@@ -14,14 +14,14 @@
 """Task to create CFS account offline."""
 import re
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.constants import RECEIPT_METHOD_EFT_MONTHLY, RECEIPT_METHOD_PAD_DAILY
+from pay_api.utils.constants import CFS_RCPT_EFT_WIRE, RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
@@ -43,7 +43,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         3. Publish a message to the queue if successful.
         """
         # Pass payment method if offline account creation has be restricted based on payment method.
-        pending_accounts: List[CfsAccountModel] = CfsAccountModel.find_all_pending_accounts()
+        pending_accounts = CfsAccountModel.find_all_pending_accounts()
         current_app.logger.info(f'Found {len(pending_accounts)} CFS Accounts to be created.')
         if len(pending_accounts) == 0:
             return
@@ -99,7 +99,12 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
             if pay_account.payment_method == PaymentMethod.EFT.value:
                 cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                                     contact_info=contact_info,
-                                                                    receipt_method=RECEIPT_METHOD_EFT_MONTHLY)
+                                                                    receipt_method=CFS_RCPT_EFT_WIRE)
+                pending_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number',
+                                                                                    None)
+                pending_account.cfs_account = cfs_account_details.get('account_number')
+                pending_account.cfs_site = cfs_account_details.get('site_number')
+                pending_account.cfs_party = cfs_account_details.get('party_number')
             elif pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
                 # This means, PAD account details have changed. So update banking details for this CFS account
                 bank_details = CFSService.update_bank_details(name=pay_account.auth_account_id,
@@ -108,6 +113,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                                                               site_number=pending_account.cfs_site,
                                                               payment_info=payment_info)
                 pending_account.payment_instrument_number = bank_details.get('payment_instrument_number', None)
+                pending_account.payment_method = PaymentMethod.PAD.value
             else:  # It's a new account, now create
                 # If the account have banking information, then create a PAD account else a regular account.
                 if pending_account.bank_number and pending_account.bank_branch_number \
@@ -116,6 +122,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                                                                         contact_info=contact_info,
                                                                         payment_info=payment_info,
                                                                         receipt_method=RECEIPT_METHOD_PAD_DAILY)
+                    pending_account.payment_method = PaymentMethod.PAD.value
                 else:
                     cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                                         contact_info=contact_info,
@@ -126,9 +133,10 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 pending_account.cfs_account = cfs_account_details.get('account_number')
                 pending_account.cfs_site = cfs_account_details.get('site_number')
                 pending_account.cfs_party = cfs_account_details.get('party_number')
+                if not pending_account.payment_method:
+                    pending_account.payment_method = pay_account.payment_method
 
         except Exception as e:  # NOQA # pylint: disable=broad-except
-            # publish to mailer queue.
             is_user_error = False
             if pay_account.payment_method == PaymentMethod.PAD.value:
                 is_user_error = CreateAccountTask._check_user_error(e.response)  # pylint: disable=no-member
@@ -146,8 +154,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 pending_account.save()
             return
 
-        # If the account has an activation time set ,
-        # before that it shud be set to the  PENDING_PAD_ACTIVATION status.
+        # If the account has an activation time set it should have PENDING_PAD_ACTIVATION status.
         is_account_in_pad_confirmation_period = pay_account.pad_activation_date is not None and \
             pay_account.pad_activation_date > datetime.today()
         pending_account.status = CfsAccountStatus.PENDING_PAD_ACTIVATION.value if \

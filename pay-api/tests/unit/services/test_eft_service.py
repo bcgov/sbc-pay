@@ -17,7 +17,11 @@
 Test-Suite to ensure that the EFT Service is working as expected.
 """
 
+import pytest
+from pay_api.exceptions import BusinessException
 from pay_api.services.eft_service import EftService
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod
+from tests.utilities.base_test import factory_invoice, factory_payment_account
 
 
 eft_service = EftService()
@@ -33,3 +37,22 @@ def test_get_payment_method_code(session):
     """Test get_payment_method_code."""
     code = eft_service.get_payment_method_code()
     assert code == 'EFT'
+
+
+def test_has_no_payment_blockers(session):
+    """Test for no payment blockers."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    payment_account.save()
+    eft_service.ensure_no_payment_blockers(payment_account)
+    assert True
+
+
+def test_has_payment_blockers(session):
+    """Test has payment blockers."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    payment_account.save()
+    factory_invoice(payment_account, status_code=InvoiceStatus.OVERDUE.value).save()
+
+    with pytest.raises(BusinessException):
+        eft_service.ensure_no_payment_blockers(payment_account)
+    assert True

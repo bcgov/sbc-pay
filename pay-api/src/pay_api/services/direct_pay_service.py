@@ -160,6 +160,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
+        self.ensure_no_payment_blockers(payment_account)
         invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
                                                                       generate_transaction_number(invoice.id), None)
         return invoice_reference

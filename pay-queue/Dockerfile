@@ -84,4 +84,4 @@ USER web
 FROM development_build AS production_build
 COPY --chown=web:web . /code
 
-CMD [ "python", "/code/app.py" ]
+CMD gunicorn --bind 0.0.0.0:8080 --config /code/gunicorn_config.py app:app

@@ -16,10 +16,10 @@
 
 Test-Suite to ensure that the Payment Reconciliation queue service is working as expected.
 """
-
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
+from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
@@ -477,7 +477,8 @@ def test_pad_nsf_reconciliations(session, app, client):
     assert payment.payment_method_code == PaymentMethod.PAD.value
     assert payment.invoice_number == invoice_number
 
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account_id)
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account_id,
+                                                                                    PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
 
 
@@ -550,7 +551,7 @@ def test_pad_reversal_reconciliations(session, app, client):
     assert payment.payment_method_code == PaymentMethod.PAD.value
     assert payment.invoice_number == invoice_number
 
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account_id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
 
     # Receipt should be deleted
@@ -686,3 +687,56 @@ async def test_credits(session, app, client, monkeypatch):
     assert pay_account.credit == onac_amount + cm_amount - cm_used_amount
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
+
+
+def test_unconsolidated_invoices_errors(session, app, client, mocker):
+    """Test error scenarios for unconsolidated invoices in the reconciliation worker."""
+    cfs_account_number = '1234'
+    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                                             cfs_account=cfs_account_number)
+
+    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
+                              service_fees=10.0, total=90.0)
+    invoice_number = '1234567890'
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
+    invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    invoice = invoice.save()
+    invoice_id = invoice.id
+    total = invoice.total
+
+    error_messages = [{'error': 'Test error message', 'row': 'row 2'}]
+    mocker.patch('pay_queue.services.payment_reconciliations._process_file_content',
+                 return_value=(True, error_messages))
+    mock_send_error_email = mocker.patch('pay_queue.services.payment_reconciliations._send_error_email')
+
+    file_name: str = 'BCR_PAYMENT_APPL_20240619.csv'
+    date = datetime.now(tz=timezone.utc).isoformat()
+    receipt_number = '1234567890'
+    row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date,
+           total, cfs_account_number,
+           TargetTransaction.INV.value, invoice_number,
+           total, 0, Status.PAID.value]
+    create_and_upload_settlement_file(file_name, [row])
+
+    add_file_event_to_queue_and_process(client,
+                                        file_name=file_name,
+                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+
+    updated_invoice = InvoiceModel.find_by_id(invoice_id)
+    assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+
+    mock_send_error_email.assert_called_once_with(
+        file_name,
+        'payment-sftp',
+        error_messages,
+        mocker.ANY,
+        CasSettlementModel.__tablename__
+    )
+
+    mock_send_error_email.assert_called_once()
+    call_args = mock_send_error_email.call_args
+    assert call_args[0][0] == file_name
+    assert call_args[0][1] == 'payment-sftp'
+    assert call_args[0][2] == error_messages

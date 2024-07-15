@@ -1,0 +1,69 @@
+version: "3"
+
+services:
+  keycloak:
+    image: sleighzy/keycloak:16.1.0-arm64
+    ports:
+      - "8081:8081"
+    platform: linux/arm64
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+    command: -b 0.0.0.0 -Djboss.http.port=8081 -Dkeycloak.migration.action=import -Dkeycloak.migration.provider=dir -Dkeycloak.migration.dir=/tmp/keycloak/test -Dkeycloak.migration.strategy=OVERWRITE_EXISTING
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "http://localhost:8081/auth/realms/demo || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - ./setup:/tmp/keycloak/test/
+
+  proxy:
+    image: nginx:alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - '8080:80'
+    depends_on:
+      - bcol
+      - pay
+      - reports
+      - paybc
+      - auth
+      - notify
+  bcol:
+    image: stoplight/prism:3.3.0
+    command: >
+      mock -p 4010 --host 0.0.0.0
+      https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/api_contract/bcol-api-1.0.0.yaml
+  pay:
+    image: stoplight/prism:3.3.0
+    command: >
+      mock -p 4010 --host 0.0.0.0
+      https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/api_contract/pay-api.yaml
+  reports:
+    image: stoplight/prism:3.3.0
+    command: >
+      mock -p 4010 --host 0.0.0.0
+      https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/api_contract/report-api-1.0.0.yaml
+  paybc:
+    image: stoplight/prism:3.3.0
+    command: >
+      mock -p 4010 --host 0.0.0.0
+      https://raw.githubusercontent.com/bcgov/sbc-pay/d8091408d5cd591dd3e0c83ae8c5738de90699de/docs/docs/PayBC%20Mocking/paybc-1.0.0.yaml
+  auth:
+    image: stoplight/prism:3.3.0
+    command: >
+      mock -p 4010 --host 0.0.0.0
+      https://raw.githubusercontent.com/bcgov/sbc-auth/main/docs/docs/api_contract/auth-api-1.0.0.yaml
+  notify:
+    image: stoplight/prism:3.3.0
+    command: >
+      mock -p 4010 --host 0.0.0.0
+      https://raw.githubusercontent.com/bcgov/sbc-auth/main/docs/docs/api_contract/notify-api-1.0.0.yaml

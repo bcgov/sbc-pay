@@ -312,7 +312,7 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
 
     AUTH_API_ENDPOINT = 'http://localhost:8080/auth-api/'
 
-    BCOL_API_ENDPOINT = 'http://localhost:8080/bcol-api'
+    BCOL_API_ENDPOINT = 'http://localhost:8080/bcol-api/'
 
     VALID_REDIRECT_URLS = ['http://localhost:8080/*']
 

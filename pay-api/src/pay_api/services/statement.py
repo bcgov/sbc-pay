@@ -16,7 +16,8 @@ from datetime import date, datetime, timedelta
 from typing import List
 
 from flask import current_app
-from sqlalchemy import func
+from sql_versioning import history_cls
+from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column, or_, select, union
 
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -128,10 +129,157 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def find_by_account_id(auth_account_id: str, page: int, limit: int):
+    def get_payment_methods_query(statement: StatementModel):
+        """Return payment methods for a statement was based on current and historical payment account versions."""
+        payment_account_history = history_cls(PaymentAccountModel)
+
+        current_account = (
+            select(
+                PaymentAccountModel.id,
+                PaymentAccountModel.payment_method,
+                PaymentAccountModel.version,
+                literal(datetime.max.date()).label('end_date')
+            ).correlate(StatementModel)
+            .where(
+                PaymentAccountModel.id == StatementModel.payment_account_id
+            )
+        )
+
+        payment_account_history = (
+            select(
+                payment_account_history.id,
+                payment_account_history.payment_method,
+                payment_account_history.version,
+                payment_account_history.changed.label('end_date')
+            ).correlate(StatementModel)
+            .where(
+                payment_account_history.id == statement.payment_account_id
+            )
+        )
+
+        # Combine current and historical records and calculate the date range for when it was active
+        union_query = union(current_account, payment_account_history)
+        subquery = (
+            select(union_query.c.id,
+                   union_query.c.payment_method,
+                   union_query.c.version,
+                   func.coalesce(func.lag(union_query.c.end_date)
+                                 .over(order_by=union_query.c.version.asc()), datetime.min.date())
+                   .label('start_date'),
+                   union_query.c.end_date)
+            .order_by(union_query.c.version.asc())
+        )
+
+        query = (
+            select(func.array_agg(func.distinct(subquery.c.payment_method)))
+            .select_from(subquery)
+            .where(
+                and_(
+                    subquery.c.start_date != subquery.c.end_date,
+                    or_(
+                        and_(func.date(subquery.c.start_date) <= statement.from_date,
+                             statement.from_date <= func.date(subquery.c.end_date)),
+                        and_(func.date(subquery.c.start_date) <= statement.to_date,
+                             statement.to_date <= func.date(subquery.c.end_date)),
+                        and_(statement.from_date <= func.date(subquery.c.start_date),
+                             func.date(subquery.c.start_date) <= statement.to_date)
+                    )
+                )
+            )
+        )
+
+        return query.scalar_subquery()
+
+    @staticmethod
+    def get_statement_owing_query():
+        """Get statement query used for amount owing."""
+        return (
+            db.session.query(
+                StatementInvoicesModel.statement_id,
+                func.sum(InvoiceModel.total - InvoiceModel.paid).label('amount_owing'))
+            .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
+            .filter(InvoiceModel.invoice_status_code.in_([
+                InvoiceStatus.PARTIAL.value,
+                InvoiceStatus.CREATED.value,
+                InvoiceStatus.OVERDUE.value])
+            )
+            .group_by(StatementInvoicesModel.statement_id)
+        )
+
+    @staticmethod
+    def find_by_id(statement_id: int):
+        """Get statement by id and populate payment methods and amount owing."""
+        owing_subquery = Statement.get_statement_owing_query().subquery()
+        payment_methods_subquery = Statement.get_payment_methods_query(StatementModel)
+
+        query = (db.session.query(StatementModel,
+                                  owing_subquery.c.amount_owing,
+                                  payment_methods_subquery)
+                 .join(PaymentAccountModel)
+                 .outerjoin(owing_subquery, owing_subquery.c.statement_id == StatementModel.id)
+                 .filter(and_(PaymentAccountModel.id == StatementModel.payment_account_id,
+                              cast(StatementModel.id, Integer) == cast(statement_id, Integer))))
+
+        result = query.one()
+        amount_owing = result[1] if result[1] else 0
+        payment_methods = result[2]
+
+        result[0].amount_owing = amount_owing
+        result[0].payment_methods = payment_methods
+
+        return result[0]
+
+    @staticmethod
+    def get_account_statements(auth_account_id: str, page, limit, is_owing: bool = None):
+        """Return all active statements for an account."""
+        owing_subquery = Statement.get_statement_owing_query().subquery()
+        payment_methods_subquery = Statement.get_payment_methods_query(StatementModel)
+
+        query = (db.session.query(StatementModel,
+                                  owing_subquery.c.amount_owing,
+                                  payment_methods_subquery)
+                 .join(PaymentAccountModel)
+                 .filter(and_(PaymentAccountModel.id == StatementModel.payment_account_id,
+                         PaymentAccountModel.auth_account_id == auth_account_id)))
+        query = query.outerjoin(
+            owing_subquery,
+            owing_subquery.c.statement_id == StatementModel.id
+        )
+
+        if is_owing:
+            query = query.filter(owing_subquery.c.amount_owing > 0)
+
+        frequency_case = case(
+            (
+                StatementModel.frequency == StatementFrequency.MONTHLY.value,
+                literal_column("'1'")
+            ),
+            (
+                StatementModel.frequency == StatementFrequency.WEEKLY.value,
+                literal_column("'2'")
+            ),
+            (
+                StatementModel.frequency == StatementFrequency.DAILY.value,
+                literal_column("'3'")
+            ),
+            else_=literal_column("'4'")
+        )
+
+        query = query.order_by(StatementModel.to_date.desc(), frequency_case)
+        pagination = query.paginate(per_page=limit, page=page)
+
+        for i, (statement, amount_owing, payment_methods) in enumerate(pagination.items):
+            statement.amount_owing = amount_owing if amount_owing else 0
+            statement.payment_methods = payment_methods
+            pagination.items[i] = statement
+
+        return pagination.items, pagination.total
+
+    @staticmethod
+    def find_by_account_id(auth_account_id: str, page: int, limit: int, is_owing: bool = None):
         """Find statements by account id."""
         current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
-        statements, total = StatementModel.find_all_statements_for_account(auth_account_id, page, limit)
+        statements, total = Statement.get_account_statements(auth_account_id, page, limit, is_owing)
         statements = Statement.populate_overdue_from_invoices(statements)
         statements_schema = StatementModelSchema()
         data = {
@@ -157,6 +305,21 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return StatementTemplate.STATEMENT_REPORT.value
 
     @staticmethod
+    def get_invoices_owing_amount(auth_account_id: str):
+        """Get invoices owing amount that have not been added as part of a statement yet."""
+        return (db.session.query(func.sum(InvoiceModel.total - InvoiceModel.paid).label('invoices_owing'))
+                .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
+                .filter(PaymentAccountModel.auth_account_id == auth_account_id)
+                .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+                                                              InvoiceStatus.PARTIAL.value,
+                                                              InvoiceStatus.CREATED.value,
+                                                              InvoiceStatus.OVERDUE.value)))
+                .filter(~exists()
+                        .where(StatementInvoicesModel.invoice_id == InvoiceModel.id))
+                .group_by(InvoiceModel.payment_account_id)
+                ).scalar()
+
+    @staticmethod
     def get_previous_statement(statement: StatementModel) -> StatementModel:
         """Get the preceding statement."""
         return db.session.query(StatementModel)\
@@ -172,6 +335,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .join(EFTCreditModel, EFTCreditModel.eft_transaction_id == EFTTransactionModel.id) \
             .join(EFTCreditInvoiceLinkModel, EFTCreditInvoiceLinkModel.eft_credit_id == EFTCreditModel.id) \
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id) \
+            .join(StatementModel, StatementModel.id == StatementInvoicesModel.statement_id) \
             .filter(StatementModel.id == statement.id) \
             .filter(EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value) \
             .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value).all()
@@ -203,7 +367,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         current_app.logger.debug(f'<get_statement_report {statement_id}')
         report_name: str = 'bcregistry-statements'
 
-        statement_dao: StatementModel = StatementModel.find_by_id(statement_id)
+        statement_dao: StatementModel = Statement.find_by_id(statement_id)
         Statement.populate_overdue_from_invoices([statement_dao])
 
         statement_svc = Statement()
@@ -271,7 +435,12 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         total_due = float(result.total_due) if result else 0
         oldest_overdue_date = get_local_formatted_date(result.oldest_overdue_date) \
             if result and result.oldest_overdue_date else None
+
+        # Unpaid invoice amount total that are not part of a statement yet
+        invoices_unpaid_amount = Statement.get_invoices_owing_amount(auth_account_id)
+
         return {
+            'total_invoice_due': float(invoices_unpaid_amount) if invoices_unpaid_amount else 0,
             'total_due': total_due,
             'oldest_overdue_date': oldest_overdue_date
         }

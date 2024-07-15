@@ -62,7 +62,7 @@ def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, in
                                         has_reference, expected_inv_status):
     """Assert that the create refund succeeds for paid invoices."""
     expected = REFUND_SUCCESS_MESSAGES[f'{payment_method}.{invoice_status}']
-    payment_account = factory_payment_account()
+    payment_account = factory_payment_account(payment_method_code=payment_method)
     payment_account.save()
 
     i = factory_invoice(payment_account=payment_account, payment_method_code=payment_method)
@@ -86,6 +86,12 @@ def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, in
 
     assert i.invoice_status_code == expected_inv_status
     assert message['message'] == expected
+    if i.invoice_status_code in (
+        InvoiceStatus.CANCELLED.value,
+        InvoiceStatus.CREDITED.value,
+        InvoiceStatus.REFUNDED.value
+    ):
+        assert i.refund_date
 
 
 def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):

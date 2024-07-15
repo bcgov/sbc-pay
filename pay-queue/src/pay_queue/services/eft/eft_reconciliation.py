@@ -13,7 +13,6 @@
 # limitations under the License.
 """EFT reconciliation file."""
 from datetime import datetime
-from operator import and_
 from typing import Dict, List
 
 from _decimal import Decimal
@@ -28,7 +27,9 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.eft_service import EftService as EFTService
 from pay_api.services.eft_short_names import EFTShortnames
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod
+from pay_api.services.payment import Payment
+from pay_api.services.payment_account import PaymentAccount
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod
 from sentry_sdk import capture_message
 
 from pay_queue.minio import get_object
@@ -252,10 +253,10 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
         # We have a mapping and can continue processing
         try:
             auth_account_id = eft_short_link['account_id']
-            # Find invoices to be paid
-            invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
+            invoices = EFTShortnames.get_invoices_owing(auth_account_id)
             for invoice in invoices:
-                _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname])
+                _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname],
+                             short_name_links=shortname_links['items'])
 
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_eft_transaction_errors = True
@@ -388,19 +389,6 @@ def _get_shortname(short_name: str) -> EFTShortnameModel:
     return eft_shortname
 
 
-def _get_invoices_owing(auth_account_id: str) -> [InvoiceModel]:
-    """Return invoices that have not been fully paid."""
-    unpaid_status = (InvoiceStatus.PARTIAL.value,
-                     InvoiceStatus.CREATED.value, InvoiceStatus.OVERDUE.value)
-    query = db.session.query(InvoiceModel) \
-        .join(PaymentAccountModel, and_(PaymentAccountModel.id == InvoiceModel.payment_account_id,
-                                        PaymentAccountModel.auth_account_id == auth_account_id)) \
-        .filter(InvoiceModel.invoice_status_code.in_(unpaid_status)) \
-        .order_by(InvoiceModel.created_on.asc())
-
-    return query.all()
-
-
 def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
     """Create a dictionary mapping for shortname and total deposits from TDI17 file."""
     shortname_balance = {}
@@ -423,7 +411,7 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
     return shortname_balance
 
 
-def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
+def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict, short_name_links: List[Dict]):
     """Pay for an invoice and update invoice state."""
     payment_date = shortname_balance.get('transaction_date') or datetime.now()
     balance = shortname_balance.get('balance')
@@ -447,9 +435,22 @@ def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
     # Paid - update the shortname balance
     shortname_balance['balance'] -= payable_amount
 
+    # If the payment amount is at least exactly the unpaid total, unlock associated accounts
+    if payable_amount == unpaid_total:
+        _unlock_associated_frozen_accounts(short_name_links=short_name_links,
+                                           payment=payment)
+
 
 def _get_invoice_unpaid_total(invoice: InvoiceModel) -> Decimal:
     invoice_total = invoice.total or 0
     invoice_paid = invoice.paid or 0
 
     return invoice_total - invoice_paid
+
+
+def _unlock_associated_frozen_accounts(short_name_links: List[Dict], payment: Payment):
+    """Unlock the frozen accounts."""
+    for short_name_link in short_name_links:
+        auth_account_id = short_name_link['account_id']
+        payment_account: PaymentAccountModel = PaymentAccount.find_by_auth_account_id(auth_account_id)
+        PaymentAccount.unlock_frozen_accounts(payment.id, payment_account.id)

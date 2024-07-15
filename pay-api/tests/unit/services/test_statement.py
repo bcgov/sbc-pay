@@ -16,14 +16,13 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
-from datetime import datetime, timezone
-
+from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta
 from unittest.mock import patch
 
 import pytz
 from freezegun import freeze_time
-from sqlalchemy import text
+from sqlalchemy import ColumnDefault
 
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
@@ -194,8 +193,7 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementModel.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                                limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -249,8 +247,7 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementModel.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                                limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -308,8 +305,7 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementModel.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                                limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -320,6 +316,114 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
     assert monthly_invoices is not None
     assert len(monthly_invoices) == 1
     assert monthly_invoices[0].invoice_id == monthly_invoice.id
+
+
+def test_interim_statement_settings_eft(db, session, admin_users_mock):
+    """Assert statement setting properly generated when transitioning to and from EFT payment method."""
+    account_create_date = datetime(2024, 5, 30, 12, 0)
+    with freeze_time(account_create_date):
+        account: PaymentAccountService = PaymentAccountService.create(
+            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+
+        assert account is not None
+        assert account.payment_method == PaymentMethod.DRAWDOWN.value
+
+    # Confirm initial default settings when account is created
+    initial_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_active_settings(str(account.auth_account_id), datetime.today())
+
+    assert initial_settings is not None
+    assert initial_settings.frequency == StatementFrequency.WEEKLY.value
+    assert initial_settings.from_date == account_create_date.date()
+    assert initial_settings.to_date is None
+
+    update_date = localize_date(datetime(2024, 6, 13, 12, 0))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id,
+                                               get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
+                                                                              account_id=account.auth_account_id))
+    # Assert initial settings are properly end dated
+    assert initial_settings is not None
+    assert initial_settings.frequency == StatementFrequency.WEEKLY.value
+    assert initial_settings.from_date == account_create_date.date()
+    assert initial_settings.to_date == update_date.date()
+
+    # Assert new EFT Monthly settings are created
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(account.auth_account_id)
+
+    assert latest_statement_settings is not None
+    assert latest_statement_settings.id != initial_settings.id
+    assert latest_statement_settings.frequency == StatementFrequency.MONTHLY.value
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
+    assert latest_statement_settings.to_date is None
+
+    # Same day payment method change back to DRAWDOWN
+    update_date = localize_date(datetime(2024, 6, 13, 12, 5))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id,
+                                               get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(account.auth_account_id)
+
+    assert latest_statement_settings is not None
+    assert latest_statement_settings.id != initial_settings.id
+    assert latest_statement_settings.frequency == StatementFrequency.WEEKLY.value
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
+    assert latest_statement_settings.to_date is None
+
+    # Same day payment method change back to EFT
+    update_date = localize_date(datetime(2024, 6, 13, 12, 6))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id,
+                                               get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
+                                                                              account_id=account.auth_account_id))
+
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(account.auth_account_id)
+
+    assert latest_statement_settings is not None
+    assert latest_statement_settings.id != initial_settings.id
+    assert latest_statement_settings.frequency == StatementFrequency.MONTHLY.value
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
+    assert latest_statement_settings.to_date is None
+
+    all_settings = (db.session.query(StatementSettingsModel)
+                    .filter(StatementSettingsModel.payment_account_id == account.id)
+                    .order_by(StatementSettingsModel.id)).all()
+
+    assert all_settings is not None
+    assert len(all_settings) == 2
+
+    expected_from_date = latest_statement_settings.from_date
+
+    # Change payment method to DRAWDOWN 1 day later - should create a new statement settings record
+    update_date = localize_date(datetime(2024, 6, 14, 12, 6))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id,
+                                               get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(account.auth_account_id)
+
+    assert latest_statement_settings is not None
+    assert latest_statement_settings.id != initial_settings.id
+    assert latest_statement_settings.frequency == StatementFrequency.WEEKLY.value
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
+    assert latest_statement_settings.to_date is None
+
+    all_settings = (db.session.query(StatementSettingsModel)
+                    .filter(StatementSettingsModel.payment_account_id == account.id)
+                    .order_by(StatementSettingsModel.id)).all()
+
+    assert all_settings is not None
+    assert len(all_settings) == 3
+
+    # Assert previous settings properly end dated
+    assert all_settings[1].frequency == StatementFrequency.MONTHLY.value
+    assert all_settings[1].from_date == expected_from_date
+    assert all_settings[1].to_date == update_date.date()
 
 
 def get_statement_date_string(datetime_value: datetime) -> str:
@@ -380,6 +484,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             'invoices': [],
             'paymentTransactions': [],
             'statement': {
+                'amount_owing': 0,
                 'created_on': date_string_now,
                 'frequency': 'MONTHLY',
                 'from_date': get_statement_date_string(statement_from_date),
@@ -555,6 +660,7 @@ def test_get_eft_statement_with_invoices(session):
             ],
             'paymentTransactions': [],
             'statement': {
+                'amount_owing': 250.0,
                 'created_on': date_string_now,
                 'frequency': 'MONTHLY',
                 'from_date': get_statement_date_string(statement_from_date),
@@ -596,8 +702,20 @@ def test_statement_various_payment_methods_history(db, app):
     """Unit test to test various payment methods over the life of a statement."""
     # We aren't using the session fixture here because we want to test the history_cls
     # history_cls wont work on scoped session flush.
+    db.session.commit = db.session.flush
+    # Freezegun etc doesn't work here.
+    changed_column = [
+        column for column in db.metadata.tables['payment_accounts_history'].columns._all_columns
+        if column.description == 'changed'][0]
+
+    time_setter = datetime(year=2024, month=1, day=1, hour=12)
+
+    def time_set():
+        return time_setter
+
+    changed_column.default = ColumnDefault(time_set)
     with app.app_context():
-        db.session.commit = db.session.flush
+        # db.session.commit = db.session.flush
         account: PaymentAccountService = PaymentAccountService.create(
             get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
 
@@ -608,20 +726,74 @@ def test_statement_various_payment_methods_history(db, app):
             statement_settings_id=statement_settings.id,
             payment_account_id=account.id,
             created_on=datetime.today(),
-            from_date=datetime(2024, 1, 2, 12, 0).date(),
+            from_date=datetime(2024, 1, 1, 12, 0).date(),
             to_date=datetime(2024, 1, 7, 12, 0).date()
         ).flush()
 
+        time_setter = datetime(year=2024, month=1, day=2, hour=12)
+        # Change to PAD, but it will move back to DRAWDOWN and create an intermediate row that we want to filter.
         account = PaymentAccountService.update(account.auth_account_id, get_unlinked_pad_account_payload())
+
+        time_setter = datetime(year=2024, month=1, day=3, hour=12)
+        # Change to PAD again, this time with the activation date set in the past, so it will go through.
+        account.pad_activation_date = datetime.min
+        account.flush()
+        account = PaymentAccountService.update(account.auth_account_id, get_unlinked_pad_account_payload())
+
+        time_setter = datetime(year=2024, month=1, day=4, hour=12)
         # History row wont be generated for this line:
         account = PaymentAccountService.update(account.auth_account_id, get_basic_account_payload())
-        # Freezegun, pytest-freezegun don't work here.
-        db.session.execute(text("update payment_accounts_history set changed = '2024-01-02' "
-                                f"where payment_method = '{PaymentMethod.DRAWDOWN.value}'"))
-        db.session.execute(text("update payment_accounts_history set changed = '2024-01-03' "
-                                f"where payment_method = '{PaymentMethod.PAD.value}'"))
 
+        # Statement payment methods use the statement from_date to track historical payment methods
+        # this shows the relevant or transition of payment methods for that statement in particular interim statements
+        statement = StatementService.find_by_id(statement.id)
         payment_methods = statement.payment_methods
-        assert 'DIRECT_PAY' in payment_methods
         assert 'DRAWDOWN' in payment_methods
         assert 'PAD' in payment_methods
+        assert 'DIRECT_PAY' in payment_methods
+
+        statement.from_date = datetime(2024, 1, 2, 12, 0).date()
+        statement.save()
+        statement = StatementService.find_by_id(statement.id)
+        payment_methods = statement.payment_methods
+        assert 'DRAWDOWN' in payment_methods
+        assert 'PAD' in payment_methods
+        assert 'DIRECT_PAY' in payment_methods
+
+        statement.from_date = datetime(2024, 1, 4, 12, 0).date()
+        statement.save()
+        statement = StatementService.find_by_id(statement.id)
+        payment_methods = statement.payment_methods
+        assert 'DRAWDOWN' not in payment_methods
+        assert 'PAD' in payment_methods
+        assert 'DIRECT_PAY' in payment_methods
+
+        # Statement from_date is now past historical record changed dates, should only show the
+        # current active payment_method - DIRECT_PAY
+        statement.from_date = datetime(2024, 1, 5, 12, 0).date()
+        statement.save()
+        statement = StatementService.find_by_id(statement.id)
+        payment_methods = statement.payment_methods
+        assert 'DRAWDOWN' not in payment_methods
+        assert 'PAD' not in payment_methods
+        assert 'DIRECT_PAY' in payment_methods
+
+        # Should just be DRAWDOWN as DIRECT_PAY was never active during this statement period
+        # Make sure our PAD "blip" is filtered out.
+        statement.from_date = datetime(2024, 1, 1, 12, 0).date()
+        statement.to_date = datetime(2024, 1, 2, 12, 0).date()
+        statement.save()
+        statement = StatementService.find_by_id(statement.id)
+        payment_methods = statement.payment_methods
+        assert 'DRAWDOWN' in payment_methods
+        assert 'PAD' not in payment_methods
+        assert 'DIRECT_PAY' not in payment_methods
+
+        statement.from_date = datetime(2024, 1, 1, 12, 0).date()
+        statement.to_date = datetime(2024, 1, 3, 12, 0).date()
+        statement.save()
+        statement = StatementService.find_by_id(statement.id)
+        payment_methods = statement.payment_methods
+        assert 'DRAWDOWN' in payment_methods
+        assert 'PAD' in payment_methods
+        assert 'DIRECT_PAY' not in payment_methods

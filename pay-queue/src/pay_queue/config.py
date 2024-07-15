@@ -97,8 +97,16 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
 
-    # Disable EJV Error Email
+    KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv('SBC_AUTH_ADMIN_CLIENT_ID')
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = os.getenv('SBC_AUTH_ADMIN_CLIENT_SECRET')
+    JWT_OIDC_ISSUER = os.getenv('JWT_OIDC_ISSUER')
+    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL', '')
+    NOTIFY_API_VERSION = os.getenv('NOTIFY_API_VERSION', '')
+    NOTIFY_API_ENDPOINT = f'{NOTIFY_API_URL + NOTIFY_API_VERSION}/'
+    IT_OPS_EMAIL = os.getenv('IT_OPS_EMAIL', 'SBC_ITOperationsSupport@gov.bc.ca')
+
     DISABLE_EJV_ERROR_EMAIL = os.getenv('DISABLE_EJV_ERROR_EMAIL', 'true').lower() == 'true'
+    DISABLE_CSV_ERROR_EMAIL = os.getenv('DISABLE_CSV_ERROR_EMAIL', 'true').lower() == 'true'
 
     # PUB/SUB - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev, business-events
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
@@ -159,6 +167,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     TEST_PUSH_ENDPOINT = os.getenv('TEST_PUSH_ENDPOINT', f'http://host.docker.internal:{str(TEST_PUSH_ENDPOINT_PORT)}/')
     GCP_AUTH_KEY = None
     DISABLE_EJV_ERROR_EMAIL = False
+    DISABLE_CSV_ERROR_EMAIL = False
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

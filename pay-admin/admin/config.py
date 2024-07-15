@@ -22,6 +22,7 @@ rather than reading environment variables directly or by accessing this configur
 import os
 import sys
 
+from cachelib.file import FileSystemCache
 from dotenv import find_dotenv, load_dotenv
 
 
@@ -92,6 +93,10 @@ class _Config():  # pylint: disable=too-few-public-methods
     OIDC_ID_TOKEN_COOKIE_SECURE = os.getenv('PAY_OIDC_ID_TOKEN_COOKIE_SECURE', 'True').lower() == 'true'
 
     PREFERRED_URL_SCHEME = 'https'
+    SESSION_TYPE = 'cachelib'
+    SESSION_SERIALIZATION_FORMAT = 'json'
+    SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir='/tmp/sessions')
+    CACHE_TYPE = 'simple'
 
     TESTING = False
     DEBUG = True

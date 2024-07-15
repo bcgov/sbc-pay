@@ -33,10 +33,11 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
-    get_gov_account_payload_with_no_revenue_account, get_pad_account_payload, get_payment_request,
+    factory_invoice, get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
+    get_gov_account_payload_with_no_revenue_account, get_linked_pad_account_payload, get_payment_request,
     get_payment_request_for_cso, get_payment_request_with_folio_number, get_payment_request_with_service_fees,
     get_premium_account_payload, get_unlinked_pad_account_payload, token_header)
+
 
 fake = Faker()
 
@@ -344,12 +345,12 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     assert rv.json.get('accountId') == auth_account_id
 
     # assert switching to PAD returns bank details
-    pad_account_details = get_pad_account_payload(account_id=int(auth_account_id))
+    pad_account_details = get_linked_pad_account_payload(account_id=int(auth_account_id))
 
     rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(pad_account_details),
                     headers=headers)
 
-    assert rv.status_code == 202
+    assert rv.status_code == 200
 
     assert rv.json.get('futurePaymentMethod') == PaymentMethod.PAD.value
     assert rv.json.get('bankTransitNumber') == pad_account_details.get('bankTransitNumber')
@@ -486,8 +487,9 @@ def test_switch_eft_account_when_cfs_up(session, client, jwt, app, admin_users_m
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',
                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.EFT.value)),
                     headers=headers)
-
-    assert rv.status_code == 200
+    # 202 and 200, 202 for when there is a CFS account PENDING.
+    # 200 when the CFS account is invalid etc.
+    assert rv.status_code == 202
 
 
 def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
@@ -755,3 +757,25 @@ def test_search_eft_accounts(session, client, jwt, app, admin_users_mock, non_ac
     assert rv.status_code == 200
     assert len(rv.json.get('items')) == 1
     assert rv.json.get('items')[0].get('accountId') == auth_account_id
+
+
+def test_switch_eft_account_when_outstanding_balance(session, client, jwt, app, admin_users_mock):
+    """Assert outstanding balance check when switching away from EFT."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.EFT.value)),
+                     headers=headers)
+    auth_account_id = rv.json.get('accountId')
+    payment_account_id = rv.json.get('id')
+    payment_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
+
+    factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                    total=50, paid=0).save()
+
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                    data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.PAD.value)),
+                    headers=headers)
+
+    assert rv.status_code == 400
+    assert rv.json['type'] == 'EFT_SHORT_NAME_OUTSTANDING_BALANCE'

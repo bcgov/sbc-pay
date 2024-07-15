@@ -36,6 +36,7 @@ from pay_api.utils.enums import (
 from pay_api.utils.util import generate_transaction_number
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
+from sqlalchemy import select
 
 from utils import mailer
 
@@ -68,7 +69,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         cls._create_online_banking_invoices()
         current_app.logger.info('>> Done Online Banking Invoice Creation')
 
-        # Cancel invoice is the only non-creation of invoice in this job.
         current_app.logger.info('<< Starting CANCEL Routing Slip Invoices')
         cls._cancel_rs_invoices()
         current_app.logger.info('>> Done CANCEL Routing Slip Invoices')
@@ -89,27 +89,24 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(invoices)} to be cancelled in CFS.')
         for invoice in invoices:
-            # call unapply rcpts
-            # adjust invoice to zero
             current_app.logger.debug(f'Calling the invoice {invoice.id}')
             routing_slip = RoutingSlipModel.find_by_number(invoice.routing_slip)
             routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
                 routing_slip.payment_account_id)
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
-                routing_slip_payment_account.id)
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(
+                routing_slip_payment_account.id, PaymentMethod.INTERNAL.value)
             # Find COMPLETED invoice reference; as unapply has to be done only if invoice is created and applied in CFS.
             invoice_reference = InvoiceReferenceModel. \
                 find_by_invoice_id_and_status(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
             if invoice_reference:
                 current_app.logger.debug(f'Found invoice reference - {invoice_reference.invoice_number}')
                 try:
-                    # find receipts against the invoice and unapply
-                    # apply receipt now
                     receipts: List[ReceiptModel] = ReceiptModel.find_all_receipts_for_invoice(invoice_id=invoice.id)
                     for receipt in receipts:
                         CFSService.unapply_receipt(cfs_account, receipt.receipt_number,
                                                    invoice_reference.invoice_number)
 
+                    # Adjust to zero: -invoice.total + invoice.total = 0
                     adjustment_negative_amount = -invoice.total
                     CFSService.adjust_invoice(cfs_account=cfs_account,
                                               inv_number=invoice_reference.invoice_number,
@@ -143,6 +140,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             .filter(InvoiceModel.payment_method_code == PaymentMethod.INTERNAL.value) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
             .filter(CfsAccountModel.status.in_([CfsAccountStatus.ACTIVE.value, CfsAccountStatus.FREEZE.value])) \
+            .filter(CfsAccountModel.payment_method == PaymentMethod.INTERNAL.value) \
             .filter(InvoiceModel.routing_slip is not None) \
             .order_by(InvoiceModel.created_on.asc()).all()
 
@@ -160,7 +158,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 routing_slip.payment_account_id)
 
             # apply invoice to the active CFS_ACCOUNT which will be the parent routing slip
-            active_cfs_account = CfsAccountModel.find_effective_by_account_id(routing_slip_payment_account.id)
+            active_cfs_account = CfsAccountModel.find_effective_by_payment_method(routing_slip_payment_account.id,
+                                                                                  PaymentMethod.INTERNAL.value)
 
             try:
                 invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
@@ -229,22 +228,19 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_pad_invoices(cls):  # pylint: disable=too-many-locals
         """Create PAD invoices in to CFS system."""
-        # Find all accounts which have done a transaction with PAD transactions
-
         inv_subquery = db.session.query(InvoiceModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value).subquery()
 
-        # Exclude the accounts which are in FREEZE state.
         pad_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value) \
-            .filter(PaymentAccountModel.id.in_(inv_subquery)).all()
+            .filter(CfsAccountModel.payment_method == PaymentMethod.PAD.value) \
+            .filter(PaymentAccountModel.id.in_(select(inv_subquery))).all()
 
         current_app.logger.info(f'Found {len(pad_accounts)} with PAD transactions.')
 
         for account in pad_accounts:
-            # Find all PAD invoices for this account
             account_invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
@@ -252,7 +248,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 .filter(InvoiceModel.id.notin_(cls._active_invoice_reference_subquery())) \
                 .order_by(InvoiceModel.created_on.desc()).all()
 
-            # Get cfs account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(account.id)
 
             if len(account_invoices) == 0:
@@ -260,19 +255,13 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             current_app.logger.debug(
                 f'Found {len(account_invoices)} invoices for account {payment_account.auth_account_id}')
 
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-            if cfs_account is None:
-                # Get the last cfs_account for it, as the account might have got upgraded from PAD to DRAWDOWN.
-                cfs_account: CfsAccountModel = CfsAccountModel.query.\
-                    filter(CfsAccountModel.account_id == payment_account.id).order_by(CfsAccountModel.id.desc()).first()
-
-            # If the CFS Account status is not ACTIVE or INACTIVE (for above case), raise error and continue
+            cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                     PaymentMethod.PAD.value)
             if cfs_account.status not in (CfsAccountStatus.ACTIVE.value, CfsAccountStatus.INACTIVE.value):
                 current_app.logger.info(f'CFS status for account {payment_account.auth_account_id} '
                                         f'is {payment_account.cfs_account_status} skipping.')
                 continue
 
-            # Add all lines together
             lines = []
             invoice_total = Decimal('0')
             for invoice in account_invoices:
@@ -340,12 +329,13 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         """Return EFT accounts."""
         invoice_subquery = db.session.query(InvoiceModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
-            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value).subquery()
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value).subquery()
 
         eft_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value) \
-            .filter(PaymentAccountModel.id.in_(invoice_subquery)).all()
+            .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value) \
+            .filter(PaymentAccountModel.id.in_(select(invoice_subquery))).all()
 
         current_app.logger.info(f'Found {len(eft_accounts)} with EFT transactions.')
 
@@ -380,7 +370,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             account_invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == eft_account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
-                .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
+                .filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value) \
                 .filter(InvoiceModel.id.notin_(cls._active_invoice_reference_subquery())) \
                 .order_by(InvoiceModel.created_on.desc()).all()
 
@@ -395,20 +385,13 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             current_app.logger.debug(
                 f'Found {len(account_invoices)} invoices for account {payment_account.auth_account_id}')
 
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-
-            # If no CFS account then the payment method might have changed from EFT to DRAWDOWN
-            if not cfs_account:
-                cfs_account: CfsAccountModel = CfsAccountModel.query.\
-                    filter(CfsAccountModel.account_id == payment_account.id).order_by(CfsAccountModel.id.desc()).first()
-
-            # If CFS account is not ACTIVE or INACTIVE (for above case), raise error and continue
+            cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                     PaymentMethod.EFT.value)
             if cfs_account.status not in (CfsAccountStatus.ACTIVE.value, CfsAccountStatus.INACTIVE.value):
                 current_app.logger.info(f'CFS status for account {payment_account.auth_account_id} '
                                         f'is {payment_account.cfs_account_status} skipping.')
                 continue
 
-            # Add all payment line items together
             lines = []
             invoice_total = Decimal('0')
             for invoice in account_invoices:
@@ -476,17 +459,16 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(invoices)} to be created in CFS.')
         for invoice in invoices:
-            # Get cfs account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(invoice.payment_account_id)
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+            # Adding this in for the future when we can switch between BCOL and ONLINE_BANKING.
+            cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                     PaymentMethod.ONLINE_BANKING.value)
 
-            # Check for corp type and see if online banking is allowed.
             if invoice.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
                 corp_type: CorpTypeModel = CorpTypeModel.find_by_code(invoice.corp_type_code)
                 if not corp_type.is_online_banking_allowed:
                     continue
 
-            # Create a CFS invoice
             current_app.logger.debug(f'Creating cfs invoice for invoice {invoice.id}')
             try:
                 invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
@@ -504,8 +486,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_number=invoice_response.get('invoice_number'),
                 reference_number=invoice_response.get('pbc_ref_number', None))
 
-            # Misc
             invoice.cfs_account_id = payment_account.cfs_account_id
-            # leave the status as SETTLEMENT_SCHEDULED
             invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
             invoice.save()

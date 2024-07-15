@@ -395,7 +395,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
                cfs_account=account_number,
                cfs_site='29921',
                account_id=account.id,
-               status=cfs_account_status).save()
+               status=cfs_account_status,
+               payment_method=payment_method_code).save()
 
     if payment_system_code == PaymentSystem.BCOL.value:
         account.payment_method = PaymentMethod.DRAWDOWN.value
@@ -631,7 +632,7 @@ def activate_pad_account(auth_account_id: str):
     payment_account: PaymentAccount = PaymentAccount.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
     payment_account.save()
-    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(payment_account.id)
+    cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     cfs_account.status = 'ACTIVE'
     cfs_account.save()
 
@@ -785,8 +786,8 @@ def get_eft_enable_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.
     }
 
 
-def get_pad_account_payload(account_id: int = randrange(999999), bank_number: str = '001', transit_number='999',
-                            bank_account='1234567890'):
+def get_linked_pad_account_payload(account_id: int = randrange(999999), bank_number: str = '001', transit_number='999',
+                                   bank_account='1234567890'):
     """Return a pad payment account object."""
     return {
         'accountId': account_id,

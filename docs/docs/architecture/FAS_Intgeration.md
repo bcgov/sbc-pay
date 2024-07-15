@@ -127,7 +127,7 @@ end note
 Pay_API -> CFS_API: /rcpts/adjs ?
 CFS_API -> Pay_API : 
 note right
-  Adjust the invoice to zero using an activity_name to move the fund to refund revenue account.
+  Adjust the receipt to zero using an activity_name to move the fund to refund revenue account.
 end note
 
 

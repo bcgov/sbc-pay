@@ -117,13 +117,14 @@ select ('python3 invoke_jobs.py GENERATE_STATEMENTS ' || i::date) as command ,i:
 ) t1 where statement_count = 0;
 ```
 
-EX It will spit out a command:
-`python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25`
+EX It will spit out a command, add in the bcrosAccountId or authAccountId:
+`python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25 <accountId>`
 
 Connect to the job pod, and run this line. 
 
+Note: logs might differ a bit here, bcrosAccountId/authAccountId was recently added.
 ```
-$ python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25
+$ python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25 <accountId>
 ----------------------------Scheduler Ran With Argument-- GENERATE_STATEMENTS
 2023-03-16 18:37:48,690 - invoke_jobs - INFO in invoke_jobs:invoke_jobs.py:50 - create_app: <<<< Starting Payment Jobs >>>>
 2023-03-16 18:37:49,035 - invoke_jobs - DEBUG in statement_task:statement_task.py:47 - generate_statements: Generating statements for: 2022-06-25 using date override.
@@ -164,4 +165,29 @@ Log onto the postgres pod - run:
 REINDEX (VERBOSE) DATABASE CONCURRENTLY "pay-db";
 
 If you run into duplicate keys, remove them and keep re-running the indexing.
+
+20. How do I replay GCP PUBSUB queue messages?
+
+You should be able to look on the pod and see the message for example:
+
+2024-06-10 20:31:09,969 - account_mailer - INFO in worker:worker.py:49 - worker: Event message received: {"id": "a13c5ed0-a36f-4260-8b46-cff89a0dcd71", "source": "sbc-auth-auth-api", "subject": null, "time": "2024-06-10T20:31:09.745295+00:00", "type": "bc.registry.auth.staffReviewAccount", "data": {"emailAddresses": "xxx@hello.ca", "contextUrl": "
+https://gogo.ca//review-account/1127"
+, "userFirstName": "REG", "userLastName": "99"}}
+
+1. Add in "specversion": "1.0"
+2. Add in "datacontenttype": "application/json"
+3. ALSO change the ID (it's saved in a table typically to prevent double messages)
+
+you can build it into a Gcloud message to replay:
+
+gcloud pubsub topics publish projects/<project>/topics/<topic> --message='{"specversion": "1.0", "datacontenttype": "application/json", "id": "c13c5ed0-a36f-4260-8b46-cff89a0dcd71", "source": "sbc-auth-auth-api", "subject": null, "time": "2024-06-10T20:31:09.745295+00:00", "type": "bc.registry.auth.staffReviewAccount", "data": {"emailAddresses": "xxx@hello.ca", "contextUrl": "
+https://gogo.ca//review-account/1127"
+, "userFirstName": "REG", "userLastName": "99"}}
+
+it will work and process on the pod.
+
+
+21. Where are the reports generated (report-api)? 
+Here: https://github.com/bcgov/bcros-common/
+
 

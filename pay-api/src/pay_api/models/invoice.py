@@ -14,7 +14,7 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
 from dateutil.relativedelta import relativedelta
@@ -35,7 +35,6 @@ from .invoice_reference import InvoiceReferenceSchema
 from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
-from ..utils.util import current_local_time
 
 
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
@@ -102,7 +101,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     payment_date = db.Column(db.DateTime, nullable=True)
     # default overdue_date to the first of next month
     overdue_date = db.Column(db.DateTime, nullable=True,
-                             default=lambda: current_local_time() + relativedelta(months=1, day=1))
+                             default=lambda: datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1))
     refund_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Numeric(19, 2), nullable=True)
     routing_slip = db.Column(db.String(50), nullable=True, index=True)
@@ -141,6 +140,14 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(business_identifier=business_identifier).all()
 
     @classmethod
+    def find_invoices_by_status_for_account(cls, pay_account_id: int, invoice_statuses: List[str]):
+        """Return invoices by status for an account."""
+        query = cls.query.filter_by(payment_account_id=pay_account_id). \
+            filter(Invoice.invoice_status_code.in_(invoice_statuses))
+
+        return query.all()
+
+    @classmethod
     def find_invoices_for_payment(cls,
                                   payment_id: int,
                                   reference_status=InvoiceReferenceStatus.ACTIVE.value) -> List[Invoice]:
@@ -172,6 +179,12 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
                     (Invoice.payment_method_code == PaymentMethod.PAD.value) &
                     (Invoice.invoice_status_code == InvoiceStatus.PAID.value) &
                     (Invoice.created_on >= from_date)
+            ) |
+            (
+                (Invoice.payment_method_code == PaymentMethod.EFT.value) &
+                (Invoice.payment_method_code.in_([InvoiceStatus.CREATED.value, InvoiceStatus.OVERDUE.value])
+                 ) &
+                (Invoice.created_on >= from_date)
             )
         )
 

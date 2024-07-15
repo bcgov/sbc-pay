@@ -156,8 +156,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         short_name_model: EFTShortnameModel = EFTShortnameModel.find_by_id(short_name_id)
         auth_account_id = short_name_model.auth_account_id
 
-        # Find invoices to be paid
-        invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
+        invoices = EFTShortnames.get_invoices_owing(auth_account_id)
         pay_service = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
 
         for invoice in invoices:
@@ -166,7 +165,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>process_owing_invoices')
 
     @staticmethod
-    def get_invoices_owing(auth_account_id: str) -> [InvoiceModel]:
+    def get_invoices_owing(auth_account_id: str) -> List[InvoiceModel]:
         """Return invoices that have not been fully paid."""
         unpaid_status = (InvoiceStatus.PARTIAL.value,
                          InvoiceStatus.CREATED.value, InvoiceStatus.OVERDUE.value)
@@ -291,7 +290,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 .filter(InvoiceModel.payment_account_id == PaymentAccountModel.id)
                 .filter(EFTCreditInvoiceLinkModel.status_code.in_([EFTCreditInvoiceStatus.PENDING.value]))
                 .correlate(PaymentAccountModel)
-                .as_scalar())
+                .scalar_subquery())
 
     @classmethod
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
@@ -350,6 +349,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 query = query.filter_conditionally(search_criteria.amount_owing, statement_summary_query.c.total_owing)
 
         query = cls.get_link_state_filters(search_criteria, query)
+        query = query.filter(or_(CfsAccountModel.payment_method == PaymentMethod.EFT.value,
+                                 CfsAccountModel.id.is_(None)))
         query = query.filter(
             or_(PaymentAccountModel.payment_method == PaymentMethod.EFT.value, PaymentAccountModel.id.is_(None))
         )

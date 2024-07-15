@@ -77,6 +77,7 @@ urllib3 = "2.2.1"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 pg8000 = "^1.30.5"
 sql-versioning = { git = "https://github.com/bcgov/lear.git", subdirectory = "python/common/sql-versioning", branch = "feature-legal-name" }
+aiohttp = "^3.9.5"
 
 
 [tool.poetry.group.dev.dependencies]

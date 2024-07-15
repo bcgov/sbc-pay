@@ -17,10 +17,10 @@
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
 from dateutil.relativedelta import relativedelta
+from datetime import datetime, timezone
 
 from pay_api.models import Invoice, InvoiceSchema
 from pay_api.utils.enums import InvoiceStatus
-from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
@@ -39,7 +39,7 @@ def test_invoice(session):
 
     # assert overdue default is set
     assert invoice.overdue_date is not None
-    assert invoice.overdue_date.date() == (current_local_time() + relativedelta(months=1, day=1)).date()
+    assert invoice.overdue_date.date() == (datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1)).date()
 
 
 def test_invoice_find_by_id(session):

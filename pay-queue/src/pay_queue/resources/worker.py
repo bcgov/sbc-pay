@@ -42,7 +42,7 @@ def worker():
     try:
         current_app.logger.info('Event Message Received: %s ', json.dumps(dataclasses.asdict(ce)))
         if ce.type == QueueMessageTypes.CAS_MESSAGE_TYPE.value:
-            reconcile_payments(ce.data)
+            reconcile_payments(ce)
         elif ce.type == QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value:
             reconcile_distributions(ce.data)
         elif ce.type == QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value:
@@ -52,10 +52,10 @@ def worker():
         elif ce.type in [QueueMessageTypes.INCORPORATION.value, QueueMessageTypes.REGISTRATION.value]:
             update_temporary_identifier(ce.data)
         else:
-            raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
+            current_app.logger.warning('Invalid queue message type: %s', ce.type)
 
         return {}, HTTPStatus.OK
-    except Exception:  # pylint: disable=broad-exception-caught
-        current_app.logger.error('Failed to process queue message: %s', HTTPStatus.INTERNAL_SERVER_ERROR)
-        # Optionally, return an error status code or message
+    except Exception: # NOQA # pylint: disable=broad-except
+        # Catch Exception so that any error is still caught and the message is removed from the queue
+        current_app.logger.error('Error processing event:', exc_info=True)
         return {}, HTTPStatus.OK

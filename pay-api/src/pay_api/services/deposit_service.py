@@ -40,7 +40,7 @@ class DepositService(PaymentSystemService, CFSService):
         """Create an account for the Deposit transactions."""
         cfs_account = CfsAccountModel()
         cfs_account.status = CfsAccountStatus.PENDING.value
-        return cfs_account
+        raise NotImplementedError('Deposit payment method is not implemented.')
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:

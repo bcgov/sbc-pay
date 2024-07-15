@@ -626,5 +626,5 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
 
     invoice_1: Invoice = Invoice.find_by_id(invoice_1.id)
     assert invoice_1.invoice_status_code == 'PAID'
-    cfs_account = CfsAccount.find_effective_by_account_id(payment_account.id)
+    cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == 'ACTIVE'

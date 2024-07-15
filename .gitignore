@@ -132,3 +132,5 @@ jobs/notebook-report/data/
 test_eft_tdi17.txt
 ACK.INBOX*
 FEEDBACK.INBOX*
+*.env
+pay-admin/flask_session/

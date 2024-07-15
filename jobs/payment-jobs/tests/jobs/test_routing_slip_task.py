@@ -51,8 +51,8 @@ def test_link_rs(session):
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
         child_rs.payment_account_id)
 
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
-        payment_account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(
+        payment_account.id, PaymentMethod.INTERNAL.value)
 
     with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse:
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:

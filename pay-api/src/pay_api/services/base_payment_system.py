@@ -22,6 +22,7 @@ from flask import current_app
 from sentry_sdk import capture_message
 from sbc_common_components.utils.enums import QueueMessageTypes
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
@@ -38,7 +39,9 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
+    CfsAccountStatus, CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources,
+    TransactionStatus)
+from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
@@ -140,6 +143,16 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Apply credit on invoice."""
         return None
 
+    def ensure_no_payment_blockers(self, payment_account: PaymentAccount) -> None:  # pylint: disable=unused-argument
+        """Ensure no payment blockers are present."""
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
+        if cfs_account and cfs_account.status == CfsAccountStatus.FREEZE.value:
+            # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
+            current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
+            raise BusinessException(Error.PAD_CURRENTLY_NSF)
+        if Invoice.has_overdue_invoices(payment_account.id):
+            raise BusinessException(Error.EFT_INVOICES_OVERDUE)
+
     @staticmethod
     def _release_payment(invoice: Invoice):
         """Release record."""
@@ -174,13 +187,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                     invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
             return InvoiceStatus.CANCELLED.value
 
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
-        if cfs_account is None:
-            # Get the last cfs_account for it, as the account might have been changed from PAD to DRAWDOWN.
-            cfs_account = CfsAccountModel.query.\
-                    filter(CfsAccountModel.account_id == invoice.payment_account_id).\
-                    order_by(CfsAccountModel.id.desc()). \
-                    first()
+        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(invoice.payment_account_id,
+                                                                                 invoice.payment_method_code)
         line_items: List[PaymentLineItemModel] = []
         for line_item in invoice.payment_line_items:
             line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
