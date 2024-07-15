@@ -111,9 +111,7 @@ def test_send_unpaid_statement_notification(setup, session):
     summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
     total_amount_owing = summary['total_due']
 
-    # Assert notification was published to the mailer queue
     with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
-        # Freeze time to due date - trigger due notification
         with freeze_time(last_day):
             StatementDueTask.process_unpaid_statements()
             mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
@@ -123,7 +121,6 @@ def test_send_unpaid_statement_notification(setup, session):
                                                                      emails=statement_recipient.email,
                                                                      total_amount_owing=total_amount_owing))
 
-        # Freeze time to due date - trigger reminder notification
         with freeze_time(last_day - timedelta(days=7)):
             StatementDueTask.process_unpaid_statements()
             mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
@@ -132,7 +129,6 @@ def test_send_unpaid_statement_notification(setup, session):
                                                                      due_date=last_day.date(),
                                                                      emails=statement_recipient.email,
                                                                      total_amount_owing=total_amount_owing))
-        # Freeze time to due date - trigger overdue notification
         with freeze_time(last_day + timedelta(days=7)):
             StatementDueTask.process_unpaid_statements()
             mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
