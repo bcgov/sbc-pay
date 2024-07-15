@@ -144,8 +144,8 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         if (recipients := StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)):
             recipients = ','.join([str(recipient.email) for recipient in recipients])
             if action == StatementNotificationAction.OVERDUE:
-                if current_app.config.get('EFT_OVERDUE_NOTIFY_EMAILS'):
-                    recipients += ',' + current_app.config.get('EFT_OVERDUE_NOTIFY_EMAILS')
+                if overdue_notify_emails := current_app.config.get('EFT_OVERDUE_NOTIFY_EMAILS'):
+                    recipients += ',' + overdue_notify_emails
             return recipients
 
         current_app.logger.info(f'No recipients found for statement: {statement.payment_account_id}. Skipping sending.')
