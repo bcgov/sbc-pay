@@ -21,7 +21,7 @@ class Config(object):
     ENVIRONMENT = os.getenv('ENVIRONMENT', '')
     WEEKLY_REPORT_DATES = os.getenv('WEEKLY_REPORT_DATES', '[1]')
     MONTHLY_REPORT_DATES = os.getenv('MONTHLY_REPORT_DATES', '[1]')
-    PARTNER_CODES = os.getenv('PARTNER_CODES', 'CSO,VS')
+    PARTNER_CODES = os.getenv('PARTNER_CODES', 'CSO,VS,RPT,ESRA')
 
     # POSTGRESQL
     PAY_USER = os.getenv('PAY_USER', '')
