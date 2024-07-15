@@ -34,7 +34,7 @@ from utils.enums import StatementNotificationAction
 from utils.mailer import StatementNotificationInfo, publish_payment_notification
 
 
-class StatementDueTask:
+class StatementDueTask:   # pylint: disable=too-few-public-methods
     """Task to notify admin for unpaid statements.
 
     This is currently for EFT payment method invoices only. This may be expanded to
@@ -147,4 +147,3 @@ class StatementDueTask:
 
         current_app.logger.info(f'No recipients found for statement: {statement.payment_account_id}. Skipping sending.')
         return None
-
