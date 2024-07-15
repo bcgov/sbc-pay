@@ -21,8 +21,8 @@ from typing import Dict, List
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import ForeignKey, func
-from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
+from sqlalchemy import ForeignKey, Numeric, func
+from sqlalchemy.orm import cast, contains_eager, lazyload, load_only, relationship
 
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import PaymentMethod, RoutingSlipStatus
@@ -190,7 +190,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             query = query.filter(RoutingSlip.total == total_amount)
 
         if remaining_amount := search_filter.get('remainingAmount', None):
-            query = query.filter(RoutingSlip.remaining_amount == remaining_amount.replace('$', ''))
+            query = query.filter(RoutingSlip.remaining_amount == cast(remaining_amount.replace('$', ''), Numeric))
 
         query = cls._add_date_filter(query, search_filter)
 
