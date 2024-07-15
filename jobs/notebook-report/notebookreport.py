@@ -152,7 +152,7 @@ def process_notebooks(notebookdirectory: str, data_dir: str):
         execute_notebook(notebookdirectory, data_dir)
 
 
-def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None, is_monthly:bool = False):
+def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None, is_monthly: bool = False):
     """Execute notebook and send emails."""
     parameters = {'partner_code': partner_code} if partner_code else None
     if is_monthly:
