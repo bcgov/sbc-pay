@@ -383,3 +383,10 @@ class StatementTemplate(Enum):
 
     EFT_STATEMENT = 'eft_statement'
     STATEMENT_REPORT = 'statement_report'
+
+
+class SuspensionReasonCodes(Enum):
+    """Suspension Reason Codes."""
+
+    OVERDUE_EFT = 'OVERDUE_EFT'
+    PAD_NSF = 'PAD_NSF'
