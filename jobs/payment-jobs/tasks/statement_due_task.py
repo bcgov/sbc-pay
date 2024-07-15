@@ -148,8 +148,3 @@ class StatementDueTask:
         current_app.logger.info(f'No recipients found for statement: {statement.payment_account_id}. Skipping sending.')
         return None
 
-    @staticmethod
-    def is_invoice_overdue(invoice):
-        """Check if an invoice is overdue."""
-        return invoice.payment_method_code == PaymentMethod.EFT.value \
-            and invoice.status_code == InvoiceStatus.OVERDUE.value
