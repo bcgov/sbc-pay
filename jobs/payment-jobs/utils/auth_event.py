@@ -1,8 +1,9 @@
-
 from flask import current_app
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import gcp_queue_publisher
-from pay_api.utils.enums import QueueSources, QueueMessage
+from pay_api.services.gcp_queue_publisher import QueueMessage
+from pay_api.utils.enums import QueueSources
+from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 
@@ -17,7 +18,7 @@ class AuthEvent:
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_QUEUE.value,
-                    message_type=QueueMessage.LOCK_ACCOUNT.value,
+                    message_type=QueueMessageTypes.NSF_LOCK_ACCOUNT.value,
                     payload=payload,
                     topic=current_app.config.get('AUTH_QUEUE_TOPIC')
                 )
