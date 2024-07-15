@@ -24,6 +24,8 @@ from pay_api.utils.enums import QueueSources
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
+from .enums import StatementNotificationAction
+
 
 @dataclass
 class StatementNotificationInfo:
@@ -31,7 +33,7 @@ class StatementNotificationInfo:
 
     auth_account_id: str
     statement: StatementModel
-    is_due: bool
+    action: StatementNotificationAction
     due_date: datetime
     emails: str
     total_amount_owing: float
