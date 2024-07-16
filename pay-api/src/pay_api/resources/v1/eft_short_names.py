@@ -30,7 +30,6 @@ from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.util import string_to_date, string_to_decimal, string_to_int
-from pay_api.utils.errors import Error
 
 bp = Blueprint('EFT_SHORT_NAMES', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/eft-shortnames')
 

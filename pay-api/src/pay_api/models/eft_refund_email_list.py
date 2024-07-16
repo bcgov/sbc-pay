@@ -14,13 +14,11 @@
 """Model to handle all operations related to Fee related to accounts."""
 from __future__ import annotations
 
-from sql_versioning import Versioned
-
 from .base_model import BaseModel
 from .db import db
 
 
-class EFTRefundEmailList(Versioned, BaseModel):
+class EFTRefundEmailList(BaseModel):
     """This class manages all of the emails for EFT refund notifications."""
 
     __tablename__ = 'eft_refund_email_list'

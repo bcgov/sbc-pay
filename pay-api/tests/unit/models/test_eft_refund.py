@@ -32,7 +32,6 @@ def test_eft_refund_defaults(session):
 
     eft_refund = EFTRefundModel(
         short_name_id=short_name_id,
-        auth_account_id='123',
         refund_amount=100.00,
         cas_supplier_number='SUP123456',
         refund_email='test@example.com',
@@ -71,7 +70,6 @@ def test_eft_refund_all_attributes(session):
     status = 'COMPLETED'
     updated_by = 'user123'
     updated_by_name = 'User Name'
-    auth_account_id = '123'
 
     eft_refund = EFTRefundModel(
         short_name_id=short_name_id,
@@ -82,7 +80,6 @@ def test_eft_refund_all_attributes(session):
         status=status,
         updated_by=updated_by,
         updated_by_name=updated_by_name,
-        auth_account_id=auth_account_id
     )
     eft_refund.save()
 
