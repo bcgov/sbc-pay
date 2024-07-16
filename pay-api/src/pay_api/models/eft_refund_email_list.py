@@ -21,7 +21,7 @@ from .db import db
 
 
 class EFTRefundEmailList(Versioned, BaseModel):
-    """This class manages all of the Expense Authority emails."""
+    """This class manages all of the emails for EFT refund notifications."""
 
     __tablename__ = 'eft_refund_email_list'
     # this mapper is used so that new and old versions of the service can be run simultaneously,
@@ -36,17 +36,17 @@ class EFTRefundEmailList(Versioned, BaseModel):
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
         'include_properties': [
-            'id',
-            'first_name',
-            'last_name',
             'email'
+            'first_name',
+            'id',
+            'last_name',
         ]
     }
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    first_name = db.Column(db.String(25), nullable=False)
-    last_name = db.Column(db.String(25), nullable=False)
     email = db.Column(db.String(25), nullable=False)
+    first_name = db.Column(db.String(25), nullable=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    last_name = db.Column(db.String(25), nullable=False)
 
     @classmethod
     def find_all_emails(cls):

@@ -870,7 +870,7 @@ def test_post_shortname_refund_success(client, mocker, jwt, app):
                 'comment': 'Refund for overpayment'
             }
 
-    rv = client.post('/api/v1/eft-shortnames/shortname_refund', headers=headers, json=data)
+    rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
 
     assert rv.status_code == 202
     assert rv.json == {'refundId': '12345'}
@@ -886,7 +886,7 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/eft-shortnames/shortname_refund', headers=headers, json=data)
+    rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
 
     assert rv.status_code == 400
     assert 'INVALID_REQUEST' in rv.json['type']

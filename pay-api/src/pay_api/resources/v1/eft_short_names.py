@@ -194,7 +194,7 @@ def delete_eft_shortname_link(short_name_id: int, short_name_link_id: int):
     return jsonify(response), status
 
 
-@bp.route('/shortname_refund', methods=['POST', 'OPTIONS'])
+@bp.route('/shortname-refund', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
 @_jwt.has_one_of_roles(
     [Role.SYSTEM.value, Role.EFT_REFUND.value])
@@ -202,14 +202,14 @@ def post_shortname_refund():
     """Create the Refund for the Shortname."""
     current_app.logger.info('<post_shortname_refund')
     request_json = request.get_json(silent=True)
+    valid_format, errors = schema_utils.validate(request_json, 'refund_shortname')
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
-        valid_format, errors = schema_utils.validate(request_json, 'refund_shortname') if \
-            request_json else (True, None)
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
-
         response = EftService.create_shortname_refund(request_json)
+        status = HTTPStatus.ACCEPTED
     except BusinessException as exception:
         return exception.response()
+
     current_app.logger.debug('>post_fas_refund')
-    return jsonify(response), HTTPStatus.ACCEPTED
+    return jsonify(response), status

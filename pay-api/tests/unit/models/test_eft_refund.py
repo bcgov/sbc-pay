@@ -30,14 +30,14 @@ def test_eft_refund_defaults(session):
     db.session.commit()
     short_name_id = short_name.id
 
-    # Create and save the EFT refund
-    eft_refund = EFTRefundModel()
-    eft_refund.short_name_id = short_name_id
-    eft_refund.auth_account_id = '123'
-    eft_refund.refund_amount = 100.00
-    eft_refund.cas_supplier_number = 'SUP123456'
-    eft_refund.refund_email = 'test@example.com'
-    eft_refund.comment = 'Test comment'
+    eft_refund = EFTRefundModel(
+        short_name_id=short_name_id,
+        auth_account_id='123',
+        refund_amount=100.00,
+        cas_supplier_number='SUP123456',
+        refund_email='test@example.com',
+        comment='Test comment'
+    )
     eft_refund.save()
 
     # Retrieve and assert the EFT refund
@@ -73,16 +73,17 @@ def test_eft_refund_all_attributes(session):
     updated_by_name = 'User Name'
     auth_account_id = '123'
 
-    eft_refund = EFTRefundModel()
-    eft_refund.short_name_id = short_name_id
-    eft_refund.refund_amount = refund_amount
-    eft_refund.cas_supplier_number = cas_supplier_number
-    eft_refund.refund_email = refund_email
-    eft_refund.comment = comment
-    eft_refund.status = status
-    eft_refund.updated_by = updated_by
-    eft_refund.updated_by_name = updated_by_name
-    eft_refund.auth_account_id = auth_account_id
+    eft_refund = EFTRefundModel(
+        short_name_id=short_name_id,
+        refund_amount=refund_amount,
+        cas_supplier_number=cas_supplier_number,
+        refund_email=refund_email,
+        comment=comment,
+        status=status,
+        updated_by=updated_by,
+        updated_by_name=updated_by_name,
+        auth_account_id=auth_account_id
+    )
     eft_refund.save()
 
     eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()

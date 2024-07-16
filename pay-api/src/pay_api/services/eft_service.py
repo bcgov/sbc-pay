@@ -137,7 +137,6 @@ class EftService(DepositService):
     @classmethod
     @user_context
     def create_shortname_refund(cls, request: Dict[str, str], **kwargs) -> Dict[str, str]:
-        # pylint: disable=too-many-locals
         """Create refund."""
         shortname_id = get_str_by_path(request, 'shortNameId')
         shortname = get_str_by_path(request, 'shortName')
@@ -146,32 +145,43 @@ class EftService(DepositService):
 
         current_app.logger.debug(f'Starting shortname refund : {shortname_id}')
 
-        refund: EFTRefundModel = EFTRefundModel(short_name_id=shortname_id,
-                                                refund_amount=amount,
-                                                cas_supplier_number=get_str_by_path(request, 'casSupplierNum'),
-                                                refund_email=get_str_by_path(request, 'refundEmail'),
-                                                comment=comment)
-        refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
+        refund = cls._create_refund_model(request, shortname_id, amount, comment)
         recipients = EFTRefundEmailList.find_all_emails()
 
         subject = f'Pending Refund Request for Short Name {shortname}'
+        html_body = cls._render_email_body(shortname, amount, comment)
 
+        send_email(recipients, subject, html_body, **kwargs)
+        refund.save()
+
+    @classmethod
+    def _create_refund_model(cls, request: Dict[str, str],
+                             shortname_id: str, amount: str, comment: str) -> EFTRefundModel:
+        """Create and return the EFTRefundModel instance."""
+        refund = EFTRefundModel(
+            short_name_id=shortname_id,
+            refund_amount=amount,
+            cas_supplier_number=get_str_by_path(request, 'casSupplierNum'),
+            refund_email=get_str_by_path(request, 'refundEmail'),
+            comment=comment
+        )
+        refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
+        return refund
+
+    @classmethod
+    def _render_email_body(cls, shortname: str, amount: str, comment: str) -> str:
+        """Render the email body using the provided template."""
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root_dir = os.path.dirname(current_dir)
         templates_dir = os.path.join(project_root_dir, 'templates')
         env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
         template = env.get_template('eft_refund_notification.html')
 
-        url = (f"{current_app.config.get('AUTH_WEB_URL')}/account/"
-               'settings/transactions')
-
+        url = f"{current_app.config.get('AUTH_WEB_URL')}/account/settings/transactions"
         params = {
             'shortname': shortname,
             'refundAmount': amount,
             'comment': comment,
             'url': url
         }
-        html_body = template.render(params)
-
-        send_email(recipients, subject, html_body, **kwargs)
-        refund.save()
+        return template.render(params)

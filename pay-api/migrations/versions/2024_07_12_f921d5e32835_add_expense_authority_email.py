@@ -18,10 +18,10 @@ depends_on = None
 
 def upgrade():
     op.create_table('eft_refund_email_list',
+                    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
                     sa.Column('first_name', sa.String(25), nullable=True),
                     sa.Column('last_name', sa.String(25), nullable=True),
-                    sa.Column('email', sa.String(25), nullable=True),
-                    sqlite_autoincrement=True
+                    sa.Column('email', sa.String(25), nullable=False),
                     )
 def downgrade():
     op.drop_table('eft_refund_email_list')
