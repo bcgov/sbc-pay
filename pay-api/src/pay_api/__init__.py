@@ -54,7 +54,8 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
         Migrate(app, db)
         app.logger.info('Running migration upgrade.')
         with app.app_context():
-            upgrade(directory='migrations', revision='head', sql=False, tag=None)
+            execute_migrations(app)
+
     # Alembic has it's own logging config, we'll need to restore our logging here.
     setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
     app.logger.info('Finished migration upgrade.')
@@ -94,6 +95,15 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     register_shellcontext(app)
     build_cache(app)
     return app
+
+
+def execute_migrations(app):
+    """Execute the database migrations."""
+    try:
+        upgrade(directory='migrations', revision='head', sql=False, tag=None)
+    except Exception as e:  # NOQA pylint: disable=broad-except
+        app.logger.error('Error processing migrations:', exc_info=True)
+        raise e
 
 
 def setup_jwt_manager(app, jwt_manager):
