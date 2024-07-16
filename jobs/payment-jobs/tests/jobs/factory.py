@@ -165,7 +165,7 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
                              name=f'Test {auth_account_id}').save()
     CfsAccount(status=status, account_id=account.id, bank_number=bank_number,
                bank_branch_number=bank_branch, bank_account_number=bank_account,
-               payment_method=payment_method).save()
+               payment_method=PaymentMethod.PAD.value).save()
     return account
 
 

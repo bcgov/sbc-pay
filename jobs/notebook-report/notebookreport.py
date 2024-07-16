@@ -114,10 +114,10 @@ def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_cod
     except Exception:  # noqa: B902
         logging.exception('Error parsing monthly report dates for: %s', notebookdirectory)
         send_email(notebookdirectory, 'ERROR', traceback.format_exc())
-        return  
+        return
 
     today = date.today().day
-    logging.info('Today\'s date: %s', today)
+    logging.info("Today\'s date: %s", today)
 
     if notebookdirectory == 'daily':
         logging.info('Processing daily notebooks for partner: %s', partner_code)
@@ -152,7 +152,7 @@ def process_notebooks(notebookdirectory: str, data_dir: str):
         execute_notebook(notebookdirectory, data_dir)
 
 
-def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None, is_monthly:bool = False):
+def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None, is_monthly: bool = False):
     """Execute notebook and send emails."""
     parameters = {'partner_code': partner_code} if partner_code else None
     if is_monthly:

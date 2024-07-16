@@ -33,6 +33,7 @@ from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_m
 import config
 from tasks.statement_task import StatementTask
 from tasks.statement_due_task import StatementDueTask
+from utils.enums import StatementNotificationAction
 from utils.mailer import StatementNotificationInfo
 
 from .factory import (
@@ -88,7 +89,6 @@ def test_send_unpaid_statement_notification(setup, session):
                                                                    previous_month_year,
                                                                    StatementFrequency.MONTHLY.value,
                                                                    351.50)
-
     assert invoice.payment_method_code == PaymentMethod.EFT.value
     assert account.payment_method == PaymentMethod.EFT.value
 
@@ -99,7 +99,6 @@ def test_send_unpaid_statement_notification(setup, session):
     with freeze_time(current_local_time().replace(day=1, hour=1)):
         StatementTask.generate_statements()
 
-    # Assert statements and invoice was created
     statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
@@ -111,24 +110,29 @@ def test_send_unpaid_statement_notification(setup, session):
     summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
     total_amount_owing = summary['total_due']
 
-    # Assert notification was published to the mailer queue
     with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
-        # Freeze time to due date - trigger due notification
         with freeze_time(last_day):
             StatementDueTask.process_unpaid_statements()
             mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
                                                                      statement=statements[0][0],
-                                                                     is_due=True,
+                                                                     action=StatementNotificationAction.DUE,
                                                                      due_date=last_day.date(),
                                                                      emails=statement_recipient.email,
                                                                      total_amount_owing=total_amount_owing))
 
-        # Freeze time to due date - trigger reminder notification
         with freeze_time(last_day - timedelta(days=7)):
             StatementDueTask.process_unpaid_statements()
             mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
                                                                      statement=statements[0][0],
-                                                                     is_due=False,
+                                                                     action=StatementNotificationAction.REMINDER,
+                                                                     due_date=last_day.date(),
+                                                                     emails=statement_recipient.email,
+                                                                     total_amount_owing=total_amount_owing))
+        with freeze_time(last_day + timedelta(days=7)):
+            StatementDueTask.process_unpaid_statements()
+            mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
+                                                                     statement=statements[0][0],
+                                                                     action=StatementNotificationAction.OVERDUE,
                                                                      due_date=last_day.date(),
                                                                      emails=statement_recipient.email,
                                                                      total_amount_owing=total_amount_owing))
