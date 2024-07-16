@@ -13,7 +13,9 @@
 # limitations under the License.
 """Model to handle EFT short name to BCROS account mapping links."""
 from datetime import datetime
+from typing import List
 from _decimal import Decimal
+
 from attrs import define
 
 
@@ -67,12 +69,24 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
         return cls.query.filter_by(eft_short_name_id=short_name_id).all()
 
     @classmethod
-    def find_active_by_short_name_and_account_id(cls, short_name_id: id, auth_account_id: str):
+    def find_active_link(cls, short_name_id: id, auth_account_id: str):
         """Find active link by short name and account."""
+        return cls.find_link_by_status(short_name_id, auth_account_id,
+                                       [EFTShortnameStatus.LINKED.value,
+                                           EFTShortnameStatus.PENDING.value])
+
+    @classmethod
+    def find_inactive_link(cls, short_name_id: id, auth_account_id: str):
+        """Find active link by short name and account."""
+        return cls.find_link_by_status(short_name_id, auth_account_id, [EFTShortnameStatus.INACTIVE.value])
+
+    @classmethod
+    def find_link_by_status(cls, short_name_id: id, auth_account_id: str, statuses: List[str]):
+        """Find short name account link by status."""
         return (cls.query
                 .filter_by(eft_short_name_id=short_name_id)
                 .filter_by(auth_account_id=auth_account_id)
-                .filter(cls.status_code.in_([EFTShortnameStatus.LINKED.value, EFTShortnameStatus.PENDING.value]))
+                .filter(cls.status_code.in_(statuses))
                 ).one_or_none()
 
 

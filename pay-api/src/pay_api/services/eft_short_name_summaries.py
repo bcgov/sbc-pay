@@ -18,14 +18,13 @@ from flask import current_app
 from sqlalchemy import and_, func, or_
 
 from pay_api.models import EFTCredit as EFTCreditModel
-from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnameSummarySchema as EFTSummarySchema
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import db
 from pay_api.services.eft_short_names import EFTShortnamesSearch
-from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
 from pay_api.utils.util import unstructure_schema_items
 
 
@@ -84,9 +83,6 @@ class EFTShortnameSummaries:
                                  (func.coalesce(
                                      func.sum(EFTCreditModel.remaining_amount), 0))
                                  .label('total'))
-                .outerjoin(EFTCreditInvoiceModel,
-                           and_(EFTCreditInvoiceModel.eft_credit_id == EFTCreditModel.id,
-                                EFTCreditInvoiceModel.status_code == EFTCreditInvoiceStatus.PENDING.value))
                 .group_by(EFTCreditModel.short_name_id))
 
     @staticmethod

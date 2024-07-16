@@ -223,6 +223,23 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>reverse_payment_action')
 
     @classmethod
+    def patch_shortname_link(cls, link_id: int, request: Dict):
+        """Patch EFT short name link."""
+        current_app.logger.debug('<patch_shortname_link')
+        valid_statuses = [EFTShortnameStatus.INACTIVE.value]
+        status_code = request.get('statusCode', None)
+
+        if status_code is None or status_code not in valid_statuses:
+            raise BusinessException(Error.EFT_SHORT_NAME_LINK_INVALID_STATUS)
+
+        shortname_link = EFTShortnameLinksModel.find_by_id(link_id)
+        shortname_link.status_code = status_code
+        shortname_link.save()
+
+        current_app.logger.debug('>patch_shortname_link')
+        return cls.find_link_by_id(link_id)
+
+    @classmethod
     @user_context
     def create_shortname_link(cls, short_name_id: int, auth_account_id: str, **kwargs) -> EFTShortnameLinksModel:
         """Create EFT short name auth account link."""
@@ -239,14 +256,19 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if short_name:
             raise BusinessException(Error.EFT_SHORT_NAME_ALREADY_MAPPED)
 
-        eft_short_name_link = EFTShortnameLinksModel(
-            eft_short_name_id=short_name_id,
-            auth_account_id=auth_account_id,
-            status_code=EFTShortnameStatus.PENDING.value,
-            updated_by=kwargs['user'].user_name,
-            updated_by_name=kwargs['user'].name,
-            updated_on=datetime.now()
-        )
+        # Re-activate link if it previously existed
+        eft_short_name_link = EFTShortnameLinksModel.find_inactive_link(short_name_id, auth_account_id)
+        if eft_short_name_link is None:
+            eft_short_name_link = EFTShortnameLinksModel(
+                eft_short_name_id=short_name_id,
+                auth_account_id=auth_account_id,
+            )
+
+        eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value
+        eft_short_name_link.updated_by = kwargs['user'].user_name
+        eft_short_name_link.updated_by_name = kwargs['user'].name
+        eft_short_name_link.updated_on = datetime.now()
+
         db.session.add(eft_short_name_link)
         db.session.flush()
 
@@ -312,7 +334,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def process_owing_statements(short_name_id: int, auth_account_id: str, is_new_link: bool = False) -> EFTShortnames:
         """Process outstanding statement invoices for an EFT Short name."""
         current_app.logger.debug('<process_owing_statements')
-        shortname_link = EFTShortnameLinksModel.find_active_by_short_name_and_account_id(short_name_id, auth_account_id)
+        shortname_link = EFTShortnameLinksModel.find_active_link(short_name_id, auth_account_id)
 
         if shortname_link is None:
             raise BusinessException(Error.EFT_SHORT_NAME_NOT_LINKED)
@@ -331,8 +353,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         invoice_ids = set()
         if statements:
             for statement in statements:
-                invoices: List[InvoiceModel] = EFTShortnames.get_statement_invoices_owing(auth_account_id,
-                                                                                          statement.id)
+                invoices: List[InvoiceModel] = EFTShortnames._get_statement_invoices_owing(auth_account_id,
+                                                                                           statement.id)
                 for invoice in invoices:
                     if invoice.payment_method_code == PaymentMethod.EFT.value:
                         invoice_ids.add(invoice.id)
@@ -343,7 +365,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>process_owing_statements')
 
     @staticmethod
-    def get_statement_invoices_owing(auth_account_id: str, statement_id: int = None) -> List[InvoiceModel]:
+    def _get_statement_invoices_owing(auth_account_id: str, statement_id: int = None) -> List[InvoiceModel]:
         """Return statement invoices that have not been fully paid."""
         unpaid_status = (InvoiceStatus.PARTIAL.value,
                          InvoiceStatus.CREATED.value, InvoiceStatus.OVERDUE.value)

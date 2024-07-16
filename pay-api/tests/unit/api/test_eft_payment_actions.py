@@ -87,7 +87,6 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
     account, short_name = setup_account_shortname_data()
     setup_statement_data(account=account, invoice_totals=[50, 50, 100])
 
-    # Assert required accountId
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.APPLY_CREDITS.value}),
                      headers=headers)
@@ -132,7 +131,6 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
     setup_statement_data(account=account, invoice_totals=[50, 50, 100])
     eft_credits = setup_eft_credits(short_name=short_name, credit_amounts=[50, 25, 125])
 
-    # Assert required accountId
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.CANCEL.value}),
                      headers=headers)
@@ -145,7 +143,6 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 204
 
-    # Make EFT Payment
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.APPLY_CREDITS.value,
                                       'accountId': account.auth_account_id}),
@@ -154,7 +151,6 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
     assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
 
-    # Cancel Payment - Trigger unexpected credit amount
     credit_offset = 100
     eft_credits[1].remaining_amount += credit_offset
     eft_credits[1].save()
@@ -171,7 +167,6 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
     assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
 
-    # Cancel EFT Payment
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.CANCEL.value,
                                       'accountId': account.auth_account_id}),
@@ -217,7 +212,6 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app):
     account, short_name = setup_account_shortname_data()
     setup_statement_data(account=account, invoice_totals=[50, 50, 100])
 
-    # Assert required accountId
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.REVERSE.value}),
                      headers=headers)

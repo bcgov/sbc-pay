@@ -31,6 +31,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod, Role,
     StatementFrequency)
+from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice, factory_payment_account,
     factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, token_header)
@@ -92,9 +93,10 @@ def test_create_eft_short_name_link_with_credit_and_owing(db, session, client, j
     assert link_dict['accountId'] == '1234'
     assert link_dict['updatedBy'] == 'IDIR/JSMITH'
 
-    link_id = link_dict['id']
-    rv = client.delete(f'/api/v1/eft-shortnames/{short_name.id}/links/{link_id}', headers=headers)
-    assert rv.status_code == 202
+    short_name_link_id = link_dict['id']
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link_id}',
+                      data=json.dumps({'statusCode': EFTShortnameStatus.INACTIVE.value}), headers=headers)
+    assert rv.status_code == 200
 
     invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
                               total=50, paid=0).save()
@@ -178,21 +180,31 @@ def test_eft_short_name_unlink(session, client, jwt, app):
         auth_account_id=account.auth_account_id
     ).save()
 
-    # Assert cannot unlink an account not in PENDING status
-    rv = client.delete(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
-                       headers=headers)
+    rv = client.get(f'/api/v1/eft-shortnames/{short_name.id}/links', headers=headers)
+    links = rv.json
+    assert rv.status_code == 200
+    assert links['items']
+    assert len(links['items']) == 1
+
+    # Assert valid link status state
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
+                      data=json.dumps({'statusCode': EFTShortnameStatus.LINKED.value}), headers=headers)
 
     link_dict = rv.json
     assert rv.status_code == 400
-    assert link_dict['type'] == 'EFT_SHORT_NAME_LINK_INVALID_STATUS'
+    assert link_dict['type'] == Error.EFT_SHORT_NAME_LINK_INVALID_STATUS.name
 
-    short_name_link.status_code = EFTShortnameStatus.PENDING.value
-    short_name_link.save()
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
+                      data=json.dumps({'statusCode': EFTShortnameStatus.INACTIVE.value}), headers=headers)
 
-    # Assert we can delete a short name link that is pending
-    rv = client.delete(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
-                       headers=headers)
-    assert rv.status_code == 202
+    link_dict = rv.json
+    assert rv.status_code == 200
+    assert link_dict['statusCode'] == EFTShortnameStatus.INACTIVE.value
+
+    rv = client.get(f'/api/v1/eft-shortnames/{short_name.id}/links', headers=headers)
+    links = rv.json
+    assert rv.status_code == 200
+    assert not links['items']
 
 
 def test_get_eft_short_name_links(session, client, jwt, app):
