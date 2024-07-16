@@ -313,6 +313,7 @@ class CfsReceiptStatus(Enum):
 class EFTCreditInvoiceStatus(Enum):
     """EFT Credit Invoice Link Status."""
 
+    CANCELLED = 'CANCELLED'
     COMPLETED = 'COMPLETED'
     PENDING = 'PENDING'
     PENDING_REFUND = 'PENDING_REFUND'
@@ -351,6 +352,14 @@ class EFTShortnameStatus(Enum):
     LINKED = 'LINKED'
     UNLINKED = 'UNLINKED'
     PENDING = 'PENDING'
+
+
+class EFTPaymentActions(Enum):
+    """EFT Short name payment actions."""
+
+    CANCEL = 'CANCEL'
+    REVERSE = 'REVERSE'
+    APPLY_CREDITS = 'APPLY_CREDITS'
 
 
 class PaymentDetailsGlStatus(Enum):

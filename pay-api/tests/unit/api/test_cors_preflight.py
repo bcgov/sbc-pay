@@ -237,12 +237,17 @@ def test_preflight_eft_shortnames(app, client, jwt, session):
     rv = client.options('/api/v1/eft-shortnames/1/links',
                         headers={'Access-Control-Request-Method': 'GET'})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, '*', 'GET, POST')
+    assert_access_control_headers(rv, '*', 'GET, PATCH, POST')
 
     rv = client.options('/api/v1/eft-shortnames/1/transactions',
                         headers={'Access-Control-Request-Method': 'GET'})
     assert rv.status_code == 200
     assert_access_control_headers(rv, '*', 'GET')
+
+    rv = client.options('/api/v1/eft-shortnames/1/payment',
+                        headers={'Access-Control-Request-Method': 'POST'})
+    assert rv.status_code == 200
+    assert_access_control_headers(rv, '*', 'POST')
 
 
 def assert_access_control_headers(rv, origins: str, methods: str):

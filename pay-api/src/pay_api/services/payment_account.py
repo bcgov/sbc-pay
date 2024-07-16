@@ -16,21 +16,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
 from typing import Any, Dict, List, Tuple
 
 from cattr import Converter
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
-from sqlalchemy import and_, desc, func, or_
+from sqlalchemy import and_, desc, or_
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import EFTCredit as EFTCreditModel
-from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
@@ -49,8 +46,7 @@ from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, PaymentMethod, PaymentSystem, QueueSources,
-    StatementFrequency)
+    AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -506,57 +502,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         payment_accounts = [PaymentAccountSearchModel.from_row(eft_account) for eft_account in eft_accounts]
         return Converter().unstructure({'items': payment_accounts})
-
-    @classmethod
-    def get_eft_credit_balance(cls, account_id: int) -> Decimal:
-        """Calculate pay account eft balance by account id."""
-        result = db.session.query(func.sum(EFTCreditModel.remaining_amount).label('credit_balance')) \
-            .filter(EFTCreditModel.payment_account_id == account_id) \
-            .group_by(EFTCreditModel.payment_account_id) \
-            .one_or_none()
-
-        return Decimal(result.credit_balance) if result else 0
-
-    @classmethod
-    def deduct_eft_credit(cls, invoice: InvoiceModel, auto_save: bool = True):
-        """Deduct EFT credit and update remaining credit records."""
-        eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
-            .filter(EFTCreditModel.remaining_amount > 0) \
-            .filter(EFTCreditModel.payment_account_id == invoice.payment_account_id)\
-            .order_by(EFTCreditModel.created_on.asc())\
-            .all()
-
-        # Calculate invoice balance
-        invoice_balance = invoice.total - (invoice.paid or 0)
-
-        # Deduct credits and apply to the invoice
-        now = datetime.now(tz=timezone.utc)
-        for eft_credit in eft_credits:
-            EFTCreditInvoiceLinkModel(
-                eft_credit_id=eft_credit.id,
-                invoice_id=invoice.id).save_or_add(auto_save)
-
-            if eft_credit.remaining_amount >= invoice_balance:
-                # Credit covers the full invoice balance
-                eft_credit.remaining_amount -= invoice_balance
-                eft_credit.save_or_add(auto_save)
-
-                invoice.payment_date = now
-                invoice.paid = invoice.total
-                invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice.save_or_add(auto_save)
-                break
-
-            # Credit covers partial invoice balance
-            invoice_balance -= eft_credit.remaining_amount
-            invoice.payment_date = now
-            invoice.paid += eft_credit.remaining_amount
-            invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
-
-            eft_credit.remaining_amount = 0
-            eft_credit.save_or_add(auto_save)
-
-        invoice.save_or_add(auto_save)
 
     @staticmethod
     def _calculate_activation_date():
