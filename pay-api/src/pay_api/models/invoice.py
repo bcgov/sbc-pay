@@ -118,6 +118,10 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     references = relationship('InvoiceReference', lazy='joined')
     corp_type = relationship('CorpType', foreign_keys=[corp_type_code], lazy='select', innerjoin=True)
 
+    __table_args__ = (
+        db.Index('idx_invoice_invoice_status_code_payment_account_idx', payment_account_id, invoice_status_code),
+    )
+
     @classmethod
     def update_invoices_for_revenue_updates(cls, fee_distribution_id: int):
         """Find and update all invoices using the distribution id."""
