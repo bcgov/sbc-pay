@@ -28,6 +28,7 @@ from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod, Role,
     StatementFrequency)
@@ -824,3 +825,42 @@ def test_search_eft_short_names(session, client, jwt, app):
                       data_dict['single-linked']['short_name'],
                       data_dict['single-linked']['accounts'][0],
                       data_dict['single-linked']['statement_summary'][0])
+
+
+def test_post_shortname_refund_success(client, mocker, jwt, app):
+    """Test successful creation of a shortname refund."""
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    mock_create_shortname_refund = mocker.patch.object(EftService, 'create_shortname_refund')
+    mock_create_shortname_refund.return_value = {'refundId': '12345'}
+
+    data = {
+                'shortNameId': '12345',
+                'authAccountId': '123',
+                'refundAmount': 100.00,
+                'casSupplierNum': 'CAS123',
+                'refundEmail': 'test@example.com',
+                'comment': 'Refund for overpayment'
+            }
+
+    rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
+
+    assert rv.status_code == 202
+    assert rv.json == {'refundId': '12345'}
+    mock_create_shortname_refund.assert_called_once_with(data)
+
+
+def test_post_shortname_refund_invalid_request(client, mocker, jwt, app):
+    """Test handling of invalid request format."""
+    data = {
+        'invalid_field': 'invalid_value'
+    }
+
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
+
+    assert rv.status_code == 400
+    assert 'INVALID_REQUEST' in rv.json['type']

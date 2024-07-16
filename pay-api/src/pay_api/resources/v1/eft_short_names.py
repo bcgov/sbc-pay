@@ -19,6 +19,7 @@ from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, error_to_response
 from pay_api.schemas import utils as schema_utils
+from pay_api.services.eft_service import EftService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
 from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
 from pay_api.services.eft_short_names import EFTShortnamesSearch
@@ -215,4 +216,25 @@ def post_eft_statement_payment(short_name_id: int):
         return exception.response()
 
     current_app.logger.debug('>post_eft_statement_payment')
+    return jsonify(response), status
+
+
+@bp.route('/shortname-refund', methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', methods=['POST'])
+@_jwt.has_one_of_roles(
+    [Role.SYSTEM.value, Role.EFT_REFUND.value])
+def post_shortname_refund():
+    """Create the Refund for the Shortname."""
+    current_app.logger.info('<post_shortname_refund')
+    request_json = request.get_json(silent=True)
+    valid_format, errors = schema_utils.validate(request_json, 'refund_shortname')
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    try:
+        response = EftService.create_shortname_refund(request_json)
+        status = HTTPStatus.ACCEPTED
+    except BusinessException as exception:
+        return exception.response()
+
+    current_app.logger.debug('>post_fas_refund')
     return jsonify(response), status

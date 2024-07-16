@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
+import os
 from datetime import datetime
 from typing import Any, Dict, List
 
 from flask import current_app
+from jinja2 import Environment, FileSystemLoader
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.models.eft_refund_email_list import EFTRefundEmailList
+from pay_api.services.email_service import send_email
+from pay_api.utils.enums import (
+    CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+from pay_api.utils.user_context import user_context
+from pay_api.utils.util import get_str_by_path
 
 from .deposit_service import DepositService
 from .invoice import Invoice
@@ -100,3 +108,55 @@ class EftService(DepositService):
                                              invoice_id=invoice.id,
                                              receipt_number=payment.receipt_number)
         return receipt
+
+    @classmethod
+    @user_context
+    def create_shortname_refund(cls, request: Dict[str, str], **kwargs) -> Dict[str, str]:
+        """Create refund."""
+        shortname_id = get_str_by_path(request, 'shortNameId')
+        shortname = get_str_by_path(request, 'shortName')
+        amount = get_str_by_path(request, 'refundAmount')
+        comment = get_str_by_path(request, 'comment')
+
+        current_app.logger.debug(f'Starting shortname refund : {shortname_id}')
+
+        refund = cls._create_refund_model(request, shortname_id, amount, comment)
+        recipients = EFTRefundEmailList.find_all_emails()
+
+        subject = f'Pending Refund Request for Short Name {shortname}'
+        html_body = cls._render_email_body(shortname, amount, comment)
+
+        send_email(recipients, subject, html_body, **kwargs)
+        refund.save()
+
+    @classmethod
+    def _create_refund_model(cls, request: Dict[str, str],
+                             shortname_id: str, amount: str, comment: str) -> EFTRefundModel:
+        """Create and return the EFTRefundModel instance."""
+        refund = EFTRefundModel(
+            short_name_id=shortname_id,
+            refund_amount=amount,
+            cas_supplier_number=get_str_by_path(request, 'casSupplierNum'),
+            refund_email=get_str_by_path(request, 'refundEmail'),
+            comment=comment
+        )
+        refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
+        return refund
+
+    @classmethod
+    def _render_email_body(cls, shortname: str, amount: str, comment: str) -> str:
+        """Render the email body using the provided template."""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root_dir = os.path.dirname(current_dir)
+        templates_dir = os.path.join(project_root_dir, 'templates')
+        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+        template = env.get_template('eft_refund_notification.html')
+
+        url = f"{current_app.config.get('AUTH_WEB_URL')}/account/settings/transactions"
+        params = {
+            'shortname': shortname,
+            'refundAmount': amount,
+            'comment': comment,
+            'url': url
+        }
+        return template.render(params)
