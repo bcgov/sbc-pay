@@ -28,6 +28,7 @@ from pay_api.services.eft_transactions import EFTTransactionSearch
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
+from pay_api.utils.errors import Error
 from pay_api.utils.util import string_to_date, string_to_decimal, string_to_int
 from pay_api.utils.errors import Error
 
@@ -134,7 +135,7 @@ def get_eft_shortname_transactions(short_name_id: int):
 
 
 @bp.route('/<int:short_name_id>/links', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET', 'POST'])
+@cross_origin(origins='*', methods=['GET', 'POST', 'PATCH'])
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname_links(short_name_id: int):
     """Get EFT short name account links."""
@@ -173,24 +174,49 @@ def post_eft_shortname_link(short_name_id: int):
     return jsonify(response), status
 
 
-@bp.route('/<int:short_name_id>/links/<int:short_name_link_id>', methods=['DELETE', 'OPTIONS'])
-@cross_origin(origins='*', methods=['DELETE'])
+@bp.route('/<int:short_name_id>/links/<int:short_name_link_id>', methods=['PATCH'])
+@cross_origin(origins='*')
+@_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
-def delete_eft_shortname_link(short_name_id: int, short_name_link_id: int):
-    """Delete EFT short name to account link."""
-    current_app.logger.info('<delete_eft_shortname_link')
+def patch_eft_shortname_link(short_name_id: int, short_name_link_id: int):
+    """Patch EFT short name link."""
+    current_app.logger.info('<patch_eft_shortname_link')
+    request_json = request.get_json()
 
     try:
         link = EFTShortnameService.find_link_by_id(short_name_link_id)
         if not link or link['short_name_id'] != short_name_id:
             response, status = {}, HTTPStatus.NOT_FOUND
         else:
-            EFTShortnameService.delete_shortname_link(short_name_link_id)
-            response, status = None, HTTPStatus.ACCEPTED
+            response, status = EFTShortnameService.patch_shortname_link(short_name_link_id, request_json), HTTPStatus.OK
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>patch_eft_shortname_link')
+    return jsonify(response), status
+
+
+@bp.route('/<int:short_name_id>/payment', methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', methods=['POST'])
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def post_eft_statement_payment(short_name_id: int):
+    """Perform EFT short name payment action on statement."""
+    current_app.logger.info('<post_eft_statement_payment')
+    request_json = request.get_json()
+
+    try:
+        if not EFTShortnameService.find_by_short_name_id(short_name_id):
+            response, status = {}, HTTPStatus.NOT_FOUND
+        else:
+            valid_format, errors = schema_utils.validate(request_json, 'eft_payment')
+            if not valid_format:
+                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+            response, status = (EFTShortnameService.process_payment_action(short_name_id, request_json),
+                                HTTPStatus.NO_CONTENT)
     except BusinessException as exception:
         return exception.response()
 
-    current_app.logger.debug('>delete_eft_shortname_link')
+    current_app.logger.debug('>post_eft_statement_payment')
     return jsonify(response), status
 
 

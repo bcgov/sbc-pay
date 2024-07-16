@@ -21,28 +21,25 @@ import json
 from datetime import datetime
 from decimal import Decimal
 
-import pytest
-from flask import current_app
-
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
 from pay_api.models import EFTFile as EFTFileModel
-from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
+from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
-from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import Receipt as ReceiptModel
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
-    EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role,
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod, Role,
     StatementFrequency)
+from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice, factory_payment_account,
     factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, token_header)
 
 
 def test_create_eft_short_name_link(session, client, jwt, app):
-    """Assert that an EFT short name link can be created."""
+    """Assert that an EFT short name link can be created for an account with no credits or statements owing."""
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value],
                                       username='IDIR/JSMITH'), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -64,6 +61,78 @@ def test_create_eft_short_name_link(session, client, jwt, app):
 
     date_format = '%Y-%m-%dT%H:%M:%S.%f'
     assert datetime.strptime(link_dict['updatedOn'], date_format).date() == datetime.now().date()
+
+
+def test_create_eft_short_name_link_with_credit_and_owing(db, session, client, jwt, app):
+    """Assert that an EFT short name link can be created for an account with credit."""
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value],
+                                      username='IDIR/JSMITH'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
+                                              auth_account_id='1234').save()
+
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
+
+    eft_file = factory_eft_file('test.txt')
+
+    eft_credit_1 = EFTCreditModel()
+    eft_credit_1.eft_file_id = eft_file.id
+    eft_credit_1.amount = 100
+    eft_credit_1.remaining_amount = 100
+    eft_credit_1.short_name_id = short_name.id
+    eft_credit_1.save()
+
+    rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/links',
+                     data=json.dumps({'accountId': '1234'}),
+                     headers=headers)
+    link_dict = rv.json
+    assert rv.status_code == 200
+    assert link_dict is not None
+    assert link_dict['id'] is not None
+    assert link_dict['shortNameId'] == short_name.id
+    assert link_dict['statusCode'] == EFTShortnameStatus.PENDING.value
+    assert link_dict['accountId'] == '1234'
+    assert link_dict['updatedBy'] == 'IDIR/JSMITH'
+
+    short_name_link_id = link_dict['id']
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link_id}',
+                      data=json.dumps({'statusCode': EFTShortnameStatus.INACTIVE.value}), headers=headers)
+    assert rv.status_code == 200
+
+    invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                              total=50, paid=0).save()
+
+    statement_settings = factory_statement_settings(payment_account_id=payment_account.id,
+                                                    frequency=StatementFrequency.MONTHLY.value)
+    statement = factory_statement(payment_account_id=payment_account.id,
+                                  frequency=StatementFrequency.MONTHLY.value,
+                                  statement_settings_id=statement_settings.id)
+    factory_statement_invoices(statement_id=statement.id, invoice_id=invoice.id)
+
+    rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/links',
+                     data=json.dumps({'accountId': '1234'}),
+                     headers=headers)
+    link_dict = rv.json
+    assert rv.status_code == 200
+    assert link_dict is not None
+    assert link_dict['id'] is not None
+    assert link_dict['shortNameId'] == short_name.id
+    assert link_dict['statusCode'] == EFTShortnameStatus.PENDING.value
+    assert link_dict['accountId'] == '1234'
+    assert link_dict['updatedBy'] == 'IDIR/JSMITH'
+
+    assert eft_credit_1.amount == 100
+    assert eft_credit_1.remaining_amount == 50
+    assert eft_credit_1.short_name_id == short_name.id
+
+    credit_invoice: EFTCreditInvoiceModel = (db.session.query(EFTCreditInvoiceModel)
+                                             .filter(EFTCreditInvoiceModel.eft_credit_id == eft_credit_1.id)
+                                             .filter(EFTCreditInvoiceModel.invoice_id == invoice.id)).one_or_none()
+
+    assert credit_invoice
+    assert credit_invoice.eft_credit_id == eft_credit_1.id
+    assert credit_invoice.invoice_id == invoice.id
+    assert credit_invoice.status_code == EFTCreditInvoiceStatus.PENDING.value
 
 
 def test_create_eft_short_name_link_validation(session, client, jwt, app):
@@ -112,21 +181,31 @@ def test_eft_short_name_unlink(session, client, jwt, app):
         auth_account_id=account.auth_account_id
     ).save()
 
-    # Assert cannot unlink an account not in PENDING status
-    rv = client.delete(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
-                       headers=headers)
+    rv = client.get(f'/api/v1/eft-shortnames/{short_name.id}/links', headers=headers)
+    links = rv.json
+    assert rv.status_code == 200
+    assert links['items']
+    assert len(links['items']) == 1
+
+    # Assert valid link status state
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
+                      data=json.dumps({'statusCode': EFTShortnameStatus.LINKED.value}), headers=headers)
 
     link_dict = rv.json
     assert rv.status_code == 400
-    assert link_dict['type'] == 'EFT_SHORT_NAME_LINK_INVALID_STATUS'
+    assert link_dict['type'] == Error.EFT_SHORT_NAME_LINK_INVALID_STATUS.name
 
-    short_name_link.status_code = EFTShortnameStatus.PENDING.value
-    short_name_link.save()
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
+                      data=json.dumps({'statusCode': EFTShortnameStatus.INACTIVE.value}), headers=headers)
 
-    # Assert we can delete a short name link that is pending
-    rv = client.delete(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
-                       headers=headers)
-    assert rv.status_code == 202
+    link_dict = rv.json
+    assert rv.status_code == 200
+    assert link_dict['statusCode'] == EFTShortnameStatus.INACTIVE.value
+
+    rv = client.get(f'/api/v1/eft-shortnames/{short_name.id}/links', headers=headers)
+    links = rv.json
+    assert rv.status_code == 200
+    assert not links['items']
 
 
 def test_get_eft_short_name_links(session, client, jwt, app):
@@ -746,111 +825,6 @@ def test_search_eft_short_names(session, client, jwt, app):
                       data_dict['single-linked']['short_name'],
                       data_dict['single-linked']['accounts'][0],
                       data_dict['single-linked']['statement_summary'][0])
-
-
-@pytest.mark.skip(reason='This needs to be re-thought, the create cfs invoice job should be handling receipt creation'
-                         'and creating invoice references when payments are mapped, '
-                         'it should wait until 6 pm before marking invoices as PAID'
-                         'Otherwise calls to CFS could potentially fail and the two systems would go out of sync.')
-def test_apply_eft_short_name_credits(session, client, jwt, app):
-    """Assert that credits are applied to invoices when short name is mapped to an account."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value, Role.MANAGE_EFT.value]), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
-
-    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
-                                              auth_account_id='1234').save()
-    invoice_1 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
-                                total=50, paid=0).save()
-    invoice_2 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
-                                total=200, paid=0).save()
-    eft_file = factory_eft_file('test.txt')
-
-    eft_credit_1 = EFTCreditModel()
-    eft_credit_1.eft_file_id = eft_file.id
-    eft_credit_1.payment_account_id = payment_account.id
-    eft_credit_1.amount = 50
-    eft_credit_1.remaining_amount = 50
-    eft_credit_1.short_name_id = short_name.id
-    eft_credit_1.save()
-
-    eft_credit_2 = EFTCreditModel()
-    eft_credit_2.eft_file_id = eft_file.id
-    eft_credit_2.payment_account_id = payment_account.id
-    eft_credit_2.amount = 150
-    eft_credit_2.remaining_amount = 150
-    eft_credit_2.short_name_id = short_name.id
-    eft_credit_2.save()
-
-    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}',
-                      data=json.dumps({'accountId': '1234'}),
-                      headers=headers)
-    shortname_dict = rv.json
-    assert rv.status_code == 200
-    assert shortname_dict is not None
-    assert shortname_dict['id'] is not None
-    assert shortname_dict['shortName'] == 'TESTSHORTNAME'
-    assert shortname_dict['accountId'] == '1234'
-
-    # Assert credits have the correct remaining values
-    assert eft_credit_1.remaining_amount == 0
-    assert eft_credit_1.payment_account_id == payment_account.id
-    assert eft_credit_2.remaining_amount == 0
-    assert eft_credit_2.payment_account_id == payment_account.id
-
-    today = datetime.now().date()
-
-    # Assert details of fully paid invoice
-    invoice_1_paid = 50
-    assert invoice_1.payment_method_code == PaymentMethod.EFT.value
-    assert invoice_1.invoice_status_code == InvoiceStatus.PAID.value
-    assert invoice_1.payment_date is not None
-    assert invoice_1.payment_date.date() == today
-    assert invoice_1.paid == invoice_1_paid
-    assert invoice_1.total == invoice_1_paid
-
-    receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_1.id, invoice_1.id)
-    assert receipt is not None
-    assert receipt.receipt_number == str(invoice_1.id)
-    assert receipt.receipt_amount == invoice_1_paid
-
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice_1.id)
-    assert payment is not None
-    assert payment.payment_date.date() == today
-    assert payment.invoice_number == f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice_1.id}'
-    assert payment.payment_account_id == payment_account.id
-    assert payment.payment_status_code == PaymentStatus.COMPLETED.value
-    assert payment.payment_method_code == PaymentMethod.EFT.value
-    assert payment.invoice_amount == invoice_1_paid
-    assert payment.paid_amount == invoice_1_paid
-
-    assert not invoice_1.references
-
-    # Assert details of partially paid invoice
-    invoice_2_paid = 150
-    assert invoice_2.payment_method_code == PaymentMethod.EFT.value
-    assert invoice_2.invoice_status_code == InvoiceStatus.PARTIAL.value
-    assert invoice_2.payment_date is not None
-    assert invoice_2.payment_date.date() == today
-    assert invoice_2.paid == 150
-    assert invoice_2.total == 200
-
-    receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_2.id, invoice_2.id)
-    assert receipt is not None
-    assert receipt.receipt_number == str(invoice_2.id)
-    assert receipt.receipt_amount == invoice_2_paid
-
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice_2.id)
-    assert payment is not None
-    assert payment.payment_date.date() == today
-    assert payment.invoice_number == f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice_2.id}'
-    assert payment.payment_account_id == payment_account.id
-    assert payment.payment_status_code == PaymentStatus.COMPLETED.value
-    assert payment.payment_method_code == PaymentMethod.EFT.value
-    assert payment.invoice_amount == 200
-    assert payment.paid_amount == invoice_2_paid
-
-    assert not invoice_2.references
 
 
 def test_post_shortname_refund_success(client, mocker, jwt, app):

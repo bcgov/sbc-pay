@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/eft_payment",
+  "type": "object",
+  "title": "EFT Payment",
+  "required": ["action"],
+  "properties": {
+    "action": {
+      "$id": "#/properties/action",
+      "type": "string",
+      "title": "Action to perform",
+      "examples": [
+        "CANCEL",
+        "APPLY_CREDITS"
+      ]
+    },
+    "statementId": {
+      "$id": "#/properties/statementId",
+      "type": "number",
+      "title": "Statement Identifier",
+      "examples": [
+        1234567
+      ]
+    },
+    "accountId": {
+      "$id": "#/properties/accountId",
+      "type": "string",
+      "title": "Account Identifier",
+      "examples": [
+        "1234567"
+      ]
+    }
+  }
+}

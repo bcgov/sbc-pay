@@ -16,17 +16,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
-from operator import and_
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from _decimal import Decimal
 from flask import current_app
-from sqlalchemy import case, func, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.sql.expression import exists
 
 from pay_api.exceptions import BusinessException
-from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnameLinkSchema
@@ -38,10 +37,13 @@ from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import (
+    EFTCreditInvoiceStatus, EFTPaymentActions, EFTShortnameStatus, InvoiceStatus, PaymentMethod)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
+
+from .statement import Statement as StatementService
 
 
 @dataclass
@@ -68,6 +70,175 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
 class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     """Service to manage EFT short name model operations."""
 
+    @staticmethod
+    def get_eft_credit_balance(short_name_id: int) -> Decimal:
+        """Calculate pay account eft balance by account id."""
+        result = db.session.query(func.sum(EFTCreditModel.remaining_amount).label('credit_balance')) \
+            .filter(EFTCreditModel.short_name_id == short_name_id) \
+            .group_by(EFTCreditModel.short_name_id) \
+            .one_or_none()
+
+        return Decimal(result.credit_balance) if result else 0
+
+    @staticmethod
+    def get_eft_credits(short_name_id: int) -> List[EFTCreditModel]:
+        """Get EFT Credits with a remaining amount."""
+        return (db.session.query(EFTCreditModel)
+                .filter(EFTCreditModel.remaining_amount > 0)
+                .filter(EFTCreditModel.short_name_id == short_name_id)
+                .order_by(EFTCreditModel.created_on.asc())
+                .all())
+
+    @classmethod
+    def _apply_eft_credit(cls,
+                          invoice_id: int,
+                          short_name_id: int,
+                          auto_save: bool = False):
+        """Apply EFT credit and update remaining credit records."""
+        invoice = InvoiceModel.find_by_id(invoice_id)
+        payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+
+        # Clear any existing pending credit links on this invoice
+        cls._cancel_payment_action(short_name_id, payment_account.auth_account_id, invoice_id)
+
+        eft_credit_balance = EFTShortnames.get_eft_credit_balance(short_name_id)
+        invoice_balance = invoice.total - (invoice.paid or 0)
+
+        if eft_credit_balance < invoice_balance:
+            return
+
+        eft_credits: List[EFTCreditModel] = EFTShortnames.get_eft_credits(short_name_id)
+        for eft_credit in eft_credits:
+            credit_invoice_link = EFTCreditInvoiceLinkModel(
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.PENDING.value,
+                invoice_id=invoice.id)
+
+            if eft_credit.remaining_amount >= invoice_balance:
+                # Credit covers the full invoice balance
+                credit_invoice_link.amount = invoice_balance
+                credit_invoice_link.save_or_add(auto_save)
+                eft_credit.remaining_amount -= invoice_balance
+                eft_credit.save_or_add(auto_save)
+                break
+
+            # Credit covers partial invoice balance
+            invoice_balance -= eft_credit.remaining_amount
+            credit_invoice_link.amount = eft_credit.remaining_amount
+            credit_invoice_link.save_or_add(auto_save)
+            eft_credit.remaining_amount = 0
+            eft_credit.save_or_add(auto_save)
+
+    @classmethod
+    def process_payment_action(cls, short_name_id: int, request: Dict):
+        """Process EFT payment action."""
+        current_app.logger.debug('<process_payment_action')
+        action = request.get('action', None)
+        statement_id = request.get('statementId', None)
+        auth_account_id = request.get('accountId', None)
+        try:
+            match action:
+                case EFTPaymentActions.CANCEL.value:
+                    cls._cancel_payment_action(short_name_id, auth_account_id)
+                case EFTPaymentActions.APPLY_CREDITS.value:
+                    cls._apply_payment_action(short_name_id, auth_account_id)
+                case EFTPaymentActions.REVERSE.value:
+                    cls._reverse_payment_action(short_name_id, statement_id)
+                case _:
+                    raise BusinessException(Error.EFT_PAYMENT_ACTION_UNSUPPORTED)
+
+            db.session.commit()
+        except Exception: # NOQA pylint:disable=broad-except
+            db.session.rollback()
+            raise
+        current_app.logger.debug('>process_payment_action')
+
+    @staticmethod
+    def get_shortname_invoice_links(short_name_id: int, payment_account_id: int,
+                                    statuses: List[str], invoice_id: int = None) -> List[EFTCreditInvoiceLinkModel]:
+        """Get short name credit invoice links by account."""
+        credit_links_query = (
+            db.session.query(EFTCreditInvoiceLinkModel)
+            .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id)
+            .join(InvoiceModel, InvoiceModel.id == EFTCreditInvoiceLinkModel.invoice_id)
+            .filter(InvoiceModel.payment_account_id == payment_account_id)
+            .filter(EFTCreditModel.short_name_id == short_name_id)
+            .filter(EFTCreditInvoiceLinkModel.status_code.in_(statuses))
+        )
+        credit_links_query = credit_links_query.filter_conditionally(invoice_id, InvoiceModel.id)
+        return credit_links_query.all()
+
+    @classmethod
+    def _cancel_payment_action(cls, short_name_id: int, auth_account_id: str, invoice_id: int = None):
+        """Cancel EFT pending payments."""
+        current_app.logger.debug('<cancel_payment_action')
+        if any([auth_account_id is None,
+                (payment_account := PaymentAccountModel.find_by_auth_account_id(auth_account_id)) is None]):
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_ACCOUNT_ID_REQUIRED)
+
+        credit_links = cls.get_shortname_invoice_links(short_name_id=short_name_id,
+                                                       payment_account_id=payment_account.id,
+                                                       invoice_id=invoice_id,
+                                                       statuses=[EFTCreditInvoiceStatus.PENDING.value])
+        for credit_link in credit_links:
+            eft_credit = EFTCreditModel.find_by_id(credit_link.eft_credit_id)
+            eft_credit.remaining_amount += credit_link.amount
+
+            if eft_credit.remaining_amount > eft_credit.amount:
+                raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)
+
+            credit_link.status_code = EFTCreditInvoiceStatus.CANCELLED.value
+            db.session.add(eft_credit)
+            db.session.add(credit_link)
+
+        db.session.flush()
+        current_app.logger.debug('>cancel_payment_action')
+
+    @classmethod
+    def _apply_payment_action(cls, short_name_id: int, auth_account_id: str):
+        """Apply EFT payments to outstanding payments."""
+        current_app.logger.debug('<apply_payment_action')
+        if auth_account_id is None or PaymentAccountModel.find_by_auth_account_id(auth_account_id) is None:
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_ACCOUNT_ID_REQUIRED)
+
+        cls.process_owing_statements(short_name_id, auth_account_id)
+        current_app.logger.debug('>apply_payment_action')
+
+    @classmethod
+    def _reverse_payment_action(cls, short_name_id: int, statement_id: int):  # pylint: disable=unused-argument
+        """Reverse EFT Payments on a statement to short name EFT credits."""
+        current_app.logger.debug('<reverse_payment_action')
+        if statement_id is None:
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_STATEMENT_ID_REQUIRED)
+
+        # TODO - function skeleton for upcoming ticket to implement this
+        # Get COMPLETED eft_credit_invoice_links for the statement_id
+        # Will need to check if an invoice has been disbursed and set the eft_credit_invoice_link status accordingly
+        # Invoice NOT disbursed - reset invoice state and create new eft_invoice_link for REFUNDED and move amount back
+        # to the original eft_credit based on the current COMPLETED invoice link
+        # Invoice disbursed - same as not disbursed but eft_invoice_link status of PENDING_REFUND. Jobs will need to
+        # pick up on this and set to REFUNDED when processed for reversal. Invoice disbursement status will be
+        # the final indicator on whether this is complete
+
+        current_app.logger.debug('>reverse_payment_action')
+
+    @classmethod
+    def patch_shortname_link(cls, link_id: int, request: Dict):
+        """Patch EFT short name link."""
+        current_app.logger.debug('<patch_shortname_link')
+        valid_statuses = [EFTShortnameStatus.INACTIVE.value]
+        status_code = request.get('statusCode', None)
+
+        if status_code is None or status_code not in valid_statuses:
+            raise BusinessException(Error.EFT_SHORT_NAME_LINK_INVALID_STATUS)
+
+        shortname_link = EFTShortnameLinksModel.find_by_id(link_id)
+        shortname_link.status_code = status_code
+        shortname_link.save()
+
+        current_app.logger.debug('>patch_shortname_link')
+        return cls.find_link_by_id(link_id)
+
     @classmethod
     @user_context
     def create_shortname_link(cls, short_name_id: int, auth_account_id: str, **kwargs) -> EFTShortnameLinksModel:
@@ -85,15 +256,25 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if short_name:
             raise BusinessException(Error.EFT_SHORT_NAME_ALREADY_MAPPED)
 
-        eft_short_name_link = EFTShortnameLinksModel(
-            eft_short_name_id=short_name_id,
-            auth_account_id=auth_account_id,
-            status_code=EFTShortnameStatus.PENDING.value,
-            updated_by=kwargs['user'].user_name,
-            updated_by_name=kwargs['user'].name,
-            updated_on=datetime.now()
-        ).save()
+        # Re-activate link if it previously existed
+        eft_short_name_link = EFTShortnameLinksModel.find_inactive_link(short_name_id, auth_account_id)
+        if eft_short_name_link is None:
+            eft_short_name_link = EFTShortnameLinksModel(
+                eft_short_name_id=short_name_id,
+                auth_account_id=auth_account_id,
+            )
 
+        eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value
+        eft_short_name_link.updated_by = kwargs['user'].user_name
+        eft_short_name_link.updated_by_name = kwargs['user'].name
+        eft_short_name_link.updated_on = datetime.now()
+
+        db.session.add(eft_short_name_link)
+        db.session.flush()
+
+        cls.process_owing_statements(short_name_id=short_name_id, auth_account_id=auth_account_id, is_new_link=True)
+
+        eft_short_name_link.save()
         current_app.logger.debug('>create_shortname_link')
         return cls.find_link_by_id(eft_short_name_link.id)
 
@@ -125,8 +306,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                  EFTShortnameLinksModel.updated_on,
                                  invoice_count_query.label('invoice_count')) \
             .join(
-                PaymentAccountModel,
-                PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
+            PaymentAccountModel,
+            PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
 
         query = cls.add_payment_account_name_columns(query)
         query = query.add_columns(
@@ -136,8 +317,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             statement_summary_query,
             statement_summary_query.c.payment_account_id == PaymentAccountModel.id
         ).filter(EFTShortnameLinksModel.eft_short_name_id == short_name_id) \
-         .filter(EFTShortnameLinksModel.status_code.in_([EFTShortnameStatus.LINKED.value,
-                                                         EFTShortnameStatus.PENDING.value]))
+            .filter(EFTShortnameLinksModel.status_code.in_([EFTShortnameStatus.LINKED.value,
+                                                            EFTShortnameStatus.PENDING.value]))
 
         query = query.order_by(EFTShortnameLinksModel.created_on.asc())
 
@@ -150,31 +331,53 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         }
 
     @staticmethod
-    def process_owing_invoices(short_name_id: int) -> EFTShortnames:
-        """Process outstanding invoices when an EFT short name is mapped to an auth account id using credits."""
-        current_app.logger.debug('<process_owing_invoices')
-        short_name_model: EFTShortnameModel = EFTShortnameModel.find_by_id(short_name_id)
-        auth_account_id = short_name_model.auth_account_id
+    def process_owing_statements(short_name_id: int, auth_account_id: str, is_new_link: bool = False) -> EFTShortnames:
+        """Process outstanding statement invoices for an EFT Short name."""
+        current_app.logger.debug('<process_owing_statements')
+        shortname_link = EFTShortnameLinksModel.find_active_link(short_name_id, auth_account_id)
 
-        invoices = EFTShortnames.get_invoices_owing(auth_account_id)
-        pay_service = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
+        if shortname_link is None:
+            raise BusinessException(Error.EFT_SHORT_NAME_NOT_LINKED)
 
-        for invoice in invoices:
-            pay_service.apply_credit(invoice)
+        credit_balance: Decimal = EFTShortnames.get_eft_credit_balance(short_name_id)
+        summary_dict: dict = StatementService.get_summary(auth_account_id)
+        total_due = summary_dict['total_due']
 
-        current_app.logger.debug('>process_owing_invoices')
+        if credit_balance < total_due:
+            if not is_new_link:
+                raise BusinessException(Error.EFT_INSUFFICIENT_CREDITS)
+            return
+
+        statements, _ = StatementService.get_account_statements(auth_account_id=auth_account_id, page=1, limit=1000,
+                                                                is_owing=True)
+        invoice_ids = set()
+        if statements:
+            for statement in statements:
+                invoices: List[InvoiceModel] = EFTShortnames._get_statement_invoices_owing(auth_account_id,
+                                                                                           statement.id)
+                for invoice in invoices:
+                    if invoice.payment_method_code == PaymentMethod.EFT.value:
+                        invoice_ids.add(invoice.id)
+
+        for invoice_id in invoice_ids:
+            EFTShortnames._apply_eft_credit(invoice_id, short_name_id)
+
+        current_app.logger.debug('>process_owing_statements')
 
     @staticmethod
-    def get_invoices_owing(auth_account_id: str) -> List[InvoiceModel]:
-        """Return invoices that have not been fully paid."""
+    def _get_statement_invoices_owing(auth_account_id: str, statement_id: int = None) -> List[InvoiceModel]:
+        """Return statement invoices that have not been fully paid."""
         unpaid_status = (InvoiceStatus.PARTIAL.value,
                          InvoiceStatus.CREATED.value, InvoiceStatus.OVERDUE.value)
         query = db.session.query(InvoiceModel) \
             .join(PaymentAccountModel, and_(PaymentAccountModel.id == InvoiceModel.payment_account_id,
                                             PaymentAccountModel.auth_account_id == auth_account_id)) \
+            .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id) \
             .filter(InvoiceModel.invoice_status_code.in_(unpaid_status)) \
-            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
-            .order_by(InvoiceModel.created_on.asc())
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
+
+        query = query.filter_conditionally(statement_id, StatementInvoicesModel.statement_id)
+        query = query.order_by(InvoiceModel.created_on.asc())
 
         return query.all()
 
@@ -184,7 +387,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<find_by_short_name_id')
         short_name_model: EFTShortnameModel = cls.get_search_query(EFTShortnamesSearch(id=short_name_id)).first()
         converter = Converter()
-        result = converter.unstructure(EFTShortnameSchema.from_row(short_name_model))
+        result = converter.unstructure(EFTShortnameSchema.from_row(short_name_model)) if short_name_model else None
 
         current_app.logger.debug('>find_by_short_name_id')
         return result
@@ -280,7 +483,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             (PaymentAccountModel.name.like('%-' + PaymentAccountModel.branch_name),
              func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
              ), else_=PaymentAccountModel.name).label('account_name'),
-            PaymentAccountModel.branch_name.label('account_branch'))
+                                 PaymentAccountModel.branch_name.label('account_branch'))
 
     @staticmethod
     def get_pending_payment_count():
