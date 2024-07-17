@@ -59,24 +59,19 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                                       receipt_number) -> bool:
         """Apply electronic funds transfers (receipts in CFS) to invoice."""
         current_app.logger.debug(f'Apply receipt {receipt_number} on invoice {invoice_number} ')
-        # If balance of receipt is zero, continue to next receipt.
         receipt_balance_before_apply = float(
             CFSService.get_receipt(cfs_account, receipt_number).get('unapplied_amount')
         )
         current_app.logger.debug(f'Current balance on {receipt_number} = {receipt_balance_before_apply}')
-        if receipt_balance_before_apply == 0:
-            current_app.logger.debug(f'Applying receipt {receipt_number} to {invoice_number}')
-            receipt_response = CFSService.apply_receipt(cfs_account, receipt_number, invoice_number)
-            receipt_json = receipt_response.json()
-            receipt = ReceiptModel(receipt_number=receipt_json.get('receipt_number', None),
-                                   receipt_amount=receipt_balance_before_apply -
-                                   float(receipt_json.get('unapplied_amount')),
-                                   invoice_id=invoice.id,
-                                   receipt_date=datetime.now(tz=timezone.utc))
-            receipt.flush()
-            invoice_from_cfs = CFSService.get_invoice(cfs_account, invoice_number)
-            if invoice_from_cfs.get('amount_due') == 0:
-                current_app.logger.error("No amount due thus receipt couldn\'t be applied")
+        current_app.logger.debug(f'Applying receipt {receipt_number} to {invoice_number}')
+        receipt_response = CFSService.apply_receipt(cfs_account, receipt_number, invoice_number)
+        receipt_json = receipt_response.json()
+        receipt = ReceiptModel(receipt_number=receipt_json.get('receipt_number', None),
+                               receipt_amount=receipt_balance_before_apply -
+                               float(receipt_json.get('unapplied_amount')),
+                               invoice_id=invoice.id,
+                               receipt_date=datetime.now(tz=timezone.utc))
+        receipt.flush()
 
     @classmethod
     def link_electronic_funds_transfers_cfs(cls):
@@ -119,7 +114,13 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.flush()
             except Exception as e:  # NOQA # pylint: disable=broad-except
-
+                capture_message(
+                    f'Error on linking EFT invoice links in CFS '
+                    f'Account id={invoice.payment_account_id} '
+                    f'EFT Credit invoice Link : {credit_invoice_link.id}'
+                    f'ERROR : {str(e)}', level='error')
+                current_app.logger.error(e)
+                db.session.rollback()
                 continue
             db.session.commit()
 
