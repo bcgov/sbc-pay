@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from typing import List
 
 from flask import current_app
+from sqlalchemy import or_
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -26,8 +28,8 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem,
-    ReverseOperation)
+    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
+    PaymentSystem, ReverseOperation)
 from sentry_sdk import capture_message
 
 
@@ -46,8 +48,16 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
             .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value) \
             .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value) \
             .filter(EFTCreditInvoiceLinkModel.status_code == status)
-        if status == EFTCreditInvoiceStatus.PENDING.value:
-            query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
+        match status:
+            case EFTCreditInvoiceStatus.PENDING.value:
+                query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
+                query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value)
+            case EFTCreditInvoiceStatus.PENDING_REFUND.value:
+                query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
+                query = query.filter(or_(InvoiceModel.disbursement_status_code.is_(
+                    None), InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value))
+            case _:
+                pass
         return query.order_by(InvoiceModel.payment_account_id, EFTCreditInvoiceLinkModel.id).all()
 
     @classmethod
@@ -119,6 +129,8 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.COMPLETED.value
                 )
+                # TODO need to handle reversal for disbursement, we can look for EFT CREATED invoices that are COMPLETED
+                # they should be reversed.
                 invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
                 invoice_reference.flush()
                 CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
