@@ -97,6 +97,8 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                     credit_invoice_link.invoice_id, InvoiceReferenceStatus.ACTIVE.value
                 )
+                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+                invoice_reference.flush()
                 # Note: Not creating the entire EFT as a receipt because it can be mapped to multiple CFS accounts.
                 # eft_credit_invoice_links table should reflect exactly what's in CAS.
                 receipt_number = f'EFT-CIL-{credit_invoice_link.id}'
@@ -111,19 +113,13 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     cfs_account, invoice, invoice_reference.invoice_number, receipt_number
                 )
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice.paid = invoice.total
+                invoice.paid = credit_invoice_link.amount
                 invoice.payment_date = datetime.now(tz=timezone.utc)
                 invoice.flush()
-                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-                invoice_reference.flush()
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.flush()
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
-                    f'Error on creating EFT invoice links in CFS'
-                    f'EFT Credit Invoice Link : {credit_invoice_link.id}, ERROR : {str(e)}', level='error')
-                current_app.logger.error(e)
-                db.session.rollback()
+
                 continue
             db.session.commit()
 
@@ -140,20 +136,23 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.COMPLETED.value
                 )
+                invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
+                invoice_reference.flush()
                 CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
                 invoice.invoice_status_code = InvoiceStatus.CREATED.value
                 invoice.paid = 0
+                invoice.refunded = credit_invoice_link.amount
                 invoice.refund_date = datetime.now(tz=timezone.utc)
                 invoice.flush()
-                invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
-                invoice_reference.flush()
                 for receipt in ReceiptModel.find_all_receipts_for_invoice(invoice.id):
                     db.session.delete(receipt)
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.REFUNDED.value
                 credit_invoice_link.flush()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
-                    f'Error on Processing UNLINKING for :={receipt_number}, account id={invoice.payment_account_id} '
+                    f'Error on reversing EFT invoice links in CFS '
+                    f'Account id={invoice.payment_account_id} '
+                    f'EFT Credit invoice Link : {credit_invoice_link.id}'
                     f'ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
                 db.session.rollback()
