@@ -20,8 +20,8 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime, timedelta
 
 from pay_api.models import (
-    CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTFile, EFTShortnameLinks, EFTShortnames,
-    EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, Receipt, Refund,
+    CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnameLinks,
+    EFTShortnames, EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, Receipt, Refund,
     RefundsPartial, RoutingSlip, StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus,
@@ -282,6 +282,16 @@ def factory_create_eft_transaction(file_id=1, line_number=1, line_type='T',
         status_code=status_code,
     ).save()
     return eft_transaction
+
+
+def factory_create_eft_credit_invoice_link(invoice_id=1, eft_credit_id=1, status_code='PENDING'):
+    """Return Factory."""
+    eft_credit_invoice_link = EFTCreditInvoiceLink(
+        invoice_id=invoice_id,
+        eft_credit_id=eft_credit_id,
+        status_code=status_code
+    ).save()
+    return eft_credit_invoice_link
 
 
 def factory_create_account(auth_account_id: str = '1234', payment_method_code: str = PaymentMethod.DIRECT_PAY.value,

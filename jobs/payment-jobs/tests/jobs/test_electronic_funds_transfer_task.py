@@ -30,9 +30,9 @@ from pay_api.services import CFSService
 from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
 
 from .factory import (
-    factory_create_eft_account, factory_create_eft_credit, factory_create_eft_file, factory_create_eft_shortname,
-    factory_create_eft_transaction, factory_eft_shortname_link, factory_invoice, factory_invoice_reference,
-    factory_payment, factory_payment_line_item, factory_receipt)
+    factory_create_eft_account, factory_create_eft_credit, factory_create_eft_credit_invoice_link,
+    factory_create_eft_file, factory_create_eft_shortname, factory_create_eft_transaction, factory_eft_shortname_link,
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_line_item, factory_receipt)
 
 
 def test_link_electronic_funds_transfers(session):
@@ -56,6 +56,7 @@ def test_link_electronic_funds_transfers(session):
     factory_create_eft_credit(
         amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=eft_short_name.id,
         payment_account_id=payment_account.id)
+    factory_create_eft_credit_invoice_link(invoice_id=invoice.id)
 
     eft_short_name = EFTShortnameModel.find_by_short_name(short_name)
     eft_short_name_link = EFTShortnameLinksModel.find_by_short_name_id(eft_short_name.id)[0]
@@ -72,7 +73,7 @@ def test_link_electronic_funds_transfers(session):
 
     with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
         with patch.object(CFSService, 'get_receipt') as mock_get_receipt:
-            ElectronicFundsTransferTask.link_electronic_funds_transfers()
+            ElectronicFundsTransferTask.link_electronic_funds_transfers_cfs()
             mock_create_cfs.assert_called()
             mock_get_receipt.assert_called()
 
@@ -126,6 +127,6 @@ def test_unlink_electronic_funds_transfers(session):
 
     with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_reverse:
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_receipt:
-            ElectronicFundsTransferTask.unlink_electronic_funds_transfers()
+            ElectronicFundsTransferTask.reverse_electronic_funds_transfers_cfs()
             mock_reverse.assert_called()
             mock_create_receipt.assert_called()
