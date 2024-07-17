@@ -45,11 +45,10 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
             .join(InvoiceModel, InvoiceModel.id == EFTCreditInvoiceLinkModel.invoice_id) \
             .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value) \
             .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value) \
-            .filter(EFTCreditInvoiceLinkModel.status_code == status) \
-            .order_by(InvoiceModel.payment_account_id, EFTCreditInvoiceLinkModel.id)
+            .filter(EFTCreditInvoiceLinkModel.status_code == status)
         if status == EFTCreditInvoiceStatus.PENDING.value:
             query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
-        return query.all()
+        return query.order_by(InvoiceModel.payment_account_id, EFTCreditInvoiceLinkModel.id).all()
 
     @classmethod
     def _apply_eft_receipt_to_invoice(cls,
