@@ -111,7 +111,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     disbursement_type='INVOICE',
                     is_reversal=False,
                     partner_code=invoice.corp_type_code,
-                    status_code='WAITING FOR DISBURSEMENT'
+                    status_code='WAITING FOR DISBURSEMENT',
                     target_id=credit_invoice_link.invoice_id
                 ).flush()
                 db.session.commit()
