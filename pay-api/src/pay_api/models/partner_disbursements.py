@@ -41,6 +41,7 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
             'disbursement_type',
             'feedback_on',
             'is_reversal',
+            'partner_code',
             'processed_on',
             'source_gl',
             'status_code',
@@ -54,6 +55,7 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
     disbursement_type = db.Column('disbursement_type', db.String(50), nullable=False)
     feedback_on = db.Column('feedback_on', db.DateTime, nullable=True)
+    partner_code = db.Column('partner_code', db.String(50), nullable=False)
     processed_on = db.Column('processed_on', db.DateTime, nullable=True)
     is_reversal = db.Column('is_reversal', db.Boolean(), nullable=False, default=False)
     source_gl = db.Column('source_gl', db.String(50), nullable=False)

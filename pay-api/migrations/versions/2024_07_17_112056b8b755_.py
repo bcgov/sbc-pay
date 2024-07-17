@@ -26,6 +26,7 @@ def upgrade():
     sa.Column('created_on', sa.DateTime(), nullable=False),
     sa.Column('disbursement_type', sa.String(length=50), nullable=False),
     sa.Column('feedback_on', sa.DateTime(), nullable=True),
+    sa.Column('partner_code', sa.String(length=50), nullable=False),
     sa.Column('processed_on', sa.DateTime(), nullable=True),
     sa.Column('is_reversal', sa.Boolean(), nullable=False),
     sa.Column('source_gl', sa.String(length=50), nullable=False),
@@ -37,4 +38,4 @@ def upgrade():
 
 
 def downgrade():
-    pass
+     op.drop_table('partner_disbursements')
