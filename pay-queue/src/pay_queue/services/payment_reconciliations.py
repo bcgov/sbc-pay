@@ -212,6 +212,8 @@ def reconcile_payments(ce):
     error_messages = []
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
+    current_app.logger.info(f'_process_file_content has errors: {has_errors},'
+                            f"generate email: {current_app.config.get('DISABLE_CSV_ERROR_EMAIL')}")
     if has_errors and not current_app.config.get('DISABLE_CSV_ERROR_EMAIL'):
         _send_error_email(file_name, minio_location, error_messages, msg, cas_settlement.__tablename__)
 
@@ -259,12 +261,28 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
         db.session.commit()
 
     # Create payment records for lines other than PAD
-    _create_payment_records(content)
+    try:
+        _create_payment_records(content)
+    except Exception as e: # NOQA # pylint: disable=broad-except
+        error_msg = f'Error creating payment records: {str(e)}'
+        _csv_error_handling('N/A', error_msg, error_messages)
+        has_errors = True
 
     # Create Credit Records.
-    _create_credit_records(content)
+    try:
+        _create_credit_records(content)
+    except Exception as e: # NOQA # pylint: disable=broad-except
+        error_msg = f'Error creating credit records: {str(e)}'
+        _csv_error_handling('N/A', error_msg, error_messages)
+        has_errors = True
+
     # Sync credit memo and on account credits with CFS
-    _sync_credit_records()
+    try:
+        _sync_credit_records()
+    except Exception as e: # NOQA # pylint: disable=broad-except
+        error_msg = f'Error syncing credit records: {str(e)}'
+        _csv_error_handling('N/A', error_msg, error_messages)
+        has_errors = True
 
     cas_settlement.processed_on = datetime.now()
     cas_settlement.save()
