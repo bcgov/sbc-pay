@@ -17,7 +17,7 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('eft_credit_invoice_links', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('receipt_number', sa.String(length=50), nullable=False))
+        batch_op.add_column(sa.Column('receipt_number', sa.String(length=50), nullable=True))
 
 def downgrade():
     with op.batch_alter_table('eft_credit_invoice_links', schema=None) as batch_op:
