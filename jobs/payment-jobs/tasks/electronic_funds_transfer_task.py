@@ -129,8 +129,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.COMPLETED.value
                 )
-                # TODO need to handle reversal for disbursement, we can look for EFT CREATED invoices that are COMPLETED
-                # they should be reversed.
                 invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
                 invoice_reference.flush()
                 CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
