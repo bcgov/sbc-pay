@@ -95,6 +95,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice.flush()
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.flush()
+                db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
                     f'Error on linking EFT invoice links in CFS '
@@ -104,7 +105,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(e)
                 db.session.rollback()
                 continue
-            db.session.commit()
 
     @classmethod
     def reverse_electronic_funds_transfers_cfs(cls):
@@ -131,6 +131,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     db.session.delete(receipt)
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.REFUNDED.value
                 credit_invoice_link.flush()
+                db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
                     f'Error on reversing EFT invoice links in CFS '
@@ -140,4 +141,3 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(e)
                 db.session.rollback()
                 continue
-            db.session.commit()
