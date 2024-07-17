@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pay-api = {git = "https://github.com/bcgov/sbc-pay.git", branch = "20087", subdirectory = "pay-api"}
+pay-api = {git = "https://github.com/bcgov/sbc-pay.git", branch = "20596", subdirectory = "pay-api"}
 gunicorn = "^21.2.0"
 flask = "^3.0.2"
 flask-sqlalchemy = "^3.1.1"
