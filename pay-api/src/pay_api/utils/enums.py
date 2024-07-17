@@ -208,7 +208,7 @@ class CorpType(Enum):
 
 class DisbursementStatus(Enum):
     """Disbursement status codes."""
-   
+
     ACKNOWLEDGED = 'ACKNOWLEDGED'
     COMPLETED = 'COMPLETED'
     ERRORED = 'ERRORED'
