@@ -1,4 +1,4 @@
-"""Get rid of invoice batches, invoice batch links, eft gl transfers.
+"""Get rid of invoice batches, invoice batch links, eft gl transfers. Add in partner disbursements.
 
 Revision ID: 112056b8b755
 Revises: f98666d9809a
@@ -22,17 +22,17 @@ def upgrade():
     op.drop_table('eft_gl_transfers')
     op.create_table('partner_disbursements',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('amount', sa.Numeric(), nullable=False),
     sa.Column('created_on', sa.DateTime(), nullable=False),
     sa.Column('disbursement_type', sa.String(length=50), nullable=False),
+    sa.Column('processed_on', sa.DateTime(), nullable=True),
     sa.Column('feedback_on', sa.DateTime(), nullable=True),
     sa.Column('partner_code', sa.String(length=50), nullable=False),
-    sa.Column('processed_on', sa.DateTime(), nullable=True),
     sa.Column('is_reversal', sa.Boolean(), nullable=False),
+    sa.Column('amount', sa.Numeric(), nullable=False),
     sa.Column('source_gl', sa.String(length=50), nullable=False),
+    sa.Column('target_gl', sa.String(length=50), nullable=False),
     sa.Column('status_code', sa.String(length=25), nullable=False),
     sa.Column('target_id', sa.Integer(), nullable=True),
-    sa.Column('target_gl', sa.String(length=50), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
 
