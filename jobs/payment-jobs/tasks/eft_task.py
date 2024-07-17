@@ -72,9 +72,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING.value)
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
             try:
-                current_app.logger.debug(f'Create EFT Invoice Links in CFS - PayAccount: {invoice.payment_account_id}'
-                                         f'Id: {credit_invoice_link.id} - Amount: {credit_invoice_link.amount} '
-                                         f'- Invoice Id: {invoice.id}')
+                current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {credit_invoice_link.id} -'
+                                        f' Invoice Id: {invoice.id} - Amount: {credit_invoice_link.amount}')
                 invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                     credit_invoice_link.invoice_id, InvoiceReferenceStatus.ACTIVE.value
                 )
@@ -109,7 +108,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                     f'Account id={invoice.payment_account_id} '
                     f'EFT Credit invoice Link : {credit_invoice_link.id}'
                     f'ERROR : {str(e)}', level='error')
-                current_app.logger.error('Error: ', exc_info=True)
+                current_app.logger.error(f'Error Account id={invoice.payment_account_id} - '
+                                         f'EFT Credit invoice Link : {credit_invoice_link.id}', exc_info=True)
                 db.session.rollback()
                 continue
 
@@ -119,9 +119,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value)
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
             try:
-                current_app.logger.debug(f'Reverse EFT Invoice Links in CFS - PayAccount: {invoice.payment_account_id}'
-                                         f'Id: {credit_invoice_link.id} - Amount: {credit_invoice_link.amount}'
-                                         f'- Invoice Id: {invoice.id}')
+                current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {credit_invoice_link.id} -'
+                                        f' Invoice Id: {invoice.id} - Amount: {credit_invoice_link.amount}')
                 receipt_number = f'EFT-CIL-{credit_invoice_link.id}'
                 invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.COMPLETED.value
@@ -145,6 +144,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                     f'Account id={invoice.payment_account_id} '
                     f'EFT Credit invoice Link : {credit_invoice_link.id}'
                     f'ERROR : {str(e)}', level='error')
-                current_app.logger.error('Error: ', exc_info=True)
+                current_app.logger.error(f'Error Account id={invoice.payment_account_id} - '
+                                         f'EFT Credit invoice Link : {credit_invoice_link.id}', exc_info=True)
                 db.session.rollback()
                 continue
