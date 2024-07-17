@@ -23,14 +23,13 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import PartnerDisbursements
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
-    PaymentMethod, PaymentSystem, ReverseOperation)
+    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
+    PaymentSystem, ReverseOperation)
 from sentry_sdk import capture_message
 
 
@@ -52,7 +51,8 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         match status:
             case EFTCreditInvoiceStatus.PENDING.value:
                 query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
-                query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value)
+                query = query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.CREATED.value,
+                                                                           InvoiceStatus.OVERDUE.value]))
             case EFTCreditInvoiceStatus.PENDING_REFUND.value:
                 query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
                 query = query.filter(or_(InvoiceModel.disbursement_status_code.is_(
@@ -104,16 +104,9 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice.paid = credit_invoice_link.amount
                 invoice.payment_date = datetime.now(tz=timezone.utc)
                 invoice.flush()
+                # TODO unlock code - function
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.flush()
-                PartnerDisbursements(
-                    amount=credit_invoice_link.amount,
-                    disbursement_type=EJVLinkType.INVOICE.value,
-                    is_reversal=False,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                    target_id=credit_invoice_link.invoice_id
-                ).flush()
                 db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
@@ -150,14 +143,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     db.session.delete(receipt)
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.REFUNDED.value
                 credit_invoice_link.flush()
-                PartnerDisbursements(
-                    amount=credit_invoice_link.amount,
-                    disbursement_type=EJVLinkType.INVOICE.value,
-                    is_reversal=True,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                    target_id=credit_invoice_link.invoice_id
-                ).flush()
                 db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(

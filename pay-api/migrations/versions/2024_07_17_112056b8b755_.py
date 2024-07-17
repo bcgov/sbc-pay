@@ -7,7 +7,6 @@ Create Date: 2024-07-17 07:37:52.834892
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '112056b8b755'
@@ -35,7 +34,11 @@ def upgrade():
     sa.Column('target_id', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    with op.batch_alter_table('invoices', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('disbursement_reversal_date', sa.DateTime(), nullable=True))
 
 
 def downgrade():
-     op.drop_table('partner_disbursements')
+    op.drop_table('partner_disbursements')
+    with op.batch_alter_table('invoices', schema=None) as batch_op:
+        batch_op.drop_column('disbursement_reversal_date')
