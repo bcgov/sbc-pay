@@ -81,7 +81,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 invoice_reference.flush()
                 # Note: Not creating the entire EFT as a receipt because it can be mapped to multiple CFS accounts.
                 # eft_credit_invoice_links table should reflect exactly what's in CAS.
-                receipt_number = f'EFT{credit_invoice_link.id}'
+                receipt_number = f'EFTCIL{credit_invoice_link.id}'
                 CFSService.create_cfs_receipt(
                     cfs_account=cfs_account,
                     rcpt_number=receipt_number,
