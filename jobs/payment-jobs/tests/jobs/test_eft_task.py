@@ -113,10 +113,10 @@ def test_link_electronic_funds_transfers(session):
     invoice_reference = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(payment_account_id=payment_account.id, payment_method_code=PaymentMethod.EFT.value,
                     invoice_amount=351.50)
-    factory_create_eft_credit(
+    eft_credit = factory_create_eft_credit(
         amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
         payment_account_id=payment_account.id, eft_transaction_id=eft_transaction_id)
-    credit_invoice_link = factory_create_eft_credit_invoice_link(invoice_id=invoice.id)
+    credit_invoice_link = factory_create_eft_credit_invoice_link(invoice_id=invoice.id, eft_credit_id=eft_credit.id)
 
     cfs_account = CfsAccountModel.find_effective_by_payment_method(
         payment_account.id, PaymentMethod.EFT.value)
@@ -155,12 +155,13 @@ def test_unlink_electronic_funds_transfers(session):
     invoice_reference = factory_invoice_reference(invoice_id=invoice.id,
                                                   status_code=InvoiceReferenceStatus.COMPLETED.value,
                                                   invoice_number=invoice_number)
-    factory_create_eft_credit(
+    eft_credit = factory_create_eft_credit(
         amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
         payment_account_id=payment_account.id,
         eft_transaction_id=eft_transaction_id)
     cil = factory_create_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                 status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value)
+                                                 status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
+                                                 eft_credit_id=eft_credit.id)
     factory_receipt(invoice.id, receipt_number)
 
     session.commit()
