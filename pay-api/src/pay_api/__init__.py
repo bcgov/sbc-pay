@@ -102,6 +102,7 @@ def execute_migrations(app):
     try:
         upgrade(directory='migrations', revision='head', sql=False, tag=None)
     except Exception as e:  # NOQA pylint: disable=broad-except
+        app.logger.disabled = False
         app.logger.error('Error processing migrations:', exc_info=True)
         raise e
 
