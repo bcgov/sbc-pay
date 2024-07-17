@@ -29,8 +29,8 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-    PaymentSystem, ReverseOperation)
+    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
+    PaymentMethod, PaymentSystem, ReverseOperation)
 from sentry_sdk import capture_message
 
 
@@ -108,7 +108,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 credit_invoice_link.flush()
                 PartnerDisbursements(
                     amount=credit_invoice_link.amount,
-                    disbursement_type='INVOICE',
+                    disbursement_type=EJVLinkType.INVOICE.value,
                     is_reversal=False,
                     partner_code=invoice.corp_type_code,
                     status_code=DisbursementStatus.WAITING_FOR_JOB.value,
@@ -152,7 +152,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 credit_invoice_link.flush()
                 PartnerDisbursements(
                     amount=credit_invoice_link.amount,
-                    disbursement_type='INVOICE',
+                    disbursement_type=EJVLinkType.INVOICE.value,
                     is_reversal=True,
                     partner_code=invoice.corp_type_code,
                     status_code=DisbursementStatus.WAITING_FOR_JOB.value,
