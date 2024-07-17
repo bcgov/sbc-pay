@@ -24,6 +24,5 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('partner_disbursements')
     with op.batch_alter_table('invoices', schema=None) as batch_op:
         batch_op.drop_column('disbursement_reversal_date')
