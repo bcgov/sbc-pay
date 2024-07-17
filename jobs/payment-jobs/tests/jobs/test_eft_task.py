@@ -57,10 +57,10 @@ tests = [
      InvoiceStatus.CREATED.value], [EFTCreditInvoiceStatus.COMPLETED.value, EFTCreditInvoiceStatus.REFUNDED.value],
      [None], 0, 0),
     ('wrong_disbursement', PaymentMethod.EFT.value, [
-     InvoiceStatus.CREATED.value], [DisbursementStatus.UPLOADED.value], [None], 0, 0),
+     InvoiceStatus.CREATED.value], [EFTCreditInvoiceStatus.PENDING.value], [DisbursementStatus.UPLOADED.value], 0, 0),
     ('wrong_invoice_status', PaymentMethod.EFT.value, [
      InvoiceStatus.CREDITED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.APPROVED.value],
-     [DisbursementStatus.UPLOADED.value], [None], 0, 0)
+     [EFTCreditInvoiceStatus.PENDING.value], [None], 0, 0)
 ]
 
 

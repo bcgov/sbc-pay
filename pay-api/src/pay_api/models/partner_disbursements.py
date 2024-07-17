@@ -19,8 +19,6 @@ from .base_model import BaseModel
 from .db import db
 
 
-
-# TODO requires migration, handle in disbursement ticket
 class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the partner disbursements that should be executed."""
 
