@@ -279,19 +279,17 @@ class CFSService(OAuthService):
     @classmethod
     def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
         """Apply Invoice to Routing slip receipt from CFS."""
-        current_app.logger.debug(f'Apply receipt: {receipt_number} to invoice {invoice_number}')
         return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number)
 
     @classmethod
     def unapply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
         """Unapply Invoice to Routing slip receipt from CFS."""
-        current_app.logger.debug(f'Unapply receipt: {receipt_number} from invoice {invoice_number}')
         return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number, verb='unapply')
 
     @classmethod
     def _modify_rs_receipt_in_cfs(cls, cfs_account, invoice_number, receipt_number, verb='apply'):
         """Apply and unapply using the verb passed."""
-        current_app.logger.debug('>Apply receipt: %s invoice:%s', receipt_number, invoice_number)
+        current_app.logger.debug('>%s receipt: %s invoice:%s', verb, receipt_number, invoice_number)
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
