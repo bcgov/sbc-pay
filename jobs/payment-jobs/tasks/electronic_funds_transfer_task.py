@@ -113,7 +113,9 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
                 invoice.paid = invoice.total
                 invoice.payment_date = datetime.now(tz=timezone.utc)
+                invoice.flush()
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+                invoice_reference.flush()
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.flush()
             except Exception as e:  # NOQA # pylint: disable=broad-except
