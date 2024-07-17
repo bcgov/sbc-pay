@@ -125,7 +125,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(e)
                 db.session.rollback()
                 continue
-        db.session.commit()
+            db.session.commit()
 
     @classmethod
     def reverse_electronic_funds_transfers_cfs(cls):
@@ -156,5 +156,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     f'Error on Processing UNLINKING for :={receipt_number}, account id={invoice.payment_account_id} '
                     f'ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
+                db.session.rollback()
                 continue
-        db.session.commit()
+            db.session.commit()
