@@ -53,19 +53,15 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _apply_eft_receipt_to_invoice(cls,
                                       cfs_account: CfsAccountModel,
-                                      invoice: InvoiceModel,
-                                      invoice_number: str,
+                                      invoice_reference: InvoiceReferenceModel,
                                       receipt_number,
                                       amount) -> bool:
         """Apply electronic funds transfers (receipts in CFS) to invoice."""
-        current_app.logger.debug(f'Applying receipt {receipt_number} to {invoice_number}')
-        receipt_response = CFSService.apply_receipt(cfs_account, receipt_number, invoice_number)
-        receipt_json = receipt_response.json()
-        receipt = ReceiptModel(receipt_number=receipt_json.get('receipt_number', None),
-                               receipt_amount=amount,
-                               invoice_id=invoice.id,
-                               receipt_date=datetime.now(tz=timezone.utc))
-        receipt.flush()
+        CFSService.apply_receipt(cfs_account, receipt_number, invoice_reference.invoice_number)
+        ReceiptModel(receipt_number=receipt_number,
+                     receipt_amount=amount,
+                     invoice_id=invoice_reference.invoice_id,
+                     receipt_date=datetime.now(tz=timezone.utc)).flush()
 
     @classmethod
     def link_electronic_funds_transfers_cfs(cls):
@@ -92,7 +88,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     payment_method=PaymentMethod.EFT.value,
                     access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
                 cls._apply_eft_receipt_to_invoice(
-                    cfs_account, invoice, invoice_reference.invoice_number, receipt_number, credit_invoice_link.amount)
+                    cfs_account, invoice_reference, receipt_number, credit_invoice_link.amount)
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
                 invoice.paid = credit_invoice_link.amount
                 invoice.payment_date = datetime.now(tz=timezone.utc)
