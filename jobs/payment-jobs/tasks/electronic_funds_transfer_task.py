@@ -71,13 +71,12 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def link_electronic_funds_transfers_cfs(cls):
-        """Replicate linked EFT's as receipts inside of CFS.
+        """Replicate linked EFT's as receipts inside of CFS and mark invoices.
 
         Steps:
         1. Find all pending EFT Credit Invoice Links in PENDING status.
         2. Receipts created in CAS representing the EFT.
         3. Apply the receipts to the invoices.
-        4. Notify mailer
         """
         credit_invoice_links = cls._get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING.value)
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
@@ -121,7 +120,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def reverse_electronic_funds_transfers_cfs(cls):
-        """Reverse electronic funds transfers."""
+        """Reverse electronic funds transfers receipts in CFS and reset invoices."""
         credit_invoice_links = cls._get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value)
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
             try:
