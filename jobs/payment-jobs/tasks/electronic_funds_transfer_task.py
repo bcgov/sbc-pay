@@ -102,7 +102,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     f'Account id={invoice.payment_account_id} '
                     f'EFT Credit invoice Link : {credit_invoice_link.id}'
                     f'ERROR : {str(e)}', level='error')
-                current_app.logger.error(e)
+                current_app.logger.error('Error: ', exc_info=True)
                 db.session.rollback()
                 continue
 
@@ -138,6 +138,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     f'Account id={invoice.payment_account_id} '
                     f'EFT Credit invoice Link : {credit_invoice_link.id}'
                     f'ERROR : {str(e)}', level='error')
-                current_app.logger.error(e)
+                current_app.logger.error('Error: ', exc_info=True)
                 db.session.rollback()
                 continue
