@@ -209,11 +209,12 @@ class CorpType(Enum):
 class DisbursementStatus(Enum):
     """Disbursement status codes."""
 
-    UPLOADED = 'UPLOADED'
     ACKNOWLEDGED = 'ACKNOWLEDGED'
-    ERRORED = 'ERRORED'
     COMPLETED = 'COMPLETED'
+    ERRORED = 'ERRORED'
     REVERSED = 'REVERSED'
+    UPLOADED = 'UPLOADED'
+    WAITING_FOR_JOB = 'WAITING_FOR_JOB'
 
 
 class Product(Enum):
@@ -336,14 +337,6 @@ class EFTFileLineType(Enum):
     HEADER = 'HEADER'
     TRANSACTION = 'TRANSACTION'
     TRAILER = 'TRAILER'
-
-
-class EFTGlTransferType(Enum):
-    """EFT GL Transfer types for job processing."""
-
-    PAYMENT = 'PAYMENT'
-    REVERSAL = 'REVERSAL'
-    TRANSFER = 'TRANSFER'
 
 
 class EFTShortnameStatus(Enum):

@@ -53,6 +53,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         cls._create_ejv_file_for_partner(batch_type='GI')  # Internal ministry
         cls._create_ejv_file_for_partner(batch_type='GA')  # External ministry
 
+    # TODO grab EFT invoices from PartnerDisbursements, eventually everything will run through partner disbursements.
     @staticmethod
     def get_invoices_for_disbursement(partner):
         """Return invoices for disbursement. Used by EJV and AP."""
@@ -60,7 +61,9 @@ class EjvPartnerDistributionTask(CgiEjv):
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(
-            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value,
+                                                     PaymentMethod.DRAWDOWN.value,
+                                                     PaymentMethod.EFT.value])) \
             .filter((InvoiceModel.disbursement_status_code.is_(None)) |
                     (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
             .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
@@ -94,7 +97,9 @@ class EjvPartnerDistributionTask(CgiEjv):
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
             .filter(
-            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value,
+                                                     PaymentMethod.DRAWDOWN.value,
+                                                     PaymentMethod.EFT.value])) \
             .filter(InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()

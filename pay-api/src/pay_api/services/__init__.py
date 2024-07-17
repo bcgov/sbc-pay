@@ -18,7 +18,6 @@ from .distribution_code import DistributionCode
 from .eft_service import EftService
 from .eft_short_names import EFTShortnames as EFTShortNamesService
 from .eft_short_name_summaries import EFTShortnameSummaries as EFTShortNameSummaryService
-from .eft_gl_transfer import EFTGlTransfer
 from .fee_schedule import FeeSchedule
 from .hashing import HashingService
 from .internal_pay_service import InternalPayService
