@@ -59,7 +59,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                                       receipt_number,
                                       amount) -> bool:
         """Apply electronic funds transfers (receipts in CFS) to invoice."""
-        current_app.logger.debug(f'Apply receipt {receipt_number} on invoice {invoice_number} ')
         current_app.logger.debug(f'Applying receipt {receipt_number} to {invoice_number}')
         receipt_response = CFSService.apply_receipt(cfs_account, receipt_number, invoice_number)
         receipt_json = receipt_response.json()
