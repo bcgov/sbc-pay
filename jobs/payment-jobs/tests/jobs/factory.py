@@ -290,6 +290,7 @@ def factory_create_eft_credit_invoice_link(invoice_id=1, eft_credit_id=1, status
         amount=amount,
         invoice_id=invoice_id,
         eft_credit_id=eft_credit_id,
+        receipt_number='1234',
         status_code=status_code
     ).save()
     return eft_credit_invoice_link

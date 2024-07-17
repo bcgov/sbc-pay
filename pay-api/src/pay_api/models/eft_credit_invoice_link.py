@@ -42,6 +42,7 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
             'created_on',
             'eft_credit_id',
             'invoice_id',
+            'receipt_number',
             'status_code'
         ]
     }
@@ -52,6 +53,7 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     amount = db.Column(db.Numeric(19, 2), nullable=True)
     status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
+    receipt_number = db.Column(db.String(50), nullable=True)
 
     @classmethod
     def find_pending_invoice_links(cls, invoice_id: int):

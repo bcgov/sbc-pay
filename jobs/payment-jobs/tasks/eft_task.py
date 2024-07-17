@@ -100,6 +100,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 invoice.flush()
                 # TODO ADD UNLOCK MAILER HERE.
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
+                credit_invoice_link.receipt_number = receipt_number
                 credit_invoice_link.flush()
                 db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
@@ -121,7 +122,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             try:
                 current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {credit_invoice_link.id} -'
                                         f' Invoice Id: {invoice.id} - Amount: {credit_invoice_link.amount}')
-                receipt_number = f'EFTCIL{credit_invoice_link.id}'
+                receipt_number = credit_invoice_link.receipt_number
                 invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.COMPLETED.value
                 )
