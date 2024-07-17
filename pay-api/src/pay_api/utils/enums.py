@@ -338,14 +338,6 @@ class EFTFileLineType(Enum):
     TRAILER = 'TRAILER'
 
 
-class EFTGlTransferType(Enum):
-    """EFT GL Transfer types for job processing."""
-
-    PAYMENT = 'PAYMENT'
-    REVERSAL = 'REVERSAL'
-    TRANSFER = 'TRANSFER'
-
-
 class EFTShortnameStatus(Enum):
     """EFT Short name statuses."""
 

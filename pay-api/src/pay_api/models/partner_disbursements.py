@@ -15,16 +15,14 @@
 
 from datetime import datetime
 
-from sqlalchemy import ForeignKey
-
 from .base_model import BaseModel
 from .db import db
 
 
-class EFTGLTransfer(BaseModel):  # pylint: disable=too-many-instance-attributes
-    """This class manages the file data for EFT transactions."""
+class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attributes
+    """This class manages the partner disbursements that should be executed."""
 
-    __tablename__ = 'eft_gl_transfers'
+    __tablename__ = 'partner_disbursements'
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -38,28 +36,27 @@ class EFTGLTransfer(BaseModel):  # pylint: disable=too-many-instance-attributes
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'amount',
             'created_on',
-            'invoice_id',
-            'is_processed',
+            'disbursement_type',
+            'feedback_on',
+            'is_reversal',
             'processed_on',
-            'short_name_id',
             'source_gl',
-            'target_gl',
-            'transfer_amount',
-            'transfer_type',
-            'transfer_date'
+            'status_code',
+            'target_id',
+            'target_gl'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    # Intended to be populated based on TDI17 date for GL Transfers or payment date of an invoice for distributions
-    transfer_date = db.Column('transfer_date', db.DateTime, nullable=False, default=datetime.now, index=True)
-    transfer_type = db.Column('transfer_type', db.String(50), nullable=False)
-    transfer_amount = db.Column(db.Numeric(19, 2), nullable=False)
-    source_gl = db.Column('source_gl', db.String(50), nullable=False)
-    target_gl = db.Column('target_gl', db.String(50), nullable=False)
-    is_processed = db.Column('is_processed', db.Boolean(), nullable=False, default=False)
-    processed_on = db.Column('processed_on', db.DateTime, nullable=True)
+    amount = db.Column(db.Numeric, nullable=False)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=True)
-    short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
+    disbursement_type = db.Column('disbursement_type', db.String(50), nullable=False)
+    target_id = db.Column(db.Integer, nullable=True)
+    feedback_on = db.Column('feedback_on', db.DateTime, nullable=True)
+    processed_on = db.Column('processed_on', db.DateTime, nullable=True)
+    is_reversal = db.Column('is_reversal', db.Boolean(), nullable=False, default=False)
+    source_gl = db.Column('source_gl', db.String(50), nullable=False)
+    status_code = db.Column('status_code', db.String(25), nullable=False)
+    target_gl = db.Column('target_gl', db.String(50), nullable=False)
