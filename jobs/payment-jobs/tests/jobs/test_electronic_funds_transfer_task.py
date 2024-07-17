@@ -27,7 +27,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
 from pay_api.services import CFSService
-from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
+from tasks.eft_task import ElectronicFundsTransferTask
 
 from .factory import (
     factory_create_eft_account, factory_create_eft_credit, factory_create_eft_credit_invoice_link,

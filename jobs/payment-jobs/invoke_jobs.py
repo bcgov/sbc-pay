@@ -25,7 +25,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 import config
 from services import oracle_db
 from tasks.routing_slip_task import RoutingSlipTask
-from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
+from tasks.eft_task import ElectronicFundsTransferTask
 from tasks.statement_due_task import StatementDueTask
 from utils.logger import setup_logging
 

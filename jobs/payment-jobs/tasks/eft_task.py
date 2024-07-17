@@ -106,13 +106,12 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice.flush()
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.flush()
-                # check if partner needs disbursement.. if so add this row.
                 PartnerDisbursements(
                     amount=credit_invoice_link.amount,
                     disbursement_type='INVOICE',
                     is_reversal=False,
                     partner_code=invoice.corp_type_code,
-                    status_code='WAITING FOR DISBURSEMENT',
+                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
                     target_id=credit_invoice_link.invoice_id
                 ).flush()
                 db.session.commit()
@@ -151,13 +150,12 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     db.session.delete(receipt)
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.REFUNDED.value
                 credit_invoice_link.flush()
-                # check if partner needs disbursement.. if so add this row.
                 PartnerDisbursements(
                     amount=credit_invoice_link.amount,
                     disbursement_type='INVOICE',
                     is_reversal=True,
                     partner_code=invoice.corp_type_code,
-                    status_code='WAITING FOR DISBURSEMENT',
+                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
                     target_id=credit_invoice_link.invoice_id
                 ).flush()
                 db.session.commit()

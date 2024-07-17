@@ -208,12 +208,14 @@ class CorpType(Enum):
 
 class DisbursementStatus(Enum):
     """Disbursement status codes."""
-
-    UPLOADED = 'UPLOADED'
+    
     ACKNOWLEDGED = 'ACKNOWLEDGED'
-    ERRORED = 'ERRORED'
     COMPLETED = 'COMPLETED'
+    ERRORED = 'ERRORED'
+    NOT_REQUIRED = 'NOT_REQUIRED'
     REVERSED = 'REVERSED'
+    UPLOADED = 'UPLOADED'
+    WAITING_FOR_JOB = 'WAITING_FOR_JOB'
 
 
 class Product(Enum):
