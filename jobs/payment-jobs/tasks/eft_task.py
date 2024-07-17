@@ -16,14 +16,12 @@ from datetime import datetime, timezone
 from typing import List
 
 from flask import current_app
-from sqlalchemy import or_
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
@@ -31,23 +29,30 @@ from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
     PaymentSystem, ReverseOperation)
 from sentry_sdk import capture_message
+from sqlalchemy import func, or_
+from sqlalchemy.orm import lazyload
 
 
-class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
+class EFTTask:  # pylint:disable=too-few-public-methods
     """Task to link electronic funds transfers."""
 
     @classmethod
-    def _get_eft_credit_invoice_links_by_status(cls, status: str) \
-            -> List[InvoiceModel, EFTCreditInvoiceLinkModel, CfsAccountModel]:
+    def get_eft_credit_invoice_links_by_status(cls, status: str) \
+            -> List[tuple[InvoiceModel, EFTCreditInvoiceLinkModel, CfsAccountModel]]:
         """Get electronic funds transfer by state."""
+        latest_cfs_account = db.session.query(func.max(CfsAccountModel.id).label('max_id_per_payment_account')) \
+            .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value) \
+            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value) \
+            .group_by(CfsAccountModel.account_id).subquery('latest_cfs_account')
+
         query = db.session.query(InvoiceModel, EFTCreditInvoiceLinkModel, CfsAccountModel) \
             .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id) \
-            .join(PaymentAccountModel, PaymentAccountModel.id == EFTCreditModel.payment_account_id) \
-            .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
+            .join(CfsAccountModel, CfsAccountModel.account_id == EFTCreditModel.payment_account_id) \
+            .join(latest_cfs_account, CfsAccountModel.id == latest_cfs_account.c.max_id_per_payment_account) \
             .join(InvoiceModel, InvoiceModel.id == EFTCreditInvoiceLinkModel.invoice_id) \
-            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value) \
-            .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value) \
+            .options(lazyload('*')) \
             .filter(EFTCreditInvoiceLinkModel.status_code == status)
+
         match status:
             case EFTCreditInvoiceStatus.PENDING.value:
                 query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
@@ -62,22 +67,9 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         return query.order_by(InvoiceModel.payment_account_id, EFTCreditInvoiceLinkModel.id).all()
 
     @classmethod
-    def _apply_eft_receipt_to_invoice(cls,
-                                      cfs_account: CfsAccountModel,
-                                      invoice_reference: InvoiceReferenceModel,
-                                      receipt_number,
-                                      amount) -> bool:
-        """Apply electronic funds transfers (receipts in CFS) to invoice."""
-        CFSService.apply_receipt(cfs_account, receipt_number, invoice_reference.invoice_number)
-        ReceiptModel(receipt_number=receipt_number,
-                     receipt_amount=amount,
-                     invoice_id=invoice_reference.invoice_id,
-                     receipt_date=datetime.now(tz=timezone.utc)).flush()
-
-    @classmethod
     def link_electronic_funds_transfers_cfs(cls):
         """Replicate linked EFT's as receipts inside of CFS and mark invoices as paid."""
-        credit_invoice_links = cls._get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING.value)
+        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING.value)
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
             try:
                 current_app.logger.debug(f'Create EFT Invoice Links in CFS - PayAccount: {invoice.payment_account_id}'
@@ -98,13 +90,16 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     amount=credit_invoice_link.amount,
                     payment_method=PaymentMethod.EFT.value,
                     access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
-                cls._apply_eft_receipt_to_invoice(
-                    cfs_account, invoice_reference, receipt_number, credit_invoice_link.amount)
+                CFSService.apply_receipt(cfs_account, receipt_number, invoice_reference.invoice_number)
+                ReceiptModel(receipt_number=receipt_number,
+                             receipt_amount=credit_invoice_link.amount,
+                             invoice_id=invoice_reference.invoice_id,
+                             receipt_date=datetime.now(tz=timezone.utc)).flush()
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
                 invoice.paid = credit_invoice_link.amount
                 invoice.payment_date = datetime.now(tz=timezone.utc)
                 invoice.flush()
-                # TODO unlock code - function
+                # TODO ADD UNLOCK MAILER HERE.
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.flush()
                 db.session.commit()
@@ -121,7 +116,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def reverse_electronic_funds_transfers_cfs(cls):
         """Reverse electronic funds transfers receipts in CFS and reset invoices."""
-        credit_invoice_links = cls._get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value)
+        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value)
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
             try:
                 current_app.logger.debug(f'Reverse EFT Invoice Links in CFS - PayAccount: {invoice.payment_account_id}'
@@ -136,7 +131,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
                 invoice.invoice_status_code = InvoiceStatus.CREATED.value
                 invoice.paid = 0
-                invoice.refunded = credit_invoice_link.amount
+                invoice.refund = credit_invoice_link.amount
                 invoice.refund_date = datetime.now(tz=timezone.utc)
                 invoice.flush()
                 for receipt in ReceiptModel.find_all_receipts_for_invoice(invoice.id):

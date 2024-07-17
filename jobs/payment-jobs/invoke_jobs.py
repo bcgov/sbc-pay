@@ -25,7 +25,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 import config
 from services import oracle_db
 from tasks.routing_slip_task import RoutingSlipTask
-from tasks.eft_task import ElectronicFundsTransferTask
+from tasks.eft_task import EFTTask
 from tasks.statement_due_task import StatementDueTask
 from utils.logger import setup_logging
 
@@ -134,8 +134,8 @@ def run(job_name, argument=None):
         RoutingSlipTask.adjust_routing_slips()
         application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
     elif job_name == 'EFT':
-        ElectronicFundsTransferTask.link_electronic_funds_transfers_cfs()
-        ElectronicFundsTransferTask.reverse_electronic_funds_transfers_cfs()
+        EFTTask.link_electronic_funds_transfers_cfs()
+        EFTTask.reverse_electronic_funds_transfers_cfs()
         application.logger.info(f'<<<< Completed EFT tasks >>>>')
     elif job_name == 'EJV_PAYMENT':
         EjvPaymentTask.create_ejv_file()

@@ -16,6 +16,7 @@ depends_on = None
 
 
 def upgrade():
+    op.drop_constraint('invoice_batch_link_batch_id_fkey', 'invoice_batch_links')
     op.drop_table('invoice_batches')
     op.drop_table('invoice_batch_links')
     op.drop_table('eft_gl_transfers')

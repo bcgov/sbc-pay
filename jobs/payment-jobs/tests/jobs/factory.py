@@ -246,7 +246,7 @@ def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234'
         updated_by=updated_by,
         updated_by_name=updated_by,
         updated_on=updated_on
-    )
+    ).save()
 
 
 def factory_create_eft_credit(amount=100, remaining_amount=0, eft_file_id=1, short_name_id=1, payment_account_id=1,
@@ -284,9 +284,10 @@ def factory_create_eft_transaction(file_id=1, line_number=1, line_type='T',
     return eft_transaction
 
 
-def factory_create_eft_credit_invoice_link(invoice_id=1, eft_credit_id=1, status_code='PENDING'):
+def factory_create_eft_credit_invoice_link(invoice_id=1, eft_credit_id=1, status_code='PENDING', amount=10):
     """Return Factory."""
     eft_credit_invoice_link = EFTCreditInvoiceLink(
+        amount=amount,
         invoice_id=invoice_id,
         eft_credit_id=eft_credit_id,
         status_code=status_code
