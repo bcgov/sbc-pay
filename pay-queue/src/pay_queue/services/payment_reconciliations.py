@@ -429,7 +429,7 @@ def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]
     if ex:
         formatted_traceback = ''.join(traceback.TracebackException.from_exception(ex).format())
         error_msg = f'{error_msg}\n{formatted_traceback}'
-    current_app.logger.error(error_msg, level='error')
+    current_app.logger.error(error_msg)
     capture_message(error_msg, level='error')
     error_messages.append({'error': error_msg, 'row': row})
 
