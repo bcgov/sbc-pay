@@ -2,7 +2,8 @@
   {
       "vault": "shared",
       "application": [
-          "encryption-key"
+        "api-endpoints",
+        "encryption-key"
       ]
   },
   {
@@ -10,12 +11,6 @@
     "application": [
         "jwt-base",
         "sbc-auth-admin"
-    ]
-  },
-  {
-    "vault": "entity",
-    "application": [
-        "colin-api"
     ]
   },
   {
