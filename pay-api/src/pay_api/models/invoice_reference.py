@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle invoice references from third party systems."""
+from __future__ import annotations
 
 from marshmallow import fields
 from sqlalchemy import ForeignKey
@@ -56,12 +57,12 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
         'invoice_reference_status_codes.code'), nullable=False, index=True)
 
     @classmethod
-    def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str):
+    def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str) -> InvoiceReference:
         """Return active Invoice Reference by invoice id."""
         return cls.query.filter_by(invoice_id=invoice_id).filter_by(status_code=status_code).one_or_none()
 
     @classmethod
-    def find_any_active_reference_by_invoice_number(cls, invoice_number: str):
+    def find_any_active_reference_by_invoice_number(cls, invoice_number: str) -> InvoiceReference:
         """Return any active Invoice Reference by invoice number."""
         return cls.query.filter_by(invoice_number=invoice_number) \
             .filter_by(status_code=InvoiceReferenceStatus.ACTIVE.value).first()

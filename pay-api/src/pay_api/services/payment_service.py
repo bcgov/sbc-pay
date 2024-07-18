@@ -124,6 +124,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             invoice.commit()
 
+            # TODO put in partner disbursement row.. requires migration, handle in disbursement ticket
+
             pay_service.complete_post_invoice(invoice, invoice_reference)
 
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)

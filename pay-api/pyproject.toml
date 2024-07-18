@@ -73,7 +73,7 @@ threadloop = "1.0.2"
 thrift = "0.16.0"
 tornado = "6.4"
 typing-extensions = "4.10.0"
-urllib3 = "2.2.1"
+urllib3 = "2.2.2"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 pg8000 = "^1.30.5"
 sql-versioning = { git = "https://github.com/bcgov/lear.git", subdirectory = "python/common/sql-versioning", branch = "feature-legal-name" }

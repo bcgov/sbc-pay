@@ -30,7 +30,6 @@ from .distribution_code import DistributionCode, DistributionCodeLink
 from .eft_credit import EFTCredit
 from .eft_credit_invoice_link import EFTCreditInvoiceLink
 from .eft_file import EFTFile
-from .eft_gl_transfers import EFTGLTransfer
 from .eft_process_status_code import EFTProcessStatusCode
 from .eft_short_names import EFTShortnames, EFTShortnameSchema, EFTShortnameSummarySchema
 from .eft_refund import EFTRefund
@@ -44,14 +43,13 @@ from .fee_code import FeeCode, FeeCodeSchema  # noqa: I001
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .invoice import Invoice, InvoiceSchema, InvoiceSearchModel
-from .invoice_batch import InvoiceBatch
-from .invoice_batch_link import InvoiceBatchLink
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
 from .invoice_reference_status_code import InvoiceReferenceStatusCode, InvoiceReferenceStatusCodeSchema
 from .invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
 from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
 from .non_sufficient_funds import NonSufficientFundsModel, NonSufficientFundsSchema
 from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
+from .partner_disbursements import PartnerDisbursements
 from .payment import Payment, PaymentSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema, PaymentAccountSearchModel  # noqa: I001
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema

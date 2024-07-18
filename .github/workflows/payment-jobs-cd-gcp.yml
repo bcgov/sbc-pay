@@ -22,7 +22,7 @@ on:
 
 jobs:
   payment-jobs-cd:
-    uses: bcgov/bcregistry-sre/.github/workflows/cloud-run-job-cd.yaml@main
+    uses: bcgov/bcregistry-sre/.github/workflows/backend-job-cd.yaml@main
     with:
       target: ${{ inputs.target }}
       app_name: "payment-jobs"
