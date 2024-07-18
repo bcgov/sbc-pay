@@ -209,12 +209,12 @@ class EjvPaymentTask(CgiEjv):
         ejv_content = f'{batch_header}{ejv_content}{batch_trailer}'
 
         # Create a file add this content.
-        file_path_with_name, trg_file_path = cls.create_inbox_and_trg_files(ejv_content)
+        file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ejv_content)
 
         current_app.logger.info('Uploading to ftp.')
 
         # Upload file and trg to FTP
-        cls.upload(ejv_content, cls.get_file_name(), file_path_with_name, trg_file_path)
+        cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
 
         # commit changes to DB
         db.session.commit()
