@@ -212,6 +212,8 @@ def reconcile_payments(ce):
     error_messages = []
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
+    current_app.logger.info(f'_process_file_content has errors: {has_errors},'
+                            f"generate email: {current_app.config.get('DISABLE_CSV_ERROR_EMAIL')}")
     if has_errors and not current_app.config.get('DISABLE_CSV_ERROR_EMAIL'):
         _send_error_email(file_name, minio_location, error_messages, msg, cas_settlement.__tablename__)
 
@@ -251,20 +253,39 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
         else:
             # For any other transactions like DM log error and continue.
             error_msg = f'Record Type is received as {record_type}, and cannot process {msg}.'
-            _csv_error_handling(row, error_msg, error_messages)
             has_errors = True
+            _csv_error_handling(row, error_msg, error_messages)
             # Continue processing
 
         # Commit the transaction and process next row.
         db.session.commit()
 
     # Create payment records for lines other than PAD
-    _create_payment_records(content)
+    try:
+        _create_payment_records(content)
+    except Exception as e: # NOQA # pylint: disable=broad-except
+        error_msg = f'Error creating payment records: {str(e)}'
+        has_errors = True
+        _csv_error_handling('N/A', error_msg, error_messages)
+        return has_errors, error_messages
 
     # Create Credit Records.
-    _create_credit_records(content)
+    try:
+        _create_credit_records(content)
+    except Exception as e: # NOQA # pylint: disable=broad-except
+        error_msg = f'Error creating credit records: {str(e)}'
+        has_errors = True
+        _csv_error_handling('N/A', error_msg, error_messages)
+        return has_errors, error_messages
+
     # Sync credit memo and on account credits with CFS
-    _sync_credit_records()
+    try:
+        _sync_credit_records()
+    except Exception as e: # NOQA # pylint: disable=broad-except
+        error_msg = f'Error syncing credit records: {str(e)}'
+        has_errors = True
+        _csv_error_handling('N/A', error_msg, error_messages)
+        return has_errors, error_messages
 
     cas_settlement.processed_on = datetime.now()
     cas_settlement.save()
@@ -334,8 +355,8 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
 
             if not inv_references and not completed_inv_references:
                 error_msg = f'No invoice found for {inv_number} in the system, and cannot process {row}.'
-                _csv_error_handling(row, error_msg, error_messages)
                 has_errors = True
+                _csv_error_handling(row, error_msg, error_messages)
                 return has_errors
             _process_paid_invoices(inv_references, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
@@ -347,8 +368,8 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 _publish_account_events(QueueMessageTypes.NSF_LOCK_ACCOUNT.value, payment_account, row)
         else:
             error_msg = f'Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}.'
-            _csv_error_handling(row, error_msg, error_messages)
             has_errors = True
+            _csv_error_handling(row, error_msg, error_messages)
     return has_errors
 
 
@@ -384,8 +405,8 @@ def _process_unconsolidated_invoices(row, error_messages: List[Dict[str, any]]) 
             if len(completed_inv_references) != 1:
                 error_msg = (f'More than one or none invoice reference '
                              f'received for invoice number {inv_number} for {record_type}')
-                _csv_error_handling(row, error_msg, error_messages)
                 has_errors = True
+                _csv_error_handling(row, error_msg, error_messages)
         else:
             # Handle fully PAID and Partially Paid scenarios.
             if target_txn_status.lower() == Status.PAID.value.lower():
@@ -398,13 +419,14 @@ def _process_unconsolidated_invoices(row, error_messages: List[Dict[str, any]]) 
             else:
                 error_msg = (f'Target Transaction Type is received '
                              f'as {target_txn} for {record_type}, and cannot process.')
-                _csv_error_handling(row, error_msg, error_messages)
                 has_errors = True
+                _csv_error_handling(row, error_msg, error_messages)
+
     return has_errors
 
 
 def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]]):
-    current_app.logger.error(error_msg)
+    current_app.logger.info(error_msg)
     capture_message(error_msg, level='error')
     error_messages.append({'error': error_msg, 'row': row})
 
@@ -430,8 +452,8 @@ def _process_credit_on_invoices(row, error_messages: List[Dict[str, any]]) -> bo
                                     'Ignoring as the credit memo payment is already captured.')
         else:
             error_msg = f'Target Transaction status is received as {target_txn_status} for CMAP, and cannot process.'
-            _csv_error_handling(row, error_msg, error_messages)
             has_errors = True
+            _csv_error_handling(row, error_msg, error_messages)
     return has_errors
 
 
