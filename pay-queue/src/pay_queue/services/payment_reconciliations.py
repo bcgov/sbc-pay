@@ -16,9 +16,9 @@ import csv
 import dataclasses
 import json
 import os
+import traceback
 from datetime import datetime
 from decimal import Decimal
-import traceback
 from typing import Dict, List, Tuple
 
 from flask import current_app
