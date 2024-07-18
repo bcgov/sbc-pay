@@ -6,6 +6,13 @@
       ]
   },
   {
+    "vault": "keycloak",
+    "application": [
+        "jwt-base",
+        "sbc-auth-admin"
+    ]
+  },
+  {
         "vault": "minio",
         "application": [
             "base",
