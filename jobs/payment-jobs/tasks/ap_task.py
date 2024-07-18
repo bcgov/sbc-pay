@@ -167,10 +167,10 @@ class ApTask(CgiAP):
 
     @classmethod
     def _create_file_and_upload(cls, ap_content):
-        file_path_with_name, trg_file_path = cls.create_inbox_and_trg_files(ap_content)
-        cls.upload(ap_content, cls.get_file_name(), file_path_with_name, trg_file_path)
+        file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ap_content)
+        cls.upload(ap_content, file_name, file_path_with_name, trg_file_path)
         db.session.commit()
-        # Add a sleep to prevent collision on file name.
+        # Sleep to prevent collision on file name.
         time.sleep(1)
 
     @classmethod

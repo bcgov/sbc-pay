@@ -53,7 +53,6 @@ class EjvPartnerDistributionTask(CgiEjv):
         cls._create_ejv_file_for_partner(batch_type='GI')  # Internal ministry
         cls._create_ejv_file_for_partner(batch_type='GA')  # External ministry
 
-    # TODO grab EFT invoices from PartnerDisbursements, eventually everything will run through partner disbursements.
     @staticmethod
     def get_invoices_for_disbursement(partner):
         """Return invoices for disbursement. Used by EJV and AP."""
@@ -276,11 +275,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         jv_batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
 
         ejv_content = f'{batch_header}{ejv_content}{jv_batch_trailer}'
-        # Create a file add this content.
-        file_path_with_name, trg_file_path = cls.create_inbox_and_trg_files(ejv_content)
-
-        # Upload file and trg to FTP
-        cls.upload(ejv_content, cls.get_file_name(), file_path_with_name, trg_file_path)
+        file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ejv_content)
+        cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
 
         # commit changes to DB
         db.session.commit()
