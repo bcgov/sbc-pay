@@ -213,9 +213,9 @@ def reconcile_payments(ce):
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
     current_app.logger.info(f'_process_file_content has errors: {has_errors},'
-                            f"generate email: {current_app.config.get('DISABLE_CSV_ERROR_EMAIL')}")
+                            f"DISABLE_CSV_ERROR_EMAIL: {current_app.config.get('DISABLE_CSV_ERROR_EMAIL')}")
     if has_errors and not current_app.config.get('DISABLE_CSV_ERROR_EMAIL'):
-        _send_error_email(file_name, minio_location, error_messages, msg, cas_settlement.__tablename__)
+        _send_error_email(file_name, minio_location, error_messages, ce, cas_settlement.__tablename__)
 
 
 def _process_file_content(content: str, cas_settlement: CasSettlementModel,
