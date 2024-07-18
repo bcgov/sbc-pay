@@ -45,6 +45,7 @@ class CorpType(db.Model, CodeTable):
             'bcol_staff_fee_code',
             'code',
             'description',
+            'has_partner_disbursements',
             'is_online_banking_allowed',
             'product'
         ]
@@ -57,6 +58,7 @@ class CorpType(db.Model, CodeTable):
     bcol_code_no_service_fee = db.Column(db.String(20), nullable=True)
     bcol_staff_fee_code = db.Column(db.String(20), nullable=True)
     is_online_banking_allowed = db.Column(Boolean(), default=True)
+    has_partner_disbursements = db.Column(Boolean(), default=False)
     batch_type = db.Column(db.String(2), nullable=True)
     product = db.Column(db.String(20), nullable=True)
 

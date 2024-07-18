@@ -12,24 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
-import os
 from datetime import datetime
 from typing import Any, Dict, List
 
 from flask import current_app
-from jinja2 import Environment, FileSystemLoader
 
+
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.eft_refund_email_list import EFTRefundEmailList
-from pay_api.services.email_service import send_email
+from pay_api.services.email_service import send_email, shortname_refund_email_body
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+    CfsAccountStatus, DisbursementStatus, EJVLinkType, EFTCreditInvoiceStatus, InvoiceReferenceStatus, PaymentMethod,
+    PaymentStatus, PaymentSystem)
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
 
@@ -65,6 +67,16 @@ class EftService(DepositService):
                        **kwargs) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
+        if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
+            if corp_type.has_partner_disbursement:
+                PartnerDisbursementsModel(
+                    amount=invoice.total,
+                    disbursement_type=EJVLinkType.INVOICE.value,
+                    is_reversal=False,
+                    partner_code=invoice.corp_type_code,
+                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                    target_id=invoice.id
+                ).flush()
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
@@ -103,10 +115,10 @@ class EftService(DepositService):
     @staticmethod
     def create_receipt(invoice: InvoiceModel, payment: PaymentModel) -> ReceiptModel:
         """Create a receipt record for an invoice payment."""
-        receipt: ReceiptModel = ReceiptModel(receipt_date=payment.payment_date,
-                                             receipt_amount=payment.paid_amount,
-                                             invoice_id=invoice.id,
-                                             receipt_number=payment.receipt_number)
+        receipt = ReceiptModel(receipt_date=payment.payment_date,
+                               receipt_amount=payment.paid_amount,
+                               invoice_id=invoice.id,
+                               receipt_number=payment.receipt_number)
         return receipt
 
     @classmethod
@@ -124,7 +136,7 @@ class EftService(DepositService):
         recipients = EFTRefundEmailList.find_all_emails()
 
         subject = f'Pending Refund Request for Short Name {shortname}'
-        html_body = cls._render_email_body(shortname, amount, comment)
+        html_body = shortname_refund_email_body(shortname, amount, comment)
 
         send_email(recipients, subject, html_body, **kwargs)
         refund.save()
@@ -142,21 +154,3 @@ class EftService(DepositService):
         )
         refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
         return refund
-
-    @classmethod
-    def _render_email_body(cls, shortname: str, amount: str, comment: str) -> str:
-        """Render the email body using the provided template."""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root_dir = os.path.dirname(current_dir)
-        templates_dir = os.path.join(project_root_dir, 'templates')
-        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-        template = env.get_template('eft_refund_notification.html')
-
-        url = f"{current_app.config.get('AUTH_WEB_URL')}/account/settings/transactions"
-        params = {
-            'shortname': shortname,
-            'refundAmount': amount,
-            'comment': comment,
-            'url': url
-        }
-        return template.render(params)

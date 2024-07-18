@@ -14,7 +14,11 @@
 
 """This manages all of the email notification service."""
 
+import os
+
 from flask import current_app
+from jinja2 import Environment, FileSystemLoader
+
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
@@ -51,3 +55,21 @@ def send_email(recipients: list, subject: str, html_body: str, **kwargs):
             current_app.logger.error(f'Error sending email to {recipient}: {e}')
 
     return success
+
+
+def shortname_refund_email_body(shortname: str, amount: str, comment: str) -> str:
+    """Render the email body using the provided template."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root_dir = os.path.dirname(current_dir)
+    templates_dir = os.path.join(project_root_dir, 'templates')
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+    template = env.get_template('eft_refund_notification.html')
+
+    url = f"{current_app.config.get('AUTH_WEB_URL')}/account/settings/transactions"
+    params = {
+        'shortname': shortname,
+        'refundAmount': amount,
+        'comment': comment,
+        'url': url
+    }
+    return template.render(params)
