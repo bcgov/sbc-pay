@@ -22,6 +22,7 @@ def upgrade():
                     sa.Column('first_name', sa.String(25), nullable=True),
                     sa.Column('last_name', sa.String(25), nullable=True),
                     sa.Column('email', sa.String(25), nullable=False),
+                    sa.PrimaryKeyConstraint('id')
                     )
 def downgrade():
     op.drop_table('eft_refund_email_list')

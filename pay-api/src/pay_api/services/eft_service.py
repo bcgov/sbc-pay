@@ -124,7 +124,7 @@ class EftService(DepositService):
         recipients = EFTRefundEmailList.find_all_emails()
 
         subject = f'Pending Refund Request for Short Name {shortname}'
-        html_body = cls._render_email_body(shortname, amount, comment)
+        html_body = cls._render_email_body(shortname, amount, comment, shortname_id)
 
         send_email(recipients, subject, html_body, **kwargs)
         refund.save()
@@ -144,7 +144,7 @@ class EftService(DepositService):
         return refund
 
     @classmethod
-    def _render_email_body(cls, shortname: str, amount: str, comment: str) -> str:
+    def _render_email_body(cls, shortname: str, amount: str, comment: str, shortname_id: str) -> str:
         """Render the email body using the provided template."""
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root_dir = os.path.dirname(current_dir)
@@ -152,7 +152,7 @@ class EftService(DepositService):
         env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
         template = env.get_template('eft_refund_notification.html')
 
-        url = f"{current_app.config.get('AUTH_WEB_URL')}/account/settings/transactions"
+        url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{}"
         params = {
             'shortname': shortname,
             'refundAmount': amount,
