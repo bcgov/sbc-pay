@@ -14,6 +14,8 @@
 """Model to handle all operations related to Fee related to accounts."""
 from __future__ import annotations
 
+from sqlalchemy import Sequence
+
 from .base_model import BaseModel
 from .db import db
 
@@ -34,7 +36,7 @@ class EFTRefundEmailList(BaseModel):
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
         'include_properties': [
-            'email'
+            'email',
             'first_name',
             'id',
             'last_name',
@@ -43,8 +45,8 @@ class EFTRefundEmailList(BaseModel):
 
     email = db.Column(db.String(25), nullable=False)
     first_name = db.Column(db.String(25), nullable=True)
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    last_name = db.Column(db.String(25), nullable=False)
+    id = db.Column(db.Integer, Sequence('eft_refund_email_list_id_seq'), primary_key=True)
+    last_name = db.Column(db.String(25), nullable=True)
 
     @classmethod
     def find_all_emails(cls):
