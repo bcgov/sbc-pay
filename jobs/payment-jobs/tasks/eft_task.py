@@ -108,7 +108,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                              payment_account_id=cfs_account.account_id,
                              payment_date=datetime.now(tz=timezone.utc),
                              paid_amount=credit_invoice_link.amount,
-                             receipt_number=invoice.id).flush()
+                             receipt_number=receipt_number).flush()
                 if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
                     overdue_accounts[invoice.payment_account_id] = cfs_account.payment_account
 
