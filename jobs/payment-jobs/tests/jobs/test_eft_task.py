@@ -177,3 +177,32 @@ def test_reverse_electronic_funds_transfers(session):
     assert invoice.refund == cil.amount
     assert invoice.refund_date
     assert cil.status_code == EFTCreditInvoiceStatus.REFUNDED.value
+
+
+def test_unlock_overdue_accounts(session):
+    """Test unlock overdue account events."""
+    auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
+    payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
+    invoice_1 = factory_invoice(payment_account=payment_account, payment_method_code=PaymentMethod.EFT.value)
+    invoice_1.invoice_status_code = InvoiceStatus.OVERDUE.value
+    invoice_1.save()
+    factory_invoice_reference(invoice_id=invoice_1.id)
+    eft_credit = factory_create_eft_credit(
+        amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
+        payment_account_id=payment_account.id, eft_transaction_id=eft_transaction_id)
+    factory_create_eft_credit_invoice_link(invoice_id=invoice_1.id, eft_credit_id=eft_credit.id)
+
+    # Create second overdue invoice and confirm unlock is not double called on a payment account
+    invoice_2 = factory_invoice(payment_account=payment_account, payment_method_code=PaymentMethod.EFT.value)
+    invoice_2.invoice_status_code = InvoiceStatus.OVERDUE.value
+    invoice_2.save()
+    factory_invoice_reference(invoice_id=invoice_2.id)
+    factory_create_eft_credit_invoice_link(invoice_id=invoice_2.id, eft_credit_id=eft_credit.id)
+
+    overdue_accounts = EFTTask.link_electronic_funds_transfers_cfs()
+    assert overdue_accounts
+
+    with patch('utils.auth_event.AuthEvent.publish_unlock_account_event') as mock_unlock:
+        EFTTask.unlock_overdue_accounts(overdue_accounts)
+        mock_unlock.assert_called_once()
+        mock_unlock.assert_called_with(payment_account)
