@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from pay_api.models import DistributionCode, db, PaymentAccount
+from pay_api.models import DistributionCode, PaymentAccount, db
 
 from .secured_view import SecuredView
 
