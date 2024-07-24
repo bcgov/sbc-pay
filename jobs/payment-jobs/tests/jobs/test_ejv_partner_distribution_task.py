@@ -43,6 +43,8 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     """
     monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code('VS')
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
 
     pad_account = factory_create_pad_account(auth_account_id='1234',
                                              bank_number='001',

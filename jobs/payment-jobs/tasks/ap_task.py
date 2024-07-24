@@ -13,10 +13,10 @@
 # limitations under the License.
 """Task to create AP file for FAS refunds and Disbursement via EFT for non-government orgs without a GL."""
 
+import time
+from datetime import date, datetime, timedelta
 from typing import List
 
-from datetime import date, datetime
-import time
 from flask import current_app
 from more_itertools import batched
 from pay_api.models import CorpType as CorpTypeModel
@@ -25,13 +25,15 @@ from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, RoutingSlipStatus
+from pay_api.utils.enums import (
+    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod, RoutingSlipStatus)
+from sqlalchemy import Date, cast
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APLine
-from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 
 class ApTask(CgiAP):
@@ -105,13 +107,51 @@ class ApTask(CgiAP):
 
             cls._create_file_and_upload(ap_content)
 
+    @staticmethod
+    def get_invoices_for_disbursement(partner):
+        """Return invoices for disbursement. Used by EJV and AP."""
+        disbursement_date = datetime.today() - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
+        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+            .filter(
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value,
+                                                     PaymentMethod.DRAWDOWN.value,
+                                                     PaymentMethod.EFT.value])) \
+            .filter((InvoiceModel.disbursement_status_code.is_(None)) |
+                    (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
+            .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
+            .filter(InvoiceModel.corp_type_code == partner.code) \
+            .all()
+        current_app.logger.info(invoices)
+        return invoices
+
+    @classmethod
+    def get_invoices_for_refund_reversal(cls, partner):
+        """Return invoices for refund reversal."""
+        # REFUND_REQUESTED for credit card payments, CREDITED for AR and REFUNDED for other payments.
+        refund_inv_statuses = (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value,
+                               InvoiceStatus.CREDITED.value)
+
+        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+            .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
+            .filter(
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value,
+                                                     PaymentMethod.DRAWDOWN.value,
+                                                     PaymentMethod.EFT.value])) \
+            .filter(InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value) \
+            .filter(InvoiceModel.corp_type_code == partner.code) \
+            .all()
+        current_app.logger.info(invoices)
+        return invoices
+
     @classmethod
     def _create_non_gov_disbursement_file(cls):  # pylint:disable=too-many-locals
         """Create AP file for disbursement for non government entities without a GL code via EFT and upload to CGI."""
         cls.ap_type = EjvFileType.NON_GOV_DISBURSEMENT
         bca_partner = CorpTypeModel.find_by_code('BCA')
-        total_invoices: List[InvoiceModel] = EjvPartnerDistributionTask().get_invoices_for_disbursement(bca_partner) + \
-            EjvPartnerDistributionTask().get_invoices_for_refund_reversal(bca_partner)
+        # TODO these two functions need to be reworked when we onboard BCA again.
+        total_invoices: List[InvoiceModel] = cls.get_invoices_for_disbursement(bca_partner) + \
+            cls.get_invoices_for_refund_reversal(bca_partner)
 
         current_app.logger.info(f'Found {len(total_invoices)} to disburse.')
         if not total_invoices:

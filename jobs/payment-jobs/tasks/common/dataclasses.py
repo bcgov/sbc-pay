@@ -12,13 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
+from decimal import Decimal
+
 from dataclasses import dataclass
 from typing import List, Optional
 from dataclass_wizard import JSONWizard
+from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as LineItemModel
 from pay_api.utils.enums import InvoiceStatus
 from tasks.common.enums import PaymentDetailsGlStatus
+
+
+@dataclass
+class DisbursementLineItem:
+    """Disbursement Line Item."""
+
+    amount: Decimal
+    flow_through: str
+    description_identifier: str
+    is_reversal: bool
+    is_legacy: bool
+    disbursement_type: str
+    identifier: int
+
+
+@dataclass
+class Disbursement:
+    """Data class to hold disbursement line item."""
+
+    bcreg_distribution_code: DistributionCodeModel
+    partner_distribution_code: DistributionCodeModel
+    line_item: DisbursementLineItem
 
 
 @dataclass
