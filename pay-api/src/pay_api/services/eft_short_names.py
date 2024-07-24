@@ -262,7 +262,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.EFT_PAYMENT_ACTION_STATEMENT_ID_REQUIRED)
 
         credit_invoice_links = cls._get_statement_credit_invoice_links(short_name_id, statement_id)
-        cls._validate_reversal_credit_invoice_links(credit_invoice_links)
+        cls._validate_reversal_credit_invoice_links(statement_id, credit_invoice_links)
 
         for current_link in credit_invoice_links:
             invoice = InvoiceModel.find_by_id(current_link.invoice_id)
