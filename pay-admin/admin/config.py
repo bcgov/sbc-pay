@@ -84,6 +84,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     else:
         SQLALCHEMY_DATABASE_URI = f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
     SQLALCHEMY_ECHO = _get_config('SQLALCHEMY_ECHO', default='False').lower() == 'true'
+    SQLALCHEMY_ECHO = True
 
     # Normal Keycloak parameters.
     OIDC_CLIENT_SECRETS = os.getenv('PAY_OIDC_CLIENT_SECRETS', 'secrets/keycloak.json')
