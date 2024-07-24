@@ -22,15 +22,21 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.services.eft_service import EftService as EFTService
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-    PaymentSystem, ReverseOperation)
+    PaymentSystem, ReverseOperation, PaymentStatus)
 from sentry_sdk import capture_message
 from sqlalchemy import func, or_
 from sqlalchemy.orm import lazyload
+
+from utils.auth_event import AuthEvent
 
 
 class EFTTask:  # pylint:disable=too-few-public-methods
@@ -67,9 +73,10 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         return query.order_by(InvoiceModel.payment_account_id, EFTCreditInvoiceLinkModel.id).all()
 
     @classmethod
-    def link_electronic_funds_transfers_cfs(cls):
+    def link_electronic_funds_transfers_cfs(cls) -> dict:
         """Replicate linked EFT's as receipts inside of CFS and mark invoices as paid."""
         credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING.value)
+        overdue_accounts = {}
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
             try:
                 current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {credit_invoice_link.id} -'
@@ -94,11 +101,23 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                              receipt_amount=credit_invoice_link.amount,
                              invoice_id=invoice_reference.invoice_id,
                              receipt_date=datetime.now(tz=timezone.utc)).flush()
+                payment = PaymentModel(payment_method_code=PaymentMethod.EFT.value,
+                                       payment_status_code=PaymentStatus.COMPLETED.value,
+                                       payment_system_code=EFTService.get_payment_system_code(),
+                                       invoice_number=invoice.id,
+                                       invoice_amount=invoice.total,
+                                       payment_account_id=cfs_account.account_id,
+                                       payment_date=datetime.now(tz=timezone.utc),
+                                       paid_amount=credit_invoice_link.amount,
+                                       receipt_number=invoice.id).flush()
+                if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
+                    overdue_accounts[invoice.payment_account_id] = cfs_account.payment_account
+
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
                 invoice.paid = credit_invoice_link.amount
                 invoice.payment_date = datetime.now(tz=timezone.utc)
                 invoice.flush()
-                # TODO ADD UNLOCK MAILER HERE.
+
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.receipt_number = receipt_number
                 credit_invoice_link.flush()
@@ -113,6 +132,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                          f'EFT Credit invoice Link : {credit_invoice_link.id}', exc_info=True)
                 db.session.rollback()
                 continue
+        return overdue_accounts
 
     @classmethod
     def reverse_electronic_funds_transfers_cfs(cls):
@@ -149,3 +169,12 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                          f'EFT Credit invoice Link : {credit_invoice_link.id}', exc_info=True)
                 db.session.rollback()
                 continue
+
+    @classmethod
+    def unlock_overdue_accounts(cls, overdue_accounts: dict):
+        """Check and unlock overdue EFT accounts."""
+        for payment_account_id in overdue_accounts:
+            if InvoiceService.has_overdue_invoices(payment_account_id):
+                continue
+            payment_account: PaymentAccountModel = overdue_accounts[payment_account_id]
+            AuthEvent.publish_lock_account_event(payment_account)

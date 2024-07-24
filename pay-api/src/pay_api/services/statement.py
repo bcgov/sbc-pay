@@ -292,6 +292,13 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return data
 
     @staticmethod
+    def get_statement_invoices(statement_id: int) -> List[InvoiceModel]:
+        """Find statements by account id."""
+        return (db.session.query(InvoiceModel)
+                .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
+                .filter(StatementInvoicesModel.statement_id == statement_id))
+
+    @staticmethod
     def get_statement_template(statement: StatementModel, ordered_invoices: List[InvoiceModel]) -> str:
         """Return the statement template name."""
         # Check invoice payment method for statement template

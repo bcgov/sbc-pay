@@ -131,10 +131,6 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     # Credit short name and map to eft transaction for tracking
     has_eft_credits_error = _process_eft_credits(shortname_balance, eft_file_model.id)
 
-    # Process payments, update invoice and create receipt
-    has_eft_transaction_errors = _process_eft_payments(shortname_balance, eft_file_model)
-
-    # Mark EFT File partially processed due to transaction errors
     # Rollback EFT transactions and update to FAIL status
     if has_eft_transaction_errors or has_eft_credits_error:
         db.session.rollback()
@@ -224,46 +220,6 @@ def _process_eft_credits(shortname_balance, eft_file_id):
             current_app.logger.error(e)
             capture_message('EFT Failed to set EFT balance.', level='error')
     return has_credit_errors
-
-
-def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bool:
-    """Process payments by creating payment records and updating invoice state."""
-    has_eft_transaction_errors = False
-
-    for shortname in shortname_balance.keys():
-        # Retrieve or Create shortname mapping
-        eft_shortname_model = _get_shortname(shortname)
-        shortname_links = EFTShortnames.get_shortname_links(eft_shortname_model.id)
-
-        #  Skip short names with no links or multiple links (manual processing by staff)
-        if not shortname_links['items'] or len(shortname_links['items']) > 1:
-            continue
-
-        eft_short_link = shortname_links['items'][0]
-        #  Skip if the link is in pending status - this will be officially linked via a scheduled job
-        if eft_short_link['status_code'] == EFTShortnameStatus.PENDING.value:
-            continue
-
-        # No balance to apply - move to next shortname
-        if shortname_balance[shortname]['balance'] <= 0:
-            current_app.logger.warning('UNEXPECTED BALANCE: %s had zero or less balance on file: %s',
-                                       shortname, eft_file.file_ref)
-            continue
-
-        # We have a mapping and can continue processing
-        try:
-            auth_account_id = eft_short_link['account_id']
-            invoices = EFTShortnames.get_invoices_owing(auth_account_id)
-            for invoice in invoices:
-                _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname],
-                             short_name_links=shortname_links['items'])
-
-        except Exception as e:  # NOQA pylint: disable=broad-exception-caught
-            has_eft_transaction_errors = True
-            current_app.logger.error(e)
-            capture_message('EFT Failed to apply balance to invoice.', level='error')
-
-    return has_eft_transaction_errors
 
 
 def _set_eft_header_on_file(eft_header: EFTHeader, eft_file_model: EFTFileModel):
@@ -410,47 +366,3 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
 
     return shortname_balance
 
-
-def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict, short_name_links: List[Dict]):
-    """Pay for an invoice and update invoice state."""
-    payment_date = shortname_balance.get('transaction_date') or datetime.now()
-    balance = shortname_balance.get('balance')
-
-    # # Get the unpaid total - could be partial
-    unpaid_total = _get_invoice_unpaid_total(invoice)
-
-    # Determine the payable amount based on what is available in the shortname balance
-    payable_amount = unpaid_total if balance >= unpaid_total else balance
-
-    # Create the payment record
-    eft_payment_service: EFTService = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
-
-    payment, receipt = eft_payment_service.apply_credit(invoice=invoice,
-                                                        payment_date=payment_date,
-                                                        auto_save=True)
-
-    db.session.add(payment)
-    db.session.add(receipt)
-
-    # Paid - update the shortname balance
-    shortname_balance['balance'] -= payable_amount
-
-    # If the payment amount is at least exactly the unpaid total, unlock associated accounts
-    if payable_amount == unpaid_total:
-        _unlock_associated_frozen_accounts(short_name_links=short_name_links,
-                                           payment=payment)
-
-
-def _get_invoice_unpaid_total(invoice: InvoiceModel) -> Decimal:
-    invoice_total = invoice.total or 0
-    invoice_paid = invoice.paid or 0
-
-    return invoice_total - invoice_paid
-
-
-def _unlock_associated_frozen_accounts(short_name_links: List[Dict], payment: Payment):
-    """Unlock the frozen accounts."""
-    for short_name_link in short_name_links:
-        auth_account_id = short_name_link['account_id']
-        payment_account: PaymentAccountModel = PaymentAccount.find_by_auth_account_id(auth_account_id)
-        PaymentAccount.unlock_frozen_accounts(payment.id, payment_account.id)

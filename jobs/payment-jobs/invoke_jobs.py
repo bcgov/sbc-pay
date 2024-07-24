@@ -135,7 +135,8 @@ def run(job_name, argument=None):
             RoutingSlipTask.adjust_routing_slips()
             application.logger.info('<<<< Completed Routing Slip tasks >>>>')
         case 'EFT':
-            EFTTask.link_electronic_funds_transfers_cfs()
+            overdue_accounts = EFTTask.link_electronic_funds_transfers_cfs()
+            EFTTask.unlock_overdue_accounts(overdue_accounts)
             EFTTask.reverse_electronic_funds_transfers_cfs()
             application.logger.info('<<<< Completed EFT tasks >>>>')
         case 'EJV_PAYMENT':

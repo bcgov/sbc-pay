@@ -137,8 +137,8 @@ def test_link_electronic_funds_transfers(session):
     assert credit_invoice_link.status_code == EFTCreditInvoiceStatus.COMPLETED.value
 
 
-def test_unlink_electronic_funds_transfers(session):
-    """Test unlink electronic funds transfers."""
+def test_reverse_electronic_funds_transfers(session):
+    """Test reverse electronic funds transfers."""
     auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
     receipt_number = '1111R'
     invoice_number = '1234'

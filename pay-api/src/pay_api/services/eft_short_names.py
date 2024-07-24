@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Dict, List, Optional
 
 from _decimal import Decimal
@@ -148,7 +148,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                     raise BusinessException(Error.EFT_PAYMENT_ACTION_UNSUPPORTED)
 
             db.session.commit()
-        except Exception: # NOQA pylint:disable=broad-except
+        except Exception:  # NOQA pylint:disable=broad-except
             db.session.rollback()
             raise
         current_app.logger.debug('>process_payment_action')
@@ -169,6 +169,21 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         return credit_links_query.all()
 
     @classmethod
+    def _return_eft_credit(cls, eft_credit_link: EFTCreditInvoiceLinkModel,
+                           update_status: str = None) -> EFTCreditModel:
+        """Return EFT Credit Invoice Link amount to EFT Credit."""
+        eft_credit = EFTCreditModel.find_by_id(eft_credit_link.eft_credit_id)
+        eft_credit.remaining_amount += eft_credit_link.amount
+
+        if eft_credit.remaining_amount > eft_credit.amount:
+            raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)
+
+        if update_status:
+            eft_credit_link.status_code = update_status
+
+        return eft_credit
+
+    @classmethod
     def _cancel_payment_action(cls, short_name_id: int, auth_account_id: str, invoice_id: int = None):
         """Cancel EFT pending payments."""
         current_app.logger.debug('<cancel_payment_action')
@@ -181,13 +196,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                                        invoice_id=invoice_id,
                                                        statuses=[EFTCreditInvoiceStatus.PENDING.value])
         for credit_link in credit_links:
-            eft_credit = EFTCreditModel.find_by_id(credit_link.eft_credit_id)
-            eft_credit.remaining_amount += credit_link.amount
-
-            if eft_credit.remaining_amount > eft_credit.amount:
-                raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)
-
-            credit_link.status_code = EFTCreditInvoiceStatus.CANCELLED.value
+            eft_credit = cls._return_eft_credit(credit_link, EFTCreditInvoiceStatus.CANCELLED.value)
             db.session.add(eft_credit)
             db.session.add(credit_link)
 
@@ -205,21 +214,81 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>apply_payment_action')
 
     @classmethod
-    def _reverse_payment_action(cls, short_name_id: int, statement_id: int):  # pylint: disable=unused-argument
+    def _get_statement_credit_invoice_links(cls, shortname_id, statement_id) -> List[EFTCreditInvoiceLinkModel]:
+        """Get most recent EFT Credit invoice links associated to a statement and short name."""
+        return (db.session.query(EFTCreditInvoiceLinkModel)
+                .distinct(EFTCreditInvoiceLinkModel.invoice_id)
+                .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id)
+                .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id)
+                .filter(StatementInvoicesModel.statement_id == statement_id)
+                .filter(EFTCreditModel.short_name_id == shortname_id)
+                .filter(EFTCreditInvoiceLinkModel.status_code != EFTCreditInvoiceStatus.CANCELLED.value)
+                .order_by(EFTCreditInvoiceLinkModel.invoice_id, EFTCreditInvoiceLinkModel.created_on.desc())
+                ).all()
+
+    @classmethod
+    def _validate_reversal_credit_invoice_links(cls, statement_id: int,
+                                                credit_invoice_links: List[EFTCreditInvoiceLinkModel]):
+        """Validate credit invoice links for reversal."""
+        invalid_link_statuses = [EFTCreditInvoiceStatus.PENDING.value,
+                                 EFTCreditInvoiceStatus.PENDING_REFUND.value,
+                                 EFTCreditInvoiceStatus.REFUNDED.value]
+
+        # We are reversing all invoices associated to a statement, if any links are in transition state or already
+        # refunded we should not allow a statement reversal
+        unprocessable_links = [link for link in credit_invoice_links if link.status_code in invalid_link_statuses]
+        if unprocessable_links:
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_CREDIT_LINK_STATUS_INVALID)
+        # Validate when statement paid date can't be older than 60 days
+        min_payment_date = (
+            db.session.query(func.min(InvoiceModel.payment_date))
+            .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
+            .filter(StatementInvoicesModel.statement_id == statement_id)
+            .scalar()
+        )
+
+        if min_payment_date is None:
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_UNPAID_STATEMENT)
+
+        date_difference = datetime.now(tz=timezone.utc) - min_payment_date.replace(tzinfo=timezone.utc)
+        if date_difference.days > 60:
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_REVERSAL_EXCEEDS_SIXTY_DAYS)
+
+    @classmethod
+    def _reverse_payment_action(cls, short_name_id: int, statement_id: int):
         """Reverse EFT Payments on a statement to short name EFT credits."""
         current_app.logger.debug('<reverse_payment_action')
         if statement_id is None:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_STATEMENT_ID_REQUIRED)
 
-        # TODO - function skeleton for upcoming ticket to implement this
-        # Get COMPLETED eft_credit_invoice_links for the statement_id
-        # Will need to check if an invoice has been disbursed and set the eft_credit_invoice_link status accordingly
-        # Invoice NOT disbursed - reset invoice state and create new eft_invoice_link for REFUNDED and move amount back
-        # to the original eft_credit based on the current COMPLETED invoice link
-        # Invoice disbursed - same as not disbursed but eft_invoice_link status of PENDING_REFUND. Jobs will need to
-        # pick up on this and set to REFUNDED when processed for reversal. Invoice disbursement status will be
-        # the final indicator on whether this is complete
+        credit_invoice_links = cls._get_statement_credit_invoice_links(short_name_id, statement_id)
+        cls._validate_reversal_credit_invoice_links(credit_invoice_links)
 
+        for current_link in credit_invoice_links:
+            invoice = InvoiceModel.find_by_id(current_link.invoice_id)
+
+            if invoice.invoice_status_code != InvoiceStatus.PAID.value:
+                current_app.logger.error(f'EFT Invoice Payment could not be reversed for invoice '
+                                         f'- {invoice.id} in status {invoice.invoice_status_code}.')
+                raise BusinessException(Error.EFT_PAYMENT_INVOICE_REVERSE_UNEXPECTED_STATUS)
+
+            eft_credit = cls._return_eft_credit(current_link)
+            EFTCreditInvoiceLinkModel(
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
+                invoice_id=invoice.id).flush()
+
+            # TODO - (Check for duplicate) pending migration from another PR, uncomment when ready
+            # partner_disbursement = PartnerDisbursementsModel(
+            #     amount=invoice.total,
+            #     disbursement_type=EJVLinkType.PARTNER_DISBURSEMENTS.value,
+            #     is_reversal=True,
+            #     partner_code=invoice.corp_type_code,
+            #     status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+            #     target_id=invoice.id
+            # ).flush()
+
+        db.session.flush()
         current_app.logger.debug('>reverse_payment_action')
 
     @classmethod
