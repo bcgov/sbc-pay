@@ -26,7 +26,7 @@ from tasks.common.enums import PaymentDetailsGlStatus
 
 @dataclass
 class DisbursementLineItem:
-    """Disbursement Line Item."""
+    """DTO mapping for disbursement line item."""
 
     amount: Decimal
     flow_through: str
@@ -39,7 +39,7 @@ class DisbursementLineItem:
 
 @dataclass
 class Disbursement:
-    """Data class to hold disbursement line item."""
+    """DTO mapping for disbursement."""
 
     bcreg_distribution_code: DistributionCodeModel
     partner_distribution_code: DistributionCodeModel

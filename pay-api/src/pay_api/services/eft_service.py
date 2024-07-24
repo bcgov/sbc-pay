@@ -73,6 +73,7 @@ class EftService(DepositService):
                     amount=invoice.total,
                     disbursement_type=EJVLinkType.INVOICE.value,
                     is_reversal=False,
+                    is_legacy=False,
                     partner_code=invoice.corp_type_code,
                     status_code=DisbursementStatus.WAITING_FOR_JOB.value,
                     target_id=invoice.id

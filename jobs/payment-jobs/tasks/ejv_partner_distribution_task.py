@@ -56,7 +56,7 @@ class EjvPartnerDistributionTask(CgiEjv):
 
     @staticmethod
     def get_disbursement_by_distribution_for_partner(partner) -> List[Disbursement]:
-        """Return invoices for disbursement. Used by EJV and AP."""
+        """Return disbursements dataclass for partners."""
         # Internal invoices aren't disbursed to partners, DRAWDOWN is handled by the mainframe.
         # EFT is handled by the PartnerDisbursements table.
         # ##################################################### Original (Legacy way) - invoice.disbursement_status_code
@@ -121,14 +121,15 @@ class EjvPartnerDistributionTask(CgiEjv):
             .all()
 
         for partner_disbursement, distribution_code in partner_disbursements:
-            suffix = 'PR' if partner_disbursement.disbursement_type == EJVLinkType.PARTIAL_REFUND else 'PD'
+            suffix = 'PR' if partner_disbursement.disbursement_type == EJVLinkType.PARTIAL_REFUND else ''
+            flow_through = f'{partner.target_id}-{partner_disbursement.id}{suffix}'
             disbursement_rows.append(Disbursement(
                 bcreg_distribution_code=distribution_code,
                 partner_distribution_code=distribution_code.partner_distribution_code,
                 line_item=DisbursementLineItem(
                     amount=partner_disbursement.amount,
-                    flow_through=f'{suffix}{partner_disbursement.target_id:<110}',
-                    description_identifier=f'{suffix}#{partner_disbursement.id}',
+                    flow_through=flow_through,
+                    description_identifier='#'+flow_through,
                     is_reversal=partner_disbursement.is_reversal,
                     disbursement_type=partner_disbursement.disbursement_type,
                     identifier=partner_disbursement.target_id,
@@ -190,7 +191,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                                               target_distribution,
                                               description,
                                               effective_date,
-                                              dl.flow_through,
+                                              f'{dl.flow_through:<110}',
                                               journal_name,
                                               dl.amount,
                                               line_number,
