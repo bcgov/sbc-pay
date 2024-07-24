@@ -45,7 +45,8 @@ class DistributionCodeConfig(SecuredView):
 
     form_args = {
         'account': {
-            'query_factory': lambda: db.session.query(PaymentAccount).filter(PaymentAccount.payment_method == 'EJV').all()
+            'query_factory': lambda: db.session.query(PaymentAccount)
+            .filter(PaymentAccount.payment_method == 'EJV').all()
         }
     }
 
