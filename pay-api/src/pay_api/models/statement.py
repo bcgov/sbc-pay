@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
+from typing import List
 
 import pytz
 from marshmallow import fields
@@ -73,7 +74,7 @@ class Statement(BaseModel):
             .filter(Statement.notification_status_code.in_(statuses)).all()
 
     @classmethod
-    def find_all_payments_and_invoices_for_statement(cls, statement_id: str):
+    def find_all_payments_and_invoices_for_statement(cls, statement_id: str) -> List[Invoice]:
         """Find all payment and invoices specific to a statement."""
         # Import from here as the statement invoice already imports statement and causes circular import.
         from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
