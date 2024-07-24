@@ -65,8 +65,6 @@ class DistributionCodeConfig(SecuredView):
     def create_form(self, obj=None):
         """Create form overrides."""
         form = super().create_form(obj)
-        # form.account.render_kw = {'disabled': True}
-        # form.account = None
         return form
 
     def on_model_change(self, form, model, is_created):
