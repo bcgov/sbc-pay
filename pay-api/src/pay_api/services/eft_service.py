@@ -68,7 +68,7 @@ class EftService(DepositService):
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
         if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-            if corp_type.has_partner_disbursement:
+            if corp_type.has_partner_disbursements:
                 PartnerDisbursementsModel(
                     amount=invoice.total,
                     disbursement_type=EJVLinkType.INVOICE.value,
