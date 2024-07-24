@@ -21,6 +21,15 @@ from sqlalchemy import and_, func
 class CustomQuery(Query):  # pylint: disable=too-many-ancestors
     """Custom Query class to extend the base query class for helper functionality."""
 
+    def filter_boolean(self, search_criteria, model_attribute):
+        """Add query filter for boolean value."""
+        if search_criteria is False:
+            return self
+        if search_criteria is None:
+            raise ValueError('Invalid search criteria None, not True or False')
+        return self.filter(model_attribute == search_criteria)
+    
+
     def filter_conditionally(self, search_criteria, model_attribute, is_like: bool = False):
         """Add query filter if present."""
         if search_criteria is None:

@@ -254,10 +254,8 @@ class EjvPartnerDistributionTask(CgiEjv):
             .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)) \
             .filter(DistributionCodeModel.account_id.is_(None)) \
             .filter(DistributionCodeModel.disbursement_distribution_code_id.is_(None)) \
-            .filter_conditionally(True if batch_type == 'GA' else None,
-                                  DistributionCodeModel.client == bc_reg_client_code) \
-            .filter_conditionally(True if batch_type == 'GI' else None,
-                                  DistributionCodeModel.client != bc_reg_client_code)
+            .filter_boolean(batch_type == 'GA', DistributionCodeModel.client == bc_reg_client_code) \
+            .filter_boolean(batch_type == 'GI', DistributionCodeModel.client != bc_reg_client_code)
 
         # Find all distribution codes who have these partner distribution codes as disbursement.
         partner_distribution_codes = db.session.query(DistributionCodeModel.distribution_code_id).filter(
