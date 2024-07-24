@@ -136,7 +136,7 @@ class EftService(DepositService):
         recipients = EFTRefundEmailList.find_all_emails()
 
         subject = f'Pending Refund Request for Short Name {shortname}'
-        html_body = cls._render_email_body(shortname, amount, comment)
+        html_body = shortname_refund_email_body(shortname, amount, comment, shortname_id)
 
         send_email(recipients, subject, html_body, **kwargs)
         refund.save()

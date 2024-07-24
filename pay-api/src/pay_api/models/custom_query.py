@@ -28,7 +28,7 @@ class CustomQuery(Query):  # pylint: disable=too-many-ancestors
         if search_criteria is None:
             raise ValueError('Invalid search criteria None, not True or False')
         return self.filter(model_attribute == search_criteria)
-    
+
 
     def filter_conditionally(self, search_criteria, model_attribute, is_like: bool = False):
         """Add query filter if present."""

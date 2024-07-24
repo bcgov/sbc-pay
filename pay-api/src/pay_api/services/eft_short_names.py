@@ -220,18 +220,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         # pick up on this and set to REFUNDED when processed for reversal. Invoice disbursement status will be
         # the final indicator on whether this is complete
 
-        """
-        Need to create row and update existing rows for:
-              PartnerDisbursementsModel(
-                    amount=invoice.total,
-                    disbursement_type=EJVLinkType.INVOICE.value,
-                    is_reversal=False,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                    target_id=invoice.id
-                ).flush()
-        """
-
         current_app.logger.debug('>reverse_payment_action')
 
     @classmethod
