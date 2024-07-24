@@ -57,7 +57,7 @@ def send_email(recipients: list, subject: str, html_body: str, **kwargs):
     return success
 
 
-def shortname_refund_email_body(shortname: str, amount: str, comment: str) -> str:
+def shortname_refund_email_body(shortname: str, amount: str, comment: str, shortname_id: str) -> str:
     """Render the email body using the provided template."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
@@ -65,7 +65,7 @@ def shortname_refund_email_body(shortname: str, amount: str, comment: str) -> st
     env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
     template = env.get_template('eft_refund_notification.html')
 
-    url = f"{current_app.config.get('AUTH_WEB_URL')}/account/settings/transactions"
+    url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{shortname_id}"
     params = {
         'shortname': shortname,
         'refundAmount': amount,
