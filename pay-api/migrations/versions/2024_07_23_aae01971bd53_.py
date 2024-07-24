@@ -59,6 +59,6 @@ def downgrade():
     with op.batch_alter_table('refunds_partial_history', schema=None) as batch_op:
         batch_op.add_column(sa.Column('disbursement_status_code', sa.String(length=20), nullable=True))    
         batch_op.add_column(sa.Column('disbursement_date', sa.Date(), nullable=True))
-        batch_op.create_foreign_key(None 'refunds_partial_history', 'disbursement_status_codes', ['disbursement_status_code'], ['code'])
+        batch_op.create_foreign_key(None, 'refunds_partial_history', 'disbursement_status_codes', ['disbursement_status_code'], ['code'])
 
     
