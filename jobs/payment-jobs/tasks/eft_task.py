@@ -30,7 +30,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-    PaymentSystem, ReverseOperation, PaymentStatus)
+    PaymentStatus, PaymentSystem, ReverseOperation)
 from sentry_sdk import capture_message
 from sqlalchemy import func, or_
 from sqlalchemy.orm import lazyload
