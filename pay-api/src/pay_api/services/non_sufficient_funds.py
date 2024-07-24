@@ -153,7 +153,7 @@ class NonSufficientFundsService:
         current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
         invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
         payment_account = PaymentAccountModel.find_by_auth_account_id(account_id)
-        cfs_account = CfsAccountModel.find_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
+        cfs_account = CfsAccountModel.find_latest_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
         invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice['invoices'][0]['id'], InvoiceReferenceStatus.ACTIVE.value)
         account_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'
