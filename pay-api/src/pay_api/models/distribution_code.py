@@ -104,7 +104,7 @@ class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-
                                                  remote_side=[distribution_code_id], lazy='select')
     disbursement_distribution_code = relationship('DistributionCode', foreign_keys=[disbursement_distribution_code_id],
                                                   remote_side=[distribution_code_id], lazy='select')
-    account = relationship('PaymentAccount', lazy='select')
+    account = relationship('PaymentAccount', lazy='joined')
 
     def __str__(self):
         """Override to string."""
