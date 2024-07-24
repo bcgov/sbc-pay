@@ -28,7 +28,6 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice as InvoiceService
-from pay_api.services.eft_service import EftService as EFTService
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
     PaymentSystem, ReverseOperation, PaymentStatus)
@@ -101,15 +100,15 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                              receipt_amount=credit_invoice_link.amount,
                              invoice_id=invoice_reference.invoice_id,
                              receipt_date=datetime.now(tz=timezone.utc)).flush()
-                payment = PaymentModel(payment_method_code=PaymentMethod.EFT.value,
-                                       payment_status_code=PaymentStatus.COMPLETED.value,
-                                       payment_system_code=EFTService.get_payment_system_code(),
-                                       invoice_number=invoice.id,
-                                       invoice_amount=invoice.total,
-                                       payment_account_id=cfs_account.account_id,
-                                       payment_date=datetime.now(tz=timezone.utc),
-                                       paid_amount=credit_invoice_link.amount,
-                                       receipt_number=invoice.id).flush()
+                PaymentModel(payment_method_code=PaymentMethod.EFT.value,
+                             payment_status_code=PaymentStatus.COMPLETED.value,
+                             payment_system_code=PaymentSystem.PAYBC.value,
+                             invoice_number=invoice.id,
+                             invoice_amount=invoice.total,
+                             payment_account_id=cfs_account.account_id,
+                             payment_date=datetime.now(tz=timezone.utc),
+                             paid_amount=credit_invoice_link.amount,
+                             receipt_number=invoice.id).flush()
                 if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
                     overdue_accounts[invoice.payment_account_id] = cfs_account.payment_account
 
