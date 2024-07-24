@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from pay_api.models import DistributionCode, db
+from pay_api.models import DistributionCode, db, PaymentAccount
 
 from .secured_view import SecuredView
 
@@ -43,7 +43,11 @@ class DistributionCodeConfig(SecuredView):
 
     column_default_sort = 'name'
 
-    form_args = {}
+    form_args = {
+        'account': {
+            'query_factory': lambda: db.session.query(PaymentAccount).filter(PaymentAccount.payment_method == 'EJV').all()
+        }
+    }
 
     form_columns = edit_columns = [
         'name', 'stop_ejv', 'client', 'responsibility_centre', 'service_line', 'stob', 'project_code',
@@ -61,6 +65,8 @@ class DistributionCodeConfig(SecuredView):
     def create_form(self, obj=None):
         """Create form overrides."""
         form = super().create_form(obj)
+        # form.account.render_kw = {'disabled': True}
+        # form.account = None
         return form
 
     def on_model_change(self, form, model, is_created):
