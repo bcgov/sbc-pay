@@ -57,7 +57,6 @@ class EjvPaymentTask(CgiEjv):
         batch_total: float = 0
         control_total: int = 0
 
-        # Create a ejv file model record.
         ejv_file_model: EjvFileModel = EjvFileModel(
             file_type=EjvFileType.PAYMENT.value,
             file_ref=cls.get_file_name(),
@@ -65,10 +64,8 @@ class EjvPaymentTask(CgiEjv):
         ).flush()
         batch_number = cls.get_batch_number(ejv_file_model.id)
 
-        # Get all invoices which should be part of the batch type.
         account_ids = cls._get_account_ids_for_payment(batch_type)
 
-        # JV Batch Header
         batch_header: str = cls.get_batch_header(batch_number, batch_type)
 
         current_app.logger.info('Processing accounts.')
@@ -77,20 +74,17 @@ class EjvPaymentTask(CgiEjv):
             # Find all invoices for the gov account to pay.
             invoices = cls._get_invoices_for_payment(account_id)
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
-            # If no invoices continue.
             if not invoices or not pay_account.billable:
                 continue
 
             disbursement_desc = f'{pay_account.name[:100]:<100}'
             effective_date: str = cls.get_effective_date()
-            # Construct journal name
             ejv_header_model: EjvFileModel = EjvHeaderModel(
                 payment_account_id=account_id,
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
                 ejv_file_id=ejv_file_model.id
             ).flush()
             journal_name: str = cls.get_journal_name(ejv_header_model.id)
-            # Distribution code for the account.
             debit_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(
                 account_id
             )
@@ -168,7 +162,6 @@ class EjvPaymentTask(CgiEjv):
                                                                   line_number, 'D' if not is_jv_reversal else 'C')
             batch_total += total
 
-            # Skip if we have no total from the invoices.
             if total > 0:
                 # A JV header for each account.
                 control_total += 1
@@ -176,7 +169,6 @@ class EjvPaymentTask(CgiEjv):
                                                journal_name, total) + account_jv
                 ejv_content = ejv_content + account_jv
 
-            # Create ejv invoice link records and set invoice status
             current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
             sequence = 1
             for inv in invoices:
@@ -187,8 +179,6 @@ class EjvPaymentTask(CgiEjv):
                                                 sequence=sequence)
                 db.session.add(ejv_invoice_link)
                 sequence += 1
-                # Set distribution status to invoice
-                # Create invoice reference record
                 current_app.logger.debug(f'Creating Invoice Reference for invoice id: {inv.id}')
                 inv_ref = InvoiceReferenceModel(
                     invoice_id=inv.id,
@@ -203,23 +193,14 @@ class EjvPaymentTask(CgiEjv):
             db.session.rollback()
             return
 
-        # JV Batch Trailer
         batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
-
         ejv_content = f'{batch_header}{ejv_content}{batch_trailer}'
-
-        # Create a file add this content.
         file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ejv_content)
-
-        current_app.logger.info('Uploading to ftp.')
-
-        # Upload file and trg to FTP
+        current_app.logger.info('Uploading to sftp.')
         cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
-
-        # commit changes to DB
         db.session.commit()
 
-        # Add a sleep to prevent collision on file name.
+        # Sleep to prevent collision on file name.
         time.sleep(1)
 
     @classmethod
