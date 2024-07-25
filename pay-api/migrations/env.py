@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import logging
+import re
 from logging.config import fileConfig
 
 from alembic import context
@@ -30,7 +31,19 @@ target_metadata = current_app.extensions['migrate'].db.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+def get_list_from_config(config, key):
+    arr = config.get_main_option(key, [])
+    if arr:
+        # split on newlines and commas, then trim (I mean strip)
+        arr = [token for a in arr.split('\n') for b in a.split(',') if (token := b.strip())]
+    return arr
 
+
+exclude_tables = get_list_from_config(config, "exclude_tables")
+
+def include_name(name, type_, parent_names):
+    return not (type_ == 'table' and name in exclude_tables)
+    
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -45,7 +58,7 @@ def run_migrations_offline():
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True
+        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True, include_name=include_name
     )
 
     with context.begin_transaction():
@@ -81,6 +94,7 @@ def run_migrations_online():
             connection=connection,
             target_metadata=target_metadata,
             process_revision_directives=process_revision_directives,
+            include_name=include_name,
             **current_app.extensions['migrate'].configure_args
         )
 
