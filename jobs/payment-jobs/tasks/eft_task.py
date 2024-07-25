@@ -52,9 +52,9 @@ class EFTTask:  # pylint:disable=too-few-public-methods
 
         query = db.session.query(InvoiceModel, EFTCreditInvoiceLinkModel, CfsAccountModel) \
             .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id) \
-            .join(CfsAccountModel, CfsAccountModel.account_id == EFTCreditModel.payment_account_id) \
-            .join(latest_cfs_account, CfsAccountModel.id == latest_cfs_account.c.max_id_per_payment_account) \
             .join(InvoiceModel, InvoiceModel.id == EFTCreditInvoiceLinkModel.invoice_id) \
+            .join(CfsAccountModel, CfsAccountModel.account_id == InvoiceModel.payment_account_id) \
+            .join(latest_cfs_account, CfsAccountModel.id == latest_cfs_account.c.max_id_per_payment_account) \
             .options(lazyload('*')) \
             .filter(EFTCreditInvoiceLinkModel.status_code == status)
 
@@ -150,9 +150,10 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
                 invoice.invoice_status_code = InvoiceStatus.CREATED.value
                 invoice.paid = 0
-                invoice.refund = credit_invoice_link.amount
-                invoice.refund_date = datetime.now(tz=timezone.utc)
+                invoice.payment_date = None
                 invoice.flush()
+                if payment := PaymentModel.find_payment_for_invoice(invoice.id):
+                    db.session.delete(payment)
                 for receipt in ReceiptModel.find_all_receipts_for_invoice(invoice.id):
                     db.session.delete(receipt)
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.REFUNDED.value

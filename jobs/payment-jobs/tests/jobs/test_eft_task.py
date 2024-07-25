@@ -174,8 +174,7 @@ def test_reverse_electronic_funds_transfers(session):
     assert len(ReceiptModel.find_all_receipts_for_invoice(invoice.id)) == 0
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
     assert invoice.paid == 0
-    assert invoice.refund == cil.amount
-    assert invoice.refund_date
+    assert invoice.payment_date is None
     assert cil.status_code == EFTCreditInvoiceStatus.REFUNDED.value
 
 
