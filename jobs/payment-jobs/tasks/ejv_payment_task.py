@@ -236,7 +236,7 @@ class EjvPaymentTask(CgiEjv):
             .filter_boolean(batch_type == 'GA', DistributionCodeModel.client == bc_reg_client_code) \
             .filter_boolean(batch_type != 'GA', DistributionCodeModel.client != bc_reg_client_code) \
             .all()
-        return [account_id_tuple[0] for account_id_tuple in account_ids.all()]
+        return [account_id_tuple[0] for account_id_tuple in account_ids]
 
     @classmethod
     def _get_invoices_for_payment(cls, account_id: int) -> List[InvoiceModel]:
