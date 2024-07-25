@@ -119,7 +119,7 @@ class EjvPaymentTask(CgiEjv):
                         total += line.total
                         line_distribution = cls.get_distribution_string(line_distribution_code)
                         flow_through = f'{line.invoice_id:<110}'
-                        # Credit to BCREG GL
+                        # Credit to BCREG GL for a transaction (non-reversal)
                         line_number += 1
                         control_total += 1
                         # If it's normal payment then the Line distribution goes as Credit,
@@ -129,7 +129,7 @@ class EjvPaymentTask(CgiEjv):
                                                                   line.total,
                                                                   line_number, 'C' if not is_jv_reversal else 'D')
 
-                        # Debit from GOV ACCOUNT GL
+                        # Debit from GOV ACCOUNT GL for a transaction (non-reversal)
                         line_number += 1
                         control_total += 1
                         # If it's normal payment then the Gov account GL goes as Debit,
@@ -144,7 +144,7 @@ class EjvPaymentTask(CgiEjv):
                         total += line.service_fees
                         service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
                         flow_through = f'{line.invoice_id:<110}'
-                        # Credit to BCREG GL
+                        # Credit to BCREG GL for a transaction (non-reversal)
                         line_number += 1
                         control_total += 1
                         account_jv = account_jv + cls.get_jv_line(batch_type, service_fee_distribution,
@@ -153,7 +153,7 @@ class EjvPaymentTask(CgiEjv):
                                                                   line.service_fees,
                                                                   line_number, 'C' if not is_jv_reversal else 'D')
 
-                        # Debit from GOV ACCOUNT GL
+                        # Debit from GOV ACCOUNT GL for a transaction (non-reversal)
                         line_number += 1
                         control_total += 1
                         account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, description,
