@@ -99,11 +99,9 @@ def test_refund_eft_credits_exceed_balance(session):
 
     with patch('pay_api.services.eft_service.EFTShortnames.get_eft_credits',
                return_value=[credit1, credit2, credit3]), \
-         patch('pay_api.services.eft_service.EFTShortnames.get_eft_credit_balance', return_value=8), \
-         patch('flask.current_app.logger.error') as mock_error_logger:
+         patch('pay_api.services.eft_service.EFTShortnames.get_eft_credit_balance', return_value=8):
 
         with pytest.raises(BusinessException) as excinfo:
             EftService._refund_eft_credits(1, '20')
 
-        assert excinfo.value.code == Error.INVALID_TRANSACTION.name
-        mock_error_logger.assert_called_with('Shortname 1 Refund amount exceed eft_credits remaining amount.')
+        assert excinfo.value.code == Error.INVALID_REFUND.name

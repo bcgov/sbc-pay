@@ -143,8 +143,7 @@ class EftService(DepositService):
         eft_credit_balance = EFTShortnames.get_eft_credit_balance(shortname_id)
 
         if refund_amount > eft_credit_balance:
-            current_app.logger.error(f'Shortname {shortname_id} Refund amount exceed eft_credits remaining amount.')
-            raise BusinessException(Error.INVALID_TRANSACTION)
+            raise BusinessException(Error.INVALID_REFUND)
 
         for credit in eft_credits:
             if refund_amount <= 0:
