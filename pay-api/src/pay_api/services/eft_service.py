@@ -139,7 +139,7 @@ class EftService(DepositService):
     def _refund_eft_credits(cls, shortname_id: int, amount: str):
         """Refund the amount to eft_credits table based on short_name_id."""
         refund_amount = Decimal(amount)
-        eft_credits: List[EFTCreditModel] = EFTShortnames.get_eft_credits(shortname_id)
+        eft_credits = EFTShortnames.get_eft_credits(shortname_id)
         eft_credit_balance = EFTShortnames.get_eft_credit_balance(shortname_id)
 
         if refund_amount > eft_credit_balance:
@@ -181,7 +181,7 @@ class EftService(DepositService):
         env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
         template = env.get_template('eft_refund_notification.html')
 
-        url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{shortname_id}"
+        url = f"{current_app.config.get('WEB_APP_URL')}/pay/shortname-details/{shortname_id}"
         params = {
             'shortname': shortname,
             'refundAmount': amount,

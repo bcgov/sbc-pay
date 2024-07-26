@@ -34,7 +34,8 @@
         "application": [
             "postgres-pay",
             "pay-api",
-            "jwt"
+            "jwt",
+            "account-mailer"
         ]
     },
 	{

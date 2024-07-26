@@ -151,7 +151,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     REPORT_API_BASE_URL = f'{REPORT_API_URL + REPORT_API_VERSION}/reports'
     BCOL_API_ENDPOINT = f'{BCOL_API_URL + BCOL_API_VERSION}/'
 
-    AUTH_WEB_URL = os.getenv('AUTH_WEB_URL', '')
+    WEB_APP_URL = os.getenv('WEB_APP_URL', '')
     NOTIFY_API_URL = os.getenv('NOTIFY_API_URL', '')
     NOTIFY_API_VERSION = os.getenv('NOTIFY_API_VERSION', '')
     NOTIFY_API_ENDPOINT = f'{NOTIFY_API_URL + NOTIFY_API_VERSION}/'
