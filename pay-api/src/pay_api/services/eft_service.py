@@ -180,7 +180,7 @@ class EftService(DepositService):
         env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
         template = env.get_template('eft_refund_notification.html')
 
-        url = f"{current_app.config.get('WEB_APP_URL')}/pay/shortname-details/{shortname_id}"
+        url = f"{current_app.config.get('WEB_APP_URL')}pay/shortname-details/{shortname_id}"
         params = {
             'shortname': shortname,
             'refundAmount': amount,
