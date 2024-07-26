@@ -603,8 +603,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             ))
 
             # Short name link filters
-
-
             subquery = subquery.filter_conditionally(search_criteria.account_id,
                                                      EFTShortnameLinksModel.auth_account_id,
                                                      is_like=True)
