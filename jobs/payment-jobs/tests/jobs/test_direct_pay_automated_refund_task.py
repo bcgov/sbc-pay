@@ -85,7 +85,8 @@ def test_successful_completed_refund(session, monkeypatch):
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(6, 00))):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(),
+                                               datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
@@ -134,7 +135,8 @@ def test_bad_cfs_refund(session, monkeypatch):
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(6, 00))):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(),
+                                               datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         assert refund.gl_error == 'BAD BAD'
         assert refund.gl_posted is None

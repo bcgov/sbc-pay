@@ -211,6 +211,7 @@ class DisbursementStatus(Enum):
 
     ACKNOWLEDGED = 'ACKNOWLEDGED'
     COMPLETED = 'COMPLETED'
+    CANCELLED = 'CANCELLED'
     ERRORED = 'ERRORED'
     REVERSED = 'REVERSED'
     UPLOADED = 'UPLOADED'
@@ -378,7 +379,7 @@ class EJVLinkType(Enum):
     """EJV link types for ejv_link table."""
 
     INVOICE = 'invoice'
-    REFUND = 'refund'
+    PARTIAL_REFUND = 'partial_refund'
 
 
 class StatementTemplate(Enum):

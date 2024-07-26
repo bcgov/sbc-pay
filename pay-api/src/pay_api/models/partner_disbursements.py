@@ -38,27 +38,23 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
             'id',
             'amount',
             'created_on',
-            'disbursement_type',
             'feedback_on',
             'is_reversal',
             'partner_code',
             'processed_on',
-            'source_gl',
             'status_code',
             'target_id',
-            'target_gl'
+            'target_type'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     amount = db.Column(db.Numeric, nullable=False)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
-    disbursement_type = db.Column('disbursement_type', db.String(50), nullable=False)
     feedback_on = db.Column('feedback_on', db.DateTime, nullable=True)
     partner_code = db.Column('partner_code', db.String(50), nullable=False)
     processed_on = db.Column('processed_on', db.DateTime, nullable=True)
     is_reversal = db.Column('is_reversal', db.Boolean(), nullable=False, default=False)
-    source_gl = db.Column('source_gl', db.String(50), nullable=False)
     status_code = db.Column('status_code', db.String(25), nullable=False)
     target_id = db.Column(db.Integer, nullable=True)
-    target_gl = db.Column('target_gl', db.String(50), nullable=False)
+    target_type = db.Column(db.String(50), nullable=True)
