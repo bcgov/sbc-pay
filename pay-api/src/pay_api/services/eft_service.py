@@ -22,7 +22,6 @@ from jinja2 import Environment, FileSystemLoader
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
