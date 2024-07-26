@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
+from decimal import Decimal
 import os
 from datetime import datetime
 from typing import Any, Dict, List
@@ -20,6 +21,7 @@ from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -121,13 +123,39 @@ class EftService(DepositService):
         current_app.logger.debug(f'Starting shortname refund : {shortname_id}')
 
         refund = cls._create_refund_model(request, shortname_id, amount, comment)
-        recipients = EFTRefundEmailList.find_all_emails()
+        cls._refund_eft_credits(shortname_id, amount)
 
+        recipients = EFTRefundEmailList.find_all_emails()
         subject = f'Pending Refund Request for Short Name {shortname}'
         html_body = cls._render_email_body(shortname, amount, comment, shortname_id)
 
         send_email(recipients, subject, html_body, **kwargs)
         refund.save()
+
+    @classmethod
+    def _refund_eft_credits(cls, shortname_id: str, amount: str):
+        """Refund the amount to eft_credits table based on short_name_id."""
+        refund_amount = Decimal(amount)
+        eft_credits = EFTCreditModel.find_by_short_name_id(int(shortname_id))
+
+        for credit in eft_credits:
+            if refund_amount <=0:
+                break
+            credit_amount = Decimal(credit.remaining_amount)
+            if credit_amount <= 0:
+                continue
+
+            if refund_amount <= credit_amount:
+                credit.remaining_amount -= refund_amount
+                refund_amount = Decimal(0)
+            else:
+                refund_amount -= credit_amount
+                credit.remaining_amount = Decimal(0)
+
+            credit.save()
+
+        if refund_amount > 0:
+            current_app.logger.error(f'Shortname {shortname_id} Refund amount exceed eft_credits remaining amount.')
 
     @classmethod
     def _create_refund_model(cls, request: Dict[str, str],

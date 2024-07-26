@@ -61,3 +61,8 @@ class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
     def find_by_payment_account_id(cls, payment_account_id: int):
         """Find EFT Credit by payment account id."""
         return cls.query.filter_by(payment_account_id=payment_account_id).all()
+
+    @classmethod
+    def find_by_short_name_id(cls, short_name_id: int):
+        """Find EFT Credit by short name id."""
+        return cls.query.filter_by(short_name_id=short_name_id).all()

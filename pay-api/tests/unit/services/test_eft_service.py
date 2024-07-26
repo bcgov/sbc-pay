@@ -17,7 +17,9 @@
 Test-Suite to ensure that the EFT Service is working as expected.
 """
 
+from unittest.mock import MagicMock, patch
 import pytest
+from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.exceptions import BusinessException
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
@@ -56,3 +58,30 @@ def test_has_payment_blockers(session):
     with pytest.raises(BusinessException):
         eft_service.ensure_no_payment_blockers(payment_account)
     assert True
+
+
+def test_refund_eft_credits(session):
+    """Test the _refund_eft_credits method."""
+    credit1 = MagicMock(remaining_amount=2)
+    credit2 = MagicMock(remaining_amount=4)
+    credit3 = MagicMock(remaining_amount=3)
+
+    with patch.object(EFTCreditModel, 'find_by_short_name_id', return_value=[credit1, credit2, credit3]):
+        EftService._refund_eft_credits(1, 8)
+        assert credit1.remaining_amount == 0
+        assert credit2.remaining_amount == 0
+        assert credit3.remaining_amount == 1
+
+        credit1.remaining_amount = 5
+        credit2.remaining_amount = 5
+
+        EftService._refund_eft_credits(1, 7)
+        assert credit1.remaining_amount == 0
+        assert credit2.remaining_amount == 3
+
+        credit1.remaining_amount = 5
+        credit2.remaining_amount = 2
+
+        EftService._refund_eft_credits(1, 1)
+        assert credit1.remaining_amount == 4
+        assert credit2.remaining_amount == 2
