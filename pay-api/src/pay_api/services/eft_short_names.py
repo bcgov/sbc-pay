@@ -52,7 +52,6 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
 
     id: Optional[int] = None
     account_id: Optional[str] = None
-    account_id_list: Optional[str] = None
     account_name: Optional[str] = None
     account_branch: Optional[str] = None
     amount_owing: Optional[Decimal] = None
