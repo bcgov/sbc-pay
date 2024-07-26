@@ -526,11 +526,11 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             func.max(StatementModel.id).label('latest_statement_id'),
             func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.paid), 0).label('total_owing')
         ).join(
-                StatementInvoicesModel,
-                StatementInvoicesModel.statement_id == StatementModel.id
+            StatementInvoicesModel,
+            StatementInvoicesModel.statement_id == StatementModel.id
         ).join(
-                InvoiceModel,
-                InvoiceModel.id == StatementInvoicesModel.invoice_id
+            InvoiceModel,
+            InvoiceModel.id == StatementInvoicesModel.invoice_id
         ).group_by(StatementModel.payment_account_id)
 
     @classmethod
