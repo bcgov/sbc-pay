@@ -519,7 +519,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         }
 
     @staticmethod
-    def get_statement_summary_query(inner_join=False):
+    def get_statement_summary_query():
         """Query for latest statement id and total amount owing of invoices in statements."""
         return db.session.query(
             StatementModel.payment_account_id,
@@ -566,7 +566,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
         """Query for short names based on search criteria."""
-        statement_summary_query = cls.get_statement_summary_query(inner_join=True).subquery()
+        statement_summary_query = cls.get_statement_summary_query().subquery()
 
         # Case statement is to check for and remove the branch name from the name, so they can be filtered on separately
         # The branch name was added to facilitate a better short name search experience and the existing
@@ -648,7 +648,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         query = query.filter_conditionally(search_criteria.account_id_list,
                                            subquery.c.auth_account_id,
                                            is_like=True)
-        
+
         # Short name filters
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
