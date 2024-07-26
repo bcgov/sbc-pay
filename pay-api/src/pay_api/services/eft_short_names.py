@@ -581,7 +581,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                          ),
                                         else_=EFTShortnameLinksModel.status_code
                                     ).label('link_status_code'),
-                                    CfsAccountModel.status.label('cfs_account_status')) \
+                                    CfsAccountModel.status.label('cfs_account_status'),
+                                    PaymentAccountModel.name,
+                                    PaymentAccountModel.branch_name) \
             .outerjoin(PaymentAccountModel,
                        PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id) \
             .outerjoin(CfsAccountModel,
@@ -594,6 +596,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         # Join payment information if this is NOT the count query
         if not is_count:
             subquery = cls.add_payment_account_name_columns(subquery)
+
             subquery = (subquery.add_columns(
                 statement_summary_query.c.total_owing,
                 statement_summary_query.c.latest_statement_id
@@ -602,55 +605,68 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 statement_summary_query.c.payment_account_id == PaymentAccountModel.id
             ))
 
-            # Short name link filters
-            subquery = subquery.filter_conditionally(search_criteria.account_id,
-                                                     EFTShortnameLinksModel.auth_account_id,
-                                                     is_like=True)
-
-            # Payment account filters
-            subquery = subquery.filter_conditionally(
-                search_criteria.account_name, PaymentAccountModel.name, is_like=True)
-            subquery = subquery.filter_conditionally(search_criteria.account_branch, PaymentAccountModel.branch_name,
-                                                     is_like=True)
-
-            # Statement summary filters
-            subquery = subquery.filter_conditionally(search_criteria.statement_id,
-                                                     statement_summary_query.c.latest_statement_id)
-            if search_criteria.amount_owing == 0:
-                subquery = subquery.filter(or_(statement_summary_query.c.total_owing == 0,
-                                               statement_summary_query.c.total_owing.is_(None)))
-            else:
-                subquery = subquery.filter_conditionally(
-                    search_criteria.amount_owing, statement_summary_query.c.total_owing)
-
-        subquery = cls.get_link_state_filters(search_criteria, subquery)
         subquery = subquery.filter(or_(CfsAccountModel.payment_method == PaymentMethod.EFT.value,
                                        CfsAccountModel.id.is_(None)))
         subquery = subquery.filter(
             or_(PaymentAccountModel.payment_method == PaymentMethod.EFT.value, PaymentAccountModel.id.is_(None))
         )
+
         subquery = subquery.subquery()
         query = query.outerjoin(subquery, subquery.c.eft_short_name_id == EFTShortnameModel.id)
+
         if not is_count:
+            # Statement summary filters
+            query = query.filter_conditionally(search_criteria.statement_id,
+                                               subquery.c.latest_statement_id)
+            if search_criteria.amount_owing == 0:
+                query = query.filter(or_(subquery.c.total_owing == 0,
+                                         subquery.c.total_owing.is_(None)))
+            else:
+                query = query.filter_conditionally(
+                    search_criteria.amount_owing, subquery.c.total_owing)
+
+            # Short name link filters
+            query = query.filter_conditionally(search_criteria.account_id,
+                                               subquery.c.auth_account_id,
+                                               is_like=True)
+            # Payment account filters
+            query = query.filter_conditionally(
+                search_criteria.account_name, subquery.c.account_name, is_like=True)
+            query = query.filter_conditionally(search_criteria.account_branch, subquery.c.branch_name,
+                                               is_like=True)
+
             query = query.add_columns(
                 subquery.c.eft_short_name_id,
                 subquery.c.status_code,
                 subquery.c.auth_account_id,
                 subquery.c.link_status_code,
                 subquery.c.cfs_account_status,
+                subquery.c.account_name,
+                subquery.c.account_branch,
                 subquery.c.total_owing,
                 subquery.c.latest_statement_id
             )
 
-        # Filter out accounts using account_id_list.
-        query = query.filter_conditionally(search_criteria.account_id_list,
-                                           subquery.c.auth_account_id,
-                                           is_like=True)
+        if search_criteria.state:
+            if EFTShortnameStatus.UNLINKED.value in search_criteria.state:
+                #  There can be multiple links to a short name, look for any links that don't have an UNLINKED status
+                #  if they don't exist return the short name.
+                query = query.filter(
+                    ~exists()
+                    .where(subquery.c.status_code != EFTShortnameStatus.UNLINKED.value)
+                    .where(subquery.c.eft_short_name_id == EFTShortnameModel.id)
+                    .correlate(EFTShortnameModel)
+                )
+            if EFTShortnameStatus.LINKED.value in search_criteria.state:
+                query = query.filter(
+                    subquery.c.status_code.in_([EFTShortnameStatus.PENDING.value,
+                                                EFTShortnameStatus.LINKED.value])
+                )
 
         # Short name filters
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
-        if not is_count and not search_criteria.account_id_list:
+        if not is_count:
             query = query.order_by(EFTShortnameModel.short_name.asc(), subquery.c.auth_account_id.asc())
         return query
 

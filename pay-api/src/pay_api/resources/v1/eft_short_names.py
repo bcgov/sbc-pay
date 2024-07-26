@@ -50,14 +50,12 @@ def get_eft_shortnames():
     short_name_id = request.args.get('shortNameId', None)
     statement_id = request.args.get('statementId', None)
     account_id = request.args.get('accountId', None)
-    account_id_list = request.args.get('accountIdList', None)
     account_name = request.args.get('accountName', None)
     account_branch = request.args.get('accountBranch', None)
 
     response, status = EFTShortnameService.search(EFTShortnamesSearch(
         id=short_name_id,
         account_id=account_id,
-        account_id_list=account_id_list,
         account_name=account_name,
         account_branch=account_branch,
         amount_owing=string_to_decimal(amount_owing),
