@@ -19,10 +19,10 @@ Test-Suite to ensure that the EFT Service is working as expected.
 
 from unittest.mock import MagicMock, patch
 import pytest
-from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.exceptions import BusinessException
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
+from pay_api.utils.errors import Error
 from tests.utilities.base_test import factory_invoice, factory_payment_account
 
 
@@ -66,8 +66,10 @@ def test_refund_eft_credits(session):
     credit2 = MagicMock(remaining_amount=4)
     credit3 = MagicMock(remaining_amount=3)
 
-    with patch.object(EFTCreditModel, 'find_by_short_name_id', return_value=[credit1, credit2, credit3]):
-        EftService._refund_eft_credits(1, 8)
+    with patch('pay_api.services.eft_service.EFTShortnames.get_eft_credits',
+               return_value=[credit1, credit2, credit3]), \
+         patch('pay_api.services.eft_service.EFTShortnames.get_eft_credit_balance', return_value=9):
+        EftService._refund_eft_credits(1, '8')
         assert credit1.remaining_amount == 0
         assert credit2.remaining_amount == 0
         assert credit3.remaining_amount == 1
@@ -75,13 +77,33 @@ def test_refund_eft_credits(session):
         credit1.remaining_amount = 5
         credit2.remaining_amount = 5
 
-        EftService._refund_eft_credits(1, 7)
-        assert credit1.remaining_amount == 0
-        assert credit2.remaining_amount == 3
+        with patch('pay_api.services.eft_service.EFTShortnames.get_eft_credit_balance', return_value=10):
+            EftService._refund_eft_credits(1, '7')
+            assert credit1.remaining_amount == 0
+            assert credit2.remaining_amount == 3
 
         credit1.remaining_amount = 5
         credit2.remaining_amount = 2
 
-        EftService._refund_eft_credits(1, 1)
-        assert credit1.remaining_amount == 4
-        assert credit2.remaining_amount == 2
+        with patch('pay_api.services.eft_service.EFTShortnames.get_eft_credit_balance', return_value=7):
+            EftService._refund_eft_credits(1, '1')
+            assert credit1.remaining_amount == 4
+            assert credit2.remaining_amount == 2
+
+
+def test_refund_eft_credits_exceed_balance(session):
+    """Test refund amount exceeds eft_credit_balance."""
+    credit1 = MagicMock(remaining_amount=2)
+    credit2 = MagicMock(remaining_amount=4)
+    credit3 = MagicMock(remaining_amount=3)
+
+    with patch('pay_api.services.eft_service.EFTShortnames.get_eft_credits',
+               return_value=[credit1, credit2, credit3]), \
+         patch('pay_api.services.eft_service.EFTShortnames.get_eft_credit_balance', return_value=8), \
+         patch('flask.current_app.logger.error') as mock_error_logger:
+
+        with pytest.raises(BusinessException) as excinfo:
+            EftService._refund_eft_credits(1, '20')
+
+        assert excinfo.value.code == Error.INVALID_TRANSACTION.name
+        mock_error_logger.assert_called_with('Shortname 1 Refund amount exceed eft_credits remaining amount.')
