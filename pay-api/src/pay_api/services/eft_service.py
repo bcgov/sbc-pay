@@ -139,7 +139,7 @@ class EftService(DepositService):
         eft_credits = EFTCreditModel.find_by_short_name_id(int(shortname_id))
 
         for credit in eft_credits:
-            if refund_amount <=0:
+            if refund_amount <= 0:
                 break
             credit_amount = Decimal(credit.remaining_amount)
             if credit_amount <= 0:
