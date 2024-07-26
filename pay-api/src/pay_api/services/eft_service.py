@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
+from decimal import Decimal
 import os
 from datetime import datetime
 from typing import Any, Dict, List
@@ -19,7 +20,9 @@ from typing import Any, Dict, List
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -27,9 +30,11 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.eft_refund_email_list import EFTRefundEmailList
+from pay_api.services.eft_short_names import EFTShortnames
 from pay_api.services.email_service import send_email
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
 
@@ -121,13 +126,37 @@ class EftService(DepositService):
         current_app.logger.debug(f'Starting shortname refund : {shortname_id}')
 
         refund = cls._create_refund_model(request, shortname_id, amount, comment)
-        recipients = EFTRefundEmailList.find_all_emails()
+        cls._refund_eft_credits(int(shortname_id), amount)
 
+        recipients = EFTRefundEmailList.find_all_emails()
         subject = f'Pending Refund Request for Short Name {shortname}'
         html_body = cls._render_email_body(shortname, amount, comment, shortname_id)
 
         send_email(recipients, subject, html_body, **kwargs)
         refund.save()
+
+    @classmethod
+    def _refund_eft_credits(cls, shortname_id: int, amount: str):
+        """Refund the amount to eft_credits table based on short_name_id."""
+        refund_amount = Decimal(amount)
+        eft_credits: List[EFTCreditModel] = EFTShortnames.get_eft_credits(shortname_id)
+        eft_credit_balance = EFTShortnames.get_eft_credit_balance(shortname_id)
+
+        if refund_amount > eft_credit_balance:
+            raise BusinessException(Error.INVALID_REFUND)
+
+        for credit in eft_credits:
+            if refund_amount <= 0:
+                break
+            credit_amount = Decimal(credit.remaining_amount)
+            if credit_amount <= 0:
+                continue
+
+            deduction = min(refund_amount, credit_amount)
+            credit.remaining_amount -= deduction
+            refund_amount -= deduction
+
+            credit.save()
 
     @classmethod
     def _create_refund_model(cls, request: Dict[str, str],
