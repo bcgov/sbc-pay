@@ -52,7 +52,7 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
 
     id: Optional[int] = None
     account_id: Optional[str] = None
-    allow_partial_account_id: Optional[bool] = True
+    account_id_list: Optional[str] = None
     account_name: Optional[str] = None
     account_branch: Optional[str] = None
     amount_owing: Optional[Decimal] = None
@@ -479,7 +479,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<find_by_auth_account_id_state')
         short_name_models: EFTShortnameModel = cls.get_search_query(
             EFTShortnamesSearch(account_id=auth_account_id,
-                                allow_partial_account_id=False,
                                 state=state
                                 )).all()
 
@@ -522,28 +521,17 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def get_statement_summary_query(inner_join=False):
         """Query for latest statement id and total amount owing of invoices in statements."""
-        query = db.session.query(
+        return db.session.query(
             StatementModel.payment_account_id,
             func.max(StatementModel.id).label('latest_statement_id'),
             func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.paid), 0).label('total_owing')
-        )
-        if inner_join:
-            query = query.join(
+        ).join(
                 StatementInvoicesModel,
                 StatementInvoicesModel.statement_id == StatementModel.id
-            ).join(
+        ).join(
                 InvoiceModel,
                 InvoiceModel.id == StatementInvoicesModel.invoice_id
-            ).group_by(StatementModel.payment_account_id)
-        else:
-            query = query.outerjoin(
-                StatementInvoicesModel,
-                StatementInvoicesModel.statement_id == StatementModel.id
-            ).outerjoin(
-                InvoiceModel,
-                InvoiceModel.id == StatementInvoicesModel.invoice_id
-            ).group_by(StatementModel.payment_account_id)
-        return query
+        ).group_by(StatementModel.payment_account_id)
 
     @classmethod
     def get_search_count(cls, search_criteria: EFTShortnamesSearch):
@@ -615,6 +603,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             ))
 
             # Short name link filters
+
+
             subquery = subquery.filter_conditionally(search_criteria.account_id,
                                                      EFTShortnameLinksModel.auth_account_id,
                                                      is_like=True)
@@ -654,10 +644,15 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 subquery.c.latest_statement_id
             )
 
+        # Filter out accounts using account_id_list.
+        query = query.filter_conditionally(search_criteria.account_id_list,
+                                           subquery.c.auth_account_id,
+                                           is_like=True)
+        
         # Short name filters
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
-        if not is_count:
+        if not is_count and not search_criteria.account_id_list:
             query = query.order_by(EFTShortnameModel.short_name.asc(), subquery.c.auth_account_id.asc())
         return query
 
