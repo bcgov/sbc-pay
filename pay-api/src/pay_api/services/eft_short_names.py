@@ -666,7 +666,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if EFTShortnameStatus.UNLINKED.value in search_criteria.state:
             #  There can be multiple links to a short name, look for any links that don't have an UNLINKED status
             #  if they don't exist return the short name.
-            condition_id = EFTShortnameLinksModel.eft_short_name_id if subquery else subquery.c.eft_short_name_id
+            condition_id = subquery.c.eft_short_name_id if subquery else EFTShortnameLinksModel.eft_short_name_id
             query = query.filter(
                 ~exists()
                 .where(condition_status != EFTShortnameStatus.UNLINKED.value)
