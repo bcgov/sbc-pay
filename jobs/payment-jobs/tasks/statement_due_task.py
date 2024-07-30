@@ -114,6 +114,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
             .join(PaymentAccountModel) \
             .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
             .filter(StatementModel.frequency == statement_frequency) \
+            .filter(StatementModel.overdue_reminder.is_(True)) \
             .order_by(StatementModel.to_date.desc())
 
         return query.first()
