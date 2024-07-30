@@ -48,8 +48,8 @@ class Statement(BaseModel):
             'is_interim_statement',
             'notification_date',
             'notification_status_code',
-            'payment_account_id',
             'overdue_notification_date',
+            'payment_account_id',
             'statement_settings_id',
             'to_date'
         ]
