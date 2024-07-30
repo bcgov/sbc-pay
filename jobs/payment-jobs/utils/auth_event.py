@@ -21,7 +21,7 @@ class AuthEvent:
                     source=QueueSources.PAY_JOBS.value,
                     message_type=QueueMessageTypes.NSF_LOCK_ACCOUNT.value,
                     payload=payload,
-                    topic=current_app.config.get('AUTH_QUEUE_TOPIC')
+                    topic=current_app.config.get('AUTH_EVENT_TOPIC')
                 )
             )
         except Exception:  # NOQA pylint: disable=broad-except
@@ -44,7 +44,7 @@ class AuthEvent:
                     source=QueueSources.PAY_JOBS.value,
                     message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
                     payload=unlock_payload,
-                    topic=current_app.config.get('AUTH_QUEUE_TOPIC')
+                    topic=current_app.config.get('AUTH_EVENT_TOPIC')
                 )
             )
         except Exception:  # NOQA pylint: disable=broad-except

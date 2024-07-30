@@ -79,27 +79,32 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         current_app.logger.info(f'Processing {len(eft_payment_accounts)} EFT accounts for monthly reminders.')
         for payment_account in eft_payment_accounts:
             try:
-                statement = cls._find_most_recent_statement(
-                    payment_account.auth_account_id, StatementFrequency.MONTHLY.value)
+                if not (statement := cls._find_most_recent_statement(
+                        payment_account.auth_account_id, StatementFrequency.MONTHLY.value)):
+                    continue
                 action, due_date = cls._determine_action_and_due_date_by_invoice(statement.id)
                 total_due = Statement.get_summary(payment_account.auth_account_id, statement.id)['total_due']
-                if action and total_due > 0 and (emails := cls._determine_recipient_emails(statement, action)):
+                if action and total_due > 0:
+                    emails = cls._determine_recipient_emails(statement, action)
                     if action == StatementNotificationAction.OVERDUE:
                         current_app.logger.info('Freezing payment account id: %s and locking auth account id: %s',
                                                 payment_account.id, payment_account.auth_account_id)
                         AuthEvent.publish_lock_account_event(payment_account)
-                    publish_payment_notification(
-                        StatementNotificationInfo(auth_account_id=payment_account.auth_account_id,
-                                                  statement=statement,
-                                                  action=action,
-                                                  due_date=due_date,
-                                                  emails=emails,
-                                                  total_amount_owing=total_due))
+                    if emails:
+                        publish_payment_notification(
+                            StatementNotificationInfo(auth_account_id=payment_account.auth_account_id,
+                                                      statement=statement,
+                                                      action=action,
+                                                      due_date=due_date,
+                                                      emails=emails,
+                                                      total_amount_owing=total_due))
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
                     f'Error on unpaid statement notification auth_account_id={payment_account.auth_account_id}, '
                     f'ERROR : {str(e)}', level='error')
-                current_app.logger.error(e)
+                current_app.logger.error(
+                    f'Error on unpaid statement notification auth_account_id={payment_account.auth_account_id}',
+                    exc_info=True)
                 continue
 
     @classmethod
