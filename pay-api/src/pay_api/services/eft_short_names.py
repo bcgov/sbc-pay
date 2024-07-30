@@ -648,22 +648,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 subquery.c.latest_statement_id
             )
 
-        if search_criteria.state:
-            if EFTShortnameStatus.UNLINKED.value in search_criteria.state:
-                #  There can be multiple links to a short name, look for any links that don't have an UNLINKED status
-                #  if they don't exist return the short name.
-                query = query.filter(
-                    ~exists()
-                    .where(subquery.c.status_code != EFTShortnameStatus.UNLINKED.value)
-                    .where(subquery.c.eft_short_name_id == EFTShortnameModel.id)
-                    .correlate(EFTShortnameModel)
-                )
-            if EFTShortnameStatus.LINKED.value in search_criteria.state:
-                query = query.filter(
-                    subquery.c.status_code.in_([EFTShortnameStatus.PENDING.value,
-                                                EFTShortnameStatus.LINKED.value])
-                )
-
+        cls.get_link_state_filters(search_criteria, query, subquery)
         # Short name filters
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
@@ -672,21 +657,25 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         return query
 
     @classmethod
-    def get_link_state_filters(cls, search_criteria, query):
+    def get_link_state_filters(cls, search_criteria, query, subquery=None):
         """Build filters for link states."""
-        if search_criteria.state:
-            if EFTShortnameStatus.UNLINKED.value in search_criteria.state:
-                #  There can be multiple links to a short name, look for any links that don't have an UNLINKED status
-                #  if they don't exist return the short name.
-                query = query.filter(
-                    ~exists()
-                    .where(EFTShortnameLinksModel.status_code != EFTShortnameStatus.UNLINKED.value)
-                    .where(EFTShortnameLinksModel.eft_short_name_id == EFTShortnameModel.id)
-                    .correlate(EFTShortnameModel)
-                )
-            if EFTShortnameStatus.LINKED.value in search_criteria.state:
-                query = query.filter(
-                    EFTShortnameLinksModel.status_code.in_([EFTShortnameStatus.PENDING.value,
-                                                            EFTShortnameStatus.LINKED.value])
-                )
+        if not search_criteria.state:
+            return query
+
+        condition_status = subquery.c.status_code if subquery else EFTShortnameLinksModel.status_code
+        if EFTShortnameStatus.UNLINKED.value in search_criteria.state:
+            #  There can be multiple links to a short name, look for any links that don't have an UNLINKED status
+            #  if they don't exist return the short name.
+            condition_id = EFTShortnameLinksModel.eft_short_name_id if subquery else subquery.c.eft_short_name_id
+            query = query.filter(
+                ~exists()
+                .where(condition_status != EFTShortnameStatus.UNLINKED.value)
+                .where(condition_id == EFTShortnameModel.id)
+                .correlate(EFTShortnameModel)
+            )
+        if EFTShortnameStatus.LINKED.value in search_criteria.state:
+            query = query.filter(
+                condition_status.in_([EFTShortnameStatus.PENDING.value,
+                                      EFTShortnameStatus.LINKED.value])
+            )
         return query
