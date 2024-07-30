@@ -49,7 +49,7 @@ class Statement(BaseModel):
             'notification_date',
             'notification_status_code',
             'payment_account_id',
-            'overdue_reminder',
+            'overdue_notification_date',
             'statement_settings_id',
             'to_date'
         ]
@@ -63,8 +63,7 @@ class Statement(BaseModel):
     from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
     is_interim_statement = db.Column('is_interim_statement', db.Boolean(), nullable=False, default=False)
-    overdue_reminder = db.Column('overdue_reminder', db.Boolean(), nullable=False, default=True)
-
+    overdue_notification_date = db.Column(db.Date, default=None, nullable=True)
     created_on = db.Column(db.Date, default=None, nullable=False)
     notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)

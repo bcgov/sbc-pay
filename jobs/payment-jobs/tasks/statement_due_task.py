@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to notify user for any outstanding statement."""
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 from pay_api.models import db
@@ -90,6 +90,8 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                         current_app.logger.info('Freezing payment account id: %s and locking auth account id: %s',
                                                 payment_account.id, payment_account.auth_account_id)
                         AuthEvent.publish_lock_account_event(payment_account)
+                        statement.overdue_notification_date = datetime.now(tz=timezone.utc)
+                        statement.save()
                     if emails:
                         publish_payment_notification(
                             StatementNotificationInfo(auth_account_id=payment_account.auth_account_id,
@@ -114,7 +116,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
             .join(PaymentAccountModel) \
             .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
             .filter(StatementModel.frequency == statement_frequency) \
-            .filter(StatementModel.overdue_reminder.is_(True)) \
+            .filter(StatementModel.overdue_notification_date.is_(None)) \
             .order_by(StatementModel.to_date.desc())
 
         return query.first()
