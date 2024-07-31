@@ -39,7 +39,8 @@
 	{
         "vault": "relationship",
         "application": [
-            "postgres-pay"
+            "postgres-pay",
+	    "pay-queue"
         ]
     },
 	{
