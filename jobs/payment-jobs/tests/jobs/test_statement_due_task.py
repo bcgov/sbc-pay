@@ -78,6 +78,7 @@ def create_test_data(payment_method_code: str, payment_date: datetime,
 
     return account, invoice, inv_ref, statement_recipient, statement_settings
 
+
 @pytest.mark.skip(reason='Will be fixed 20087/PR1650')
 def test_send_unpaid_statement_notification(setup, session):
     """Assert payment reminder event is being sent."""
@@ -146,6 +147,7 @@ def test_unpaid_statement_notification_not_sent(setup, session):
         with freeze_time(current_local_time().replace(day=10)):
             StatementDueTask.process_unpaid_statements()
             mock_mailer.assert_not_called()
+
 
 @pytest.mark.skip(reason='Will be fixed 20087/PR1650')
 def test_overdue_invoices_updated(setup, session):
