@@ -23,13 +23,13 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
-from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
+from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -199,10 +199,11 @@ class EjvPartnerDistributionTask(CgiEjv):
             # Create ejv invoice link records and set invoice status
             for inv in invoices:
                 # Create Ejv file link and flush
-                link_model = EjvInvoiceLinkModel(invoice_id=inv.id,
-                                                 ejv_header_id=ejv_header_model.id,
-                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                 sequence=sequence)
+                link_model = EjvLinkModel(invoice_id=inv.id,
+                                          ejv_header_id=ejv_header_model.id,
+                                          disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                          sequence=sequence,
+                                          link_type=EJVLinkType.INVOICE.value)
                 # Set distribution status to invoice
                 db.session.add(link_model)
                 sequence += 1
