@@ -23,14 +23,13 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
-from pay_api.models import EjvLink as EjvLinkModel
+from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceStatus, PaymentMethod
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -53,7 +52,6 @@ class EjvPartnerDistributionTask(CgiEjv):
         cls._create_ejv_file_for_partner(batch_type='GI')  # Internal ministry
         cls._create_ejv_file_for_partner(batch_type='GA')  # External ministry
 
-    # TODO grab EFT invoices from PartnerDisbursements, eventually everything will run through partner disbursements.
     @staticmethod
     def get_invoices_for_disbursement(partner):
         """Return invoices for disbursement. Used by EJV and AP."""
@@ -61,9 +59,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(
-            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value,
-                                                     PaymentMethod.DRAWDOWN.value,
-                                                     PaymentMethod.EFT.value])) \
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value, PaymentMethod.EFT.value])) \
             .filter((InvoiceModel.disbursement_status_code.is_(None)) |
                     (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
             .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
@@ -71,21 +67,6 @@ class EjvPartnerDistributionTask(CgiEjv):
             .all()
         current_app.logger.info(invoices)
         return invoices
-
-    @staticmethod
-    def get_refund_partial_payment_line_items_for_disbursement(partner) -> List[PaymentLineItemModel]:
-        """Return payment line items with partial refunds for disbursement."""
-        payment_line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
-            .join(InvoiceModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
-            .join(RefundsPartialModel, PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id) \
-            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
-            .filter(InvoiceModel.payment_method_code.in_([PaymentMethod.DIRECT_PAY.value])) \
-            .filter((RefundsPartialModel.disbursement_status_code.is_(None)) |
-                    (RefundsPartialModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
-            .filter(InvoiceModel.corp_type_code == partner.code) \
-            .all()
-        current_app.logger.info(payment_line_items)
-        return payment_line_items
 
     @classmethod
     def get_invoices_for_refund_reversal(cls, partner):
@@ -97,9 +78,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
             .filter(
-            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value,
-                                                     PaymentMethod.DRAWDOWN.value,
-                                                     PaymentMethod.EFT.value])) \
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value, PaymentMethod.EFT.value])) \
             .filter(InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()
@@ -134,16 +113,12 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         for partner in partners:
             # Find all invoices for the partner to disburse.
-            # This includes invoices which are not PAID and invoices which are refunded and partial refunded.
+            # This includes invoices which are not PAID and invoices which are refunded.
             payment_invoices = cls.get_invoices_for_disbursement(partner)
             refund_reversals = cls.get_invoices_for_refund_reversal(partner)
             invoices = payment_invoices + refund_reversals
-
-            # Process partial refunds for each partner
-            refund_partial_items = cls.get_refund_partial_payment_line_items_for_disbursement(partner)
-
             # If no invoices continue.
-            if not invoices and not refund_partial_items:
+            if not invoices:
                 continue
 
             effective_date: str = cls.get_effective_date()
@@ -159,15 +134,10 @@ class EjvPartnerDistributionTask(CgiEjv):
             # and create one JV Header and detail for each.
             distribution_code_set = set()
             invoice_id_list = []
-            partial_line_item_id_list = []
             for inv in invoices:
                 invoice_id_list.append(inv.id)
                 for line_item in inv.payment_line_items:
                     distribution_code_set.add(line_item.fee_distribution_id)
-
-            for line_item in refund_partial_items:
-                partial_line_item_id_list.append(line_item.id)
-                distribution_code_set.add(line_item.fee_distribution_id)
 
             for distribution_code_id in list(distribution_code_set):
                 distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(distribution_code_id)
@@ -177,22 +147,13 @@ class EjvPartnerDistributionTask(CgiEjv):
                 if credit_distribution_code.stop_ejv:
                     continue
 
-                line_items = cls._find_line_items_by_invoice_and_distribution(
-                        distribution_code_id, invoice_id_list)
-
-                refund_partial_items = cls._find_refund_partial_items_by_distribution(
-                        distribution_code_id, partial_line_item_id_list)
+                line_items = cls._find_line_items_by_invoice_and_distribution(distribution_code_id, invoice_id_list)
 
                 total: float = 0
                 for line in line_items:
                     total += line.total
 
-                partial_refund_total: float = 0
-                for refund_partial in refund_partial_items:
-                    partial_refund_total += refund_partial.refund_amount
-
                 batch_total += total
-                batch_total += partial_refund_total
 
                 debit_distribution = cls.get_distribution_string(distribution_code)  # Debit from BCREG GL
                 credit_distribution = cls.get_distribution_string(credit_distribution_code)  # Credit to partner GL
@@ -234,39 +195,20 @@ class EjvPartnerDistributionTask(CgiEjv):
 
                     control_total += 1
 
-                partial_refund_number: int = 0
-                for refund_partial in refund_partial_items:
-                    # JV Details for partial refunds
-                    partial_refund_number += 1
-                    # Flow Through add it as the refunds_partial id.
-                    flow_through = f'{refund_partial.id:<110}'
-                    refund_partial_number = f'#{refund_partial.id}'
-                    description = disbursement_desc[:-len(refund_partial_number)] + refund_partial_number
-                    description = f'{description[:100]:<100}'
-
-                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                                cls.get_jv_line(batch_type, credit_distribution, description,
-                                                                effective_date, flow_through, journal_name,
-                                                                refund_partial.refund_amount,
-                                                                partial_refund_number, 'D'))
-                    partial_refund_number += 1
-                    control_total += 1
-
-                    # Add a line here for debit too
-                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                                cls.get_jv_line(batch_type, debit_distribution, description,
-                                                                effective_date, flow_through, journal_name,
-                                                                refund_partial.refund_amount,
-                                                                partial_refund_number, 'C'))
-                    control_total += 1
-
-                    # Update partial refund status
-                    refund_partial.disbursement_status_code = DisbursementStatus.UPLOADED.value
-
-            # Create ejv invoice/partial_refund link records and set invoice status
             sequence = 1
-            sequence = cls._create_ejv_link(invoices, ejv_header_model, sequence, EJVLinkType.INVOICE.value)
-            cls._create_ejv_link(refund_partial_items, ejv_header_model, sequence, EJVLinkType.REFUND.value)
+            # Create ejv invoice link records and set invoice status
+            for inv in invoices:
+                # Create Ejv file link and flush
+                link_model = EjvInvoiceLinkModel(invoice_id=inv.id,
+                                                 ejv_header_id=ejv_header_model.id,
+                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                                 sequence=sequence)
+                # Set distribution status to invoice
+                db.session.add(link_model)
+                sequence += 1
+                inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
+
+            db.session.flush()
 
         if not ejv_content:
             db.session.rollback()
@@ -299,18 +241,6 @@ class EjvPartnerDistributionTask(CgiEjv):
         return line_items
 
     @classmethod
-    def _find_refund_partial_items_by_distribution(cls, distribution_code_id, partial_line_item_id_list) \
-            -> List[RefundsPartialModel]:
-        """Find and return all payment line items for this distribution."""
-        line_items: List[RefundsPartialModel] = db.session.query(RefundsPartialModel) \
-            .join(PaymentLineItemModel, PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id) \
-            .filter(RefundsPartialModel.payment_line_item_id.in_(partial_line_item_id_list)) \
-            .filter(RefundsPartialModel.refund_amount > 0) \
-            .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id) \
-            .all()
-        return line_items
-
-    @classmethod
     def _get_partners_by_batch_type(cls, batch_type) -> List[CorpTypeModel]:
         """Return partners by batch type."""
         # CREDIT : Ministry GL code -> disbursement_distribution_code_id on distribution_codes table
@@ -323,38 +253,22 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         if batch_type == 'GA':
             # Rule for GA. Credit is 112 and debit is 112.
-            partner_distribution_code_ids: List[int] = db.session.scalars(query.filter(
+            partner_distribution_code_ids: List[int] = query.filter(
                 DistributionCodeModel.client == bc_reg_client_code
-            )).all()
+            ).all()
         else:
             # Rule for GI. Debit is 112 and credit is not 112.
-            partner_distribution_code_ids: List[int] = db.session.scalars(query.filter(
+            partner_distribution_code_ids: List[int] = query.filter(
                 DistributionCodeModel.client != bc_reg_client_code
-            )).all()
+            ).all()
 
         # Find all distribution codes who have these partner distribution codes as disbursement.
-        fee_query = db.session.query(DistributionCodeModel.distribution_code_id).filter(
-            DistributionCodeModel.disbursement_distribution_code_id.in_(partner_distribution_code_ids))
-        fee_distribution_codes: List[int] = db.session.scalars(fee_query).all()
+        fee_distribution_codes: List[int] = db.session.query(DistributionCodeModel.distribution_code_id).filter(
+            DistributionCodeModel.disbursement_distribution_code_id.in_(partner_distribution_code_ids)).all()
 
-        corp_type_query = db.session.query(FeeScheduleModel.corp_type_code). \
+        corp_type_codes: List[str] = db.session.query(FeeScheduleModel.corp_type_code). \
             join(DistributionCodeLinkModel,
-                 DistributionCodeLinkModel.fee_schedule_id == FeeScheduleModel.fee_schedule_id).\
-            filter(DistributionCodeLinkModel.distribution_code_id.in_(fee_distribution_codes))
-        corp_type_codes: List[str] = db.session.scalars(corp_type_query).all()
+                 DistributionCodeLinkModel.fee_schedule_id == FeeScheduleModel.fee_schedule_id). \
+            filter(DistributionCodeLinkModel.distribution_code_id.in_(fee_distribution_codes)).all()
 
         return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()
-
-    @classmethod
-    def _create_ejv_link(cls, items, ejv_header_model, sequence, link_type):
-        for item in items:
-            link_model = EjvLinkModel(link_id=item.id,
-                                      link_type=link_type,
-                                      ejv_header_id=ejv_header_model.id,
-                                      disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                      sequence=sequence)
-            db.session.add(link_model)
-            sequence += 1
-            item.disbursement_status_code = DisbursementStatus.UPLOADED.value
-        db.session.flush()
-        return sequence

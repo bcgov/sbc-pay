@@ -34,6 +34,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.flags import flags
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
@@ -150,7 +151,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
             current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
-        if Invoice.has_overdue_invoices(payment_account.id):
+        if flags.is_on('enable-eft-payment-method', default=False) and \
+            Invoice.has_overdue_invoices(payment_account.id):
             raise BusinessException(Error.EFT_INVOICES_OVERDUE)
 
     @staticmethod
