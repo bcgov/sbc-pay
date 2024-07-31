@@ -190,4 +190,27 @@ it will work and process on the pod.
 21. Where are the reports generated (report-api)? 
 Here: https://github.com/bcgov/bcros-common/
 
+22. How do I resolve some of the database performance issues? Take a look at some of the longer running queries if they're stuck:
 
+SELECT pid, usename, query, state,
+       EXTRACT(EPOCH FROM (now() - query_start)) AS duration
+FROM pg_stat_activity
+WHERE state != 'idle'
+ORDER BY duration DESC;
+
+or 
+
+SELECT *
+FROM pg_stat_activity
+WHERE state = 'active';
+
+Terminate long running queries if required, for long running query operations, if it is a parallel worker you should kill the leader_pid as well or it can just spawn more parallel workers:
+
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE pid in (146105,
+              146355,
+              146394
+    );
+ 
+ 
