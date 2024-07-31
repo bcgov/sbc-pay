@@ -270,7 +270,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         # Find all distribution codes who have these partner distribution codes as disbursement.
         fee_distribution_codes: List[int] = db.session.query(DistributionCodeModel.distribution_code_id).filter(
             DistributionCodeModel.disbursement_distribution_code_id.in_(partner_distribution_code_ids))
-    
+
         corp_type_codes: List[str] = db.session.query(FeeScheduleModel.corp_type_code). \
             join(DistributionCodeLinkModel,
                  DistributionCodeLinkModel.fee_schedule_id == FeeScheduleModel.fee_schedule_id). \
