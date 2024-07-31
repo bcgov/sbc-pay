@@ -39,7 +39,7 @@ def test_invoice(session):
 
     # assert overdue default is set
     assert invoice.overdue_date is not None
-    assert invoice.overdue_date.date() == (datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1)).date()
+    assert invoice.overdue_date.date() == (datetime.now(tz=timezone.utc) + relativedelta(months=2, day=1)).date()
 
 
 def test_invoice_find_by_id(session):

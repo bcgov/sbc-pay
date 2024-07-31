@@ -102,7 +102,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     payment_date = db.Column(db.DateTime, nullable=True)
     # default overdue_date to the first of next month
     overdue_date = db.Column(db.DateTime, nullable=True,
-                             default=lambda: datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1))
+                             default=lambda: datetime.now(tz=timezone.utc) + relativedelta(months=2, day=1))
     refund_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Numeric(19, 2), nullable=True)
     routing_slip = db.Column(db.String(50), nullable=True, index=True)
