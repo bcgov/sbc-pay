@@ -203,7 +203,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             # Create ejv invoice link records and set invoice status
             for inv in invoices:
                 # Create Ejv file link and flush
-                link_model = EjvLinkModel(invoice_id=inv.id,
+                link_model = EjvLinkModel(link_id=inv.id,
                                           ejv_header_id=ejv_header_model.id,
                                           disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                           sequence=sequence,
@@ -260,20 +260,20 @@ class EjvPartnerDistributionTask(CgiEjv):
             # Rule for GA. Credit is 112 and debit is 112.
             partner_distribution_code_ids: List[int] = query.filter(
                 DistributionCodeModel.client == bc_reg_client_code
-            ).all()
+            )
         else:
             # Rule for GI. Debit is 112 and credit is not 112.
             partner_distribution_code_ids: List[int] = query.filter(
                 DistributionCodeModel.client != bc_reg_client_code
-            ).all()
+            )
 
         # Find all distribution codes who have these partner distribution codes as disbursement.
         fee_distribution_codes: List[int] = db.session.query(DistributionCodeModel.distribution_code_id).filter(
-            DistributionCodeModel.disbursement_distribution_code_id.in_(partner_distribution_code_ids)).all()
-
+            DistributionCodeModel.disbursement_distribution_code_id.in_(partner_distribution_code_ids))
+    
         corp_type_codes: List[str] = db.session.query(FeeScheduleModel.corp_type_code). \
             join(DistributionCodeLinkModel,
                  DistributionCodeLinkModel.fee_schedule_id == FeeScheduleModel.fee_schedule_id). \
-            filter(DistributionCodeLinkModel.distribution_code_id.in_(fee_distribution_codes)).all()
+            filter(DistributionCodeLinkModel.distribution_code_id.in_(fee_distribution_codes))
 
         return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()
