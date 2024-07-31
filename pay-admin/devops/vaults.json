@@ -1,0 +1,15 @@
+[
+  {
+    "vault": "relationship",
+    "application": [
+      "postgres-pay",
+      "pay-admin"
+    ]
+  },
+  {
+	"vault": "sentry",
+	"application": [
+		"relationship-api"
+	]
+  }
+]
