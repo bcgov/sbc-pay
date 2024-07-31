@@ -59,7 +59,9 @@ class EjvPartnerDistributionTask(CgiEjv):
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(
-            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value, PaymentMethod.EFT.value])) \
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value,
+                                                     PaymentMethod.DRAWDOWN.value,
+                                                     PaymentMethod.EFT.value])) \
             .filter((InvoiceModel.disbursement_status_code.is_(None)) |
                     (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
             .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
@@ -78,7 +80,9 @@ class EjvPartnerDistributionTask(CgiEjv):
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
             .filter(
-            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value, PaymentMethod.EFT.value])) \
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value,
+                                                     PaymentMethod.DRAWDOWN.value,
+                                                     PaymentMethod.EFT.value])) \
             .filter(InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()

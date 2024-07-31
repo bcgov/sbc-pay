@@ -152,7 +152,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
         if flags.is_on('enable-eft-payment-method', default=False) and \
-            Invoice.has_overdue_invoices(payment_account.id):
+                Invoice.has_overdue_invoices(payment_account.id):
             raise BusinessException(Error.EFT_INVOICES_OVERDUE)
 
     @staticmethod
