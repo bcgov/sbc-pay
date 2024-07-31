@@ -116,10 +116,10 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
     REGISTRIES_LOGO_IMAGE_NAME = os.getenv('REGISTRIES_LOGO_IMAGE_NAME', 'bc_logo_for_email.png')
 
-    # PUB/SUB- PUB: account-mailer-dev
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
+    # GCP PubSub
     GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
-
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
+    AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', None)
 
     CFS_ACCOUNT_DESCRIPTION = os.getenv('CFS_ACCOUNT_DESCRIPTION', 'BCR')
     CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
@@ -195,11 +195,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     EFT_TRANSFER_DESC = os.getenv('EFT_TRANSFER_DESC', 'BCREGISTRIES {} {} EFT TRANSFER')
     EFT_OVERDUE_NOTIFY_EMAILS = os.getenv('EFT_OVERDUE_NOTIFY_EMAILS', '')
 
-    # GCP PubSub
-    AUDIENCE = os.getenv('AUDIENCE', None)
-    GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
-    PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
+
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
