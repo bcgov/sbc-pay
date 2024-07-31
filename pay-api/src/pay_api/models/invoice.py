@@ -94,7 +94,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     disbursement_date = db.Column(db.DateTime, nullable=True)
     disbursement_reversal_date = db.Column(db.DateTime, nullable=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now, index=True)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc), index=True)
 
     business_identifier = db.Column(db.String(20), nullable=True)
     total = db.Column(db.Numeric(19, 2), nullable=False)
