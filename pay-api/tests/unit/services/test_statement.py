@@ -493,6 +493,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 'is_interim_statement': False,
                 'is_overdue': False,
                 'notification_date': None,
+                'overdue_notification_date': None,
                 'payment_methods': ['EFT']
             },
             'statementSummary': {
@@ -669,6 +670,7 @@ def test_get_eft_statement_with_invoices(session):
                 'is_interim_statement': False,
                 'is_overdue': False,
                 'notification_date': None,
+                'overdue_notification_date': None,
                 'payment_methods': ['EFT']
             },
             'statementSummary': {
