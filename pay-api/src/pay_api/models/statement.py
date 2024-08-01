@@ -82,7 +82,8 @@ class Statement(BaseModel):
 
         query = db.session.query(Invoice) \
             .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
-            .filter(StatementInvoices.statement_id == cast(statement_id, Integer))
+            .filter(StatementInvoices.statement_id == cast(statement_id, Integer)) \
+            .order_by(Invoice.id.desc())
 
         return query.all()
 
