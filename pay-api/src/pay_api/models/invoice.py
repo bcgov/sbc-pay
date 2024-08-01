@@ -47,7 +47,7 @@ def determine_overdue_date(context):
     # Correct for daylight savings.
     hours = target_datetime.astimezone(pytz.timezone('US/Pacific')).utcoffset().total_seconds() / 60 / 60
     target_date = target_datetime.replace(tzinfo=timezone.utc) + relativedelta(hours=-hours)
-    return target_date
+    return target_date.replace(tzinfo=None)
 
 
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
