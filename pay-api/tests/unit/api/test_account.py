@@ -779,9 +779,9 @@ def test_switch_eft_account_when_outstanding_balance(session, client, jwt, app, 
 
     assert rv.status_code == 400
     assert rv.json['type'] == 'EFT_SHORT_NAME_OUTSTANDING_BALANCE'
-    
+
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',
                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.PAD.value)),
                     headers=headers)
 
-    assert rv.status_code == 200
+    assert rv.status_code == 202
