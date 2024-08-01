@@ -164,7 +164,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         account_summary = Statement.get_summary(account.auth_account_id)
         outstanding_balance = account_summary['total_invoice_due'] + account_summary['total_due']
 
-        if account.payment_method == PaymentMethod.EFT.value and outstanding_balance > 0:
+        if (account.payment_method == PaymentMethod.EFT.value and
+                target_payment_method != PaymentMethod.PAD.value and
+                outstanding_balance) > 0:
             raise BusinessException(Error.EFT_SHORT_NAME_OUTSTANDING_BALANCE)
 
         # Payment method has changed between EFT and other payment methods
