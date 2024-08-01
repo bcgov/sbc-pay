@@ -111,7 +111,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                         statement.overdue_notification_date = datetime.now(tz=timezone.utc)
                         statement.save()
                         continue
-                    if emails := cls._determine_recipient_emails(statement, action):
+                    if emails := cls._determine_recipient_emails(statement):
                         publish_payment_notification(
                             StatementNotificationInfo(auth_account_id=payment_account.auth_account_id,
                                                       statement=statement,
