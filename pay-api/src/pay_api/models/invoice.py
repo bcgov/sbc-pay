@@ -14,6 +14,7 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
+import pytz
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
@@ -35,6 +36,18 @@ from .invoice_reference import InvoiceReferenceSchema
 from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
+
+
+def determine_overdue_date(context):
+    """Determine the overdue date with the correct time offset."""
+    created_on = context.get_current_parameters()['created_on']
+    target_date = created_on.date() + relativedelta(months=2,
+                                                    day=1)
+    target_datetime = datetime.combine(target_date, datetime.min.time())
+    # Correct for daylight savings.
+    hours = target_datetime.astimezone(pytz.timezone('US/Pacific')).utcoffset().total_seconds() / 60 / 60
+    target_date = target_datetime.replace(tzinfo=timezone.utc) + relativedelta(hours=-hours)
+    return target_date
 
 
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
@@ -100,9 +113,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     total = db.Column(db.Numeric(19, 2), nullable=False)
     paid = db.Column(db.Numeric(19, 2), nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
-    # default overdue_date to the first of next month
-    overdue_date = db.Column(db.DateTime, nullable=True,
-                             default=lambda: datetime.now(tz=timezone.utc) + relativedelta(months=2, day=1))
+    overdue_date = db.Column(db.DateTime, nullable=True, default=determine_overdue_date)
     refund_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Numeric(19, 2), nullable=True)
     routing_slip = db.Column(db.String(50), nullable=True, index=True)
