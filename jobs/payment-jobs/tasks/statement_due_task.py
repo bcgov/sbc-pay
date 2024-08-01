@@ -80,7 +80,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         for invoice_tuple in invoices:
             NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice_tuple[0],
                                                                 invoice_number=invoice_tuple[1],
-                                                                cfs_account=cfs_account,
+                                                                cfs_account=cfs_account.cfs_account,
                                                                 description='EFT invoice overdue')
 
     @classmethod
@@ -106,7 +106,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                                                 payment_account.id, payment_account.auth_account_id)
                         # The locking email is sufficient for overdue, no seperate email required.
                         AuthEvent.publish_lock_account_event(payment_account)
-                        cls.add_to_non_sufficient_funds(payment_account.id)
+                        cls.add_to_non_sufficient_funds(payment_account)
                         statement.overdue_notification_date = datetime.now(tz=timezone.utc)
                         statement.save()
                         continue
