@@ -16,18 +16,21 @@ from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 from pay_api.models import db
+from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.models.invoice import Invoice as InvoiceModel
+from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
+from pay_api.models.non_sufficient_funds import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.services.flags import flags
+from pay_api.services import NonSufficientFundsService
 from pay_api.services.statement import Statement
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
-from pay_api.utils.util import current_local_time, get_local_time
+from pay_api.utils.util import current_local_time
 from sentry_sdk import capture_message
-from sqlalchemy import func
 
 from utils.auth_event import AuthEvent
 from utils.enums import StatementNotificationAction
@@ -55,17 +58,30 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     @classmethod
     def _update_invoice_overdue_status(cls):
         """Update the status of any invoices that are overdue."""
-        legislative_timezone = current_app.config.get('LEGISLATIVE_TIMEZONE')
-        overdue_datetime = func.timezone(legislative_timezone, func.timezone('UTC', InvoiceModel.overdue_date))
-
-        db.session.query(InvoiceModel) \
+        query = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
                     InvoiceModel.overdue_date.isnot(None),
-                    func.date(overdue_datetime) <= current_local_time().date(),
-                    InvoiceModel.invoice_status_code.in_(cls.unpaid_status))\
-            .update({InvoiceModel.invoice_status_code: InvoiceStatus.OVERDUE.value}, synchronize_session='fetch')
-
+                    InvoiceModel.overdue_date <= datetime.now(tz=timezone.utc),
+                    InvoiceModel.invoice_status_code.in_(cls.unpaid_status))
+        query.update({InvoiceModel.invoice_status_code: InvoiceStatus.OVERDUE.value}, synchronize_session='fetch')
         db.session.commit()
+
+    @classmethod
+    def add_to_non_sufficient_funds(cls, payment_account):
+        """Add the invoice to the non sufficient funds table."""
+        invoices = db.session.query(InvoiceModel.id, InvoiceReferenceModel.invoice_number) \
+            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
+            .filter(InvoiceModel.payment_account_id == payment_account.id,
+                    InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value,
+                    InvoiceModel.id.notin_(
+                        db.session.query(NonSufficientFundsModel.invoice_id)
+                    )).distinct().all()
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.EFT.value)
+        for invoice_tuple in invoices:
+            NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice_tuple[0],
+                                                                invoice_number=invoice_tuple[1],
+                                                                cfs_account=cfs_account,
+                                                                description='EFT invoice overdue')
 
     @classmethod
     def _notify_for_monthly(cls):
@@ -85,14 +101,16 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                 action, due_date = cls._determine_action_and_due_date_by_invoice(statement.id)
                 total_due = Statement.get_summary(payment_account.auth_account_id, statement.id)['total_due']
                 if action and total_due > 0:
-                    emails = cls._determine_recipient_emails(statement, action)
                     if action == StatementNotificationAction.OVERDUE:
-                        current_app.logger.info('Freezing payment account id: %s and locking auth account id: %s',
+                        current_app.logger.info('Freezing payment account id: %s locking auth account id: %s',
                                                 payment_account.id, payment_account.auth_account_id)
+                        # The locking email is sufficient for overdue, no seperate email required.
                         AuthEvent.publish_lock_account_event(payment_account)
+                        cls.add_to_non_sufficient_funds(payment_account.id)
                         statement.overdue_notification_date = datetime.now(tz=timezone.utc)
                         statement.save()
-                    if emails:
+                        continue
+                    if emails := cls._determine_recipient_emails(statement, action):
                         publish_payment_notification(
                             StatementNotificationInfo(auth_account_id=payment_account.auth_account_id,
                                                       statement=statement,
@@ -134,9 +152,9 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         if invoice is None:
             return None, None
 
-        day_before_invoice_overdue = get_local_time(invoice.overdue_date).date() - timedelta(days=1)
+        day_before_invoice_overdue = (invoice.overdue_date - timedelta(days=1)).date()
         seven_days_before_invoice_due = day_before_invoice_overdue - timedelta(days=7)
-        now_date = current_local_time().date()
+        now_date = datetime.now(tz=timezone.utc).date()
 
         if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
             return StatementNotificationAction.OVERDUE, day_before_invoice_overdue
@@ -156,5 +174,5 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                     recipients += ',' + overdue_notify_emails
             return recipients
 
-        current_app.logger.info(f'No recipients found for statement: {statement.payment_account_id}. Skipping sending.')
+        current_app.logger.error(f'No recipients found for statement: {statement.payment_account_id}. Skipping.')
         return None

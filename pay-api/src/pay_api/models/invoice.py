@@ -14,10 +14,10 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
-import pytz
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
+import pytz
 from dateutil.relativedelta import relativedelta
 from attrs import define
 
@@ -45,7 +45,7 @@ def determine_overdue_date(context):
                                                     day=1)
     target_datetime = datetime.combine(target_date, datetime.min.time())
     # Correct for daylight savings.
-    hours = target_datetime.astimezone(pytz.timezone('US/Pacific')).utcoffset().total_seconds() / 60 / 60
+    hours = target_datetime.astimezone(pytz.timezone('America/Vancouver')).utcoffset().total_seconds() / 60 / 60
     target_date = target_datetime.replace(tzinfo=timezone.utc) + relativedelta(hours=-hours)
     return target_date.replace(tzinfo=None)
 

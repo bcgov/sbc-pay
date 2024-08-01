@@ -51,6 +51,11 @@ class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-a
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
     invoice_number = db.Column(db.String(50), nullable=False, index=True, comment='CFS Invoice number')
 
+    @classmethod
+    def find_by_invoice_id(cls, invoice_id: int):
+        """Find a record by invoice id."""
+        return cls.query.filter_by(invoice_id=invoice_id).all()
+
 
 @define
 class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
