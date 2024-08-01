@@ -1999,9 +1999,9 @@ werkzeug = "3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "20087_p2"
-resolved_reference = "7ff93b7aebeadaf37041ad05b9b787f3030694b1"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "HEAD"
+resolved_reference = "012af273fe5ea47368f9c3ff9f0fe7e253e211dc"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3141,4 +3141,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "12a259aefea10244b14769369b1107bf847f91f9b4166ace87332ee9fde5e725"
+content-hash = "3ec0b51675efd0cf2d4bb86d2c636f4b147d554e6dd34d02195adbe7e1874acf"
