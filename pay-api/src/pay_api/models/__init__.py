@@ -47,7 +47,7 @@ from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
 from .invoice_reference_status_code import InvoiceReferenceStatusCode, InvoiceReferenceStatusCodeSchema
 from .invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
 from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
-from .non_sufficient_funds import NonSufficientFundsModel, NonSufficientFundsSchema
+from .non_sufficient_funds import NonSufficientFunds, NonSufficientFundsSchema
 from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
 from .payment import Payment, PaymentSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema, PaymentAccountSearchModel  # noqa: I001

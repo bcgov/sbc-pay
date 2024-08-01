@@ -26,7 +26,7 @@ from faker import Faker
 
 from pay_api.models import (
     CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnameLinks, EFTShortnames, Invoice,
-    InvoiceReference, NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt,
+    InvoiceReference, NonSufficientFunds, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt,
     RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
@@ -912,7 +912,7 @@ def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234'
 
 def factory_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str = None):
     """Return a Non-Sufficient Funds Model."""
-    return NonSufficientFundsModel(invoice_id=invoice_id, invoice_number=invoice_number, description=description)
+    return NonSufficientFunds(invoice_id=invoice_id, invoice_number=invoice_number, description=description)
 
 
 def factory_distribution_code(name: str, client: str = '111', reps_centre: str = '22222', service_line: str = '33333',
