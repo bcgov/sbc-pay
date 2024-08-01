@@ -104,7 +104,8 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
 
 def publish_payment_notification(info: StatementNotificationInfo) -> bool:
     """Publish payment notification message to the mailer queue."""
-    message_type = QueueMessageTypes.PAYMENT_DUE_NOTIFICATION.value if info.is_due \
+    message_type = QueueMessageTypes.PAYMENT_DUE_NOTIFICATION.value \
+        if info.action == StatementNotificationAction.OVERDUE \
         else QueueMessageTypes.PAYMENT_REMINDER_NOTIFICATION.value
 
     payload = {

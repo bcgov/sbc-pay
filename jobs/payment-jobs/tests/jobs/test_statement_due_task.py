@@ -25,6 +25,7 @@ import pytest
 from faker import Faker
 from flask import Flask
 from freezegun import freeze_time
+from pay_api.models import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.services import Statement as StatementService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
@@ -79,18 +80,23 @@ def create_test_data(payment_method_code: str, payment_date: datetime,
     return account, invoice, inv_ref, statement_recipient, statement_settings
 
 
-@pytest.mark.skip(reason='Will be fixed 20087/PR1650')
-def test_send_unpaid_statement_notification(setup, session):
+@pytest.mark.parametrize('test_name, freeze_time_offset, action', [
+    ('reminder', timedelta(days=-7), StatementNotificationAction.REMINDER),
+    ('due', timedelta(days=0), StatementNotificationAction.DUE),
+    ('overdue', timedelta(days=7), StatementNotificationAction.OVERDUE)
+])
+def test_send_unpaid_statement_notification(setup, session, test_name, freeze_time_offset, action):
     """Assert payment reminder event is being sent."""
     last_month, last_year = get_previous_month_and_year()
     previous_month_year = datetime(last_year, last_month, 5)
 
-    account, invoice, inv_ref, \
-        statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
-                                                                   previous_month_year,
-                                                                   StatementFrequency.MONTHLY.value,
-                                                                   351.50)
+    account, invoice, _, \
+        statement_recipient, _ = create_test_data(PaymentMethod.EFT.value,
+                                                  previous_month_year,
+                                                  StatementFrequency.MONTHLY.value,
+                                                  351.50)
     assert invoice.payment_method_code == PaymentMethod.EFT.value
+    assert invoice.overdue_date
     assert account.payment_method == PaymentMethod.EFT.value
 
     now = current_local_time().replace(hour=1)
@@ -111,32 +117,21 @@ def test_send_unpaid_statement_notification(setup, session):
     summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
     total_amount_owing = summary['total_due']
 
-    with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
-        with freeze_time(last_day):
-            StatementDueTask.process_unpaid_statements()
-            mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
-                                                                     statement=statements[0][0],
-                                                                     action=StatementNotificationAction.DUE,
-                                                                     due_date=last_day.date(),
-                                                                     emails=statement_recipient.email,
-                                                                     total_amount_owing=total_amount_owing))
-
-        with freeze_time(last_day - timedelta(days=7)):
-            StatementDueTask.process_unpaid_statements()
-            mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
-                                                                     statement=statements[0][0],
-                                                                     action=StatementNotificationAction.REMINDER,
-                                                                     due_date=last_day.date(),
-                                                                     emails=statement_recipient.email,
-                                                                     total_amount_owing=total_amount_owing))
-        with freeze_time(last_day + timedelta(days=7)):
-            StatementDueTask.process_unpaid_statements()
-            mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
-                                                                     statement=statements[0][0],
-                                                                     action=StatementNotificationAction.OVERDUE,
-                                                                     due_date=last_day.date(),
-                                                                     emails=statement_recipient.email,
-                                                                     total_amount_owing=total_amount_owing))
+    with patch('utils.auth_event.AuthEvent.publish_lock_account_event') as mock_auth_event:
+        with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
+            with freeze_time(last_day + freeze_time_offset):
+                StatementDueTask.process_unpaid_statements()
+                if action == StatementNotificationAction.OVERDUE:
+                    mock_auth_event.assert_called()
+                    assert statements[0][0].overdue_notification_date
+                    assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
+                else:
+                    mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
+                                                                             statement=statements[0][0],
+                                                                             action=action,
+                                                                             due_date=last_day.date(),
+                                                                             emails=statement_recipient.email,
+                                                                             total_amount_owing=total_amount_owing))
 
 
 def test_unpaid_statement_notification_not_sent(setup, session):
@@ -149,27 +144,21 @@ def test_unpaid_statement_notification_not_sent(setup, session):
             mock_mailer.assert_not_called()
 
 
-@pytest.mark.skip(reason='Will be fixed 20087/PR1650')
 def test_overdue_invoices_updated(setup, session):
     """Assert invoices are transitioned to overdue status."""
-    invoice_date = current_local_time() + relativedelta(months=-1, day=5)
-
-    # Freeze time to the previous month so the overdue date is set properly and in the past for this test
-    with freeze_time(invoice_date):
-        account, invoice, inv_ref, \
-            statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
-                                                                       invoice_date,
-                                                                       StatementFrequency.MONTHLY.value,
-                                                                       351.50)
-
-    # Freeze time to the current month so the overdue date is in the future for this test
-    with freeze_time(current_local_time().replace(day=5)):
-        invoice2 = factory_invoice(payment_account=account, created_on=current_local_time().date(),
-                                   payment_method_code=PaymentMethod.EFT.value, status_code=InvoiceStatus.CREATED.value,
-                                   total=10.50)
-
+    invoice_date = current_local_time() + relativedelta(months=-2, day=5, hours=1)
+    account, invoice, _, \
+        _, _ = create_test_data(PaymentMethod.EFT.value,
+                                invoice_date,
+                                StatementFrequency.MONTHLY.value,
+                                351.50)
     assert invoice.payment_method_code == PaymentMethod.EFT.value
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+
+    invoice2 = factory_invoice(payment_account=account, created_on=current_local_time().date() + relativedelta(hours=1),
+                               payment_method_code=PaymentMethod.EFT.value, status_code=InvoiceStatus.CREATED.value,
+                               total=10.50)
+
     assert invoice2.payment_method_code == PaymentMethod.EFT.value
     assert invoice2.invoice_status_code == InvoiceStatus.CREATED.value
     assert account.payment_method == PaymentMethod.EFT.value

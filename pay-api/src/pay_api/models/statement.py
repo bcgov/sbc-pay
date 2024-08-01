@@ -48,6 +48,7 @@ class Statement(BaseModel):
             'is_interim_statement',
             'notification_date',
             'notification_status_code',
+            'overdue_notification_date',
             'payment_account_id',
             'statement_settings_id',
             'to_date'
@@ -62,7 +63,7 @@ class Statement(BaseModel):
     from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
     is_interim_statement = db.Column('is_interim_statement', db.Boolean(), nullable=False, default=False)
-
+    overdue_notification_date = db.Column(db.Date, default=None, nullable=True)
     created_on = db.Column(db.Date, default=None, nullable=False)
     notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
@@ -81,7 +82,8 @@ class Statement(BaseModel):
 
         query = db.session.query(Invoice) \
             .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
-            .filter(StatementInvoices.statement_id == cast(statement_id, Integer))
+            .filter(StatementInvoices.statement_id == cast(statement_id, Integer)) \
+            .order_by(Invoice.id.asc())
 
         return query.all()
 

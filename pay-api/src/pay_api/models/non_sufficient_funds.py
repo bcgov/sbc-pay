@@ -21,7 +21,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-attributes
+class NonSufficientFunds(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Non-Sufficient Funds."""
 
     __tablename__ = 'non_sufficient_funds'
@@ -51,6 +51,11 @@ class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-a
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
     invoice_number = db.Column(db.String(50), nullable=False, index=True, comment='CFS Invoice number')
 
+    @classmethod
+    def find_by_invoice_id(cls, invoice_id: int):
+        """Find a record by invoice id."""
+        return cls.query.filter_by(invoice_id=invoice_id).all()
+
 
 @define
 class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
@@ -63,7 +68,7 @@ class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
     description: str
 
     @classmethod
-    def from_row(cls, row: NonSufficientFundsModel):
+    def from_row(cls, row: NonSufficientFunds):
         """From row is used so we don't tightly couple to our database class.
 
         https://www.attrs.org/en/stable/init.html

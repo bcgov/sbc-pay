@@ -22,7 +22,7 @@ from sqlalchemy import case, func
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import InvoiceSearchModel, NonSufficientFundsModel, NonSufficientFundsSchema
+from pay_api.models import InvoiceSearchModel, NonSufficientFunds, NonSufficientFundsSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
@@ -39,14 +39,14 @@ class NonSufficientFundsService:
 
     def __init__(self):
         """Initialize the service."""
-        self.dao = NonSufficientFundsModel()
+        self.dao = NonSufficientFunds()
 
     def asdict(self):
         """Return the EFT Short name as a python dict."""
         return Converter().unstructure(NonSufficientFundsSchema.from_row(self.dao))
 
     @staticmethod
-    def populate(value: NonSufficientFundsModel):
+    def populate(value: NonSufficientFunds):
         """Populate Non-Sufficient Funds Service."""
         non_sufficient_funds_service = NonSufficientFundsService()
         non_sufficient_funds_service.dao = value
@@ -72,8 +72,8 @@ class NonSufficientFundsService:
     @staticmethod
     def exists_for_invoice_number(invoice_number: str) -> bool:
         """Return boolean if a row exists for the invoice number."""
-        return (db.session.query(NonSufficientFundsModel)
-                .filter(NonSufficientFundsModel.invoice_number == invoice_number)
+        return (db.session.query(NonSufficientFunds)
+                .filter(NonSufficientFunds.invoice_number == invoice_number)
                 .count()
                 ) > 0
 
@@ -83,8 +83,8 @@ class NonSufficientFundsService:
         query = (db.session.query(
             InvoiceModel, InvoiceReferenceModel)
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
-            .join(NonSufficientFundsModel,
-                  NonSufficientFundsModel.invoice_number == InvoiceReferenceModel.invoice_number)
+            .join(NonSufficientFunds,
+                  NonSufficientFunds.invoice_number == InvoiceReferenceModel.invoice_number)
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
             .filter(PaymentAccountModel.auth_account_id == account_id,
                     InvoiceModel.invoice_status_code != InvoiceStatus.PAID.value)
@@ -101,8 +101,8 @@ class NonSufficientFundsService:
                     else_=0)).label('nsf_amount')
             )
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
-            .join(NonSufficientFundsModel,
-                  NonSufficientFundsModel.invoice_number == InvoiceReferenceModel.invoice_number)
+            .join(NonSufficientFunds,
+                  NonSufficientFunds.invoice_number == InvoiceReferenceModel.invoice_number)
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
             .filter(PaymentAccountModel.auth_account_id == account_id,

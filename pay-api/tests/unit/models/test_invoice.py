@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
+import pytest
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timezone
 
@@ -73,3 +74,18 @@ def test_payments_marked_for_delete(session):
     invoice.save()
     invoices = Invoice.find_invoices_marked_for_delete()
     assert len(invoices) == 1
+
+
+@pytest.mark.parametrize('test_name, created_on, overdue_date', [
+    ('March - PST - edge', datetime(2024, 1, 1, 8), datetime(2024, 3, 1, 8, 0, 0)),
+    ('April - PDT - edge', datetime(2024, 2, 1, 8), datetime(2024, 4, 1, 7, 0, 0)),
+    ('November - PDT - edge', datetime(2024, 9, 1, 8), datetime(2024, 11, 1, 7, 0, 0)),
+    ('December - PST - edge', datetime(2024, 10, 1, 8), datetime(2024, 12, 1, 8, 0, 0))
+])
+def test_overdue_date(session, test_name, created_on, overdue_date):
+    """Test overdue date to make sure it's right TZ."""
+    # PDT -> PST on Nov 3, 2024 at 2:00 am
+    # PST -> PDT on March 10, 2024 at 2:00 am
+    invoice = factory_invoice(created_on=created_on, payment_account=factory_payment_account())
+    invoice.save()
+    assert invoice.overdue_date == overdue_date
