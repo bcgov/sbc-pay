@@ -12,7 +12,7 @@ DOCKER_NAME:=pay-queue
 #################################################################################
 # COMMANDS -- Setup                                                             #
 #################################################################################
-setup: install install-dev ## Setup the project
+setup: install ## Setup the project
 
 clean: clean-build clean-pyc clean-test ## Clean the project
 	rm -rf venv/
@@ -40,9 +40,6 @@ install: clean
 	unset HOME ## unset HOME because it's in the DEV .env file, will cause permissions issues
 	pip install poetry ;\
 	poetry install
-
-install-dev:
-	poetry install --with dev
 
 #################################################################################
 # COMMANDS - CI                                                                 #
