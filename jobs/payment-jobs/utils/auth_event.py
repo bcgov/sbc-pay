@@ -12,10 +12,10 @@ class AuthEvent:
     """Publishes to the auth-queue as an auth event though PUBSUB, this message gets sent to account-mailer after."""
 
     @staticmethod
-    def publish_lock_account_event(pay_account: PaymentAccountModel):
+    def publish_lock_account_event(pay_account: PaymentAccountModel, additional_emails=''):
         """Publish NSF lock account event to the auth queue."""
         try:
-            payload = AuthEvent._create_event_payload(pay_account)
+            payload = AuthEvent._create_event_payload(pay_account, additional_emails)
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_JOBS.value,
@@ -55,9 +55,10 @@ class AuthEvent:
                             payment_account.auth_account_id}, {unlock_payload}.', level='error')
 
     @staticmethod
-    def _create_event_payload(pay_account):
+    def _create_event_payload(pay_account, additional_emails=''):
         return {
             'accountId': pay_account.auth_account_id,
             'paymentMethod': PaymentMethod.EFT.value,
-            'suspensionReasonCode': SuspensionReasonCodes.OVERDUE_EFT.value
+            'suspensionReasonCode': SuspensionReasonCodes.OVERDUE_EFT.value,
+            'additionalEmails': additional_emails
         }
