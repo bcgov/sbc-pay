@@ -60,11 +60,13 @@ def test_eft_credit_invoice_link(session):
     eft_credit.payment_account_id = payment_account.id
     eft_credit.save()
 
+    link_group_id = EFTCreditInvoiceLink.get_next_group_link_seq()
     eft_credit_invoice_link = EFTCreditInvoiceLink()
     eft_credit_invoice_link.invoice_id = invoice.id
     eft_credit_invoice_link.eft_credit_id = eft_credit.id
     eft_credit_invoice_link.status_code = EFTCreditInvoiceStatus.PENDING.value
     eft_credit_invoice_link.amount = 50.00
+    eft_credit_invoice_link.link_group_id = link_group_id
     eft_credit_invoice_link.save()
 
     eft_credit_invoice_link = EFTCreditInvoiceLink.find_by_id(eft_credit_invoice_link.id)
@@ -73,3 +75,4 @@ def test_eft_credit_invoice_link(session):
     assert eft_credit_invoice_link.invoice_id == invoice.id
     assert eft_credit_invoice_link.status_code == EFTCreditInvoiceStatus.PENDING.value
     assert eft_credit_invoice_link.amount == 50.00
+    assert eft_credit_invoice_link.link_group_id == link_group_id

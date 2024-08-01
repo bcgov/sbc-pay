@@ -356,6 +356,14 @@ class EFTPaymentActions(Enum):
     APPLY_CREDITS = 'APPLY_CREDITS'
 
 
+class EFTHistoricalTypes(Enum):
+    """EFT Short names historical transaction types."""
+
+    FUNDS_RECEIVED = 'FUNDS_RECEIVED'
+    STATEMENT_PAID = 'STATEMENT_PAID'
+    STATEMENT_REVERSE = 'STATEMENT_REVERSE'
+
+
 class PaymentDetailsGlStatus(Enum):
     """Payment details GL status."""
 
