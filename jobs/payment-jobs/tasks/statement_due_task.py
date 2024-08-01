@@ -166,8 +166,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         return None, day_before_invoice_overdue
 
     @classmethod
-    def _determine_recipient_emails(cls,
-                                    statement: StatementRecipientsModel, action: StatementNotificationAction) -> str:
+    def _determine_recipient_emails(cls, statement: StatementRecipientsModel) -> str:
         if (recipients := StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)):
             recipients = ','.join([str(recipient.email) for recipient in recipients])
 
