@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
@@ -62,7 +62,7 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
         template = ENV.get_template('statement_notification.html')
         for statement in statements_with_pending_notifications:
             statement.notification_status_code = NotificationStatus.PROCESSING.value
-            statement.notification_date = datetime.now()
+            statement.notification_date = datetime.now(tz=timezone.utc)
             statement.commit()
             payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(statement.payment_account_id)
             recipients = StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)
@@ -70,7 +70,7 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.info(f'No recipients found for statement: '
                                         f'{statement.payment_account_id}.Skipping sending')
                 statement.notification_status_code = NotificationStatus.SKIP.value
-                statement.notification_date = datetime.now()
+                statement.notification_date = datetime.now(tz=timezone.utc)
                 statement.commit()
                 continue
 
@@ -92,7 +92,7 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
                                                                           result['total_due'], to_emails)
                 else:  # EFT not enabled - mark skip - shouldn't happen, but safeguard for manual data injection
                     statement.notification_status_code = NotificationStatus.SKIP.value
-                    statement.notification_date = datetime.now()
+                    statement.notification_date = datetime.now(tz=timezone.utc)
                     statement.commit()
                     continue
             except Exception as e: # NOQA # pylint:disable=broad-except
@@ -103,11 +103,11 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
             if not notification_success:
                 current_app.logger.error('<notification failed')
                 statement.notification_status_code = NotificationStatus.FAILED.value
-                statement.notification_date = datetime.now()
+                statement.notification_date = datetime.now(tz=timezone.utc)
                 statement.commit()
             else:
                 statement.notification_status_code = NotificationStatus.SUCCESS.value
-                statement.notification_date = datetime.now()
+                statement.notification_date = datetime.now(tz=timezone.utc)
                 statement.commit()
 
     @classmethod

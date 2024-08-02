@@ -151,7 +151,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             frequency=setting.frequency,
             statement_settings_id=setting.id,
             payment_account_id=pay_account.id,
-            created_on=get_local_time(datetime.now()),
+            created_on=get_local_time(datetime.now(tz=timezone.utc)),
             from_date=statement_from,
             to_date=statement_to,
             notification_status_code=NotificationStatus.PENDING.value

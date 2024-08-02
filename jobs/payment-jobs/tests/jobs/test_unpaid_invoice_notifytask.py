@@ -17,7 +17,7 @@
 Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from flask import current_app
@@ -39,7 +39,7 @@ def test_unpaid_one_invoice(session):
     # Create an invoice for this account
     cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=10,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
@@ -80,14 +80,14 @@ def test_unpaid_multiple_invoice(session):
     # Create an invoice for this account
     cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=10,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    factory_invoice(payment_account=account, created_on=datetime.now(), total=200,
+    factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=200,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     factory_invoice(payment_account=account, created_on=previous_day, total=2000,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
@@ -114,7 +114,7 @@ def test_unpaid_invoice_pad(session):
     # Create an invoice for this account
     cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=10,
                               cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
@@ -138,11 +138,11 @@ def test_unpaid_single_invoice_total(session):
     total_invoice1 = 100
     total_invoice2 = 200
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice1,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=total_invoice1,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     factory_invoice(payment_account=account, created_on=previous_day, total=total_invoice2,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
@@ -175,15 +175,16 @@ def test_unpaid_multiple_invoice_total(session):
     total_invoice2 = 200
     total_invoice3 = 300
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice1,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=total_invoice1,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice2,
+    factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=total_invoice2,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
     # this is future invoice
-    factory_invoice(payment_account=account, created_on=datetime.now() + timedelta(days=1), total=total_invoice3,
+    factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc) + timedelta(days=1),
+                    total=total_invoice3,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
     # created two invoices ; so two events
