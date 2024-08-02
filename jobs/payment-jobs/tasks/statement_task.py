@@ -167,7 +167,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         for statement, auth_account_id in zip(statements, auth_account_ids):
             invoices = [i for i in invoices_and_auth_ids if i.auth_account_id == auth_account_id]
             for invoice in invoices:
-                current_app.logger(f'{invoice.id}')
+                current_app.logger.debug(f'{invoice.id}')
             statement_invoices = statement_invoices + [StatementInvoicesModel(
                 statement_id=statement.id,
                 invoice_id=invoice.id
