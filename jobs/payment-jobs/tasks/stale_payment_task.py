@@ -30,7 +30,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def update_stale_payments(cls):
         """Update stale payments."""
-        current_app.logger.info(f'StalePaymentTask Ran at {datetime.datetime.now()}')
+        current_app.logger.info(f'StalePaymentTask Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}')
         cls._update_stale_payments()
         cls._delete_marked_payments()
 
@@ -50,7 +50,8 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             .all()
 
         if len(stale_transactions) == 0 and len(service_unavailable_transactions) == 0:
-            current_app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
+            current_app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}.'
+                                    'But No records found!')
         for transaction in [*stale_transactions, *service_unavailable_transactions]:
             try:
                 current_app.logger.info(f'Stale Transaction Job found records.Payment Id: {transaction.payment_id}, '
@@ -78,7 +79,8 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         """
         invoices_to_delete = InvoiceModel.find_invoices_marked_for_delete()
         if len(invoices_to_delete) == 0:
-            current_app.logger.info(f'Delete Invoice Job Ran at {datetime.datetime.now()}.But No records found!')
+            current_app.logger.info(f'Delete Invoice Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}.'
+                                    'But No records found!')
         for invoice in invoices_to_delete:
             try:
                 current_app.logger.info(f'Delete Payment Job found records.Payment Id: {invoice.id}')

@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from flask import current_app
@@ -105,7 +105,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
     ejv_file.disbursement_status_code = DisbursementStatus.COMPLETED.value
     invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-    invoice.refund_date = datetime.now()
+    invoice.refund_date = datetime.now(tz=timezone.utc)
     invoice.save()
 
     EjvPartnerDistributionTask.create_ejv_file()

@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the UpdateStalePayment is working as expected.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytz
 from freezegun import freeze_time
@@ -97,7 +97,7 @@ def test_statements_for_empty_results(session):
     2) Mark the account settings as DAILY settlement starting yesterday
     3) Generate statement and assert that the statement does not contains payment records
     """
-    day_before_yday = get_previous_day(datetime.now()) - timedelta(days=1)
+    day_before_yday = get_previous_day(datetime.now(tz=timezone.utc)) - timedelta(days=1)
     bcol_account = factory_premium_payment_account()
     invoice = factory_invoice(payment_account=bcol_account, created_on=day_before_yday)
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)

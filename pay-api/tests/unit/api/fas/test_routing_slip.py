@@ -18,7 +18,7 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 """
 
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Dict
 
 import pytest
@@ -557,7 +557,8 @@ def test_routing_slip_report(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_REPORTS.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post(f'/api/v1/fas/routing-slips/{datetime.now().strftime(DT_SHORT_FORMAT)}/reports', headers=headers)
+    rv = client.post(f'/api/v1/fas/routing-slips/{datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT)}/reports',
+                     headers=headers)
     assert rv.status_code == 201
 
 
@@ -756,7 +757,7 @@ def test_create_routing_slip_null_cheque_date(session, client, jwt, app):
 
     routing_slip_payload: Dict[str, any] = {
         'number': '345777543',
-        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'routingSlipDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
         'paymentAccount': {
             'accountName': 'TEST'
         },

@@ -17,7 +17,7 @@
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnameLinks,
@@ -50,7 +50,7 @@ def factory_statement_recipient(auth_user_id: int, first_name: str, last_name: s
     ).save()
 
 
-def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date=datetime.now(),
+def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date=datetime.now(tz=timezone.utc),
                                to_date=None) -> StatementSettings:
     """Return Factory."""
     return StatementSettings(
@@ -64,7 +64,7 @@ def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date
 def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
-        payment_date: datetime = datetime.now(),
+        payment_date: datetime = datetime.now(tz=timezone.utc),
         invoice_number: str = None,
         payment_account_id: int = None,
         invoice_amount: float = None,
@@ -86,7 +86,7 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0, total=0, paid=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-                    created_on: datetime = datetime.now(),
+                    created_on: datetime = datetime.now(tz=timezone.utc),
                     cfs_account_id: int = 0,
                     routing_slip=None,
                     disbursement_status_code=None
@@ -181,7 +181,7 @@ def factory_routing_slip_account(
         status: str = CfsAccountStatus.PENDING.value,
         total: int = 0,
         remaining_amount: int = 0,
-        routing_slip_date=datetime.now(),
+        routing_slip_date=datetime.now(tz=timezone.utc),
         payment_method=PaymentMethod.CASH.value,
         auth_account_id='1234',
         routing_slip_status=RoutingSlipStatus.ACTIVE.value,
@@ -236,7 +236,7 @@ def factory_create_eft_shortname(short_name: str):
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
-                               updated_by: str = None, updated_on: datetime = datetime.now(),
+                               updated_by: str = None, updated_on: datetime = datetime.now(tz=timezone.utc),
                                status_code: str = EFTShortnameStatus.LINKED.value):
     """Return an EFT short name link model."""
     return EFTShortnameLinks(
@@ -363,7 +363,7 @@ def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
 def factory_receipt(
         invoice_id: int,
         receipt_number: str = 'TEST1234567890',
-        receipt_date: datetime = datetime.now(),
+        receipt_date: datetime = datetime.now(tz=timezone.utc),
         receipt_amount: float = 10.0
 ):
     """Return Factory."""
@@ -382,7 +382,7 @@ def factory_refund(
     """Return Factory."""
     return Refund(
         routing_slip_id=routing_slip_id,
-        requested_date=datetime.now(),
+        requested_date=datetime.now(tz=timezone.utc),
         reason='TEST',
         requested_by='TEST',
         details=details
@@ -396,7 +396,7 @@ def factory_refund_invoice(
     """Return Factory."""
     return Refund(
         invoice_id=invoice_id,
-        requested_date=datetime.now(),
+        requested_date=datetime.now(tz=timezone.utc),
         reason='TEST',
         requested_by='TEST',
         details=details
@@ -408,7 +408,7 @@ def factory_refund_partial(
         refund_amount: float,
         refund_type: str,
         created_by='test',
-        created_on: datetime = datetime.now()
+        created_on: datetime = datetime.now(tz=timezone.utc)
 ):
     """Return Factory."""
     return RefundsPartial(

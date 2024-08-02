@@ -123,7 +123,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
 
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-            invoice.refund_date = datetime.now()
+            invoice.refund_date = datetime.now(tz=timezone.utc)
             invoice.save()
 
     @classmethod
@@ -221,7 +221,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # leave the status as PAID
 
             invoice.invoice_status_code = InvoiceStatus.PAID.value
-            invoice.payment_date = datetime.now()
+            invoice.payment_date = datetime.now(tz=timezone.utc)
             invoice.paid = invoice.total
             invoice.save()
 
@@ -308,7 +308,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             additional_params = {
                 'invoice_total': float(invoice_total),
-                'invoice_process_date': f'{datetime.now()}'
+                'invoice_process_date': f'{datetime.now(tz=timezone.utc)}'
             }
             mailer.publish_mailer_events(QueueMessageTypes.PAD_INVOICE_CREATED.value, payment_account,
                                          additional_params)

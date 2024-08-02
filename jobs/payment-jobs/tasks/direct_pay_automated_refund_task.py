@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to handle Direct Pay automated refunds."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from flask import current_app
@@ -130,7 +130,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(
             'Refund complete - GL was posted - setting refund.gl_posted to now.')
         refund = RefundModel.find_by_invoice_id(invoice.id)
-        refund.gl_posted = datetime.now()
+        refund.gl_posted = datetime.now(tz=timezone.utc)
         refund.save()
 
     @staticmethod
@@ -166,7 +166,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Set invoice and payment to REFUNDED."""
         current_app.logger.info('Invoice & Payment set to REFUNDED, add refund_date.')
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-        invoice.refund_date = datetime.now()
+        invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.save()
         payment = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value

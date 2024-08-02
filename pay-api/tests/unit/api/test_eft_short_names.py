@@ -18,7 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -60,7 +60,7 @@ def test_create_eft_short_name_link(session, client, jwt, app):
     assert link_dict['updatedBy'] == 'IDIR/JSMITH'
 
     date_format = '%Y-%m-%dT%H:%M:%S.%f'
-    assert datetime.strptime(link_dict['updatedOn'], date_format).date() == datetime.now().date()
+    assert datetime.strptime(link_dict['updatedOn'], date_format).date() == datetime.now(tz=timezone.utc).date()
 
 
 def test_create_eft_short_name_link_with_credit_and_owing(db, session, client, jwt, app):

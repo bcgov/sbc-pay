@@ -13,7 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Transaction."""
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytz
 from marshmallow import fields
@@ -64,7 +64,7 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
     pay_response_url = db.Column(db.String(2000), nullable=True)
     pay_system_reason_code = db.Column(db.String(2000), nullable=True)
 
-    transaction_start_time = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    transaction_start_time = db.Column(db.DateTime, default=datetime.now(tz=timezone.utc), nullable=False)
     transaction_end_time = db.Column(db.DateTime, nullable=True)
 
     @classmethod
@@ -139,7 +139,7 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .payment import Payment
 
-        oldest_transaction_time = datetime.now() - (timedelta(days=days, hours=hours, minutes=minutes))
+        oldest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
         completed_status = [TransactionStatus.COMPLETED.value, TransactionStatus.CANCELLED.value,
                             TransactionStatus.FAILED.value]
         return db.session.query(PaymentTransaction)\

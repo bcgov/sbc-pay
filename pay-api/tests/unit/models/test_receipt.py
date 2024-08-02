@@ -17,7 +17,7 @@
 Test-Suite to ensure that the Receipt Class is working as expected.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pay_api.models import Receipt
 from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
@@ -36,7 +36,7 @@ def test_receipt(session):
     invoice = invoice.save()
     receipt = Receipt()
     receipt.receipt_amount = 100
-    receipt.receipt_date = datetime.now()
+    receipt.receipt_date = datetime.now(tz=timezone.utc)
     receipt.invoice_id = invoice.id
     receipt.receipt_number = '123451'
     receipt = receipt.save()
@@ -56,7 +56,7 @@ def test_receipt_find_by_id(session):
     invoice = invoice.save()
     receipt = Receipt()
     receipt.receipt_amount = 100
-    receipt.receipt_date = datetime.now()
+    receipt.receipt_date = datetime.now(tz=timezone.utc)
     receipt.invoice_id = invoice.id
     receipt.receipt_number = '123451'
     receipt = receipt.save()

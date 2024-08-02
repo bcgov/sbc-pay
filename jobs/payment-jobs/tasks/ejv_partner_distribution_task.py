@@ -14,7 +14,7 @@
 """Task to create Journal Voucher."""
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from flask import current_app
@@ -95,7 +95,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         ejv_content: str = ''
         batch_total: float = 0
         control_total: int = 0
-        today = datetime.now()
+        today = datetime.now(tz=timezone.utc)
         disbursement_desc = current_app.config.get('CGI_DISBURSEMENT_DESC'). \
             format(today.strftime('%B').upper(), f'{today.day:0>2}')[:100]
         disbursement_desc = f'{disbursement_desc:<100}'

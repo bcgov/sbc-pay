@@ -14,7 +14,7 @@
 
 """Tests to assure the Direct Payment Service."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from unittest.mock import patch
 import urllib.parse
@@ -185,7 +185,7 @@ def test_process_cfs_refund_success(session, monkeypatch):
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
-    invoice.payment_date = datetime.now()
+    invoice.payment_date = datetime.now(tz=timezone.utc)
     invoice.save()
     receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
     receipt.save()
@@ -224,7 +224,7 @@ def test_process_cfs_refund_duplicate_refund(session, monkeypatch):
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
-    invoice.payment_date = datetime.now()
+    invoice.payment_date = datetime.now(tz=timezone.utc)
     invoice.save()
     receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
     receipt.save()
@@ -298,7 +298,7 @@ def _automated_refund_preparation():
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account, total=30, service_fees=1.5)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
-    invoice.payment_date = datetime.now()
+    invoice.payment_date = datetime.now(tz=timezone.utc)
     invoice.save()
     payment_line_item = factory_payment_line_item(invoice.id, fee_schedule_id=1, service_fees=1.5, total=30)
     payment_line_item.save()

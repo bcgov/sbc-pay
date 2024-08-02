@@ -15,7 +15,7 @@
 
 import functools
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from flask import current_app
@@ -235,7 +235,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             'transactionDateTime': get_local_formatted_date_time(transaction_date_time),
             'transactionAmount': receipt.receipt_amount,
             'transactionId': invoice_ref.invoice_number,
-            'refundDate': get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
+            'refundDate': get_local_formatted_date_time(datetime.now(tz=timezone.utc), '%Y%m%d'),
             'filingDescription': filing_description
         }
         if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
@@ -267,7 +267,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                        payment_account_id=invoice.payment_account_id)
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.paid = invoice.total
-        current_time = datetime.now()
+        current_time = datetime.now(tz=timezone.utc)
         invoice.payment_date = current_time
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         # Create receipt.

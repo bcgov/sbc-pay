@@ -317,9 +317,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if auth_account_id is None:
             raise BusinessException(Error.EFT_SHORT_NAME_ACCOUNT_ID_REQUIRED)
 
-        short_name: EFTShortnameModel = cls.find_by_auth_account_id_state(auth_account_id,
-                                                                          [EFTShortnameStatus.LINKED.value,
-                                                                           EFTShortnameStatus.PENDING.value])
+        short_name = cls.find_by_auth_account_id_state(auth_account_id,
+                                                       [EFTShortnameStatus.LINKED.value,
+                                                        EFTShortnameStatus.PENDING.value])
 
         # This BCROS account already has an active link to a short name
         if short_name:
@@ -336,7 +336,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value
         eft_short_name_link.updated_by = kwargs['user'].user_name
         eft_short_name_link.updated_by_name = kwargs['user'].name
-        eft_short_name_link.updated_on = datetime.now()
+        eft_short_name_link.updated_on = datetime.now(tz=timezone.utc)
 
         db.session.add(eft_short_name_link)
         db.session.flush()

@@ -19,7 +19,7 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 from decimal import Decimal
 import json
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
@@ -103,7 +103,7 @@ def test_create_pad_refund(session, client, jwt, app):
     cfs_account.status = CfsAccountStatus.ACTIVE.value
     cfs_account.save()
 
-    pay_account.pad_activation_date = datetime.now()
+    pay_account.pad_activation_date = datetime.now(tz=timezone.utc)
     pay_account.save()
 
     token = jwt.create_jwt(get_claims(), token_header)
@@ -122,7 +122,7 @@ def test_create_pad_refund(session, client, jwt, app):
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
-    inv.payment_date = datetime.now()
+    inv.payment_date = datetime.now(tz=timezone.utc)
     inv.save()
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
@@ -225,7 +225,7 @@ def test_create_refund_with_existing_routing_slip(session, client,
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
-    inv.payment_date = datetime.now()
+    inv.payment_date = datetime.now(tz=timezone.utc)
     inv.save()
 
     assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total

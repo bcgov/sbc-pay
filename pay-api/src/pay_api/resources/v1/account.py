@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for Payment account."""
-from datetime import datetime
+from datetime import datetime, timezone
 from http import HTTPStatus
 
 from flask import Blueprint, Response, abort, current_app, jsonify, request
@@ -266,7 +266,7 @@ def post_account_purchase_report(account_number: str):
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    report_name = f"bcregistry-transactions-{datetime.now().strftime('%m-%d-%Y')}"
+    report_name = f"bcregistry-transactions-{datetime.now(tz=timezone.utc).strftime('%m-%d-%Y')}"
 
     if response_content_type == ContentType.PDF.value:
         report_name = f'{report_name}.pdf'

@@ -457,7 +457,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                                                                              auth=get_auth_premium_user())
         assert report_name == expected_report_name
 
-        date_string_now = get_statement_date_string(datetime.now())
+        date_string_now = get_statement_date_string(datetime.now(tz=timezone.utc))
         expected_template_vars = {
             'account': {
                 'accountType': 'PREMIUM',
@@ -557,7 +557,7 @@ def test_get_eft_statement_with_invoices(session):
 
         assert report_name == expected_report_name
 
-        date_string_now = get_statement_date_string(datetime.now())
+        date_string_now = get_statement_date_string(datetime.now(tz=timezone.utc))
         expected_template_vars = {
             'account': {
                 'accountType': 'PREMIUM',

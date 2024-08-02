@@ -13,7 +13,7 @@
 # limitations under the License.
 """Task to update refunded invoices that have been processed by BCOL."""
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timezone
 
 from decimal import Decimal
 from typing import Dict, List
@@ -115,6 +115,6 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
 
             # refund was processed and value is correct. Update invoice state and refund date
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-            invoice.refund_date = datetime.now()
+            invoice.refund_date = datetime.now(tz=timezone.utc)
             db.session.add(invoice)
         db.session.commit()

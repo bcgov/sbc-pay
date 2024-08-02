@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the Routing slip Service is working as expected.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -60,13 +60,13 @@ def test_create_routing_slip(session, staff_user_mock):
     """Create a routing slip."""
     routing_slip_payload: Dict[str, any] = {
         'number': '206380834',
-        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'routingSlipDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
         'paymentAccount': {
             'accountName': 'TEST'
         },
         'payments': [{
             'paymentMethod': PaymentMethod.CHEQUE.value,
-            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+            'paymentDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
             'chequeReceiptNumber': '123',
             'paidAmount': 100
         }]
@@ -83,20 +83,20 @@ def test_create_routing_slip_usd_one_of_payments(session, staff_user_mock):
     """Create a routing slip."""
     routing_slip_payload: Dict[str, any] = {
         'number': '206380834',
-        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'routingSlipDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
         'paymentAccount': {
             'accountName': 'TEST'
         },
         'payments': [
             {
                 'paymentMethod': PaymentMethod.CHEQUE.value,
-                'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+                'paymentDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
                 'chequeReceiptNumber': '123',
                 'paidAmount': 100
             },
             {
                 'paymentMethod': PaymentMethod.CHEQUE.value,
-                'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+                'paymentDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
                 'chequeReceiptNumber': '123',
                 'paidAmount': 100,
                 'paidUsdAmount': 80
@@ -116,21 +116,21 @@ def test_create_routing_slip_usd_both_payments(session, staff_user_mock):
     """Create a routing slip."""
     routing_slip_payload: Dict[str, any] = {
         'number': '206380834',
-        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'routingSlipDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
         'paymentAccount': {
             'accountName': 'TEST'
         },
         'payments': [
             {
                 'paymentMethod': PaymentMethod.CHEQUE.value,
-                'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+                'paymentDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
                 'chequeReceiptNumber': '123',
                 'paidAmount': 120,
                 'paidUsdAmount': 100
             },
             {
                 'paymentMethod': PaymentMethod.CHEQUE.value,
-                'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+                'paymentDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
                 'chequeReceiptNumber': '123',
                 'paidAmount': 100,
                 'paidUsdAmount': 80

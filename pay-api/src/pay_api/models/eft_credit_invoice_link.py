@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to link invoices with EFT Credits."""
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey
 
@@ -52,7 +52,7 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     eft_credit_id = db.Column(db.Integer, ForeignKey('eft_credits.id'), nullable=False, index=True)
     amount = db.Column(db.Numeric(19, 2), nullable=True)
     status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
     receipt_number = db.Column(db.String(50), nullable=True)
 
     @classmethod

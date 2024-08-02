@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the EFT Credits model is working as expected.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from pay_api.models import EFTCredit, EFTFile, EFTShortnames, EFTTransaction
@@ -59,7 +59,7 @@ def test_eft_credits(session):
     assert eft_credit.id is not None
     assert eft_credit.payment_account_id is None
     assert eft_credit.eft_file_id == eft_file.id
-    assert eft_credit.created_on.date() == datetime.now().date()
+    assert eft_credit.created_on.date() == datetime.now(tz=timezone.utc).date()
     assert eft_credit.amount == 100.00
     assert eft_credit.remaining_amount == 50.00
     assert eft_credit.eft_transaction_id == eft_transaction.id

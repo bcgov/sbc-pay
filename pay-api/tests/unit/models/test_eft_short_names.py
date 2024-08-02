@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the EFT Short names model is working as expected.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pay_api.models.eft_short_names import EFTShortnames as EFTShortnamesModel
 
@@ -29,4 +29,4 @@ def test_eft_short_name_model(session):
 
     assert eft_short_name.id is not None
     assert eft_short_name.short_name == 'ABC'
-    assert eft_short_name.created_on.date() == datetime.now().date()
+    assert eft_short_name.created_on.date() == datetime.now(tz=timezone.utc).date()
