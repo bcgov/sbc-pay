@@ -101,8 +101,8 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
     assert invoice.overdue_date
     assert account.payment_method == PaymentMethod.EFT.value
 
-    # Generate statements runs at 7:01 UTC
-    with freeze_time(datetime(2023, 2, 1, 7)):
+    # Generate statements runs at 8:01 UTC, currently set to 7:01 UTC, should be moved.
+    with freeze_time(datetime(2023, 2, 1, 8, 0, 1, tzinfo=None)):
         StatementTask.generate_statements()
 
     statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)

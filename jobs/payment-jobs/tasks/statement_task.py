@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dateutil.parser import parse
 from flask import current_app
@@ -45,7 +45,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         date_override = arguments[0] if arguments and len(arguments) > 0 else None
         auth_account_override = arguments[1] if arguments and len(arguments) > 1 else None
 
-        target_time = get_local_time(datetime.now()) if date_override is None \
+        target_time = get_local_time(datetime.now(tz=timezone.utc)) if date_override is None \
             else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
         cls.has_date_override = date_override is not None
         cls.has_account_override = auth_account_override is not None
