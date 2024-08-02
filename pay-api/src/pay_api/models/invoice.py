@@ -42,7 +42,7 @@ def determine_overdue_date(context):
     """Determine the overdue date with the correct time offset."""
     created_on = context.get_current_parameters()['created_on']
     target_date = created_on.date() + relativedelta(months=2,
-                                                    day=1)
+                                                    day=15)
     target_datetime = datetime.combine(target_date, datetime.min.time())
     # Correct for daylight savings.
     hours = target_datetime.astimezone(pytz.timezone('America/Vancouver')).utcoffset().total_seconds() / 60 / 60
