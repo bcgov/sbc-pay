@@ -18,7 +18,7 @@ A simple decorator to add the options method to a Request Class.
 """
 import ast
 import calendar
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict
 from decimal import Decimal
 from urllib.parse import parse_qsl
@@ -97,7 +97,7 @@ def get_week_start_and_end_date(target_date: datetime = datetime.now(), index: i
 
 def get_first_and_last_dates_of_month(month: int, year: int):
     """Return first and last dates for a given month and year."""
-    start_date = datetime.now().replace(day=1, year=year, month=month)
+    start_date = datetime.now(tz=timezone.utc).replace(day=1, year=year, month=month)
     end_date = start_date.replace(day=calendar.monthrange(year=year, month=month)[1])
     return start_date, end_date
 
