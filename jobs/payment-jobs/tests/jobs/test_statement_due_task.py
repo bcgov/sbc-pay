@@ -17,7 +17,7 @@
 Test-Suite to ensure that the UnpaidStatementNotifyTask is working as expected.
 """
 import decimal
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from unittest.mock import patch
 
@@ -29,7 +29,7 @@ from pay_api.models import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.services import Statement as StatementService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
-from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_previous_month_and_year
+from pay_api.utils.util import current_local_time
 
 import config
 from tasks.statement_task import StatementTask
@@ -101,7 +101,7 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
     assert invoice.overdue_date
     assert account.payment_method == PaymentMethod.EFT.value
 
-    with freeze_time(datetime(2023, 2, 1, 0)):
+    with freeze_time(datetime(2023, 2, 1, 7)):
         StatementTask.generate_statements()
 
     statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
