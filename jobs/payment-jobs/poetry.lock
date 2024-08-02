@@ -2001,7 +2001,7 @@ werkzeug = "3.0.1"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "statement_reminder_tweaks"
-resolved_reference = "e17dbde7b13957fb94ffa36ff339b7f43f3a44c5"
+resolved_reference = "7fdb6226198ce4cc307b3b3daad56669d905ab3a"
 subdirectory = "pay-api"
 
 [[package]]
