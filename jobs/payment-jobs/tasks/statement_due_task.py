@@ -38,8 +38,9 @@ from utils.enums import StatementNotificationAction
 from utils.mailer import StatementNotificationInfo, publish_payment_notification
 
 
-# IMPORTANT: Due to the nature of dates, run this job at least  08:00 UTC or greater.
+# IMPORTANT: Due to the nature of dates, run this job at least 08:00 UTC or greater.
 # Otherwise it could be triggered the day before due to timeshift for PDT/PST.
+# It also needs to run after the statements job.
 class StatementDueTask:   # pylint: disable=too-few-public-methods
     """Task to notify admin for unpaid statements.
 
