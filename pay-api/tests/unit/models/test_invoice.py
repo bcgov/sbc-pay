@@ -77,11 +77,11 @@ def test_payments_marked_for_delete(session):
 
 
 @pytest.mark.parametrize('test_name, created_on, overdue_date', [
-    ('March - PST - edge', datetime(2024, 1, 1, 8), datetime(2024, 3, 15, 8, 0, 0)),
+    ('March - PDT - edge', datetime(2024, 1, 1, 8), datetime(2024, 3, 15, 7, 0, 0)),
     ('April - PDT - edge', datetime(2024, 2, 1, 8), datetime(2024, 4, 15, 7, 0, 0)),
-    ('November - PDT - edge', datetime(2024, 9, 1, 8), datetime(2024, 11, 15, 7, 0, 0)),
+    ('November - PST - edge', datetime(2024, 9, 1, 8), datetime(2024, 11, 15, 8, 0, 0)),
     ('December - PST - edge', datetime(2024, 10, 1, 8), datetime(2024, 12, 15, 8, 0, 0)),
-    ('End of the month invoice creation', datetime(2024, 1, 31, 8), datetime(2024, 3, 15, 8, 0, 0)),
+    ('End of the month invoice creation', datetime(2024, 1, 31, 8), datetime(2024, 3, 15, 7, 0, 0)),
     ('Beginning of month invoice creation', datetime(2023, 12, 1, 8), datetime(2024, 2, 15, 8, 0, 0)),
 ])
 def test_overdue_date(session, test_name, created_on, overdue_date):
