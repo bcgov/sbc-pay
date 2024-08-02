@@ -153,8 +153,13 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         if invoice is None:
             return None, None
 
-        day_before_invoice_overdue = (invoice.overdue_date - timedelta(days=1)).date()
-        seven_days_before_invoice_due = day_before_invoice_overdue - timedelta(days=7)
+        # 1. EFT Invoice created between or on January 1st <-> January 31st
+        # 2. Statement Day Feburary 1st
+        # 3. 7 day reminder Feb 21th ( due date - 7)
+        # 4. Final reminder Feb 28th (due date client should be told to pay by this time)
+        # 5. Overdue Date and account locked March 15th
+        day_before_invoice_overdue = (invoice.overdue_date - timedelta(days=1 + 15)).date()
+        seven_days_before_invoice_due = day_before_invoice_overdue - timedelta(days=7 + 15)
         now_date = datetime.now(tz=timezone.utc).date()
 
         if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:

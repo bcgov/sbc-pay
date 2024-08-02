@@ -2001,7 +2001,7 @@ werkzeug = "3.0.1"
 type = "git"
 url = "https://github.com/bcgov/sbc-pay.git"
 reference = "HEAD"
-resolved_reference = "012af273fe5ea47368f9c3ff9f0fe7e253e211dc"
+resolved_reference = "de5eaa066f3e42188138d6919e3bb257885a596c"
 subdirectory = "pay-api"
 
 [[package]]

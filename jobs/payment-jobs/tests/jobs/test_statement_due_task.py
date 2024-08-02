@@ -80,10 +80,15 @@ def create_test_data(payment_method_code: str, payment_date: datetime,
     return account, invoice, inv_ref, statement_recipient, statement_settings
 
 
+# 1. EFT Invoice created between or on January 1st <-> January 31st
+# 2. Statement Day Feburary 1st
+# 3. 7 day reminder Feb 21th ( due date - 7)
+# 4. Final reminder Feb 28th (due date client should be told to pay by this time)
+# 5. Overdue Date and account locked March 15th
 @pytest.mark.parametrize('test_name, freeze_time_offset, action', [
     ('reminder', timedelta(days=-7), StatementNotificationAction.REMINDER),
     ('due', timedelta(days=0), StatementNotificationAction.DUE),
-    ('overdue', timedelta(days=7), StatementNotificationAction.OVERDUE)
+    ('overdue', timedelta(days=15), StatementNotificationAction.OVERDUE)
 ])
 def test_send_unpaid_statement_notification(setup, session, test_name, freeze_time_offset, action):
     """Assert payment reminder event is being sent."""
