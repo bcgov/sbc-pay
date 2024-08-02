@@ -307,7 +307,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # if distribution code exists, put an end date as previous day and create new.
             dist_code_svc = DistributionCode.find_active_by_account_id(details.payment_account.id)
             if dist_code_svc and dist_code_svc.distribution_code_id:
-                end_date: datetime = datetime.now() - timedelta(days=1)
+                end_date: datetime = datetime.now(tz=timezone.utc) - timedelta(days=1)
                 dist_code_svc.end_date = end_date.date()
                 dist_code_svc.save()
 

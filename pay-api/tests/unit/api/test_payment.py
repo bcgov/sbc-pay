@@ -17,7 +17,7 @@
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentMethod, Role
@@ -82,7 +82,7 @@ def test_create_eft_payment(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = {
         'paidAmount': 100,
-        'paymentDate': str(datetime.now()),
+        'paymentDate': str(datetime.now(tz=timezone.utc)),
         'paymentMethod': 'EFT'
     }
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
@@ -98,7 +98,7 @@ def test_create_wire_payment(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = {
         'paidAmount': 100,
-        'paymentDate': str(datetime.now()),
+        'paymentDate': str(datetime.now(tz=timezone.utc)),
         'paymentMethod': 'WIRE'
     }
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.WIRE.value).save()

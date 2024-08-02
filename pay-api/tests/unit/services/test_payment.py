@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 import pytz
@@ -81,8 +81,8 @@ def test_payment_with_no_active_invoice(session):
     ('status_code_completed', {'statusCode': 'COMPLETED'}, False, 0, None, None),
     ('folio', {'folioNumber': '1234567890'}, False, 3, 'folio_number', '1234567890'),
     ('business_identifier', {'businessIdentifier': 'CP000'}, False, 3, 'business_identifier', 'CP0001234'),
-    ('date', {'dateFilter': {'createdFrom': datetime.now().strftime('%m/%d/%Y'),
-                             'createdTo': datetime.now().strftime('%m/%d/%Y')}},
+    ('date', {'dateFilter': {'createdFrom': datetime.now(tz=timezone.utc).strftime('%m/%d/%Y'),
+                             'createdTo': datetime.now(tz=timezone.utc).strftime('%m/%d/%Y')}},
      False, 3, None, None),
     ('week_no_match', {'weekFilter': {'index': 2}}, False, 0, None, None),
     ('week_match_all', {'weekFilter': {'index': 0}}, False, 3, None, None),
@@ -232,7 +232,7 @@ def test_create_payment_report_pdf(session, rest_call_mock):
 def test_search_payment_history_with_tz(session):
     """Assert that the search payment history is working."""
     payment_account = factory_payment_account()
-    invoice_created_on = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    invoice_created_on = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     invoice_created_on = invoice_created_on.astimezone(pytz.utc)
     payment = factory_payment(payment_status_code='CREATED')
     payment_account.save()
@@ -249,7 +249,7 @@ def test_search_payment_history_with_tz(session):
     assert results.get('total') == 1
 
     # Add one more payment
-    invoice_created_on = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    invoice_created_on = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     invoice_created_on = invoice_created_on.astimezone(pytz.utc)
     payment = factory_payment(payment_status_code='CREATED')
     payment_account.save()

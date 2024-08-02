@@ -17,7 +17,7 @@
 Test-Suite to ensure that the Refund Service is working as expected.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import pytest
 
 from pay_api.exceptions import BusinessException
@@ -110,7 +110,7 @@ def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
     factory_payment_transaction(payment_id=payment.id, status_code=TransactionStatus.COMPLETED.value).save()
 
     i.invoice_status_code = InvoiceStatus.PAID.value
-    i.payment_date = datetime.now()
+    i.payment_date = datetime.now(tz=timezone.utc)
     i.save()
 
     factory_receipt(invoice_id=i.id, receipt_number='953959345343').save()

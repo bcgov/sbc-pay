@@ -18,7 +18,7 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
@@ -50,8 +50,8 @@ def test_transaction_saved_from_new(session):
 
     payment_transaction = PaymentTransactionService()
     payment_transaction.status_code = 'CREATED'
-    payment_transaction.transaction_end_time = datetime.now()
-    payment_transaction.transaction_start_time = datetime.now()
+    payment_transaction.transaction_end_time = datetime.now(tz=timezone.utc)
+    payment_transaction.transaction_start_time = datetime.now(tz=timezone.utc)
     payment_transaction.pay_system_url = 'http://google.com'
     payment_transaction.client_system_url = 'http://google.com'
     payment_transaction.payment_id = payment.id
@@ -478,7 +478,7 @@ def test_event_failed_transactions(session, public_user_mock, monkeypatch):
 
     def get_receipt(cls, payment_account, pay_response_url: str,
                     invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
-        return '1234567890', datetime.now(), 30.00
+        return '1234567890', datetime.now(tz=timezone.utc), 30.00
 
     monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService.get_receipt', get_receipt)
 
@@ -614,7 +614,7 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
 
     def get_receipt(cls, payment_account, pay_response_url: str,
                     invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
-        return '1234567890', datetime.now(), 100.00
+        return '1234567890', datetime.now(tz=timezone.utc), 100.00
 
     monkeypatch.setattr('pay_api.services.paybc_service.PaybcService.get_receipt', get_receipt)
     txn = PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())

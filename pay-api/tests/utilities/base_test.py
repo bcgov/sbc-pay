@@ -898,7 +898,7 @@ def factory_eft_shortname(short_name: str):
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
-                               updated_by: str = None, updated_on: datetime = datetime.now()):
+                               updated_by: str = None, updated_on: datetime = datetime.now(tz=timezone.utc)):
     """Return an EFT short name link model."""
     return EFTShortnameLinks(
         eft_short_name_id=short_name_id,

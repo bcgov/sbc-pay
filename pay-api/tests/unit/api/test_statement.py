@@ -17,7 +17,7 @@
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from pay_api.models import PaymentAccount
@@ -250,7 +250,7 @@ def test_statement_summary(session, client, jwt, app):
     total_due = 0
     payment_account_id = 0
     invoice_ids = []
-    oldest_overdue_date = datetime.now()
+    oldest_overdue_date = datetime.now(tz=timezone.utc)
     for _ in range(5):
         rv = client.post('/api/v1/payment-requests',
                          data=json.dumps(get_payment_request(business_identifier='CP0002000')),

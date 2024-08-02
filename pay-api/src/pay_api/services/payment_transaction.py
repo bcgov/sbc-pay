@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 import humps
@@ -261,7 +261,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if existing_transaction and existing_transaction.status_code != TransactionStatus.CANCELLED.value:
             current_app.logger.info('Found existing transaction. Setting as CANCELLED.')
             existing_transaction.status_code = TransactionStatus.CANCELLED.value
-            existing_transaction.transaction_end_time = datetime.now()
+            existing_transaction.transaction_end_time = datetime.now(tz=timezone.utc)
             existing_transaction.save()
         transaction = PaymentTransaction()
         transaction.payment_id = payment.id
@@ -406,7 +406,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             transaction_dao.pay_system_reason_code = pay_system_reason_code
 
         # Save response URL
-        transaction_dao.transaction_end_time = datetime.now()
+        transaction_dao.transaction_end_time = datetime.now(tz=timezone.utc)
         transaction_dao.pay_response_url = pay_response_url
         transaction_dao = transaction_dao.save()
 
@@ -427,7 +427,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     def _update_receipt_details(invoices, payment, receipt_details, transaction_dao):
         """Update receipt details to invoice."""
         payment.paid_amount = receipt_details[2]
-        payment.payment_date = datetime.now()
+        payment.payment_date = datetime.now(tz=timezone.utc)
         transaction_dao.status_code = TransactionStatus.COMPLETED.value
 
         if float(payment.paid_amount) < float(payment.invoice_amount):
@@ -444,7 +444,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 PaymentTransaction.__save_receipt(invoice, receipt_details)
                 invoice.paid = invoice.total  # set the paid amount as total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice.payment_date = datetime.now()
+                invoice.payment_date = datetime.now(tz=timezone.utc)
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
                 # TODO If it's not PAD, publish message. Refactor and move to pay system service later.

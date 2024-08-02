@@ -14,7 +14,7 @@
 """Service to manage routing slip operations."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Dict, List, Set
 
@@ -237,7 +237,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             'reportName': f'Routing-Slip-Daily-Report-{date}',
             'templateVars': {
                 'day': date,
-                'reportDay': str(get_local_time(datetime.now())),
+                'reportDay': str(get_local_time(datetime.now(tz=timezone.utc))),
                 'total': float(total),
                 'numberOfCashReceipts': no_of_cash,
                 'numberOfChequeReceipts': no_of_cheque,
