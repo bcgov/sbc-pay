@@ -58,10 +58,12 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     @classmethod
     def _update_invoice_overdue_status(cls):
         """Update the status of any invoices that are overdue."""
+        # Needs to be non timezone aware.
+        now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         query = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
                     InvoiceModel.overdue_date.isnot(None),
-                    InvoiceModel.overdue_date <= datetime.now(tz=timezone.utc),
+                    InvoiceModel.overdue_date <= now,
                     InvoiceModel.invoice_status_code.in_(cls.unpaid_status))
         query.update({InvoiceModel.invoice_status_code: InvoiceStatus.OVERDUE.value}, synchronize_session='fetch')
         db.session.commit()
@@ -153,17 +155,22 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         if invoice is None:
             return None, None
 
-        day_before_invoice_overdue = (invoice.overdue_date - timedelta(days=1)).date()
-        seven_days_before_invoice_due = day_before_invoice_overdue - timedelta(days=7)
+        # 1. EFT Invoice created between or on January 1st <-> January 31st
+        # 2. Statement Day February 1st
+        # 3. 7 day reminder Feb 21th ( due date - 7)
+        # 4. Final reminder Feb 28th (due date client should be told to pay by this time)
+        # 5. Overdue Date and account locked March 15th
+        day_invoice_due = (invoice.overdue_date - timedelta(days=15)).date()
+        seven_days_before_invoice_due = day_invoice_due - timedelta(days=7)
         now_date = datetime.now(tz=timezone.utc).date()
 
         if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
-            return StatementNotificationAction.OVERDUE, day_before_invoice_overdue
-        if day_before_invoice_overdue == now_date:
-            return StatementNotificationAction.DUE, day_before_invoice_overdue
+            return StatementNotificationAction.OVERDUE, day_invoice_due
+        if day_invoice_due == now_date:
+            return StatementNotificationAction.DUE, day_invoice_due
         if seven_days_before_invoice_due == now_date:
-            return StatementNotificationAction.REMINDER, day_before_invoice_overdue
-        return None, day_before_invoice_overdue
+            return StatementNotificationAction.REMINDER, day_invoice_due
+        return None, day_invoice_due
 
     @classmethod
     def _determine_recipient_emails(cls, statement: StatementRecipientsModel) -> str:
