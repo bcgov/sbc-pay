@@ -94,7 +94,7 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
     """Assert payment reminder event is being sent."""
     account, invoice, _, \
         statement_recipient, _ = create_test_data(PaymentMethod.EFT.value,
-                                                  datetime(2023, 1, 1, 0),
+                                                  datetime(2023, 1, 1, 8),
                                                   StatementFrequency.MONTHLY.value,
                                                   351.50)
     assert invoice.payment_method_code == PaymentMethod.EFT.value
