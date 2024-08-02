@@ -106,6 +106,7 @@ def test_send_unpaid_statement_notification(setup, session, test_name, freeze_ti
 
     now = current_local_time().replace(hour=1)
     _, last_day = get_first_and_last_dates_of_month(now.month, now.year)
+    last_day = last_day + timedelta(hours=8) # 8 Hours should get us into the correct day.
 
     # Generate statement for previous month - freeze time to the 1st of the current month
     with freeze_time(current_local_time().replace(day=1, hour=1)):
