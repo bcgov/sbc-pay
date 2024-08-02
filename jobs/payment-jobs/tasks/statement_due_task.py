@@ -58,10 +58,12 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     @classmethod
     def _update_invoice_overdue_status(cls):
         """Update the status of any invoices that are overdue."""
+        # Needs to be non timezone aware.
+        now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         query = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
                     InvoiceModel.overdue_date.isnot(None),
-                    InvoiceModel.overdue_date <= datetime.now(tz=timezone.utc),
+                    InvoiceModel.overdue_date <= now,
                     InvoiceModel.invoice_status_code.in_(cls.unpaid_status))
         query.update({InvoiceModel.invoice_status_code: InvoiceStatus.OVERDUE.value}, synchronize_session='fetch')
         db.session.commit()

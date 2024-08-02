@@ -106,7 +106,7 @@ def test_send_unpaid_statement_notification(setup, session, test_name, freeze_ti
 
     now = current_local_time().replace(hour=1)
     _, last_day = get_first_and_last_dates_of_month(now.month, now.year)
-    last_day = last_day + timedelta(hours=8)  # 8 Hours should get us into the correct day.
+    last_day = last_day.replace(hour=8)  # 8 Hours should get us into the correct day.
 
     # Generate statement for previous month - freeze time to the 1st of the current month
     with freeze_time(current_local_time().replace(day=1, hour=1)):
@@ -152,7 +152,7 @@ def test_unpaid_statement_notification_not_sent(setup, session):
 
 def test_overdue_invoices_updated(setup, session):
     """Assert invoices are transitioned to overdue status."""
-    invoice_date = current_local_time() + relativedelta(months=-2, day=5, hours=1)
+    invoice_date = current_local_time() - relativedelta(months=2, days=15)
     account, invoice, _, \
         _, _ = create_test_data(PaymentMethod.EFT.value,
                                 invoice_date,
