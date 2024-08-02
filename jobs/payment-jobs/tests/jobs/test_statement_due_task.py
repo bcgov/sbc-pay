@@ -82,34 +82,26 @@ def create_test_data(payment_method_code: str, payment_date: datetime,
 
 # 1. EFT Invoice created between or on January 1st <-> January 31st
 # 2. Statement Day February 1st
-# 3. 7 day reminder Feb 21th ( due date - 7)
+# 3. 7 day reminder Feb 21th (due date - 7)
 # 4. Final reminder Feb 28th (due date client should be told to pay by this time)
 # 5. Overdue Date and account locked March 15th
-@pytest.mark.parametrize('test_name, freeze_time_offset, action', [
-    ('reminder', timedelta(days=-7), StatementNotificationAction.REMINDER),
-    ('due', timedelta(days=0), StatementNotificationAction.DUE),
-    ('overdue', timedelta(days=15), StatementNotificationAction.OVERDUE)
+@pytest.mark.parametrize('test_name, action_on, action', [
+    ('reminder', datetime(2023, 2, 21, 8), StatementNotificationAction.REMINDER),
+    ('due', datetime(2023, 2, 28, 8), StatementNotificationAction.DUE),
+    ('overdue', datetime(2023, 3, 15, 8), StatementNotificationAction.OVERDUE)
 ])
-def test_send_unpaid_statement_notification(setup, session, test_name, freeze_time_offset, action):
+def test_send_unpaid_statement_notification(setup, session, test_name, action_on, action):
     """Assert payment reminder event is being sent."""
-    last_month, last_year = get_previous_month_and_year()
-    previous_month_year = datetime(last_year, last_month, 5)
-
     account, invoice, _, \
         statement_recipient, _ = create_test_data(PaymentMethod.EFT.value,
-                                                  previous_month_year,
+                                                  datetime(2023, 1, 1, 0),
                                                   StatementFrequency.MONTHLY.value,
                                                   351.50)
     assert invoice.payment_method_code == PaymentMethod.EFT.value
     assert invoice.overdue_date
     assert account.payment_method == PaymentMethod.EFT.value
 
-    now = current_local_time().replace(hour=1)
-    _, last_day = get_first_and_last_dates_of_month(now.month, now.year)
-    last_day = last_day.replace(hour=8)  # 8 Hours should get us into the correct day.
-
-    # Generate statement for previous month - freeze time to the 1st of the current month
-    with freeze_time(current_local_time().replace(day=1, hour=1)):
+    with freeze_time(datetime(2023, 2, 1, 0)):
         StatementTask.generate_statements()
 
     statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
@@ -125,17 +117,18 @@ def test_send_unpaid_statement_notification(setup, session, test_name, freeze_ti
 
     with patch('utils.auth_event.AuthEvent.publish_lock_account_event') as mock_auth_event:
         with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
-            with freeze_time(last_day + freeze_time_offset):
-                StatementDueTask.process_unpaid_statements()
+            with freeze_time(action_on):
+                StatementDueTask.process_unpaid_statements(statement_date_override=datetime(2023, 2, 1, 0))
                 if action == StatementNotificationAction.OVERDUE:
                     mock_auth_event.assert_called()
                     assert statements[0][0].overdue_notification_date
                     assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
                 else:
+                    due_date = statements[0][0].to_date + relativedelta(months=1)
                     mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
                                                                              statement=statements[0][0],
                                                                              action=action,
-                                                                             due_date=last_day.date(),
+                                                                             due_date=due_date,
                                                                              emails=statement_recipient.email,
                                                                              total_amount_owing=total_amount_owing))
 

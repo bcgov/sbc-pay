@@ -13,6 +13,7 @@
 # limitations under the License.
 """Task to notify user for any outstanding statement."""
 from datetime import datetime, timedelta, timezone
+from dateutil.relativedelta import relativedelta
 
 from flask import current_app
 from pay_api.models import db
@@ -37,6 +38,8 @@ from utils.enums import StatementNotificationAction
 from utils.mailer import StatementNotificationInfo, publish_payment_notification
 
 
+# IMPORTANT: Due to the nature of dates, run this job at least  08:00 UTC or greater.
+# Otherwise it could be triggered the day before due to timeshift for PDT/PST.
 class StatementDueTask:   # pylint: disable=too-few-public-methods
     """Task to notify admin for unpaid statements.
 
@@ -48,12 +51,12 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                      InvoiceStatus.CREATED.value]
 
     @classmethod
-    def process_unpaid_statements(cls):
+    def process_unpaid_statements(cls, statement_date_override=None):
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
         if eft_enabled:
             cls._update_invoice_overdue_status()
-            cls._notify_for_monthly()
+            cls._notify_for_monthly(statement_date_override)
 
     @classmethod
     def _update_invoice_overdue_status(cls):
@@ -86,9 +89,9 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                                                                 description='EFT invoice overdue')
 
     @classmethod
-    def _notify_for_monthly(cls):
+    def _notify_for_monthly(cls, statement_date_override):
         """Notify for unpaid monthly statements with an amount owing."""
-        previous_month = current_local_time().replace(day=1) - timedelta(days=1)
+        previous_month = statement_date_override or current_local_time().replace(day=1) - timedelta(days=1)
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_month,
                                                                                         StatementFrequency.MONTHLY)
         eft_payment_accounts = [pay_account for _, pay_account in statement_settings
@@ -100,7 +103,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                 if not (statement := cls._find_most_recent_statement(
                         payment_account.auth_account_id, StatementFrequency.MONTHLY.value)):
                     continue
-                action, due_date = cls._determine_action_and_due_date_by_invoice(statement.id)
+                action, due_date = cls._determine_action_and_due_date_by_invoice(statement)
                 total_due = Statement.get_summary(payment_account.auth_account_id, statement.id)['total_due']
                 if action and total_due > 0:
                     if action == StatementNotificationAction.OVERDUE:
@@ -143,11 +146,11 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         return query.first()
 
     @classmethod
-    def _determine_action_and_due_date_by_invoice(cls, statement_id: int):
+    def _determine_action_and_due_date_by_invoice(cls, statement: StatementModel):
         """Find the most overdue invoice for a statement and provide an action."""
         invoice = db.session.query(InvoiceModel) \
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id) \
-            .filter(StatementInvoicesModel.statement_id == statement_id) \
+            .filter(StatementInvoicesModel.statement_id == statement.id) \
             .filter(InvoiceModel.overdue_date.isnot(None)) \
             .order_by(InvoiceModel.overdue_date.asc()) \
             .first()
@@ -157,12 +160,13 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
 
         # 1. EFT Invoice created between or on January 1st <-> January 31st
         # 2. Statement Day February 1st
-        # 3. 7 day reminder Feb 21th ( due date - 7)
+        # 3. 7 day reminder Feb 21th (due date - 7)
         # 4. Final reminder Feb 28th (due date client should be told to pay by this time)
         # 5. Overdue Date and account locked March 15th
-        day_invoice_due = (invoice.overdue_date - timedelta(days=15)).date()
+        day_invoice_due = statement.to_date + relativedelta(months=1)
         seven_days_before_invoice_due = day_invoice_due - timedelta(days=7)
-        now_date = datetime.now(tz=timezone.utc).date()
+        # Needs to be non timezone aware for comparison.
+        now_date = datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
 
         if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
             return StatementNotificationAction.OVERDUE, day_invoice_due
