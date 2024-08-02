@@ -154,7 +154,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
             return None, None
 
         # 1. EFT Invoice created between or on January 1st <-> January 31st
-        # 2. Statement Day Feburary 1st
+        # 2. Statement Day February 1st
         # 3. 7 day reminder Feb 21th ( due date - 7)
         # 4. Final reminder Feb 28th (due date client should be told to pay by this time)
         # 5. Overdue Date and account locked March 15th
