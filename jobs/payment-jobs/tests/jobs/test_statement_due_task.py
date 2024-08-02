@@ -101,6 +101,7 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
     assert invoice.overdue_date
     assert account.payment_method == PaymentMethod.EFT.value
 
+    # Generate statements runs at 7:01 UTC
     with freeze_time(datetime(2023, 2, 1, 7)):
         StatementTask.generate_statements()
 
