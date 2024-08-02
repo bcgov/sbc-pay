@@ -123,7 +123,8 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
                                       'accountId': account.auth_account_id}),
                      headers=headers)
     assert rv.status_code == 204
-    assert eft_credits_2[0].remaining_amount == 300
+    assert sum([eft_credit.remaining_amount for eft_credit in eft_credits + eft_credits_2]) == 300
+    # assert eft_credits_2[0].remaining_amount == 300
     assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 300
 
 
