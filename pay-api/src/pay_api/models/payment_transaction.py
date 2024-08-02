@@ -64,7 +64,7 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
     pay_response_url = db.Column(db.String(2000), nullable=True)
     pay_system_reason_code = db.Column(db.String(2000), nullable=True)
 
-    transaction_start_time = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    transaction_start_time = db.Column(db.DateTime, default=datetime.now(tz=timezone.utc), nullable=False)
     transaction_end_time = db.Column(db.DateTime, nullable=True)
 
     @classmethod
