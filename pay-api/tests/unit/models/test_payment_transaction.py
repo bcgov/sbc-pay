@@ -81,7 +81,7 @@ def test_find_older_records(session):
                                                              minutes=10)  # find records which are 2.10 hours older
     assert len(all_records) == 2
     for record in all_records:
-        assert record.transaction_start_time < datetime.now(tz=timezone.utc) - timedelta(hours=2)
+        assert record.transaction_start_time < datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(hours=2)
 
 
 def test_find_older_records_invalid_status(session):
