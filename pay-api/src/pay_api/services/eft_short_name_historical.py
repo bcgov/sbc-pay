@@ -61,7 +61,6 @@ class EFTShortnameHistorical:
             amount=history.amount,
             created_by='SYSTEM',
             credit_balance=history.credit_balance,
-            description='Funds Received',
             hidden=history.hidden,
             is_processing=history.is_processing,
             short_name_id=history.short_name_id,
@@ -77,7 +76,6 @@ class EFTShortnameHistorical:
             amount=history.amount,
             created_by=kwargs['user'].user_name,
             credit_balance=history.credit_balance,
-            description='Statement Paid',
             hidden=history.hidden,
             is_processing=history.is_processing,
             payment_account_id=history.payment_account_id,
@@ -96,7 +94,6 @@ class EFTShortnameHistorical:
             amount=history.amount,
             created_by=kwargs['user'].user_name,
             credit_balance=history.credit_balance,
-            description='Payment Reversed',
             hidden=history.hidden,
             is_processing=history.is_processing,
             payment_account_id=history.payment_account_id,
@@ -109,7 +106,7 @@ class EFTShortnameHistorical:
 
     @staticmethod
     def transaction_date_now() -> datetime:
-        """Construct a datetime using the legislation timezone."""
+        """Construct transaction datetime using the utc timezone."""
         return datetime.now(tz=timezone.utc)
 
     @staticmethod
@@ -146,6 +143,10 @@ class EFTShortnameHistorical:
             .correlate(history_model)
         ).subquery('latest_statement_history')
 
+        # Reversible if:
+        # - most recent state of the statement has been paid and not processing
+        # - within 60 days of that transaction date
+        # - is STATEMENT_PAID transaction type
         reversible_statement_subquery = exists(
             select(1)
             .select_from(latest_history_subquery)
@@ -168,7 +169,6 @@ class EFTShortnameHistorical:
                                   history_model.short_name_id,
                                   history_model.amount,
                                   history_model.credit_balance,
-                                  history_model.description,
                                   history_model.statement_number,
                                   history_model.transaction_date,
                                   history_model.transaction_type,

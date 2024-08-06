@@ -16,6 +16,9 @@
 
 Test-Suite to ensure that the /eft-shortnames/{id}/history endpoint is working as expected.
 """
+from datetime import datetime
+
+from freezegun import freeze_time
 
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
@@ -54,57 +57,56 @@ def test_search_short_name_history(session, client, jwt, app):
     """Assert that EFT short names history can be searched."""
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    payment_account, short_name = setup_test_data()
-    rv = client.get(f'/api/v1/eft-shortnames/{short_name.id}/history', headers=headers)
-    assert rv.status_code == 200
+    transaction_date = datetime(2024, 7, 31, 0, 0, 0)
+    with freeze_time(transaction_date):
+        payment_account, short_name = setup_test_data()
+        rv = client.get(f'/api/v1/eft-shortnames/{short_name.id}/history', headers=headers)
+        assert rv.status_code == 200
 
-    result_dict = rv.json
-    assert result_dict is not None
-    assert result_dict['page'] == 1
-    assert result_dict['total'] == 3
-    assert result_dict['limit'] == 10
-    assert result_dict['items'] is not None
-    assert len(result_dict['items']) == 3
+        result_dict = rv.json
+        assert result_dict is not None
+        assert result_dict['page'] == 1
+        assert result_dict['total'] == 3
+        assert result_dict['limit'] == 10
+        assert result_dict['items'] is not None
+        assert len(result_dict['items']) == 3
 
-    transaction_date = EFTHistoryService.transaction_date_now().strftime('%Y-%m-%d')
-    funds_received = result_dict['items'][2]
-    assert not funds_received['isReversible'] is True
-    assert funds_received['accountBranch'] is None
-    assert funds_received['accountId'] is None
-    assert funds_received['accountName'] is None
-    assert funds_received['amount'] == 351.50
-    assert funds_received['historicalId'] is not None
-    assert funds_received['shortNameBalance'] == 351.50
-    assert funds_received['shortNameId'] == short_name.id
-    assert funds_received['statementNumber'] is None
-    assert funds_received['transactionType'] == EFTHistoricalTypes.FUNDS_RECEIVED.value
-    assert funds_received['transactionDate'] == transaction_date
-    assert funds_received['transactionDescription'] == 'Funds Received'
+        transaction_date = EFTHistoryService.transaction_date_now().strftime('%Y-%m-%dT%H:%M:%S')
+        funds_received = result_dict['items'][2]
+        assert funds_received['isReversible'] is False
+        assert funds_received['accountBranch'] is None
+        assert funds_received['accountId'] is None
+        assert funds_received['accountName'] is None
+        assert funds_received['amount'] == 351.50
+        assert funds_received['historicalId'] is not None
+        assert funds_received['shortNameBalance'] == 351.50
+        assert funds_received['shortNameId'] == short_name.id
+        assert funds_received['statementNumber'] is None
+        assert funds_received['transactionType'] == EFTHistoricalTypes.FUNDS_RECEIVED.value
+        assert funds_received['transactionDate'] == transaction_date
 
-    statement_paid = result_dict['items'][1]
-    assert statement_paid['isReversible'] is True
-    assert statement_paid['accountBranch'] == payment_account.branch_name
-    assert statement_paid['accountId'] == payment_account.auth_account_id
-    assert statement_paid['accountName'] == 'ABC'
-    assert statement_paid['amount'] == 351.50
-    assert statement_paid['historicalId'] is not None
-    assert statement_paid['shortNameBalance'] == 0
-    assert statement_paid['shortNameId'] == short_name.id
-    assert statement_paid['statementNumber'] == 1234
-    assert statement_paid['transactionType'] == EFTHistoricalTypes.STATEMENT_PAID.value
-    assert statement_paid['transactionDate'] == transaction_date
-    assert statement_paid['transactionDescription'] == 'Statement Paid'
+        statement_paid = result_dict['items'][1]
+        assert statement_paid['isReversible'] is False
+        assert statement_paid['accountBranch'] == payment_account.branch_name
+        assert statement_paid['accountId'] == payment_account.auth_account_id
+        assert statement_paid['accountName'] == 'ABC'
+        assert statement_paid['amount'] == 351.50
+        assert statement_paid['historicalId'] is not None
+        assert statement_paid['shortNameBalance'] == 0
+        assert statement_paid['shortNameId'] == short_name.id
+        assert statement_paid['statementNumber'] == 1234
+        assert statement_paid['transactionType'] == EFTHistoricalTypes.STATEMENT_PAID.value
+        assert statement_paid['transactionDate'] == transaction_date
 
-    statement_reverse = result_dict['items'][0]
-    assert statement_reverse['isReversible'] is False
-    assert statement_reverse['accountBranch'] == payment_account.branch_name
-    assert statement_reverse['accountId'] == payment_account.auth_account_id
-    assert statement_reverse['accountName'] == 'ABC'
-    assert statement_reverse['amount'] == 351.50
-    assert statement_reverse['historicalId'] is not None
-    assert statement_reverse['shortNameBalance'] == 351.50
-    assert statement_reverse['shortNameId'] == short_name.id
-    assert statement_reverse['statementNumber'] == 1234
-    assert statement_reverse['transactionType'] == EFTHistoricalTypes.STATEMENT_REVERSE.value
-    assert statement_reverse['transactionDate'] == transaction_date
-    assert statement_reverse['transactionDescription'] == 'Payment Reversed'
+        statement_reverse = result_dict['items'][0]
+        assert statement_reverse['isReversible'] is False
+        assert statement_reverse['accountBranch'] == payment_account.branch_name
+        assert statement_reverse['accountId'] == payment_account.auth_account_id
+        assert statement_reverse['accountName'] == 'ABC'
+        assert statement_reverse['amount'] == 351.50
+        assert statement_reverse['historicalId'] is not None
+        assert statement_reverse['shortNameBalance'] == 351.50
+        assert statement_reverse['shortNameId'] == short_name.id
+        assert statement_reverse['statementNumber'] == 1234
+        assert statement_reverse['transactionType'] == EFTHistoricalTypes.STATEMENT_REVERSE.value
+        assert statement_reverse['transactionDate'] == transaction_date

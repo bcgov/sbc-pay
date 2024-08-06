@@ -29,7 +29,6 @@ def upgrade():
                     sa.Column('created_by', sa.String(), nullable=True),
                     sa.Column('created_on', sa.DateTime(), nullable=False),
                     sa.Column('credit_balance', sa.Numeric(precision=19, scale=2), nullable=False),
-                    sa.Column('description', sa.String(), nullable=False),
                     sa.Column('hidden', sa.Boolean(), nullable=False),
                     sa.Column('is_processing', sa.Boolean(), nullable=False),
                     sa.Column('payment_account_id', sa.Integer(), nullable=True),

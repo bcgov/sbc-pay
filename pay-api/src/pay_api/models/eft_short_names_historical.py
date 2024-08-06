@@ -59,7 +59,6 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
     created_by = db.Column(db.String, nullable=True)
     created_on = db.Column(db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
     credit_balance = db.Column(db.Numeric(19, 2), nullable=False)
-    description = db.Column(db.String, nullable=False)
     hidden = db.Column(db.Boolean(), nullable=False, default=False, index=True)
     is_processing = db.Column(db.Boolean(), nullable=False, default=False)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
@@ -88,7 +87,6 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
     short_name_id: int
     short_name_balance: Decimal
     transaction_date: datetime
-    transaction_description: str
     transaction_type: str
     is_processing: bool
     is_reversible: bool
@@ -109,6 +107,5 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
                    statement_number=getattr(row, 'statement_number', None),
                    transaction_date=getattr(row, 'transaction_date', None),
                    transaction_type=getattr(row, 'transaction_type', None),
-                   transaction_description=getattr(row, 'description', None),
                    is_processing=bool(getattr(row, 'is_processing', False)),
                    is_reversible=bool(getattr(row, 'is_reversible', False)))
