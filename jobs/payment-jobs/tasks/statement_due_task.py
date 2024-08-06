@@ -101,8 +101,6 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         current_app.logger.info(f'Processing {len(eft_payment_accounts)} EFT accounts for monthly reminders.')
         for payment_account in eft_payment_accounts:
             try:
-                if payment_account.id != 3757:
-                    continue
                 if not (statement := cls._find_most_recent_statement(
                         payment_account.auth_account_id, StatementFrequency.MONTHLY.value)):
                     continue
