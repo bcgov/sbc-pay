@@ -257,6 +257,11 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         if data.get('status_code') == InvoiceStatus.PAID.value:
             data['status_code'] = PaymentStatus.COMPLETED.value
 
+        # Backwards compatibility - Important for ESRA, marking the invoice as COMPLETED.
+        if data.get('status_code') == InvoiceStatus.CREATED.value and \
+                data.get('payment_method') == PaymentMethod.EFT.value:
+            data['status_code'] = PaymentStatus.COMPLETED.value
+
         return data
 
 
@@ -298,6 +303,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
         https://www.attrs.org/en/stable/init.html
         """
         # Similar to _clean_up in InvoiceSchema.
+        # In the future may need to add a mapping from EFT Status: CREATED -> COMPLETED
         status_code = PaymentStatus.COMPLETED.value if row.invoice_status_code == InvoiceStatus.PAID.value \
             else row.invoice_status_code
         business_identifier = None if row.business_identifier and row.business_identifier.startswith('T') \

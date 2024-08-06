@@ -260,8 +260,8 @@ def test_create_pad_payment(session, public_user_mock):
             business_identifier='CP0002000'),
         get_auth_premium_user())
     assert payment_response is not None
-    assert payment_response.get('payment_method') == 'PAD'
-    assert payment_response.get('status_code') == 'APPROVED'
+    assert payment_response.get('payment_method') == PaymentMethod.PAD.value
+    assert payment_response.get('status_code') == InvoiceStatus.APPROVED.value
 
 
 def test_create_online_banking_payment(session, public_user_mock):
@@ -273,8 +273,8 @@ def test_create_online_banking_payment(session, public_user_mock):
             business_identifier='CP0002000'),
         get_auth_premium_user())
     assert payment_response is not None
-    assert payment_response.get('payment_method') == 'ONLINE_BANKING'
-    assert payment_response.get('status_code') == 'CREATED'
+    assert payment_response.get('payment_method') == PaymentMethod.ONLINE_BANKING.value
+    assert payment_response.get('status_code') == PaymentStatus.CREATED.value
 
 
 def test_patch_online_banking_payment_to_direct_pay(session, public_user_mock):
@@ -286,8 +286,8 @@ def test_patch_online_banking_payment_to_direct_pay(session, public_user_mock):
             business_identifier='CP0002000'),
         get_auth_premium_user())
     assert payment_response is not None
-    assert payment_response.get('payment_method') == 'ONLINE_BANKING'
-    assert payment_response.get('status_code') == 'CREATED'
+    assert payment_response.get('payment_method') == PaymentMethod.ONLINE_BANKING.value
+    assert payment_response.get('status_code') == PaymentStatus.CREATED.value
 
     invoice_id = payment_response.get('id')
 
@@ -330,7 +330,7 @@ def test_create_eft_payment(session, public_user_mock):
         get_auth_premium_user())
     assert payment_response is not None
     assert payment_response.get('payment_method') == PaymentMethod.EFT.value
-    assert payment_response.get('status_code') == 'CREATED'
+    assert payment_response.get('status_code') == PaymentStatus.COMPLETED.value
 
 
 def test_create_eft_payment_ff_disabled(session, public_user_mock):
@@ -358,7 +358,7 @@ def test_create_wire_payment(session, public_user_mock):
         get_auth_premium_user())
     assert payment_response is not None
     assert payment_response.get('payment_method') == PaymentMethod.WIRE.value
-    assert payment_response.get('status_code') == 'CREATED'
+    assert payment_response.get('status_code') == PaymentStatus.CREATED.value
 
 
 def test_internal_rs_back_active(session, public_user_mock):
