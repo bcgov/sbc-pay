@@ -1999,9 +1999,9 @@ werkzeug = "3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "statement_reminder_tweaks"
-resolved_reference = "8c1375ec044911aa43c08c7a02e7492204a577ca"
+url = "https://github.com/ochiu/sbc-pay.git"
+reference = "22061-EFT-Shortname-historical"
+resolved_reference = "00cae377a613c396a85816c5b09f1f0040fe2642"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3141,4 +3141,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "4df063962d383603ff7e023d32901521365daecadb54cbb054c408b527fef547"
+content-hash = "d56d6bb184d19b3e87c123f36014fd0961edc91568c2cbc826b5084fb8b7b9aa"
