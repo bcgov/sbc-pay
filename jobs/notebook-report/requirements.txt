@@ -28,7 +28,7 @@ python-dotenv==0.13.0
 requests==2.31.0
 marshmallow==2.20.5
 Werkzeug==0.16.1
-certifi==2023.7.22
+certifi==2024.7.4
 urllib3==1.26.19
 idna==3.7
 pylint
