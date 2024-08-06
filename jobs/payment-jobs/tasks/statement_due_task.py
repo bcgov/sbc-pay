@@ -50,12 +50,16 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
 
     unpaid_status = [InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value,
                      InvoiceStatus.CREATED.value]
+    statement_date_override = None
+    action_date_override = None
 
     @classmethod
     def process_unpaid_statements(cls, statement_date_override=None, action_date_override=None):
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
         if eft_enabled:
+            cls.statement_date_override = statement_date_override
+            cls.action_date_override = action_date_override
             cls._update_invoice_overdue_status()
             cls._notify_for_monthly(statement_date_override, action_date_override)
 
@@ -90,9 +94,9 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                                                                 description='EFT invoice overdue')
 
     @classmethod
-    def _notify_for_monthly(cls, statement_date_override, action_date_override):
+    def _notify_for_monthly(cls):
         """Notify for unpaid monthly statements with an amount owing."""
-        previous_month = statement_date_override or current_local_time().replace(day=1) - timedelta(days=1)
+        previous_month = cls.statement_date_override or current_local_time().replace(day=1) - timedelta(days=1)
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_month,
                                                                                         StatementFrequency.MONTHLY)
         eft_payment_accounts = [pay_account for _, pay_account in statement_settings
@@ -104,7 +108,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                 if not (statement := cls._find_most_recent_statement(
                         payment_account.auth_account_id, StatementFrequency.MONTHLY.value)):
                     continue
-                action, due_date = cls._determine_action_and_due_date_by_invoice(statement, action_date_override)
+                action, due_date = cls._determine_action_and_due_date_by_invoice(statement)
                 total_due = Statement.get_summary(payment_account.auth_account_id, statement.id)['total_due']
                 if action and total_due > 0:
                     if action == StatementNotificationAction.OVERDUE:
@@ -147,7 +151,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         return query.first()
 
     @classmethod
-    def _determine_action_and_due_date_by_invoice(cls, statement: StatementModel, action_date_override=None):
+    def _determine_action_and_due_date_by_invoice(cls, statement: StatementModel):
         """Find the most overdue invoice for a statement and provide an action."""
         invoice = db.session.query(InvoiceModel) \
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id) \
@@ -168,7 +172,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         seven_days_before_invoice_due = day_invoice_due - timedelta(days=7)
 
         # Needs to be non timezone aware for comparison.
-        now_date = datetime.strptime(action_date_override, '%Y-%m-%d').date() if action_date_override \
+        now_date = datetime.strptime(cls.action_date_override, '%Y-%m-%d').date() if cls.action_date_override \
             else datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
 
         if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
