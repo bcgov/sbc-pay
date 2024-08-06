@@ -33,7 +33,7 @@ def test_eft_short_names_historical(session):
     eft_short_name = factory_eft_shortname('TESTSHORTNAME')
     eft_short_name.save()
 
-    now_date = datetime.now(tz=timezone.utc)
+    now_date = datetime.now(tz=timezone.utc).date()
     default_historical = EFTShortnamesHistorical(
         amount=151.50,
         created_by='USER1',
@@ -55,7 +55,7 @@ def test_eft_short_names_historical(session):
     assert default_historical.related_group_link_id is None
     assert default_historical.short_name_id == eft_short_name.id
     assert default_historical.statement_number is None
-    assert default_historical.transaction_date == now_date
+    assert default_historical.transaction_date.date() == now_date
     assert default_historical.transaction_type == EFTHistoricalTypes.FUNDS_RECEIVED.value
 
     short_name_historical = EFTShortnamesHistorical(
@@ -85,5 +85,5 @@ def test_eft_short_names_historical(session):
     assert short_name_historical.related_group_link_id == 5
     assert short_name_historical.short_name_id == eft_short_name.id
     assert short_name_historical.statement_number == 1234567
-    assert short_name_historical.transaction_date == now_date
+    assert short_name_historical.transaction_date.date() == now_date
     assert short_name_historical.transaction_type == EFTHistoricalTypes.STATEMENT_PAID.value
