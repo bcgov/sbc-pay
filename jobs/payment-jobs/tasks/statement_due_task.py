@@ -58,8 +58,8 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
         if eft_enabled:
-            cls.statement_date_override = statement_date_override
             cls.action_date_override = action_date_override
+            cls.statement_date_override = statement_date_override
             cls._update_invoice_overdue_status()
             cls._notify_for_monthly()
 
