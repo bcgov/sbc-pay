@@ -41,8 +41,8 @@ def test_invoice_eft_created_return_completed(session):
     invoice = Invoice_service.find_by_id(i.id, skip_auth_check=True).asdict()
 
     assert invoice is not None
-    assert invoice.payment_method_code == PaymentMethod.EFT.value
-    assert invoice.invoice_status_code == PaymentStatus.COMPLETED.value
+    assert invoice['payment_method'] == PaymentMethod.EFT.value
+    assert invoice['status_code'] == PaymentStatus.COMPLETED.value
 
 
 def test_invoice_saved_from_new(session):

@@ -274,7 +274,7 @@ def test_create_online_banking_payment(session, public_user_mock):
         get_auth_premium_user())
     assert payment_response is not None
     assert payment_response.get('payment_method') == PaymentMethod.ONLINE_BANKING.value
-    assert payment_response.get('status_code') == PaymentStatus.COMPLETED.value
+    assert payment_response.get('status_code') == PaymentStatus.CREATED.value
 
 
 def test_patch_online_banking_payment_to_direct_pay(session, public_user_mock):
