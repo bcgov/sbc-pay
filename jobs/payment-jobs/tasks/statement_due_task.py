@@ -117,11 +117,16 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                         # The locking email is sufficient for overdue, no seperate email required.
                         additional_emails = current_app.config.get('EFT_OVERDUE_NOTIFY_EMAILS')
                         AuthEvent.publish_lock_account_event(payment_account, additional_emails)
-                        cls.add_to_non_sufficient_funds(payment_account)
                         statement.overdue_notification_date = datetime.now(tz=timezone.utc)
+                        # Saving here because the code below can exception, we don't want to send the lock email twice.
                         statement.save()
+                        cls.add_to_non_sufficient_funds(payment_account)
                         continue
                     if emails := cls._determine_recipient_emails(statement):
+                        current_app.logger.info(f'Sending statement {statement.id} {action}'
+                                                f' notification for auth_account_id='
+                                                f'{payment_account.auth_account_id}, payment_account_id='
+                                                f'{payment_account.id}')
                         publish_payment_notification(
                             StatementNotificationInfo(auth_account_id=payment_account.auth_account_id,
                                                       statement=statement,
@@ -190,5 +195,5 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
 
             return recipients
 
-        current_app.logger.error(f'No recipients found for statement: {statement.payment_account_id}. Skipping.')
+        current_app.logger.error(f'No recipients found for payment_account_id: {statement.payment_account_id}. Skip.')
         return None
