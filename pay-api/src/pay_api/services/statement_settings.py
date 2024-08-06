@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from flask import current_app
 
@@ -147,7 +147,7 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
 
         """
         statements_settings_schema = StatementSettingsModelSchema()
-        today = datetime.today()
+        today = datetime.now(tz=timezone.utc)
         current_statements_settings = StatementSettingsModel.find_active_settings(auth_account_id, today)
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         if current_statements_settings is None:
@@ -190,7 +190,7 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
     @staticmethod
     def _get_end_of(frequency: StatementFrequency):
         """Return the end of either week or month."""
-        today = datetime.today()
+        today = datetime.now(tz=timezone.utc)
         end_date = current_local_time()
         if frequency == StatementFrequency.WEEKLY.value:
             end_date = get_week_start_and_end_date()[1]

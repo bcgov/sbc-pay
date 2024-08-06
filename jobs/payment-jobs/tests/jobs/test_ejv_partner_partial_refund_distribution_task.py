@@ -17,7 +17,7 @@
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 from freezegun import freeze_time
@@ -66,7 +66,7 @@ def test_partial_refund_disbursement(session, monkeypatch):
     refund_partial_link = EjvLink.find_ejv_link_by_link_id(refund_partial.id)
     assert refund_partial_link is None
 
-    day_after_time_delay = datetime.today() + timedelta(days=(
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=(
         current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS') + 1))
 
     with freeze_time(day_after_time_delay):

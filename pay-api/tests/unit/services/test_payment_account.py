@@ -290,7 +290,7 @@ def test_eft_payment_method_settings(session, client, jwt, app, admin_users_mock
     assert payment_account.payment_method == PaymentMethod.EFT.value
 
     statement_settings: StatementSettingsModel = StatementSettingsModel\
-        .find_active_settings(str(payment_account.auth_account_id), datetime.today())
+        .find_active_settings(str(payment_account.auth_account_id), datetime.now(tz=timezone.utc))
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value

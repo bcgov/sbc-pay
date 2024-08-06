@@ -18,7 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import dateutil
 
@@ -51,7 +51,7 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
             expected_weekly = (get_week_start_and_end_date()[1] + timedelta(days=1)).date()
             assert actual_weekly == expected_weekly, 'weekly matches'
         if freqeuncy.get('frequency') == StatementFrequency.MONTHLY.value:
-            today = datetime.today()
+            today = datetime.now(tz=timezone.utc)
             actual_monthly = dateutil.parser.parse(freqeuncy.get('startDate')).date()
             expected_monthly = (
                     get_first_and_last_dates_of_month(today.month, today.year)[1] + timedelta(days=1)).date()
