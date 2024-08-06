@@ -145,11 +145,10 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
             .join(PaymentAccountModel) \
             .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
             .filter(StatementModel.frequency == statement_frequency) \
-            .filter(StatementModel.overdue_notification_date.is_(None)) \
             .order_by(StatementModel.to_date.desc())
 
         statement = query.first()
-        return None if statement.overdue_notification_date else statement
+        return statement if statement and statement.overdue_notification_date is None else None
 
     @classmethod
     def _determine_action_and_due_date_by_invoice(cls, statement: StatementModel):
