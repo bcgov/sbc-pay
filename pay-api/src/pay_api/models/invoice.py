@@ -257,6 +257,11 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         if data.get('status_code') == InvoiceStatus.PAID.value:
             data['status_code'] = PaymentStatus.COMPLETED.value
 
+        # Backwards compatibility - Important for ESRA, marking the invoice as COMPLETED.
+        if data.get('status_code') == InvoiceStatus.CREATED.value and \
+                data.get('payment_method') == PaymentMethod.EFT.value:
+            data['status_code'] = PaymentStatus.COMPLETED.value
+
         return data
 
 
