@@ -55,19 +55,9 @@ def test_eft_credits(session):
     eft_credit.save()
 
     assert eft_credit.id is not None
-    assert eft_credit.payment_account_id is None
     assert eft_credit.eft_file_id == eft_file.id
     assert eft_credit.created_on.date() == datetime.now(tz=timezone.utc).date()
     assert eft_credit.amount == 100.00
     assert eft_credit.remaining_amount == 50.00
     assert eft_credit.eft_transaction_id == eft_transaction.id
 
-    eft_credit.payment_account_id = payment_account.id
-    eft_credit.save()
-
-    assert eft_credit.payment_account_id == payment_account.id
-
-    eft_credits: List[EFTCredit] = EFTCredit.find_by_payment_account_id(payment_account.id)
-
-    assert eft_credits is not None
-    assert eft_credits[0].id == eft_credit.id

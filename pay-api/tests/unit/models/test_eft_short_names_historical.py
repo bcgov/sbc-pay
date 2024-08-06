@@ -38,7 +38,6 @@ def test_eft_short_names_historical(session):
         amount=151.50,
         created_by='USER1',
         credit_balance=1234.50,
-        description='Funds Received',
         short_name_id=eft_short_name.id,
         transaction_date=now_date,
         transaction_type=EFTHistoricalTypes.FUNDS_RECEIVED.value
@@ -50,7 +49,6 @@ def test_eft_short_names_historical(session):
     assert default_historical.created_on.date() == now_date
     assert default_historical.created_by == 'USER1'
     assert default_historical.credit_balance == 1234.50
-    assert default_historical.description == 'Funds Received'
     assert not default_historical.hidden
     assert not default_historical.is_processing
     assert default_historical.payment_account_id is None
@@ -64,7 +62,6 @@ def test_eft_short_names_historical(session):
         amount=123.50,
         created_by='USER1',
         credit_balance=456.50,
-        description='Statement Paid',
         hidden=True,
         is_processing=True,
         payment_account_id=payment_account.id,
@@ -82,7 +79,6 @@ def test_eft_short_names_historical(session):
     assert short_name_historical.created_on.date() == now_date
     assert short_name_historical.created_by == 'USER1'
     assert short_name_historical.credit_balance == 456.50
-    assert short_name_historical.description == 'Statement Paid'
     assert short_name_historical.hidden
     assert short_name_historical.is_processing
     assert short_name_historical.payment_account_id == payment_account.id
