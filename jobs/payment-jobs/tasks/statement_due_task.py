@@ -50,14 +50,18 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
 
     unpaid_status = [InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value,
                      InvoiceStatus.CREATED.value]
+    action_date_override = None
+    statement_date_override = None
 
     @classmethod
-    def process_unpaid_statements(cls, statement_date_override=None):
+    def process_unpaid_statements(cls, statement_date_override=None, action_date_override=None):
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
         if eft_enabled:
+            cls.action_date_override = action_date_override
+            cls.statement_date_override = statement_date_override
             cls._update_invoice_overdue_status()
-            cls._notify_for_monthly(statement_date_override)
+            cls._notify_for_monthly()
 
     @classmethod
     def _update_invoice_overdue_status(cls):
@@ -90,9 +94,9 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                                                                 description='EFT invoice overdue')
 
     @classmethod
-    def _notify_for_monthly(cls, statement_date_override):
+    def _notify_for_monthly(cls):
         """Notify for unpaid monthly statements with an amount owing."""
-        previous_month = statement_date_override or current_local_time().replace(day=1) - timedelta(days=1)
+        previous_month = cls.statement_date_override or current_local_time().replace(day=1) - timedelta(days=1)
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_month,
                                                                                         StatementFrequency.MONTHLY)
         eft_payment_accounts = [pay_account for _, pay_account in statement_settings
@@ -166,8 +170,10 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         # 5. Overdue Date and account locked March 15th
         day_invoice_due = statement.to_date + relativedelta(months=1)
         seven_days_before_invoice_due = day_invoice_due - timedelta(days=7)
+
         # Needs to be non timezone aware for comparison.
-        now_date = datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
+        now_date = datetime.strptime(cls.action_date_override, '%Y-%m-%d').date() if cls.action_date_override \
+            else datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
 
         if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
             return StatementNotificationAction.OVERDUE, day_invoice_due
