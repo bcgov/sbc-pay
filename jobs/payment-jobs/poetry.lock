@@ -2001,7 +2001,7 @@ werkzeug = "3.0.1"
 type = "git"
 url = "https://github.com/ochiu/sbc-pay.git"
 reference = "22061-EFT-Shortname-historical"
-resolved_reference = "00cae377a613c396a85816c5b09f1f0040fe2642"
+resolved_reference = "e0f8922f6c726d7bf42f8aa53df1a27a5cf7bbf6"
 subdirectory = "pay-api"
 
 [[package]]
