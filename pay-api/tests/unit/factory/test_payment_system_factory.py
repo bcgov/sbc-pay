@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from flask import current_app
@@ -134,7 +134,7 @@ def test_pad_factory_for_system_fails(session, system_user_mock):
     assert excinfo.value.code == Error.ACCOUNT_IN_PAD_CONFIRMATION_PERIOD.name
 
     time_delay = current_app.config['PAD_CONFIRMATION_PERIOD_IN_DAYS']
-    with freeze_time(datetime.today() + timedelta(days=time_delay + 1, minutes=1)):
+    with freeze_time(datetime.now(tz=timezone.utc) + timedelta(days=time_delay + 1, minutes=1)):
         instance = PaymentSystemFactory.create(payment_method='PAD', payment_account=pad_account)
         assert isinstance(instance, PadService)
 

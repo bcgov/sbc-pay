@@ -163,7 +163,7 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
 
     # Assert that the default weekly statement settings are created
     statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_active_settings(str(account.auth_account_id), datetime.today())
+        .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.WEEKLY.value
@@ -218,7 +218,7 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
 
     # Assert that the default MONTHLY statement settings are created
     statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_active_settings(str(account.auth_account_id), datetime.today())
+        .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value
@@ -271,7 +271,7 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
 
     # Update current active settings to monthly
     statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_active_settings(str(account.auth_account_id), datetime.today())
+        .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
 
     statement_settings.frequency = StatementFrequency.MONTHLY.value
     statement_settings.save()
@@ -330,7 +330,7 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
 
     # Confirm initial default settings when account is created
     initial_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_active_settings(str(account.auth_account_id), datetime.today())
+        .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
 
     assert initial_settings is not None
     assert initial_settings.frequency == StatementFrequency.WEEKLY.value
@@ -722,12 +722,12 @@ def test_statement_various_payment_methods_history(db, app):
             get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
 
         statement_settings: StatementSettingsModel = StatementSettingsModel \
-            .find_active_settings(str(account.auth_account_id), datetime.today())
+            .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
 
         statement = StatementModel(
             statement_settings_id=statement_settings.id,
             payment_account_id=account.id,
-            created_on=datetime.today(),
+            created_on=datetime.now(tz=timezone.utc),
             from_date=datetime(2024, 1, 1, 12, 0).date(),
             to_date=datetime(2024, 1, 7, 12, 0).date()
         ).flush()

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to notify user for any outstanding invoice for online banking."""
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -50,7 +50,7 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
         """
         unpaid_status = (
             InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value)
-        notification_date = datetime.today() - timedelta(days=current_app.config.get('NOTIFY_AFTER_DAYS'))
+        notification_date = datetime.now(tz=timezone.utc) - timedelta(days=current_app.config.get('NOTIFY_AFTER_DAYS'))
         # Get distinct accounts with pending invoices for that exact day
         notification_pending_accounts = db.session.query(InvoiceModel.payment_account_id).distinct().filter(and_(
             InvoiceModel.invoice_status_code.in_(unpaid_status),

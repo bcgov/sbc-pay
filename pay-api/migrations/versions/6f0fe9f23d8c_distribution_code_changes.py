@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 
-today = datetime.today().strftime('%Y-%m-%d')
+today = datetime.now(tz=timezone.utc).strftime('%Y-%m-%d')
 
 # revision identifiers, used by Alembic.
 revision = '6f0fe9f23d8c'

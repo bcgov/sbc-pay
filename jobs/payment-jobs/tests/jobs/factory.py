@@ -158,7 +158,7 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
                                status=CfsAccountStatus.PENDING.value, payment_method=PaymentMethod.PAD.value,
                                confirmation_period: int = 3):
     """Return Factory."""
-    date_after_wait_period = datetime.today() + timedelta(confirmation_period)
+    date_after_wait_period = datetime.now(tz=timezone.utc) + timedelta(confirmation_period)
     account = PaymentAccount(auth_account_id=auth_account_id,
                              payment_method=payment_method,
                              pad_activation_date=date_after_wait_period,
@@ -324,7 +324,7 @@ def factory_create_ejv_account(auth_account_id='1234',
                      stob=stob,
                      project_code=project_code,
                      account_id=account.id,
-                     start_date=datetime.today().date(),
+                     start_date=datetime.now(tz=timezone.utc).date(),
                      created_by='test').save()
     return account
 
@@ -350,7 +350,7 @@ def factory_distribution(name: str, client: str = '111', reps_centre: str = '222
                             project_code=project_code,
                             service_fee_distribution_code_id=service_fee_dist_id,
                             disbursement_distribution_code_id=disbursement_dist_id,
-                            start_date=datetime.today().date(),
+                            start_date=datetime.now(tz=timezone.utc).date(),
                             created_by='test').save()
 
 
