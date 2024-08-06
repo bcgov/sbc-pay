@@ -50,8 +50,8 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
 
     unpaid_status = [InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value,
                      InvoiceStatus.CREATED.value]
-    statement_date_override = None
     action_date_override = None
+    statement_date_override = None
 
     @classmethod
     def process_unpaid_statements(cls, statement_date_override=None, action_date_override=None):
@@ -61,7 +61,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
             cls.statement_date_override = statement_date_override
             cls.action_date_override = action_date_override
             cls._update_invoice_overdue_status()
-            cls._notify_for_monthly(statement_date_override, action_date_override)
+            cls._notify_for_monthly()
 
     @classmethod
     def _update_invoice_overdue_status(cls):
