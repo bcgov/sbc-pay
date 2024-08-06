@@ -17,7 +17,6 @@
 Test-Suite to ensure that the EFT Credits model is working as expected.
 """
 from datetime import datetime, timezone
-from typing import List
 
 from pay_api.models import EFTCredit, EFTFile, EFTShortnames, EFTTransaction
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus
@@ -60,4 +59,3 @@ def test_eft_credits(session):
     assert eft_credit.amount == 100.00
     assert eft_credit.remaining_amount == 50.00
     assert eft_credit.eft_transaction_id == eft_transaction.id
-
