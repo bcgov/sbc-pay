@@ -17,7 +17,7 @@
 Test-Suite to ensure that the service is working as expected.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
@@ -182,7 +182,7 @@ def factory_create_ejv_account(auth_account_id='1234',
                      stob=stob,
                      project_code=project_code,
                      account_id=account.id,
-                     start_date=datetime.today().date(),
+                     start_date=datetime.now(tz=timezone.utc).date(),
                      created_by='test').save()
     return account
 
@@ -199,7 +199,7 @@ def factory_distribution(name: str, client: str = '111', reps_centre: str = '222
                             project_code=project_code,
                             service_fee_distribution_code_id=service_fee_dist_id,
                             disbursement_distribution_code_id=disbursement_dist_id,
-                            start_date=datetime.today().date(),
+                            start_date=datetime.now(tz=timezone.utc).date(),
                             created_by='test').save()
 
 

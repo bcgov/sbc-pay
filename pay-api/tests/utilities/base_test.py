@@ -927,7 +927,7 @@ def factory_distribution_code(name: str, client: str = '111', reps_centre: str =
                             project_code=project_code,
                             service_fee_distribution_code_id=service_fee_dist_id,
                             disbursement_distribution_code_id=disbursement_dist_id,
-                            start_date=datetime.today().date(),
+                            start_date=datetime.now(tz=timezone.utc).date(),
                             created_by='test')
 
 

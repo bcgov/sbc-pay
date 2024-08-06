@@ -13,7 +13,7 @@
 # limitations under the License.
 """Task to create CFS account offline."""
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 
 from flask import current_app
@@ -156,7 +156,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
 
         # If the account has an activation time set it should have PENDING_PAD_ACTIVATION status.
         is_account_in_pad_confirmation_period = pay_account.pad_activation_date is not None and \
-            pay_account.pad_activation_date > datetime.today()
+            pay_account.pad_activation_date > datetime.now(tz=timezone.utc).replace(tzinfo=None)
         pending_account.status = CfsAccountStatus.PENDING_PAD_ACTIVATION.value if \
             is_account_in_pad_confirmation_period else CfsAccountStatus.ACTIVE.value
         pending_account.save()

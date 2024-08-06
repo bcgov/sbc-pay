@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List
 
 from flask import current_app
@@ -474,7 +474,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
     @staticmethod
     def generate_interim_statement(auth_account_id: str, new_frequency: str):
         """Generate interim statement."""
-        today = get_local_time(datetime.today())
+        today = get_local_time(datetime.now(tz=timezone.utc))
 
         # This can happen during account creation when the default active settings do not exist yet
         # No interim statement is needed in this case
