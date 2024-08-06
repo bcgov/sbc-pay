@@ -125,7 +125,8 @@ def run(job_name, argument=None):
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             application.logger.info('<<<< Completed Sending notification for OB invoices >>>>')
         case 'STATEMENTS_DUE':
-            StatementDueTask.process_unpaid_statements()
+            action_date_override = argument[0] if len(argument) == 1 else None
+            StatementDueTask.process_unpaid_statements(action_date_override=action_date_override)
             application.logger.info('<<<< Completed Sending notification for unpaid statements >>>>')
         case 'ROUTING_SLIP':
             RoutingSlipTask.link_routing_slips()
