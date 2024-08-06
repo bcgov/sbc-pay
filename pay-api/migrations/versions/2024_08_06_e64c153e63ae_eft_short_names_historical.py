@@ -2,7 +2,7 @@
 
 Revision ID: e64c153e63ae
 Revises: f9c15c7f29f5
-Create Date: 2024-07-25 13:27:04.018005
+Create Date: 2024-08-06 13:27:04.018005
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'e64c153e63ae'
-down_revision = '4e57f6cf649c'
+down_revision = '1d5b66ef7f81'
 branch_labels = None
 depends_on = None
 
