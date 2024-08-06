@@ -20,6 +20,7 @@ from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
+from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -72,10 +73,29 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         return query.order_by(InvoiceModel.payment_account_id, EFTCreditInvoiceLinkModel.id).all()
 
     @classmethod
+    def get_eft_history_by_group_id(cls, related_group_id: int) -> EFTShortnameHistoryModel:
+        """Get EFT short name historical record by related group id."""
+        return (db.session.query(EFTShortnameHistoryModel)
+                .filter(EFTShortnameHistoryModel.related_group_link_id == related_group_id)).one_or_none()
+
+    @classmethod
+    def _finalize_shortname_history(cls, group_set: set, invoice_link: EFTCreditInvoiceLinkModel):
+        """Finalize EFT short name historical record state."""
+        if invoice_link.link_group_id is None or invoice_link.link_group_id in group_set:
+            return
+
+        group_set.add(invoice_link.link_group_id)
+        if history_model := cls.get_eft_history_by_group_id(invoice_link.link_group_id):
+            history_model.hidden = False
+            history_model.is_processing = False
+            history_model.flush()
+
+    @classmethod
     def link_electronic_funds_transfers_cfs(cls) -> dict:
         """Replicate linked EFT's as receipts inside of CFS and mark invoices as paid."""
         credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING.value)
         overdue_accounts = {}
+        history_group_ids = set()
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
             try:
                 current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {credit_invoice_link.id} -'
@@ -120,6 +140,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
                 credit_invoice_link.receipt_number = receipt_number
                 credit_invoice_link.flush()
+
+                cls._finalize_shortname_history(history_group_ids, credit_invoice_link)
                 db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
@@ -137,6 +159,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     def reverse_electronic_funds_transfers_cfs(cls):
         """Reverse electronic funds transfers receipts in CFS and reset invoices."""
         credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value)
+        history_group_ids = set()
         for invoice, credit_invoice_link, cfs_account in credit_invoice_links:
             try:
                 current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {credit_invoice_link.id} -'
@@ -158,6 +181,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                     db.session.delete(receipt)
                 credit_invoice_link.status_code = EFTCreditInvoiceStatus.REFUNDED.value
                 credit_invoice_link.flush()
+
+                cls._finalize_shortname_history(history_group_ids, credit_invoice_link)
                 db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(

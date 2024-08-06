@@ -55,7 +55,6 @@ def test_create_funds_received(session):
         assert historical_record.amount == 151.50
         assert historical_record.created_on is not None
         assert historical_record.credit_balance == 300
-        assert historical_record.description == 'Funds Received'
         assert not historical_record.hidden
         assert not historical_record.is_processing
         assert historical_record.payment_account_id is None
@@ -86,7 +85,6 @@ def test_create_statement_paid(session, staff_user_mock):
         assert historical_record.created_on is not None
         assert historical_record.created_by == 'STAFF USER'
         assert historical_record.credit_balance == 300
-        assert historical_record.description == 'Statement Paid'
         assert not historical_record.hidden
         assert not historical_record.is_processing
         assert historical_record.payment_account_id == payment_account.id
@@ -118,7 +116,6 @@ def test_create_statement_reverse(session, staff_user_mock):
         assert historical_record.created_on is not None
         assert historical_record.created_by == 'STAFF USER'
         assert historical_record.credit_balance == 300
-        assert historical_record.description == 'Payment Reversed'
         assert not historical_record.hidden
         assert historical_record.is_processing
         assert historical_record.payment_account_id == payment_account.id

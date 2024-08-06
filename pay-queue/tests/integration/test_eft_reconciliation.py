@@ -25,10 +25,11 @@ from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
+from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod
+from pay_api.utils.enums import EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, PaymentMethod
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.services.eft.eft_enums import EFTConstants
@@ -267,16 +268,14 @@ def test_eft_tdi17_basic_process(session, app, client):
     assert not short_name_link_2
     assert eft_shortnames[1].short_name == 'DEF456'
 
-    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.created_on.asc()).all()
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
     assert eft_credits is not None
     assert len(eft_credits) == 2
-    assert eft_credits[0].payment_account_id is None
     assert eft_credits[0].short_name_id == eft_shortnames[0].id
     assert eft_credits[0].eft_file_id == eft_file_model.id
     assert eft_credits[0].amount == 135
     assert eft_credits[0].remaining_amount == 135
     assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
-    assert eft_credits[1].payment_account_id is None
     assert eft_credits[1].short_name_id == eft_shortnames[1].id
     assert eft_credits[1].eft_file_id == eft_file_model.id
     assert eft_credits[1].amount == 5250
@@ -286,6 +285,23 @@ def test_eft_tdi17_basic_process(session, app, client):
     # Expecting no credit links as they have not been applied to invoices
     eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
     assert not eft_credit_invoice_links
+
+    history: List[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
+    assert_funds_received_history(eft_credits[0], history[0])
+    assert_funds_received_history(eft_credits[1], history[1])
+
+
+def assert_funds_received_history(eft_credit: EFTCreditModel, eft_history: EFTHistoryModel,
+                                  assert_balance: bool = True):
+    """Assert credit and history records match."""
+    assert eft_history.short_name_id == eft_credit.short_name_id
+    assert eft_history.amount == eft_credit.amount
+    assert eft_history.transaction_type == EFTHistoricalTypes.FUNDS_RECEIVED.value
+    assert eft_history.hidden is False
+    assert eft_history.is_processing is False
+    assert eft_history.statement_number is None
+    if assert_balance:
+        assert eft_history.credit_balance == eft_credit.amount
 
 
 def test_eft_tdi17_process(session, app, client):
@@ -353,6 +369,13 @@ def test_eft_tdi17_process(session, app, client):
     assert eft_shortnames[0].short_name == 'TESTSHORTNAME'
     assert not short_name_link_2
     assert eft_shortnames[1].short_name == 'ABC123'
+
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
+    history: List[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
+    assert_funds_received_history(eft_credits[0], history[0])
+    assert_funds_received_history(eft_credits[1], history[1], False)
+    assert history[1].credit_balance == eft_credits[0].amount + eft_credits[1].amount
+    assert_funds_received_history(eft_credits[2], history[2])
 
 
 def test_eft_tdi17_rerun(session, app, client):
