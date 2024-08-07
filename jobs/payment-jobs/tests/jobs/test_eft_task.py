@@ -113,7 +113,8 @@ def test_link_electronic_funds_transfers(session):
     """Test link electronic funds transfers."""
     auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
     payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
-    invoice = factory_invoice(payment_account=payment_account, payment_method_code=PaymentMethod.EFT.value)
+    invoice = factory_invoice(payment_account=payment_account, payment_method_code=PaymentMethod.EFT.value,
+                              status_code=InvoiceStatus.APPROVED.value)
     invoice_reference = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(payment_account_id=payment_account.id, payment_method_code=PaymentMethod.EFT.value,
                     invoice_amount=351.50)
