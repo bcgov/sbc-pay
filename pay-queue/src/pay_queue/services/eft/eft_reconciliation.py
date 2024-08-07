@@ -21,6 +21,9 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
+from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
+from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus
 from sentry_sdk import capture_message
 
@@ -39,10 +42,8 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     5: Validate and persist transaction details - persist any error messages
     5.1: If transaction details are invalid, set FAIL state and return
     6: Calculate total transaction balance per short name - dictionary
-    7: Apply balance to outstanding EFT invoices - Update invoice paid amount and status, create payment,
-        invoice reference, and receipt
-    8: Create EFT Credit records for left over balances
-    9: Finalize and complete
+    7: Create EFT Credit records for left over balances
+    8: Finalize and complete
     """
     # Fetch EFT File
     file_name: str = msg.get('fileName')
@@ -206,7 +207,12 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                 eft_credit_model.amount = deposit_amount
                 eft_credit_model.remaining_amount = deposit_amount
                 eft_credit_model.eft_transaction_id = eft_transaction['id']
-                db.session.add(eft_credit_model)
+                eft_credit_model.flush()
+
+                credit_balance = EFTShortnamesService.get_eft_credit_balance(eft_credit_model.short_name_id)
+                EFTHistoryService.create_funds_received(EFTHistory(short_name_id=eft_credit_model.short_name_id,
+                                                                   amount=deposit_amount,
+                                                                   credit_balance=credit_balance)).flush()
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_credit_errors = True
             current_app.logger.error(e)
