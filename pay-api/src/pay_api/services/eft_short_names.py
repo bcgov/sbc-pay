@@ -296,6 +296,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             EFTCreditInvoiceLinkModel(
                 eft_credit_id=eft_credit.id,
                 status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
+                amount=current_link.amount,
+                receipt_number=current_link.receipt_number,
                 invoice_id=invoice.id,
                 link_group_id=link_group_id).flush()
 
