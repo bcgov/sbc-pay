@@ -1,7 +1,7 @@
 """Move EFT invoices from created to APPROVED.
 
 Revision ID: d197b43e25dc
-Revises: 1d5b66ef7f81
+Revises: e64c153e63ae
 Create Date: 2024-08-07 11:49:14.975144
 
 """
@@ -14,7 +14,7 @@ from pay_api.utils.enums import InvoiceStatus
 # Please ignore those lines and don't include in migration.
 
 revision = 'd197b43e25dc'
-down_revision = '1d5b66ef7f81'
+down_revision = 'e64c153e63ae'
 branch_labels = None
 depends_on = None
 
