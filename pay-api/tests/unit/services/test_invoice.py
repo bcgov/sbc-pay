@@ -22,7 +22,7 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
 from pay_api.services.invoice import Invoice as Invoice_service
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
     factory_invoice, factory_payment, factory_payment_account, factory_payment_line_item)
 
