@@ -17,10 +17,9 @@
 Test-Suite to ensure that the EFT Credits model is working as expected.
 """
 from datetime import datetime, timezone
-from typing import List
 
 from pay_api.models import EFTCredit, EFTFile, EFTShortnames, EFTTransaction
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus
 from tests.utilities.base_test import factory_payment_account
 
 
@@ -32,8 +31,6 @@ def test_eft_credits(session):
     assert payment_account.id is not None
 
     eft_short_name = EFTShortnames()
-    eft_short_name.auth_account_id = payment_account.auth_account_id
-    eft_short_name.status_code = EFTShortnameStatus.LINKED.value
     eft_short_name.short_name = 'TESTSHORTNAME'
     eft_short_name.save()
 
@@ -57,19 +54,8 @@ def test_eft_credits(session):
     eft_credit.save()
 
     assert eft_credit.id is not None
-    assert eft_credit.payment_account_id is None
     assert eft_credit.eft_file_id == eft_file.id
     assert eft_credit.created_on.date() == datetime.now(tz=timezone.utc).date()
     assert eft_credit.amount == 100.00
     assert eft_credit.remaining_amount == 50.00
     assert eft_credit.eft_transaction_id == eft_transaction.id
-
-    eft_credit.payment_account_id = payment_account.id
-    eft_credit.save()
-
-    assert eft_credit.payment_account_id == payment_account.id
-
-    eft_credits: List[EFTCredit] = EFTCredit.find_by_payment_account_id(payment_account.id)
-
-    assert eft_credits is not None
-    assert eft_credits[0].id == eft_credit.id

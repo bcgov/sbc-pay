@@ -21,11 +21,11 @@ from datetime import datetime, timedelta, timezone
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnameLinks,
-    EFTShortnames, EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, Receipt, Refund,
-    RefundsPartial, RoutingSlip, StatementRecipients, StatementSettings)
+    EFTShortnames, EFTShortnamesHistorical, EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount,
+    PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus,
-    PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus)
+    CfsAccountStatus, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus,
+    LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -249,15 +249,13 @@ def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234'
     ).save()
 
 
-def factory_create_eft_credit(amount=100, remaining_amount=0, eft_file_id=1, short_name_id=1, payment_account_id=1,
-                              eft_transaction_id=1):
+def factory_create_eft_credit(amount=100, remaining_amount=0, eft_file_id=1, short_name_id=1, eft_transaction_id=1):
     """Return Factory."""
     eft_credit = EFTCredit(
         amount=amount,
         remaining_amount=remaining_amount,
         eft_file_id=eft_file_id,
         short_name_id=short_name_id,
-        payment_account_id=payment_account_id,
         eft_transaction_id=eft_transaction_id
     ).save()
     return eft_credit
@@ -284,16 +282,38 @@ def factory_create_eft_transaction(file_id=1, line_number=1, line_type='T',
     return eft_transaction
 
 
-def factory_create_eft_credit_invoice_link(invoice_id=1, eft_credit_id=1, status_code='PENDING', amount=10):
+def factory_create_eft_credit_invoice_link(invoice_id=1, eft_credit_id=1, status_code='PENDING', amount=10,
+                                           link_group_id=1):
     """Return Factory."""
     eft_credit_invoice_link = EFTCreditInvoiceLink(
         amount=amount,
         invoice_id=invoice_id,
         eft_credit_id=eft_credit_id,
         receipt_number='1234',
-        status_code=status_code
+        status_code=status_code,
+        link_group_id=link_group_id
     ).save()
     return eft_credit_invoice_link
+
+
+def factory_create_eft_shortname_historical(payment_account_id=1, related_group_link_id=1, short_name_id=1,
+                                            statement_number=123,
+                                            transaction_type=EFTHistoricalTypes.STATEMENT_PAID.value):
+    """Return Factory."""
+    eft_historical = EFTShortnamesHistorical(
+        amount=100,
+        created_by='TEST USER',
+        credit_balance=100,
+        hidden=True,
+        is_processing=True,
+        payment_account_id=payment_account_id,
+        related_group_link_id=related_group_link_id,
+        short_name_id=short_name_id,
+        statement_number=statement_number,
+        transaction_date=datetime.now(tz=timezone.utc),
+        transaction_type=transaction_type
+    ).save()
+    return eft_historical
 
 
 def factory_create_account(auth_account_id: str = '1234', payment_method_code: str = PaymentMethod.DIRECT_PAY.value,

@@ -16,20 +16,24 @@
 
 Test-Suite to ensure that the EFTTask for electronic funds transfer is working as expected.
 """
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
+    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, EFTHistoricalTypes, InvoiceReferenceStatus,
+    InvoiceStatus, PaymentMethod)
+
 from tasks.eft_task import EFTTask
 
 from .factory import (
     factory_create_eft_account, factory_create_eft_credit, factory_create_eft_credit_invoice_link,
-    factory_create_eft_file, factory_create_eft_shortname, factory_create_eft_transaction, factory_invoice,
-    factory_invoice_reference, factory_payment, factory_payment_line_item, factory_receipt)
+    factory_create_eft_file, factory_create_eft_shortname, factory_create_eft_shortname_historical,
+    factory_create_eft_transaction, factory_invoice, factory_invoice_reference, factory_payment,
+    factory_payment_line_item, factory_receipt)
 
 
 def setup_eft_credit_invoice_links_test():
@@ -82,8 +86,8 @@ def test_eft_credit_invoice_links_by_status(session, test_name, payment_method, 
             CfsAccountModel.find_by_account_id(payment_account.id)[0].status = CfsAccountStatus.INACTIVE.value
 
     eft_credit = factory_create_eft_credit(
-                    amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
-                    payment_account_id=payment_account.id, eft_transaction_id=eft_transaction_id)
+        amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
+        eft_transaction_id=eft_transaction_id)
 
     for invoice_status in invoice_status_codes:
         for disbursement_status in disbursement_status_codes:
@@ -115,8 +119,16 @@ def test_link_electronic_funds_transfers(session):
                     invoice_amount=351.50)
     eft_credit = factory_create_eft_credit(
         amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
-        payment_account_id=payment_account.id, eft_transaction_id=eft_transaction_id)
-    credit_invoice_link = factory_create_eft_credit_invoice_link(invoice_id=invoice.id, eft_credit_id=eft_credit.id)
+        eft_transaction_id=eft_transaction_id)
+    credit_invoice_link = factory_create_eft_credit_invoice_link(invoice_id=invoice.id, eft_credit_id=eft_credit.id,
+                                                                 link_group_id=1)
+    eft_historical = factory_create_eft_shortname_historical(
+        payment_account_id=payment_account.id,
+        short_name_id=short_name_id,
+        related_group_link_id=1
+    )
+    assert eft_historical.hidden
+    assert eft_historical.is_processing
 
     cfs_account = CfsAccountModel.find_effective_by_payment_method(
         payment_account.id, PaymentMethod.EFT.value)
@@ -135,6 +147,9 @@ def test_link_electronic_funds_transfers(session):
     assert invoice.paid == credit_invoice_link.amount
     assert invoice.payment_date
     assert credit_invoice_link.status_code == EFTCreditInvoiceStatus.COMPLETED.value
+
+    assert not eft_historical.hidden
+    assert not eft_historical.is_processing
 
 
 def test_reverse_electronic_funds_transfers(session):
@@ -157,12 +172,20 @@ def test_reverse_electronic_funds_transfers(session):
                                                   invoice_number=invoice_number)
     eft_credit = factory_create_eft_credit(
         amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
-        payment_account_id=payment_account.id,
         eft_transaction_id=eft_transaction_id)
     cil = factory_create_eft_credit_invoice_link(invoice_id=invoice.id,
                                                  status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
                                                  eft_credit_id=eft_credit.id)
     factory_receipt(invoice.id, receipt_number)
+
+    eft_historical = factory_create_eft_shortname_historical(
+        payment_account_id=payment_account.id,
+        short_name_id=short_name_id,
+        related_group_link_id=1,
+        transaction_type=EFTHistoricalTypes.STATEMENT_REVERSE.value
+    )
+    assert eft_historical.hidden
+    assert eft_historical.is_processing
 
     session.commit()
 
@@ -177,6 +200,9 @@ def test_reverse_electronic_funds_transfers(session):
     assert invoice.payment_date is None
     assert cil.status_code == EFTCreditInvoiceStatus.REFUNDED.value
 
+    assert not eft_historical.hidden
+    assert not eft_historical.is_processing
+
 
 def test_unlock_overdue_accounts(session):
     """Test unlock overdue account events."""
@@ -188,7 +214,7 @@ def test_unlock_overdue_accounts(session):
     factory_invoice_reference(invoice_id=invoice_1.id)
     eft_credit = factory_create_eft_credit(
         amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
-        payment_account_id=payment_account.id, eft_transaction_id=eft_transaction_id)
+        eft_transaction_id=eft_transaction_id)
     factory_create_eft_credit_invoice_link(invoice_id=invoice_1.id, eft_credit_id=eft_credit.id)
 
     # Create second overdue invoice and confirm unlock is not double called on a payment account
