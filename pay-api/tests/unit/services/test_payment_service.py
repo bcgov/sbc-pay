@@ -330,7 +330,7 @@ def test_create_eft_payment(session, public_user_mock):
         get_auth_premium_user())
     assert payment_response is not None
     assert payment_response.get('payment_method') == PaymentMethod.EFT.value
-    assert payment_response.get('status_code') == PaymentStatus.COMPLETED.value
+    assert payment_response.get('status_code') == InvoiceStatus.APPROVED.value
 
 
 def test_create_eft_payment_ff_disabled(session, public_user_mock):

@@ -62,7 +62,7 @@ def create_test_data(payment_method_code: str, payment_date: datetime,
     """Create seed data for tests."""
     account = factory_create_account(auth_account_id='1', payment_method_code=payment_method_code)
     invoice = factory_invoice(payment_account=account, created_on=payment_date,
-                              payment_method_code=payment_method_code, status_code=InvoiceStatus.CREATED.value,
+                              payment_method_code=payment_method_code, status_code=InvoiceStatus.APPROVED.value,
                               total=invoice_total)
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     statement_recipient = factory_statement_recipient(auth_user_id=account.auth_account_id,
@@ -154,18 +154,18 @@ def test_overdue_invoices_updated(setup, session):
                                 StatementFrequency.MONTHLY.value,
                                 351.50)
     assert invoice.payment_method_code == PaymentMethod.EFT.value
-    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
     invoice2 = factory_invoice(payment_account=account, created_on=current_local_time().date() + relativedelta(hours=1),
-                               payment_method_code=PaymentMethod.EFT.value, status_code=InvoiceStatus.CREATED.value,
+                               payment_method_code=PaymentMethod.EFT.value, status_code=InvoiceStatus.APPROVED.value,
                                total=10.50)
 
     assert invoice2.payment_method_code == PaymentMethod.EFT.value
-    assert invoice2.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
     assert account.payment_method == PaymentMethod.EFT.value
 
     # Freeze time to 1st of the month - should trigger overdue status update for previous month invoices
     with freeze_time(current_local_time().replace(day=1)):
         StatementDueTask.process_unpaid_statements()
         assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
-        assert invoice2.invoice_status_code == InvoiceStatus.CREATED.value
+        assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value

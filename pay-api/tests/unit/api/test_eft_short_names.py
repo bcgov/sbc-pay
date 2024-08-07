@@ -30,7 +30,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod, Role,
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod, Role,
     StatementFrequency)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
@@ -100,6 +100,7 @@ def test_create_eft_short_name_link_with_credit_and_owing(db, session, client, j
     assert rv.status_code == 200
 
     invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                              status_code=InvoiceStatus.APPROVED.value,
                               total=50, paid=0).save()
 
     statement_settings = factory_statement_settings(payment_account_id=payment_account.id,

@@ -61,6 +61,7 @@ def setup_statement_data(account: PaymentAccountModel, invoice_totals: List[Deci
 
     for invoice_total in invoice_totals:
         invoice = factory_invoice(account, payment_method_code=PaymentMethod.EFT.value,
+                                  status_code=InvoiceStatus.APPROVED.value,
                                   total=invoice_total, paid=0).save()
         factory_statement_invoices(statement_id=statement.id, invoice_id=invoice.id)
 

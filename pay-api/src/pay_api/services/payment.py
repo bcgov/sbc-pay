@@ -664,9 +664,10 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, pay_account.payment_method)
 
+        # May require some review and thought, will be done in another ticket 22655
         outstanding_invoices: List[InvoiceModel] = (
             InvoiceModel.find_invoices_by_status_for_account(pay_account.id,
-                                                             [InvoiceStatus.CREATED.value,
+                                                             [InvoiceStatus.APPROVED.value,
                                                               InvoiceStatus.PARTIAL.value,
                                                               InvoiceStatus.OVERDUE.value,
                                                               InvoiceStatus.SETTLEMENT_SCHEDULED]

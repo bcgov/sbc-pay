@@ -33,7 +33,8 @@ from pay_api.models.eft_refund_email_list import EFTRefundEmailList
 from pay_api.services.eft_short_names import EFTShortnames
 from pay_api.services.email_service import send_email
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+    CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
+    PaymentSystem)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
@@ -75,6 +76,10 @@ class EftService(DepositService):
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
+
+    def get_default_invoice_status(self) -> str:
+        """Return the default status for invoice when created."""
+        return InvoiceStatus.APPROVED.value
 
     def create_payment(self, payment_account: PaymentAccountModel, invoice: InvoiceModel, payment_date: datetime,
                        paid_amount) -> PaymentModel:

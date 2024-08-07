@@ -22,7 +22,7 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
 from pay_api.services.invoice import Invoice as Invoice_service
-from pay_api.utils.enums import PaymentMethod, PaymentStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
     factory_invoice, factory_payment, factory_payment_account, factory_payment_line_item)
 
@@ -33,7 +33,9 @@ def test_invoice_eft_created_return_completed(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    i = factory_invoice(payment_account=payment_account, payment_method_code=PaymentMethod.EFT.value)
+    i = factory_invoice(status_code=InvoiceStatus.APPROVED.value,
+                        payment_account=payment_account,
+                        payment_method_code=PaymentMethod.EFT.value)
     i.save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
@@ -42,7 +44,7 @@ def test_invoice_eft_created_return_completed(session):
 
     assert invoice is not None
     assert invoice['payment_method'] == PaymentMethod.EFT.value
-    assert invoice['status_code'] == PaymentStatus.COMPLETED.value
+    assert invoice['status_code'] == InvoiceStatus.APPROVED.value
 
 
 def test_invoice_saved_from_new(session):
