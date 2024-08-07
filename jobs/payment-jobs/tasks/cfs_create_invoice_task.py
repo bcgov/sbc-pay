@@ -437,11 +437,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            mailer.publish_mailer_events(QueueMessageTypes.EFT_INVOICE_CREATED.value, payment_account, {
-                'invoice_total': float(invoice_total),
-                'invoice_process_date': f'{datetime.now(tz=timezone.utc)}'
-            })
-
             cls._save_invoice_reference_records(account_invoices, cfs_account, invoice_response)
 
     @classmethod
