@@ -619,7 +619,7 @@ def test_get_eft_statement_with_invoices(session):
                     'product': 'BUSINESS',
                     'refund': 0.0,
                     'service_fees': 0.0,
-                    'status_code': 'PAD Invoice Approved',
+                    'status_code': 'Invoice Approved',
                     'total': 200.0,
                 },
                 {
@@ -657,7 +657,7 @@ def test_get_eft_statement_with_invoices(session):
                     'product': 'BUSINESS',
                     'refund': 0.0,
                     'service_fees': 0.0,
-                    'status_code': 'PAD Invoice Approved',
+                    'status_code': 'Invoice Approved',
                     'total': 50.0,
                 },
             ],

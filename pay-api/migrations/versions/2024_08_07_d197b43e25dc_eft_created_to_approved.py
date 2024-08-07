@@ -20,6 +20,8 @@ depends_on = None
 
 def upgrade():
     op.execute(f"update invoices set invoice_status_code = '{InvoiceStatus.APPROVED.value}' where invoice_status_code = '{InvoiceStatus.CREATED.value}' and payment_method_code = 'EFT'")
+    op.execute(f"update invoice_status_codes set description = 'Invoice Approved' where code = '{InvoiceStatus.APPROVED.value}'")
 
 def downgrade():
     op.execute(f"update invoices set invoice_status_code = '{InvoiceStatus.CREATED.value}' where invoice_status_code = '{InvoiceStatus.APPROVED.value}' and payment_method_code = 'EFT'")
+    op.execute(f"update invoice_status_codes set description = 'PAD Invoice Approved' where code = '{InvoiceStatus.APPROVED.value}'")
