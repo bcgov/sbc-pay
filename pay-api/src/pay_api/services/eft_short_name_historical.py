@@ -151,7 +151,7 @@ class EFTShortnameHistorical:
             select(1)
             .select_from(latest_history_subquery)
             .where(and_(latest_history_subquery.c.transaction_type == EFTHistoricalTypes.STATEMENT_PAID.value,
-                        latest_history_subquery.c.is_processing == false()))
+                        latest_history_subquery.c.is_processing.is_(False)))
         )
 
         is_reversible_statement = case(

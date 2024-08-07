@@ -210,8 +210,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
         # Clean up pending historical records from pending links
         for link_group_id in link_group_ids:
-            history_model: EFTShortnameHistoryModel = (EFTShortnameHistoryModel
-                                                       .find_by_related_group_link_id(link_group_id))
+            history_model = EFTShortnameHistoryModel.find_by_related_group_link_id(link_group_id)
             if history_model:
                 db.session.delete(history_model)
 

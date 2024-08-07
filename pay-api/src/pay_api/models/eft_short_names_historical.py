@@ -14,6 +14,7 @@
 """Model to handle all operations related to EFT Short name historical audit data."""
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import Self
 
 from attr import define
 from sqlalchemy import ForeignKey
@@ -69,7 +70,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
     transaction_type = db.Column(db.String, nullable=False)
 
     @classmethod
-    def find_by_related_group_link_id(cls, group_link_id: int):
+    def find_by_related_group_link_id(cls, group_link_id: int) -> Self:
         """Find historical records by related EFT Credit Invoice Link group id."""
         return cls.query.filter_by(related_group_link_id=group_link_id).one_or_none()
 
