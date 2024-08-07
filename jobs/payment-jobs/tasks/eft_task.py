@@ -57,7 +57,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             .join(CfsAccountModel, CfsAccountModel.account_id == InvoiceModel.payment_account_id) \
             .join(latest_cfs_account, CfsAccountModel.id == latest_cfs_account.c.max_id_per_payment_account) \
             .options(lazyload('*')) \
-            .filter(EFTCreditInvoiceLinkModel.status_code == status)
+            .filter(EFTCreditInvoiceLinkModel.status_code == status) \
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
 
         match status:
             case EFTCreditInvoiceStatus.PENDING.value:

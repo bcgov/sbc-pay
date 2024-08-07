@@ -56,7 +56,7 @@ tests = [
     ('no_cfs_active', PaymentMethod.EFT.value, [
      InvoiceStatus.APPROVED.value], [EFTCreditInvoiceStatus.PENDING.value], [None], 0, 0),
     ('wrong_payment_method', PaymentMethod.PAD.value, [
-     InvoiceStatus.APPROVED.value], [EFTCreditInvoiceStatus.PENDING.value], [None], 0, 0),
+     InvoiceStatus.CREATED.value], [EFTCreditInvoiceStatus.PENDING.value], [None], 0, 0),
     ('credit_invoice_link_status_incorrect', PaymentMethod.EFT.value, [
      InvoiceStatus.APPROVED.value], [EFTCreditInvoiceStatus.COMPLETED.value, EFTCreditInvoiceStatus.REFUNDED.value],
      [None], 0, 0),
