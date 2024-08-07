@@ -200,7 +200,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
             .filter(InvoiceModel.invoice_status_code.in_([
                 InvoiceStatus.PARTIAL.value,
-                InvoiceStatus.CREATED.value,
+                InvoiceStatus.APPROVED.value,
                 InvoiceStatus.OVERDUE.value])
             )
             .group_by(StatementInvoicesModel.statement_id)
@@ -429,7 +429,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
             .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
                                                           InvoiceStatus.PARTIAL.value,
-                                                          InvoiceStatus.CREATED.value,
+                                                          InvoiceStatus.APPROVED.value,
                                                           InvoiceStatus.OVERDUE.value))) \
             .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id)
 

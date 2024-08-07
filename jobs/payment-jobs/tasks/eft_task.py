@@ -61,7 +61,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         match status:
             case EFTCreditInvoiceStatus.PENDING.value:
                 query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
-                query = query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.CREATED.value,
+                query = query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value,
                                                                            InvoiceStatus.OVERDUE.value]))
             case EFTCreditInvoiceStatus.PENDING_REFUND.value:
                 query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
@@ -148,7 +148,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
                 invoice_reference.flush()
                 CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
-                invoice.invoice_status_code = InvoiceStatus.CREATED.value
+                invoice.invoice_status_code = InvoiceStatus.APPROVED.value
                 invoice.paid = 0
                 invoice.payment_date = None
                 invoice.flush()

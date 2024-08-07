@@ -437,7 +437,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def _get_statement_invoices_owing(auth_account_id: str, statement_id: int = None) -> List[InvoiceModel]:
         """Return statement invoices that have not been fully paid."""
         unpaid_status = (InvoiceStatus.PARTIAL.value,
-                         InvoiceStatus.CREATED.value, InvoiceStatus.OVERDUE.value)
+                         InvoiceStatus.APPROVED.value, InvoiceStatus.OVERDUE.value)
         query = db.session.query(InvoiceModel) \
             .join(PaymentAccountModel, and_(PaymentAccountModel.id == InvoiceModel.payment_account_id,
                                             PaymentAccountModel.auth_account_id == auth_account_id)) \

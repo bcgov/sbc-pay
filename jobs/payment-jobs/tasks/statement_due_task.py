@@ -49,7 +49,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     """
 
     unpaid_status = [InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value,
-                     InvoiceStatus.CREATED.value]
+                     InvoiceStatus.APPROVED.value]
     action_date_override = None
     statement_date_override = None
 

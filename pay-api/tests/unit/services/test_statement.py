@@ -229,7 +229,7 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
     invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
     monthly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
                                       payment_method_code=PaymentMethod.EFT.value,
-                                      status_code=InvoiceStatus.CREATED.value,
+                                      status_code=InvoiceStatus.APPROVED.value,
                                       total=50).save()
 
     assert monthly_invoice is not None
@@ -536,10 +536,12 @@ def test_get_eft_statement_with_invoices(session):
     assert statements is not None
 
     invoice_1 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                                status_code=InvoiceStatus.APPROVED.value,
                                 total=200, paid=0).save()
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
 
     invoice_2 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                                status_code=InvoiceStatus.APPROVED.value,
                                 total=50, paid=0).save()
     factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
 
@@ -617,7 +619,7 @@ def test_get_eft_statement_with_invoices(session):
                     'product': 'BUSINESS',
                     'refund': 0.0,
                     'service_fees': 0.0,
-                    'status_code': 'Pending',
+                    'status_code': 'APPROVED',
                     'total': 200.0,
                 },
                 {
@@ -655,7 +657,7 @@ def test_get_eft_statement_with_invoices(session):
                     'product': 'BUSINESS',
                     'refund': 0.0,
                     'service_fees': 0.0,
-                    'status_code': 'Pending',
+                    'status_code': 'APPROVED',
                     'total': 50.0,
                 },
             ],

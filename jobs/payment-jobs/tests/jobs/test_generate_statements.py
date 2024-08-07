@@ -129,7 +129,7 @@ def test_bcol_weekly_to_eft_statement(session):
     invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
     weekly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
                                      payment_method_code=PaymentMethod.DRAWDOWN.value,
-                                     status_code=InvoiceStatus.CREATED.value,
+                                     status_code=InvoiceStatus.APPROVED.value,
                                      total=50)
 
     assert weekly_invoice is not None
@@ -173,7 +173,7 @@ def test_bcol_weekly_to_eft_statement(session):
     # Using the same invoice create date as the weekly to test invoices on the same day with different payment methods
     monthly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
                                       payment_method_code=PaymentMethod.EFT.value,
-                                      status_code=InvoiceStatus.CREATED.value,
+                                      status_code=InvoiceStatus.APPROVED.value,
                                       total=50)
 
     assert monthly_invoice is not None
@@ -204,7 +204,7 @@ def test_bcol_monthly_to_eft_statement(session):
     invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
     bcol_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
                                    payment_method_code=PaymentMethod.DRAWDOWN.value,
-                                   status_code=InvoiceStatus.CREATED.value,
+                                   status_code=InvoiceStatus.APPROVED.value,
                                    total=50)
 
     assert bcol_invoice is not None
@@ -249,7 +249,7 @@ def test_bcol_monthly_to_eft_statement(session):
     # Using the same invoice create date as the weekly to test invoices on the same day with different payment methods
     monthly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
                                       payment_method_code=PaymentMethod.EFT.value,
-                                      status_code=InvoiceStatus.CREATED.value,
+                                      status_code=InvoiceStatus.APPROVED.value,
                                       total=50)
 
     assert monthly_invoice is not None
