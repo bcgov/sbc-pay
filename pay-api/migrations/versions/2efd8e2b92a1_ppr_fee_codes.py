@@ -5,7 +5,7 @@ Revises: 7c127b25168f
 Create Date: 2021-03-16 10:49:56.185103
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, Float, String
@@ -70,7 +70,7 @@ def upgrade():
                 "filing_type_code": "FLREG",
                 "corp_type_code": "PPR",
                 "fee_code": "EN114",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,
@@ -80,7 +80,7 @@ def upgrade():
                 "filing_type_code": "RLREG",
                 "corp_type_code": "PPR",
                 "fee_code": "EN111",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,
@@ -90,7 +90,7 @@ def upgrade():
                 "filing_type_code": "FSREN",
                 "corp_type_code": "PPR",
                 "fee_code": "EN111",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,
@@ -100,7 +100,7 @@ def upgrade():
                 "filing_type_code": "INFRN",
                 "corp_type_code": "PPR",
                 "fee_code": "EN112",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": "FUT01",
                 "priority_fee_code": None,
@@ -110,7 +110,7 @@ def upgrade():
                 "filing_type_code": "FSCHG",
                 "corp_type_code": "PPR",
                 "fee_code": "EN114",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,

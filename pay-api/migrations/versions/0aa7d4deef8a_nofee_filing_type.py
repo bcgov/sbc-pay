@@ -5,7 +5,7 @@ Revises: 7b8f813d7a14
 Create Date: 2021-05-17 13:15:02.260765
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, String
@@ -51,7 +51,7 @@ def upgrade():
                 "filing_type_code": "NOFEE",
                 "corp_type_code": "BC",
                 "fee_code": "EN107",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,
@@ -60,7 +60,7 @@ def upgrade():
                 "filing_type_code": "NOFEE",
                 "corp_type_code": "CP",
                 "fee_code": "EN107",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,
@@ -69,7 +69,7 @@ def upgrade():
                 "filing_type_code": "NOFEE",
                 "corp_type_code": "BEN",
                 "fee_code": "EN107",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,
@@ -78,7 +78,7 @@ def upgrade():
                 "filing_type_code": "NOFEE",
                 "corp_type_code": "ULC",
                 "fee_code": "EN107",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,

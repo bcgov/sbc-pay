@@ -34,7 +34,7 @@ from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     ContentType, EFTFileLineType, EFTProcessStatus, InvoiceStatus, NotificationStatus, PaymentMethod,
     StatementFrequency, StatementTemplate)
-from pay_api.utils.util import get_first_and_last_of_frequency, get_local_formatted_date, get_local_time
+from pay_api.utils.util import get_first_and_last_of_frequency, get_local_time
 
 from .payment import Payment as PaymentService
 from .payment import PaymentReportInput
@@ -171,7 +171,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         )
 
         query = (
-            select(func.array_agg(func.distinct(subquery.c.payment_method)))
+            select(func.array_agg(func.distinct(subquery.c.payment_method)))  # pylint:disable=not-callable
             .select_from(subquery)
             .where(
                 and_(
@@ -440,7 +440,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_overdue_date = get_local_formatted_date(result.oldest_overdue_date) \
+        oldest_overdue_date = result.oldest_overdue_date.strftime('%Y-%m-%d') \
             if result and result.oldest_overdue_date else None
 
         # Unpaid invoice amount total that are not part of a statement yet

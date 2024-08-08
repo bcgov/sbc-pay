@@ -17,7 +17,7 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -41,7 +41,7 @@ def test_fee_schedule_saved_from_new(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = date.today()
+    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
@@ -56,13 +56,13 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = date.today()
+    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
 
     assert fee_schedule.fee_schedule_id is not None
-    assert fee_schedule.fee_start_date == date.today()
+    assert fee_schedule.fee_start_date == datetime.now(tz=timezone.utc).date()
     assert fee_schedule.fee_end_date is None
     assert fee_schedule.fee_code == FEE_CODE
     assert fee_schedule.corp_type_code == CORP_TYPE_CODE
@@ -110,11 +110,11 @@ def test_find_by_corp_type_and_filing_type_and_valid_date(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = date.today()
+    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE,
-                                                                          date.today())
+                                                                          datetime.now(tz=timezone.utc))
 
     assert fee_schedule.fee_schedule_id is not None
 
@@ -127,12 +127,14 @@ def test_find_by_corp_type_and_filing_type_and_invalid_date(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = date.today()
+    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.save()
 
     with pytest.raises(BusinessException) as excinfo:
-        fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE,
-                                                                              date.today() - timedelta(1))
+        fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE,
+                                                                              FILING_TYPE_CODE,
+                                                                              datetime.now(tz=timezone.utc) -
+                                                                              timedelta(1))
 
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
 
@@ -159,11 +161,12 @@ def test_fee_schedule_with_waive_fees(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = date.today()
+    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE,
-                                                                          date.today(), waive_fees=True)
+                                                                          datetime.now(tz=timezone.utc),
+                                                                          waive_fees=True)
 
     assert fee_schedule is not None
     assert fee_schedule.fee_amount == 0
@@ -195,13 +198,13 @@ def test_fee_schedule_with_service_fees(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = corp_type_code
     fee_schedule.fee_code = fee_code
-    fee_schedule.fee_start_date = date.today()
+    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.service_fee_code = tran_fee_code
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(corp_type=corp_type_code,
                                                                           filing_type_code=FILING_TYPE_CODE,
-                                                                          valid_date=date.today(),
+                                                                          valid_date=datetime.now(tz=timezone.utc),
                                                                           include_service_fees=True)
     assert fee_schedule.service_fees == 10
 
@@ -232,13 +235,13 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = corp_type_code
     fee_schedule.fee_code = fee_code
-    fee_schedule.fee_start_date = date.today()
+    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.service_fee_code = tran_fee_code
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(corp_type=corp_type_code,
                                                                           filing_type_code=FILING_TYPE_CODE,
-                                                                          valid_date=date.today(),
+                                                                          valid_date=datetime.now(tz=timezone.utc),
                                                                           include_service_fees=False)
     assert fee_schedule.service_fees == 10
 

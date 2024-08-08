@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Tuple
 
 from cattr import Converter
@@ -437,7 +437,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         statement_settings_model = StatementSettingsModel(
             frequency=frequency,
             payment_account_id=payment_account_id,
-            from_date=date.today()  # To help with mocking tests - freeze_time doesn't seem to work on the model default
+            # To help with mocking tests - freeze_time doesn't seem to work on the model default
+            from_date=datetime.now(tz=timezone.utc).date()
         )
         statement_settings_model.save()
 
