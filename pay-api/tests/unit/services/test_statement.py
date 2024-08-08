@@ -538,13 +538,11 @@ def test_get_eft_statement_with_invoices(session):
     invoice_1 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
                                 status_code=InvoiceStatus.APPROVED.value,
                                 total=200, paid=0).save()
-    print(invoice_1.created_on)
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
 
     invoice_2 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
                                 status_code=InvoiceStatus.APPROVED.value,
                                 total=50, paid=0).save()
-    print(invoice_2.created_on)
     factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
 
     factory_invoice_reference(invoice_1.id).save()
@@ -592,7 +590,7 @@ def test_get_eft_statement_with_invoices(session):
                     'corp_type_code': 'CP',
                     'created_by': 'test',
                     'created_name': 'test name',
-                    'created_on': date_string_now,
+                    'created_on': invoice_1.created_on.strftime('%Y-%m-%d'),
                     'details': [
                         {
                             'label': 'label',
@@ -630,7 +628,7 @@ def test_get_eft_statement_with_invoices(session):
                     'corp_type_code': 'CP',
                     'created_by': 'test',
                     'created_name': 'test name',
-                    'created_on': date_string_now,
+                    'created_on': invoice_2.created_on.strftime('%Y-%m-%d'),
                     'details': [
                         {
                             'label': 'label',
