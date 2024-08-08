@@ -519,7 +519,7 @@ def test_get_eft_statement_for_empty_invoices(session):
 
 def test_get_eft_statement_with_invoices(session):
     """Assert that the get statement report works for eft statement with invoices."""
-    statement_from_date = datetime.now(timezone.utc) + relativedelta(months=1, day=1)
+    statement_from_date = datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1)
     statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     settings_model = factory_statement_settings(payment_account_id=payment_account.id,
@@ -538,11 +538,13 @@ def test_get_eft_statement_with_invoices(session):
     invoice_1 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
                                 status_code=InvoiceStatus.APPROVED.value,
                                 total=200, paid=0).save()
+    print(invoice_1.created_on)
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
 
     invoice_2 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
                                 status_code=InvoiceStatus.APPROVED.value,
                                 total=50, paid=0).save()
+    print(invoice_2.created_on)
     factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
 
     factory_invoice_reference(invoice_1.id).save()
