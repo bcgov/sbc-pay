@@ -33,6 +33,7 @@ from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
+from pay_api.utils.util import get_local_formatted_date
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_premium_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings,
@@ -590,7 +591,7 @@ def test_get_eft_statement_with_invoices(session):
                     'corp_type_code': 'CP',
                     'created_by': 'test',
                     'created_name': 'test name',
-                    'created_on': invoice_1.created_on.strftime('%Y-%m-%d'),
+                    'created_on': get_local_formatted_date(invoice_1.created_on),
                     'details': [
                         {
                             'label': 'label',
@@ -628,7 +629,7 @@ def test_get_eft_statement_with_invoices(session):
                     'corp_type_code': 'CP',
                     'created_by': 'test',
                     'created_name': 'test name',
-                    'created_on': invoice_2.created_on.strftime('%Y-%m-%d'),
+                    'created_on': get_local_formatted_date(invoice_2.created_on),
                     'details': [
                         {
                             'label': 'label',
