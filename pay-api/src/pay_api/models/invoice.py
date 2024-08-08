@@ -76,6 +76,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             'cfs_account_id',
             'dat_number',
             'details',
+            'disbursement_reversal_date',
             'disbursement_status_code',
             'disbursement_date',
             'filing_id',
@@ -99,7 +100,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_codes.code'), nullable=False)
+    invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_codes.code'), nullable=False, index=True)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     cfs_account_id = db.Column(db.Integer, ForeignKey('cfs_accounts.id'), nullable=True)
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False, index=True)
