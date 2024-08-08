@@ -21,7 +21,7 @@ jinja2 = "^3.1.3"
 protobuf = "4.25.3"
 launchdarkly-server-sdk = "^8.2.1"
 cachecontrol = "^0.14.0"
-pay-api = {git = "https://github.com/seeker25/sbc-pay.git", subdirectory = "pay-api", branch = "4pm_unit_test_fix"}
+pay-api = {git = "https://github.com/seeker25/sbc-pay.git", subdirectory = "pay-api", branch = "production_release_fixes"}
 pg8000 = "^1.30.5"
 
 
