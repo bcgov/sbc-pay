@@ -23,7 +23,6 @@ import json
 from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
 from pay_api.utils.enums import ContentType, InvoiceStatus, StatementFrequency
-from pay_api.utils.util import get_local_formatted_date
 from tests.utilities.base_test import (
     factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, get_payment_request,
     token_header)
@@ -276,4 +275,4 @@ def test_statement_summary(session, client, jwt, app):
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('totalDue') == float(total_due)
-    assert rv.json.get('oldestOverdueDate') == get_local_formatted_date(oldest_overdue_date)
+    assert rv.json.get('oldestOverdueDate') == oldest_overdue_date.strftime('%Y-%m-%d')

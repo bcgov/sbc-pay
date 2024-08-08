@@ -18,7 +18,7 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 """
 
 import json
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict
 
 import pytest
@@ -100,8 +100,8 @@ def test_create_routing_slips_search(session, client, jwt, app):
 
     # search with dates
 
-    valid_date_filter = {'startDate': (date.today() - timedelta(1)).strftime(DT_SHORT_FORMAT),
-                         'endDate': (date.today() + timedelta(1)).strftime(DT_SHORT_FORMAT)}
+    valid_date_filter = {'startDate': (datetime.now(tz=timezone.utc) - timedelta(1)).strftime(DT_SHORT_FORMAT),
+                         'endDate': (datetime.now(tz=timezone.utc) + timedelta(1)).strftime(DT_SHORT_FORMAT)}
     rv = client.post('/api/v1/fas/routing-slips/queries',
                      data=json.dumps({'routingSlipNumber': rs_number, 'dateFilter': valid_date_filter}),
                      headers=headers)
@@ -110,8 +110,8 @@ def test_create_routing_slips_search(session, client, jwt, app):
     assert len(items) == 1
     assert items[0].get('number') == rs_number
 
-    invalid_date_filter = {'startDate': (date.today() + timedelta(100)).strftime(DT_SHORT_FORMAT),
-                           'endDate': (date.today() + timedelta(1)).strftime(DT_SHORT_FORMAT)}
+    invalid_date_filter = {'startDate': (datetime.now(tz=timezone.utc) + timedelta(100)).strftime(DT_SHORT_FORMAT),
+                           'endDate': (datetime.now(tz=timezone.utc) + timedelta(1)).strftime(DT_SHORT_FORMAT)}
     rv = client.post('/api/v1/fas/routing-slips/queries',
                      data=json.dumps({'routingSlipNumber': rs_number, 'dateFilter': invalid_date_filter}),
                      headers=headers)

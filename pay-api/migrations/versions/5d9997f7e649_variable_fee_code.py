@@ -5,7 +5,7 @@ Revises: cdd2ce690303
 Create Date: 2021-11-22 13:47:57.469953
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
@@ -76,7 +76,7 @@ def upgrade():
                 'filing_type_code': 'CSBVFEE',
                 'corp_type_code': 'CSO',
                 'fee_code': 'EN107',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': None,
                 'variable': True
@@ -85,7 +85,7 @@ def upgrade():
                 'filing_type_code': 'CSBSRCH',
                 'corp_type_code': 'CSO',
                 'fee_code': 'EN115',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': None,
                 'variable': False
@@ -94,7 +94,7 @@ def upgrade():
                 'filing_type_code': 'CSBPDOC',
                 'corp_type_code': 'CSO',
                 'fee_code': 'EN114',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': None,
                 'variable': False
@@ -103,7 +103,7 @@ def upgrade():
                 'filing_type_code': 'CSCRMTFC',
                 'corp_type_code': 'CSO',
                 'fee_code': 'EN107',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': None,
                 'variable': False

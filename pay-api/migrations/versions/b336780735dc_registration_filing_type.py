@@ -5,7 +5,7 @@ Revises: 5d9997f7e649
 Create Date: 2021-11-30 09:33:57.641970
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, String, Boolean, Float, text
@@ -95,7 +95,7 @@ def upgrade():
                 'filing_type_code': 'FRREG',
                 'corp_type_code': 'SP',
                 'fee_code': 'EN116',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': 'TRF01',
                 'priority_fee_code': 'PRI01'
@@ -104,7 +104,7 @@ def upgrade():
                 'filing_type_code': 'FRREG',
                 'corp_type_code': 'GP',
                 'fee_code': 'EN116',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': 'TRF01',
                 'priority_fee_code': 'PRI01'

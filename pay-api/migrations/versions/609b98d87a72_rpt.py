@@ -5,7 +5,7 @@ Revises: 9543cbcb8b79
 Create Date: 2021-09-16 11:09:04.691660
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, String, Boolean, text
@@ -64,7 +64,7 @@ def upgrade():
                 'filing_type_code': 'OLLXTFI',
                 'corp_type_code': 'RPT',
                 'fee_code': 'EN111',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': 'TRF01'
             }

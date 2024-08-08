@@ -14,7 +14,7 @@
 """Model to handle all operations related to distribution code."""
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime, timezone
 
 from marshmallow import fields
 from sql_versioning import Versioned
@@ -89,7 +89,7 @@ class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-
     stob = db.Column(db.String(50), nullable=True)
     project_code = db.Column(db.String(50), nullable=True)
 
-    start_date = db.Column(db.Date, default=date.today(), nullable=False)
+    start_date = db.Column(db.Date, default=datetime.now(tz=timezone.utc).date(), nullable=False)
     end_date = db.Column(db.Date, default=None, nullable=True)
     stop_ejv = db.Column('stop_ejv', Boolean(), default=False)
 
@@ -114,7 +114,7 @@ class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-
     @classmethod
     def find_all(cls, include_gov_account_gl_codes: bool = False):
         """Find all distribution codes."""
-        valid_date = date.today()
+        valid_date = datetime.now(tz=timezone.utc).date()
         query = cls.query.filter(DistributionCode.start_date <= valid_date). \
             filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date)). \
             order_by(DistributionCode.name.asc())
@@ -133,7 +133,7 @@ class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-
     @classmethod
     def find_by_active_for_fee_schedule(cls, fee_schedule_id: int):
         """Return active distribution for fee schedule."""
-        valid_date = date.today()
+        valid_date = datetime.now(tz=timezone.utc).date()
         query = db.session.query(DistributionCode). \
             join(DistributionCodeLink). \
             filter(DistributionCodeLink.fee_schedule_id == fee_schedule_id). \
@@ -146,7 +146,7 @@ class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-
     @classmethod
     def find_by_active_for_account(cls, account_id: int):
         """Return active distribution for account."""
-        valid_date = date.today()
+        valid_date = datetime.now(tz=timezone.utc).date()
         query = db.session.query(DistributionCode). \
             filter(DistributionCode.account_id == account_id). \
             filter(DistributionCode.start_date <= valid_date). \

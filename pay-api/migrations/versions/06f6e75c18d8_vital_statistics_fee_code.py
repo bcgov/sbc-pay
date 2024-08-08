@@ -5,7 +5,7 @@ Revises: a23093f25c56
 Create Date: 2020-05-25 16:38:23.388619
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
@@ -83,7 +83,7 @@ def upgrade():
                 "filing_type_code": "WILLNOTICE",
                 "corp_type_code": "VS",
                 "fee_code": "EN201",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": "PRI02"
@@ -92,7 +92,7 @@ def upgrade():
                 "filing_type_code": "WILLSEARCH",
                 "corp_type_code": "VS",
                 "fee_code": "EN202",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": "PRI02",
@@ -101,7 +101,7 @@ def upgrade():
                 "filing_type_code": "WILLALIAS",
                 "corp_type_code": "VS",
                 "fee_code": "EN203",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": "PRI02",

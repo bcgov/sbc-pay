@@ -5,7 +5,7 @@ Revises: 0aa7d4deef8a
 Create Date: 2021-06-04 08:27:25.551857
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
@@ -58,7 +58,7 @@ def upgrade():
     op.bulk_insert(
         fee_schedule_table,
         [
-            {'filing_type_code': 'MAREG', 'corp_type_code': 'RPPR', 'fee_code': 'EN107', 'fee_start_date': date.today(),
+            {'filing_type_code': 'MAREG', 'corp_type_code': 'RPPR', 'fee_code': 'EN107', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
         ]
     )

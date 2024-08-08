@@ -6,7 +6,7 @@ Revises: e748b5c19247
 Create Date: 2022-05-24 21:46:54.030721
 
 """
-from datetime import date
+from datetime import datetime, timezone
 from re import M
 
 from alembic import op
@@ -88,7 +88,7 @@ def upgrade():
                 'filing_type_code': 'BSRCH',
                 'corp_type_code': 'BUS',
                 'fee_code': 'EN110', # 7.00
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': 'TRF01', #$1.50 default
             }
@@ -98,14 +98,14 @@ def upgrade():
     op.bulk_insert(distribution_code_table, 
                    [
                        {
-                           'created_on': date.today(),
+                           'created_on': datetime.now(tz=timezone.utc),
                            'name': 'Corporate Registry - Searches',
                            'client': '112',
                            'responsibility_centre': '32363',
                            'service_line': '34725',
                            'stob': '4375',
                            'project_code': '3200056',
-                           'start_date': date.today(),
+                           'start_date': datetime.now(tz=timezone.utc),
                            'created_by': 'Alembic'
                        }
                    ]

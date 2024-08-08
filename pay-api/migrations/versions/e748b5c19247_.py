@@ -5,7 +5,7 @@ Revises: e3644698c172
 Create Date: 2022-05-12 12:30:13.857906
 
 """
-from datetime import date
+from datetime import datetime, timezone
 from re import M
 
 from alembic import op
@@ -86,7 +86,7 @@ def upgrade():
                 'filing_type_code': 'OLAARTOQ',
                 'corp_type_code': 'BCA',
                 'fee_code': 'EN107', # 0.00
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': 'TRF01', #$1.50 default
                 'variable': True
@@ -95,7 +95,7 @@ def upgrade():
                 'filing_type_code': 'OLAARTAQ',
                 'corp_type_code': 'BCA',
                 'fee_code': 'EN107', # 0.00
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,              
                 'service_fee_code': 'TRF01', #$1.50 default
                 'variable': True
@@ -104,7 +104,7 @@ def upgrade():
                 'filing_type_code': 'OLAARTIQ',
                 'corp_type_code': 'BCA',
                 'fee_code': 'EN107', # 0.00
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': 'TRF01', #$1.50 default
                 'variable': True
@@ -115,14 +115,14 @@ def upgrade():
     op.bulk_insert(distribution_code_table, 
                    [
                        {
-                           'created_on': date.today(),
+                           'created_on': datetime.now(tz=timezone.utc),
                            'name': 'BC Assessment',
                            'client': '112',
                            'responsibility_centre': '32041',
                            'service_line': '35301',
                            'stob': '1278',
                            'project_code': '3200000',
-                           'start_date': date.today(),
+                           'start_date': datetime.now(tz=timezone.utc),
                            'created_by': 'Alembic'
                        }
                    ]

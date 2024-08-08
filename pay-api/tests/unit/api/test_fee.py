@@ -17,7 +17,7 @@
 Test-Suite to ensure that the /fees endpoint is working as expected.
 """
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
@@ -49,7 +49,7 @@ def test_fees_with_corp_type_and_filing_type_with_valid_start_date(session, clie
 
     corp_type = 'XX'
     filing_type_code = 'XOTANN'
-    now = date.today()
+    now = datetime.now(tz=timezone.utc)
     factory_fee_schedule_model(
         factory_filing_type_model('XOTANN', 'TEST'),
         factory_corp_type_model('XX', 'TEST'),
@@ -69,7 +69,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, cl
 
     corp_type = 'XX'
     filing_type_code = 'XOTANN'
-    now = date.today()
+    now = datetime.now(tz=timezone.utc)
     factory_fee_schedule_model(
         factory_filing_type_model('XOTANN', 'TEST'),
         factory_corp_type_model('XX', 'TEST'),
@@ -89,7 +89,7 @@ def test_fees_with_corp_type_and_filing_type_with_valid_end_date(session, client
 
     corp_type = 'XX'
     filing_type_code = 'XOTANN'
-    now = date.today()
+    now = datetime.now(tz=timezone.utc)
     factory_fee_schedule_model(
         factory_filing_type_model('XOTANN', 'TEST'),
         factory_corp_type_model('XX', 'TEST'),
@@ -109,7 +109,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(session, clie
 
     corp_type = 'XX'
     filing_type_code = 'XOTANN'
-    now = date.today()
+    now = datetime.now(tz=timezone.utc)
     factory_fee_schedule_model(
         factory_filing_type_model('XOTANN', 'TEST'),
         factory_corp_type_model('XX', 'TEST'),
@@ -310,7 +310,7 @@ def factory_fee_schedule_model(
         filing_type: FilingType,
         corp_type: CorpType,
         fee_code: FeeCode,
-        fee_start_date: date = date.today(),
+        fee_start_date: date = datetime.now(tz=timezone.utc).date(),
         fee_end_date: date = None,
         service_fee: FeeCode = None):
     """Return the fee schedule model."""

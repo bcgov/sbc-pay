@@ -5,7 +5,7 @@ Revises: 55f71addab9d
 Create Date: 2019-05-10 11:07:41.003718
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, Float, Integer, String
@@ -77,27 +77,27 @@ def upgrade():
     op.bulk_insert(
         fee_schedule_table,
         [
-            {'filing_type_code': 'OTANN', 'corp_type_code': 'CP', 'fee_code': 'EN103', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTANN', 'corp_type_code': 'CP', 'fee_code': 'EN103', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTADD', 'corp_type_code': 'CP', 'fee_code': 'EN101', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTADD', 'corp_type_code': 'CP', 'fee_code': 'EN101', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTCDR', 'corp_type_code': 'CP', 'fee_code': 'EN101', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTCDR', 'corp_type_code': 'CP', 'fee_code': 'EN101', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTSPE', 'corp_type_code': 'CP', 'fee_code': 'EN104', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTSPE', 'corp_type_code': 'CP', 'fee_code': 'EN104', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTINC', 'corp_type_code': 'CP', 'fee_code': 'EN106', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTINC', 'corp_type_code': 'CP', 'fee_code': 'EN106', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTAMA', 'corp_type_code': 'CP', 'fee_code': 'EN106', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTAMA', 'corp_type_code': 'CP', 'fee_code': 'EN106', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTREG', 'corp_type_code': 'CP', 'fee_code': 'EN106', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTREG', 'corp_type_code': 'CP', 'fee_code': 'EN106', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTRES', 'corp_type_code': 'CP', 'fee_code': 'EN106', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTRES', 'corp_type_code': 'CP', 'fee_code': 'EN106', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTAMR', 'corp_type_code': 'CP', 'fee_code': 'EN101', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTAMR', 'corp_type_code': 'CP', 'fee_code': 'EN101', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTADR', 'corp_type_code': 'CP', 'fee_code': 'EN101', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTADR', 'corp_type_code': 'CP', 'fee_code': 'EN101', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'OTCGM', 'corp_type_code': 'CP', 'fee_code': 'EN107', 'fee_start_date': date.today(),
+            {'filing_type_code': 'OTCGM', 'corp_type_code': 'CP', 'fee_code': 'EN107', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None}
         ]
     )

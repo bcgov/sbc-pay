@@ -5,7 +5,7 @@ Revises: 52a01edc692a
 Create Date: 2022-03-30 15:04:45.566151
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, String, text
@@ -43,7 +43,7 @@ def upgrade():
                 'filing_type_code': 'DIS_VOL',
                 'corp_type_code': 'SP',
                 'fee_code': 'EN107',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': None,
                 'future_effective_fee_code': None,
@@ -53,7 +53,7 @@ def upgrade():
                 'filing_type_code': 'DIS_VOL',
                 'corp_type_code': 'GP',
                 'fee_code': 'EN107',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': None,
                 'future_effective_fee_code': None,

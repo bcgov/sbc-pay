@@ -171,7 +171,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         )
 
         query = (
-            select(func.array_agg(func.distinct(subquery.c.payment_method)))
+            select(func.array_agg(func.distinct(subquery.c.payment_method)))  # pylint:disable=not-callable
             .select_from(subquery)
             .where(
                 and_(

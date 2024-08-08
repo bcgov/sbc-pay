@@ -14,7 +14,7 @@
 """Service to manage Fee Calculation."""
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Dict
 
 from dateutil import parser
@@ -366,7 +366,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         if distribution_details.get('startDate', None):
             dist_code_svc.start_date = parser.parse(distribution_details.get('startDate'))
         else:
-            dist_code_svc.start_date = date.today()
+            dist_code_svc.start_date = datetime.now(tz=timezone.utc).date()
 
         _has_code_changes: bool = dist_code_svc.client != distribution_details.get('client', None) \
             or dist_code_svc.responsibility_centre != distribution_details.get('responsibilityCentre', None) \

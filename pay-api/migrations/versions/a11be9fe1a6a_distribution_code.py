@@ -5,7 +5,7 @@ Revises: cf9a60955b68
 Create Date: 2020-07-27 10:33:34.602674
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
@@ -72,42 +72,42 @@ def upgrade():
             {
                 'distribution_code_id': 1,
                 'created_by': 'Alembic',
-                'created_on': date.today(),
+                'created_on': datetime.now(tz=timezone.utc),
                 'memo_name': 'CO-OP Filing',
                 'service_fee_memo_name': None,
-                'start_date': date.today(),
+                'start_date': datetime.now(tz=timezone.utc),
             },
             {
                 'distribution_code_id': 2,
                 'created_by': 'Alembic',
-                'created_on': date.today(),
+                'created_on': datetime.now(tz=timezone.utc),
                 'memo_name': 'Benefit Companies',
                 'service_fee_memo_name': 'SBC Modernization Service Charge',
-                'start_date': date.today(),
+                'start_date': datetime.now(tz=timezone.utc),
             },
             {
                 'distribution_code_id': 3,
                 'created_by': 'Alembic',
-                'created_on': date.today(),
+                'created_on': datetime.now(tz=timezone.utc),
                 'memo_name': 'Benefit Companies',
                 'service_fee_memo_name': 'SBC Modernization Service Charge',
-                'start_date': date.today(),
+                'start_date': datetime.now(tz=timezone.utc),
             },
             {
                 'distribution_code_id': 4,
                 'created_by': 'Alembic',
-                'created_on': date.today(),
+                'created_on': datetime.now(tz=timezone.utc),
                 'memo_name': 'VS',
                 'service_fee_memo_name': 'SBC Modernization Service Charge',
-                'start_date': date.today(),
+                'start_date': datetime.now(tz=timezone.utc),
             },
             {
                 'distribution_code_id': 5,
                 'created_by': 'Alembic',
-                'created_on': date.today(),
+                'created_on': datetime.now(tz=timezone.utc),
                 'memo_name': 'PPR',
                 'service_fee_memo_name': 'SBC Modernization Service Charge',
-                'start_date': date.today(),
+                'start_date': datetime.now(tz=timezone.utc),
             }
 
         ]
