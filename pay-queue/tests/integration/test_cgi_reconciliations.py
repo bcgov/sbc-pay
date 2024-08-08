@@ -392,7 +392,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     invoice = InvoiceModel.find_by_id(invoice_id)
     assert invoice.disbursement_status_code == DisbursementStatus.REVERSED.value
-    assert invoice.disbursement_date == datetime(2023, 5, 29)
+    assert invoice.disbursement_reversal_date == datetime(2023, 5, 29)
 
 
 def test_succesful_payment_ejv_reconciliations(session, app, client):
@@ -1149,7 +1149,7 @@ def test_successful_ap_disbursement(session, app, client):
             assert invoice.disbursement_date is not None
         if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
             assert invoice.disbursement_status_code == DisbursementStatus.REVERSED.value
-            assert invoice.disbursement_date is not None
+            assert invoice.disbursement_reversal_date is not None
             refund = RefundModel.find_by_invoice_id(invoice.id)
             assert refund.gl_posted is not None
 
