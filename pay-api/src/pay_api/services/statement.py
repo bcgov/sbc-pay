@@ -232,22 +232,22 @@ class Statement:  # pylint:disable=too-many-instance-attributes
     @staticmethod
     def get_account_statements(auth_account_id: str, page, limit, is_owing: bool = None):
         """Return all active statements for an account."""
-        owing_subquery = Statement.get_statement_owing_query().subquery()
         payment_methods_subquery = Statement.get_payment_methods_query(StatementModel)
 
         query = (db.session.query(StatementModel,
-                                  owing_subquery.c.amount_owing,
                                   payment_methods_subquery)
                  .join(PaymentAccountModel)
                  .filter(and_(PaymentAccountModel.id == StatementModel.payment_account_id,
                          PaymentAccountModel.auth_account_id == auth_account_id)))
-        query = query.outerjoin(
-            owing_subquery,
-            owing_subquery.c.statement_id == StatementModel.id
-        )
-
         if is_owing:
+            owing_subquery = Statement.get_statement_owing_query().subquery()
+            query = query.add_columns(owing_subquery.c.amount_owing).outerjoin(
+                owing_subquery,
+                owing_subquery.c.statement_id == StatementModel.id
+            )
             query = query.filter(owing_subquery.c.amount_owing > 0)
+        else:
+            query = query.add_columns(literal(0).label('amount_owing'))
 
         frequency_case = case(
             (
@@ -268,7 +268,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         query = query.order_by(StatementModel.to_date.desc(), frequency_case)
         pagination = query.paginate(per_page=limit, page=page)
 
-        for i, (statement, amount_owing, payment_methods) in enumerate(pagination.items):
+        for i, (statement, payment_methods, amount_owing) in enumerate(pagination.items):
             statement.amount_owing = amount_owing if amount_owing else 0
             statement.payment_methods = payment_methods
             pagination.items[i] = statement

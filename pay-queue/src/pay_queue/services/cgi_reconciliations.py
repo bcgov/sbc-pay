@@ -273,12 +273,13 @@ def _fix_invoice_line(line):
 
 def _update_invoice_disbursement_status(invoice, effective_date: datetime):
     """Update status to reversed if its a refund, else to completed."""
-    invoice.disbursement_date = effective_date
     if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value,
                                        InvoiceStatus.CREDITED.value):
         invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
+        invoice.disbursement_reversal_date = effective_date
     else:
         invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+        invoice.disbursement_date = effective_date
 
 
 def _create_payment_record(amount, ejv_header, receipt_number):
