@@ -21,12 +21,12 @@ depends_on = None
 def upgrade():
     with op.batch_alter_table('invoices', schema=None) as batch_op:
         # existing adhoc on PROD
-        op.execute('DROP IF EXISTS INDEX invoices_invoice_status_code_idx')
+        op.execute('DROP INDEX CONCURRENTLY IF EXISTS invoices_invoice_status_code_idx')
         batch_op.create_index(batch_op.f('ix_invoices_invoice_status_code'), ['invoice_status_code'], unique=False, postgresql_concurrently=True)
 
     with op.batch_alter_table('statement_invoices', schema=None) as batch_op:
         # existing adhoc on PROD
-        op.execute('DROP IF EXISTS INDEX statement_invoices_invoice_id_idx')
+        op.execute('DROP INDEX CONCURRENTLY IF EXISTS statement_invoices_invoice_id_idx')
         batch_op.create_index(batch_op.f('ix_statement_invoices_invoice_id'), ['invoice_id'], unique=False, postgresql_concurrently=True)
 
 def downgrade():
