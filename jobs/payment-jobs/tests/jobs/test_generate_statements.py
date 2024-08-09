@@ -208,6 +208,11 @@ def test_bcol_monthly_to_eft_statement(session):
                                    total=50)
 
     assert bcol_invoice is not None
+    direct_pay_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
+                                         payment_method_code=PaymentMethod.DIRECT_PAY.value,
+                                         status_code=InvoiceStatus.APPROVED.value,
+                                         total=50)
+    assert direct_pay_invoice
 
     statement_from_date = localize_date(datetime(2023, 10, 1, 12, 0))
     statement_to_date = localize_date(datetime(2023, 10, 30, 12, 0))
@@ -227,10 +232,11 @@ def test_bcol_monthly_to_eft_statement(session):
                                         new_frequency=StatementFrequency.MONTHLY.value)
 
     # Validate bcol monthly interim invoice is correct
-    bcol_invoices = StatementInvoices.find_all_invoices_for_statement(bcol_monthly_statement.id)
-    assert bcol_invoices is not None
-    assert len(bcol_invoices) == 1
-    assert bcol_invoices[0].invoice_id == bcol_invoice.id
+    invoices = StatementInvoices.find_all_invoices_for_statement(bcol_monthly_statement.id)
+    assert invoices is not None
+    assert len(invoices) == 2
+    assert invoices[0].invoice_id == bcol_invoice.id
+    assert invoices[1].invoice_id == direct_pay_invoice.id
 
     # Generate monthly statement using the 1st of next month
     generate_date = localize_date(datetime(2023, 11, 1, 12, 0))
@@ -242,6 +248,10 @@ def test_bcol_monthly_to_eft_statement(session):
     assert statements is not None
     assert len(statements[0]) == 2
     first_statement_id = statements[0][0].id
+    # Test invoices existing and payment_account.payment_method_code fallback.
+    assert statements[0][0].payment_methods == PaymentMethod.EFT.value
+    assert statements[0][1].payment_methods in [f'{PaymentMethod.DIRECT_PAY.value},{PaymentMethod.DRAWDOWN.value}',
+                                                f'{PaymentMethod.DRAWDOWN.value},{PaymentMethod.DIRECT_PAY.value}']
     monthly_invoices = StatementInvoices.find_all_invoices_for_statement(first_statement_id)
     assert len(monthly_invoices) == 0
 
@@ -253,6 +263,12 @@ def test_bcol_monthly_to_eft_statement(session):
                                       total=50)
 
     assert monthly_invoice is not None
+    # This should get ignored.
+    monthly_invoice_2 = factory_invoice(payment_account=account, created_on=invoice_create_date,
+                                        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+                                        status_code=InvoiceStatus.APPROVED.value,
+                                        total=50)
+    assert monthly_invoice_2
 
     # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
     StatementTask.generate_statements([(generate_date - timedelta(days=1)).strftime('%Y-%m-%d')])
@@ -266,12 +282,16 @@ def test_bcol_monthly_to_eft_statement(session):
     assert monthly_invoices is not None
     assert len(monthly_invoices) == 1
     assert monthly_invoices[0].invoice_id == monthly_invoice.id
+    # This should be EFT only, because there's a filter in the jobs that looks only for EFT invoices if
+    # payment_account is set to EFT.
+    assert statements[0][0].payment_methods == f'{PaymentMethod.EFT.value}'
 
     # Validate bcol monthly interim invoice is correct
     bcol_invoices = StatementInvoices.find_all_invoices_for_statement(bcol_monthly_statement.id)
     assert bcol_invoices is not None
-    assert len(bcol_invoices) == 1
+    assert len(bcol_invoices) == 2
     assert bcol_invoices[0].invoice_id == bcol_invoice.id
+    assert bcol_invoices[1].invoice_id == direct_pay_invoice.id
 
 
 def localize_date(date: datetime):

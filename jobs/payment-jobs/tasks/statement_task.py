@@ -22,6 +22,7 @@ from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
+from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.enums import NotificationStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
@@ -143,7 +144,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # must match the account payment method. Used for EFT so the statements only show EFT invoices and interim
         # statement logic when transitioning payment methods
         search_filter['matchPaymentMethods'] = [PaymentMethod.EFT.value]
-        invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(search_filter)
+        invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(search_filter)
         if cls.has_date_override and statement_settings:
             cls._clean_up_old_statements(statement_settings, statement_from, statement_to)
         current_app.logger.debug('Inserting statements.')
@@ -156,7 +157,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             to_date=statement_to,
             notification_status_code=NotificationStatus.PENDING.value
             if pay_account.statement_notification_enabled is True and cls.has_date_override is False
-            else NotificationStatus.SKIP.value
+            else NotificationStatus.SKIP.value,
+            payment_methods=StatementService.get_payment_methods_from_details(invoice_detail_tuple, pay_account)
         ) for setting, pay_account in statement_settings]
         # Return defaults which returns the id.
         db.session.bulk_save_objects(statements, return_defaults=True)
@@ -165,7 +167,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         current_app.logger.debug('Inserting statement invoices.')
         statement_invoices = []
         for statement, auth_account_id in zip(statements, auth_account_ids):
-            invoices = [i for i in invoices_and_auth_ids if i.auth_account_id == auth_account_id]
+            invoices = [i for i in invoice_detail_tuple if i.auth_account_id == auth_account_id]
             statement_invoices = statement_invoices + [StatementInvoicesModel(
                 statement_id=statement.id,
                 invoice_id=invoice.id

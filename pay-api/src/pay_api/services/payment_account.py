@@ -443,7 +443,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         statement_settings_model.save()
 
     @classmethod
-    def find_account(cls, authorization: Dict[str, Any]) -> PaymentAccount:
+    def find_account(cls, authorization: Dict[str, Any]) -> PaymentAccount | None:
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_payment_account')
         auth_account_id: str = get_str_by_path(authorization, 'account/id')

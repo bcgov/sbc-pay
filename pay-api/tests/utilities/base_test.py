@@ -609,14 +609,16 @@ def factory_statement(
         from_date: datetime = datetime.now(tz=timezone.utc),
         to_date: datetime = datetime.now(tz=timezone.utc),
         statement_settings_id: str = None,
-        created_on: datetime = datetime.now(tz=timezone.utc)):
+        created_on: datetime = datetime.now(tz=timezone.utc),
+        payment_methods: str = PaymentMethod.EFT.value):
     """Return Factory."""
     return Statement(frequency=frequency,
                      statement_settings_id=statement_settings_id,
                      payment_account_id=payment_account_id,
                      from_date=from_date,
                      to_date=to_date,
-                     created_on=created_on).save()
+                     created_on=created_on,
+                     payment_methods=payment_methods).save()
 
 
 def factory_statement_invoices(
@@ -629,7 +631,7 @@ def factory_statement_invoices(
 
 def activate_pad_account(auth_account_id: str):
     """Activate the pad account."""
-    payment_account: PaymentAccount = PaymentAccount.find_by_auth_account_id(auth_account_id)
+    payment_account = PaymentAccount.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
     payment_account.save()
     cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
