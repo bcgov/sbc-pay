@@ -400,10 +400,12 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return statements
 
     @staticmethod
-    def get_payment_methods_from_details(invoice_detail_tuple, pay_account) -> str:
+    def determine_payment_methods(invoice_detail_tuple, pay_account, existing_statement=None) -> str:
         """Grab payment methods from invoices detail tuple."""
         payment_methods = {payment_method for _, payment_method, auth_account_id,
                            _ in invoice_detail_tuple if pay_account.auth_account_id == auth_account_id}
+        if existing_statement and not payment_methods:
+            return existing_statement.payment_methods
         if not payment_methods:
             payment_methods = {pay_account.payment_method}
         return ','.join(payment_methods)
@@ -434,7 +436,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
 
         invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(statement_filter)
         invoice_ids = list(invoice_detail_tuple)
-        payment_methods_string = Statement.get_payment_methods_from_details(invoice_detail_tuple, account)
+        payment_methods_string = Statement.determine_payment_methods(invoice_detail_tuple, account)
 
         # Generate interim statement
         statement = StatementModel(
