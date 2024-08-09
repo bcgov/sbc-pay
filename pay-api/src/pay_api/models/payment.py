@@ -279,6 +279,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 ))
 
         query = cls.filter_date(query, search_filter).with_entities(Invoice.id,
+                                                                    Invoice.payment_method_code,
                                                                     PaymentAccount.auth_account_id,
                                                                     PaymentAccount.id.label('payment_account_id'))
         return query.all()
