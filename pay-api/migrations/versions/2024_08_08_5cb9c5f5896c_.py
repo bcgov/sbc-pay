@@ -25,8 +25,24 @@ def upgrade():
     with op.batch_alter_table('statements', schema=None) as batch_op:
         batch_op.add_column(sa.Column('payment_methods', sa.String(length=100), nullable=True))
 
-    # Scenario where there exists statement invoices.
+    # Scenario where there are no statement invoices.
     # Note this takes at least 15 minutes to run both queries.
+    op.execute("""
+        update
+            statements
+        set
+            (payment_methods) = (
+            select
+                payment_method
+            from
+                payment_accounts
+            where
+                payment_accounts.id = statements.payment_account_id
+        )
+        where payment_methods is null and not exists (select 1 from statement_invoices where statement_invoices.statement_id = statements.id);
+    """)
+
+    # Scenario where there exists statement invoices.
     op.execute("""
         update
             statements
@@ -41,22 +57,6 @@ def upgrade():
             where
                 statement_invoices.statement_id = statements.id
             group by statement_invoices.statement_id
-        )
-        where payment_methods is null;
-    """)
-
-    # Scenario where there are no statement invoices.
-    op.execute("""
-        update
-            statements
-        set
-            (payment_methods) = (
-            select
-                payment_method
-            from
-                payment_accounts
-            where
-                payment_accounts.id = statements.payment_account_id
         )
         where payment_methods is null;
     """)
