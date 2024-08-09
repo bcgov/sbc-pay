@@ -401,6 +401,15 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return statements
 
     @staticmethod
+    def get_payment_methods_from_details(invoice_detail_tuple, pay_account) -> str:
+        """Grab payment methods from invoices detail tuple."""
+        payment_methods = {payment_method for _, payment_method, _,
+                           auth_account_id in invoice_detail_tuple if pay_account.auth_account_id == auth_account_id}
+        if not payment_methods:
+            payment_methods = {pay_account.payment_method}
+        return ','.join(payment_methods)
+
+    @staticmethod
     def generate_interim_statement(auth_account_id: str, new_frequency: str):
         """Generate interim statement."""
         today = get_local_time(datetime.now(tz=timezone.utc))
@@ -424,10 +433,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             'authAccountIds': [account.auth_account_id]
         }
 
-        invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(statement_filter)
-        invoices = list(invoices_and_auth_ids)
-        payment_methods = {invoice.payment_method for invoice in invoices} or {account.payment_method}
-        payment_methods = ','.join(payment_methods)
+        invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(statement_filter)
+        invoice_ids = list(invoice_detail_tuple)
+        payment_methods_string = Statement.get_payment_methods_from_details(invoice_detail_tuple, account)
 
         # Generate interim statement
         statement = StatementModel(
@@ -440,13 +448,13 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             notification_status_code=NotificationStatus.PENDING.value
             if account.statement_notification_enabled else NotificationStatus.SKIP.value,
             is_interim_statement=True,
-            payment_methods=payment_methods
+            payment_methods=payment_methods_string
         ).save()
 
         statement_invoices = [StatementInvoicesModel(
             statement_id=statement.id,
             invoice_id=invoice.id
-        ) for invoice in invoices]
+        ) for invoice in invoice_ids]
 
         db.session.bulk_save_objects(statement_invoices)
 
