@@ -609,14 +609,16 @@ def factory_statement(
         from_date: datetime = datetime.now(tz=timezone.utc),
         to_date: datetime = datetime.now(tz=timezone.utc),
         statement_settings_id: str = None,
-        created_on: datetime = datetime.now(tz=timezone.utc)):
+        created_on: datetime = datetime.now(tz=timezone.utc),
+        payment_methods: str = PaymentMethod.EFT.value):
     """Return Factory."""
     return Statement(frequency=frequency,
                      statement_settings_id=statement_settings_id,
                      payment_account_id=payment_account_id,
                      from_date=from_date,
                      to_date=to_date,
-                     created_on=created_on).save()
+                     created_on=created_on,
+                     payment_methods=payment_methods).save()
 
 
 def factory_statement_invoices(

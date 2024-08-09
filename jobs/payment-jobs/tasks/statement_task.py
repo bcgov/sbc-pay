@@ -144,7 +144,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # must match the account payment method. Used for EFT so the statements only show EFT invoices and interim
         # statement logic when transitioning payment methods
         search_filter['matchPaymentMethods'] = [PaymentMethod.EFT.value]
-        invoice_detail_tuple = PaymentModel.get_invoices_for_statements(search_filter)
+        invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(search_filter)
         if cls.has_date_override and statement_settings:
             cls._clean_up_old_statements(statement_settings, statement_from, statement_to)
         current_app.logger.debug('Inserting statements.')

@@ -50,6 +50,7 @@ class Statement(BaseModel):
             'notification_status_code',
             'overdue_notification_date',
             'payment_account_id',
+            'payment_methods',
             'statement_settings_id',
             'to_date'
         ]
@@ -101,5 +102,9 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     from_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     is_overdue = fields.Boolean()
-    payment_methods = fields.List(fields.String())
+    payment_methods = fields.Method(serialize='payment_methods_to_list')
     amount_owing = fields.Float(load_default=0)
+
+    def payment_methods_to_list(self, target):
+        """Convert comma separated string to list."""
+        return target.payment_methods.split(',') if target.payment_methods else []

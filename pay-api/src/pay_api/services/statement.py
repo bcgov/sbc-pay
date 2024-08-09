@@ -128,8 +128,6 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return d
 
     @staticmethod
-
-    @staticmethod
     def get_statement_owing_query():
         """Get statement query used for amount owing."""
         return (
@@ -159,9 +157,10 @@ class Statement:  # pylint:disable=too-many-instance-attributes
                               cast(StatementModel.id, Integer) == cast(statement_id, Integer))))
 
         result = query.one()
+        statement = result[0]
         amount_owing = result[1] if result[1] else 0
-        result[0].amount_owing = amount_owing
-        return result[0]
+        statement.amount_owing = amount_owing
+        return statement
 
     @staticmethod
     def get_account_statements(auth_account_id: str, page, limit, is_owing: bool = None):
