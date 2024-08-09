@@ -16,8 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List
 
 from flask import current_app
-from sql_versioning import history_cls
-from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column, or_, select, union
+from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column
 
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -129,68 +128,6 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def get_payment_methods_query(statement: StatementModel):
-        """Return payment methods for a statement was based on current and historical payment account versions."""
-        payment_account_history = history_cls(PaymentAccountModel)
-
-        current_account = (
-            select(
-                PaymentAccountModel.id,
-                PaymentAccountModel.payment_method,
-                PaymentAccountModel.version,
-                literal(datetime.max.date()).label('end_date')
-            ).correlate(StatementModel)
-            .where(
-                PaymentAccountModel.id == StatementModel.payment_account_id
-            )
-        )
-
-        payment_account_history = (
-            select(
-                payment_account_history.id,
-                payment_account_history.payment_method,
-                payment_account_history.version,
-                payment_account_history.changed.label('end_date')
-            ).correlate(StatementModel)
-            .where(
-                payment_account_history.id == statement.payment_account_id
-            )
-        )
-
-        # Combine current and historical records and calculate the date range for when it was active
-        union_query = union(current_account, payment_account_history)
-        subquery = (
-            select(union_query.c.id,
-                   union_query.c.payment_method,
-                   union_query.c.version,
-                   func.coalesce(func.lag(union_query.c.end_date)
-                                 .over(order_by=union_query.c.version.asc()), datetime.min.date())
-                   .label('start_date'),
-                   union_query.c.end_date)
-            .order_by(union_query.c.version.asc())
-        )
-
-        query = (
-            select(func.array_agg(func.distinct(subquery.c.payment_method)))  # pylint:disable=not-callable
-            .select_from(subquery)
-            .where(
-                and_(
-                    subquery.c.start_date != subquery.c.end_date,
-                    or_(
-                        and_(func.date(subquery.c.start_date) <= statement.from_date,
-                             statement.from_date <= func.date(subquery.c.end_date)),
-                        and_(func.date(subquery.c.start_date) <= statement.to_date,
-                             statement.to_date <= func.date(subquery.c.end_date)),
-                        and_(statement.from_date <= func.date(subquery.c.start_date),
-                             func.date(subquery.c.start_date) <= statement.to_date)
-                    )
-                )
-            )
-        )
-
-        return query.scalar_subquery()
-
-    @staticmethod
     def get_statement_owing_query():
         """Get statement query used for amount owing."""
         return (
@@ -210,33 +147,25 @@ class Statement:  # pylint:disable=too-many-instance-attributes
     def find_by_id(statement_id: int):
         """Get statement by id and populate payment methods and amount owing."""
         owing_subquery = Statement.get_statement_owing_query().subquery()
-        payment_methods_subquery = Statement.get_payment_methods_query(StatementModel)
 
         query = (db.session.query(StatementModel,
-                                  owing_subquery.c.amount_owing,
-                                  payment_methods_subquery)
+                                  owing_subquery.c.amount_owing
+                                  )
                  .join(PaymentAccountModel)
                  .outerjoin(owing_subquery, owing_subquery.c.statement_id == StatementModel.id)
                  .filter(and_(PaymentAccountModel.id == StatementModel.payment_account_id,
                               cast(StatementModel.id, Integer) == cast(statement_id, Integer))))
 
         result = query.one()
+        statement = result[0]
         amount_owing = result[1] if result[1] else 0
-        payment_methods = result[2]
-
-        result[0].amount_owing = amount_owing
-        result[0].payment_methods = payment_methods
-
-        return result[0]
+        statement.amount_owing = amount_owing
+        return statement
 
     @staticmethod
     def get_account_statements(auth_account_id: str, page, limit, is_owing: bool = None):
         """Return all active statements for an account."""
-        payment_methods_subquery = Statement.get_payment_methods_query(StatementModel)
-
-        query = (db.session.query(StatementModel,
-                                  payment_methods_subquery)
-                 .join(PaymentAccountModel)
+        query = (db.session.query(StatementModel).join(PaymentAccountModel)
                  .filter(and_(PaymentAccountModel.id == StatementModel.payment_account_id,
                          PaymentAccountModel.auth_account_id == auth_account_id)))
         if is_owing:
@@ -268,9 +197,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         query = query.order_by(StatementModel.to_date.desc(), frequency_case)
         pagination = query.paginate(per_page=limit, page=page)
 
-        for i, (statement, payment_methods, amount_owing) in enumerate(pagination.items):
+        for i, (statement, amount_owing) in enumerate(pagination.items):
             statement.amount_owing = amount_owing if amount_owing else 0
-            statement.payment_methods = payment_methods
             pagination.items[i] = statement
 
         return pagination.items, pagination.total
@@ -472,6 +400,17 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return statements
 
     @staticmethod
+    def determine_payment_methods(invoice_detail_tuple, pay_account, existing_statement=None) -> str:
+        """Grab payment methods from invoices detail tuple."""
+        payment_methods = {payment_method for _, payment_method, auth_account_id,
+                           _ in invoice_detail_tuple if pay_account.auth_account_id == auth_account_id}
+        if existing_statement and not payment_methods:
+            return existing_statement.payment_methods
+        if not payment_methods:
+            payment_methods = {pay_account.payment_method}
+        return ','.join(payment_methods)
+
+    @staticmethod
     def generate_interim_statement(auth_account_id: str, new_frequency: str):
         """Generate interim statement."""
         today = get_local_time(datetime.now(tz=timezone.utc))
@@ -495,6 +434,10 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             'authAccountIds': [account.auth_account_id]
         }
 
+        invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(statement_filter)
+        invoice_ids = list(invoice_detail_tuple)
+        payment_methods_string = Statement.determine_payment_methods(invoice_detail_tuple, account)
+
         # Generate interim statement
         statement = StatementModel(
             frequency=active_settings.frequency,
@@ -505,16 +448,14 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             to_date=today,
             notification_status_code=NotificationStatus.PENDING.value
             if account.statement_notification_enabled else NotificationStatus.SKIP.value,
-            is_interim_statement=True
+            is_interim_statement=True,
+            payment_methods=payment_methods_string
         ).save()
-
-        invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(statement_filter)
-        invoices = list(invoices_and_auth_ids)
 
         statement_invoices = [StatementInvoicesModel(
             statement_id=statement.id,
             invoice_id=invoice.id
-        ) for invoice in invoices]
+        ) for invoice in invoice_ids]
 
         db.session.bulk_save_objects(statement_invoices)
 

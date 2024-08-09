@@ -261,7 +261,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return result, count
 
     @classmethod
-    def get_invoices_for_statements(cls, search_filter: Dict):
+    def get_invoices_and_payment_accounts_for_statements(cls, search_filter: Dict):
         """Slimmed down version for statements."""
         query = db.session.query(Invoice) \
             .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)\
@@ -278,7 +278,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                          Invoice.payment_method_code == PaymentAccount.payment_method)
                 ))
 
-        query = cls.filter_date(query, search_filter).with_entities(Invoice.id, PaymentAccount.auth_account_id)
+        query = cls.filter_date(query, search_filter).with_entities(Invoice.id,
+                                                                    Invoice.payment_method_code,
+                                                                    PaymentAccount.auth_account_id,
+                                                                    PaymentAccount.id.label('payment_account_id'))
         return query.all()
 
     @classmethod
