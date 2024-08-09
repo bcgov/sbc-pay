@@ -26,7 +26,7 @@ def upgrade():
         batch_op.add_column(sa.Column('payment_methods', sa.String(length=100), nullable=True))
 
     # Scenario where there exists statement invoices.
-    # Note this takes at least 4+ minutes to run.
+    # Note this takes at least 15 minutes to run both queries.
     op.execute("""
         update
             statements
@@ -46,7 +46,6 @@ def upgrade():
     """)
 
     # Scenario where there are no statement invoices.
-    # Takes at least 4 minutes+ to run.
     op.execute("""
         update
             statements
