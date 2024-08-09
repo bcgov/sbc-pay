@@ -26,6 +26,7 @@ def upgrade():
         batch_op.add_column(sa.Column('payment_methods', sa.String(length=100), nullable=True))
 
     # Scenario where there exists statement invoices.
+    # Note this takes at least 4+ minutes to run.
     op.execute("""
         update
             statements
@@ -37,25 +38,26 @@ def upgrade():
                 statement_invoices
             join invoices on
                 invoices.id = statement_invoices.invoice_id
-            group by statement_invoices.statement_id 
             where
                 statement_invoices.statement_id = statements.id
+            group by statement_invoices.statement_id
         )
         where payment_methods is null;
     """)
 
     # Scenario where there are no statement invoices.
+    # Takes at least 4 minutes+ to run.
     op.execute("""
         update
             statements
         set
             (payment_methods) = (
             select
-                payment_method_code
+                payment_method
             from
                 payment_accounts
             where
-                payment_accounts.statement_id = statements.payment_account_id
+                payment_accounts.id = statements.payment_account_id
         )
         where payment_methods is null;
     """)
