@@ -402,8 +402,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
     @staticmethod
     def get_payment_methods_from_details(invoice_detail_tuple, pay_account) -> str:
         """Grab payment methods from invoices detail tuple."""
-        payment_methods = {payment_method for _, payment_method, _,
-                           auth_account_id in invoice_detail_tuple if pay_account.auth_account_id == auth_account_id}
+        payment_methods = {payment_method for _, payment_method, auth_account_id,
+                           _ in invoice_detail_tuple if pay_account.auth_account_id == auth_account_id}
         if not payment_methods:
             payment_methods = {pay_account.payment_method}
         return ','.join(payment_methods)
