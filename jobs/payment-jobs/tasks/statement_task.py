@@ -120,7 +120,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _get_payment_methods(cls, invoices, pay_account):
         """Grab payment methods from invoices."""
-        payment_methods = {i.payment_method for i in invoices if i.payment_account_id == pay_account.id}
+        payment_methods = {i.payment_method_code for i in invoices if i.payment_account_id == pay_account.id}
         if not payment_methods:
             payment_methods = {pay_account.payment_method}
         return ','.join(payment_methods)
