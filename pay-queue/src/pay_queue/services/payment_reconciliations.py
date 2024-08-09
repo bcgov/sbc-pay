@@ -607,6 +607,21 @@ def _create_credit_records(csv_content: str):
                 ).save()
 
 
+def _check_cfs_accounts_for_pad_and_ob(credit):
+    """Ensure we don't have PAD and OB for the same account, because there is no association between CFS and CREDITS."""
+    has_pad = False
+    has_online_banking = False
+    for cfs_account in CfsAccountModel.find_by_account_id(credit.account_id):
+        if cfs_account.payment_method == PaymentMethod.PAD.value:
+            has_pad = True
+        if cfs_account.payment_method == PaymentMethod.ONLINE_BANKING.value:
+            has_online_banking = True
+    if has_pad and has_online_banking:
+        raise Exception(  # pylint: disable=broad-exception-raised
+            'Multiple payment methods for the same account for CREDITS'
+            ' credits has no link to CFS account.')
+
+
 def _sync_credit_records():
     """Sync credit records with CFS."""
     # 1. Get all credit records with balance > 0
@@ -617,14 +632,19 @@ def _sync_credit_records():
     current_app.logger.info('Found %s credit records', len(active_credits))
     account_ids: List[int] = []
     for credit in active_credits:
+        _check_cfs_accounts_for_pad_and_ob(credit)
         cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(credit.account_id,
-                                                                                 PaymentMethod.PAD.value)
+                                                                                 PaymentMethod.PAD.value) \
+            or CfsAccountModel.find_effective_or_latest_by_payment_method(credit.account_id,
+                                                                          PaymentMethod.ONLINE_BANKING.value)
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
-            credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
+            credit_memo = CFSService.get_cms(
+                cfs_account=cfs_account, cms_number=credit.cfs_identifier)
             credit.remaining_amount = abs(float(credit_memo.get('amount_due')))
         else:
-            receipt = CFSService.get_receipt(cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
+            receipt = CFSService.get_receipt(
+                cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
             receipt_amount = float(receipt.get('receipt_amount'))
             applied_amount: float = 0
             for invoice in receipt.get('invoices', []):
