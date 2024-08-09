@@ -84,9 +84,10 @@ def test_statements(session):
     assert invoices is not None
     assert invoices[0].invoice_id == invoice.id
 
-    # Check to see if the old statement / invoices were cleaned up.
-    assert Statement.find_by_id(first_statement_id) is None
-    assert StatementInvoices.find_all_invoices_for_statement(first_statement_id) == []
+    # Check to see if the old statement was reused and invoices were cleaned up.
+    assert Statement.find_by_id(first_statement_id)
+    assert first_statement_id == statements[0][0].id
+    assert len(StatementInvoices.find_all_invoices_for_statement(first_statement_id)) == 2
 
 
 def test_statements_for_empty_results(session):
@@ -230,6 +231,8 @@ def test_bcol_monthly_to_eft_statement(session):
         bcol_monthly_statement = StatementService\
             .generate_interim_statement(auth_account_id=account.auth_account_id,
                                         new_frequency=StatementFrequency.MONTHLY.value)
+    account.payment_method_code = PaymentMethod.EFT.value
+    account.save()
 
     # Validate bcol monthly interim invoice is correct
     invoices = StatementInvoices.find_all_invoices_for_statement(bcol_monthly_statement.id)

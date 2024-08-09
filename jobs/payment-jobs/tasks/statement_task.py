@@ -35,6 +35,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
 
     has_date_override: bool = False
     has_account_override: bool = False
+    statement_from: datetime = None
+    statement_to: datetime = None
 
     @classmethod
     def generate_statements(cls, arguments=None):
@@ -119,20 +121,57 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         cls._create_statement_records(search_filter, statement_settings, account_override)
 
     @classmethod
-    def _create_statement_records(cls, search_filter, statement_settings, account_override: str):
-        statement_from = None
-        statement_to = None
-        if search_filter.get('dateFilter', None):
-            statement_from = parse(search_filter.get('dateFilter').get('startDate'))
-            statement_to = parse(search_filter.get('dateFilter').get('endDate'))
-            if statement_from == statement_to:
-                current_app.logger.debug(f'Statements for day: {statement_from.date()}')
+    def _upsert_statements(cls, statement_settings, invoice_detail_tuple, reuse_statements):
+        """Upsert statements to reuse statement ids because they are referenced in the EFT Shortname History."""
+        statements = []
+        for setting, pay_account in statement_settings:
+            existing_statement = next(
+                    (statement for statement in reuse_statements
+                     if statement.payment_account_id == pay_account.id and
+                     statement.frequency == setting.frequency and
+                     statement.from_date == cls.statement_from.date() and statement.to_date == cls.statement_to.date()),
+                    None
+                   )
+            notification_status = NotificationStatus.PENDING.value \
+                if pay_account.statement_notification_enabled is True and cls.has_date_override is False \
+                else NotificationStatus.SKIP.value
+            payment_methods = StatementService.determine_payment_methods(invoice_detail_tuple,
+                                                                         pay_account,
+                                                                         existing_statement)
+            if existing_statement:
+                current_app.logger.debug(f'Reusing existing statement already exists for {cls.statement_from.date()}')
+                existing_statement.notification_status_code = notification_status
+                existing_statement.payment_methods = payment_methods
+                statements.append(existing_statement)
             else:
-                current_app.logger.debug(f'Statements for week: {statement_from.date()} to {statement_to.date()}')
+                statements.append(StatementModel(
+                    frequency=setting.frequency,
+                    statement_settings_id=setting.id,
+                    payment_account_id=pay_account.id,
+                    created_on=get_local_time(datetime.now(tz=timezone.utc)),
+                    from_date=cls.statement_from,
+                    to_date=cls.statement_to,
+                    notification_status_code=notification_status,
+                    payment_methods=payment_methods
+                ))
+        return statements
+
+    @classmethod
+    def _create_statement_records(cls, search_filter, statement_settings, account_override: str):
+        cls.statement_from = None
+        cls.statement_to = None
+        if search_filter.get('dateFilter', None):
+            cls.statement_from = parse(search_filter.get('dateFilter').get('startDate'))
+            cls.statement_to = parse(search_filter.get('dateFilter').get('endDate'))
+            if cls.statement_from == cls.statement_to:
+                current_app.logger.debug(f'Statements for day: {cls.statement_from.date()}')
+            else:
+                current_app.logger.debug(f'Statements for week: {cls.statement_from.date()} to '
+                                         f'{cls.statement_to.date()}')
         elif search_filter.get('monthFilter', None):
-            statement_from, statement_to = get_first_and_last_dates_of_month(
+            cls.statement_from, cls.statement_to = get_first_and_last_dates_of_month(
                 search_filter.get('monthFilter').get('month'), search_filter.get('monthFilter').get('year'))
-            current_app.logger.debug(f'Statements for month: {statement_from.date()} to {statement_to.date()}')
+            current_app.logger.debug(f'Statements for month: {cls.statement_from.date()} to {cls.statement_to.date()}')
         if cls.has_account_override:
             auth_account_ids = [account_override]
             statement_settings = cls._filter_settings_by_override(statement_settings, account_override)
@@ -145,21 +184,11 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # statement logic when transitioning payment methods
         search_filter['matchPaymentMethods'] = [PaymentMethod.EFT.value]
         invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(search_filter)
+        reuse_statements = []
         if cls.has_date_override and statement_settings:
-            cls._clean_up_old_statements(statement_settings, statement_from, statement_to)
-        current_app.logger.debug('Inserting statements.')
-        statements = [StatementModel(
-            frequency=setting.frequency,
-            statement_settings_id=setting.id,
-            payment_account_id=pay_account.id,
-            created_on=get_local_time(datetime.now(tz=timezone.utc)),
-            from_date=statement_from,
-            to_date=statement_to,
-            notification_status_code=NotificationStatus.PENDING.value
-            if pay_account.statement_notification_enabled is True and cls.has_date_override is False
-            else NotificationStatus.SKIP.value,
-            payment_methods=StatementService.get_payment_methods_from_details(invoice_detail_tuple, pay_account)
-        ) for setting, pay_account in statement_settings]
+            reuse_statements = cls._clean_up_old_statements(statement_settings)
+        current_app.logger.debug('Upserting statements.')
+        statements = cls._upsert_statements(statement_settings, invoice_detail_tuple, reuse_statements)
         # Return defaults which returns the id.
         db.session.bulk_save_objects(statements, return_defaults=True)
         db.session.flush()
@@ -175,17 +204,18 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         db.session.bulk_save_objects(statement_invoices)
 
     @classmethod
-    def _clean_up_old_statements(cls, statement_settings, statement_from, statement_to):
+    def _clean_up_old_statements(cls, statement_settings):
         """Clean up duplicate / old statements before generating."""
         payment_account_ids = [pay_account.id for _, pay_account in statement_settings]
-        remove_statements = db.session.query(StatementModel)\
+        existing_statements = db.session.query(StatementModel)\
             .filter_by(
                 frequency=statement_settings[0].StatementSettings.frequency,
-                from_date=statement_from.date(), to_date=statement_to.date())\
+                from_date=cls.statement_from.date(), to_date=cls.statement_to.date(),
+                is_interim_statement=False)\
             .filter(StatementModel.payment_account_id.in_(payment_account_ids))\
             .all()
-        current_app.logger.debug(f'Removing {len(remove_statements)} existing duplicate/stale statements.')
-        remove_statements_ids = [statement.id for statement in remove_statements]
+        current_app.logger.debug(f'Removing {len(existing_statements)} existing duplicate/stale statement invoices.')
+        remove_statements_ids = [statement.id for statement in existing_statements]
         remove_statement_invoices = db.session.query(StatementInvoicesModel)\
             .filter(StatementInvoicesModel.statement_id.in_(remove_statements_ids))\
             .all()
@@ -194,8 +224,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             .where(StatementInvoicesModel.id.in_(statement_invoice_ids))
         db.session.execute(delete_statement_invoice)
         db.session.flush()
-        delete_statement = delete(StatementModel).where(StatementModel.id.in_(remove_statements_ids))
-        db.session.execute(delete_statement)
+        return existing_statements
 
     @classmethod
     def _filter_settings_by_override(cls, statement_settings, auth_account_id: str):
