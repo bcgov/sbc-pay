@@ -629,7 +629,7 @@ def factory_statement_invoices(
 
 def activate_pad_account(auth_account_id: str):
     """Activate the pad account."""
-    payment_account: PaymentAccount = PaymentAccount.find_by_auth_account_id(auth_account_id)
+    payment_account = PaymentAccount.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
     payment_account.save()
     cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
