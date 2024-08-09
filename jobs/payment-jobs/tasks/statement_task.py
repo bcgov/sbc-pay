@@ -118,6 +118,14 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         cls._create_statement_records(search_filter, statement_settings, account_override)
 
     @classmethod
+    def _get_payment_methods(cls, invoices, pay_account):
+        """Grab payment methods from invoices."""
+        payment_methods = {i.payment_method for i in invoices if i.payment_account_id == pay_account.id}
+        if not payment_methods:
+            payment_methods = {pay_account.payment_method}
+        return ','.join(payment_methods)
+
+    @classmethod
     def _create_statement_records(cls, search_filter, statement_settings, account_override: str):
         statement_from = None
         statement_to = None
@@ -156,7 +164,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             to_date=statement_to,
             notification_status_code=NotificationStatus.PENDING.value
             if pay_account.statement_notification_enabled is True and cls.has_date_override is False
-            else NotificationStatus.SKIP.value
+            else NotificationStatus.SKIP.value,
+            payment_methods=cls._get_payment_methods(invoices_and_auth_ids, pay_account)
         ) for setting, pay_account in statement_settings]
         # Return defaults which returns the id.
         db.session.bulk_save_objects(statements, return_defaults=True)

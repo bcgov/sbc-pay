@@ -67,6 +67,7 @@ class Statement(BaseModel):
     created_on = db.Column(db.Date, default=None, nullable=False)
     notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
+    payment_methods = db.Column(db.String(100), nullable=True)
 
     @classmethod
     def find_all_statements_by_notification_status(cls, statuses):
