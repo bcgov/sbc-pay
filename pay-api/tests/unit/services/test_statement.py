@@ -249,6 +249,8 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
 
     assert statements is not None
     assert len(statements[0]) == 1
+    assert statements[0][0].is_interim_statement
+    assert statements[0][0].payment_methods == PaymentMethod.EFT.value
 
     # Validate interim invoice is correct
     interim_invoices = StatementInvoiceModel.find_all_invoices_for_statement(statements[0][0].id)
