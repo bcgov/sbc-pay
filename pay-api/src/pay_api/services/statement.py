@@ -334,7 +334,6 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         if template_name == StatementTemplate.EFT_STATEMENT.value:
             report_inputs.statement_summary = Statement._populate_statement_summary(statement_dao,
                                                                                     statement_purchases)
-            report_inputs.eft_transactions = Statement.get_statement_eft_transactions(statement_dao)
 
         report_response = PaymentService.generate_payment_report(report_inputs,
                                                                  auth=kwargs.get('auth', None),
