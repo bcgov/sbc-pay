@@ -50,7 +50,7 @@ tests = [
      [EFTCreditInvoiceStatus.PENDING.value, EFTCreditInvoiceStatus.PENDING_REFUND.value], [None], 0, 0),
     ('happy_flow_multiple_links', PaymentMethod.EFT.value, [InvoiceStatus.APPROVED.value, InvoiceStatus.PAID.value],
      [EFTCreditInvoiceStatus.PENDING.value, EFTCreditInvoiceStatus.PENDING_REFUND.value],
-        [None, DisbursementStatus.COMPLETED.value], 1, 1),
+        [None, DisbursementStatus.COMPLETED.value], 1, 2),
     ('happy_flow', PaymentMethod.EFT.value, [InvoiceStatus.APPROVED.value, InvoiceStatus.PAID.value],
      [EFTCreditInvoiceStatus.PENDING.value,
       EFTCreditInvoiceStatus.PENDING_REFUND.value], [None, DisbursementStatus.COMPLETED.value], 1, 2),
@@ -169,7 +169,7 @@ def test_link_electronic_funds_transfers(session):
     assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
     receipt = ReceiptModel.find_all_receipts_for_invoice(invoice.id)[0]
     assert receipt
-    assert receipt.receipt_amount == credit_invoice_link.amount
+    assert receipt.receipt_amount == credit_invoice_link.amount + credit_invoice_link2.amount
     assert receipt.invoice_id == invoice.id
     assert invoice.invoice_status_code == InvoiceStatus.PAID.value
     assert invoice.paid == credit_invoice_link.amount
