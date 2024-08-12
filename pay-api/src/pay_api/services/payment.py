@@ -467,7 +467,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
             template_vars = {
                 'statementSummary': report_inputs.statement_summary,
-                'paymentTransactions': report_inputs.eft_transactions,
                 'invoices': results.get('items', None),
                 'total': totals,
                 'account': account_info,

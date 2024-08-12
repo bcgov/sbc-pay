@@ -482,7 +482,6 @@ def test_get_eft_statement_for_empty_invoices(session):
                 },
             },
             'invoices': [],
-            'paymentTransactions': [],
             'statement': {
                 'amount_owing': 0,
                 'created_on': date_string_now,
@@ -661,7 +660,6 @@ def test_get_eft_statement_with_invoices(session):
                     'total': 50.0,
                 },
             ],
-            'paymentTransactions': [],
             'statement': {
                 'amount_owing': 250.0,
                 'created_on': date_string_now,
