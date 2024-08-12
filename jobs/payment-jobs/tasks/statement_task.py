@@ -138,17 +138,19 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             payment_methods = StatementService.determine_payment_methods(invoice_detail_tuple,
                                                                          pay_account,
                                                                          existing_statement)
+            created_on = get_local_time(datetime.now(tz=timezone.utc))
             if existing_statement:
                 current_app.logger.debug(f'Reusing existing statement already exists for {cls.statement_from.date()}')
                 existing_statement.notification_status_code = notification_status
                 existing_statement.payment_methods = payment_methods
+                existing_statement.created_on = created_on
                 statements.append(existing_statement)
             else:
                 statements.append(StatementModel(
                     frequency=setting.frequency,
                     statement_settings_id=setting.id,
                     payment_account_id=pay_account.id,
-                    created_on=get_local_time(datetime.now(tz=timezone.utc)),
+                    created_on=created_on,
                     from_date=cls.statement_from,
                     to_date=cls.statement_to,
                     notification_status_code=notification_status,
