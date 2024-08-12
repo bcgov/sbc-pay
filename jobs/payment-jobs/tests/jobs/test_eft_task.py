@@ -172,7 +172,7 @@ def test_link_electronic_funds_transfers(session):
     assert receipt.receipt_amount == credit_invoice_link.amount + credit_invoice_link2.amount
     assert receipt.invoice_id == invoice.id
     assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-    assert invoice.paid == credit_invoice_link.amount
+    assert invoice.paid == credit_invoice_link.amount + credit_invoice_link2.amount
     assert invoice.payment_date
     assert credit_invoice_link.status_code == EFTCreditInvoiceStatus.COMPLETED.value
     assert credit_invoice_link2.status_code == EFTCreditInvoiceStatus.COMPLETED.value
