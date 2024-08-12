@@ -14,7 +14,8 @@
 """Task for linking electronic funds transfers."""
 from datetime import datetime, timezone
 from typing import List
-
+from dataclasses import dataclass
+from decimal import Decimal
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
@@ -33,7 +34,7 @@ from pay_api.utils.enums import (
     PaymentStatus, PaymentSystem, ReverseOperation)
 from sentry_sdk import capture_message
 from sqlalchemy import func, or_
-from sqlalchemy.orm import lazyload
+from sqlalchemy.orm import lazyload, registry
 
 from utils.auth_event import AuthEvent
 
@@ -66,13 +67,19 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                       EFTCreditInvoiceLinkModel.receipt_number) \
             .subquery()
 
-        class EFTCILRollup(db.Model):
-            """Here so we can map our subquery tuple to an object, it's only used locally."""
+        @dataclass
+        class EFTCILRollup:
+            """Dataclass for rollup so we don't use a tuple instead."""
 
-            __table__ = cil_rollup
-            __mapper_args__ = {
-                'primary_key': [cil_rollup.c.invoice_id, cil_rollup.c.status_code, cil_rollup.c.receipt_number]
-            }
+            invoice_id: int
+            status_code: str
+            receipt_number: str
+            link_ids: List[int]
+            rollup_amount: Decimal
+
+        registry().map_imperatively(EFTCILRollup, cil_rollup, primary_key=[cil_rollup.c.invoice_id,
+                                                                           cil_rollup.c.status_code,
+                                                                           cil_rollup.c.receipt_number])
 
         query = db.session.query(InvoiceModel, CfsAccountModel, EFTCILRollup) \
             .join(cil_rollup, InvoiceModel.id == cil_rollup.c.invoice_id) \

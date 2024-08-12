@@ -173,9 +173,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         credit_links_query = credit_links_query.filter_conditionally(invoice_id, InvoiceModel.id)
         return credit_links_query.all()
 
-    @classmethod
-    def _return_eft_credit(cls, eft_credit_link: EFTCreditInvoiceLinkModel,
-                           update_status: str = None) -> EFTCreditModel:
+    @staticmethod
+    def return_eft_credit(eft_credit_link: EFTCreditInvoiceLinkModel,
+                          update_status: str = None) -> EFTCreditModel:
         """Return EFT Credit Invoice Link amount to EFT Credit."""
         eft_credit = EFTCreditModel.find_by_id(eft_credit_link.eft_credit_id)
         eft_credit.remaining_amount += eft_credit_link.amount
@@ -202,7 +202,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                                        statuses=[EFTCreditInvoiceStatus.PENDING.value])
         link_group_ids = set()
         for credit_link in credit_links:
-            eft_credit = cls._return_eft_credit(credit_link, EFTCreditInvoiceStatus.CANCELLED.value)
+            eft_credit = EFTShortnames.return_eft_credit(credit_link, EFTCreditInvoiceStatus.CANCELLED.value)
             if credit_link.link_group_id:
                 link_group_ids.add(credit_link.link_group_id)
             db.session.add(eft_credit)
@@ -289,7 +289,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                          f'- {invoice.id} in status {invoice.invoice_status_code}.')
                 raise BusinessException(Error.EFT_PAYMENT_INVOICE_REVERSE_UNEXPECTED_STATUS)
 
-            eft_credit = cls._return_eft_credit(current_link)
+            eft_credit = EFTShortnames.return_eft_credit(current_link)
             eft_credit.flush()
             reversed_credits += current_link.amount
 

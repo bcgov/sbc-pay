@@ -23,12 +23,14 @@ from jinja2 import Environment, FileSystemLoader
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import RefundPartialLine
 from pay_api.models.eft_refund_email_list import EFTRefundEmailList
 from pay_api.services.eft_short_names import EFTShortnames
 from pay_api.services.email_service import send_email
@@ -194,3 +196,29 @@ class EftService(DepositService):
             'url': url
         }
         return template.render(params)
+
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount,
+                           refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
+        """Process refund in CFS."""
+       if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
+                and InvoiceReferenceModel.find_by_invoice_id_and_status(
+                    invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
+            return InvoiceStatus.CANCELLED.value
+
+        # 1. No EFT Credit Link - Need to void (Invoice Exists)
+        if not (credit_link := EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)):
+            return InvoiceStatus.REFUND_REQUESTED.value
+            # return InvoiceStatus.CANCELLED.value
+
+
+        # 2. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call (Invoice exists)
+        #    a) Insert PENDING_REFUND - needs to reverse invoice  (How would the job knows) or (new status)
+            eft_credit = EFTShortnames._return_eft_credit(credit_link, EFTCreditInvoiceStatus.CANCELLED.value)
+            # If it's EFT and it's REFUND_REQUESTED - think about this part in CFS_Accounts or EFT job
+
+        # 3. EFT Credit Link - COMPLETED (Receipt and Invoice exists)
+        #   a) Insert PENDING_REFUND if COMPLETED
+        #   Handle the credits 
+         #eft_credit = EFTShortnames._return_eft_credit(current_link)
+        return InvoiceStatus.REFUND_REQUESTED.value        
