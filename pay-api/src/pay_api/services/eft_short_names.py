@@ -224,7 +224,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if auth_account_id is None or PaymentAccountModel.find_by_auth_account_id(auth_account_id) is None:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_ACCOUNT_ID_REQUIRED)
 
-        cls.process_owing_statements(short_name_id, auth_account_id)
+        cls._process_owing_statements(short_name_id, auth_account_id)
         current_app.logger.debug('>apply_payment_action')
 
     @classmethod
@@ -374,7 +374,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         db.session.add(eft_short_name_link)
         db.session.flush()
 
-        cls.process_owing_statements(short_name_id=short_name_id, auth_account_id=auth_account_id, is_new_link=True)
+        cls._process_owing_statements(short_name_id=short_name_id, auth_account_id=auth_account_id, is_new_link=True)
 
         eft_short_name_link.save()
         current_app.logger.debug('>create_shortname_link')
@@ -433,7 +433,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         }
 
     @staticmethod
-    def process_owing_statements(short_name_id: int, auth_account_id: str, is_new_link: bool = False) -> EFTShortnames:
+    def _process_owing_statements(short_name_id: int, auth_account_id: str, is_new_link: bool = False) -> EFTShortnames:
         """Process outstanding statement invoices for an EFT Short name."""
         current_app.logger.debug('<process_owing_statements')
         shortname_link = EFTShortnameLinksModel.find_active_link(short_name_id, auth_account_id)
