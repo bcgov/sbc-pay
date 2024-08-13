@@ -29,9 +29,8 @@ from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
-    factory_invoice_reference, 
-    get_claims, get_payment_request, get_payment_request_with_payment_method, get_payment_request_with_service_fees,
-    get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
+    factory_invoice_reference, get_claims, get_payment_request, get_payment_request_with_payment_method,
+    get_payment_request_with_service_fees, get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
 
 
 def test_create_refund(session, client, jwt, app, monkeypatch):
@@ -115,13 +114,12 @@ def test_create_eft_refund(session, client, jwt, app):
                      headers=headers)
     rv = client.post(f'/api/v1/payment-requests/{inv_id2}/refunds', data=json.dumps({'reason': 'Test'}),
                      headers=headers)
-    
+
     invoice = InvoiceModel.find_by_id(inv_id)
     assert invoice.invoice_status_code == InvoiceStatus.CANCELLED.value
 
     invoice2 = InvoiceModel.find_by_id(inv_id2)
     assert invoice2.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
-
 
 
 def test_create_pad_refund(session, client, jwt, app):
