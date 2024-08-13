@@ -55,6 +55,7 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
 
     id: Optional[int] = None
     account_id: Optional[str] = None
+    account_id_list: Optional[List[str]] = None
     allow_partial_account_id: Optional[bool] = True
     account_name: Optional[str] = None
     account_branch: Optional[str] = None
@@ -694,6 +695,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 links_subquery.c.total_owing,
                 links_subquery.c.latest_statement_id
             )
+
+        if search_criteria.account_id_list:
+            query = query.filter(links_subquery.c.auth_account_id.in_(search_criteria.account_id_list))
 
         query = cls.get_link_state_filters(search_criteria, query, links_subquery)
         # Short name filters

@@ -863,6 +863,23 @@ def test_search_eft_short_names(session, client, jwt, app):
                       data_dict['single-linked']['accounts'][0],
                       data_dict['single-linked']['statement_summary'][0])
 
+    # Assert search account id list
+    rv = client.get('/api/v1/eft-shortnames?state=LINKED&accountIdList=1111,999', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name(result_dict['items'][0],
+                      data_dict['single-linked']['short_name'],
+                      data_dict['single-linked']['accounts'][0],
+                      data_dict['single-linked']['statement_summary'][0])
+
 
 def test_post_shortname_refund_success(client, mocker, jwt, app):
     """Test successful creation of a shortname refund."""

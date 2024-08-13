@@ -469,33 +469,25 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return account
 
     @classmethod
-    @user_context
-    def _get_non_active_org_ids(cls, **kwargs):
-        """Retrieve inactive org ids to filter out."""
-        url = f'{current_app.config.get("AUTH_API_ENDPOINT")}orgs/simple'
-        url += '?statuses=ACTIVE&excludeStatuses=true&limit=1000000'
-        result = OAuthService.get(endpoint=url,
-                                  token=kwargs['user'].bearer_token,
-                                  auth_header_type=AuthHeaderType.BEARER,
-                                  content_type=ContentType.JSON).json()
-        return [str(org.get('id')) for org in result.get('items')]
-
-    @classmethod
     def search_eft_accounts(cls, search_text: str):
         """Find EFT accounts that are in ACTIVE status (call into AUTH-API to determine)."""
-        non_active_org_ids = cls._get_non_active_org_ids()
-
         search_text = f'%{search_text}%'
-        query = db.session.query(PaymentAccountModel) \
+        query = (
+            db.session.query(PaymentAccountModel)
+            .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id)
+            .filter(and_(CfsAccountModel.payment_method == PaymentMethod.EFT.value,
+                         CfsAccountModel.status.in_([CfsAccountStatus.ACTIVE.value, CfsAccountStatus.PENDING.value])))
             .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
-                    PaymentAccountModel.eft_enable.is_(True)) \
-            .filter(PaymentAccountModel.auth_account_id.notin_(non_active_org_ids)) \
-            .filter(and_(
-                or_(PaymentAccountModel.auth_account_id.ilike(search_text),
-                    PaymentAccountModel.name.ilike(search_text),
-                    and_(PaymentAccountModel.branch_name.ilike(search_text),
-                         PaymentAccountModel.branch_name != ''))
-            ))
+                    PaymentAccountModel.eft_enable.is_(True))
+            .filter(
+                and_(
+                    or_(PaymentAccountModel.auth_account_id.ilike(search_text),
+                        PaymentAccountModel.name.ilike(search_text),
+                        and_(PaymentAccountModel.branch_name.ilike(search_text),
+                             PaymentAccountModel.branch_name != '')
+                        )
+                ))
+        )
         query = query.order_by(desc(PaymentAccountModel.auth_account_id == search_text),
                                PaymentAccountModel.id.desc()
                                )
