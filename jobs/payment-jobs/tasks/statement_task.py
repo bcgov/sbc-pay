@@ -63,6 +63,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         generate_monthly = target_time.day == 1
 
         cls._generate_daily_statements(target_time, auth_account_override)
+        if not generate_weekly:
+            cls._generate_gap_statements(target_time, auth_account_override)
         if generate_weekly:
             cls._generate_weekly_statements(target_time, auth_account_override)
         if generate_monthly:
@@ -70,6 +72,27 @@ class StatementTask:  # pylint:disable=too-few-public-methods
 
         # Commit transaction
         db.session.commit()
+
+    @classmethod
+    def _generate_gap_statements(cls, target_time, account_override):
+        """Generate gap statements for weekly statements that wont run over Sunday."""
+        # Look at the target_time versus the end date.
+        previous_day = get_previous_day(target_time)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
+                                                                                        StatementFrequency.WEEKLY,
+                                                                                        to_date=previous_day.date())
+        statement_from, _ = get_week_start_and_end_date(previous_day, index=0)
+        statement_to = previous_day
+        if statement_from == statement_to or not statement_settings:
+            return
+        current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate GAP statements')
+        search_filter = {
+            'dateFilter': {
+                'startDate': statement_from.strftime('%Y-%m-%d'),
+                'endDate': statement_to.strftime('%Y-%m-%d')
+            }
+        }
+        cls._create_statement_records(search_filter, statement_settings, account_override)
 
     @classmethod
     def _generate_daily_statements(cls, target_time: datetime, account_override: str):

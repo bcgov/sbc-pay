@@ -20,8 +20,10 @@ from datetime import datetime, timedelta, timezone
 
 import pytz
 from freezegun import freeze_time
-from pay_api.models import Statement, StatementInvoices
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Statement, StatementInvoices, StatementSettings
 from pay_api.services import Statement as StatementService
+from pay_api.services import StatementSettings as StatementSettingsService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import get_previous_day
 
@@ -295,6 +297,45 @@ def test_bcol_monthly_to_eft_statement(session):
     assert len(bcol_invoices) == 2
     assert bcol_invoices[0].invoice_id == bcol_invoice.id
     assert bcol_invoices[1].invoice_id == direct_pay_invoice.id
+
+
+def test_weekly_to_monthly_gap_statements(session):
+    """Ensure gap statements are generated for weekly to monthly."""
+    account_create_date = datetime(2024, 1, 1, 8)
+    account = None
+    invoice_ids = []
+    with freeze_time(account_create_date):
+        account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.PAD.value)
+        assert account is not None
+
+    from_date = (localize_date(datetime(2024, 1, 1, 8))).date()
+    StatementInvoices.query.delete()
+    Statement.query.delete()
+    StatementSettings.query.delete()
+    InvoiceModel.query.delete()
+    factory_statement_settings(pay_account_id=account.id,
+                               frequency=StatementFrequency.WEEKLY.value,
+                               from_date=from_date
+                               ).save()
+    with freeze_time(datetime(2024, 1, 1, 8)):
+        # This should create a gap between 28th Sunday and 31st Wednesday, this is a gap statement.
+        StatementSettingsService.update_statement_settings(account.auth_account_id,
+                                                           StatementFrequency.MONTHLY.value)
+    for i in range(0, 31):
+        inv = factory_invoice(payment_account=account,
+                              payment_method_code=PaymentMethod.PAD.value,
+                              status_code=InvoiceStatus.APPROVED.value,
+                              total=50,
+                              created_on=account_create_date + timedelta(i)) \
+            .save()
+        invoice_ids.append(inv.id)
+
+    for r in range(0, 32):
+        generate_date = localize_date(datetime(2024, 1, 1, 8) + timedelta(days=r))
+        StatementTask.generate_statements([(generate_date - timedelta(days=1)).strftime('%Y-%m-%d')])
+
+    generated_invoice_ids = [inv.invoice_id for inv in StatementInvoices.query.all()]
+    assert len(invoice_ids) == len(generated_invoice_ids)
 
 
 def localize_date(date: datetime):
