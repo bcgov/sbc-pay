@@ -17,6 +17,7 @@
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
+from datetime import datetime, timezone
 import json
 from unittest.mock import patch
 
@@ -54,6 +55,10 @@ def test_account_purchase_history(session, client, jwt, app):
     invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
+    invoice.disbursement_date = datetime.now(tz=timezone.utc)
+    invoice.disbursement_reversal_date = datetime.now(tz=timezone.utc)
+    invoice.save()
+
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries', data=json.dumps({}),
                      headers=headers)
 
@@ -64,7 +69,7 @@ def test_account_purchase_history(session, client, jwt, app):
     assert invoice
     required_fields = ['id', 'corpTypeCode', 'createdOn', 'statusCode', 'total', 'serviceFees',
                        'paid', 'refund', 'folioNumber', 'createdName', 'paymentMethod', 'details',
-                       'businessIdentifier', 'createdBy', 'filingId']
+                       'businessIdentifier', 'createdBy', 'filingId', 'disbursementReversalDate', 'disbursementDate']
 
     for field in required_fields:
         assert field in invoice

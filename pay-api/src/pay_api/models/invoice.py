@@ -291,6 +291,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     payment_date: datetime
     refund_date: datetime
     disbursement_date: datetime
+    disbursement_reversal_date: datetime
     # Add disbursement_reversal_date when CSO is prepared.
 
     @classmethod
@@ -321,4 +322,5 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
                    payment_date=row.payment_date,
                    refund_date=row.refund_date,
                    disbursement_date=row.disbursement_date,
+                   disbursement_reversal_date=row.disbursement_reversal_date,
                    invoice_number=invoice_number)
