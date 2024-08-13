@@ -59,7 +59,6 @@ def test_account_purchase_history(session, client, jwt, app):
     invoice.disbursement_reversal_date = datetime.now(tz=timezone.utc)
     invoice.save()
 
-
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries', data=json.dumps({}),
                      headers=headers)
 
