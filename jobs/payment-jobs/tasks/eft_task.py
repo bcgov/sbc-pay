@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
@@ -61,6 +60,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                       func.array_agg(EFTCreditInvoiceLinkModel.id)  # pylint: disable=not-callable
                                       .label('link_ids'),
                                       func.sum(EFTCreditInvoiceLinkModel.amount).label('rollup_amount')) \
+            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id) \
             .filter(EFTCreditInvoiceLinkModel.status_code == status) \
             .group_by(EFTCreditInvoiceLinkModel.invoice_id,
                       EFTCreditInvoiceLinkModel.status_code,
@@ -203,7 +203,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         if not (invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
             cil_rollup.invoice_id, InvoiceReferenceStatus.ACTIVE.value
         )):
-            raise BusinessException(f'No invoice reference found for invoice id: {invoice.id}')
+            raise Exception(f'Active Invoice reference not '  # pylint: disable=broad-exception-raised
+                            f'found for invoice id: {invoice.id}')
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         invoice_reference.flush()
         # Note: Not creating the entire EFT as a receipt because it can be mapped to multiple CFS accounts.
@@ -240,7 +241,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         if not (invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value
         )):
-            raise BusinessException(f'No invoice reference found for invoice id: {invoice.id}')
+            raise Exception(f'Completed invoice reference '  # pylint: disable=broad-exception-raised
+                            f'not found for invoice id: {invoice.id}')
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         invoice_reference.flush()

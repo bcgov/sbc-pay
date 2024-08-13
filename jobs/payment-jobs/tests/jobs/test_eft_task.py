@@ -69,7 +69,9 @@ tests = [
      InvoiceStatus.APPROVED.value], [EFTCreditInvoiceStatus.PENDING.value], [DisbursementStatus.UPLOADED.value], 0, 0),
     ('wrong_invoice_status', PaymentMethod.EFT.value, [
      InvoiceStatus.CREDITED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value],
-     [EFTCreditInvoiceStatus.PENDING.value], [None], 0, 0)
+     [EFTCreditInvoiceStatus.PENDING.value], [None], 0, 0),
+    ('no_invoice_reference', PaymentMethod.EFT.value, [
+         InvoiceStatus.APPROVED.value], [EFTCreditInvoiceStatus.PENDING.value], [None], 0, 0),
 ]
 
 
@@ -101,7 +103,8 @@ def test_eft_credit_invoice_links_by_status(session, test_name, payment_method, 
                                           payment_method_code=payment_method,
                                           status_code=invoice_status,
                                           disbursement_status_code=disbursement_status)
-                factory_invoice_reference(invoice_id=invoice.id)
+                if test_name != 'no_invoice_reference':
+                    factory_invoice_reference(invoice_id=invoice.id)
                 match test_name:
                     case 'happy_flow_multiple_links':
                         factory_create_eft_credit_invoice_link(
