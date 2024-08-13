@@ -66,6 +66,11 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
                 ).one_or_none()
 
     @classmethod
+    def find_by_invoice_id(cls, invoice_id: int):
+        """Find links by invoice id."""
+        return cls.query.filter_by(invoice_id=invoice_id).all()
+
+    @classmethod
     def get_next_group_link_seq(cls):
         """Get next value of EFT Group Link Sequence."""
         return db.session.execute(text("SELECT nextval('eft_group_link_seq')")).scalar()

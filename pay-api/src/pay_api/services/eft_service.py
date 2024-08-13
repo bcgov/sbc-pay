@@ -13,12 +13,10 @@
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
 from decimal import Decimal
-import os
 from datetime import datetime
 from typing import Any, Dict, List
 
 from flask import current_app
-from jinja2 import Environment, FileSystemLoader
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -29,9 +27,10 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import RefundPartialLine
 from pay_api.models.eft_refund_email_list import EFTRefundEmailList
 from pay_api.services.eft_short_names import EFTShortnames
-from pay_api.services.email_service import send_email
+from pay_api.services.email_service import _render_shortname_details_body, send_email
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
     PaymentSystem)
@@ -95,6 +94,18 @@ class EftService(DepositService):
                                receipt_number=invoice.id)
         return payment
 
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount,
+                           refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
+        """Process refund in CFS."""
+        if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
+                and InvoiceReferenceModel.find_by_invoice_id_and_status(
+                    invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
+            return InvoiceStatus.CANCELLED.value
+
+        # TODO: Just leaving now so we can get partners working. Need to implement the refund logic.
+        return InvoiceStatus.REFUND_REQUESTED.value
+
     @staticmethod
     def create_invoice_reference(invoice: InvoiceModel, invoice_number: str,
                                  reference_number: str) -> InvoiceReferenceModel:
@@ -135,7 +146,7 @@ class EftService(DepositService):
 
         recipients = EFTRefundEmailList.find_all_emails()
         subject = f'Pending Refund Request for Short Name {shortname}'
-        html_body = cls._render_email_body(shortname, amount, comment, shortname_id)
+        html_body = _render_shortname_details_body(shortname, amount, comment, shortname_id)
 
         send_email(recipients, subject, html_body, **kwargs)
         refund.save()
@@ -176,21 +187,3 @@ class EftService(DepositService):
         )
         refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
         return refund
-
-    @classmethod
-    def _render_email_body(cls, shortname: str, amount: str, comment: str, shortname_id: str) -> str:
-        """Render the email body using the provided template."""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root_dir = os.path.dirname(current_dir)
-        templates_dir = os.path.join(project_root_dir, 'templates')
-        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-        template = env.get_template('eft_refund_notification.html')
-
-        url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{shortname_id}"
-        params = {
-            'shortname': shortname,
-            'refundAmount': amount,
-            'comment': comment,
-            'url': url
-        }
-        return template.render(params)

@@ -14,10 +14,10 @@
 """Task for linking electronic funds transfers."""
 from datetime import datetime, timezone
 from typing import List
-
+from dataclasses import dataclass
+from decimal import Decimal
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
@@ -33,7 +33,7 @@ from pay_api.utils.enums import (
     PaymentStatus, PaymentSystem, ReverseOperation)
 from sentry_sdk import capture_message
 from sqlalchemy import func, or_
-from sqlalchemy.orm import lazyload
+from sqlalchemy.orm import lazyload, registry
 
 from utils.auth_event import AuthEvent
 
@@ -60,19 +60,26 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                       func.array_agg(EFTCreditInvoiceLinkModel.id)  # pylint: disable=not-callable
                                       .label('link_ids'),
                                       func.sum(EFTCreditInvoiceLinkModel.amount).label('rollup_amount')) \
+            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id) \
             .filter(EFTCreditInvoiceLinkModel.status_code == status) \
             .group_by(EFTCreditInvoiceLinkModel.invoice_id,
                       EFTCreditInvoiceLinkModel.status_code,
                       EFTCreditInvoiceLinkModel.receipt_number) \
             .subquery()
 
-        class EFTCILRollup(db.Model):
-            """Here so we can map our subquery tuple to an object, it's only used locally."""
+        @dataclass
+        class EFTCILRollup:
+            """Dataclass for rollup so we don't use a tuple instead."""
 
-            __table__ = cil_rollup
-            __mapper_args__ = {
-                'primary_key': [cil_rollup.c.invoice_id, cil_rollup.c.status_code, cil_rollup.c.receipt_number]
-            }
+            invoice_id: int
+            status_code: str
+            receipt_number: str
+            link_ids: List[int]
+            rollup_amount: Decimal
+
+        registry().map_imperatively(EFTCILRollup, cil_rollup, primary_key=[cil_rollup.c.invoice_id,
+                                                                           cil_rollup.c.status_code,
+                                                                           cil_rollup.c.receipt_number])
 
         query = db.session.query(InvoiceModel, CfsAccountModel, EFTCILRollup) \
             .join(cil_rollup, InvoiceModel.id == cil_rollup.c.invoice_id) \
@@ -196,7 +203,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         if not (invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
             cil_rollup.invoice_id, InvoiceReferenceStatus.ACTIVE.value
         )):
-            raise BusinessException(f'No invoice reference found for invoice id: {invoice.id}')
+            raise Exception(f'Active Invoice reference not '  # pylint: disable=broad-exception-raised
+                            f'found for invoice id: {invoice.id}')
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         invoice_reference.flush()
         # Note: Not creating the entire EFT as a receipt because it can be mapped to multiple CFS accounts.
@@ -233,7 +241,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         if not (invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value
         )):
-            raise BusinessException(f'No invoice reference found for invoice id: {invoice.id}')
+            raise Exception(f'Completed invoice reference '  # pylint: disable=broad-exception-raised
+                            f'not found for invoice id: {invoice.id}')
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         invoice_reference.flush()
