@@ -24,8 +24,8 @@ from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency
 from tests.utilities.base_test import (
-    factory_statement, factory_statement_invoices, factory_statement_settings,
-    get_claims, get_payment_request, get_payment_request_with_payment_method, token_header)
+    factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, get_payment_request,
+    get_payment_request_with_payment_method, token_header)
 
 
 def test_get_daily_statements(session, client, jwt, app):
