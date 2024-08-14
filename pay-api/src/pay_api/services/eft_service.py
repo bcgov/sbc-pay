@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from flask import current_app
@@ -21,6 +21,7 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -98,12 +99,19 @@ class EftService(DepositService):
                            payment_account: PaymentAccount,
                            refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
-        if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
-                and InvoiceReferenceModel.find_by_invoice_id_and_status(
-                    invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
-            return InvoiceStatus.CANCELLED.value
+        current_time = datetime.now(tz=timezone.utc)
+        eft_credit_invoice_links = EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)
 
-        # TODO: Just leaving now so we can get partners working. Need to implement the refund logic.
+        if current_time.hour < 18 and invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
+            return InvoiceStatus.CANCELLED.value
+        if current_time.hour >= 18:
+            if invoice.invoice_status_code == InvoiceStatus.PAID.value:
+                return InvoiceStatus.REFUND_REQUESTED.value
+            for eft_credit_invoice_link in eft_credit_invoice_links:
+                if eft_credit_invoice_link.status_code == EFTCreditInvoiceStatus.PENDING.value:
+                    eft_credit_invoice_link.status_code = EFTCreditInvoiceStatus.CANCELLED.value
+                    eft_credit_invoice_link.save()
+
         return InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod

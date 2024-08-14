@@ -31,6 +31,7 @@ from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_invoice_reference, get_claims, get_payment_request, get_payment_request_with_payment_method,
     get_payment_request_with_service_fees, get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
+from unittest.mock import patch
 
 
 def test_create_refund(session, client, jwt, app, monkeypatch):
@@ -82,44 +83,78 @@ def test_create_drawdown_refund(session, client, jwt, app):
     assert rv.status_code == 202
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
 
-
 def test_create_eft_refund(session, client, jwt, app):
     """Assert EFT refunds work."""
     # TODO add more.
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    with patch('pay_api.services.eft_service.datetime') as mock_date:
+        # After 6 PM
+        mock_date.now.return_value = datetime(2024, 1, 1, 19, 0)
+        mock_date.side_effect = lambda *args, **kw: datetime(*args, **kw)
 
-    rv = client.post('/api/v1/payment-requests',
-                     data=json.dumps(
-                         get_payment_request_with_payment_method(
-                             business_identifier='CP0002000', payment_method='EFT'
-                         )
-                     ),
-                     headers=headers)
-    inv_id = rv.json.get('id')
+        token = jwt.create_jwt(get_claims(), token_header)
+        headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/payment-requests',
-                     data=json.dumps(
-                            get_payment_request_with_payment_method(
-                                business_identifier='CP0002000', payment_method='EFT'
-                            )
-                     ),
-                     headers=headers)
-    inv_id2 = rv.json.get('id')
-    factory_invoice_reference(inv_id2, 'REG3904393').save()
+        rv = client.post(
+            '/api/v1/payment-requests',
+            data=json.dumps(
+                get_payment_request_with_payment_method(
+                    business_identifier='CP0002000',
+                    payment_method='EFT')),
+            headers=headers)
 
-    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
-                     headers=headers)
-    rv = client.post(f'/api/v1/payment-requests/{inv_id2}/refunds', data=json.dumps({'reason': 'Test'}),
-                     headers=headers)
+        inv_id = rv.json.get('id')
 
-    invoice = InvoiceModel.find_by_id(inv_id)
-    assert invoice.invoice_status_code == InvoiceStatus.CANCELLED.value
+        rv = client.post(
+            '/api/v1/payment-requests',
+            data=json.dumps(
+                get_payment_request_with_payment_method(
+                    business_identifier='CP0002000',
+                    payment_method='EFT')),
+            headers=headers)
 
-    invoice2 = InvoiceModel.find_by_id(inv_id2)
-    assert invoice2.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+        inv_id2 = rv.json.get('id')
+        factory_invoice_reference(inv_id2, 'REG3904393').save()
+        token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+        headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+        rv = client.post(
+            f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+            headers=headers)
+        rv = client.post(
+            f'/api/v1/payment-requests/{inv_id2}/refunds', data=json.dumps({'reason': 'Test'}),
+            headers=headers)
+
+        invoice = InvoiceModel.find_by_id(inv_id)
+        assert invoice.invoice_status_code == InvoiceStatus.CANCELLED.value
+
+        invoice2 = InvoiceModel.find_by_id(inv_id2)
+        assert invoice2.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+
+    with patch('pay_api.services.eft_service.datetime') as mock_date:
+        # Before 6 PM
+        mock_date.now.return_value = datetime(2024, 1, 1, 17, 0)
+        mock_date.side_effect = lambda *args, **kw: datetime(*args, **kw)
+
+        token = jwt.create_jwt(get_claims(), token_header)
+        headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+        rv = client.post(
+            '/api/v1/payment-requests',
+            data=json.dumps(
+                get_payment_request_with_payment_method(
+                    business_identifier='CP0002000',
+                    payment_method='EFT')),
+            headers=headers)
+
+        inv_id = rv.json.get('id')
+        factory_invoice_reference(inv_id, 'REG3904393').save()
+        token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+        headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+        rv = client.post(
+            f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+            headers=headers)
+
+        invoice2 = InvoiceModel.find_by_id(inv_id)
+        assert invoice2.invoice_status_code == InvoiceStatus.CANCELLED.value
 
 
 def test_create_pad_refund(session, client, jwt, app):

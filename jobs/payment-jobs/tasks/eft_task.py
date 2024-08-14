@@ -90,6 +90,9 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             .filter(InvoiceModel.total == cil_rollup.c.rollup_amount)
 
         match status:
+            case EFTCreditInvoiceStatus.COMPLETED.value:
+                query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
+
             case EFTCreditInvoiceStatus.PENDING.value:
                 query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
                 query = query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value,
@@ -244,9 +247,16 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             raise Exception(f'Completed invoice reference '  # pylint: disable=broad-exception-raised
                             f'not found for invoice id: {invoice.id}')
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
+
         invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         invoice_reference.flush()
-        invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+
+        if invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value:
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+            invoice.refund_date = datetime.now(tz=timezone.utc)
+        else:
+            invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+
         invoice.paid = 0
         invoice.payment_date = None
         invoice.flush()
