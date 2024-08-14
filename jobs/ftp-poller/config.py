@@ -121,7 +121,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
             'SFTP_VERIFY_HOST': EFT_SFTP_VERIFY_HOST,
             'SFTP_HOST_KEY': EFT_SFTP_HOST_KEY,
             'SFTP_PORT': EFT_SFTP_PORT,
-            'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
+            'FTP_PRIVATE_KEY_LOCATION': BCREG_EFT_FTP_PRIVATE_KEY_LOCATION,
             'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_EFT_FTP_PRIVATE_KEY_PASSPHRASE
         }
     }
