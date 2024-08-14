@@ -19,11 +19,13 @@ Test-Suite to ensure that the UpdateStalePayment is working as expected.
 from datetime import datetime, timedelta, timezone
 
 import pytz
+import pytest
 from freezegun import freeze_time
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Statement, StatementInvoices, StatementSettings
 from pay_api.services import Statement as StatementService
 from pay_api.services import StatementSettings as StatementSettingsService
+from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import get_previous_day
 
@@ -31,6 +33,7 @@ from tasks.statement_task import StatementTask
 
 from .factory import (
     factory_create_account, factory_invoice, factory_invoice_reference, factory_payment,
+    factory_pad_account_payload, factory_eft_account_payload,
     factory_premium_payment_account, factory_statement_settings)
 
 
@@ -299,14 +302,18 @@ def test_bcol_monthly_to_eft_statement(session):
     assert bcol_invoices[1].invoice_id == direct_pay_invoice.id
 
 
-def test_weekly_to_monthly_gap_statements(session):
+@pytest.mark.parametrize('test_name', [('non_interm'), ('pad_to_eft'), ('eft_to_pad')])
+def test_gap_statements(session, test_name, admin_users_mock):
     """Ensure gap statements are generated for weekly to monthly."""
     account_create_date = datetime(2024, 1, 1, 8)
     account = None
     invoice_ids = []
     with freeze_time(account_create_date):
-        account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.PAD.value)
-        assert account is not None
+        match test_name:
+            case 'eft_to_pad':
+                account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.EFT.value)
+            case _:
+                account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.PAD.value)
 
     from_date = (localize_date(datetime(2024, 1, 1, 8))).date()
     StatementInvoices.query.delete()
@@ -317,25 +324,97 @@ def test_weekly_to_monthly_gap_statements(session):
                                frequency=StatementFrequency.WEEKLY.value,
                                from_date=from_date
                                ).save()
-    with freeze_time(datetime(2024, 1, 1, 8)):
-        # This should create a gap between 28th Sunday and 31st Wednesday, this is a gap statement.
-        StatementSettingsService.update_statement_settings(account.auth_account_id,
-                                                           StatementFrequency.MONTHLY.value)
-    for i in range(0, 31):
-        inv = factory_invoice(payment_account=account,
-                              payment_method_code=PaymentMethod.PAD.value,
-                              status_code=InvoiceStatus.APPROVED.value,
-                              total=50,
-                              created_on=account_create_date + timedelta(i)) \
-            .save()
-        invoice_ids.append(inv.id)
 
-    for r in range(0, 32):
-        generate_date = localize_date(datetime(2024, 1, 1, 8) + timedelta(days=r))
-        StatementTask.generate_statements([(generate_date - timedelta(days=1)).strftime('%Y-%m-%d')])
+    # Generate invoices for January 1st -> January 31st.
+    match test_name:
+        case 'non_interm':
+            for i in range(0, 31):
+                inv = factory_invoice(payment_account=account,
+                                      payment_method_code=PaymentMethod.PAD.value,
+                                      status_code=InvoiceStatus.PAID.value,
+                                      total=50,
+                                      created_on=account_create_date + timedelta(i)) \
+                    .save()
+                invoice_ids.append(inv.id)
+        case 'pad_to_eft':
+            for i in range(0, 28):
+                inv = factory_invoice(payment_account=account,
+                                      payment_method_code=PaymentMethod.PAD.value,
+                                      status_code=InvoiceStatus.PAID.value,
+                                      total=50,
+                                      created_on=account_create_date + timedelta(i)) \
+                    .save()
+                invoice_ids.append(inv.id)
+            # Overlap an EFT invoice and PAD on the same day.
+            for i in range(28, 31):
+                inv = factory_invoice(payment_account=account,
+                                      payment_method_code=PaymentMethod.EFT.value,
+                                      status_code=InvoiceStatus.PAID.value,
+                                      total=50,
+                                      created_on=account_create_date + timedelta(i)) \
+                    .save()
+                invoice_ids.append(inv.id)
+        case 'eft_to_pad':
+            for i in range(0, 28):
+                inv = factory_invoice(payment_account=account,
+                                      payment_method_code=PaymentMethod.EFT.value,
+                                      status_code=InvoiceStatus.PAID.value,
+                                      total=50,
+                                      created_on=account_create_date + timedelta(i)) \
+                    .save()
+                invoice_ids.append(inv.id)
+            # Overlap an EFT invoice and PAD on the same day.
+            for i in range(28, 31):
+                inv = factory_invoice(payment_account=account,
+                                      payment_method_code=PaymentMethod.PAD.value,
+                                      status_code=InvoiceStatus.PAID.value,
+                                      total=50,
+                                      created_on=account_create_date + timedelta(i)) \
+                    .save()
+                invoice_ids.append(inv.id)
+
+    match test_name:
+        case 'non_interm':
+            with freeze_time(datetime(2024, 1, 1, 8)):
+                # This should create a gap between 28th Sunday and 31st Wednesday, this is a gap statement.
+                StatementSettingsService.update_statement_settings(account.auth_account_id,
+                                                                   StatementFrequency.MONTHLY.value)
+            generate_statements(0, 32)
+        case 'pad_to_eft':
+            # Note: This will work even if we start off as MONTHLY or change to MONTHLY from weekly.
+            # Generate up to the 28th before the interm statment.
+            generate_statements(0, 28)
+            with freeze_time(localize_date(datetime(2024, 1, 28, 8))):
+                payload = factory_eft_account_payload(payment_method=PaymentMethod.EFT.value,
+                                                      account_id=account.auth_account_id)
+                PaymentAccountService.update(account.auth_account_id, payload)
+            generate_statements(29, 32)
+        case 'eft_to_pad':
+            # Generate up to the 28th before the interm statment.
+            generate_statements(0, 28)
+            with freeze_time(localize_date(datetime(2024, 1, 28, 8))):
+                # Update to PAD - Keep the pad activation_date in the past, otherwise we wont switch over to PAD.
+                # If we can't switch to PAD, no invoices would be created until activation date was hit.
+                account.pad_activation_date = datetime.now(tz=timezone.utc) - timedelta(days=1)
+                account.save()
+                PaymentAccountService.update(account.auth_account_id, factory_pad_account_payload())
+            generate_statements(29, 32)
+
+    statements = Statement.query.all()
+    for statement in statements:
+        assert statement.payment_methods != 'PAD,EFT'
+        assert statement.payment_methods != 'EFT,PAD'
 
     generated_invoice_ids = [inv.invoice_id for inv in StatementInvoices.query.all()]
+
     assert len(invoice_ids) == len(generated_invoice_ids)
+
+
+def generate_statements(start, end):
+    """Generate statements helper."""
+    for r in range(start, end):
+        override_date = localize_date(datetime(2024, 1, 1, 8) + timedelta(days=r - 1)).strftime('%Y-%m-%d')
+        StatementTask.generate_statements([override_date])
 
 
 def localize_date(date: datetime):
