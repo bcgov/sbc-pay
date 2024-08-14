@@ -30,7 +30,8 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
-from sqlalchemy import Date, cast
+from sqlalchemy import Date, cast, func, select
+from sqlalchemy.dialects.postgresql import array
 
 from tasks.common.cgi_ejv import CgiEjv
 
@@ -239,6 +240,7 @@ class EjvPartnerDistributionTask(CgiEjv):
     def _find_line_items_by_invoice_and_distribution(cls, distribution_code_id, invoice_id_list) \
             -> List[PaymentLineItemModel]:
         """Find and return all payment line items for this distribution."""
+        invoice_id_list = select(func.unnest(array(invoice_id_list)))
         line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .filter(PaymentLineItemModel.invoice_id.in_(invoice_id_list)) \
             .filter(PaymentLineItemModel.total > 0) \

@@ -20,10 +20,11 @@ from datetime import datetime, timedelta
 
 import pytz
 from freezegun import freeze_time
-from pay_api.models import Statement, StatementInvoices
+from pay_api.models import Statement, StatementInvoices, db
 from pay_api.services import Statement as StatementService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import get_previous_day
+from sqlalchemy import insert
 
 from tasks.statement_task import StatementTask
 
@@ -272,6 +273,38 @@ def test_bcol_monthly_to_eft_statement(session):
     assert bcol_invoices is not None
     assert len(bcol_invoices) == 1
     assert bcol_invoices[0].invoice_id == bcol_invoice.id
+
+
+def test_many_statements():
+    """Ensure many statements work over 65535 statements."""
+    account = factory_create_account(auth_account_id='1')
+    factory_statement_settings(
+        pay_account_id=account.id,
+        from_date=datetime(2024, 1, 1, 8),
+        to_date=datetime(2024, 1, 4, 8),
+        frequency=StatementFrequency.DAILY.value
+    ).save()
+    invoice = factory_invoice(account)
+    statement_list = []
+    for _ in range(0, 70000):
+        statement_list.append({'created_on': '2024-01-01',
+                               'from_date': '2024-01-01 08:00:00',
+                               'to_date': '2024-01-04 08:00:00',
+                               'payment_account_id': f'{account.id}',
+                               'frequency': StatementFrequency.DAILY.value
+                               })
+    db.session.execute(insert(Statement), statement_list)
+
+    statement = db.session.query(Statement).first()
+    statement_invoices_list = []
+    for _ in range(0, 70000):
+        statement_invoices_list.append({
+            'statement_id': statement.id,
+            'invoice_id': invoice.id
+        })
+    db.session.execute(insert(StatementInvoices), statement_invoices_list)
+    StatementTask.generate_statements([datetime(2024, 1, 1, 8).strftime('%Y-%m-%d')])
+    assert True
 
 
 def localize_date(date: datetime):

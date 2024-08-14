@@ -26,7 +26,8 @@ from pay_api.utils.enums import NotificationStatus, PaymentMethod, StatementFreq
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
     get_week_start_and_end_date)
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.postgresql import array
 
 
 class StatementTask:  # pylint:disable=too-few-public-methods
@@ -180,19 +181,21 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             .filter_by(
                 frequency=statement_settings[0].StatementSettings.frequency,
                 from_date=statement_from.date(), to_date=statement_to.date())\
-            .filter(StatementModel.payment_account_id.in_(payment_account_ids))\
+            .filter(StatementModel.payment_account_id.in_(select(func.unnest(array(payment_account_ids)))))\
             .all()
         current_app.logger.debug(f'Removing {len(remove_statements)} existing duplicate/stale statements.')
         remove_statements_ids = [statement.id for statement in remove_statements]
         remove_statement_invoices = db.session.query(StatementInvoicesModel)\
-            .filter(StatementInvoicesModel.statement_id.in_(remove_statements_ids))\
+            .filter(StatementInvoicesModel.statement_id.in_(
+                select(func.unnest(array(remove_statements_ids)))))\
             .all()
         statement_invoice_ids = [statement_invoice.id for statement_invoice in remove_statement_invoices]
         delete_statement_invoice = delete(StatementInvoicesModel)\
-            .where(StatementInvoicesModel.id.in_(statement_invoice_ids))
+            .where(StatementInvoicesModel.id.in_(select(func.unnest(array(statement_invoice_ids)))))
         db.session.execute(delete_statement_invoice)
         db.session.flush()
-        delete_statement = delete(StatementModel).where(StatementModel.id.in_(remove_statements_ids))
+        delete_statement = delete(StatementModel).where(
+                StatementModel.id.in_(select(func.unnest(array(remove_statements_ids)))))
         db.session.execute(delete_statement)
 
     @classmethod
