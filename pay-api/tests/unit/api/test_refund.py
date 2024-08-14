@@ -83,6 +83,7 @@ def test_create_drawdown_refund(session, client, jwt, app):
     assert rv.status_code == 202
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
 
+
 def test_create_eft_refund(session, client, jwt, app):
     """Assert EFT refunds work."""
     with patch('pay_api.services.eft_service.datetime') as mock_date:

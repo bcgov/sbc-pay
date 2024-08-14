@@ -102,9 +102,10 @@ class EftService(DepositService):
         current_time = datetime.now(tz=timezone.utc)
         eft_credit_invoice_links = EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)
 
-        if (current_time.hour < 18 
-            or InvoiceReferenceModel.find_by_invoice_id_and_status(
-                invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None
+        if (
+            current_time.hour < 18 or InvoiceReferenceModel.find_by_invoice_id_and_status(
+                invoice.id,
+                InvoiceReferenceStatus.ACTIVE.value) is None
         ) and invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
             return InvoiceStatus.CANCELLED.value
         if current_time.hour >= 18:
