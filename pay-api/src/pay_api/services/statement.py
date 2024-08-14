@@ -248,6 +248,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
                 .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
                                                               InvoiceStatus.PARTIAL.value,
                                                               InvoiceStatus.CREATED.value,
+                                                              InvoiceStatus.APPROVED.value,
                                                               InvoiceStatus.OVERDUE.value)))
                 .filter(~exists()
                         .where(StatementInvoicesModel.invoice_id == InvoiceModel.id))
