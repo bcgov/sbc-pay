@@ -85,7 +85,6 @@ def test_create_drawdown_refund(session, client, jwt, app):
 
 def test_create_eft_refund(session, client, jwt, app):
     """Assert EFT refunds work."""
-    # TODO add more.
     with patch('pay_api.services.eft_service.datetime') as mock_date:
         # After 6 PM
         mock_date.now.return_value = datetime(2024, 1, 1, 19, 0)
