@@ -33,7 +33,7 @@ from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     factory_invoice, get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
     get_gov_account_payload_with_no_revenue_account, get_linked_pad_account_payload, get_payment_request,
@@ -782,6 +782,7 @@ def test_switch_eft_account_when_outstanding_balance(session, client, jwt, app, 
     payment_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
 
     factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                    status_code=InvoiceStatus.APPROVED.value,
                     total=50, paid=0).save()
 
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',

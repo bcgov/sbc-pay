@@ -17,15 +17,15 @@
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
-from datetime import datetime, timezone
 import json
+from datetime import datetime, timezone
 
 from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency
 from tests.utilities.base_test import (
-    factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, get_payment_request, get_payment_request_with_payment_method,
-    token_header)
+    factory_statement, factory_statement_invoices, factory_statement_settings,
+    get_claims, get_payment_request, get_payment_request_with_payment_method, token_header)
 
 
 def test_get_daily_statements(session, client, jwt, app):
@@ -302,7 +302,6 @@ def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, 
 
     payment_account_id = Invoice.find_by_id(invoice_ids[0]).payment_account_id
     pay_account = PaymentAccount.find_by_id(payment_account_id)
-    pay_account.payment_method = PaymentMethod.EFT.value
 
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
                     headers=headers)
@@ -310,4 +309,4 @@ def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, 
     assert rv.status_code == 200
     assert rv.json.get('totalDue') == 0
     assert rv.json.get('oldestOverdueDate') is None
-    assert rv.json.get('total_invoice_due') == float(unpaid_amount)
+    assert rv.json.get('totalInvoiceDue') == float(unpaid_amount)
