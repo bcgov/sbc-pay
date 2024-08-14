@@ -22,9 +22,9 @@ import json
 
 from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
-from pay_api.utils.enums import ContentType, InvoiceStatus, StatementFrequency
+from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency
 from tests.utilities.base_test import (
-    factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, get_payment_request,
+    factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, get_payment_request, get_payment_request_with_payment_method,
     token_header)
 
 
@@ -276,3 +276,38 @@ def test_statement_summary(session, client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('totalDue') == float(total_due)
     assert rv.json.get('oldestOverdueDate') == oldest_overdue_date.strftime('%Y-%m-%d')
+
+
+def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, app):
+    """Assert the statement summary is working when eft invoices has no statement yet."""
+    headers = {
+        'Authorization': f'Bearer {jwt.create_jwt(get_claims(), token_header)}',
+        'content-type': 'application/json'
+    }
+
+    invoice_ids = []
+    unpaid_amount = 0
+    for _ in range(3):
+        rv = client.post('/api/v1/payment-requests',
+                         data=json.dumps(
+                             get_payment_request_with_payment_method(business_identifier='CP0002000',
+                                                                     payment_method=PaymentMethod.EFT.value)),
+                         headers=headers)
+        invoice_id = rv.json.get('id')
+        invoice = Invoice.find_by_id(invoice_id)
+        invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+        invoice.save()
+        invoice_ids.append(invoice_id)
+        unpaid_amount += invoice.total - invoice.paid
+
+    payment_account_id = Invoice.find_by_id(invoice_ids[0]).payment_account_id
+    pay_account = PaymentAccount.find_by_id(payment_account_id)
+    pay_account.payment_method = PaymentMethod.EFT.value
+
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
+                    headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json.get('totalDue') == 0
+    assert rv.json.get('oldestOverdueDate') is None
+    assert rv.json.get('total_invoice_due') == float(unpaid_amount)
