@@ -46,6 +46,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
             'credit_balance',
             'description',
             'hidden',
+            'invoice_id',
             'is_processing',
             'payment_account_id',
             'related_group_link_id',
@@ -61,6 +62,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
     created_on = db.Column(db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
     credit_balance = db.Column(db.Numeric(19, 2), nullable=False)
     hidden = db.Column(db.Boolean(), nullable=False, default=False, index=True)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=True, index=True)
     is_processing = db.Column(db.Boolean(), nullable=False, default=False)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     related_group_link_id = db.Column(db.Integer, nullable=True, index=True)
@@ -84,6 +86,7 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
     account_name: str
     account_branch: str
     amount: Decimal
+    invoice_id: int
     statement_number: int
     short_name_id: int
     short_name_balance: Decimal
@@ -105,6 +108,7 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
                    account_id=getattr(row, 'auth_account_id', None),
                    account_name=getattr(row, 'account_name', None),
                    account_branch=getattr(row, 'account_branch', None),
+                   invoice_id=getattr(row, 'invoice_id', None),
                    statement_number=getattr(row, 'statement_number', None),
                    transaction_date=getattr(row, 'transaction_date', None),
                    transaction_type=getattr(row, 'transaction_type', None),
