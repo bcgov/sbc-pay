@@ -234,7 +234,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         query = (db.session.query(EFTCreditInvoiceLinkModel)
                  .distinct(EFTCreditInvoiceLinkModel.invoice_id)
                  .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id)
-                 .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id)
+                 .join(StatementInvoicesModel,
+                       StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id)
                  .filter(StatementInvoicesModel.statement_id == statement_id)
                  .filter(EFTCreditModel.short_name_id == shortname_id)
                  .filter(EFTCreditInvoiceLinkModel.status_code != EFTCreditInvoiceStatus.CANCELLED.value)
