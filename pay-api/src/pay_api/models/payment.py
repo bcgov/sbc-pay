@@ -19,7 +19,8 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, not_, or_, text
+from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, not_, or_, select, text
+from sqlalchemy.dialects.postgresql import array
 from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql.expression import literal
 
@@ -263,10 +264,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_invoices_for_statements(cls, search_filter: Dict):
         """Slimmed down version for statements."""
+        auth_account_ids = select(func.unnest(array(search_filter.get('authAccountIds', []))))
         query = db.session.query(Invoice) \
             .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)\
-            .filter(PaymentAccount.auth_account_id.in_(search_filter.get('authAccountIds', [])))
-
+            .filter(PaymentAccount.auth_account_id.in_(auth_account_ids))
         # If an account is within these payment methods - limit invoices to these payment methods.
         # Used for transitioning payment method and an interim statement is created (There could be different payment
         # methods for the transition day and we don't want it on both statements)
