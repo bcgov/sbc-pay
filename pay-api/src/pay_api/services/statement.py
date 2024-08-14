@@ -424,7 +424,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         # End the current statement settings
         active_settings.to_date = today
         active_settings.save()
-        statement_from, statement_to = get_first_and_last_of_frequency(today, active_settings.frequency)
+        statement_to = today
+        statement_from, _ = get_first_and_last_of_frequency(today, active_settings.frequency)
         statement_filter = {
             'dateFilter': {
                 'startDate': statement_from.strftime('%Y-%m-%d'),
