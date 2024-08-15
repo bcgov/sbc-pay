@@ -360,6 +360,7 @@ class EFTHistoricalTypes(Enum):
     """EFT Short names historical transaction types."""
 
     FUNDS_RECEIVED = 'FUNDS_RECEIVED'
+    INVOICE_REFUND = 'INVOICE_REFUND'
     STATEMENT_PAID = 'STATEMENT_PAID'
     STATEMENT_REVERSE = 'STATEMENT_REVERSE'
 
