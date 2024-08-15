@@ -19,7 +19,7 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, not_, or_, select, text
+from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select, text
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql.expression import literal
