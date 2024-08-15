@@ -83,7 +83,7 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     @classmethod
     def find_by_invoice_ids(cls, invoice_ids: list):
         """Return list of line items by list of invoice ids."""
-        invoice_ids = select(func.unnest(array(invoice_ids, _type=INTEGER)))
+        invoice_ids = select(func.unnest(array(invoice_ids, type_=INTEGER)))
         return db.session.query(PaymentLineItem).filter(PaymentLineItem.invoice_id.in_(
                 invoice_ids)) \
             .order_by(PaymentLineItem.invoice_id.desc()).all()

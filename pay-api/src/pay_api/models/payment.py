@@ -264,7 +264,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_invoices_for_statements(cls, search_filter: Dict):
         """Slimmed down version for statements."""
-        auth_account_ids = select(func.unnest(array(search_filter.get('authAccountIds', []), _type=INTEGER)))
+        auth_account_ids = select(func.unnest(array(search_filter.get('authAccountIds', []), type_=INTEGER)))
         query = db.session.query(Invoice) \
             .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)\
             .filter(PaymentAccount.auth_account_id.in_(auth_account_ids))

@@ -240,7 +240,7 @@ class EjvPartnerDistributionTask(CgiEjv):
     def _find_line_items_by_invoice_and_distribution(cls, distribution_code_id, invoice_id_list) \
             -> List[PaymentLineItemModel]:
         """Find and return all payment line items for this distribution."""
-        invoice_id_list = select(func.unnest(array(invoice_id_list, _type=INTEGER)))
+        invoice_id_list = select(func.unnest(array(invoice_id_list, type_=INTEGER)))
         line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .filter(PaymentLineItemModel.invoice_id.in_(invoice_id_list)) \
             .filter(PaymentLineItemModel.total > 0) \

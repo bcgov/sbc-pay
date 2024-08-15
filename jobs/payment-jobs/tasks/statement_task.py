@@ -177,7 +177,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
     def _clean_up_old_statements(cls, statement_settings, statement_from, statement_to):
         """Clean up duplicate / old statements before generating."""
         payment_account_ids = [pay_account.id for _, pay_account in statement_settings]
-        payment_account_ids = select(func.unnest(array(payment_account_ids, _type=INTEGER)))
+        payment_account_ids = select(func.unnest(array(payment_account_ids, type_=INTEGER)))
         remove_statements = db.session.query(StatementModel)\
             .filter_by(
                 frequency=statement_settings[0].StatementSettings.frequency,
@@ -188,15 +188,15 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         remove_statements_ids = [statement.id for statement in remove_statements]
         remove_statement_invoices = db.session.query(StatementInvoicesModel)\
             .filter(StatementInvoicesModel.statement_id.in_(
-                select(func.unnest(array(remove_statements_ids, _type=INTEGER)))))\
+                select(func.unnest(array(remove_statements_ids, type_=INTEGER)))))\
             .all()
         statement_invoice_ids = [statement_invoice.id for statement_invoice in remove_statement_invoices]
         delete_statement_invoice = delete(StatementInvoicesModel)\
-            .where(StatementInvoicesModel.id.in_(select(func.unnest(array(statement_invoice_ids, _type=INTEGER)))))
+            .where(StatementInvoicesModel.id.in_(select(func.unnest(array(statement_invoice_ids, type_=INTEGER)))))
         db.session.execute(delete_statement_invoice)
         db.session.flush()
         delete_statement = delete(StatementModel).where(
-                StatementModel.id.in_(select(func.unnest(array(remove_statements_ids, _type=INTEGER)))))
+                StatementModel.id.in_(select(func.unnest(array(remove_statements_ids, type_=INTEGER)))))
         db.session.execute(delete_statement)
 
     @classmethod
