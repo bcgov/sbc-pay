@@ -40,6 +40,7 @@ install: clean
 	unset HOME ## unset HOME because it's in the DEV .env file, will cause permissions issues
 	pip install poetry ;\
 	poetry install
+	poetry config installer.parallel false
 
 #################################################################################
 # COMMANDS - CI                                                                 #
