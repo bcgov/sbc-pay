@@ -20,7 +20,7 @@ import pytz
 from flask import current_app
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, not_, or_, select, text
-from sqlalchemy.dialects.postgresql import INTEGER, array
+from sqlalchemy.dialects.postgresql import TEXT, array
 from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql.expression import literal
 
@@ -264,7 +264,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_invoices_for_statements(cls, search_filter: Dict):
         """Slimmed down version for statements."""
-        auth_account_ids = select(func.unnest(array(search_filter.get('authAccountIds', []), type_=INTEGER)))
+        auth_account_ids = select(func.unnest(array(search_filter.get('authAccountIds', []), type_=TEXT)))
         query = db.session.query(Invoice) \
             .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)\
             .filter(PaymentAccount.auth_account_id.in_(auth_account_ids))
