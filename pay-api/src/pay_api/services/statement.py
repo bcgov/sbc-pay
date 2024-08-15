@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service class to control all the operations related to statements."""
 from datetime import date, datetime, timedelta, timezone
+from dateutil.relativedelta import relativedelta
 from typing import List
 
 from flask import current_app
@@ -350,10 +351,11 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         # This is written outside of the model, because we have multiple model references that need to be included.
         # If we include these references inside of a model, it runs the risk of having circular dependencies.
         # It's easier to build out features if our models don't rely on other models.
+
         result = db.session.query(func.sum(InvoiceModel.total - InvoiceModel.paid).label('total_due'),
-                                  func.min(InvoiceModel.overdue_date).label('oldest_overdue_date')) \
-            .join(PaymentAccountModel) \
-            .join(StatementInvoicesModel) \
+                                  func.min(StatementModel.to_date).label('oldest_to_date')) \
+            .join(PaymentAccountModel, PaymentAccountModel.id == StatementModel.payment_account_id) \
+            .join(StatementInvoicesModel, StatementModel.id == StatementInvoicesModel.statement_id) \
             .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
             .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
                                                           InvoiceStatus.PARTIAL.value,
@@ -368,8 +370,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_overdue_date = result.oldest_overdue_date.strftime('%Y-%m-%d') \
-            if result and result.oldest_overdue_date else None
+        oldest_due_date = (result.oldest_to_date + relativedelta(months=1)).strftime('%Y-%m-%d') \
+            if result and result.oldest_to_date else None
 
         # Unpaid invoice amount total that are not part of a statement yet
         invoices_unpaid_amount = Statement.get_invoices_owing_amount(auth_account_id)
@@ -377,7 +379,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return {
             'total_invoice_due': float(invoices_unpaid_amount) if invoices_unpaid_amount else 0,
             'total_due': total_due,
-            'oldest_overdue_date': oldest_overdue_date
+            'oldest_due_date': oldest_due_date
         }
 
     @staticmethod
