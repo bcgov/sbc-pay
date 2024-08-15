@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List
 
 from flask import current_app
-from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column
+from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column, select
 from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 from pay_api.models import EFTCredit as EFTCreditModel
