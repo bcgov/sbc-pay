@@ -370,7 +370,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_due_date = (result.oldest_to_date + relativedelta(months=1)).strftime('%Y-%m-%d') \
+        oldest_due_date = (result.oldest_to_date + relativedelta(months=1, hours=8)).strftime('%Y-%m-%d') \
             if result and result.oldest_to_date else None
 
         # Unpaid invoice amount total that are not part of a statement yet
