@@ -23,7 +23,7 @@ from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.services.statement import Statement as StatementService
-from pay_api.utils.enums import NotificationStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.enums import NotificationStatus, StatementFrequency
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
     get_week_start_and_end_date)
@@ -64,6 +64,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         generate_monthly = target_time.day == 1
 
         cls._generate_daily_statements(target_time, auth_account_override)
+        if not generate_weekly:
+            cls._generate_gap_statements(target_time, auth_account_override)
         if generate_weekly:
             cls._generate_weekly_statements(target_time, auth_account_override)
         if generate_monthly:
@@ -71,6 +73,27 @@ class StatementTask:  # pylint:disable=too-few-public-methods
 
         # Commit transaction
         db.session.commit()
+
+    @classmethod
+    def _generate_gap_statements(cls, target_time, account_override):
+        """Generate gap statements for weekly statements that wont run over Sunday."""
+        # Look at the target_time versus the end date.
+        previous_day = get_previous_day(target_time)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
+                                                                                        StatementFrequency.WEEKLY,
+                                                                                        to_date=previous_day.date())
+        statement_from, _ = get_week_start_and_end_date(previous_day, index=0)
+        statement_to = previous_day
+        if statement_from == statement_to or not statement_settings:
+            return
+        current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate GAP statements')
+        search_filter = {
+            'dateFilter': {
+                'startDate': statement_from.strftime('%Y-%m-%d'),
+                'endDate': statement_to.strftime('%Y-%m-%d')
+            }
+        }
+        cls._create_statement_records(search_filter, statement_settings, account_override)
 
     @classmethod
     def _generate_daily_statements(cls, target_time: datetime, account_override: str):
@@ -185,7 +208,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # Force match on these methods where if the payment method is in matchPaymentMethods, the invoice payment method
         # must match the account payment method. Used for EFT so the statements only show EFT invoices and interim
         # statement logic when transitioning payment methods
-        search_filter['matchPaymentMethods'] = [PaymentMethod.EFT.value]
+        search_filter['matchPaymentMethods'] = True
         invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(search_filter)
         reuse_statements = []
         if cls.has_date_override and statement_settings:

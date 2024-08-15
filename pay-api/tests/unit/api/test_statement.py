@@ -275,7 +275,7 @@ def test_statement_summary(session, client, jwt, app):
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('totalDue') == float(total_due)
-    assert rv.json.get('oldestDueDate') == oldest_due_date.strftime('%Y-%m-%d')
+    assert rv.json.get('oldestDueDate') == (oldest_due_date.date() + relativedelta(hours=8)).isoformat()
 
 
 def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, app):

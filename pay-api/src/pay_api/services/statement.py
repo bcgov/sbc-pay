@@ -370,7 +370,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_due_date = (result.oldest_to_date + relativedelta(months=1)).strftime('%Y-%m-%d') \
+        oldest_due_date = (result.oldest_to_date + relativedelta(months=1, hours=8)).isoformat() \
             if result and result.oldest_to_date else None
 
         # Unpaid invoice amount total that are not part of a statement yet
@@ -427,7 +427,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         # End the current statement settings
         active_settings.to_date = today
         active_settings.save()
-        statement_from, statement_to = get_first_and_last_of_frequency(today, active_settings.frequency)
+        statement_to = today
+        statement_from, _ = get_first_and_last_of_frequency(today, active_settings.frequency)
         statement_filter = {
             'dateFilter': {
                 'startDate': statement_from.strftime('%Y-%m-%d'),
