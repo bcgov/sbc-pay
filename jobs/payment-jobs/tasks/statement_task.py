@@ -23,7 +23,7 @@ from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.services.statement import Statement as StatementService
-from pay_api.utils.enums import NotificationStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.enums import NotificationStatus, StatementFrequency
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
     get_week_start_and_end_date)
