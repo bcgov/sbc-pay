@@ -352,8 +352,9 @@ def test_gap_statements(session, test_name, admin_users_mock):
     Statement.query.delete()
     StatementSettings.query.delete()
     InvoiceModel.query.delete()
+    frequency = StatementFrequency.MONTHLY.value if test_name == 'eft_to_pad' else StatementFrequency.WEEKLY.value
     factory_statement_settings(pay_account_id=account.id,
-                               frequency=StatementFrequency.WEEKLY.value,
+                               frequency=frequency,
                                from_date=from_date
                                ).save()
 
@@ -430,7 +431,8 @@ def test_gap_statements(session, test_name, admin_users_mock):
                 account.pad_activation_date = datetime.now(tz=timezone.utc) - timedelta(days=1)
                 account.save()
                 PaymentAccountService.update(account.auth_account_id, factory_pad_account_payload())
-            generate_statements(29, 32)
+            # The default for PAD is weekly, need extra days because no to_date set for gap_statements.
+            generate_statements(29, 35)
 
     statements = Statement.query.all()
     for statement in statements:

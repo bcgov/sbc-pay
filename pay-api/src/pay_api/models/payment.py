@@ -272,13 +272,16 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         # If an account is within these payment methods - limit invoices to these payment methods.
         # Used for transitioning payment method and an interim statement is created (There could be different payment
         # methods for the transition day and we don't want it on both statements)
-        if payment_methods := search_filter.get('matchPaymentMethods', None):
+        if search_filter.get('matchPaymentMethods', None):
             query = query.filter(
                 or_(
-                    not_(PaymentAccount.payment_method.in_(payment_methods)),
-                    and_(PaymentAccount.payment_method.in_(payment_methods),
-                         Invoice.payment_method_code == PaymentAccount.payment_method)
-                ))
+                    and_(PaymentAccount.payment_method == PaymentMethodEnum.EFT.value,
+                         Invoice.payment_method_code == PaymentAccount.payment_method),
+                    and_(PaymentAccount.payment_method != PaymentMethodEnum.EFT.value,
+                         Invoice.payment_method_code != PaymentMethodEnum.EFT.value
+                         )
+                )
+            )
 
         query = cls.filter_date(query, search_filter).with_entities(Invoice.id,
                                                                     Invoice.payment_method_code,
