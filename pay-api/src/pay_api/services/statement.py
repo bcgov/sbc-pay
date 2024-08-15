@@ -13,8 +13,8 @@
 # limitations under the License.
 """Service class to control all the operations related to statements."""
 from datetime import date, datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
 from typing import List
+from dateutil.relativedelta import relativedelta
 
 from flask import current_app
 from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column, select
