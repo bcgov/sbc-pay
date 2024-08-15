@@ -231,15 +231,19 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _get_statement_credit_invoice_links(cls, shortname_id, statement_id) -> List[EFTCreditInvoiceLinkModel]:
         """Get most recent EFT Credit invoice links associated to a statement and short name."""
-        return (db.session.query(EFTCreditInvoiceLinkModel)
-                .distinct(EFTCreditInvoiceLinkModel.invoice_id)
-                .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id)
-                .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id)
-                .filter(StatementInvoicesModel.statement_id == statement_id)
-                .filter(EFTCreditModel.short_name_id == shortname_id)
-                .filter(EFTCreditInvoiceLinkModel.status_code != EFTCreditInvoiceStatus.CANCELLED.value)
-                .order_by(EFTCreditInvoiceLinkModel.invoice_id, EFTCreditInvoiceLinkModel.created_on.desc())
-                ).all()
+        query = (db.session.query(EFTCreditInvoiceLinkModel)
+                 .distinct(EFTCreditInvoiceLinkModel.invoice_id)
+                 .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id)
+                 .join(StatementInvoicesModel,
+                       StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id)
+                 .filter(StatementInvoicesModel.statement_id == statement_id)
+                 .filter(EFTCreditModel.short_name_id == shortname_id)
+                 .filter(EFTCreditInvoiceLinkModel.status_code != EFTCreditInvoiceStatus.CANCELLED.value)
+                 .order_by(EFTCreditInvoiceLinkModel.invoice_id.desc(),
+                           EFTCreditInvoiceLinkModel.created_on.desc(),
+                           EFTCreditInvoiceLinkModel.id.desc())
+                 )
+        return query.all()
 
     @classmethod
     def _validate_reversal_credit_invoice_links(cls, statement_id: int,
@@ -280,10 +284,17 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         credit_invoice_links = cls._get_statement_credit_invoice_links(short_name_id, statement_id)
         cls._validate_reversal_credit_invoice_links(statement_id, credit_invoice_links)
 
+        alt_flow_invoice_statuses = [InvoiceStatus.REFUND_REQUESTED.value,
+                                     InvoiceStatus.REFUNDED.value,
+                                     InvoiceStatus.CANCELLED.value]
         link_group_id = EFTCreditInvoiceLinkModel.get_next_group_link_seq()
         reversed_credits = 0
         for current_link in credit_invoice_links:
             invoice = InvoiceModel.find_by_id(current_link.invoice_id)
+
+            # Check if the invoice status is handled by other flows and can be skipped
+            if invoice.invoice_status_code in alt_flow_invoice_statuses:
+                continue
 
             if invoice.invoice_status_code != InvoiceStatus.PAID.value:
                 current_app.logger.error(f'EFT Invoice Payment could not be reversed for invoice '

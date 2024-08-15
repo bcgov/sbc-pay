@@ -16,7 +16,8 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List
 
 from flask import current_app
-from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column
+from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column, select
+from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -246,9 +247,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
                 .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
                 .filter(PaymentAccountModel.auth_account_id == auth_account_id)
                 .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
-                                                              InvoiceStatus.PARTIAL.value,
-                                                              InvoiceStatus.CREATED.value,
+                                                              InvoiceStatus.APPROVED.value,
                                                               InvoiceStatus.OVERDUE.value)))
+                .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
                 .filter(~exists()
                         .where(StatementInvoicesModel.invoice_id == InvoiceModel.id))
                 .group_by(InvoiceModel.payment_account_id)
@@ -383,7 +384,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
     def populate_overdue_from_invoices(statements: List[StatementModel]):
         """Populate is_overdue field for statements."""
         # Invoice status can change after a statement has been generated.
-        statement_ids = [statements.id for statements in statements]
+        statement_ids = select(func.unnest(cast([statements.id for statements in statements], ARRAY(INTEGER))))
         overdue_statements = db.session.query(
                 func.count(InvoiceModel.id).label('overdue_invoices'),  # pylint:disable=not-callable
                 StatementInvoicesModel.statement_id) \
