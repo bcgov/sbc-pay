@@ -16,8 +16,8 @@
 from decimal import Decimal
 from attrs import define
 from marshmallow import fields
-from sqlalchemy import ForeignKey, func, select
-from sqlalchemy.dialects.postgresql import INTEGER, array
+from sqlalchemy import ForeignKey, cast, func, select
+from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 from sqlalchemy.orm import relationship
 
 from .base_model import BaseModel
@@ -83,7 +83,7 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     @classmethod
     def find_by_invoice_ids(cls, invoice_ids: list):
         """Return list of line items by list of invoice ids."""
-        invoice_ids = select(func.unnest(array(invoice_ids, type_=INTEGER)))
+        invoice_ids = select(func.unnest(cast(invoice_ids, ARRAY(INTEGER))))
         return db.session.query(PaymentLineItem).filter(PaymentLineItem.invoice_id.in_(
                 invoice_ids)) \
             .order_by(PaymentLineItem.invoice_id.desc()).all()

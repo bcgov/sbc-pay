@@ -18,7 +18,7 @@ from typing import List
 from flask import current_app
 from sql_versioning import history_cls
 from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column, or_, select, union
-from sqlalchemy.dialects.postgresql import INTEGER, array
+from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -457,7 +457,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
     def populate_overdue_from_invoices(statements: List[StatementModel]):
         """Populate is_overdue field for statements."""
         # Invoice status can change after a statement has been generated.
-        statement_ids = select(func.unnest(array([statements.id for statements in statements], type_=INTEGER)))
+        statement_ids = select(func.unnest(cast([statements.id for statements in statements], ARRAY(INTEGER))))
         overdue_statements = db.session.query(
                 func.count(InvoiceModel.id).label('overdue_invoices'),  # pylint:disable=not-callable
                 StatementInvoicesModel.statement_id) \
