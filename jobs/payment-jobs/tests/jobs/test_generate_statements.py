@@ -33,9 +33,8 @@ from sqlalchemy import insert
 from tasks.statement_task import StatementTask
 
 from .factory import (
-    factory_create_account, factory_invoice, factory_invoice_reference, factory_payment,
-    factory_pad_account_payload, factory_eft_account_payload,
-    factory_premium_payment_account, factory_statement_settings)
+    factory_create_account, factory_eft_account_payload, factory_invoice, factory_invoice_reference,
+    factory_pad_account_payload, factory_payment, factory_premium_payment_account, factory_statement_settings)
 
 
 @freeze_time('2023-01-02 12:00:00T08:00:00')
