@@ -350,13 +350,13 @@ ujson = ["ujson (>=5.7.0)"]
 
 [[package]]
 name = "certifi"
-version = "2024.2.2"
+version = "2024.7.4"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2024.2.2-py3-none-any.whl", hash = "sha256:dc383c07b76109f368f6106eee2b593b04a011ea4d55f652c6ca24a754d1cdd1"},
-    {file = "certifi-2024.2.2.tar.gz", hash = "sha256:0569859f95fc761b18b45ef421b1290a0f65f147e92a1e5eb3e635f9a5e4e66f"},
+    {file = "certifi-2024.7.4-py3-none-any.whl", hash = "sha256:c198e21b1289c2ab85ee4e67bb4b4ef3ead0892059901a8d5b622f24a1101e90"},
+    {file = "certifi-2024.7.4.tar.gz", hash = "sha256:5a1e7645bc0ec61a09e26c36f6106dd4cf40c6db3a1fb6352b0244e7fb057c7b"},
 ]
 
 [[package]]
@@ -1957,7 +1957,7 @@ blinker = "1.7.0"
 cachelib = "0.9.0"
 cachetools = "5.3.3"
 cattrs = "23.2.3"
-certifi = "2024.2.2"
+certifi = "2024.7.4"
 cffi = "1.16.0"
 charset-normalizer = "3.3.2"
 click = "8.1.7"
@@ -2011,8 +2011,9 @@ rsa = "4.9"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 semver = "3.0.2"
 sentry-sdk = "1.41.0"
+setuptools = "^72.1.0"
 six = "1.16.0"
-sql-versioning = {git = "https://github.com/bcgov/lear.git", branch = "feature-legal-name", subdirectory = "python/common/sql-versioning"}
+sql-versioning = {git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/sql-versioning"}
 sqlalchemy = "2.0.28"
 sqlalchemy-utils = "0.41.1"
 threadloop = "1.0.2"
@@ -2024,9 +2025,9 @@ werkzeug = "3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "release/1.21.4"
-resolved_reference = "033e1dc2cfbfba80cdf924758e40db6921fc82c4"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "main"
+resolved_reference = "122634fd0b9b7d322fb2928ff40b9e72411c517a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2824,10 +2825,10 @@ develop = false
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/lear.git"
-reference = "feature-legal-name"
-resolved_reference = "e5a432d1460dc84208465ef35c0c81ab02e66f51"
-subdirectory = "python/common/sql-versioning"
+url = "https://github.com/bcgov/sbc-connect-common.git"
+reference = "HEAD"
+resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
+subdirectory = "python/sql-versioning"
 
 [[package]]
 name = "sqlalchemy"
@@ -3168,4 +3169,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "8129ef834408b12456dd11b7d9e52047c543f8f17d9c48f6bafd5586b5d1a241"
+content-hash = "93845f443d47fe70ebf46b98bd5bf422657e2e051b1d3cd34c4085b43fd753ef"
