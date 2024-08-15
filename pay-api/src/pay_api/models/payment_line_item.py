@@ -17,7 +17,7 @@ from decimal import Decimal
 from attrs import define
 from marshmallow import fields
 from sqlalchemy import ForeignKey, func, select
-from sqlalchemy.dialects.postgresql import array, INTEGER
+from sqlalchemy.dialects.postgresql import INTEGER, array
 from sqlalchemy.orm import relationship
 
 from .base_model import BaseModel
