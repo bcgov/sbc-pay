@@ -45,6 +45,8 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
             'bcol_account',
             'bcol_user_id',
             'billable',
+            'has_nsf_invoices',
+            'has_overdue_invoices',
             'branch_name',
             'credit',
             'eft_enable',
@@ -70,6 +72,10 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
 
     bcol_user_id = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)
+
+    # Either of these below block all payments on accounts.
+    has_nsf_invoices = db.Column(db.DateTime, nullable=True)
+    has_overdue_invoices = db.Column(db.DateTime, nullable=True)
 
     # when this is enabled , send out the  notifications
     statement_notification_enabled = db.Column('statement_notification_enabled', Boolean(), default=False)

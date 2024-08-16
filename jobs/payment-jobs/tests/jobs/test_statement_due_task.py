@@ -125,6 +125,7 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
                     mock_auth_event.assert_called()
                     assert statements[0][0].overdue_notification_date
                     assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
+                    assert account.has_overdue_invoices
                 else:
                     due_date = statements[0][0].to_date + relativedelta(months=1)
                     mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
