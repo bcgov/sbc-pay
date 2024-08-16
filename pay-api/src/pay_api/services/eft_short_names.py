@@ -590,7 +590,10 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             StatementInvoicesModel.statement_id == StatementModel.id
         ).join(
             InvoiceModel,
-            InvoiceModel.id == StatementInvoicesModel.invoice_id
+            and_(
+                InvoiceModel.id == StatementInvoicesModel.invoice_id,
+                InvoiceModel.payment_method_code == PaymentMethod.EFT.value
+            )
         ).group_by(StatementModel.payment_account_id)
 
     @classmethod
@@ -644,10 +647,12 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                     CfsAccountModel.status.label('cfs_account_status'),
                                     PaymentAccountModel.name,
                                     PaymentAccountModel.branch_name) \
+            .distinct(EFTShortnameLinksModel.auth_account_id) \
             .outerjoin(PaymentAccountModel,
                        PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id) \
             .outerjoin(CfsAccountModel,
-                       CfsAccountModel.account_id == PaymentAccountModel.id)
+                       CfsAccountModel.account_id == PaymentAccountModel.id) \
+            .order_by(EFTShortnameLinksModel.auth_account_id, EFTShortnameLinksModel.updated_on.desc())
 
         query = db.session.query(EFTShortnameModel.id,
                                  EFTShortnameModel.short_name,
