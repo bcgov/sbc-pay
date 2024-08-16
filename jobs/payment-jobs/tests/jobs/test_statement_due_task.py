@@ -165,8 +165,6 @@ def test_overdue_invoices_updated(setup, session):
     assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
     assert account.payment_method == PaymentMethod.EFT.value
 
-    # Freeze time to 1st of the month - should trigger overdue status update for previous month invoices
-    with freeze_time(current_local_time().replace(day=1)):
-        StatementDueTask.process_unpaid_statements()
-        assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
-        assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
+    StatementDueTask.process_unpaid_statements()
+    assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
+    assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
