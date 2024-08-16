@@ -14,12 +14,14 @@
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
 from decimal import Decimal
+import json
 from typing import List, Optional
 from urllib.parse import unquote_plus, urlencode
 
 from attrs import define
 from dateutil import parser
 from flask import current_app
+from requests import HTTPError
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -202,13 +204,32 @@ class DirectPayService(PaymentSystemService, OAuthService):
         refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
         access_token: str = self._get_refund_token().json().get('access_token')
         data = self.build_automated_refund_payload(invoice, refund_partial)
-        refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
-                                    ContentType.JSON, data, auth_header_name='Bearer-Token').json()
-        # Check if approved is 1=Success
-        if refund_response.get('approved') != 1:
-            message = 'Refund error: ' + refund_response.get('message')
-            current_app.logger.error(message)
-            raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
+
+        try:
+            refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
+                                        ContentType.JSON, data, auth_header_name='Bearer-Token').json()
+            # Check if approved is 1=Success
+            if refund_response.get('approved') != 1:
+                message = 'Refund error: ' + refund_response.get('message')
+                current_app.logger.error(message)
+                raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
+
+        except HTTPError as e:
+            current_app.logger.error(f'PayBC Refund request failed: {str(e)}')
+            error_detail = None
+            error = Error.DIRECT_PAY_INVALID_RESPONSE
+            if e.response:
+                try:
+                    error_response = json.loads(e.response.text)
+                    error.detail = error_response.get('errors')
+                except json.JSONDecodeError:
+                    error_detail = 'Error decoding JSON response from PayBC.'
+            else:
+                error_detail = str(e)
+
+            error.detail = error_detail
+            raise BusinessException(error) from e
+
         current_app.logger.debug('>process_cfs_refund')
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):

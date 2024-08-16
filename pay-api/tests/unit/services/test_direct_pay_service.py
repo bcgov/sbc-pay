@@ -243,7 +243,7 @@ def test_process_cfs_refund_duplicate_refund(session, monkeypatch):
                 'Duplicate refund - Refund has been already processed'
             ]
         }
-        with pytest.raises(HTTPError) as excinfo:
+        with pytest.raises(BusinessException) as excinfo:
             direct_pay_service.process_cfs_refund(invoice, payment_account, None)
             assert invoice.invoice_status_code == InvoiceStatus.PAID.value
 
