@@ -1939,7 +1939,7 @@ semver = "3.0.2"
 sentry-sdk = "1.41.0"
 setuptools = "^72.1.0"
 six = "1.16.0"
-sql-versioning = {git = "https://github.com/bcgov/lear.git", branch = "feature-legal-name", subdirectory = "python/common/sql-versioning"}
+sql-versioning = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/sql-versioning"}
 sqlalchemy = "2.0.28"
 sqlalchemy-utils = "0.41.1"
 threadloop = "1.0.2"
@@ -1952,8 +1952,8 @@ werkzeug = "3.0.1"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "production_release_fixes"
-resolved_reference = "19bc2350a0136de5fa34d8b2cb9d7f4d9caf4e33"
+reference = "22843"
+resolved_reference = "4f8d7737f3659eb0d2ac62bf0d5ce83a6f0b20a4"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2726,10 +2726,10 @@ develop = false
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/lear.git"
-reference = "feature-legal-name"
-resolved_reference = "e5a432d1460dc84208465ef35c0c81ab02e66f51"
-subdirectory = "python/common/sql-versioning"
+url = "https://github.com/bcgov/sbc-connect-common.git"
+reference = "main"
+resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
+subdirectory = "python/sql-versioning"
 
 [[package]]
 name = "sqlalchemy"
@@ -3070,4 +3070,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "c6562ace0225941f23f0c7fd1ac5daaa9477fe8c6c5bbd069dc0e5f3425832cf"
+content-hash = "0248e416b185f9181f13c360f539c069dee138caf8e96182f1fbfbd18a799da3"

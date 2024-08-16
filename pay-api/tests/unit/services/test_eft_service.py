@@ -17,13 +17,14 @@
 Test-Suite to ensure that the EFT Service is working as expected.
 """
 
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.services.eft_service import EftService
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.errors import Error
-from tests.utilities.base_test import factory_invoice, factory_payment_account
+from tests.utilities.base_test import factory_payment_account
 
 
 eft_service = EftService()
@@ -52,8 +53,8 @@ def test_has_no_payment_blockers(session):
 def test_has_payment_blockers(session):
     """Test has payment blockers."""
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    payment_account.has_overdue_invoices = datetime.now(tz=timezone.utc)
     payment_account.save()
-    factory_invoice(payment_account, status_code=InvoiceStatus.OVERDUE.value).save()
 
     with pytest.raises(BusinessException):
         eft_service.ensure_no_payment_blockers(payment_account)
