@@ -253,7 +253,9 @@ def test_statement_summary(session, client, jwt, app):
     oldest_due_date = datetime.now(tz=timezone.utc) + relativedelta(months=1)
     for _ in range(5):
         rv = client.post('/api/v1/payment-requests',
-                         data=json.dumps(get_payment_request(business_identifier='CP0002000')),
+                         data=json.dumps(get_payment_request_with_payment_method(business_identifier='CP0002000',
+                                                                                 payment_method=PaymentMethod.EFT.value)
+                                         ),
                          headers=headers)
         invoice_ids.append(rv.json.get('id'))
 
