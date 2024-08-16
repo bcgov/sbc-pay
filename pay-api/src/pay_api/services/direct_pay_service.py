@@ -216,9 +216,18 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         except HTTPError as e:
             current_app.logger.error(f'PayBC Refund request failed: {str(e)}')
-            error_response = json.loads(e.response.text)
+            error_detail = None
             error = Error.DIRECT_PAY_INVALID_RESPONSE
-            error.detail = error_response.get('errors')
+            if e.response:
+                try:
+                    error_response = json.loads(e.response.text)
+                    error.detail = error_response.get('errors')
+                except json.JSONDecodeError:
+                    error_detail = 'Error decoding JSON response from PayBC.'
+            else:
+                error_detail = str(e)
+
+            error.detail = error_detail
             raise BusinessException(error) from e
 
         current_app.logger.debug('>process_cfs_refund')
