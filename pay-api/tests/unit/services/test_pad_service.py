@@ -20,9 +20,8 @@ Test-Suite to ensure that the PAD Banking layer is working as expected.
 from datetime import datetime, timezone
 import pytest
 from pay_api.exceptions import BusinessException
-from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.pad_service import PadService
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
+from pay_api.utils.enums import PaymentMethod
 from tests.utilities.base_test import factory_payment_account
 
 
