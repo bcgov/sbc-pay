@@ -19,6 +19,7 @@ Test-Suite to ensure that the EFTTask for electronic funds transfer is working a
 from unittest.mock import patch
 
 import pytest
+from datetime import datetime, timezone
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -241,6 +242,7 @@ def test_unlock_overdue_accounts(session):
     """Test unlock overdue account events."""
     auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
     payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
+    payment_account.has_overdue_invoices = datetime.now(tz=timezone.utc)
     invoice_1 = factory_invoice(payment_account=payment_account, payment_method_code=PaymentMethod.EFT.value, total=10)
     invoice_1.invoice_status_code = InvoiceStatus.OVERDUE.value
     invoice_1.save()
@@ -259,5 +261,6 @@ def test_unlock_overdue_accounts(session):
 
     with patch('utils.auth_event.AuthEvent.publish_unlock_account_event') as mock_unlock:
         EFTTask.link_electronic_funds_transfers_cfs()
+        assert payment_account.has_overdue_invoices is None
         mock_unlock.assert_called_once()
         mock_unlock.assert_called_with(payment_account)

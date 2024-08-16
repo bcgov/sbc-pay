@@ -19,8 +19,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from flask import current_app
-from sentry_sdk import capture_message
 from sbc_common_components.utils.enums import QueueMessageTypes
+from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -34,14 +34,12 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.flags import flags
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    CfsAccountStatus, CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources,
-    TransactionStatus)
+    CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
@@ -146,13 +144,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     def ensure_no_payment_blockers(self, payment_account: PaymentAccount) -> None:  # pylint: disable=unused-argument
         """Ensure no payment blockers are present."""
-        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
-        if cfs_account and cfs_account.status == CfsAccountStatus.FREEZE.value:
+        if payment_account.has_nsf_invoices:
             # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
             current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
-        if flags.is_on('enable-eft-payment-method', default=False) and \
-                Invoice.has_overdue_invoices(payment_account.id):
+        if payment_account.has_overdue_invoices:
             raise BusinessException(Error.EFT_INVOICES_OVERDUE)
 
     @staticmethod
