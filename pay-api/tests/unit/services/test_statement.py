@@ -431,6 +431,30 @@ def get_statement_date_string(datetime_value: datetime) -> str:
     date_format = '%Y-%m-%d'
     return datetime_value.strftime(date_format)
 
+def test_fast_switching_interim_statement(session, admin_users_mock):
+    # Create account with DRAWDOWN -> EFT -> DRAWDOWN -> EFT
+    account_create_date = datetime(2024, 5, 30, 12, 0)
+    account = None
+    pad_payload = get_premium_account_payload(payment_method=PaymentMethod.PAD.value)
+    eft_payload = get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
+                                                 account_id=account.auth_account_id)
+    with freeze_time(account_create_date):
+        account = PaymentAccountService.create(pad_payload)
+        
+    update_date = localize_date(datetime(2024, 5, 30, 13))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id, eft_payload)
+    update_date = localize_date(datetime(2024, 5, 30, 14))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id, pad_payload)
+    update_date = localize_date(datetime(2024, 5, 30, 15))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id, eft_payload)
+    update_date = localize_date(datetime(2024, 5, 30, 16))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id, pad_payload)
+        
+
 
 def test_get_eft_statement_for_empty_invoices(session):
     """Assert that the get statement report works for eft statement with no invoices."""

@@ -247,8 +247,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return (db.session.query(func.sum(InvoiceModel.total - InvoiceModel.paid).label('invoices_owing'))
                 .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
                 .filter(PaymentAccountModel.auth_account_id == auth_account_id)
-                .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
-                                                              InvoiceStatus.APPROVED.value,
+                .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.APPROVED.value,
                                                               InvoiceStatus.OVERDUE.value)))
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
                 .filter(~exists()
@@ -435,14 +434,14 @@ class Statement:  # pylint:disable=too-many-instance-attributes
                 'startDate': statement_from.strftime('%Y-%m-%d'),
                 'endDate': statement_to.strftime('%Y-%m-%d')
             },
-            'authAccountIds': [account.auth_account_id]
+            'authAccountIds': [account.auth_account_id],
+            'matchPaymentMethods': True
         }
 
         invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(statement_filter)
         invoice_ids = list(invoice_detail_tuple)
         payment_methods_string = Statement.determine_payment_methods(invoice_detail_tuple, account)
 
-        # Generate interim statement
         statement = StatementModel(
             frequency=active_settings.frequency,
             statement_settings_id=active_settings.id,
