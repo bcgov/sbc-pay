@@ -361,7 +361,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
                                                           InvoiceStatus.PARTIAL.value,
                                                           InvoiceStatus.APPROVED.value,
                                                           InvoiceStatus.OVERDUE.value))) \
-            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id)
+            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id) \
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
 
         if statement_id:
             result = result.filter(StatementInvoicesModel.statement_id == statement_id)
