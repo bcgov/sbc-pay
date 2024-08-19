@@ -160,7 +160,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if account.payment_method == target_payment_method or \
                 PaymentMethod.EFT.value not in {account.payment_method, target_payment_method}:
             return
-        
+
         if (account.payment_method == PaymentMethod.EFT.value and
                 flags.is_on('enable-payment-change-from-eft', default=False)):
             raise BusinessException(Error.EFT_PAYMENT_ACTION_UNSUPPORTED)
