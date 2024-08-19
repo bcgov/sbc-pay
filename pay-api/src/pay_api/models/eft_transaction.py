@@ -66,7 +66,8 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     error_messages = db.Column(ARRAY(String, dimensions=1), nullable=True)
     file_id = db.Column(db.Integer, ForeignKey('eft_files.id'), nullable=False, index=True)
-    last_updated_on = db.Column('last_updated_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    last_updated_on = db.Column('last_updated_on', db.DateTime, nullable=False,
+                                default=lambda: datetime.now(tz=timezone.utc))
     line_number = db.Column('line_number', db.Integer, nullable=False)
     line_type = db.Column('line_type', db.String(), nullable=False)
     jv_type = db.Column('jv_type', db.String(1), nullable=True)
