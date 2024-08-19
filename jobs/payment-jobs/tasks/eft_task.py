@@ -246,8 +246,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             raise Exception(f'Completed invoice reference '  # pylint: disable=broad-exception-raised
                             f'not found for invoice id: {invoice.id}')
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
-
-        if invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value:
+        is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+        if is_invoice_refund:
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             adjustment_negative_amount = -invoice.total
             # TODO: I don't think this will work because it's rolled up, we need to actually adjust the invoice
@@ -265,7 +265,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice.invoice_status_code = InvoiceStatus.APPROVED.value
         invoice_reference.flush()
         invoice.flush()
-        if payment := PaymentModel.find_payment_for_invoice(invoice.id):
-            db.session.delete(payment)
-        for receipt in ReceiptModel.find_all_receipts_for_invoice(invoice.id):
-            db.session.delete(receipt)
+        if not is_invoice_refund:
+            if payment := PaymentModel.find_payment_for_invoice(invoice.id):
+                db.session.delete(payment)
+            for receipt in ReceiptModel.find_all_receipts_for_invoice(invoice.id):
+                db.session.delete(receipt)
