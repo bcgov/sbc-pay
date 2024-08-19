@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle EFT file processing."""
+"""Model to handle EFT REFUNDS, this is picked up by the AP job to mail out."""
 from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey
