@@ -121,14 +121,7 @@ class EftService(DepositService):
         # 3. EFT Credit Link - COMPLETED
         #  (Invoice and receipt exists, they both need to be reversed.)
         for cil in cil_completed:
-            eft_credit = EFTShortnames.return_eft_credit(cil_completed, EFTCreditInvoiceStatus.PENDING_REFUND.value)
-            EFTCreditInvoiceLinkModel(
-                 eft_credit_id=eft_credit.id,
-                 amount=invoice.paid,
-                 status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
-                 invoice_id=invoice.id,
-                 link_group_id=EFTCreditInvoiceLinkModel.get_next_group_link_seq()) \
-                .save()
+            EFTShortnames.return_eft_credit(cil_completed, EFTCreditInvoiceStatus.PENDING_REFUND.value)
         return InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
