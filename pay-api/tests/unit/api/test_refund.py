@@ -21,6 +21,7 @@ import json
 
 from datetime import datetime, timezone
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -365,3 +366,41 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     assert rv.status_code == 400
     assert rv.json.get('type') == Error.INVALID_REQUEST.name
     assert RefundModel.find_by_invoice_id(inv_id) is None
+
+
+def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):
+    """Assert that the endpoint returns 400 with detail."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(
+                         get_payment_request_with_payment_method(
+                             business_identifier='CP0002000', payment_method='DIRECT_PAY'
+                         )
+                     ),
+                     headers=headers)
+    inv_id = rv.json.get('id')
+    invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    def mock_process_cfs_refund(self, invoice, payment_account, refund_partial):
+        error = Error.DIRECT_PAY_INVALID_RESPONSE
+        error.detail = ['Transaction does not exist']
+        raise BusinessException(error)
+
+    monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService.process_cfs_refund',
+                        mock_process_cfs_refund)
+
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+
+    assert rv.status_code == 400
+    assert rv.json == {
+        'type': Error.DIRECT_PAY_INVALID_RESPONSE.name,
+        'detail': ['Transaction does not exist']
+    }

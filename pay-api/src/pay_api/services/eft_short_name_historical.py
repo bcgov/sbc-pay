@@ -41,6 +41,7 @@ class EFTShortnameHistory:  # pylint: disable=too-many-instance-attributes
     statement_number: Optional[int] = None
     hidden: Optional[bool] = False
     is_processing: Optional[bool] = False
+    invoice_id: Optional[int] = None
 
 
 @dataclass
@@ -105,6 +106,25 @@ class EFTShortnameHistorical:
         )
 
     @staticmethod
+    @user_context
+    def create_invoice_refund(history: EFTShortnameHistory, **kwargs) -> EFTShortnamesHistoricalModel:
+        """Create EFT Short name invoice refund historical record."""
+        return EFTShortnamesHistoricalModel(
+            amount=history.amount,
+            created_by=kwargs['user'].user_name,
+            credit_balance=history.credit_balance,
+            hidden=history.hidden,
+            is_processing=history.is_processing,
+            payment_account_id=history.payment_account_id,
+            related_group_link_id=history.related_group_link_id,
+            short_name_id=history.short_name_id,
+            statement_number=history.statement_number,
+            invoice_id=history.invoice_id,
+            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_type=EFTHistoricalTypes.INVOICE_REFUND.value
+        )
+
+    @staticmethod
     def transaction_date_now() -> datetime:
         """Construct transaction datetime using the utc timezone."""
         return datetime.now(tz=timezone.utc)
@@ -132,7 +152,8 @@ class EFTShortnameHistorical:
             )
             .where(
                 latest_history_model.short_name_id == history_model.short_name_id,
-                latest_history_model.statement_number == history_model.statement_number
+                latest_history_model.statement_number == history_model.statement_number,
+                latest_history_model.transaction_type != EFTHistoricalTypes.INVOICE_REFUND.value
             )
             .order_by(
                 latest_history_model.statement_number,
@@ -169,6 +190,7 @@ class EFTShortnameHistorical:
                                   history_model.short_name_id,
                                   history_model.amount,
                                   history_model.credit_balance,
+                                  history_model.invoice_id,
                                   history_model.statement_number,
                                   history_model.transaction_date,
                                   history_model.transaction_type,

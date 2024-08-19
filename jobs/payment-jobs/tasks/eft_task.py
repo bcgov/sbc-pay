@@ -164,6 +164,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         for (payment_account_id, payment_account) in cls.overdue_account_ids.items():
             if InvoiceService.has_overdue_invoices(payment_account_id):
                 continue
+            payment_account.has_overdue_invoices = None
+            payment_account.save()
             AuthEvent.publish_unlock_account_event(payment_account)
 
     @classmethod

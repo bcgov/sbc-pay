@@ -4,8 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - feature-queue-python-upgrade
-      - release*
+      - release/*
     paths:
       - "jobs/payment-jobs/**"
       - "pay-api/src/pay_api/models/**"

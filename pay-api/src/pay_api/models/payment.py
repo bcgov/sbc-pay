@@ -19,7 +19,8 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, not_, or_, text
+from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select, text
+from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql.expression import literal
 
@@ -264,20 +265,23 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_invoices_and_payment_accounts_for_statements(cls, search_filter: Dict):
         """Slimmed down version for statements."""
+        auth_account_ids = select(func.unnest(cast(search_filter.get('authAccountIds', []), ARRAY(TEXT))))
         query = db.session.query(Invoice) \
             .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)\
-            .filter(PaymentAccount.auth_account_id.in_(search_filter.get('authAccountIds', [])))
-
+            .filter(PaymentAccount.auth_account_id.in_(auth_account_ids))
         # If an account is within these payment methods - limit invoices to these payment methods.
         # Used for transitioning payment method and an interim statement is created (There could be different payment
         # methods for the transition day and we don't want it on both statements)
-        if payment_methods := search_filter.get('matchPaymentMethods', None):
+        if search_filter.get('matchPaymentMethods', None):
             query = query.filter(
                 or_(
-                    not_(PaymentAccount.payment_method.in_(payment_methods)),
-                    and_(PaymentAccount.payment_method.in_(payment_methods),
-                         Invoice.payment_method_code == PaymentAccount.payment_method)
-                ))
+                    and_(PaymentAccount.payment_method == PaymentMethodEnum.EFT.value,
+                         Invoice.payment_method_code == PaymentAccount.payment_method),
+                    and_(PaymentAccount.payment_method != PaymentMethodEnum.EFT.value,
+                         Invoice.payment_method_code != PaymentMethodEnum.EFT.value
+                         )
+                )
+            )
 
         query = cls.filter_date(query, search_filter).with_entities(Invoice.id,
                                                                     Invoice.payment_method_code,
