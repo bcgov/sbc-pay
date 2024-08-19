@@ -248,9 +248,14 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         invoice_reference.flush()
-        invoice.invoice_status_code = InvoiceStatus.APPROVED.value
-        invoice.paid = 0
-        invoice.payment_date = None
+        if invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value:
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+            invoice.refund_date = datetime.now(tz=timezone.utc)
+            invoice.refund = invoice.paid
+        else:
+            invoice.paid = 0
+            invoice.payment_date = None
+            invoice.invoice_status_code = InvoiceStatus.APPROVED.value
         invoice.flush()
         if payment := PaymentModel.find_payment_for_invoice(invoice.id):
             db.session.delete(payment)
