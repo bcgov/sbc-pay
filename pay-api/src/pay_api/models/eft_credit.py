@@ -50,7 +50,7 @@ class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
 
     amount = db.Column(db.Numeric(19, 2), nullable=False)
     remaining_amount = db.Column(db.Numeric(19, 2), nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
 
     eft_file_id = db.Column(db.Integer, ForeignKey('eft_files.id'), nullable=False)
     short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)

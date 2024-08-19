@@ -51,7 +51,7 @@ class StatementSettings(BaseModel):
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
-    from_date = db.Column(db.Date, default=datetime.now(tz=timezone.utc).date(), nullable=False)
+    from_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
 
     @classmethod
