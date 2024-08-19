@@ -21,7 +21,7 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime, timezone
 
 from pay_api.models import Invoice, InvoiceSchema
-from pay_api.utils.enums import InvoiceStatus
+from pay_api.utils.enums import CorpType, InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
@@ -91,3 +91,29 @@ def test_overdue_date(session, test_name, created_on, overdue_date):
     invoice = factory_invoice(created_on=created_on, payment_account=factory_payment_account())
     invoice.save()
     assert invoice.overdue_date == overdue_date
+
+
+def test_invoice_created_on(session):
+    """Assert a invoice created_on isn't the same for two invoices."""
+    payment_account = factory_payment_account()
+    dates = []
+    for _ in range(2):
+        invoice = Invoice(
+            invoice_status_code=InvoiceStatus.CREATED.value,
+            payment_account_id=payment_account.id,
+            total=0,
+            paid=0,
+            created_by='test',
+            created_name='hey',
+            business_identifier=None,
+            corp_type_code=CorpType.VS.value,
+            folio_number=None,
+            service_fees=0,
+            bcol_account=payment_account.bcol_account,
+            payment_method_code=PaymentMethod.DIRECT_PAY.value,
+            routing_slip=None,
+            details=[]
+        )
+        invoice.save()
+        dates.append(invoice.created_on)
+    assert dates[0] != dates[1]

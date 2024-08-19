@@ -27,8 +27,8 @@ class Audit(BaseModel):  # pylint: disable=too-few-public-methods
 
     __abstract__ = True
 
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
-    updated_on = db.Column('updated_on', db.DateTime, default=None, onupdate=datetime.now(tz=timezone.utc))
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    updated_on = db.Column('updated_on', db.DateTime, default=None, onupdate=lambda: datetime.now(tz=timezone.utc))
 
     @declared_attr
     def created_by(cls):  # pylint:disable=no-self-argument, # noqa: N805

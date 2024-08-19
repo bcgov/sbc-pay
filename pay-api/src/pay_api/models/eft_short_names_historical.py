@@ -59,7 +59,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     amount = db.Column(db.Numeric(19, 2), nullable=False)
     created_by = db.Column(db.String, nullable=True)
-    created_on = db.Column(db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    created_on = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     credit_balance = db.Column(db.Numeric(19, 2), nullable=False)
     hidden = db.Column(db.Boolean(), nullable=False, default=False, index=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=True, index=True)
