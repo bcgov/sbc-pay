@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Routing Slip Comment data."""
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import relationship
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declared_attr
@@ -53,7 +53,7 @@ class Comment(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     comment = db.Column(db.String(4096))
-    timestamp = db.Column('timestamp', db.DateTime(timezone=True), default=datetime.utcnow)
+    timestamp = db.Column('timestamp', db.DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))
     # Parent relationship
     routing_slip_number = db.Column(db.String(), ForeignKey('routing_slips.number'), index=True)
     routing_slip = relationship(RoutingSlip, foreign_keys=[routing_slip_number], lazy='select', innerjoin=True)
