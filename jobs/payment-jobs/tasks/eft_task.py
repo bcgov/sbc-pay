@@ -249,6 +249,13 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         invoice_reference.flush()
         if invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value:
+            # Adjust to zero: -invoice.total + invoice.total = 0
+            adjustment_negative_amount = -invoice.total
+            # TODO: I don't think this will work because it's rolled up, we need to actually adjust the invoice
+            # Because it wont be adjusted to zero, it could have left over
+            CFSService.adjust_invoice(cfs_account=cfs_account,
+                                      inv_number=invoice_reference.invoice_number,
+                                      amount=adjustment_negative_amount)
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
             invoice.refund_date = datetime.now(tz=timezone.utc)
             invoice.refund = invoice.paid
