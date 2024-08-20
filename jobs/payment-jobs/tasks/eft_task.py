@@ -104,7 +104,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 # Handles 4. EFT Credit Link - COMPLETED from refund flow. See eft_service refund.
                 query = query.filter(or_(InvoiceModel.disbursement_status_code.is_(
                     None), InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value))
-                query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
+                query = query.filter(InvoiceModel.invoice_status_code.in_(InvoiceStatus.PAID.value,
+                                                                          InvoiceStatus.REFUND_REQUESTED.value))
             case _:
                 pass
         return query.order_by(InvoiceModel.payment_account_id, cil_rollup.c.invoice_id).all()
