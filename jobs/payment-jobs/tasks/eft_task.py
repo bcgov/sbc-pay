@@ -201,7 +201,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             if cil.status_code == EFTCreditInvoiceStatus.CANCELLED.value:
                 continue
             cil.status_code = EFTCreditInvoiceStatus.COMPLETED.value if receipt_number \
-                    else EFTCreditInvoiceStatus.REFUNDED.value
+                else EFTCreditInvoiceStatus.REFUNDED.value
             cil.receipt_number = receipt_number or cil.receipt_number
             cil.flush()
             cls._finalize_shortname_history(cls.history_group_ids, cil)
