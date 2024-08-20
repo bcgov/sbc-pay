@@ -266,8 +266,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice.paid = 0
             invoice.payment_date = None
             invoice.invoice_status_code = InvoiceStatus.APPROVED.value
-        invoice_reference.flush()
-        invoice.flush()
+            invoice_reference.flush()
+            invoice.flush()
         if is_reversal:
             if payment := PaymentModel.find_payment_for_invoice(invoice.id):
                 db.session.delete(payment)
@@ -285,3 +285,5 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.paid
+        invoice_reference.flush()
+        invoice.flush()
