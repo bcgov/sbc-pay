@@ -183,6 +183,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             try:
                 cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
+                db.session.commit()
             except Exception as e:   # NOQA # pylint: disable=broad-except
                 capture_message(
                     f'Error on reversing unlinked REFUND_REQUESTED EFT invoice in CFS '
