@@ -43,6 +43,6 @@ class CasSettlement(BaseModel):  # pylint: disable=too-few-public-methods
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    received_on = db.Column('received_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    received_on = db.Column('received_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     file_name = db.Column(db.String, nullable=False)
     processed_on = db.Column('processed_on', db.DateTime, nullable=True)
