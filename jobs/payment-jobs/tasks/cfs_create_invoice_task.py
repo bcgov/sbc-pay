@@ -403,7 +403,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     if not invoice_total_matches:
                         capture_message(f'Error on creating EFT invoice: account id={payment_account.id}, '
                                         f'auth account : {payment_account.auth_account_id}, Invoice exists: '
-                                        f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice.total}',
+                                        f' CAS total: {invoice_response.get("total", 0)}, '
+                                        f'PAY-BC total: {invoice.total}',
                                         level='error')
                         current_app.logger.error(e)
                         continue
