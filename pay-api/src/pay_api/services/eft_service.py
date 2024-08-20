@@ -110,18 +110,27 @@ class EftService(DepositService):
         if not (cils := EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)):
             return InvoiceStatus.REFUND_REQUESTED.value
 
-        cil_pending = [cil for cil in cils
-                       if cil.status_code == EFTCreditInvoiceStatus.PENDING.value]
-        cil_completed = [cil for cil in cils
-                         if cil.status_code == EFTCreditInvoiceStatus.COMPLETED.value]
-        # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
-        # (Invoice needs to be reversed, receipt doesn't exist.)
-        for cil in cil_pending:
-            EFTShortnames.return_eft_credit(cil, EFTCreditInvoiceStatus.CANCELLED.value)
-        # 4. EFT Credit Link - COMPLETED
-        #  (Invoice needs to be reversed and receipt needs to be reversed.)
-        for cil in cil_completed:
-            EFTShortnames.return_eft_credit(cil_completed, EFTCreditInvoiceStatus.PENDING_REFUND.value)
+        latest_link = cils[0]
+        sibiling_cils = [cil for cil in cils if cil.group_id == latest_link.group_id]
+        match latest_link.status_code:
+            case EFTCreditInvoiceStatus.PENDING.value:
+                # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
+                # (Invoice needs to be reversed, receipt doesn't exist.)
+                for cil in sibiling_cils:
+                    EFTShortnames.return_eft_credit(cil, EFTCreditInvoiceStatus.CANCELLED.value)
+            case EFTCreditInvoiceStatus.COMPLETED.value:
+                # 4. EFT Credit Link - COMPLETED
+                # (Invoice needs to be reversed and receipt needs to be reversed.)
+                for cil in sibiling_cils:
+                    EFTShortnames.return_eft_credit(cil)
+                    EFTCreditInvoiceLinkModel(
+                        eft_credit_id=cil.eft_credit_id,
+                        status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
+                        amount=cil.amount,
+                        receipt_number=cil.receipt_number,
+                        invoice_id=invoice.id,
+                        link_group_id=cil.link_group_id).flush()
+            
         return InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod

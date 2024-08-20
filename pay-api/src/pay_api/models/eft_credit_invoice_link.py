@@ -68,7 +68,8 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     @classmethod
     def find_by_invoice_id(cls, invoice_id: int):
         """Find links by invoice id."""
-        return cls.query.filter_by(invoice_id=invoice_id).all()
+        # Order is important here, we use it in the jobs.
+        return cls.query.filter_by(invoice_id=invoice_id).order_by(EFTCreditInvoiceLink.id.desc()).all()
 
     @classmethod
     def get_next_group_link_seq(cls):
