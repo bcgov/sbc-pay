@@ -255,7 +255,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice.id, InvoiceReferenceStatus.COMPLETED.value
         )):
             raise Exception(f'Completed invoice reference '  # pylint: disable=broad-exception-raised
-                            f'not found for invoice id: {invoice.id}')
+                            f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
         is_reversal = not is_invoice_refund
@@ -280,34 +280,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                invoice: InvoiceModel,
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a rolled up invoice."""
-        lines = CFSService.build_lines(invoice.payment_line_items)
-        cfs_invoice = CFSService.get_invoice(cfs_account=cfs_account, inv_number=invoice_reference.invoice_number)
-        for line in cfs_invoice.get('lines', []):
-            if line.get('activityName') == 'Service Fee':
-                service_fee_line_number = line.get('lineNumber')
-            elif line.get('activityName') == 'Payment':
-                payment_line_number = line.get('lineNumber')
-
-        adjustment_lines = []
-        for line in lines:
-            # Determine line number, determine amount
-            # Raise exception if we can't map the adjustment.
-            line_number = 10
-            if not line_number:
-                raise BusinessException('Unable to determine line number for adjustment')
-            adjustment_lines.append({
-                'line_number': line.get('lineNumber'),
-                'adjustment_amount': str(-line.get('lineAmount')),
-                'activity_name': CFS_ADJ_ACTIVITY_NAME
-            })
-
-        adjustment = {
-            'comment': 'Invoice cancellation',
-            'lines': adjustment_lines
-        }
-        CFSService.adjust_invoice(cfs_account=cfs_account,
-                                  inv_number=invoice_reference.invoice_number,
-                                  adjustment=adjustment)
+        CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, -invoice.total)
         invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)

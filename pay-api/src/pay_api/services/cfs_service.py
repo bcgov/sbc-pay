@@ -491,7 +491,7 @@ class CFSService(OAuthService):
         return adjustment_response.json()
 
     @classmethod
-    def adjust_invoice(cls, cfs_account: CfsAccountModel, inv_number: str, amount=0.0, adjustment=None):
+    def adjust_invoice(cls, cfs_account: CfsAccountModel, inv_number: str, amount=0.0):
         """Add adjustment to the invoice."""
         current_app.logger.debug('>Creating Adjustment for Invoice: %s', inv_number)
         access_token: str = CFSService.get_token().json().get('access_token')
@@ -500,7 +500,7 @@ class CFSService(OAuthService):
                          f'{cfs_account.cfs_site}/invs/{inv_number}/adjs/'
         current_app.logger.debug('Adjustment URL %s', adjustment_url)
 
-        adjustment = adjustment or {
+        adjustment = {
             'comment': 'Invoice cancellation',
             'lines': [
                 {
