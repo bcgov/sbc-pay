@@ -264,3 +264,16 @@ def test_unlock_overdue_accounts(session):
         assert payment_account.has_overdue_invoices is None
         mock_unlock.assert_called_once()
         mock_unlock.assert_called_with(payment_account)
+
+
+def test_handle_invoice_refund(session):
+    invoice = factory_invoice()
+    invoice_reference = factory_invoice_reference(invoice_id=invoice.id)
+    cfs_account = CfsAccountModel(
+        cfs_account=344312,
+        cfs_party=113029,
+        cfs_site=538260,
+    ) 
+    # TODO mocks here.
+    EFTTask._handle_invoice_refund(cfs_account, invoice, invoice_reference)  # pylint: disable=protected-access
+    assert invoice

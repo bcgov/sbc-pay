@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from flask import current_app
 
+from pay_api.utils.constants import CFS_ADJ_ACTIVITY_NAME
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
@@ -37,6 +38,17 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import lazyload, registry
 
 from utils.auth_event import AuthEvent
+
+
+@dataclass
+class EFTCILRollup:
+    """Dataclass for rollup so we don't use a tuple instead."""
+
+    invoice_id: int
+    status_code: str
+    receipt_number: str
+    link_ids: List[int]
+    rollup_amount: Decimal
 
 
 class EFTTask:  # pylint:disable=too-few-public-methods
@@ -68,16 +80,6 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                       EFTCreditInvoiceLinkModel.receipt_number) \
             .subquery()
 
-        @dataclass
-        class EFTCILRollup:
-            """Dataclass for rollup so we don't use a tuple instead."""
-
-            invoice_id: int
-            status_code: str
-            receipt_number: str
-            link_ids: List[int]
-            rollup_amount: Decimal
-
         registry().map_imperatively(EFTCILRollup, cil_rollup, primary_key=[cil_rollup.c.invoice_id,
                                                                            cil_rollup.c.status_code,
                                                                            cil_rollup.c.receipt_number])
@@ -91,6 +93,9 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             .filter(InvoiceModel.total == cil_rollup.c.rollup_amount)
 
         match status:
+            case EFTCreditInvoiceStatus.CANCELLED.value:
+                query = query.filter(
+                    InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
             case EFTCreditInvoiceStatus.PENDING.value:
                 query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
                 query = query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value,
@@ -135,8 +140,10 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def reverse_electronic_funds_transfers_cfs(cls):
         """Reverse electronic funds transfers receipts in CFS and reset invoices."""
-        target_status = EFTCreditInvoiceStatus.PENDING_REFUND.value
-        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(target_status)
+        pending_refund_status = EFTCreditInvoiceStatus.PENDING_REFUND.value
+        cancelled_status = EFTCreditInvoiceStatus.CANCELLED.value
+        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(pending_refund_status) + \
+              cls.get_eft_credit_invoice_links_by_status(cancelled_status)
         cls.history_group_ids = set()
         for invoice, cfs_account, cil_rollup in credit_invoice_links:
             try:
@@ -191,16 +198,17 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         cils = db.session.query(EFTCreditInvoiceLinkModel).filter(
             EFTCreditInvoiceLinkModel.id.in_(cil_rollup.link_ids)).all()
         for cil in cils:
-            cil.status_code = EFTCreditInvoiceStatus.COMPLETED.value if receipt_number \
-                     else EFTCreditInvoiceStatus.REFUNDED.value
-            cil.receipt_number = receipt_number or cil.receipt_number
-            cil.flush()
+            if cil.status_code != EFTCreditInvoiceStatus.CANCELLED.value:
+                cil.status_code = EFTCreditInvoiceStatus.COMPLETED.value if receipt_number \
+                        else EFTCreditInvoiceStatus.REFUNDED.value
+                cil.receipt_number = receipt_number or cil.receipt_number
+                cil.flush()
             cls._finalize_shortname_history(cls.history_group_ids, cil)
 
     @classmethod
     def _create_receipt_and_invoice(cls,
                                     cfs_account: CfsAccountModel,
-                                    cil_rollup: EFTCreditInvoiceLinkModel,
+                                    cil_rollup: EFTCILRollup,
                                     invoice: InvoiceModel,
                                     receipt_number: str):
         """Create receipt in CFS and marks invoice as paid, with payment and receipt rows."""
@@ -249,17 +257,9 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                             f'not found for invoice id: {invoice.id}')
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+        is_reversal = not is_invoice_refund
         if is_invoice_refund:
-            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
-            adjustment_negative_amount = -invoice.total
-            # TODO: I don't think this will work because it's rolled up, we need to actually adjust the invoice
-            # Because it wont be adjusted to zero, it could have left over
-            CFSService.adjust_invoice(cfs_account=cfs_account,
-                                      inv_number=invoice_reference.invoice_number,
-                                      amount=adjustment_negative_amount)
-            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-            invoice.refund_date = datetime.now(tz=timezone.utc)
-            invoice.refund = invoice.paid
+            cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
         else:
             invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
             invoice.paid = 0
@@ -267,8 +267,47 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice.invoice_status_code = InvoiceStatus.APPROVED.value
         invoice_reference.flush()
         invoice.flush()
-        if not is_invoice_refund:
+        if is_reversal:
             if payment := PaymentModel.find_payment_for_invoice(invoice.id):
                 db.session.delete(payment)
             for receipt in ReceiptModel.find_all_receipts_for_invoice(invoice.id):
                 db.session.delete(receipt)
+
+    @classmethod
+    def _handle_invoice_refund(cls,
+                               cfs_account: CfsAccountModel,
+                               invoice: InvoiceModel,
+                               invoice_reference: InvoiceReferenceModel):
+        """Handle invoice refunds adjustment on a rolled up invoice."""
+        lines = CFSService.build_lines(invoice.payment_line_items)
+        cfs_invoice = CFSService.get_invoice(cfs_account=cfs_account, inv_number=invoice_reference.invoice_number)
+        for line in cfs_invoice.get('lines', []):
+            if line.get('activityName') == 'Service Fee':
+                service_fee_line_number = line.get('lineNumber')
+            elif line.get('activityName') == 'Payment':
+                payment_line_number = line.get('lineNumber')
+
+        adjustment_lines = []
+        for line in lines:
+            # Determine line number, determine amount
+            # Raise exception if we can't map the adjustment.
+            line_number = 10
+            if not line_number:
+                raise BusinessException('Unable to determine line number for adjustment')
+            adjustment_lines.append({
+                'line_number': line.get('lineNumber'),
+                'adjustment_amount': str(-line.get('lineAmount')),
+                'activity_name': CFS_ADJ_ACTIVITY_NAME
+            })
+
+        adjustment = {
+            'comment': 'Invoice cancellation',
+            'lines': adjustment_lines
+        }
+        CFSService.adjust_invoice(cfs_account=cfs_account,
+                                  inv_number=invoice_reference.invoice_number,
+                                  adjustment=adjustment)
+        invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
+        invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+        invoice.refund_date = datetime.now(tz=timezone.utc)
+        invoice.refund = invoice.paid
