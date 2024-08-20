@@ -111,7 +111,7 @@ class EftService(DepositService):
             return InvoiceStatus.REFUND_REQUESTED.value
 
         latest_link = cils[0]
-        sibiling_cils = [cil for cil in cils if cil.group_id == latest_link.group_id]
+        sibiling_cils = [cil for cil in cils if cil.link_group_id == latest_link.link_group_id]
         match latest_link.status_code:
             case EFTCreditInvoiceStatus.PENDING.value:
                 # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
