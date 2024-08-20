@@ -93,6 +93,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
 
         match status:
             case EFTCreditInvoiceStatus.CANCELLED.value:
+                # Handles 3. EFT Credit Link - PENDING, CANCEL that link reverse invoice. See eft_service refund.
                 query = query.filter(
                     InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
             case EFTCreditInvoiceStatus.PENDING.value:
@@ -100,6 +101,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 query = query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value,
                                                                            InvoiceStatus.OVERDUE.value]))
             case EFTCreditInvoiceStatus.PENDING_REFUND.value:
+                # Handles 4. EFT Credit Link - COMPLETED from refund flow. See eft_service refund.
                 query = query.filter(or_(InvoiceModel.disbursement_status_code.is_(
                     None), InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value))
                 query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
@@ -160,6 +162,35 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                     f'ERROR : {str(e)}', level='error')
                 current_app.logger.error(f'Error Account id={invoice.payment_account_id} - '
                                          f'EFT Credit invoice Link : {cil_rollup.id}', exc_info=True)
+                db.session.rollback()
+                continue
+        cls.handle_unlinked_refund_requested_invoices()
+
+    @classmethod
+    def handle_unlinked_refund_requested_invoices(cls):
+        """Handle unlinked refund requested invoices."""
+        # Handles 2. No EFT Credit Link - Job needs to reverse invoice in CFS from refund flow. See eft_service refund.
+        invoices = db.session.query(InvoiceModel).outerjoin(EFTCreditInvoiceLinkModel) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value) \
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
+            .filter(EFTCreditInvoiceLinkModel.id.is_(None)) \
+            .all()
+
+        for invoice in invoices:
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(invoice.payment_account_id,
+                                                                           PaymentMethod.EFT.value)
+            invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
+                invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+            try:
+                cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
+            except Exception as e:   # NOQA # pylint: disable=broad-except
+                capture_message(
+                    f'Error on reversing unlinked REFUND_REQUESTED EFT invoice in CFS '
+                    f'Account id={invoice.payment_account_id} '
+                    f'Invoice id : {invoice.id}'
+                    f'ERROR : {str(e)}', level='error')
+                current_app.logger.error(f'Error Account id={invoice.payment_account_id} - '
+                                         f'Invoice id : {invoice.id}', exc_info=True)
                 db.session.rollback()
                 continue
 
@@ -282,6 +313,6 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)
-        invoice.refund = invoice.paid
+        invoice.refund = invoice.total
         invoice_reference.flush()
         invoice.flush()
