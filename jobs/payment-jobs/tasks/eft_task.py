@@ -39,17 +39,6 @@ from sqlalchemy.orm import lazyload, registry
 from utils.auth_event import AuthEvent
 
 
-@dataclass
-class EFTCILRollup:
-    """Dataclass for rollup so we don't use a tuple instead."""
-
-    invoice_id: int
-    status_code: str
-    receipt_number: str
-    link_ids: List[int]
-    rollup_amount: Decimal
-
-
 class EFTTask:  # pylint:disable=too-few-public-methods
     """Task to link electronic funds transfers."""
 
@@ -78,6 +67,17 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                       EFTCreditInvoiceLinkModel.status_code,
                       EFTCreditInvoiceLinkModel.receipt_number) \
             .subquery()
+
+        # This needs to be local unfortunately so it doesn't get remapped.
+        @dataclass
+        class EFTCILRollup:
+            """Dataclass for rollup so we don't use a tuple instead."""
+
+            invoice_id: int
+            status_code: str
+            receipt_number: str
+            link_ids: List[int]
+            rollup_amount: Decimal
 
         registry().map_imperatively(EFTCILRollup, cil_rollup, primary_key=[cil_rollup.c.invoice_id,
                                                                            cil_rollup.c.status_code,
@@ -239,7 +239,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_receipt_and_invoice(cls,
                                     cfs_account: CfsAccountModel,
-                                    cil_rollup: EFTCILRollup,
+                                    cil_rollup,
                                     invoice: InvoiceModel,
                                     receipt_number: str):
         """Create receipt in CFS and marks invoice as paid, with payment and receipt rows."""
