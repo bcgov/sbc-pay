@@ -242,6 +242,8 @@ def test_reverse_electronic_funds_transfers(session):
     assert not eft_historical.hidden
     assert not eft_historical.is_processing
 
+    # Handle invoice refund flow
+
 
 def test_unlock_overdue_accounts(session):
     """Test unlock overdue account events."""
@@ -269,3 +271,33 @@ def test_unlock_overdue_accounts(session):
         assert payment_account.has_overdue_invoices is None
         mock_unlock.assert_called_once()
         mock_unlock.assert_called_with(payment_account)
+
+
+def test_handle_unlinked_refund_requested_invoices(session):
+    """Test handle unlinked refund requested invoices."""
+    auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
+    eft_credit = factory_create_eft_credit(
+        amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
+        eft_transaction_id=eft_transaction_id)
+    payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
+    invoice_1 = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                payment_method_code=PaymentMethod.EFT.value, total=10).save()
+    factory_invoice_reference(invoice_id=invoice_1.id).save()
+    factory_create_eft_credit_invoice_link(invoice_id=invoice_1.id, eft_credit_id=eft_credit.id, amount=10)
+    invoice_2 = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                payment_method_code=PaymentMethod.EFT.value, total=10).save()
+    invoice_ref_2 = factory_invoice_reference(invoice_id=invoice_2.id).save()
+    invoice_3 = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                payment_method_code=PaymentMethod.EFT.value, total=10).save()
+    with patch('pay_api.services.CFSService.adjust_invoice') as mock_reverse:
+        EFTTask.handle_unlinked_refund_requested_invoices()
+        mock_reverse.assert_called()
+        # Has CIL so it's excluded
+        assert invoice_1.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+        # Has no CIL and invoice reference
+        assert invoice_2.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert invoice_2.refund_date
+        assert invoice_2.refund
+        assert invoice_ref_2.status_code == InvoiceReferenceStatus.CANCELLED.value
+        # no invoice reference
+        assert invoice_3.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
