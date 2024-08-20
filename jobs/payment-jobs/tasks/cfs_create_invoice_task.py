@@ -342,21 +342,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         return eft_accounts
 
     @classmethod
-    def _save_invoice_reference_records(cls, account_invoices, cfs_account, invoice_response):
-        """Save invoice reference records."""
-        for invoice in account_invoices:
-
-            invoice_reference = EftService.create_invoice_reference(
-                invoice=invoice,
-                invoice_number=invoice_response.get('invoice_number'),
-                reference_number=invoice_response.get('pbc_ref_number', None)
-            )
-            db.session.add(invoice_reference)
-
-            invoice.cfs_account_id = cfs_account.id
-        db.session.commit()
-
-    @classmethod
     def _active_invoice_reference_subquery(cls):
         return db.session.query(InvoiceReferenceModel.invoice_id). \
             filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
@@ -367,23 +352,18 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         eft_accounts = cls._return_eft_accounts()
 
         for eft_account in eft_accounts:
-            account_invoices = db.session.query(InvoiceModel) \
+            invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == eft_account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
                 .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
                 .filter(InvoiceModel.id.notin_(cls._active_invoice_reference_subquery())) \
                 .order_by(InvoiceModel.created_on.desc()).all()
 
-            if not account_invoices:
-                continue
-
-            payment_account: PaymentAccountService = PaymentAccountService.find_by_id(eft_account.id)
-
-            if not payment_account:
+            if not invoices or not (payment_account := PaymentAccountService.find_by_id(eft_account.id)):
                 continue
 
             current_app.logger.debug(
-                f'Found {len(account_invoices)} invoices for account {payment_account.auth_account_id}')
+                f'Found {len(invoices)} EFT invoices for account {payment_account.auth_account_id}')
 
             cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
                                                                                      PaymentMethod.EFT.value)
@@ -392,52 +372,28 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                         f'is {payment_account.cfs_account_status} skipping.')
                 continue
 
-            lines = []
-            invoice_total = Decimal('0')
-            for invoice in account_invoices:
-                lines.extend(invoice.payment_line_items)
-                invoice_total += invoice.total
-
-            invoice_number = account_invoices[-1].id
-            try:
-                # Get the first invoice id as the trx number for CFS
-                invoice_response = CFSService.create_account_invoice(transaction_number=invoice_number,
-                                                                     line_items=lines,
-                                                                     cfs_account=cfs_account)
-            except Exception as e:  # NOQA # pylint: disable=broad-except
-                # There is a chance that the error is a timeout from CAS side,
-                # so to make sure we are not missing any data, make a GET call for the invoice we tried to create
-                # and use it if it got created.
-                current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
-                has_invoice_created: bool = False
+            current_app.logger.info(f'Found {len(invoices)} to be created in CFS.')
+            for invoice in invoices:
+                current_app.logger.debug(f'Creating cfs invoice for invoice {invoice.id}')
                 try:
-                    # add a 10 seconds delay here as safe bet, as CFS takes time to create the invoice
-                    time.sleep(10)
-                    invoice_number = generate_transaction_number(str(invoice_number))
-                    invoice_response = CFSService.get_invoice(
-                        cfs_account=cfs_account, inv_number=invoice_number
-                    )
-                    has_invoice_created = invoice_response.get('invoice_number', None) == invoice_number
-                    invoice_total_matches = Decimal(invoice_response.get('total', '0')) == invoice_total
-                except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
-                    # Ignore this error, as it is irrelevant and error on outer level is relevant.
-                    pass
-                # If no invoice is created raise an error for sentry
-                if not has_invoice_created:
+                    invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
+                                                                         line_items=invoice.payment_line_items,
+                                                                         cfs_account=cfs_account)
+                except Exception as e:  # NOQA # pylint: disable=broad-except
                     capture_message(f'Error on creating EFT invoice: account id={payment_account.id}, '
                                     f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}',
                                     level='error')
                     current_app.logger.error(e)
                     continue
-                if not invoice_total_matches:
-                    capture_message(f'Error on creating EFT invoice: account id={payment_account.id}, '
-                                    f'auth account : {payment_account.auth_account_id}, Invoice exists: '
-                                    f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}',
-                                    level='error')
-                    current_app.logger.error(e)
-                    continue
 
-            cls._save_invoice_reference_records(account_invoices, cfs_account, invoice_response)
+                invoice.cfs_account_id = cfs_account.id
+                invoice_reference = EftService.create_invoice_reference(
+                    invoice=invoice,
+                    invoice_number=invoice_response.get('invoice_number'),
+                    reference_number=invoice_response.get('pbc_ref_number', None)
+                )
+                db.session.add(invoice_reference)
+                db.session.commit()
 
     @classmethod
     def _create_online_banking_invoices(cls):
