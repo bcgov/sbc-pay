@@ -349,9 +349,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_eft_invoices(cls):
         """Create EFT invoices in CFS."""
-        eft_accounts = cls._return_eft_accounts()
-
-        for eft_account in eft_accounts:
+        for eft_account in cls._return_eft_accounts():
             invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == eft_account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
@@ -361,10 +359,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             if not invoices or not (payment_account := PaymentAccountService.find_by_id(eft_account.id)):
                 continue
-
-            current_app.logger.debug(
-                f'Found {len(invoices)} EFT invoices for account {payment_account.auth_account_id}')
-
             cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
                                                                                      PaymentMethod.EFT.value)
             if cfs_account.status not in (CfsAccountStatus.ACTIVE.value, CfsAccountStatus.INACTIVE.value):
@@ -372,7 +366,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                         f'is {payment_account.cfs_account_status} skipping.')
                 continue
 
-            current_app.logger.info(f'Found {len(invoices)} to be created in CFS.')
+            current_app.logger.info(
+                f'Found {len(invoices)} EFT invoices for account {payment_account.auth_account_id}')
             for invoice in invoices:
                 current_app.logger.debug(f'Creating cfs invoice for invoice {invoice.id}')
                 try:
