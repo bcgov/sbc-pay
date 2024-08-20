@@ -98,14 +98,15 @@ class EftService(DepositService):
                            payment_account: PaymentAccount,
                            refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
+        # 1. Invoice doesn't exist, receipt doesn't exist.
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
                 and InvoiceReferenceModel.find_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
             return InvoiceStatus.CANCELLED.value
 
         # Note: Another valid approach would be looking at the receipt table.
-        # 1. No EFT Credit Link - Job needs to reverse invoice in CFS
-        # (Invoice doesn't exist.)
+        # 2. No EFT Credit Link - Job needs to reverse invoice in CFS
+        # (Invoice needs to be reversed, receipt doesn't exist.)
         if not (cils := EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)):
             return InvoiceStatus.REFUND_REQUESTED.value
 
@@ -113,13 +114,12 @@ class EftService(DepositService):
                        if cil.status_code == EFTCreditInvoiceStatus.PENDING.value]
         cil_completed = [cil for cil in cils
                          if cil.status_code == EFTCreditInvoiceStatus.COMPLETED.value]
-        # 2. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
-        # (Invoice exists, receipt doesn't exist.)
+        # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
+        # (Invoice needs to be reversed, receipt doesn't exist.)
         for cil in cil_pending:
             EFTShortnames.return_eft_credit(cil, EFTCreditInvoiceStatus.CANCELLED.value)
-
-        # 3. EFT Credit Link - COMPLETED
-        #  (Invoice and receipt exists, they both need to be reversed.)
+        # 4. EFT Credit Link - COMPLETED
+        #  (Invoice needs to be reversed and receipt needs to be reversed.)
         for cil in cil_completed:
             EFTShortnames.return_eft_credit(cil_completed, EFTCreditInvoiceStatus.PENDING_REFUND.value)
         return InvoiceStatus.REFUND_REQUESTED.value
