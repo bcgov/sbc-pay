@@ -65,7 +65,8 @@ class FeeSchedule(db.Model):
     filing_type_code = db.Column(db.String(10), ForeignKey('filing_types.code'), nullable=False)
     corp_type_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=False)
     fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=False)
-    fee_start_date = db.Column('fee_start_date', db.Date, default=datetime.now(tz=timezone.utc).date(), nullable=False)
+    fee_start_date = db.Column('fee_start_date', db.Date, default=lambda: datetime.now(tz=timezone.utc).date(),
+                               nullable=False)
     fee_end_date = db.Column('fee_end_date', db.Date, default=None, nullable=True)
     future_effective_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
     priority_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)

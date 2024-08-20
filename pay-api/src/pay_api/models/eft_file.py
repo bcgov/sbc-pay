@@ -52,7 +52,7 @@ class EFTFile(BaseModel):  # pylint: disable=too-many-instance-attributes
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     completed_on = db.Column('completed_on', db.DateTime, nullable=True)
     deposit_from_date = db.Column('deposit_from_date', db.DateTime, nullable=True)
     deposit_to_date = db.Column('deposit_to_date', db.DateTime, nullable=True)

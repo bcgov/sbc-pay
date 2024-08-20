@@ -89,7 +89,7 @@ class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-
     stob = db.Column(db.String(50), nullable=True)
     project_code = db.Column(db.String(50), nullable=True)
 
-    start_date = db.Column(db.Date, default=datetime.now(tz=timezone.utc).date(), nullable=False)
+    start_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
     end_date = db.Column(db.Date, default=None, nullable=True)
     stop_ejv = db.Column('stop_ejv', Boolean(), default=False)
 
