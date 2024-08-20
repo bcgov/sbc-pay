@@ -16,10 +16,10 @@
 
 Test-Suite to ensure that the EFTTask for electronic funds transfer is working as expected.
 """
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
-from datetime import datetime, timezone
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import FeeSchedule as FeeScheduleModel

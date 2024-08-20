@@ -25,9 +25,9 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnameLinks, EFTShortnames, Invoice,
-    InvoiceReference, NonSufficientFunds, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt,
-    RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile,
+    EFTShortnameLinks, EFTShortnames, Invoice, InvoiceReference, NonSufficientFunds, Payment, PaymentAccount,
+    PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
@@ -910,6 +910,26 @@ def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234'
         updated_by_name=updated_by,
         updated_on=updated_on
     )
+
+
+def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amount=10.00):
+    """Return an EFT Credit."""
+    return EFTCredit(
+        created_on=datetime.now(tz=timezone.utc),
+        amount=amount,
+        remaining_amount=remaining_amount,
+        eft_file_id=eft_file_id,
+        short_name_id=short_name_id
+    )
+
+
+def factory_eft_credit_invoice_link(eft_credit_id, invoice_id, status_code, amount=1, link_group_id=None):
+    """Return an EFT Credit invoice link."""
+    return EFTCreditInvoiceLink(eft_credit_id=eft_credit_id,
+                                invoice_id=invoice_id,
+                                status_code=status_code,
+                                link_group_id=link_group_id,
+                                amount=amount)
 
 
 def factory_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str = None):
