@@ -29,11 +29,16 @@ from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.utils.enums import EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, PaymentMethod
+from pay_api.services import EFTShortNamesService
+from pay_api.utils.enums import (
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus,
+    PaymentMethod, StatementFrequency)
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.services.eft.eft_enums import EFTConstants
-from tests.integration.factory import factory_create_eft_account, factory_invoice
+from tests.integration.factory import (
+    factory_create_eft_account, factory_invoice, factory_statement, factory_statement_invoices,
+    factory_statement_settings)
 from tests.integration.utils import add_file_event_to_queue_and_process, create_and_upload_eft_file
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
@@ -487,7 +492,10 @@ def create_test_data():
         updated_on=datetime.now()
     ).save()
 
-    invoice: InvoiceModel = factory_invoice(payment_account=payment_account, total=100, service_fees=10.0,
+    invoice: InvoiceModel = factory_invoice(payment_account=payment_account,
+                                            status_code=InvoiceStatus.APPROVED.value,
+                                            total=150.50,
+                                            service_fees=1.50,
                                             payment_method_code=PaymentMethod.EFT.value)
 
     return payment_account, eft_shortname, invoice
@@ -586,3 +594,90 @@ def generate_tdi17_file(file_name: str):
     create_and_upload_eft_file(file_name, [header,
                                            transaction_1, transaction_2, transaction_3, transaction_4,
                                            trailer])
+
+
+def create_statement_from_invoices(account: PaymentAccountModel, invoices: List[InvoiceModel]):
+    """Generate a statement from a list of invoices."""
+    statement_settings = factory_statement_settings(pay_account_id=account.id,
+                                                    frequency=StatementFrequency.MONTHLY.value)
+    statement = factory_statement(payment_account_id=account.id,
+                                  frequency=StatementFrequency.MONTHLY.value,
+                                  statement_settings_id=statement_settings.id)
+    for invoice in invoices:
+        factory_statement_invoices(statement_id=statement.id, invoice_id=invoice.id)
+    return statement
+
+
+def test_apply_pending_payments(session, app, client):
+    """Test automatically applying a pending eft credit invoice link when there is a credit."""
+    payment_account, eft_shortname, invoice = create_test_data()
+    create_statement_from_invoices(payment_account, [invoice])
+    file_name: str = 'test_eft_tdi17.txt'
+    generate_tdi17_file(file_name)
+
+    add_file_event_to_queue_and_process(client,
+                                        file_name=file_name,
+                                        message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
+    short_name_id = eft_shortname.id
+    eft_credit_balance = EFTShortNamesService.get_eft_credit_balance(short_name_id)
+    assert eft_credit_balance == 0
+
+    short_name_links = EFTShortNamesService.get_shortname_links(short_name_id)
+    assert short_name_links['items']
+    assert len(short_name_links['items']) == 1
+
+    short_name_link = short_name_links['items'][0]
+    assert short_name_link.get('has_pending_payment') is True
+    assert short_name_link.get('amount_owing') == 150.50
+
+
+def test_skip_on_existing_pending_payments(session, app, client):
+    """Test auto payment skipping payment when there exists a pending payment."""
+    payment_account, eft_shortname, invoice = create_test_data()
+    file_name: str = 'test_eft_tdi17.txt'
+    generate_tdi17_file(file_name)
+    add_file_event_to_queue_and_process(client,
+                                        file_name=file_name,
+                                        message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
+
+    create_statement_from_invoices(payment_account, [invoice])
+    eft_credits = EFTShortNamesService.get_eft_credits(eft_shortname.id)
+
+    # Add an unexpected PENDING record to test that processing skips for this account
+    EFTCreditInvoiceLinkModel(
+        eft_credit_id=eft_credits[0].id,
+        status_code=EFTCreditInvoiceStatus.PENDING.value,
+        invoice_id=invoice.id,
+        amount=invoice.total,
+        link_group_id=1)
+
+    short_name_id = eft_shortname.id
+    eft_credit_balance = EFTShortNamesService.get_eft_credit_balance(short_name_id)
+    # Assert credit balance is not spent due to an expected already PENDING state
+    assert eft_credit_balance == 150.50
+
+
+def test_skip_on_insufficient_balance(session, app, client):
+    """Test auto payment skipping payment when there is an insufficient eft credit balance."""
+    payment_account, eft_shortname, invoice = create_test_data()
+    invoice.total = 99999
+    invoice.save()
+    file_name: str = 'test_eft_tdi17.txt'
+    generate_tdi17_file(file_name)
+    add_file_event_to_queue_and_process(client,
+                                        file_name=file_name,
+                                        message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
+
+    create_statement_from_invoices(payment_account, [invoice])
+
+    short_name_id = eft_shortname.id
+    eft_credit_balance = EFTShortNamesService.get_eft_credit_balance(short_name_id)
+    assert eft_credit_balance == 150.50
+
+    short_name_links = EFTShortNamesService.get_shortname_links(short_name_id)
+    assert short_name_links['items']
+    assert len(short_name_links['items']) == 1
+
+    short_name_link = short_name_links['items'][0]
+    assert short_name_link.get('has_pending_payment') is False
+    assert short_name_link.get('amount_owing') == 99999
