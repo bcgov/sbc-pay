@@ -375,11 +375,31 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                                          line_items=invoice.payment_line_items,
                                                                          cfs_account=cfs_account)
                 except Exception as e:  # NOQA # pylint: disable=broad-except
-                    capture_message(f'Error on creating EFT invoice: account id={payment_account.id}, '
-                                    f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}',
-                                    level='error')
-                    current_app.logger.error(e)
-                    continue
+                    # There is a chance that the error is a timeout from CAS side,
+                    # so to make sure we are not missing any data, make a GET call for the invoice we tried to create
+                    # and use it if it got created.
+                    current_app.logger.info(e)  # INFO intentional as sentry alerted only after the following try/catch
+                    has_invoice_created: bool = False
+                    try:
+                        # add a 10 seconds delay here as safe bet, as CFS takes time to create the invoice and
+                        # since this is a job, delay doesn't cause any performance issue
+                        time.sleep(10)
+                        invoice_number = generate_transaction_number(str(invoice.id))
+                        invoice_response = CFSService.get_invoice(
+                            cfs_account=cfs_account, inv_number=invoice_number
+                        )
+                        has_invoice_created = invoice_response.get('invoice_number', None) == invoice_number
+                    except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
+                        # Ignore this error, as it is irrelevant and error on outer level is relevant.
+                        pass
+
+                    # If no invoice is created raise an error for sentry
+                    if not has_invoice_created:
+                        capture_message(f'Error on creating EFT invoice: account id={invoice.payment_account.id}, '
+                                        f'auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}',
+                                        level='error')
+                        current_app.logger.error(e)
+                        continue
 
                 invoice.cfs_account_id = cfs_account.id
                 invoice_reference = EftService.create_invoice_reference(
