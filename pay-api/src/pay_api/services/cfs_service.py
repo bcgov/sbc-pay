@@ -353,7 +353,7 @@ class CFSService(OAuthService):
             'gl_date': curr_time,
             'term_name': CFS_TERM_NAME,
             'comments': '',
-            'lines': cls.build_lines(line_items)
+            'lines': cls._build_lines(line_items)
         }
 
         access_token = CFSService.get_token().json().get('access_token')
@@ -372,7 +372,7 @@ class CFSService(OAuthService):
         }.get(operation)
 
     @classmethod
-    def build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
+    def _build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
         """Build lines for the invoice."""
         # Fetch all distribution codes to reduce DB hits. Introduce caching if needed later
         distribution_codes: List[DistributionCodeModel] = DistributionCodeModel.find_all()
@@ -597,7 +597,7 @@ class CFSService(OAuthService):
             'transaction_date': curr_time,
             'gl_date': curr_time,
             'comments': '',
-            'lines': cls.build_lines(line_items, negate=True)
+            'lines': cls._build_lines(line_items, negate=True)
         }
 
         cms_response = CFSService.post(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, cms_payload)
