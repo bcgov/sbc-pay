@@ -130,7 +130,7 @@ class EftService(DepositService):
                         receipt_number=cil.receipt_number,
                         invoice_id=invoice.id,
                         link_group_id=cil.link_group_id).flush()
-            
+
         return InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
