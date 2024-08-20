@@ -47,6 +47,8 @@ def setup_eft_credit_invoice_links_test():
 
 
 tests = [
+    ('invoice_refund_flow', PaymentMethod.EFT.value, [InvoiceStatus.REFUND_REQUESTED.value],
+     [EFTCreditInvoiceStatus.CANCELLED.value], [None], 0, 0),
     ('insufficient_amount_on_links', PaymentMethod.EFT.value, [InvoiceStatus.APPROVED.value, InvoiceStatus.PAID.value],
      [EFTCreditInvoiceStatus.PENDING.value, EFTCreditInvoiceStatus.PENDING_REFUND.value], [None], 0, 0),
     ('happy_flow_multiple_links', PaymentMethod.EFT.value, [InvoiceStatus.APPROVED.value, InvoiceStatus.PAID.value],
@@ -136,6 +138,9 @@ def test_eft_credit_invoice_links_by_status(session, test_name, payment_method, 
     assert len(results) == pending_count
     results = EFTTask.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value)
     assert len(results) == pending_refund_count
+    if test_name == 'invoice_refund_flow':
+        results = EFTTask.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.CANCELLED.value)
+        assert len(results) == 1
 
 
 def test_link_electronic_funds_transfers(session):
