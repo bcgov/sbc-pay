@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 from flask import current_app
 
-from pay_api.utils.constants import CFS_ADJ_ACTIVITY_NAME
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
@@ -143,7 +142,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         pending_refund_status = EFTCreditInvoiceStatus.PENDING_REFUND.value
         cancelled_status = EFTCreditInvoiceStatus.CANCELLED.value
         credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(pending_refund_status) + \
-              cls.get_eft_credit_invoice_links_by_status(cancelled_status)
+            cls.get_eft_credit_invoice_links_by_status(cancelled_status)
         cls.history_group_ids = set()
         for invoice, cfs_account, cil_rollup in credit_invoice_links:
             try:
