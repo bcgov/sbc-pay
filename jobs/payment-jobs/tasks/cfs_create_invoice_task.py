@@ -389,14 +389,21 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                             cfs_account=cfs_account, inv_number=invoice_number
                         )
                         has_invoice_created = invoice_response.get('invoice_number', None) == invoice_number
+                        invoice_total_matches = Decimal(invoice_response.get('total', '0')) == invoice.total
                     except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                         # Ignore this error, as it is irrelevant and error on outer level is relevant.
                         pass
 
-                    # If no invoice is created raise an error for sentry
                     if not has_invoice_created:
                         capture_message(f'Error on creating EFT invoice: account id={invoice.payment_account.id}, '
                                         f'auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}',
+                                        level='error')
+                        current_app.logger.error(e)
+                        continue
+                    if not invoice_total_matches:
+                        capture_message(f'Error on creating EFT invoice: account id={payment_account.id}, '
+                                        f'auth account : {payment_account.auth_account_id}, Invoice exists: '
+                                        f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice.total}',
                                         level='error')
                         current_app.logger.error(e)
                         continue
