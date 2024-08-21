@@ -259,9 +259,9 @@ def test_reverse_electronic_funds_transfers(session):
     session.commit()
 
     with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_reverse:
-        with patch('pay_api.services.CFSService.adjust_invoice') as mock_adjust_invoice:
+        with patch('pay_api.services.CFSService.adjust_invoice') as mock_invoice:
             EFTTask.reverse_electronic_funds_transfers_cfs()
-            mock_adjust_invoice.assert_called()
+            mock_invoice.assert_called()
             mock_reverse.assert_called()
 
     assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
@@ -328,9 +328,9 @@ def test_handle_unlinked_refund_requested_invoices(session):
     invoice_ref_2 = factory_invoice_reference(invoice_id=invoice_2.id).save()
     invoice_3 = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value,
                                 payment_method_code=PaymentMethod.EFT.value, total=10).save()
-    with patch('pay_api.services.CFSService.adjust_invoice') as mock_adjust_invoice:
+    with patch('pay_api.services.CFSService.adjust_invoice') as mock_invoice:
         EFTTask.handle_unlinked_refund_requested_invoices()
-        mock_adjust_invoice.assert_called()
+        mock_invoice.assert_called()
         # Has CIL so it's excluded
         assert invoice_1.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
         # Has no CIL and invoice reference

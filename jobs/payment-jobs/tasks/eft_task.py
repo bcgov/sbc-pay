@@ -29,6 +29,7 @@ from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.eft_service import EftService
 from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.utils.constants import CFS_ADJ_ACTIVITY_NAME
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
     PaymentStatus, PaymentSystem, ReverseOperation)
@@ -319,10 +320,23 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
-            CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, -invoice.total)
+            adjustment_lines = cls._build_reversal_adjustment_lines(invoice)
+            CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, adjustment_lines=adjustment_lines)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.total
         invoice.flush()
+
+    @classmethod
+    def _build_reversal_adjustment_lines(cls, invoice: InvoiceModel) -> list:
+        """Build the adjustment lines for the invoice."""
+        return [
+            {
+                'line_number': line['line_number'],
+                'adjustment_amount': line['unit_price'],
+                'activity_name': CFS_ADJ_ACTIVITY_NAME
+            }
+            for line in CFSService.build_lines(invoice.payment_line_items, negate=True)
+        ]
