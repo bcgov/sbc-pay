@@ -176,12 +176,10 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             .all()
 
         for invoice in invoices:
-            cfs_account = CfsAccountModel.find_effective_by_payment_method(invoice.payment_account_id,
-                                                                           PaymentMethod.EFT.value)
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             try:
-                cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
+                cls._handle_invoice_refund(invoice, invoice_reference)
                 db.session.commit()
             except Exception as e:   # NOQA # pylint: disable=broad-except
                 capture_message(
@@ -298,7 +296,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         is_reversal = not is_invoice_refund
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         if is_invoice_refund:
-            cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
+            cls._handle_invoice_refund(invoice, invoice_reference)
         else:
             invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
             invoice.paid = 0
@@ -314,7 +312,6 @@ class EFTTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _handle_invoice_refund(cls,
-                               cfs_account: CfsAccountModel,
                                invoice: InvoiceModel,
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
