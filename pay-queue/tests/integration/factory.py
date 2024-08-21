@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, Refund, RoutingSlip, StatementSettings)
+    PaymentTransaction, Receipt, Refund, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, RoutingSlipStatus, TransactionStatus)
@@ -45,6 +45,32 @@ def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date
         from_date=from_date,
         to_date=to_date
     ).save()
+
+
+def factory_statement(
+        frequency: str = 'WEEKLY',
+        payment_account_id: str = None,
+        from_date: datetime = datetime.now(tz=timezone.utc),
+        to_date: datetime = datetime.now(tz=timezone.utc),
+        statement_settings_id: str = None,
+        created_on: datetime = datetime.now(tz=timezone.utc),
+        payment_methods: str = PaymentMethod.EFT.value):
+    """Return Factory."""
+    return Statement(frequency=frequency,
+                     statement_settings_id=statement_settings_id,
+                     payment_account_id=payment_account_id,
+                     from_date=from_date,
+                     to_date=to_date,
+                     created_on=created_on,
+                     payment_methods=payment_methods).save()
+
+
+def factory_statement_invoices(
+        statement_id: str,
+        invoice_id: str):
+    """Return Factory."""
+    return StatementInvoices(statement_id=statement_id,
+                             invoice_id=invoice_id).save()
 
 
 def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceStatus.CREATED.value,
