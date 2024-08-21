@@ -334,8 +334,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         """Build the adjustment lines for the invoice."""
         return [
             {
-                'line_number': line['line_number'],
-                'adjustment_amount': line['unit_price'],
+                'line_number': str(line['line_number']),
+                'adjustment_amount': str(line['unit_price']),
                 'activity_name': CFS_ADJ_ACTIVITY_NAME
             }
             for line in CFSService.build_lines(invoice.payment_line_items, negate=True)
