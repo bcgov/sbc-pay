@@ -239,6 +239,14 @@ def test_reverse_electronic_funds_transfers(session):
     invoice_reference3 = factory_invoice_reference(invoice_id=refund_requested_invoice2.id,
                                                    status_code=InvoiceReferenceStatus.COMPLETED.value,
                                                    invoice_number=invoice_number)
+
+    refund_requested_no_ref = factory_invoice(payment_account=payment_account, total=30,
+                                              status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                              payment_method_code=PaymentMethod.EFT.value)
+    cil4 = factory_create_eft_credit_invoice_link(invoice_id=refund_requested_no_ref.id,
+                                                  status_code=EFTCreditInvoiceStatus.CANCELLED.value,
+                                                  eft_credit_id=eft_credit.id,
+                                                  amount=30)
     eft_historical = factory_create_eft_shortname_historical(
         payment_account_id=payment_account.id,
         short_name_id=short_name_id,
@@ -273,6 +281,7 @@ def test_reverse_electronic_funds_transfers(session):
     assert cil.status_code == EFTCreditInvoiceStatus.REFUNDED.value
     assert cil2.status_code == EFTCreditInvoiceStatus.CANCELLED.value
     assert cil3.status_code == EFTCreditInvoiceStatus.REFUNDED.value
+    assert cil4.status_code == EFTCreditInvoiceStatus.CANCELLED.value
 
 
 def test_unlock_overdue_accounts(session):
@@ -329,5 +338,5 @@ def test_handle_unlinked_refund_requested_invoices(session):
         assert invoice_2.refund_date
         assert invoice_2.refund
         assert invoice_ref_2.status_code == InvoiceReferenceStatus.CANCELLED.value
-        # no invoice reference
-        assert invoice_3.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+        # Has no invoice reference, should still move to REFUNDED
+        assert invoice_3.invoice_status_code == InvoiceStatus.REFUNDED.value

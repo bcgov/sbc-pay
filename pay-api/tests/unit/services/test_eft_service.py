@@ -112,6 +112,7 @@ def test_refund_eft_credits_exceed_balance(session):
 
 
 @pytest.mark.parametrize('test_name', [
+    ('0_no_invoice_reference_cil_exists'),
     ('1_invoice_non_exist'),
     ('2_no_eft_credit_link'),
     ('3_pending_credit_link'),
@@ -130,6 +131,11 @@ def test_eft_invoice_refund(session, test_name):
                                     amount=10,
                                     remaining_amount=1).save()
     match test_name:
+        case '0_no_invoice_reference_cil_exists':
+            cil_1 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
+                                                    eft_credit_id=eft_credit.id,
+                                                    status_code=EFTCreditInvoiceStatus.PENDING.value,
+                                                    link_group_id=2).save()
         case '1_invoice_non_exist':
             pass
         case '2_no_eft_credit_link':
@@ -185,6 +191,10 @@ def test_eft_invoice_refund(session, test_name):
     invoice.save()
 
     match test_name:
+        case '0_no_invoice_reference_cil_exists':
+            assert invoice
+            assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+            assert cil_1.status_code == EFTCreditInvoiceStatus.CANCELLED.value
         case '1_invoice_non_exist':
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.CANCELLED.value

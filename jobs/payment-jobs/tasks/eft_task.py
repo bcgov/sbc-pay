@@ -288,9 +288,10 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             EFTCreditInvoiceStatus.CANCELLED.value: InvoiceReferenceStatus.ACTIVE.value
         }
         invoice_reference_status = invoice_reference_requirement.get(cil_status_code)
-        if not (invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
+        invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, invoice_reference_status
-        )):
+        )
+        if cil_status_code != EFTCreditInvoiceStatus.CANCELLED.value and not invoice_reference:
             raise Exception(f'{invoice_reference_status} invoice reference '  # pylint: disable=broad-exception-raised
                             f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
         is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
@@ -317,10 +318,11 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                invoice: InvoiceModel,
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
-        CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, -invoice.total)
-        invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
+        if invoice_reference:
+            CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, -invoice.total)
+            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
+            invoice_reference.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.total
-        invoice_reference.flush()
         invoice.flush()

@@ -98,16 +98,16 @@ class EftService(DepositService):
                            payment_account: PaymentAccount,
                            refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
-        # 1. Invoice doesn't exist, receipt doesn't exist.
+        cils = EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)
+        # 1. Possible to have no CILs and no invoice_reference, nothing to reverse.
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
                 and InvoiceReferenceModel.find_by_invoice_id_and_status(
-                    invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
+                    invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None and not cils:
             return InvoiceStatus.CANCELLED.value
 
-        # Note: Another valid approach would be looking at the receipt table.
         # 2. No EFT Credit Link - Job needs to reverse invoice in CFS
         # (Invoice needs to be reversed, receipt doesn't exist.)
-        if not (cils := EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)):
+        if not cils:
             return InvoiceStatus.REFUND_REQUESTED.value
 
         latest_link = cils[0]
