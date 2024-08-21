@@ -319,7 +319,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
-            CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, -invoice.total)
+            CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
