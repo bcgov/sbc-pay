@@ -111,17 +111,17 @@ class EftService(DepositService):
             return InvoiceStatus.REFUND_REQUESTED.value
 
         latest_link = cils[0]
-        sibiling_cils = [cil for cil in cils if cil.link_group_id == latest_link.link_group_id]
+        sibling_cils = [cil for cil in cils if cil.link_group_id == latest_link.link_group_id]
         match latest_link.status_code:
             case EFTCreditInvoiceStatus.PENDING.value:
                 # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
                 # (Invoice needs to be reversed, receipt doesn't exist.)
-                for cil in sibiling_cils:
+                for cil in sibling_cils:
                     EFTShortnames.return_eft_credit(cil, EFTCreditInvoiceStatus.CANCELLED.value)
             case EFTCreditInvoiceStatus.COMPLETED.value:
                 # 4. EFT Credit Link - COMPLETED
                 # (Invoice needs to be reversed and receipt needs to be reversed.)
-                for cil in sibiling_cils:
+                for cil in sibling_cils:
                     EFTShortnames.return_eft_credit(cil)
                     EFTCreditInvoiceLinkModel(
                         eft_credit_id=cil.eft_credit_id,

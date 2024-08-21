@@ -221,7 +221,7 @@ def test_reverse_electronic_funds_transfers(session):
                                                status_code=InvoiceStatus.REFUND_REQUESTED.value,
                                                payment_method_code=PaymentMethod.EFT.value)
 
-    factory_create_eft_credit_invoice_link(invoice_id=refund_requested_invoice.id,
+    cil2 = factory_create_eft_credit_invoice_link(invoice_id=refund_requested_invoice.id,
                                            status_code=EFTCreditInvoiceStatus.CANCELLED.value,
                                            eft_credit_id=eft_credit.id,
                                            amount=30)
@@ -232,7 +232,7 @@ def test_reverse_electronic_funds_transfers(session):
                                                 status_code=InvoiceStatus.REFUND_REQUESTED.value,
                                                 payment_method_code=PaymentMethod.EFT.value)
 
-    factory_create_eft_credit_invoice_link(invoice_id=refund_requested_invoice2.id,
+    cil3 = factory_create_eft_credit_invoice_link(invoice_id=refund_requested_invoice2.id,
                                            status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
                                            eft_credit_id=eft_credit.id,
                                            amount=30)
@@ -270,6 +270,9 @@ def test_reverse_electronic_funds_transfers(session):
     assert invoice_reference2.status_code == InvoiceReferenceStatus.CANCELLED.value
     assert refund_requested_invoice2.invoice_status_code == InvoiceStatus.REFUNDED.value
     assert invoice_reference3.status_code == InvoiceReferenceStatus.CANCELLED.value
+    assert cil.status_code == EFTCreditInvoiceStatus.REFUNDED.value
+    assert cil2.status_code == EFTCreditInvoiceStatus.CANCELLED.value
+    assert cil3.status_code == EFTCreditInvoiceStatus.REFUNDED.value
 
 
 def test_unlock_overdue_accounts(session):

@@ -410,6 +410,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                         continue
 
                 invoice.cfs_account_id = cfs_account.id
+                # Create ACTIVE invoice reference
                 invoice_reference = EftService.create_invoice_reference(
                     invoice=invoice,
                     invoice_number=invoice_response.get('invoice_number'),
