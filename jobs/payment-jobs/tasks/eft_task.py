@@ -142,17 +142,15 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def reverse_electronic_funds_transfers_cfs(cls):
         """Reverse electronic funds transfers receipts in CFS and reset invoices."""
-        pending_refund_status = EFTCreditInvoiceStatus.PENDING_REFUND.value
-        cancelled_status = EFTCreditInvoiceStatus.CANCELLED.value
-        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(pending_refund_status) + \
-            cls.get_eft_credit_invoice_links_by_status(cancelled_status)
+        cils = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value) + \
+            cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.CANCELLED.value)
         cls.history_group_ids = set()
-        for invoice, cfs_account, cil_rollup in credit_invoice_links:
+        for invoice, cfs_account, cil_rollup in cils:
             try:
                 current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {cil_rollup.id} -'
                                         f' Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}')
                 receipt_number = cil_rollup.receipt_number
-                cls._rollback_receipt_and_invoice(cfs_account, invoice, receipt_number)
+                cls._rollback_receipt_and_invoice(cfs_account, invoice, receipt_number, cil_rollup.status_code)
                 cls._update_cil_and_shortname_history(cil_rollup)
                 db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
@@ -280,16 +278,24 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice.flush()
 
     @classmethod
-    def _rollback_receipt_and_invoice(cls, cfs_account: CfsAccountModel, invoice: InvoiceModel, receipt_number: str):
+    def _rollback_receipt_and_invoice(cls, cfs_account: CfsAccountModel,
+                                      invoice: InvoiceModel,
+                                      receipt_number: str,
+                                      cil_status_code):
         """Rollback receipt in CFS and reset invoice status."""
+        invoice_reference_requirement = {
+            EFTCreditInvoiceStatus.PENDING_REFUND.value: InvoiceReferenceStatus.COMPLETED.value,
+            EFTCreditInvoiceStatus.CANCELLED.value: InvoiceReferenceStatus.ACTIVE.value
+        }
+        invoice_reference_status = invoice_reference_requirement.get(cil_status_code)
         if not (invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
-            invoice.id, InvoiceReferenceStatus.COMPLETED.value
+            invoice.id, invoice_reference_status
         )):
-            raise Exception(f'Completed invoice reference '  # pylint: disable=broad-exception-raised
+            raise Exception(f'{invoice_reference_status} invoice reference '  # pylint: disable=broad-exception-raised
                             f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
-        CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
         is_reversal = not is_invoice_refund
+        CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         if is_invoice_refund:
             cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
         else:
