@@ -161,7 +161,7 @@ def _apply_eft_pending_payments(shortname_balance):
                 except Exception as exception:  # NOQA # pylint: disable=broad-except
                     # EFT Short name service handles commit and rollback when the action fails, we just need to make
                     # sure we log the error here
-                    current_app.logger.error(exception)
+                    current_app.logger.error(exception, exc_info=True)
 
 
 def _finalize_process_state(eft_file_model: EFTFileModel):
@@ -245,7 +245,7 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                                                                    credit_balance=credit_balance)).flush()
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_credit_errors = True
-            current_app.logger.error(e)
+            current_app.logger.error(e, exc_info=True)
             capture_message('EFT Failed to set EFT balance.', level='error')
     return has_credit_errors
 

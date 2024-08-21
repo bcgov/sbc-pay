@@ -112,7 +112,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if eft_credit_balance < invoice_balance:
             return
 
-        eft_credits: List[EFTCreditModel] = EFTShortnames.get_eft_credits(short_name_id)
+        eft_credits = EFTShortnames.get_eft_credits(short_name_id)
         for eft_credit in eft_credits:
             credit_invoice_link = EFTCreditInvoiceLinkModel(
                 eft_credit_id=eft_credit.id,

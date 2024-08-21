@@ -16,10 +16,10 @@
 
 Test-Suite to ensure that the EFTTask for electronic funds transfer is working as expected.
 """
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
-from datetime import datetime, timezone
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -47,6 +47,8 @@ def setup_eft_credit_invoice_links_test():
 
 
 tests = [
+    ('invoice_refund_flow', PaymentMethod.EFT.value, [InvoiceStatus.REFUND_REQUESTED.value],
+     [EFTCreditInvoiceStatus.CANCELLED.value], [None], 0, 0),
     ('insufficient_amount_on_links', PaymentMethod.EFT.value, [InvoiceStatus.APPROVED.value, InvoiceStatus.PAID.value],
      [EFTCreditInvoiceStatus.PENDING.value, EFTCreditInvoiceStatus.PENDING_REFUND.value], [None], 0, 0),
     ('happy_flow_multiple_links', PaymentMethod.EFT.value, [InvoiceStatus.APPROVED.value, InvoiceStatus.PAID.value],
@@ -136,6 +138,9 @@ def test_eft_credit_invoice_links_by_status(session, test_name, payment_method, 
     assert len(results) == pending_count
     results = EFTTask.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value)
     assert len(results) == pending_refund_count
+    if test_name == 'invoice_refund_flow':
+        results = EFTTask.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.CANCELLED.value)
+        assert len(results) == 1
 
 
 def test_link_electronic_funds_transfers(session):
@@ -212,6 +217,36 @@ def test_reverse_electronic_funds_transfers(session):
                                                  amount=30)
     factory_receipt(invoice.id, receipt_number)
 
+    refund_requested_invoice = factory_invoice(payment_account=payment_account, total=30,
+                                               status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                               payment_method_code=PaymentMethod.EFT.value)
+
+    cil2 = factory_create_eft_credit_invoice_link(invoice_id=refund_requested_invoice.id,
+                                                  status_code=EFTCreditInvoiceStatus.CANCELLED.value,
+                                                  eft_credit_id=eft_credit.id,
+                                                  amount=30)
+    invoice_reference2 = factory_invoice_reference(invoice_id=refund_requested_invoice.id,
+                                                   status_code=InvoiceReferenceStatus.ACTIVE.value,
+                                                   invoice_number=invoice_number)
+    refund_requested_invoice2 = factory_invoice(payment_account=payment_account, total=30,
+                                                status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                                payment_method_code=PaymentMethod.EFT.value)
+
+    cil3 = factory_create_eft_credit_invoice_link(invoice_id=refund_requested_invoice2.id,
+                                                  status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
+                                                  eft_credit_id=eft_credit.id,
+                                                  amount=30)
+    invoice_reference3 = factory_invoice_reference(invoice_id=refund_requested_invoice2.id,
+                                                   status_code=InvoiceReferenceStatus.COMPLETED.value,
+                                                   invoice_number=invoice_number)
+
+    refund_requested_no_ref = factory_invoice(payment_account=payment_account, total=30,
+                                              status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                              payment_method_code=PaymentMethod.EFT.value)
+    cil4 = factory_create_eft_credit_invoice_link(invoice_id=refund_requested_no_ref.id,
+                                                  status_code=EFTCreditInvoiceStatus.CANCELLED.value,
+                                                  eft_credit_id=eft_credit.id,
+                                                  amount=30)
     eft_historical = factory_create_eft_shortname_historical(
         payment_account_id=payment_account.id,
         short_name_id=short_name_id,
@@ -224,8 +259,10 @@ def test_reverse_electronic_funds_transfers(session):
     session.commit()
 
     with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_reverse:
-        EFTTask.reverse_electronic_funds_transfers_cfs()
-        mock_reverse.assert_called()
+        with patch('pay_api.services.CFSService.adjust_invoice') as mock_adjust_invoice:
+            EFTTask.reverse_electronic_funds_transfers_cfs()
+            mock_adjust_invoice.assert_called()
+            mock_reverse.assert_called()
 
     assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
     assert len(ReceiptModel.find_all_receipts_for_invoice(invoice.id)) == 0
@@ -236,6 +273,15 @@ def test_reverse_electronic_funds_transfers(session):
 
     assert not eft_historical.hidden
     assert not eft_historical.is_processing
+
+    assert refund_requested_invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+    assert invoice_reference2.status_code == InvoiceReferenceStatus.CANCELLED.value
+    assert refund_requested_invoice2.invoice_status_code == InvoiceStatus.REFUNDED.value
+    assert invoice_reference3.status_code == InvoiceReferenceStatus.CANCELLED.value
+    assert cil.status_code == EFTCreditInvoiceStatus.REFUNDED.value
+    assert cil2.status_code == EFTCreditInvoiceStatus.CANCELLED.value
+    assert cil3.status_code == EFTCreditInvoiceStatus.REFUNDED.value
+    assert cil4.status_code == EFTCreditInvoiceStatus.CANCELLED.value
 
 
 def test_unlock_overdue_accounts(session):
@@ -264,3 +310,33 @@ def test_unlock_overdue_accounts(session):
         assert payment_account.has_overdue_invoices is None
         mock_unlock.assert_called_once()
         mock_unlock.assert_called_with(payment_account)
+
+
+def test_handle_unlinked_refund_requested_invoices(session):
+    """Test handle unlinked refund requested invoices."""
+    auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
+    eft_credit = factory_create_eft_credit(
+        amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=short_name_id,
+        eft_transaction_id=eft_transaction_id)
+    payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
+    invoice_1 = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                payment_method_code=PaymentMethod.EFT.value, total=10).save()
+    factory_invoice_reference(invoice_id=invoice_1.id).save()
+    factory_create_eft_credit_invoice_link(invoice_id=invoice_1.id, eft_credit_id=eft_credit.id, amount=10)
+    invoice_2 = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                payment_method_code=PaymentMethod.EFT.value, total=10).save()
+    invoice_ref_2 = factory_invoice_reference(invoice_id=invoice_2.id).save()
+    invoice_3 = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value,
+                                payment_method_code=PaymentMethod.EFT.value, total=10).save()
+    with patch('pay_api.services.CFSService.adjust_invoice') as mock_adjust_invoice:
+        EFTTask.handle_unlinked_refund_requested_invoices()
+        mock_adjust_invoice.assert_called()
+        # Has CIL so it's excluded
+        assert invoice_1.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+        # Has no CIL and invoice reference
+        assert invoice_2.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert invoice_2.refund_date
+        assert invoice_2.refund
+        assert invoice_ref_2.status_code == InvoiceReferenceStatus.CANCELLED.value
+        # Has no invoice reference, should still move to REFUNDED
+        assert invoice_3.invoice_status_code == InvoiceStatus.REFUNDED.value
