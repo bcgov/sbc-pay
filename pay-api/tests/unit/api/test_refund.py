@@ -32,7 +32,6 @@ from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_invoice_reference, get_claims, get_payment_request, get_payment_request_with_payment_method,
     get_payment_request_with_service_fees, get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
-from unittest.mock import patch
 
 
 def test_create_refund(session, client, jwt, app, monkeypatch):
