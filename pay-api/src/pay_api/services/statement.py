@@ -129,6 +129,13 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         d = statement_schema.dump(self._dao)
         return d
 
+    @classmethod
+    def _calculate_due_date(cls, target_date: datetime | None) -> str:
+        """Calculate the due date for the statement."""
+        if target_date:
+            return (target_date + relativedelta(months=1, hours=8)).isoformat()
+        return None
+
     @staticmethod
     def get_statement_owing_query():
         """Get statement query used for amount owing."""
@@ -295,7 +302,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return {
             'lastStatementTotal': previous_totals['fees'] if previous_totals else 0,
             'lastStatementPaidAmount': previous_totals['paid'] if previous_totals else 0,
-            'latestStatementPaymentDate': latest_payment_date.strftime(DT_SHORT_FORMAT) if latest_payment_date else None
+            'latestStatementPaymentDate': latest_payment_date.strftime(DT_SHORT_FORMAT)
+            if latest_payment_date else None,
+            'dueDate': cls._calculate_due_date(statement.to_date) if statement else None
         }
 
     @staticmethod
@@ -371,7 +380,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_due_date = (result.oldest_to_date + relativedelta(months=1, hours=8)).isoformat() \
+        oldest_due_date = Statement._calculate_due_date(result.oldest_to_date) \
             if result and result.oldest_to_date else None
 
         # Unpaid invoice amount total that are not part of a statement yet
