@@ -99,16 +99,13 @@ class EftService(DepositService):
                            payment_account: PaymentAccount,
                            refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
-        current_time = datetime.now(tz=timezone.utc)
         eft_credit_invoice_links = EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)
+        invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
+            invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
-        if (
-            current_time.hour < 18 or InvoiceReferenceModel.find_by_invoice_id_and_status(
-                invoice.id,
-                InvoiceReferenceStatus.ACTIVE.value) is None
-        ) and invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
+        if invoice_reference is None and invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
             return InvoiceStatus.CANCELLED.value
-        if current_time.hour >= 18:
+        if invoice_reference:
             if invoice.invoice_status_code == InvoiceStatus.PAID.value:
                 return InvoiceStatus.REFUND_REQUESTED.value
             for eft_credit_invoice_link in eft_credit_invoice_links:

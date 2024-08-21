@@ -145,7 +145,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                         f' Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}')
                 receipt_number = cil_rollup.receipt_number
                 cls._rollback_receipt_and_invoice(cfs_account, invoice, receipt_number)
-                cls._update_cil_and_shortname_history(cil_rollup)
+                cls._update_cil_and_shortname_history(cil_rollup, reversal=True)
                 db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
@@ -187,13 +187,17 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             history_model.flush()
 
     @classmethod
-    def _update_cil_and_shortname_history(cls, cil_rollup, receipt_number=None):
+    def _update_cil_and_shortname_history(cls, cil_rollup, receipt_number=None, reversal=False):
         """Update electronic invoice links."""
         cils = db.session.query(EFTCreditInvoiceLinkModel).filter(
-            EFTCreditInvoiceLinkModel.id.in_(cil_rollup.link_ids)).all()
+                EFTCreditInvoiceLinkModel.id.in_(cil_rollup.link_ids)).all()
         for cil in cils:
-            cil.status_code = EFTCreditInvoiceStatus.COMPLETED.value if receipt_number \
-                     else EFTCreditInvoiceStatus.REFUNDED.value
+            cil.status_code = (
+                EFTCreditInvoiceStatus.CANCELLED.value
+                if reversal and cil.status_code == EFTCreditInvoiceStatus.PENDING.value
+                else EFTCreditInvoiceStatus.COMPLETED.value if receipt_number
+                else EFTCreditInvoiceStatus.REFUNDED.value
+            )
             cil.receipt_number = receipt_number or cil.receipt_number
             cil.flush()
             cls._finalize_shortname_history(cls.history_group_ids, cil)
