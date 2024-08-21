@@ -222,9 +222,9 @@ def test_reverse_electronic_funds_transfers(session):
                                                payment_method_code=PaymentMethod.EFT.value)
 
     cil2 = factory_create_eft_credit_invoice_link(invoice_id=refund_requested_invoice.id,
-                                           status_code=EFTCreditInvoiceStatus.CANCELLED.value,
-                                           eft_credit_id=eft_credit.id,
-                                           amount=30)
+                                                  status_code=EFTCreditInvoiceStatus.CANCELLED.value,
+                                                  eft_credit_id=eft_credit.id,
+                                                  amount=30)
     invoice_reference2 = factory_invoice_reference(invoice_id=refund_requested_invoice.id,
                                                    status_code=InvoiceReferenceStatus.ACTIVE.value,
                                                    invoice_number=invoice_number)
@@ -233,9 +233,9 @@ def test_reverse_electronic_funds_transfers(session):
                                                 payment_method_code=PaymentMethod.EFT.value)
 
     cil3 = factory_create_eft_credit_invoice_link(invoice_id=refund_requested_invoice2.id,
-                                           status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
-                                           eft_credit_id=eft_credit.id,
-                                           amount=30)
+                                                  status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
+                                                  eft_credit_id=eft_credit.id,
+                                                  amount=30)
     invoice_reference3 = factory_invoice_reference(invoice_id=refund_requested_invoice2.id,
                                                    status_code=InvoiceReferenceStatus.COMPLETED.value,
                                                    invoice_number=invoice_number)

@@ -349,6 +349,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_eft_invoices(cls):
         """Create EFT invoices in CFS."""
+        # Note we can't roll up for EFT, because doing refunds for invoices it's not possible to get the line
+        # information back from the API. You need that information when creating an adjustment otherwise revenue
+        # will flow to the wrong lines.
         for eft_account in cls._return_eft_accounts():
             invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == eft_account.id) \
