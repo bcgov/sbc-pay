@@ -496,6 +496,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 'payment_methods': ['EFT']
             },
             'statementSummary': {
+                'dueDate': StatementService._calculate_due_date(statement_to_date.date()),  # pylint: disable=protected-access
                 'lastStatementTotal': 0,
                 'lastStatementPaidAmount': 0,
                 'latestStatementPaymentDate': None
@@ -674,6 +675,8 @@ def test_get_eft_statement_with_invoices(session):
                 'payment_methods': ['EFT']
             },
             'statementSummary': {
+                'dueDate':
+                    StatementService._calculate_due_date(statement_to_date.date()),  # pylint: disable=protected-access
                 'lastStatementTotal': 0,
                 'lastStatementPaidAmount': 0,
                 'latestStatementPaymentDate': None,
