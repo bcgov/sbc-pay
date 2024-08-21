@@ -178,7 +178,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
 
         is_pending_invoice = invoice_data.payment_method_code in \
-            (PaymentMethod.PAD.value, PaymentMethod.EJV.value) and \
+            (PaymentMethod.PAD.value, PaymentMethod.EJV.value, PaymentMethod.EFT.value) and \
             invoice_data.invoice_status_code != InvoiceStatus.PAID.value
         if not is_pending_invoice and not invoice_data.receipts:
             raise BusinessException(Error.INVALID_REQUEST)
