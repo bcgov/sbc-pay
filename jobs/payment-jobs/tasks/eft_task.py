@@ -29,6 +29,7 @@ from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.eft_service import EftService
 from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.utils.constants import CFS_ADJ_ACTIVITY_NAME
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
     PaymentStatus, PaymentSystem, ReverseOperation)
@@ -176,10 +177,12 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             .all()
 
         for invoice in invoices:
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(invoice.payment_account_id,
+                                                                           PaymentMethod.EFT.value)
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             try:
-                cls._handle_invoice_refund(invoice, invoice_reference)
+                cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
                 db.session.commit()
             except Exception as e:   # NOQA # pylint: disable=broad-except
                 capture_message(
@@ -296,7 +299,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         is_reversal = not is_invoice_refund
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         if is_invoice_refund:
-            cls._handle_invoice_refund(invoice, invoice_reference)
+            cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
         else:
             invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
             invoice.paid = 0
@@ -312,14 +315,28 @@ class EFTTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _handle_invoice_refund(cls,
+                               cfs_account: CfsAccountModel,
                                invoice: InvoiceModel,
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
-            CFSService.reverse_invoice(invoice_reference.invoice_number)
+            adjustment_lines = cls._build_reversal_adjustment_lines(invoice)
+            CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, adjustment_lines=adjustment_lines)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.total
         invoice.flush()
+
+    @classmethod
+    def _build_reversal_adjustment_lines(cls, invoice: InvoiceModel) -> list:
+        """Build the adjustment lines for the invoice."""
+        return [
+            {
+                'line_number': line['line_number'],
+                'adjustment_amount': line['unit_price'],
+                'activity_name': CFS_ADJ_ACTIVITY_NAME
+            }
+            for line in CFSService.build_lines(invoice.payment_line_items, negate=True)
+        ]
