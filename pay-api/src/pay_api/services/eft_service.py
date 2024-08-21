@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
 from decimal import Decimal
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List
 
 from flask import current_app
