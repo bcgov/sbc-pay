@@ -19,11 +19,14 @@ Test-Suite to ensure that the EFT Service is working as expected.
 
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
+
 import pytest
+
 from pay_api.exceptions import BusinessException
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
+from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.services.eft_service import EftService
-from pay_api.utils.enums import EFTCreditInvoiceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTHistoricalTypes, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_eft_credit, factory_eft_credit_invoice_link, factory_eft_file, factory_eft_shortname, factory_invoice,
@@ -195,12 +198,16 @@ def test_eft_invoice_refund(session, test_name):
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
             assert cil_1.status_code == EFTCreditInvoiceStatus.CANCELLED.value
+            eft_history = session.query(EFTHistoryModel).one()
+            assert_shortname_refund_history(eft_credit, eft_history, invoice)
         case '1_invoice_non_exist':
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.CANCELLED.value
+            assert session.query(EFTHistoryModel).one_or_none() is None
         case '2_no_eft_credit_link':
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+            assert session.query(EFTHistoryModel).one_or_none() is None
         case '3_pending_credit_link':
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
@@ -209,6 +216,8 @@ def test_eft_invoice_refund(session, test_name):
             assert cil_3.status_code == EFTCreditInvoiceStatus.CANCELLED.value
             assert cil_4.status_code == EFTCreditInvoiceStatus.CANCELLED.value
             assert eft_credit.remaining_amount == 3
+            eft_history = session.query(EFTHistoryModel).one()
+            assert_shortname_refund_history(eft_credit, eft_history, invoice)
         case '4_completed_credit_link':
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
@@ -224,5 +233,15 @@ def test_eft_invoice_refund(session, test_name):
                 if cil.status_code == EFTCreditInvoiceStatus.PENDING_REFUND.value:
                     pending_refund_count += 1
             assert pending_refund_count == 3
+            eft_history = session.query(EFTHistoryModel).one()
+            assert_shortname_refund_history(eft_credit, eft_history, invoice)
         case _:
             raise NotImplementedError
+
+
+def assert_shortname_refund_history(eft_credit, eft_history, invoice):
+    """Assert EFT Short name record for invoice refund."""
+    assert eft_history.credit_balance == eft_credit.remaining_amount
+    assert eft_history.is_processing is True
+    assert eft_history.amount == invoice.total
+    assert eft_history.transaction_type == EFTHistoricalTypes.INVOICE_REFUND.value
