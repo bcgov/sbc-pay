@@ -672,8 +672,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         invoice_total = Decimal('0')
         for invoice in outstanding_invoices:
+            consolidated_invoice_number = generate_transaction_number(str(outstanding_invoices[-1].id) + '-C')
             for invoice_reference in invoice.references:
-                consolidated_invoice_number = generate_transaction_number(str(outstanding_invoices[-1].id) + '-C')
                 if consolidated_invoice_number in invoice_reference.invoice_number:
                     current_app.logger.info('Invoice already previously consolidated, skipping reverse invoice.')
                     break
