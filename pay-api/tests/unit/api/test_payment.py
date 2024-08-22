@@ -135,7 +135,7 @@ def test_eft_consolidated_payments(session, client, jwt, app):
     factory_payment_line_item(invoice_id=invoice_exist_consolidation.id, fee_schedule_id=1).save()
     factory_invoice_reference(invoice_exist_consolidation.id,
                               invoice_number=existing_consolidated_invoice_number).save()
-    
+
     with patch('pay_api.services.CFSService.reverse_invoice') as mock_reverse_invoice:
         rv = client.post(f'/api/v1/accounts/{payment_account.auth_account_id}/payments?retryFailedPayment=true'
                          '&payOutstandingBalance=true',
