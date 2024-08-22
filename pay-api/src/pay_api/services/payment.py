@@ -606,13 +606,14 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                              pay_account: PaymentAccountModel,
                                              invoice_total: Decimal):
         """Create payment for consolidated invoices and update invoice references."""
-        consolidated_invoice_number = generate_transaction_number(str(consolidated_invoices[-1].id) + '-C')
+        invoice_number_no_prefix = str(consolidated_invoices[-1].id) + '-C'
+        invoice_number = generate_transaction_number(invoice_number_no_prefix)
         invoice_exists = False
         try:
             invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
-                                                      inv_number=consolidated_invoice_number)
+                                                      inv_number=invoice_number)
 
-            invoice_exists = invoice_response.get('invoice_number', None) == consolidated_invoice_number
+            invoice_exists = invoice_response.get('invoice_number', None) == invoice_number
             invoice_total_matches = Decimal(invoice_response.get('total', '0')) == invoice_total
 
             if invoice_exists and not invoice_total_matches:
@@ -624,29 +625,29 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         if not invoice_exists:
             invoice_response = CFSService.create_account_invoice(
-                transaction_number=consolidated_invoice_number,
+                transaction_number=invoice_number_no_prefix,
                 line_items=consolidated_line_items,
                 cfs_account=cfs_account)
 
         for invoice in consolidated_invoices:
             inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice_id=invoice.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
-            if inv_ref and inv_ref.invoice_number != consolidated_invoice_number:
+            if inv_ref and inv_ref.invoice_number != invoice_number:
                 inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
                 inv_ref.flush()
             if not inv_ref or inv_ref.status_code == InvoiceReferenceStatus.CANCELLED.value:
                 InvoiceReferenceModel(invoice_id=invoice.id,
                                       status_code=InvoiceReferenceStatus.ACTIVE.value,
-                                      invoice_number=consolidated_invoice_number,
+                                      invoice_number=invoice_number,
                                       reference_number=invoice_response.get('pbc_ref_number')).flush()
 
         payment = Payment.create(payment_method=PaymentMethod.CC.value,
                                  payment_system=PaymentSystem.PAYBC.value,
-                                 invoice_number=consolidated_invoice_number,
+                                 invoice_number=invoice_number,
                                  invoice_amount=invoice_total,
                                  payment_account_id=pay_account.id)
 
-        return payment, consolidated_invoice_number
+        return payment, invoice_number
 
     @classmethod
     def _consolidate_invoices_and_pay(cls, auth_account_id: str) -> Payment:
