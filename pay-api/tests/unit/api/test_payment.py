@@ -18,9 +18,12 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 import json
 from datetime import datetime, timezone
+from unittest.mock import patch
 
+from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentMethod, Role
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, Role
+from pay_api.utils.util import generate_transaction_number
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     get_claims, token_header)
@@ -106,3 +109,50 @@ def test_create_wire_payment(session, client, jwt, app):
                      data=json.dumps(payload))
     assert rv.status_code == 201
     assert rv.json.get('paymentMethod') == PaymentMethod.WIRE.value
+
+
+def test_eft_consolidated_payments(session, client, jwt, app):
+    """Assert we can consolidate invoices for EFT."""
+    # Called when pressing next on the consolidated payments (paying for overdue EFT as well) page in auth-web.
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
+    invoice_with_reference = factory_invoice(payment_account, paid=0, total=100,
+                                             status_code=InvoiceStatus.APPROVED.value)
+    invoice_with_reference.save()
+    factory_payment_line_item(invoice_id=invoice_with_reference.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_with_reference.id, invoice_number=invoice_with_reference).save()
+
+    invoice_without_reference = factory_invoice(
+        payment_account, paid=0, total=100, status_code=InvoiceStatus.APPROVED.value)
+    invoice_without_reference.save()
+    factory_payment_line_item(invoice_id=invoice_without_reference.id, fee_schedule_id=1).save()
+
+    invoice_exist_consolidation = factory_invoice(
+        payment_account, paid=0, total=100, status_code=InvoiceStatus.APPROVED.value)
+    invoice_exist_consolidation.save()
+    existing_consolidated_invoice_number = generate_transaction_number(str(invoice_exist_consolidation.id) + '-C')
+    factory_payment_line_item(invoice_id=invoice_exist_consolidation.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_exist_consolidation.id,
+                              invoice_number=existing_consolidated_invoice_number).save()
+
+    with patch('pay_api.services.CFSService.reverse_invoice') as mock_reverse_invoice:
+        rv = client.post(f'/api/v1/accounts/{payment_account.auth_account_id}/payments?retryFailedPayment=true'
+                         '&payOutstandingBalance=true',
+                         headers=headers)
+        # Called once for our invoice with a reference the other two this should skip for.
+        mock_reverse_invoice.assert_called_once()
+        assert rv.status_code == 201
+
+    assert len(invoice_with_reference.references) == 2
+    cancelled = invoice_with_reference.references[0]
+    assert cancelled.status_code == InvoiceReferenceStatus.CANCELLED.value
+    active = invoice_with_reference.references[1]
+    assert active.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert len(invoice_without_reference.references) == 1
+    active = invoice_without_reference.references[0]
+    assert active.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert len(invoice_exist_consolidation.references) == 1
+    active = invoice_exist_consolidation.references[0]
+    assert active.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert PaymentModel.query.filter(PaymentModel.invoice_number == existing_consolidated_invoice_number).first()
