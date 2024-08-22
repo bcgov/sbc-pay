@@ -675,7 +675,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             for invoice_reference in invoice.references:
                 consolidated_invoice_number = generate_transaction_number(str(outstanding_invoices[-1].id) + '-C')
                 if consolidated_invoice_number in invoice_reference.invoice_number:
-                    current_app.logger.info('Invoice already consolidated, skipping reverse invoice.')
+                    current_app.logger.info('Invoice already previously consolidated, skipping reverse invoice.')
                     break
                 if invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value:
                     CFSService.reverse_invoice(inv_number=invoice_reference.invoice_number)
