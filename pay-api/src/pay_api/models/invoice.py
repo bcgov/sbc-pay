@@ -14,7 +14,7 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
 import pytz
@@ -206,6 +206,18 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         )
 
         return query.all()
+
+    @classmethod
+    def find_recent_cc_invoices(cls, days: int = 0, hours: int = 0, minutes: int = 0):
+        """Return recent invoices within a certain time and is not complete.
+
+        Used in the batch job to find orphan records which are untouched for a time.
+        """
+        earliest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
+        return db.session.query(Invoice) \
+            .filter(Invoice.invoice_status_code == InvoiceStatus.CREATED.value) \
+            .filter(Invoice.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])) \
+            .filter(Invoice.created_on >= earliest_transaction_time)
 
 
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
