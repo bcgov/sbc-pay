@@ -24,7 +24,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus
+from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus
 from sentry_sdk import capture_message
 
 from pay_queue.minio import get_object
@@ -133,6 +133,36 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
 
     _finalize_process_state(eft_file_model)
 
+    # Apply EFT Short name link pending payments after finalizing TDI17 processing to allow
+    # for it to be committed first
+    _apply_eft_pending_payments(shortname_balance)
+
+
+def _apply_eft_pending_payments(shortname_balance):
+    """Apply payments to short name links."""
+    for shortname in shortname_balance.keys():
+        eft_shortname = _get_shortname(shortname)
+        eft_credit_balance = EFTShortnamesService.get_eft_credit_balance(eft_shortname.id)
+        shortname_links = EFTShortnamesService.get_shortname_links(eft_shortname.id).get('items', [])
+        for shortname_link in shortname_links:
+            # We are expecting pending payments to have been cleared since this runs after the
+            # eft task job. Something may have gone wrong, we will skip this link.
+            if shortname_link.get('has_pending_payment'):
+                current_app.logger.error('Unexpected pending payment on link: %s', shortname_link.id)
+                continue
+
+            amount_owing = shortname_link.get('amount_owing')
+            auth_account_id = shortname_link.get('account_id')
+            if 0 < amount_owing <= eft_credit_balance:
+                try:
+                    payload = {'action': EFTPaymentActions.APPLY_CREDITS.value,
+                               'accountId': auth_account_id}
+                    EFTShortnamesService.process_payment_action(eft_shortname.id, payload)
+                except Exception as exception:  # NOQA # pylint: disable=broad-except
+                    # EFT Short name service handles commit and rollback when the action fails, we just need to make
+                    # sure we log the error here
+                    current_app.logger.error(exception, exc_info=True)
+
 
 def _finalize_process_state(eft_file_model: EFTFileModel):
     """Set the final transaction and file statuses."""
@@ -215,7 +245,7 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                                                                    credit_balance=credit_balance)).flush()
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_credit_errors = True
-            current_app.logger.error(e)
+            current_app.logger.error(e, exc_info=True)
             capture_message('EFT Failed to set EFT balance.', level='error')
     return has_credit_errors
 

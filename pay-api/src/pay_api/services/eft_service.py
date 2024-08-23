@@ -20,7 +20,9 @@ from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -30,6 +32,8 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RefundPartialLine
 from pay_api.models.eft_refund_email_list import EFTRefundEmailList
 from pay_api.services.eft_short_names import EFTShortnames
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
+from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.services.email_service import _render_shortname_details_body, send_email
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
@@ -98,12 +102,59 @@ class EftService(DepositService):
                            payment_account: PaymentAccount,
                            refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
+        cils = EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)
+        # 1. Possible to have no CILs and no invoice_reference, nothing to reverse.
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
                 and InvoiceReferenceModel.find_by_invoice_id_and_status(
-                    invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
+                    invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None and not cils:
             return InvoiceStatus.CANCELLED.value
 
-        # TODO: Just leaving now so we can get partners working. Need to implement the refund logic.
+        # 2. No EFT Credit Link - Job needs to reverse invoice in CFS
+        # (Invoice needs to be reversed, receipt doesn't exist.)
+        if not cils:
+            return InvoiceStatus.REFUND_REQUESTED.value
+
+        latest_link = cils[0]
+        sibling_cils = [cil for cil in cils if cil.link_group_id == latest_link.link_group_id]
+        latest_eft_credit = EFTCreditModel.find_by_id(latest_link.eft_credit_id)
+        link_group_id = EFTCreditInvoiceLinkModel.get_next_group_link_seq()
+        existing_balance = EFTShortnames.get_eft_credit_balance(latest_eft_credit.short_name_id)
+
+        match latest_link.status_code:
+            case EFTCreditInvoiceStatus.PENDING.value:
+                # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
+                # (Invoice needs to be reversed, receipt doesn't exist.)
+                for cil in sibling_cils:
+                    EFTShortnames.return_eft_credit(cil, EFTCreditInvoiceStatus.CANCELLED.value)
+                    cil.link_group_id = link_group_id
+                    cil.flush()
+            case EFTCreditInvoiceStatus.COMPLETED.value:
+                # 4. EFT Credit Link - COMPLETED
+                # (Invoice needs to be reversed and receipt needs to be reversed.)
+                for cil in sibling_cils:
+                    EFTShortnames.return_eft_credit(cil)
+                    EFTCreditInvoiceLinkModel(
+                        eft_credit_id=cil.eft_credit_id,
+                        status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
+                        amount=cil.amount,
+                        receipt_number=cil.receipt_number,
+                        invoice_id=invoice.id,
+                        link_group_id=link_group_id).flush()
+
+        current_balance = EFTShortnames.get_eft_credit_balance(latest_eft_credit.short_name_id)
+        if existing_balance != current_balance:
+            short_name_history = EFTHistoryModel.find_by_related_group_link_id(latest_link.link_group_id)
+            EFTHistoryService.create_invoice_refund(
+                EFTHistory(short_name_id=latest_eft_credit.short_name_id,
+                           amount=invoice.total,
+                           credit_balance=current_balance,
+                           payment_account_id=payment_account.id,
+                           related_group_link_id=link_group_id,
+                           statement_number=short_name_history.statement_number if short_name_history else None,
+                           invoice_id=invoice.id,
+                           is_processing=True,
+                           hidden=False)).flush()
+
         return InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
@@ -134,6 +185,7 @@ class EftService(DepositService):
     @user_context
     def create_shortname_refund(cls, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create refund."""
+        # This method isn't for invoices, it's for shortname only.
         shortname_id = get_str_by_path(request, 'shortNameId')
         shortname = get_str_by_path(request, 'shortName')
         amount = get_str_by_path(request, 'refundAmount')
@@ -155,7 +207,7 @@ class EftService(DepositService):
     def _refund_eft_credits(cls, shortname_id: int, amount: str):
         """Refund the amount to eft_credits table based on short_name_id."""
         refund_amount = Decimal(amount)
-        eft_credits: List[EFTCreditModel] = EFTShortnames.get_eft_credits(shortname_id)
+        eft_credits = EFTShortnames.get_eft_credits(shortname_id)
         eft_credit_balance = EFTShortnames.get_eft_credit_balance(shortname_id)
 
         if refund_amount > eft_credit_balance:
@@ -178,6 +230,9 @@ class EftService(DepositService):
     def _create_refund_model(cls, request: Dict[str, str],
                              shortname_id: str, amount: str, comment: str) -> EFTRefundModel:
         """Create and return the EFTRefundModel instance."""
+        # AP refund job should pick up this row and send back the amount in the refund via cheque.
+        # For example if we had $500 on the EFT Shortname credits and we want to refund $300,
+        # then the AP refund job should send a cheque for $300 to the supplier while leaving $200 on the credits.
         refund = EFTRefundModel(
             short_name_id=shortname_id,
             refund_amount=amount,

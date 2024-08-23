@@ -15,12 +15,14 @@
 import base64
 from decimal import Decimal
 import json
+import json
 from typing import List, Optional
 from urllib.parse import unquote_plus, urlencode
 
 from attrs import define
 from dateutil import parser
 from flask import current_app
+from requests import HTTPError
 from requests import HTTPError
 
 from pay_api.models import Invoice as InvoiceModel

@@ -14,9 +14,11 @@
 """Service class to control all the operations related to statements."""
 from datetime import date, datetime, timedelta, timezone
 from typing import List
+from dateutil.relativedelta import relativedelta
 
 from flask import current_app
-from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column
+from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column, select
+from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -126,6 +128,13 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         statement_schema = StatementModelSchema()
         d = statement_schema.dump(self._dao)
         return d
+
+    @classmethod
+    def _calculate_due_date(cls, target_date: datetime | None) -> str:
+        """Calculate the due date for the statement."""
+        if target_date:
+            return (target_date + relativedelta(months=1, hours=8)).isoformat()
+        return None
 
     @staticmethod
     def get_statement_owing_query():
@@ -293,7 +302,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return {
             'lastStatementTotal': previous_totals['fees'] if previous_totals else 0,
             'lastStatementPaidAmount': previous_totals['paid'] if previous_totals else 0,
-            'latestStatementPaymentDate': latest_payment_date.strftime(DT_SHORT_FORMAT) if latest_payment_date else None
+            'latestStatementPaymentDate': latest_payment_date.strftime(DT_SHORT_FORMAT)
+            if latest_payment_date else None,
+            'dueDate': cls._calculate_due_date(statement.to_date) if statement else None
         }
 
     @staticmethod
@@ -349,16 +360,18 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         # This is written outside of the model, because we have multiple model references that need to be included.
         # If we include these references inside of a model, it runs the risk of having circular dependencies.
         # It's easier to build out features if our models don't rely on other models.
+
         result = db.session.query(func.sum(InvoiceModel.total - InvoiceModel.paid).label('total_due'),
-                                  func.min(InvoiceModel.overdue_date).label('oldest_overdue_date')) \
-            .join(PaymentAccountModel) \
-            .join(StatementInvoicesModel) \
+                                  func.min(StatementModel.to_date).label('oldest_to_date')) \
+            .join(PaymentAccountModel, PaymentAccountModel.id == StatementModel.payment_account_id) \
+            .join(StatementInvoicesModel, StatementModel.id == StatementInvoicesModel.statement_id) \
             .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
             .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
                                                           InvoiceStatus.PARTIAL.value,
                                                           InvoiceStatus.APPROVED.value,
                                                           InvoiceStatus.OVERDUE.value))) \
-            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id)
+            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id) \
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
 
         if statement_id:
             result = result.filter(StatementInvoicesModel.statement_id == statement_id)
@@ -367,8 +380,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_overdue_date = result.oldest_overdue_date.strftime('%Y-%m-%d') \
-            if result and result.oldest_overdue_date else None
+        oldest_due_date = Statement._calculate_due_date(result.oldest_to_date) \
+            if result and result.oldest_to_date else None
 
         # Unpaid invoice amount total that are not part of a statement yet
         invoices_unpaid_amount = Statement.get_invoices_owing_amount(auth_account_id)
@@ -376,14 +389,14 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return {
             'total_invoice_due': float(invoices_unpaid_amount) if invoices_unpaid_amount else 0,
             'total_due': total_due,
-            'oldest_overdue_date': oldest_overdue_date
+            'oldest_due_date': oldest_due_date
         }
 
     @staticmethod
     def populate_overdue_from_invoices(statements: List[StatementModel]):
         """Populate is_overdue field for statements."""
         # Invoice status can change after a statement has been generated.
-        statement_ids = [statements.id for statements in statements]
+        statement_ids = select(func.unnest(cast([statements.id for statements in statements], ARRAY(INTEGER))))
         overdue_statements = db.session.query(
                 func.count(InvoiceModel.id).label('overdue_invoices'),  # pylint:disable=not-callable
                 StatementInvoicesModel.statement_id) \
@@ -424,7 +437,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         # End the current statement settings
         active_settings.to_date = today
         active_settings.save()
-        statement_from, statement_to = get_first_and_last_of_frequency(today, active_settings.frequency)
+        statement_to = today
+        statement_from, _ = get_first_and_last_of_frequency(today, active_settings.frequency)
         statement_filter = {
             'dateFilter': {
                 'startDate': statement_from.strftime('%Y-%m-%d'),

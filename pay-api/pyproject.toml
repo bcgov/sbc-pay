@@ -71,12 +71,12 @@ sentry-sdk = "1.41.0"
 six = "1.16.0"
 threadloop = "1.0.2"
 thrift = "0.16.0"
-tornado = "6.4"
+tornado = "6.4.1"
 typing-extensions = "4.10.0"
 urllib3 = "2.2.2"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 pg8000 = "^1.30.5"
-sql-versioning = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/sql-versioning" }
+sql-versioning = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/sql-versioning", branch = "main" }
 aiohttp = "^3.9.5"
 setuptools = "^72.1.0"
 

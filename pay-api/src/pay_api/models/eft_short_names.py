@@ -46,7 +46,7 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
 
     @classmethod

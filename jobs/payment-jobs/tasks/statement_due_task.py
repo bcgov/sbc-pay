@@ -120,6 +120,8 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                         statement.overdue_notification_date = datetime.now(tz=timezone.utc)
                         # Saving here because the code below can exception, we don't want to send the lock email twice.
                         statement.save()
+                        payment_account.has_overdue_invoices = datetime.now(tz=timezone.utc)
+                        payment_account.save()
                         cls.add_to_non_sufficient_funds(payment_account)
                         continue
                     if emails := cls._determine_recipient_emails(statement):

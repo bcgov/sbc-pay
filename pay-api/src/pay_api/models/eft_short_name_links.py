@@ -57,7 +57,7 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     eft_short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False, index=True)
     auth_account_id = db.Column('auth_account_id', db.String(50), nullable=False, index=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
     updated_by = db.Column('updated_by', db.String(100), nullable=True)
     updated_by_name = db.Column('updated_by_name', db.String(100), nullable=True)

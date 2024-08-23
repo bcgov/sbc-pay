@@ -18,6 +18,7 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
 from datetime import datetime, timedelta, timezone
+from random import randrange
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnameLinks,
@@ -438,3 +439,36 @@ def factory_refund_partial(
         created_by=created_by,
         created_on=created_on
     ).save()
+
+
+def factory_pad_account_payload(account_id: int = randrange(999999), bank_number: str = '001',
+                                transit_number='999',
+                                bank_account='1234567890'):
+    """Return a pad payment account object."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'paymentInfo': {
+            'methodOfPayment': PaymentMethod.PAD.value,
+            'billable': True,
+            'bankTransitNumber': transit_number,
+            'bankInstitutionNumber': bank_number,
+            'bankAccountNumber': bank_account
+        }
+    }
+
+
+def factory_eft_account_payload(payment_method: str = PaymentMethod.EFT.value,
+                                account_id: int = randrange(999999)):
+    """Return a premium eft enable payment account object."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'bcolAccountNumber': '2000000',
+        'bcolUserId': 'U100000',
+        'eft_enable': False,
+        'paymentInfo': {
+            'methodOfPayment': payment_method,
+            'billable': True
+        }
+    }

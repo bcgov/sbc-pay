@@ -17,7 +17,7 @@ import dataclasses
 import json
 import os
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Dict, List, Tuple
 
@@ -554,6 +554,7 @@ def _process_failed_payments(row):
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
     current_app.logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
+    payment_account.has_nsf_invoices = datetime.now(tz=timezone.utc)
     # Call CFS to stop any further PAD transactions on this account.
     CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
     if is_already_frozen:

@@ -53,7 +53,7 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     eft_credit_id = db.Column(db.Integer, ForeignKey('eft_credits.id'), nullable=False, index=True)
     amount = db.Column(db.Numeric(19, 2), nullable=True)
     status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     receipt_number = db.Column(db.String(50), nullable=True)
     link_group_id = db.Column(db.Integer, nullable=True)
 
@@ -68,7 +68,8 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     @classmethod
     def find_by_invoice_id(cls, invoice_id: int):
         """Find links by invoice id."""
-        return cls.query.filter_by(invoice_id=invoice_id).all()
+        # Order is important here, we use it in the jobs.
+        return cls.query.filter_by(invoice_id=invoice_id).order_by(EFTCreditInvoiceLink.id.desc()).all()
 
     @classmethod
     def get_next_group_link_seq(cls):

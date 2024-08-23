@@ -23,11 +23,12 @@ from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.services.statement import Statement as StatementService
-from pay_api.utils.enums import NotificationStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.enums import NotificationStatus, StatementFrequency
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
     get_week_start_and_end_date)
-from sqlalchemy import delete
+from sqlalchemy import cast, delete, func, select
+from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 
 class StatementTask:  # pylint:disable=too-few-public-methods
@@ -63,6 +64,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         generate_monthly = target_time.day == 1
 
         cls._generate_daily_statements(target_time, auth_account_override)
+        if not generate_weekly:
+            cls._generate_gap_statements(target_time, auth_account_override)
         if generate_weekly:
             cls._generate_weekly_statements(target_time, auth_account_override)
         if generate_monthly:
@@ -70,6 +73,27 @@ class StatementTask:  # pylint:disable=too-few-public-methods
 
         # Commit transaction
         db.session.commit()
+
+    @classmethod
+    def _generate_gap_statements(cls, target_time, account_override):
+        """Generate gap statements for weekly statements that wont run over Sunday."""
+        # Look at the target_time versus the end date.
+        previous_day = get_previous_day(target_time)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
+                                                                                        StatementFrequency.WEEKLY,
+                                                                                        to_date=previous_day.date())
+        statement_from, _ = get_week_start_and_end_date(previous_day, index=0)
+        statement_to = previous_day
+        if statement_from == statement_to or not statement_settings:
+            return
+        current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate GAP statements')
+        search_filter = {
+            'dateFilter': {
+                'startDate': statement_from.strftime('%Y-%m-%d'),
+                'endDate': statement_to.strftime('%Y-%m-%d')
+            }
+        }
+        cls._create_statement_records(search_filter, statement_settings, account_override)
 
     @classmethod
     def _generate_daily_statements(cls, target_time: datetime, account_override: str):
@@ -184,7 +208,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # Force match on these methods where if the payment method is in matchPaymentMethods, the invoice payment method
         # must match the account payment method. Used for EFT so the statements only show EFT invoices and interim
         # statement logic when transitioning payment methods
-        search_filter['matchPaymentMethods'] = [PaymentMethod.EFT.value]
+        search_filter['matchPaymentMethods'] = True
         invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(search_filter)
         reuse_statements = []
         if cls.has_date_override and statement_settings:
@@ -209,6 +233,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
     def _clean_up_old_statements(cls, statement_settings):
         """Clean up duplicate / old statements before generating."""
         payment_account_ids = [pay_account.id for _, pay_account in statement_settings]
+        payment_account_ids = select(func.unnest(cast(payment_account_ids, ARRAY(INTEGER))))
         existing_statements = db.session.query(StatementModel)\
             .filter_by(
                 frequency=statement_settings[0].StatementSettings.frequency,
@@ -219,11 +244,12 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         current_app.logger.debug(f'Removing {len(existing_statements)} existing duplicate/stale statement invoices.')
         remove_statements_ids = [statement.id for statement in existing_statements]
         remove_statement_invoices = db.session.query(StatementInvoicesModel)\
-            .filter(StatementInvoicesModel.statement_id.in_(remove_statements_ids))\
+            .filter(StatementInvoicesModel.statement_id.in_(
+                select(func.unnest(cast(remove_statements_ids, ARRAY(INTEGER))))))\
             .all()
         statement_invoice_ids = [statement_invoice.id for statement_invoice in remove_statement_invoices]
         delete_statement_invoice = delete(StatementInvoicesModel)\
-            .where(StatementInvoicesModel.id.in_(statement_invoice_ids))
+            .where(StatementInvoicesModel.id.in_(select(func.unnest(cast(statement_invoice_ids, ARRAY(INTEGER))))))
         db.session.execute(delete_statement_invoice)
         db.session.flush()
         return existing_statements

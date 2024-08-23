@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle EFT file processing."""
+"""Model to handle EFT REFUNDS, this is picked up by the AP job to mail out."""
 from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey
@@ -53,7 +53,7 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     cas_supplier_number = db.Column(db.String(), nullable=False)
     comment = db.Column(db.String(), nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     refund_email = db.Column(db.String(100), nullable=False)

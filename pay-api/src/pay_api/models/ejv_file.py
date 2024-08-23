@@ -51,7 +51,7 @@ class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now(tz=timezone.utc))
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     completed_on = db.Column('completed_on', db.DateTime, nullable=True)
     file_type = db.Column('file_type', db.String, nullable=True, default=EjvFileType.DISBURSEMENT.value)
     file_ref = db.Column('file_ref', db.String, nullable=False, index=True)

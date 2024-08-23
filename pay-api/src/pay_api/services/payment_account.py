@@ -161,6 +161,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 PaymentMethod.EFT.value not in {account.payment_method, target_payment_method}:
             return
 
+        if (account.payment_method == PaymentMethod.EFT.value and
+                flags.is_on('enable-payment-change-from-eft', default=False)):
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_UNSUPPORTED)
+
         account_summary = Statement.get_summary(account.auth_account_id)
         outstanding_balance = account_summary['total_invoice_due'] + account_summary['total_due']
 
@@ -621,7 +625,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
                                                                                             PaymentMethod.PAD.value)
             CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
-
+            payment_account_model = PaymentAccountModel.find_by_id(payment_account_id)
+            payment_account_model.has_nsf_invoices = None
+            pay_account.save()
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
