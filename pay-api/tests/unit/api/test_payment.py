@@ -95,22 +95,6 @@ def test_create_eft_payment(session, client, jwt, app):
     assert rv.json.get('paymentMethod') == PaymentMethod.EFT.value
 
 
-def test_create_wire_payment(session, client, jwt, app):
-    """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(roles=[Role.CREATE_CREDITS.value, Role.STAFF.value]), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    payload = {
-        'paidAmount': 100,
-        'paymentDate': str(datetime.now(tz=timezone.utc)),
-        'paymentMethod': 'WIRE'
-    }
-    payment_account = factory_payment_account(payment_method_code=PaymentMethod.WIRE.value).save()
-    rv = client.post(f'/api/v1/accounts/{payment_account.auth_account_id}/payments', headers=headers,
-                     data=json.dumps(payload))
-    assert rv.status_code == 201
-    assert rv.json.get('paymentMethod') == PaymentMethod.WIRE.value
-
-
 def test_eft_consolidated_payments(session, client, jwt, app):
     """Assert we can consolidate invoices for EFT."""
     # Called when pressing next on the consolidated payments (paying for overdue EFT as well) page in auth-web.

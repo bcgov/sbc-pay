@@ -350,15 +350,6 @@ def factory_create_ejv_account(auth_account_id='1234',
     return account
 
 
-def factory_create_wire_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value):
-    """Return Factory."""
-    account = PaymentAccount(auth_account_id=auth_account_id,
-                             payment_method=PaymentMethod.WIRE.value,
-                             name=f'Test {auth_account_id}').save()
-    CfsAccount(status=status, account_id=account.id, payment_method=PaymentMethod.WIRE.value).save()
-    return account
-
-
 def factory_distribution(name: str, client: str = '111', reps_centre: str = '22222', service_line: str = '33333',
                          stob: str = '4444', project_code: str = '5555555', service_fee_dist_id: int = None,
                          disbursement_dist_id: int = None):
