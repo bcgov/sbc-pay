@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 pay-api = {git = "https://github.com/Jxio/sbc-pay.git", branch = "22775", subdirectory = "pay-api"}
-gcp-queue = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
+gcp-queue = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/gcp-queue", branch = "main" }
 gunicorn = "^21.2.0"
 flask = "^3.0.2"
 flask-sqlalchemy = "^3.1.1"

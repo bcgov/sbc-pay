@@ -213,6 +213,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         """Return recent invoices within a certain time and is not complete.
 
         Used in the batch job to find orphan records which are untouched for a time.
+        Removed CC payments cause CC use the get receipt route, not the PAYBC invoice status route
         """
         earliest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
         return db.session.query(Invoice) \

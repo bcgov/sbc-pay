@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module is being invoked from a job and it cleans up the stale records."""
 import datetime
+import traceback
 
 from flask import current_app
 from pay_api.exceptions import BusinessException, Error
@@ -99,11 +100,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
     def _verify_created_direct_pay_invoices(cls):
         """Verify recent invoice with PAYBC."""
         created_invoices = InvoiceModel.find_created_direct_pay_invoices(days=2)
-        if len(created_invoices) == 0:
-            current_app.logger.info(f'Verify Invoices Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}'
-                                    'But No records found!')
-        else:
-            current_app.logger.info(f'Found {len(created_invoices)} Created Invoices to be Verified.')
+        current_app.logger.info(f'Found {len(created_invoices)} Created Invoices to be Verified.')
 
         for invoice in created_invoices:
             try:
@@ -111,13 +108,12 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                 paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
 
                 if paybc_invoice.get('paymentstatus') in STATUS_PAID:
-                    # update active transactions
-                    current_app.logger.debug('<_update_active_transactions')
+                    current_app.logger.debug('_update_active_transactions')
                     transaction = TransactionService.find_active_by_invoice_id(invoice.id)
                     if transaction:
                         # check existing payment status in PayBC and save receipt
                         TransactionService.update_transaction(transaction.id, pay_response_url=None)
 
             except Exception as err:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error('Error on _verify_created_invoice.')
                 current_app.logger.error(err)
+                current_app.logger.error(traceback.format_exc())
