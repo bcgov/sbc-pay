@@ -84,8 +84,10 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                     InvoiceModel.invoice_status_code.in_(cls.unpaid_status))
         if cls.auth_account_override:
             current_app.logger.info(f'Using auth account override for auth_account_id: {cls.auth_account_override}')
-            query = query.join(PaymentAccountModel) \
-                .filter(PaymentAccountModel.auth_account_id == cls.auth_account_override)
+            payment_account_id = db.session.query(PaymentAccountModel.id) \
+                .filter(PaymentAccountModel.auth_account_id == cls.auth_account_override) \
+                .one()
+            query = query.filter(InvoiceModel.payment_account_id == payment_account_id[0])
         query.update({InvoiceModel.invoice_status_code: InvoiceStatus.OVERDUE.value}, synchronize_session='fetch')
         db.session.commit()
 
