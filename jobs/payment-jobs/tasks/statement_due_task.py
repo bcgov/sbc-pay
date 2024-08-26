@@ -213,7 +213,6 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     def _determine_recipient_emails(cls, statement: StatementRecipientsModel) -> str:
         if (recipients := StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)):
             recipients = ','.join([str(recipient.email) for recipient in recipients])
-
             return recipients
 
         current_app.logger.error(f'No recipients found for payment_account_id: {statement.payment_account_id}. Skip.')
