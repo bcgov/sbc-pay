@@ -492,7 +492,16 @@ class CFSService(OAuthService):
 
     @classmethod
     def adjust_invoice(cls, cfs_account: CfsAccountModel, inv_number: str, amount=0.0, adjustment_lines=None):
-        """Add adjustment to the invoice."""
+        """Add adjustment to the invoice.
+
+        Note we use reverse invoice instead of this method to adjust the invoice to zero.
+        For this method, you'd need to know the line numbers, unfortunately we can't query the line numbers from
+        the CFS service.
+        The lines are empty, so we have to guess and build the revenue line items and hopefully they match up
+        as to what we created before. Routing slips only have one payment line item typically with no service fees
+        which makes this part easy, but it gets more complicated when adjusting a rolled up invoice (think PAD).
+
+        """
         current_app.logger.debug('>Creating Adjustment for Invoice: %s', inv_number)
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')

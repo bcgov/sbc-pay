@@ -179,10 +179,13 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         for invoice in invoices:
             cfs_account = CfsAccountModel.find_effective_by_payment_method(invoice.payment_account_id,
                                                                            PaymentMethod.EFT.value)
+            if not cfs_account:
+                current_app.logger.error(f'No EFT CFS Account found for pay account id={invoice.payment_account_id}')
+                continue
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             try:
-                cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
+                cls._handle_invoice_refund(invoice, invoice_reference)
                 db.session.commit()
             except Exception as e:   # NOQA # pylint: disable=broad-except
                 capture_message(
@@ -299,7 +302,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         is_reversal = not is_invoice_refund
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         if is_invoice_refund:
-            cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
+            cls._handle_invoice_refund(invoice, invoice_reference)
         else:
             invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
             invoice.paid = 0
@@ -315,13 +318,11 @@ class EFTTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _handle_invoice_refund(cls,
-                               cfs_account: CfsAccountModel,
                                invoice: InvoiceModel,
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
-            adjustment_lines = cls._build_reversal_adjustment_lines(invoice)
-            CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, adjustment_lines=adjustment_lines)
+            CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value

@@ -105,13 +105,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     for receipt in receipts:
                         CFSService.unapply_receipt(cfs_account, receipt.receipt_number,
                                                    invoice_reference.invoice_number)
-
-                    # Adjust to zero: -invoice.total + invoice.total = 0
-                    adjustment_negative_amount = -invoice.total
-                    CFSService.adjust_invoice(cfs_account=cfs_account,
-                                              inv_number=invoice_reference.invoice_number,
-                                              amount=adjustment_negative_amount)
-
+                    # This used to be adjust invoice, but the suggested way from Tara is to use reverse invoice.
+                    CFSService.reverse_invoice(invoice_reference.invoice_number)
                 except Exception as e:  # NOQA # pylint: disable=broad-except
                     capture_message(
                         f'Error on canelling Routing Slip invoice: invoice id={invoice.id}, '
