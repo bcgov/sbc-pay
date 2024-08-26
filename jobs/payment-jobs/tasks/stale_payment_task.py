@@ -22,10 +22,7 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db
 from pay_api.services import PaymentService, TransactionService
 from pay_api.services.direct_pay_service import DirectPayService
-from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import (
-    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentStatus, TransactionStatus)
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentStatus, TransactionStatus
 
 
 STATUS_PAID = ('PAID', 'CMPLT')
@@ -40,7 +37,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         current_app.logger.info(f'StalePaymentTask Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}')
         cls._update_stale_payments()
         cls._delete_marked_payments()
-        cls._verify_recent_payments()
+        cls._verify_created_direct_pay_invoices()
 
     @classmethod
     def _update_stale_payments(cls):
@@ -99,38 +96,28 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                 current_app.logger.warn(err)
 
     @classmethod
-    def _verify_recent_payments(cls):
+    def _verify_created_direct_pay_invoices(cls):
         """Verify recent invoice with PAYBC."""
-        recent_invoices = InvoiceModel.find_recent_cc_invoices(days=2)
-        if len(recent_invoices) == 0:
-            current_app.logger.info(f'Verify Invoice Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}.'
+        created_invoices = InvoiceModel.find_created_direct_pay_invoices(days=2)
+        if len(created_invoices) == 0:
+            current_app.logger.info(f'Verify Invoices Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}'
                                     'But No records found!')
-        for invoice in recent_invoices:
+        else:
+            current_app.logger.info(f'Found {len(created_invoices)} Created Invoices to be Verified.')
+
+        for invoice in created_invoices:
             try:
                 current_app.logger.info(f'Verify Invoice Job found records.Invoice Id: {invoice.id}')
                 paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+
                 if paybc_invoice.get('paymentstatus') in STATUS_PAID:
-                    invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-                    current_app.logger.debug(f'Getting receipt details {invoice.id}')
-                    # Call PAYBC web service, get access token and use it in get txn call
-                    direct_pay_service = DirectPayService()
-                    access_token = direct_pay_service.get_token().json().get('access_token')
-                    paybc_transaction_url: str = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
-                    paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
-                    paybc_transaction_number = invoice_reference.invoice_number
-                    if not paybc_transaction_number:
-                        return
+                    # update active transactions
+                    current_app.logger.debug('<_update_active_transactions')
+                    transaction = TransactionService.find_active_by_invoice_id(invoice.id)
+                    if transaction:
+                        # check existing payment status in PayBC and save receipt
+                        TransactionService.update_transaction(transaction.id, pay_response_url=None)
 
-                    transaction_response = OAuthService.get(
-                        f'{paybc_transaction_url}/paybc/payment/{paybc_ref_number}/{paybc_transaction_number}',
-                        access_token, AuthHeaderType.BEARER, ContentType.JSON, return_none_if_404=True)
-
-                    if transaction_response:
-                        response_json = transaction_response.json()
-                        if response_json.get('paymentstatus') in STATUS_PAID:
-                            invoice.invoice_status_code = InvoiceStatus.PAID.value
-                            invoice.paid = response_json.get('trnamount')
-                            invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-            except BusinessException as err:  # just catch and continue .Don't stop
-                current_app.logger.warn('Error on _verify_recent_payments')
-                current_app.logger.warn(err)
+            except Exception as err:  # NOQA # pylint: disable=broad-except
+                current_app.logger.error('Error on _verify_created_invoice.')
+                current_app.logger.error(err)
