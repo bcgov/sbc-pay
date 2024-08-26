@@ -329,15 +329,3 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.total
         invoice.flush()
-
-    @classmethod
-    def _build_reversal_adjustment_lines(cls, invoice: InvoiceModel) -> list:
-        """Build the adjustment lines for the invoice."""
-        return [
-            {
-                'line_number': line['line_number'],
-                'adjustment_amount': line['unit_price'],
-                'activity_name': CFS_ADJ_ACTIVITY_NAME
-            }
-            for line in CFSService.build_lines(invoice.payment_line_items, negate=True)
-        ]
