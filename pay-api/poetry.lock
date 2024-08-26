@@ -1064,7 +1064,7 @@ simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-connect-common.git"
+url = "https://github.com/Jxio/sbc-connect-common.git"
 reference = "main"
 resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
 subdirectory = "python/gcp-queue"
@@ -2808,4 +2808,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b472dea0460395cc67c5a9355615106b47e53eacacd63ac7d2a05561ab9873d2"
+content-hash = "8eef4ac19659c205234a7d82b3942b57c4115ff41d85282c3ba5369799161af8"
