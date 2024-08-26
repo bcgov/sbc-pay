@@ -29,7 +29,6 @@ from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.eft_service import EftService
 from pay_api.services.invoice import Invoice as InvoiceService
-from pay_api.utils.constants import CFS_ADJ_ACTIVITY_NAME
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
     PaymentStatus, PaymentSystem, ReverseOperation)
