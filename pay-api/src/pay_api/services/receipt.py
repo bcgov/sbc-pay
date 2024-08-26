@@ -20,6 +20,7 @@ from flask import current_app
 from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import (
@@ -209,11 +210,14 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         invoices = Invoice.find_invoices_for_payment(payment_id, InvoiceReferenceStatus.COMPLETED.value)
         nsf_invoice = next((invoice for invoice in invoices
                             if invoice.payment_method_code == PaymentMethod.CC.value), None)
-        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(nsf_invoice.id)
-        receipt_details['invoiceNumber'] = invoice_reference.invoice_number
-        receipt_details['receiptNumber'] = nsf_invoice.receipts[0].receipt_number
+        payment = PaymentModel.find_by_id(payment_id)
+        receipt_details['invoiceNumber'] = payment.invoice_reference
+        receipt_details['receiptNumber'] = payment.receipt_number
         receipt_details['paymentMethodDescription'] = 'Credit Card'
         non_nsf_invoices = [inv for inv in invoices if inv.id != nsf_invoice.id]
+        # We don't generate a CC invoice for EFT overdue payments.
+        if nsf_invoice:
+            nsf_invoice = Invoice()
         nsf_invoice.details = []
         for invoice in non_nsf_invoices:
             nsf_invoice.payment_line_items.extend(invoice.payment_line_items)
