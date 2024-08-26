@@ -1187,7 +1187,7 @@ simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-connect-common.git"
+url = "https://github.com/Jxio/sbc-connect-common.git"
 reference = "main"
 resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
 subdirectory = "python/gcp-queue"
@@ -1975,7 +1975,7 @@ flask-migrate = "4.0.7"
 flask-moment = "1.0.5"
 flask-script = "2.0.6"
 flask-sqlalchemy = "3.1.1"
-gcp-queue = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
+gcp-queue = {git = "https://github.com/Jxio/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
 greenlet = "3.0.3"
 gunicorn = "21.2.0"
 holidays = "0.37"
@@ -2025,9 +2025,9 @@ werkzeug = "3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "refund_fixes"
-resolved_reference = "2ff937e416072047076fbfd79e43d03bb97fff7b"
+url = "https://github.com/Jxio/sbc-pay.git"
+reference = "22775"
+resolved_reference = "adf7653b62655d95067ef48ca3b9327ea30cef05"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3169,4 +3169,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "60640b19b266678e30cd110ca828792412cf9e40733c3b8ff078fccabf723d9a"
+content-hash = "467dea649812c156ded4c1ca15497c1dae910d799d5a462d1ba2a7335390a6c4"
