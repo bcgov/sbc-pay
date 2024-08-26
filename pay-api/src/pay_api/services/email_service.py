@@ -14,6 +14,7 @@
 
 """This manages all of the email notification service."""
 import os
+from typing import Dict
 
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
@@ -70,4 +71,18 @@ def _render_shortname_details_body(shortname: str, amount: str, comment: str, sh
         'comment': comment,
         'url': url
     }
+    return template.render(params)
+
+
+def _render_payment_reversed_template(params: Dict) -> str:
+    """Render short name statement reverse payment template."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root_dir = os.path.dirname(current_dir)
+    templates_dir = os.path.join(project_root_dir, 'templates')
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+    template = env.get_template('eft_reverse_payment.html')
+
+    statement_url = f"{current_app.config.get('AUTH_WEB_URL')}/account/{params['accountId']}/settings/statements"
+    params['statementUrl'] = statement_url
+
     return template.render(params)
