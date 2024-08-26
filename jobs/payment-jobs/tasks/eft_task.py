@@ -64,6 +64,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                       func.sum(EFTCreditInvoiceLinkModel.amount).label('rollup_amount')) \
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id) \
             .filter(EFTCreditInvoiceLinkModel.status_code == status) \
+            .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.ACTIVE.value) \
             .group_by(EFTCreditInvoiceLinkModel.invoice_id,
                       EFTCreditInvoiceLinkModel.status_code,
                       EFTCreditInvoiceLinkModel.receipt_number) \
