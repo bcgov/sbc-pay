@@ -15,6 +15,7 @@
 from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta
 
+import pytz
 from flask import current_app
 from pay_api.models import db
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
@@ -70,7 +71,12 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     def _update_invoice_overdue_status(cls):
         """Update the status of any invoices that are overdue."""
         # Needs to be non timezone aware.
-        now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        if cls.action_date_override:
+            now = datetime.strptime(cls.action_date_override, '%Y-%m-%d').replace(hour=8)
+            offset_hours = -now.astimezone(pytz.timezone('America/Vancouver')).utcoffset().total_seconds() / 60 / 60
+            now = now.replace(hour=int(offset_hours), minute=0, second=0)
+        else:
+            now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         query = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
                     InvoiceModel.overdue_date.isnot(None),
@@ -186,8 +192,10 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         seven_days_before_invoice_due = day_invoice_due - timedelta(days=7)
 
         # Needs to be non timezone aware for comparison.
-        now_date = datetime.strptime(cls.action_date_override, '%Y-%m-%d').date() if cls.action_date_override \
-            else datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
+        if cls.action_date_override:
+            now_date = datetime.strptime(cls.action_date_override, '%Y-%m-%d').date()
+        else:
+            now_date = datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
 
         if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
             return StatementNotificationAction.OVERDUE, day_invoice_due
