@@ -78,7 +78,7 @@ sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.g
 pg8000 = "^1.30.5"
 sql-versioning = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/sql-versioning", branch = "main" }
 aiohttp = "^3.9.5"
-setuptools = "^72.1.0"
+setuptools = "^73.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
