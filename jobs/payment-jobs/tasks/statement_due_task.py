@@ -51,14 +51,17 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     unpaid_status = [InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value,
                      InvoiceStatus.APPROVED.value]
     action_date_override = None
+    auth_account_override = None
     statement_date_override = None
 
     @classmethod
-    def process_unpaid_statements(cls, statement_date_override=None, action_date_override=None):
+    def process_unpaid_statements(cls, action_date_override=None,
+                                  auth_account_override=None, statement_date_override=None):
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
         if eft_enabled:
             cls.action_date_override = action_date_override
+            cls.auth_account_override = auth_account_override
             cls.statement_date_override = statement_date_override
             cls._update_invoice_overdue_status()
             cls._notify_for_monthly()
@@ -101,6 +104,10 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                                                                                         StatementFrequency.MONTHLY)
         eft_payment_accounts = [pay_account for _, pay_account in statement_settings
                                 if pay_account.payment_method == PaymentMethod.EFT.value]
+        if cls.auth_account_override:
+            current_app.logger.info(f'Using auth account override for auth_account_id: {cls.auth_account_override}')
+            eft_payment_accounts = [pay_account for pay_account in eft_payment_accounts
+                                    if pay_account.auth_account_id == cls.auth_account_override]
 
         current_app.logger.info(f'Processing {len(eft_payment_accounts)} EFT accounts for monthly reminders.')
         for payment_account in eft_payment_accounts:
