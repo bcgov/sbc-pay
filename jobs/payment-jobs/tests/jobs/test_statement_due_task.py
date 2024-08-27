@@ -165,6 +165,6 @@ def test_overdue_invoices_updated(setup, session):
     assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
     assert account.payment_method == PaymentMethod.EFT.value
 
-    StatementDueTask.process_unpaid_statements()
+    StatementDueTask.process_unpaid_statements(auth_account_override=account.auth_account_id)
     assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
     assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
