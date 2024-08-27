@@ -25,7 +25,8 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSearchModel, NonSufficientFunds, NonSufficientFundsSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.models import Statement as StatementModel, StatementDTO
+from pay_api.models import Statement as StatementModel
+from pay_api.models import StatementDTO
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
@@ -138,15 +139,15 @@ class NonSufficientFundsService:
     @staticmethod
     def find_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices."""
-        results, total, aggregate_totals, statements = NonSufficientFundsService.query_nsf_data(
-            account_id=account_id)
+        results, total, aggregate_totals, statements = \
+            NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id)
         invoice_search_model = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao, _ in results]
-        invoice_list = Converter().unstructure(invoice_search_model)
-        new_invoices = [Converter().remove_nones(invoice_dict) for invoice_dict in invoice_list]
-        statements = Converter().unstructure(StatementDTO.dao_to_dto(statements))
+        invoices = Converter().unstructure(invoice_search_model)
+        invoices = [Converter().remove_nones(invoice_dict) for invoice_dict in invoices]
+        statements = StatementDTO.dao_to_dict(statements)
         data = {
             'total': total,
-            'invoices': new_invoices,
+            'invoices': invoices,
             'statements': statements,
             'total_amount': float(aggregate_totals.total_amount or 0),
             'total_amount_remaining': float(aggregate_totals.total_amount_remaining or 0),

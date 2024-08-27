@@ -23,6 +23,7 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey, Integer, cast
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
+from pay_api.utils.converter import Converter
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -119,7 +120,6 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
     """Schema used for Statements to be converted into dtos."""
 
     id: int
-    amount_owing: Decimal
     is_interim_statement: bool
     from_date: str
     payment_methods: str
@@ -132,7 +132,7 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
         https://www.attrs.org/en/stable/init.html
         """
         return cls(id=row.id, from_date=row.from_date, to_date=row.to_date, payment_methods=row.payment_methods,
-                   amount_owing=row.amount_owing, is_interim_statement=row.is_interim_statement)
+                   is_interim_statement=row.is_interim_statement)
 
     @classmethod
     def dao_to_dto(cls, statement_daos: List[Statement]) -> List[StatementDTO]:

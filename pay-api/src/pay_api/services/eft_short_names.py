@@ -358,11 +358,11 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
         org_admins_response = get_account_admin_users(payment_account.auth_account_id)
         admins = org_admins_response.get('members') if org_admins_response.get('members', None) else []
-        recipients = ', '.join([
+        recipients = [
             admin['user']['contacts'][0]['email']
             for admin in admins
             if 'user' in admin and 'contacts' in admin['user'] and admin['user']['contacts']
-        ])
+        ]
 
         send_email(recipients=recipients,
                    subject='Outstanding Balance Adjustment Notice',
