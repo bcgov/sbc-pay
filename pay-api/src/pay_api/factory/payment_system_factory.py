@@ -27,7 +27,6 @@ from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.pad_service import PadService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.services.wire_service import WireService
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role  # noqa: I001
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
