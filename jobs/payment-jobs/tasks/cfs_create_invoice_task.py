@@ -107,6 +107,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                    invoice_reference.invoice_number)
                     # This used to be adjust invoice, but the suggested way from Tara is to use reverse invoice.
                     CFSService.reverse_invoice(invoice_reference.invoice_number)
+
                 except Exception as e:  # NOQA # pylint: disable=broad-except
                     capture_message(
                         f'Error on canelling Routing Slip invoice: invoice id={invoice.id}, '
