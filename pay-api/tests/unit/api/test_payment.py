@@ -90,4 +90,3 @@ def test_create_eft_payment(session, client, jwt, app):
                      data=json.dumps(payload))
     assert rv.status_code == 201
     assert rv.json.get('paymentMethod') == PaymentMethod.EFT.value
-
