@@ -197,3 +197,25 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         if frequency == StatementFrequency.MONTHLY.value:
             end_date = get_first_and_last_dates_of_month(today.month, today.year)[1]
         return end_date
+
+    @classmethod
+    def find_accounts_settings_by_frequency(cls,
+                                            valid_date: datetime,
+                                            frequency: StatementFrequency,
+                                            from_date=None,
+                                            to_date=None):
+        """Return active statement setting for the account."""
+        valid_date = valid_date.date()
+        query = db.session.query(StatementSettings, PaymentAccount).join(PaymentAccount)
+        query = query.filter(StatementSettings.from_date <= valid_date). \
+            filter((StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= valid_date)). \
+            filter(StatementSettings.frequency == frequency.value)
+
+        if to_date:
+            query = query.filter(StatementSettings.to_date == to_date)
+            query = query.filter(~exists()
+                                 .where(Statement.from_date <= from_date)
+                                 .where(Statement.to_date >= to_date)
+                                 .where(Statement.is_interim_statement.is_(True))
+                                 .where(Statement.payment_account_id == StatementSettings.payment_account_id))
+        return query.all()
