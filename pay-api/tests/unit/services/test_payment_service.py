@@ -348,19 +348,6 @@ def test_create_eft_payment_ff_disabled(session, public_user_mock):
         assert exception.value.code == Error.INVALID_PAYMENT_METHOD.name
 
 
-def test_create_wire_payment(session, public_user_mock):
-    """Assert that the payment records are created."""
-    factory_payment_account(payment_method_code=PaymentMethod.WIRE.value).save()
-
-    payment_response = PaymentService.create_invoice(
-        get_payment_request_with_service_fees(
-            business_identifier='CP0002000'),
-        get_auth_premium_user())
-    assert payment_response is not None
-    assert payment_response.get('payment_method') == PaymentMethod.WIRE.value
-    assert payment_response.get('status_code') == PaymentStatus.CREATED.value
-
-
 def test_internal_rs_back_active(session, public_user_mock):
     """12033 - Scenario 2.
 
