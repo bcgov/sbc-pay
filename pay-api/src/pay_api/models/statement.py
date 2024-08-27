@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
+from __future__ import annotations
 from typing import List
 
+from attr import define
 import pytz
 from marshmallow import fields
 from sqlalchemy import ForeignKey, Integer, cast
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
+from pay_api.utils.converter import Converter
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -108,3 +111,34 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     def payment_methods_to_list(self, target):
         """Convert comma separated string to list."""
         return target.payment_methods.split(',') if target.payment_methods else []
+
+
+@define
+class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+    """Schema used for Statements to be converted into dtos."""
+
+    id: int
+    is_interim_statement: bool
+    frequency: str
+    from_date: str
+    payment_methods: str
+    to_date: str
+
+    @classmethod
+    def from_row(cls, row):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+
+        """
+        return cls(id=row.id, frequency=row.frequency, from_date=row.from_date,
+                   is_interim_statement=row.is_interim_statement, payment_methods=row.payment_methods,
+                   to_date=row.to_date)
+
+    @classmethod
+    def dao_to_dict(cls, statement_daos: List[Statement]) -> dict[StatementDTO]:
+        """Convert from DAO to DTO dict."""
+        statements_dto = [StatementDTO.from_row(statement) for statement in statement_daos]
+        statements_dict = Converter().unstructure(statements_dto)
+        statements_dict = [Converter().remove_nones(statement_dict) for statement_dict in statements_dict]
+        return statements_dict
