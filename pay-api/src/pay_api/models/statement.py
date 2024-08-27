@@ -13,11 +13,9 @@
 # limitations under the License.
 """Model to handle statements data."""
 from __future__ import annotations
-
-from decimal import Decimal
 from typing import List
 
-from attrs import define
+from attr import define
 import pytz
 from marshmallow import fields
 from sqlalchemy import ForeignKey, Integer, cast
@@ -121,6 +119,7 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
 
     id: int
     is_interim_statement: bool
+    frequency: str
     from_date: str
     payment_methods: str
     to_date: str
@@ -130,11 +129,16 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
         """From row is used so we don't tightly couple to our database class.
 
         https://www.attrs.org/en/stable/init.html
+
         """
-        return cls(id=row.id, from_date=row.from_date, to_date=row.to_date, payment_methods=row.payment_methods,
-                   is_interim_statement=row.is_interim_statement)
+        return cls(id=row.id, frequency=row.frequency, from_date=row.from_date,
+                   is_interim_statement=row.is_interim_statement, payment_methods=row.payment_methods,
+                   to_date=row.to_date)
 
     @classmethod
-    def dao_to_dto(cls, statement_daos: List[Statement]) -> List[StatementDTO]:
-        """Convert from DAO to DTO."""
-        return [StatementDTO.from_row(statement) for statement in statement_daos]
+    def dao_to_dict(cls, statement_daos: List[Statement]) -> dict[StatementDTO]:
+        """Convert from DAO to DTO dict."""
+        statements_dto = [StatementDTO.from_row(statement) for statement in statement_daos]
+        statements_dict = Converter().unstructure(statements_dto)
+        statements_dict = [Converter().remove_nones(statement_dict) for statement_dict in statements_dict]
+        return statements_dict
