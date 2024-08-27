@@ -15,6 +15,7 @@
 from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta
 
+import pytz
 from flask import current_app
 from pay_api.models import db
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
@@ -51,14 +52,17 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     unpaid_status = [InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value,
                      InvoiceStatus.APPROVED.value]
     action_date_override = None
+    auth_account_override = None
     statement_date_override = None
 
     @classmethod
-    def process_unpaid_statements(cls, statement_date_override=None, action_date_override=None):
+    def process_unpaid_statements(cls, action_date_override=None,
+                                  auth_account_override=None, statement_date_override=None):
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
         if eft_enabled:
             cls.action_date_override = action_date_override
+            cls.auth_account_override = auth_account_override
             cls.statement_date_override = statement_date_override
             cls._update_invoice_overdue_status()
             cls._notify_for_monthly()
@@ -67,12 +71,23 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     def _update_invoice_overdue_status(cls):
         """Update the status of any invoices that are overdue."""
         # Needs to be non timezone aware.
-        now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        if cls.action_date_override:
+            now = datetime.strptime(cls.action_date_override, '%Y-%m-%d').replace(hour=8)
+            offset_hours = -now.astimezone(pytz.timezone('America/Vancouver')).utcoffset().total_seconds() / 60 / 60
+            now = now.replace(hour=int(offset_hours), minute=0, second=0)
+        else:
+            now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         query = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
                     InvoiceModel.overdue_date.isnot(None),
                     InvoiceModel.overdue_date <= now,
                     InvoiceModel.invoice_status_code.in_(cls.unpaid_status))
+        if cls.auth_account_override:
+            current_app.logger.info(f'Using auth account override for auth_account_id: {cls.auth_account_override}')
+            payment_account_id = db.session.query(PaymentAccountModel.id) \
+                .filter(PaymentAccountModel.auth_account_id == cls.auth_account_override) \
+                .one()
+            query = query.filter(InvoiceModel.payment_account_id == payment_account_id[0])
         query.update({InvoiceModel.invoice_status_code: InvoiceStatus.OVERDUE.value}, synchronize_session='fetch')
         db.session.commit()
 
@@ -101,6 +116,10 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                                                                                         StatementFrequency.MONTHLY)
         eft_payment_accounts = [pay_account for _, pay_account in statement_settings
                                 if pay_account.payment_method == PaymentMethod.EFT.value]
+        if cls.auth_account_override:
+            current_app.logger.info(f'Using auth account override for auth_account_id: {cls.auth_account_override}')
+            eft_payment_accounts = [pay_account for pay_account in eft_payment_accounts
+                                    if pay_account.auth_account_id == cls.auth_account_override]
 
         current_app.logger.info(f'Processing {len(eft_payment_accounts)} EFT accounts for monthly reminders.')
         for payment_account in eft_payment_accounts:
@@ -179,8 +198,10 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         seven_days_before_invoice_due = day_invoice_due - timedelta(days=7)
 
         # Needs to be non timezone aware for comparison.
-        now_date = datetime.strptime(cls.action_date_override, '%Y-%m-%d').date() if cls.action_date_override \
-            else datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
+        if cls.action_date_override:
+            now_date = datetime.strptime(cls.action_date_override, '%Y-%m-%d').date()
+        else:
+            now_date = datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
 
         if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
             return StatementNotificationAction.OVERDUE, day_invoice_due
@@ -194,7 +215,6 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     def _determine_recipient_emails(cls, statement: StatementRecipientsModel) -> str:
         if (recipients := StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)):
             recipients = ','.join([str(recipient.email) for recipient in recipients])
-
             return recipients
 
         current_app.logger.error(f'No recipients found for payment_account_id: {statement.payment_account_id}. Skip.')
