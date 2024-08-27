@@ -89,6 +89,7 @@ class OrderStatus():
     revenue: List[RevenueLine]
     postedrefundamount: Optional[Decimal]
     refundedamount: Optional[Decimal]
+    paymentstatus: Optional[str]
 
 
 class DirectPayService(PaymentSystemService, OAuthService):
