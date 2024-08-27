@@ -610,7 +610,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Unlock frozen accounts."""
         pay_account = PaymentAccountModel.find_by_id(payment_account_id)
         unlocked = False
-        if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
+        if pay_account.has_nsf_invoices:
             current_app.logger.info(f'Unlocking PAD Frozen Account {pay_account.auth_account_id}')
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
                                                                                             PaymentMethod.PAD.value)
