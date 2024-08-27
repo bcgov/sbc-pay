@@ -22,7 +22,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db
 from pay_api.services import PaymentService, TransactionService
-from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.direct_pay_service import DirectPayService, OrderStatus
 from pay_api.utils.enums import InvoiceReferenceStatus, PaymentStatus, TransactionStatus
 
 
@@ -105,9 +105,9 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         for invoice in created_invoices:
             try:
                 current_app.logger.info(f'Verify Invoice Job found records.Invoice Id: {invoice.id}')
-                paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+                paybc_invoice: OrderStatus = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
 
-                if paybc_invoice.get('paymentstatus') in STATUS_PAID:
+                if paybc_invoice.paymentstatus in STATUS_PAID:
                     current_app.logger.debug('_update_active_transactions')
                     transaction = TransactionService.find_active_by_invoice_id(invoice.id)
                     if transaction:
