@@ -31,7 +31,6 @@ from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.pad_service import PadService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.services.wire_service import WireService
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import get_unlinked_pad_account_payload
@@ -79,12 +78,6 @@ def test_paybc_system_factory(session, public_user_mock):
     # Test for EFT Service
     instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
     assert isinstance(instance, EftService)
-    assert isinstance(instance, DepositService)
-    assert isinstance(instance, PaymentSystemService)
-
-    # Test for WIRE Service
-    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.WIRE.value)
-    assert isinstance(instance, WireService)
     assert isinstance(instance, DepositService)
     assert isinstance(instance, PaymentSystemService)
 

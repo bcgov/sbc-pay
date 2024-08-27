@@ -58,8 +58,6 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             _instance = PadService()
         elif payment_method == PaymentMethod.EFT.value:
             _instance = EftService()
-        elif payment_method == PaymentMethod.WIRE.value:
-            _instance = WireService()
         elif payment_method == PaymentMethod.EJV.value:
             _instance = EjvPayService()
 
