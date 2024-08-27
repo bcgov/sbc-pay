@@ -105,7 +105,8 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         for invoice in created_invoices:
             try:
                 current_app.logger.info(f'Verify Invoice Job found records.Invoice Id: {invoice.id}')
-                paybc_invoice: OrderStatus = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+                paybc_invoice: OrderStatus = DirectPayService.query_order_status(invoice,
+                                                                                 InvoiceReferenceStatus.ACTIVE.value)
 
                 if paybc_invoice.paymentstatus in STATUS_PAID:
                     current_app.logger.debug('_update_active_transactions')
