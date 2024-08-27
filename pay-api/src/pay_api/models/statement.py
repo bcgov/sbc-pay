@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
+from __future__ import annotations
+
+from decimal import Decimal
 from typing import List
 
+from attrs import define
 import pytz
 from marshmallow import fields
 from sqlalchemy import ForeignKey, Integer, cast
@@ -108,3 +112,29 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     def payment_methods_to_list(self, target):
         """Convert comma separated string to list."""
         return target.payment_methods.split(',') if target.payment_methods else []
+
+
+@define
+class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+    """Schema used for Statements to be converted into dtos."""
+
+    id: int
+    amount_owing: Decimal
+    is_interim_statement: bool
+    from_date: str
+    payment_methods: str
+    to_date: str
+
+    @classmethod
+    def from_row(cls, row):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(id=row.id, from_date=row.from_date, to_date=row.to_date, payment_methods=row.payment_methods,
+                   amount_owing=row.amount_owing, is_interim_statement=row.is_interim_statement)
+
+    @classmethod
+    def dao_to_dto(cls, statement_daos: List[Statement]) -> List[StatementDTO]:
+        """Convert from DAO to DTO."""
+        return [StatementDTO.from_row(statement) for statement in statement_daos]
