@@ -41,7 +41,7 @@ from .payment import Payment as PaymentService
 from .payment import PaymentReportInput
 
 
-class Statement:  # pylint:disable=too-many-instance-attributes
+class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-methods
     """Service to manage statement related operations."""
 
     def __init__(self):
@@ -130,7 +130,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return d
 
     @classmethod
-    def _calculate_due_date(cls, target_date: datetime | None) -> str:
+    def calculate_due_date(cls, target_date: datetime | None) -> str:
         """Calculate the due date for the statement."""
         if target_date:
             return (target_date + relativedelta(months=1, hours=8)).isoformat()
@@ -304,7 +304,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             'lastStatementPaidAmount': previous_totals['paid'] if previous_totals else 0,
             'latestStatementPaymentDate': latest_payment_date.strftime(DT_SHORT_FORMAT)
             if latest_payment_date else None,
-            'dueDate': cls._calculate_due_date(statement.to_date) if statement else None
+            'dueDate': cls.calculate_due_date(statement.to_date) if statement else None
         }
 
     @staticmethod
@@ -380,7 +380,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_due_date = Statement._calculate_due_date(result.oldest_to_date) \
+        oldest_due_date = Statement.calculate_due_date(result.oldest_to_date) \
             if result and result.oldest_to_date else None
 
         # Unpaid invoice amount total that are not part of a statement yet

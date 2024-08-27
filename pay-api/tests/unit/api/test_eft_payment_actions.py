@@ -21,6 +21,7 @@ import json
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Tuple
+from unittest.mock import patch
 
 from dateutil.relativedelta import relativedelta
 
@@ -224,7 +225,7 @@ def test_eft_payment_action_not_found(db, session, client, jwt, app):
     assert rv.status_code == 404
 
 
-def test_eft_reverse_payment_action(db, session, client, jwt, app):
+def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_mock):
     """Assert that EFT payment reverse action works."""
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -299,11 +300,13 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app):
                                                                              ])
     credit_invoice_links[0].receipt_number = 'ABC123'
     credit_invoice_links[0].save()
+    with patch('pay_api.services.eft_short_names.send_email') as mock_email:
+        rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
+                         data=json.dumps({'action': EFTPaymentActions.REVERSE.value, 'statementId': statement.id}),
+                         headers=headers)
+        assert rv.status_code == 204
+        mock_email.assert_called_once()
 
-    rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
-                     data=json.dumps({'action': EFTPaymentActions.REVERSE.value, 'statementId': statement.id}),
-                     headers=headers)
-    assert rv.status_code == 204
     credit_invoice_links = EFTShortnamesService.get_shortname_invoice_links(short_name.id, account.id,
                                                                             [EFTCreditInvoiceStatus.PENDING.value,
                                                                              EFTCreditInvoiceStatus.COMPLETED.value,
