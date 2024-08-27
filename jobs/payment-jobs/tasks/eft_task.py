@@ -115,16 +115,15 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def link_electronic_funds_transfers_cfs(cls) -> dict:
         """Replicate linked EFT's as receipts inside of CFS and mark invoices as paid."""
-        target_status = EFTCreditInvoiceStatus.PENDING.value
-        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(target_status)
+        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING.value)
         cls.history_group_ids = set()
         for invoice, cfs_account, cil_rollup in credit_invoice_links:
             try:
                 current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {cil_rollup.id} -'
                                         f' Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}')
-                receipt_number = f'EFTCIL{cil_rollup.id}'
                 if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
                     cls.overdue_account_ids[invoice.payment_account_id] = cfs_account.payment_account
+                receipt_number = f'EFTCIL{cil_rollup.id}'
                 cls._create_receipt_and_invoice(cfs_account, cil_rollup, invoice, receipt_number)
                 cls._update_cil_and_shortname_history(cil_rollup, receipt_number=receipt_number)
                 db.session.commit()
