@@ -287,7 +287,8 @@ def test_invoice_status_deserialization():
             }
         ],
         'postedrefundamount': None,
-        'refundedamount': None
+        'refundedamount': None,
+        'paymentstatus': None
     }
     paybc_order_status = Converter().structure(paybc_response, OrderStatus)
     assert paybc_order_status
