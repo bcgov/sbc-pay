@@ -137,7 +137,7 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
 
     @classmethod
     def dao_to_dict(cls, statement_daos: List[Statement]) -> dict[StatementDTO]:
-        """Convert from DAO to DTO."""
+        """Convert from DAO to DTO dict."""
         statements_dto = [StatementDTO.from_row(statement) for statement in statement_daos]
         statements_dict = Converter().unstructure(statements_dto)
         statements_dict = [Converter().remove_nones(statement_dict) for statement_dict in statements_dict]
