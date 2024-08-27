@@ -79,11 +79,13 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         """Generate gap statements for weekly statements that wont run over Sunday."""
         # Look at the target_time versus the end date.
         previous_day = get_previous_day(target_time)
+        statement_from, _ = get_week_start_and_end_date(previous_day, index=0)
+        statement_from = statement_from.date()
+        statement_to = previous_day.date()
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
                                                                                         StatementFrequency.WEEKLY,
+                                                                                        from_date=statement_from,
                                                                                         to_date=previous_day.date())
-        statement_from, _ = get_week_start_and_end_date(previous_day, index=0)
-        statement_to = previous_day
         if statement_from == statement_to or not statement_settings:
             return
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate GAP statements')

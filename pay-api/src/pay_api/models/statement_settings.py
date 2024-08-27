@@ -14,14 +14,14 @@
 """Model to handle statements data."""
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, exists
 
 from pay_api.utils.enums import StatementFrequency
 
 from .base_model import BaseModel
 from .db import db, ma
 from .payment_account import PaymentAccount
-
+from .statement import Statement
 
 class StatementSettings(BaseModel):
     """This class manages the statements settings related data."""
@@ -76,6 +76,7 @@ class StatementSettings(BaseModel):
     def find_accounts_settings_by_frequency(cls,
                                             valid_date: datetime,
                                             frequency: StatementFrequency,
+                                            from_date=None,
                                             to_date=None):
         """Return active statement setting for the account."""
         valid_date = valid_date.date()
@@ -87,7 +88,11 @@ class StatementSettings(BaseModel):
 
         if to_date:
             query = query.filter(StatementSettings.to_date == to_date)
-
+            query = query.filter(~exists()
+                                 .where(Statement.from_date <= from_date)
+                                 .where(Statement.to_date >= to_date)
+                                 .where(Statement.is_interim_statement.is_(True))
+                                 .where(Statement.payment_account_id == StatementSettings.payment_account_id))
         return query.all()
 
 
