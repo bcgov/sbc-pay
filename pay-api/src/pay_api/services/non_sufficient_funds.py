@@ -25,7 +25,8 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSearchModel, NonSufficientFunds, NonSufficientFundsSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.models import Statement as StatementModel, StatementDTO
+from pay_api.models import Statement as StatementModel
+from pay_api.models import StatementDTO
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
