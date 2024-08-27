@@ -23,7 +23,8 @@ from random import randrange
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnameLinks,
     EFTShortnames, EFTShortnamesHistorical, EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, StatementRecipients, StatementSettings)
+    PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, Statement, StatementInvoices, StatementRecipients,
+    StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus,
     LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus)
@@ -49,6 +50,32 @@ def factory_statement_recipient(auth_user_id: int, first_name: str, last_name: s
         email=email,
         payment_account_id=payment_account_id
     ).save()
+
+
+def factory_statement_invoices(
+        statement_id: str,
+        invoice_id: str):
+    """Return Factory."""
+    return StatementInvoices(statement_id=statement_id,
+                             invoice_id=invoice_id).save()
+
+
+def factory_statement(
+        frequency: str = 'WEEKLY',
+        payment_account_id: str = None,
+        from_date: datetime = datetime.now(tz=timezone.utc),
+        to_date: datetime = datetime.now(tz=timezone.utc),
+        statement_settings_id: str = None,
+        created_on: datetime = datetime.now(tz=timezone.utc),
+        payment_methods: str = PaymentMethod.EFT.value):
+    """Return Factory."""
+    return Statement(frequency=frequency,
+                     statement_settings_id=statement_settings_id,
+                     payment_account_id=payment_account_id,
+                     from_date=from_date,
+                     to_date=to_date,
+                     created_on=created_on,
+                     payment_methods=payment_methods).save()
 
 
 def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date=datetime.now(tz=timezone.utc),
