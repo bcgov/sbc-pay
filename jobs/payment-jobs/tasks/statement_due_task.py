@@ -113,7 +113,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         """Notify for unpaid monthly statements with an amount owing."""
         previous_month = cls.statement_date_override or current_local_time().replace(day=1) - timedelta(days=1)
         statement_settings = StatementSettingsService.find_accounts_settings_by_frequency(previous_month,
-                                                                                        StatementFrequency.MONTHLY)
+                                                                                          StatementFrequency.MONTHLY)
         eft_payment_accounts = [pay_account for _, pay_account in statement_settings
                                 if pay_account.payment_method == PaymentMethod.EFT.value]
         if cls.auth_account_override:
