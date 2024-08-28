@@ -363,7 +363,6 @@ def test_gap_statements(session, test_name, admin_users_mock):
                                from_date=from_date
                                ).save()
 
-    # Generate invoices for January 1st -> January 31st.
     match test_name:
         case 'interim_overlap':
             inv = factory_invoice(payment_account=account,
@@ -430,6 +429,7 @@ def test_gap_statements(session, test_name, admin_users_mock):
                                       total=31.50,
                                       created_on=datetime(2024, 8, 22, 15, 15)).save()
                 invoice_ids.append(inv.id)
+            # Intentional to generate the statements after the interim statement already exists.
             generate_statements(0, 32, override_start=datetime(2024, 8, 1, 15))
         case 'non_interim':
             with freeze_time(datetime(2024, 1, 1, 8)):
@@ -463,8 +463,20 @@ def test_gap_statements(session, test_name, admin_users_mock):
         assert statement.payment_methods != 'PAD,EFT'
         assert statement.payment_methods != 'EFT,PAD'
 
-    if test_name == 'interim_overlap':
-        assert len(statements) == 2
+    weekly_statements = Statement.query.filter(StatementFrequency.WEEKLY.value == Statement.frequency).all()
+    sorted_statements = sorted(weekly_statements, key=lambda x: x.from_date)
+    for prev, current in zip(sorted_statements, sorted_statements[1:]):
+        # Monthly can overlap with weekly, think of switching from PAD -> EFT on the Jan 24th.
+        # we'd still need to generate EFT for the entire month of January 1 -> 31st.
+        # Ensure weekly doesn't overlap with other weekly (interim or gap or weekly).
+        assert prev.to_date < current.from_date, \
+            f'Overlap detected between weekly/gap/interim statements {prev.id} - {current.id}'
+
+    monthly_statements = Statement.query.filter(StatementFrequency.MONTHLY.value == Statement.frequency).all()
+    sorted_statements = sorted(monthly_statements, key=lambda x: x.from_date)
+    for prev, current in zip(sorted_statements, sorted_statements[1:]):
+        # Monthly should never overlap with monthly.
+        assert prev.to_date < current.from_date, f'Overlap detected between monthly statements {prev.id} - {current.id}'
 
     generated_invoice_ids = [inv.invoice_id for inv in StatementInvoices.query.all()]
 

@@ -16,8 +16,6 @@ from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey
 
-from pay_api.utils.enums import StatementFrequency
-
 from .base_model import BaseModel
 from .db import db, ma
 from .payment_account import PaymentAccount

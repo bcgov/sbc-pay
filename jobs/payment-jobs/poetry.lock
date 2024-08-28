@@ -1187,7 +1187,7 @@ simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 
 [package.source]
 type = "git"
-url = "https://github.com/Jxio/sbc-connect-common.git"
+url = "https://github.com/bcgov/sbc-connect-common.git"
 reference = "main"
 resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
 subdirectory = "python/gcp-queue"
@@ -1975,7 +1975,7 @@ flask-migrate = "4.0.7"
 flask-moment = "1.0.5"
 flask-script = "2.0.6"
 flask-sqlalchemy = "3.1.1"
-gcp-queue = {git = "https://github.com/Jxio/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
+gcp-queue = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
 greenlet = "3.0.3"
 gunicorn = "21.2.0"
 holidays = "0.37"
@@ -3169,4 +3169,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "d5e3436f0f4195f62ba6b2ae57557435335cc6eedcf3da394c8b695c7f38490a"
+content-hash = "1ed8a59292cc566377daa840509a7f0893b1638ba863327b2718207e4765ba77"
