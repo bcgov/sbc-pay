@@ -696,7 +696,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         payment, _ = cls.create_consolidated_invoices_payment(consolidated_invoices, consolidated_line_items,
                                                               cfs_account, pay_account, invoice_total,
-                                                              use_random_invoice_number=True)
+                                                              randomize_invoice_number=True)
 
         BaseModel.commit()
         return payment
