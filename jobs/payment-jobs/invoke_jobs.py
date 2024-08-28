@@ -129,7 +129,8 @@ def run(job_name, argument=None):
             auth_account_override = argument[1] if len(argument) >= 2 else None
             StatementDueTask.process_unpaid_statements(action_date_override=action_date_override,
                                                        auth_account_override=auth_account_override)
-            application.logger.info('<<<< Completed Sending notification for unpaid statements >>>>')
+            application.logger.info(
+                '<<<< Completed Sending notification for unpaid statements >>>>')
         case 'ROUTING_SLIP':
             RoutingSlipTask.link_routing_slips()
             RoutingSlipTask.process_void()
