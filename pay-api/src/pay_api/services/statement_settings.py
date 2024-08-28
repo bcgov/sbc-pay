@@ -15,10 +15,13 @@
 from datetime import date, datetime, timedelta, timezone
 
 from flask import current_app
+from sqlalchemy import exists
 
+from pay_api.models import db
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import StatementSettingsSchema as StatementSettingsModelSchema
-from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
@@ -197,3 +200,25 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         if frequency == StatementFrequency.MONTHLY.value:
             end_date = get_first_and_last_dates_of_month(today.month, today.year)[1]
         return end_date
+
+    @classmethod
+    def find_accounts_settings_by_frequency(cls,
+                                            valid_date: datetime,
+                                            frequency: StatementFrequency,
+                                            from_date=None,
+                                            to_date=None):
+        """Return active statement setting for the account."""
+        valid_date = valid_date.date()
+        query = db.session.query(StatementSettingsModel, PaymentAccountModel).join(PaymentAccountModel)
+        query = query.filter(StatementSettingsModel.from_date <= valid_date). \
+            filter((StatementSettingsModel.to_date.is_(None)) | (StatementSettingsModel.to_date >= valid_date)). \
+            filter(StatementSettingsModel.frequency == frequency.value)
+
+        if from_date and to_date:
+            query = query.filter(StatementSettingsModel.to_date == to_date)
+            query = query.filter(~exists()
+                                 .where(StatementModel.from_date <= from_date)
+                                 .where(StatementModel.to_date >= to_date)
+                                 .where(StatementModel.is_interim_statement.is_(True))
+                                 .where(StatementModel.payment_account_id == StatementSettingsModel.payment_account_id))
+        return query.all()
