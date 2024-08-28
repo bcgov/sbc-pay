@@ -614,7 +614,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             # 1 out of the 5 invoices were recently paid but aren't the last invoice in the list.
             # This would change the total, so the consolidated invoices amount would change.
             # Earlier we already reversed existing consolidated invoices.
-            # We can't really adjust invoices, beacuse we aren't getting the line information back, 
+            # We can't really adjust invoices, because we aren't getting the line information back, 
             # so we'll have to sort to reversing and recreating the consolidated invoices.
             invoice_number_no_prefix = str(consolidated_invoices[-1].id) + str(randint(1, 999999)) + '-C'
         invoice_number = generate_transaction_number(invoice_number_no_prefix)
