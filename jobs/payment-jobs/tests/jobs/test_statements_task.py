@@ -469,13 +469,14 @@ def test_gap_statements(session, test_name, admin_users_mock):
         # Monthly can overlap with weekly, think of switching from PAD -> EFT on the Jan 24th.
         # we'd still need to generate EFT for the entire month of January 1 -> 31st.
         # Ensure weekly doesn't overlap with other weekly (interim or gap or weekly).
-        assert prev.to_date < current.from_date, f'Overlap detected between statements {prev.id} and {current.id}'
+        assert prev.to_date < current.from_date, \
+            f'Overlap detected between weekly/gap/interim statements {prev.id} - {current.id}'
 
     monthly_statements = Statement.query.filter(StatementFrequency.MONTHLY.value == Statement.frequency).all()
     sorted_statements = sorted(monthly_statements, key=lambda x: x.from_date)
     for prev, current in zip(sorted_statements, sorted_statements[1:]):
         # Monthly should never overlap with monthly.
-        assert prev.to_date < current.from_date, f'Overlap detected between statements {prev.id} and {current.id}'
+        assert prev.to_date < current.from_date, f'Overlap detected between monthly statements {prev.id} - {current.id}'
 
     generated_invoice_ids = [inv.invoice_id for inv in StatementInvoices.query.all()]
 
