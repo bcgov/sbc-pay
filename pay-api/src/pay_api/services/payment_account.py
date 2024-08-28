@@ -623,12 +623,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             unlocked = True
         elif pay_account.has_overdue_invoices:
             # Reverse original invoices here, because users can still cancel out of CC payment process and pay via EFT.
+            # Note we do the opposite of this in the EFT task.
             invoice_references = InvoiceReferenceModel.query \
                 .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
                 .distinct(InvoiceReferenceModel.invoice_number) \
                 .all()
             for invoice_reference in invoice_references:
                 if '-C' not in invoice_reference.invoice_number:
+                    # TODO which invoice_reference status are we filtering here?
                     CFSService.reverse_invoice(invoice_reference.invoice_number)
             current_app.logger.info(f'Unlocking EFT Frozen Account {pay_account.auth_account_id}')
             pay_account.has_overdue_invoices = None

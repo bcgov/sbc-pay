@@ -687,7 +687,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 if invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value and \
                         '-C' in invoice_reference.invoice_number:
                     CFSService.reverse_invoice(inv_number=invoice_reference.invoice_number)
-            # Don't reverse original invoice here, we need to do so after receiving payment, otherwised we'll have a
+            # Don't reverse original invoice here, we need to do so after receiving payment, otherwise we'll have a
             # consolidated invoice reference active while the regular invoice is reversed. (Scenario where they don't
             # go through the CC NSF process) This doesn't work well for our EFT job.
             consolidated_invoices.append(invoice)

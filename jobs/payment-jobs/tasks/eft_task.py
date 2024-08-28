@@ -253,6 +253,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             raise Exception(f'Active Invoice reference not '  # pylint: disable=broad-exception-raised
                             f'found for invoice id: {invoice.id}')
         if '-C' in invoice_reference.invoice_number:
+            # Note we do the opposite of this in payment_account.
             current_app.logger.info(f'Consolidated invoice found, reversing consolidated '
                                     f'invoice {invoice_reference.invoice_number}.')
             CFSService.reverse_invoice(invoice_reference.invoice_number)
