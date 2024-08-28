@@ -677,10 +677,14 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 if consolidated_invoice_number in invoice_reference.invoice_number:
                     current_app.logger.info('Invoice already previously consolidated, skipping reverse invoice.')
                     break
-                if invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value:
+                # It's possible more invoices could be added on, thus the outstanding invoices id changes.
+                if invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value and \
+                        '-C' in invoice_reference.invoice_number:
                     CFSService.reverse_invoice(inv_number=invoice_reference.invoice_number)
                     break
-            # It's possible there is no invoice_reference because the create_cfs_invoices could run later or failed.
+            # Don't reverse original invoice here, we need to do so after receiving payment, otherwised we'll have a
+            # consolidated invoice reference active while the regular invoice is reversed. (Scenario where they don't
+            # go through the CC NSF process) This doesn't work well for our EFT job.
             consolidated_invoices.append(invoice)
             invoice_total += invoice.total - invoice.paid
             consolidated_line_items.append(*invoice.payment_line_items)
@@ -708,6 +712,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         invoice_total = Decimal('0')
         for failed_payment in failed_payments:
+            # Note this works for PAD, but wont work for EFT as users could try to consolidate
+            # but still pay via EFT instead of going through with credit card.
             CFSService.reverse_invoice(inv_number=failed_payment.invoice_number)
             # Find all invoices for this payment.
             # Add all line items to the array
