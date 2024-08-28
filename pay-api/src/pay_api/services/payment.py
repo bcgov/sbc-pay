@@ -682,16 +682,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         invoice_total = Decimal('0')
         for invoice in outstanding_invoices:
-            consolidated_invoice_number = generate_transaction_number(str(outstanding_invoices[-1].id) + '-C')
             for invoice_reference in invoice.references:
-                if consolidated_invoice_number in invoice_reference.invoice_number:
-                    current_app.logger.info('Invoice already previously consolidated, skipping reverse invoice.')
-                    break
                 # It's possible more invoices could be added on, thus the outstanding invoices id changes.
                 if invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value and \
                         '-C' in invoice_reference.invoice_number:
                     CFSService.reverse_invoice(inv_number=invoice_reference.invoice_number)
-                    break
             # Don't reverse original invoice here, we need to do so after receiving payment, otherwised we'll have a
             # consolidated invoice reference active while the regular invoice is reversed. (Scenario where they don't
             # go through the CC NSF process) This doesn't work well for our EFT job.
