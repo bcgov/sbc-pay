@@ -16,8 +16,6 @@ from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey
 
-from pay_api.utils.enums import StatementFrequency
-
 from .base_model import BaseModel
 from .db import db, ma
 from .payment_account import PaymentAccount
@@ -71,24 +69,6 @@ class StatementSettings(BaseModel):
         query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
         query = query.filter((StatementSettings.to_date.is_(None)))
         return query.one_or_none()
-
-    @classmethod
-    def find_accounts_settings_by_frequency(cls,
-                                            valid_date: datetime,
-                                            frequency: StatementFrequency,
-                                            to_date=None):
-        """Return active statement setting for the account."""
-        valid_date = valid_date.date()
-        query = db.session.query(StatementSettings, PaymentAccount).join(PaymentAccount)
-
-        query = query.filter(StatementSettings.from_date <= valid_date). \
-            filter((StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= valid_date)). \
-            filter(StatementSettings.frequency == frequency.value)
-
-        if to_date:
-            query = query.filter(StatementSettings.to_date == to_date)
-
-        return query.all()
 
 
 class StatementSettingsSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors

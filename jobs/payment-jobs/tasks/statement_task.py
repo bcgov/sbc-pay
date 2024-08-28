@@ -21,8 +21,8 @@ from pay_api.models.base_model import db
 from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
-from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.services.statement import Statement as StatementService
+from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
 from pay_api.utils.enums import NotificationStatus, StatementFrequency
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
@@ -79,11 +79,13 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         """Generate gap statements for weekly statements that wont run over Sunday."""
         # Look at the target_time versus the end date.
         previous_day = get_previous_day(target_time)
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
-                                                                                        StatementFrequency.WEEKLY,
-                                                                                        to_date=previous_day.date())
         statement_from, _ = get_week_start_and_end_date(previous_day, index=0)
-        statement_to = previous_day
+        statement_from = statement_from.date()
+        statement_to = previous_day.date()
+        statement_settings = StatementSettingsService.find_accounts_settings_by_frequency(previous_day,
+                                                                                          StatementFrequency.WEEKLY,
+                                                                                          from_date=statement_from,
+                                                                                          to_date=statement_to)
         if statement_from == statement_to or not statement_settings:
             return
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate GAP statements')
@@ -99,8 +101,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
     def _generate_daily_statements(cls, target_time: datetime, account_override: str):
         """Generate daily statements for all accounts with settings to generate daily."""
         previous_day = get_previous_day(target_time)
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
-                                                                                        StatementFrequency.DAILY)
+        statement_settings = StatementSettingsService.find_accounts_settings_by_frequency(previous_day,
+                                                                                          StatementFrequency.DAILY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate DAILY statements')
         search_filter = {
             'dateFilter': {
@@ -114,8 +116,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
     def _generate_weekly_statements(cls, target_time: datetime, account_override: str):
         """Generate weekly statements for all accounts with settings to generate weekly."""
         previous_day = get_previous_day(target_time)
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
-                                                                                        StatementFrequency.WEEKLY)
+        statement_settings = StatementSettingsService.find_accounts_settings_by_frequency(previous_day,
+                                                                                          StatementFrequency.WEEKLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
         statement_from, statement_to = get_week_start_and_end_date(previous_day, index=1)
         search_filter = {
@@ -131,8 +133,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
     def _generate_monthly_statements(cls, target_time: datetime, account_override: str):
         """Generate monthly statements for all accounts with settings to generate monthly."""
         previous_day = get_previous_day(target_time)
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
-                                                                                        StatementFrequency.MONTHLY)
+        statement_settings = StatementSettingsService.find_accounts_settings_by_frequency(previous_day,
+                                                                                          StatementFrequency.MONTHLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate MONTHLY statements')
         last_month, last_month_year = get_previous_month_and_year(target_time)
         search_filter = {

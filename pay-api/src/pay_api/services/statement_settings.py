@@ -22,7 +22,6 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import StatementSettingsSchema as StatementSettingsModelSchema
-from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
@@ -215,7 +214,7 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
             filter((StatementSettingsModel.to_date.is_(None)) | (StatementSettingsModel.to_date >= valid_date)). \
             filter(StatementSettingsModel.frequency == frequency.value)
 
-        if to_date:
+        if from_date and to_date:
             query = query.filter(StatementSettingsModel.to_date == to_date)
             query = query.filter(~exists()
                                  .where(StatementModel.from_date <= from_date)

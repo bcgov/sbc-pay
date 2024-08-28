@@ -26,10 +26,10 @@ from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
-from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.services.flags import flags
 from pay_api.services import NonSufficientFundsService
 from pay_api.services.statement import Statement
+from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import current_local_time
 from sentry_sdk import capture_message
@@ -112,7 +112,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     def _notify_for_monthly(cls):
         """Notify for unpaid monthly statements with an amount owing."""
         previous_month = cls.statement_date_override or current_local_time().replace(day=1) - timedelta(days=1)
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_month,
+        statement_settings = StatementSettingsService.find_accounts_settings_by_frequency(previous_month,
                                                                                         StatementFrequency.MONTHLY)
         eft_payment_accounts = [pay_account for _, pay_account in statement_settings
                                 if pay_account.payment_method == PaymentMethod.EFT.value]
