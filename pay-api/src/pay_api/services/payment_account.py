@@ -630,7 +630,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 .all()
             for invoice_reference in invoice_references:
                 if '-C' not in invoice_reference.invoice_number:
-                    # TODO which invoice_reference status are we filtering here?
+                    #  TODO which invoice_reference status are we filtering here?
                     CFSService.reverse_invoice(invoice_reference.invoice_number)
             current_app.logger.info(f'Unlocking EFT Frozen Account {pay_account.auth_account_id}')
             pay_account.has_overdue_invoices = None
