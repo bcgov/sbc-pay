@@ -225,7 +225,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         )
 
         # Check if there is a payment created. If not, create a payment record with status CREATED
-        payment: Payment = Payment.find_payment_for_invoice(invoice_id)
+        payment = Payment.find_payment_for_invoice(invoice_id)
         if not payment:
             # Transaction is against payment, so create a payment if not present.
             invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
@@ -414,9 +414,11 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             active_failed_payments = Payment.get_failed_payments(auth_account_id=payment_account.auth_account_id)
             current_app.logger.info('active_failed_payments %s', active_failed_payments)
-            if not active_failed_payments:
+            # Note this will take some thought if we have multiple payment methods running at once in the future.
+            if not active_failed_payments or payment_account.has_overdue_invoices:
                 PaymentAccount.unlock_frozen_accounts(payment_id=payment.id,
-                                                      payment_account_id=payment.payment_account_id)
+                                                      payment_account_id=payment.payment_account_id,
+                                                      invoice_number=invoice_reference.invoice_number)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
 

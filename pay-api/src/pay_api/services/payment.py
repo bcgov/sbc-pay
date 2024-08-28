@@ -519,7 +519,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return cells
 
     @staticmethod
-    def find_payment_for_invoice(invoice_id: int):
+    def find_payment_for_invoice(invoice_id: int) -> Payment:
         """Find payment for by invoice."""
         payment_dao = PaymentModel.find_payment_for_invoice(invoice_id)
         payment: Payment = None

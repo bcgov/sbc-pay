@@ -29,6 +29,7 @@ from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementRecipients as StatementRecipientModel
@@ -606,22 +607,29 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(payment_id: int, payment_account_id: int):
+    def unlock_frozen_accounts(payment_id: int, payment_account_id: int, invoice_number: str):
         """Unlock frozen accounts."""
         pay_account = PaymentAccountModel.find_by_id(payment_account_id)
         unlocked = False
         if pay_account.has_nsf_invoices:
             current_app.logger.info(f'Unlocking PAD Frozen Account {pay_account.auth_account_id}')
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
-                                                                                            PaymentMethod.PAD.value)
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
+                                                                           PaymentMethod.PAD.value)
             CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
             pay_account.has_nsf_invoices = None
             pay_account.save()
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
-            receipt_info = ReceiptService.get_nsf_receipt_details(payment_id)
             unlocked = True
-        if pay_account.has_overdue_invoices:
+        elif pay_account.has_overdue_invoices:
+            # Reverse original invoices here, because users can still cancel out of CC payment process and pay via EFT.
+            invoice_references = InvoiceReferenceModel.query \
+                .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
+                .distinct(InvoiceReferenceModel.invoice_number) \
+                .all()
+            for invoice_reference in invoice_references:
+                if '-C' not in invoice_reference.invoice_number:
+                    CFSService.reverse_invoice(invoice_reference.invoice_number)
             current_app.logger.info(f'Unlocking EFT Frozen Account {pay_account.auth_account_id}')
             pay_account.has_overdue_invoices = None
             pay_account.save()
