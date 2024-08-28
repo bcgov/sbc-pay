@@ -58,8 +58,11 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
 
     @classmethod
     def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str) -> InvoiceReference:
-        """Return active Invoice Reference by invoice id."""
-        return cls.query.filter_by(invoice_id=invoice_id).filter_by(status_code=status_code).one_or_none()
+        """Return Invoice Reference by invoice id by status_code."""
+        query = cls.query.filter_by(invoice_id=invoice_id).filter_by(status_code=status_code)
+        if status_code == InvoiceReferenceStatus.CANCELLED.value:
+            return query.order_by(InvoiceReference.id.desc()).first()
+        return query.one_or_none()
 
     @classmethod
     def find_any_active_reference_by_invoice_number(cls, invoice_number: str) -> InvoiceReference:

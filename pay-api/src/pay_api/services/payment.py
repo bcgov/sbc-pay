@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from random import randint
 from typing import Dict, List, Optional, Tuple
 
 from dateutil import parser
@@ -604,9 +605,18 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                              consolidated_line_items: List[PaymentLineItem],
                                              cfs_account: CfsAccountModel,
                                              pay_account: PaymentAccountModel,
-                                             invoice_total: Decimal):
+                                             invoice_total: Decimal,
+                                             randomize_invoice_number=False):
         """Create payment for consolidated invoices and update invoice references."""
         invoice_number_no_prefix = str(consolidated_invoices[-1].id) + '-C'
+        if randomize_invoice_number:
+            # We need a random number appended, because it's possible we could have 5 invoices,
+            # 1 out of the 5 invoices were recently paid but aren't the last invoice in the list.
+            # This would change the total, so the consolidated invoices amount would change.
+            # Earlier we already reversed existing consolidated invoices.
+            # We can't really adjust invoices, beacuse we aren't getting the line information back, 
+            # so we'll have to sort to reversing and recreating the consolidated invoices.
+            invoice_number_no_prefix = str(consolidated_invoices[-1].id) + str(randint(1, 999999)) + '-C'
         invoice_number = generate_transaction_number(invoice_number_no_prefix)
         invoice_exists = False
         try:
@@ -690,7 +700,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             consolidated_line_items.append(*invoice.payment_line_items)
 
         payment, _ = cls.create_consolidated_invoices_payment(consolidated_invoices, consolidated_line_items,
-                                                              cfs_account, pay_account, invoice_total)
+                                                              cfs_account, pay_account, invoice_total,
+                                                              use_random_invoice_number=True)
 
         BaseModel.commit()
         return payment
