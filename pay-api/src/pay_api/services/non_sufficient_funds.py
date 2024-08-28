@@ -81,7 +81,7 @@ class NonSufficientFundsService:
                 ) > 0
 
     @staticmethod
-    def query_nsf_data(account_id: str):
+    def query_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices and their aggregate amounts."""
         query = (db.session.query(
             InvoiceModel, InvoiceReferenceModel)
