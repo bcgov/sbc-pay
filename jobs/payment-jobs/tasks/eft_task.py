@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
@@ -63,7 +64,6 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                       func.sum(EFTCreditInvoiceLinkModel.amount).label('rollup_amount')) \
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id) \
             .filter(EFTCreditInvoiceLinkModel.status_code == status) \
-            .filter(~InvoiceReferenceModel.invoice_number.endswith('-C')) \
             .filter(InvoiceReferenceModel.status_code.in_([InvoiceReferenceStatus.ACTIVE.value,
                                                            InvoiceReferenceStatus.COMPLETED.value])) \
             .group_by(EFTCreditInvoiceLinkModel.invoice_id,
@@ -252,6 +252,10 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         )):
             raise Exception(f'Active Invoice reference not '  # pylint: disable=broad-exception-raised
                             f'found for invoice id: {invoice.id}')
+        if '-C' in invoice_reference.invoice_number:
+            # Deactivate consolidated invoice, reverse consolidated invoice
+            pass
+
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         invoice_reference.flush()
         # Note: Not creating the entire EFT as a receipt because it can be mapped to multiple CFS accounts.
@@ -296,6 +300,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, invoice_reference_status
         )
+        if invoice_reference and '-C' in invoice_reference.invoice_number:
+            raise BusinessException(f'Cannot reverse a consolidated invoice {invoice_reference.invoice_number}')
         if cil_status_code != EFTCreditInvoiceStatus.CANCELLED.value and not invoice_reference:
             raise Exception(f'{invoice_reference_status} invoice reference '  # pylint: disable=broad-exception-raised
                             f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
@@ -323,6 +329,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
+            if invoice_reference and '-C' in invoice_reference.invoice_number:
+                raise BusinessException(f'Cannot reverse a consolidated invoice: {invoice_reference.invoice_number}')
             CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
