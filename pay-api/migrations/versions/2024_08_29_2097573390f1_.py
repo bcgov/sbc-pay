@@ -25,7 +25,7 @@ def upgrade():
         batch_op.add_column(sa.Column('created_on', sa.DateTime(), nullable=True))
         batch_op.add_column(sa.Column('is_consolidated', sa.Boolean(), nullable=False))
         batch_op.create_index(batch_op.f('ix_invoice_references_is_consolidated'), ['is_consolidated'], unique=False)
-    op.execute("update invoice_references set is_consolidated = true where invoice_number like '%-C'")
+    op.execute("update invoice_references set is_consolidated = 't' where invoice_number like '%-C'")
 
 
 def downgrade():

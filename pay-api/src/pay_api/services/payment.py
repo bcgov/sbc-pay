@@ -605,7 +605,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         """Create payment for consolidated invoices and update invoice references."""
         invoice_number_no_prefix = str(consolidated_invoices[-1].id) + '-C'
         if randomize_invoice_number:
-            # We a timestamp appended because it's possible we could have 5 invoices,
+            # We timestamp appended because it's possible we could have 5 invoices,
             # 1 out of the 5 invoices were recently paid but aren't the last invoice in the list.
             # This would change the total, so the consolidated invoices amount would change.
             # Earlier we already reversed existing consolidated invoices.
