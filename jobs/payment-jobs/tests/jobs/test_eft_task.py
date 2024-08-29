@@ -143,7 +143,9 @@ def test_eft_credit_invoice_links_by_status(session, test_name, payment_method, 
         assert len(results) == 1
 
 
-def test_link_electronic_funds_transfers(session):
+@pytest.mark.parametrize('test_name', ('happy_path', 'consolidated_happy', 'consolidated_mismatch',
+                                       'normal_invoice_missing'))
+def test_link_electronic_funds_transfers(session, test_name):
     """Test link electronic funds transfers."""
     auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
     payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
@@ -169,13 +171,51 @@ def test_link_electronic_funds_transfers(session):
 
     cfs_account = CfsAccountModel.find_effective_by_payment_method(
         payment_account.id, PaymentMethod.EFT.value)
+    return_value = {}
+    original_invoice_reference = None
 
-    with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
-        EFTTask.link_electronic_funds_transfers_cfs()
-        mock_create_cfs.assert_called()
+    match test_name:
+        case 'consolidated_happy' | 'consolidated_mismatch':
+            invoice_reference.is_consolidated = True
+            invoice_reference.save()
+            original_invoice_reference = factory_invoice_reference(invoice_id=invoice.id,
+                                                                   is_consolidated=False,
+                                                                   status_code=InvoiceReferenceStatus.CANCELLED.value) \
+                .save()
+            return_value = {'total': 10.00}
+            if test_name == 'consolidated_mismatch':
+                return_value = {'total': 10.01}
+        case 'normal_invoice_missing':
+            invoice_reference.is_consolidated = True
+            invoice_reference.save()
+        case _:
+            pass
+
+    if test_name in ['consolidated_mismatch', 'normal_invoice_missing']:
+        with patch('pay_api.services.CFSService.get_invoice', return_value=return_value) as mock_get_invoice:
+            EFTTask.link_electronic_funds_transfers_cfs()
+            # No change, the amount didn't match or normal invoice was missing.
+            assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
+        return
+
+    with patch('pay_api.services.CFSService.reverse_invoice') as mock_reverse_invoice:
+        with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
+            with patch('pay_api.services.CFSService.get_invoice', return_value=return_value) as mock_get_invoice:
+                EFTTask.link_electronic_funds_transfers_cfs()
+                mock_create_cfs.assert_called()
+                if test_name == 'consolidated_mismatch':
+                    assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
+                    mock_reverse_invoice.assert_called()
+                if test_name == 'consolidated_happy':
+                    mock_reverse_invoice.assert_called()
+                    mock_get_invoice.assert_called()
 
     assert cfs_account.status == CfsAccountStatus.ACTIVE.value
-    assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
+    if test_name == 'consolidated_happy':
+        assert invoice_reference.status_code == InvoiceReferenceStatus.CANCELLED.value
+        assert original_invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
+    else:
+        assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
     receipt = ReceiptModel.find_all_receipts_for_invoice(invoice.id)[0]
     assert receipt
     assert receipt.receipt_amount == credit_invoice_link.amount + credit_invoice_link2.amount
@@ -340,3 +380,21 @@ def test_handle_unlinked_refund_requested_invoices(session):
         assert invoice_ref_2.status_code == InvoiceReferenceStatus.CANCELLED.value
         # Has no invoice reference, should still move to REFUNDED
         assert invoice_3.invoice_status_code == InvoiceStatus.REFUNDED.value
+
+
+def test_rollback_consolidated_invoice():
+    """Ensure we can't rollback a consolidated invoice."""
+    payment_account = factory_create_eft_account(status=CfsAccountStatus.ACTIVE.value)
+    invoice_1 = factory_invoice(payment_account=payment_account).save()
+    invoice_reference = factory_invoice_reference(invoice_id=invoice_1.id,
+                                                  status_code=InvoiceReferenceStatus.COMPLETED.value,
+                                                  is_consolidated=True).save()
+    with pytest.raises(Exception) as excinfo:
+        EFTTask._rollback_receipt_and_invoice(None,  # pylint: disable=protected-access
+                                              invoice_1,
+                                              None,
+                                              cil_status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value)
+        assert 'Cannot reverse a consolidated invoice' in excinfo.value.args
+    with pytest.raises(Exception) as excinfo:
+        EFTTask._handle_invoice_refund(None, invoice_reference)  # pylint: disable=protected-access
+        assert 'Cannot reverse a consolidated invoice' in excinfo.value.args
