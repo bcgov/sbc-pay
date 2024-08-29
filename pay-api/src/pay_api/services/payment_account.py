@@ -46,7 +46,7 @@ from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -626,12 +626,16 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # Note we do the opposite of this in the EFT task.
             invoice_references = InvoiceReferenceModel.query \
                 .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
+                .filter(~InvoiceReferenceModel.invoice_number.endswith('-C')) \
+                .filter(InvoiceReferenceModel.status == InvoiceReferenceStatus.CANCELLED.value) \
                 .distinct(InvoiceReferenceModel.invoice_number) \
                 .all()
+            # Possible some of these could already be reversed.
             for invoice_reference in invoice_references:
-                if '-C' not in invoice_reference.invoice_number:
-                    #  TODO which invoice_reference status are we filtering here?
+                try:
                     CFSService.reverse_invoice(invoice_reference.invoice_number)
+                except Exception as e:  # NOQA pylint: disable=broad-except
+                    current_app.logger.error(e, exc_info=True)
             current_app.logger.info(f'Unlocking EFT Frozen Account {pay_account.auth_account_id}')
             pay_account.has_overdue_invoices = None
             pay_account.save()

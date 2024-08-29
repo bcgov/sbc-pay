@@ -260,7 +260,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
-                cil_rollup.invoice_id, InvoiceReferenceStatus.CANCELLED.value
+                cil_rollup.invoice_id, InvoiceReferenceStatus.CANCELLED.value, exclude_consolidated=True
             )
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         invoice_reference.flush()

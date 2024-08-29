@@ -676,12 +676,17 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                                                                  InvoiceStatus.SETTLEMENT_SCHEDULED]
                                                                                 )
         consolidated_invoices: List[InvoiceModel] = []
+        reversed_invoice_numbers = set()
         for invoice in outstanding_invoices:
             for invoice_reference in invoice.references:
-                # It's possible more invoices could be added on, thus the outstanding invoices id changes.
-                if invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value and \
-                        '-C' in invoice_reference.invoice_number:
-                    CFSService.reverse_invoice(inv_number=invoice_reference.invoice_number)
+                invoice_number = invoice_reference.invoice_number
+                if (
+                    invoice_number not in reversed_invoice_numbers
+                    and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
+                    and '-C' in invoice_number
+                ):
+                    reversed_invoice_numbers.add(invoice_number)
+                    CFSService.reverse_invoice(inv_number=invoice_number)
             # Don't reverse original invoice here, we need to do so after receiving payment, otherwise we'll have a
             # consolidated invoice reference active while the regular invoice is reversed. (Scenario where they don't
             # go through the CC NSF process) This doesn't work well for our EFT job.

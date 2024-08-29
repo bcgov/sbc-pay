@@ -57,9 +57,12 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
         'invoice_reference_status_codes.code'), nullable=False, index=True)
 
     @classmethod
-    def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str) -> InvoiceReference:
+    def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str, exclude_consolidated=False) \
+            -> InvoiceReference:
         """Return Invoice Reference by invoice id by status_code."""
         query = cls.query.filter_by(invoice_id=invoice_id).filter_by(status_code=status_code)
+        if exclude_consolidated:
+            query = query.filter(~InvoiceReference.reference_number.endswith('-C'))
         if status_code == InvoiceReferenceStatus.CANCELLED.value:
             return query.order_by(InvoiceReference.id.desc()).first()
         return query.one_or_none()
