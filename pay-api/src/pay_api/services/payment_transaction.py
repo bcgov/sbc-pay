@@ -418,7 +418,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             if not active_failed_payments or payment_account.has_overdue_invoices:
                 PaymentAccount.unlock_frozen_accounts(payment_id=payment.id,
                                                       payment_account_id=payment.payment_account_id,
-                                                      invoice_number=invoice_reference.invoice_number)
+                                                      invoice_number=payment.invoice_number)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
 
