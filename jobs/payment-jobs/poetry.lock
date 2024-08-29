@@ -1187,7 +1187,7 @@ simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 
 [package.source]
 type = "git"
-url = "https://github.com/Jxio/sbc-connect-common.git"
+url = "https://github.com/bcgov/sbc-connect-common.git"
 reference = "main"
 resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
 subdirectory = "python/gcp-queue"
@@ -1975,7 +1975,7 @@ flask-migrate = "4.0.7"
 flask-moment = "1.0.5"
 flask-script = "2.0.6"
 flask-sqlalchemy = "3.1.1"
-gcp-queue = {git = "https://github.com/Jxio/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
+gcp-queue = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
 greenlet = "3.0.3"
 gunicorn = "21.2.0"
 holidays = "0.37"
@@ -2011,7 +2011,7 @@ rsa = "4.9"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 semver = "3.0.2"
 sentry-sdk = "1.41.0"
-setuptools = "^72.1.0"
+setuptools = "^73.0.1"
 six = "1.16.0"
 sql-versioning = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/sql-versioning"}
 sqlalchemy = "2.0.28"
@@ -2025,9 +2025,9 @@ werkzeug = "3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/Jxio/sbc-pay.git"
-reference = "22775"
-resolved_reference = "adf7653b62655d95067ef48ca3b9327ea30cef05"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "22992"
+resolved_reference = "4668d2b1c7a9653d4d221f489cc4163193b94e86"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2760,19 +2760,19 @@ tornado = ["tornado (>=5)"]
 
 [[package]]
 name = "setuptools"
-version = "72.2.0"
+version = "73.0.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "setuptools-72.2.0-py3-none-any.whl", hash = "sha256:f11dd94b7bae3a156a95ec151f24e4637fb4fa19c878e4d191bfb8b2d82728c4"},
-    {file = "setuptools-72.2.0.tar.gz", hash = "sha256:80aacbf633704e9c8bfa1d99fa5dd4dc59573efcf9e4042c13d3bcef91ac2ef9"},
+    {file = "setuptools-73.0.1-py3-none-any.whl", hash = "sha256:b208925fcb9f7af924ed2dc04708ea89791e24bde0d3020b27df0e116088b34e"},
+    {file = "setuptools-73.0.1.tar.gz", hash = "sha256:d59a3e788ab7e012ab2c4baed1b376da6366883ee20d7a5fc426816e3d7b1193"},
 ]
 
 [package.extras]
-core = ["importlib-metadata (>=6)", "importlib-resources (>=5.10.2)", "jaraco.text (>=3.7)", "more-itertools (>=8.8)", "ordered-set (>=3.1.1)", "packaging (>=24)", "platformdirs (>=2.6.2)", "tomli (>=2.0.1)", "wheel (>=0.43.0)"]
+core = ["importlib-metadata (>=6)", "importlib-resources (>=5.10.2)", "jaraco.text (>=3.7)", "more-itertools (>=8.8)", "packaging (>=24)", "platformdirs (>=2.6.2)", "tomli (>=2.0.1)", "wheel (>=0.43.0)"]
 doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "pyproject-hooks (!=1.1)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier", "towncrier (<24.7)"]
-test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "importlib-metadata", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "jaraco.test", "mypy (==1.11.*)", "packaging (>=23.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-home (>=0.5)", "pytest-mypy", "pytest-perf", "pytest-ruff (<0.4)", "pytest-ruff (>=0.2.1)", "pytest-ruff (>=0.3.2)", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
+test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "importlib-metadata", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "jaraco.test", "mypy (==1.11.*)", "packaging (>=23.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-home (>=0.5)", "pytest-mypy", "pytest-perf", "pytest-ruff (<0.4)", "pytest-ruff (>=0.2.1)", "pytest-ruff (>=0.3.2)", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel (>=0.44.0)"]
 
 [[package]]
 name = "simple-cloudevent"
@@ -3169,4 +3169,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "467dea649812c156ded4c1ca15497c1dae910d799d5a462d1ba2a7335390a6c4"
+content-hash = "1ed8a59292cc566377daa840509a7f0893b1638ba863327b2718207e4765ba77"

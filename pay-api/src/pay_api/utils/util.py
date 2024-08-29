@@ -292,6 +292,8 @@ def get_topic_for_corp_type(corp_type: str):
     product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get('product')
     if product_code == Product.BUSINESS.value:
         return current_app.config.get('BUSINESS_PAY_TOPIC')
+    if product_code == Product.STRR.value:
+        return current_app.config.get('STRR_PAY_TOPIC')
     return None
 
 

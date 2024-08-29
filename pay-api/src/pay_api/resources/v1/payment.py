@@ -66,7 +66,7 @@ def post_account_payment(account_id: str):
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         if credit_request.get('paymentMethod') in \
-                (PaymentMethod.EFT.value, PaymentMethod.WIRE.value, PaymentMethod.DRAWDOWN.value):
+                (PaymentMethod.EFT.value, PaymentMethod.DRAWDOWN.value):
             response, status = PaymentService.create_payment_receipt(
                 auth_account_id=account_id,
                 credit_request=credit_request

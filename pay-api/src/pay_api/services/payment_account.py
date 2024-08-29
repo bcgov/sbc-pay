@@ -36,17 +36,16 @@ from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.auth import get_account_admin_users
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.cfs_service import PaymentSystem as PaymentSystemService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.services.oauth_service import OAuthService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
-from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency)
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -194,16 +193,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 PaymentAccount._check_and_update_statement_notifications(payment_account)
 
     @classmethod
-    @user_context
-    def _get_account_admin_users(cls, payment_account: PaymentAccountModel, **kwargs):
-        """Retrieve account admin users."""
-        return OAuthService.get(
-            current_app.config.get('AUTH_API_ENDPOINT') +
-            f'orgs/{payment_account.auth_account_id}/members?status=ACTIVE&roles=ADMIN',
-            kwargs['user'].bearer_token, AuthHeaderType.BEARER,
-            ContentType.JSON).json()
-
-    @classmethod
     def _check_and_update_statement_notifications(cls, payment_account: PaymentAccountModel):
         """Check and update statement notification and recipients."""
         if payment_account.payment_method != PaymentMethod.EFT.value:
@@ -220,7 +209,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             return
 
         # Auto-populate recipients with current account admins if there are currently none
-        org_admins_response = cls._get_account_admin_users(payment_account)
+        org_admins_response = get_account_admin_users(payment_account.auth_account_id)
 
         members = org_admins_response.get('members') if org_admins_response.get('members', None) else []
         for member in members:

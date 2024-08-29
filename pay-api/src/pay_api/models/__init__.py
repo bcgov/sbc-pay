@@ -61,8 +61,8 @@ from .refund import Refund
 from .refunds_partial import RefundPartialLine, RefundsPartial
 from .routing_slip import RoutingSlip, RoutingSlipSchema
 from .routing_slip_status_code import RoutingSlipStatusCode, RoutingSlipStatusCodeSchema
-from .statement import Statement, StatementSchema
-from .statement_invoices import StatementInvoices, StatementInvoicesSchema
+from .statement import StatementDTO, Statement, StatementSchema
+from .statement_invoices import StatementInvoices, StatementInvoicesSchema  # noqa: I005
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema

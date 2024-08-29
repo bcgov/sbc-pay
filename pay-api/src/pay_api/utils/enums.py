@@ -229,6 +229,7 @@ class Product(Enum):
 
     BUSINESS = 'BUSINESS'
     NRO = 'NRO'
+    STRR = 'STRR'
 
 
 class RoutingSlipStatus(Enum):

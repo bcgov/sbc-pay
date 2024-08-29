@@ -37,16 +37,17 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
+from pay_api.services.auth import get_account_admin_users
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
+from pay_api.services.email_service import _render_payment_reversed_template, send_email
+from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus, EFTPaymentActions, EFTShortnameStatus, InvoiceStatus, PaymentMethod)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
-
-from .statement import Statement as StatementService
 
 
 @dataclass
@@ -334,7 +335,39 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                        is_processing=True)
         ).flush()
 
+        cls._send_reversed_payment_notification(statement, reversed_credits)
         current_app.logger.debug('>reverse_payment_action')
+
+    @classmethod
+    @user_context
+    def _send_reversed_payment_notification(cls, statement: StatementModel, reversed_amount, **kwargs):
+        payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
+        summary_dict: dict = StatementService.get_summary(payment_account.auth_account_id)
+
+        due_date = StatementService.calculate_due_date(statement.to_date)
+        outstanding_balance = summary_dict['total_due'] + reversed_amount
+        email_params = {
+            'accountId': payment_account.auth_account_id,
+            'accountName': payment_account.name,
+            'reversedAmount': f'{reversed_amount:,.2f}',
+            'outstandingBalance': f'{outstanding_balance:,.2f}',
+            'statementMonth': statement.from_date.strftime('%B'),
+            'statementNumber': statement.id,
+            'dueDate': datetime.fromisoformat(due_date).strftime('%B %e, %Y')
+        }
+
+        org_admins_response = get_account_admin_users(payment_account.auth_account_id)
+        admins = org_admins_response.get('members') if org_admins_response.get('members', None) else []
+        recipients = [
+            admin['user']['contacts'][0]['email']
+            for admin in admins
+            if 'user' in admin and 'contacts' in admin['user'] and admin['user']['contacts']
+        ]
+
+        send_email(recipients=recipients,
+                   subject='Outstanding Balance Adjustment Notice',
+                   html_body=_render_payment_reversed_template(email_params),
+                   **kwargs)
 
     @classmethod
     def patch_shortname_link(cls, link_id: int, request: Dict):

@@ -334,20 +334,25 @@ def test_many_statements():
     assert True
 
 
-@pytest.mark.parametrize('test_name', [('non_interm'), ('pad_to_eft'), ('eft_to_pad')])
+@pytest.mark.parametrize('test_name', [('interim_overlap'), ('non_interim'), ('pad_to_eft'), ('eft_to_pad')])
 def test_gap_statements(session, test_name, admin_users_mock):
     """Ensure gap statements are generated for weekly to monthly."""
     account_create_date = datetime(2024, 1, 1, 8)
+    if test_name == 'interim_overlap':
+        account_create_date = datetime(2024, 8, 18, 15, 0)
     account = None
     invoice_ids = []
     with freeze_time(account_create_date):
         match test_name:
             case 'eft_to_pad':
                 account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.EFT.value)
+                from_date = (localize_date(account_create_date)).date()
+            case 'interim_overlap':
+                account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.PAD.value)
+                from_date = (localize_date(datetime(2024, 8, 22, 15, 0))).date()
             case _:
                 account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.PAD.value)
-
-    from_date = (localize_date(datetime(2024, 1, 1, 8))).date()
+                from_date = (localize_date(account_create_date)).date()
     StatementInvoices.query.delete()
     Statement.query.delete()
     StatementSettings.query.delete()
@@ -358,9 +363,15 @@ def test_gap_statements(session, test_name, admin_users_mock):
                                from_date=from_date
                                ).save()
 
-    # Generate invoices for January 1st -> January 31st.
     match test_name:
-        case 'non_interm':
+        case 'interim_overlap':
+            inv = factory_invoice(payment_account=account,
+                                  payment_method_code=PaymentMethod.PAD.value,
+                                  status_code=InvoiceStatus.PAID.value,
+                                  total=31.50,
+                                  created_on=datetime(2024, 8, 19, 15, 15)).save()
+            invoice_ids.append(inv.id)
+        case 'non_interim':
             for i in range(0, 31):
                 inv = factory_invoice(payment_account=account,
                                       payment_method_code=PaymentMethod.PAD.value,
@@ -407,7 +418,20 @@ def test_gap_statements(session, test_name, admin_users_mock):
                 invoice_ids.append(inv.id)
 
     match test_name:
-        case 'non_interm':
+        case 'interim_overlap':
+            with freeze_time(localize_date(datetime(2024, 8, 22, 15))):
+                payload = factory_eft_account_payload(payment_method=PaymentMethod.EFT.value,
+                                                      account_id=account.auth_account_id)
+                PaymentAccountService.update(account.auth_account_id, payload)
+                inv = factory_invoice(payment_account=account,
+                                      payment_method_code=PaymentMethod.EFT.value,
+                                      status_code=InvoiceStatus.PAID.value,
+                                      total=31.50,
+                                      created_on=datetime(2024, 8, 22, 15, 15)).save()
+                invoice_ids.append(inv.id)
+            # Intentional to generate the statements after the interim statement already exists.
+            generate_statements(0, 32, override_start=datetime(2024, 8, 1, 15))
+        case 'non_interim':
             with freeze_time(datetime(2024, 1, 1, 8)):
                 # This should create a gap between 28th Sunday and 31st Wednesday, this is a gap statement.
                 StatementSettingsService.update_statement_settings(account.auth_account_id,
@@ -439,15 +463,31 @@ def test_gap_statements(session, test_name, admin_users_mock):
         assert statement.payment_methods != 'PAD,EFT'
         assert statement.payment_methods != 'EFT,PAD'
 
+    weekly_statements = Statement.query.filter(StatementFrequency.WEEKLY.value == Statement.frequency).all()
+    sorted_statements = sorted(weekly_statements, key=lambda x: x.from_date)
+    for prev, current in zip(sorted_statements, sorted_statements[1:]):
+        # Monthly can overlap with weekly, think of switching from PAD -> EFT on the Jan 24th.
+        # we'd still need to generate EFT for the entire month of January 1 -> 31st.
+        # Ensure weekly doesn't overlap with other weekly (interim or gap or weekly).
+        assert prev.to_date < current.from_date, \
+            f'Overlap detected between weekly/gap/interim statements {prev.id} - {current.id}'
+
+    monthly_statements = Statement.query.filter(StatementFrequency.MONTHLY.value == Statement.frequency).all()
+    sorted_statements = sorted(monthly_statements, key=lambda x: x.from_date)
+    for prev, current in zip(sorted_statements, sorted_statements[1:]):
+        # Monthly should never overlap with monthly.
+        assert prev.to_date < current.from_date, f'Overlap detected between monthly statements {prev.id} - {current.id}'
+
     generated_invoice_ids = [inv.invoice_id for inv in StatementInvoices.query.all()]
 
     assert len(invoice_ids) == len(generated_invoice_ids)
 
 
-def generate_statements(start, end):
+def generate_statements(start, end, override_start=None):
     """Generate statements helper."""
     for r in range(start, end):
-        override_date = localize_date(datetime(2024, 1, 1, 8) + timedelta(days=r - 1)).strftime('%Y-%m-%d')
+        target = (override_start or datetime(2024, 1, 1, 8))
+        override_date = localize_date(target + timedelta(days=r - 1)).strftime('%Y-%m-%d')
         StatementTask.generate_statements([override_date])
 
 
