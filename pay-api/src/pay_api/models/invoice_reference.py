@@ -42,8 +42,10 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'created_on',
             'invoice_id',
             'invoice_number',
+            'is_consolidated',
             'reference_number',
             'status_code'
         ]
