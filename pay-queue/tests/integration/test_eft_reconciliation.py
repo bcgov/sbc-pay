@@ -222,7 +222,7 @@ def test_eft_tdi17_fail_transactions(session, app, client, mocker):
     assert eft_transactions is not None
     assert len(eft_transactions) == 1
     assert eft_transactions[0].error_messages[0] == 'Invalid transaction deposit amount CAD.'
-    
+
     mock_send_email.assert_called_once()
     call_args = mock_send_email.call_args[0]
     assert 'Invalid transaction deposit amount CAD.' == call_args[0][0]['error']
