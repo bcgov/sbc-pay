@@ -20,6 +20,7 @@ from .base_model import BaseModel
 from .db import db, ma
 from .payment_account import PaymentAccount
 
+
 class StatementSettings(BaseModel):
     """This class manages the statements settings related data."""
 
