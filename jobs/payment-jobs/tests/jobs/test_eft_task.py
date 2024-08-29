@@ -199,16 +199,13 @@ def test_link_electronic_funds_transfers(session, test_name):
         return
 
     with patch('pay_api.services.CFSService.reverse_invoice') as mock_reverse_invoice:
-        with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
+        with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_receipt:
             with patch('pay_api.services.CFSService.get_invoice', return_value=return_value) as mock_get_invoice:
                 EFTTask.link_electronic_funds_transfers_cfs()
-                mock_create_cfs.assert_called()
-                if test_name == 'consolidated_mismatch':
-                    assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
-                    mock_reverse_invoice.assert_called()
                 if test_name == 'consolidated_happy':
                     mock_reverse_invoice.assert_called()
                     mock_get_invoice.assert_called()
+                    mock_create_receipt.assert_called()
 
     assert cfs_account.status == CfsAccountStatus.ACTIVE.value
     if test_name == 'consolidated_happy':

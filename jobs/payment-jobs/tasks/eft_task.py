@@ -252,24 +252,25 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             raise LookupError(f'Active Invoice reference not '
                               f'found for invoice id: {invoice.id}')
         if invoice_reference.is_consolidated:
+            original_invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
+                cil_rollup.invoice_id, InvoiceReferenceStatus.CANCELLED.value, exclude_consolidated=True
+            )
+            if not original_invoice_reference:
+                raise LookupError(f'Non consolidated cancelled invoice reference not '
+                                  f'found for invoice id: {invoice.id}')
+            invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
+                                                      inv_number=original_invoice_reference.invoice_number)
+            cfs_total = Decimal(invoice_response.get('total', '0'))
+            invoice_total_matches = cfs_total == invoice.total
+            if not invoice_total_matches:
+                raise ValueError(f'SBC-PAY Invoice total {invoice.total} does not match CFS total {cfs_total}')
             # Note we do the opposite of this in payment_account.
             current_app.logger.info(f'Consolidated invoice found, reversing consolidated '
                                     f'invoice {invoice_reference.invoice_number}.')
             CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
-            invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
-                cil_rollup.invoice_id, InvoiceReferenceStatus.CANCELLED.value, exclude_consolidated=True
-            )
-            if not invoice_reference:
-                raise LookupError(f'Non consolidated cancelled invoice reference not '
-                                  f'found for invoice id: {invoice.id}')
-            invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
-                                                      inv_number=invoice_reference.invoice_number)
-            cfs_total = Decimal(invoice_response.get('total', '0'))
-            invoice_total_matches = cfs_total == invoice.total
-            if not invoice_total_matches:
-                raise ValueError(f'SBC-PAY Invoice total {invoice.total} does not match CFS total {cfs_total}')
+            invoice_reference = original_invoice_reference
 
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         invoice_reference.flush()
