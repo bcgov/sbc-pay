@@ -259,10 +259,16 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
-            # TODO get invoice call.
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 cil_rollup.invoice_id, InvoiceReferenceStatus.CANCELLED.value, exclude_consolidated=True
             )
+            invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
+                                                      inv_number=invoice_reference.invoice_number)
+            cfs_total = Decimal(invoice_response.get('total', '0'))
+            invoice_total_matches = cfs_total == invoice.total
+            if not invoice_total_matches:
+                raise BusinessException(f'SBC-PAY Invoice total {invoice.total} does not match CFS total {cfs_total}')
+
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         invoice_reference.flush()
         # Note: Not creating the entire EFT as a receipt because it can be mapped to multiple CFS accounts.
