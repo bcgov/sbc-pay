@@ -43,8 +43,10 @@ from tests.integration.utils import add_file_event_to_queue_and_process, create_
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
 
-def test_eft_tdi17_fail_header(session, app, client):
+def test_eft_tdi17_fail_header(session, app, client, mocker):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
+    mock_send_email = mocker.patch(
+        'pay_queue.services.eft.eft_reconciliation.EFTReconciliationContext.send_error_email')
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -94,9 +96,15 @@ def test_eft_tdi17_fail_header(session, app, client):
 
     assert not bool(eft_transactions)
 
+    mock_send_email.assert_called_once()
+    call_args = mock_send_email.call_args[0]
+    assert 'Failed to process file test_eft_tdi17.txt with an invalid header or trailer.' == call_args[0][0]['error']
 
-def test_eft_tdi17_fail_trailer(session, app, client):
+
+def test_eft_tdi17_fail_trailer(session, app, client, mocker):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
+    mock_send_email = mocker.patch(
+        'pay_queue.services.eft.eft_reconciliation.EFTReconciliationContext.send_error_email')
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -150,9 +158,15 @@ def test_eft_tdi17_fail_trailer(session, app, client):
 
     assert not bool(eft_transactions)
 
+    mock_send_email.assert_called_once()
+    call_args = mock_send_email.call_args[0]
+    assert 'Failed to process file test_eft_tdi17.txt with an invalid header or trailer.' == call_args[0][0]['error']
 
-def test_eft_tdi17_fail_transactions(session, app, client):
+
+def test_eft_tdi17_fail_transactions(session, app, client, mocker):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
+    mock_send_email = mocker.patch(
+        'pay_queue.services.eft.eft_reconciliation.EFTReconciliationContext.send_error_email')
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -208,6 +222,10 @@ def test_eft_tdi17_fail_transactions(session, app, client):
     assert eft_transactions is not None
     assert len(eft_transactions) == 1
     assert eft_transactions[0].error_messages[0] == 'Invalid transaction deposit amount CAD.'
+    
+    mock_send_email.assert_called_once()
+    call_args = mock_send_email.call_args[0]
+    assert 'Invalid transaction deposit amount CAD.' == call_args[0][0]['error']
 
 
 def test_eft_tdi17_basic_process(session, app, client):
