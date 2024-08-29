@@ -24,8 +24,18 @@ from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, InvoiceSta
 
 from tasks.ap_task import ApTask
 from .factory import (
-    factory_create_pad_account, factory_invoice, factory_payment_line_item, factory_refund,
-    factory_routing_slip_account)
+    factory_create_eft_account, factory_create_pad_account, factory_invoice, factory_payment_line_item,
+    factory_refund, factory_routing_slip_account)
+
+def test_eft_refunds(session, monkeypatch):
+    """Test EFT Refunds AP job.
+    
+    Steps:
+    1. Create an EFT Refund with status REFUND_REQUESTED and refund_amount
+    """
+    account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    # eft_refund = 
+    
 
 
 def test_routing_slip_refunds(session, monkeypatch):

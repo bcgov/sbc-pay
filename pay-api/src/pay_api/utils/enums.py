@@ -215,6 +215,13 @@ class DisbursementStatus(Enum):
     REVERSED = 'REVERSED'
     UPLOADED = 'UPLOADED'
     WAITING_FOR_JOB = 'WAITING_FOR_JOB'
+    
+
+class DisbursementMethod(Enum):
+    """Disbursement type codes."""
+
+    EFT = 'EFT'
+    CHEQUE = 'CHQ'
 
 
 class Product(Enum):
@@ -273,6 +280,7 @@ class EjvFileType(Enum):
     PAYMENT = 'PAYMENT'
     DISBURSEMENT = 'DISBURSEMENT'
     REFUND = 'REFUND'
+    EFT_REFUND = 'EFT_REFUND'
     NON_GOV_DISBURSEMENT = 'NON_GOV_DISBURSEMENT'
     TRANSFER = 'TRANSFER'
 

@@ -16,7 +16,7 @@ import os
 from datetime import datetime, timezone
 
 from flask import current_app
-from pay_api.utils.enums import EjvFileType
+from pay_api.utils.enums import DisbursementMethod, EjvFileType
 from pay_api.utils.util import get_fiscal_year
 from tasks.common.dataclasses import APLine
 
@@ -51,7 +51,8 @@ class CgiAP(CgiEjv):
         effective_date = cls._get_date(datetime.now(tz=timezone.utc))
         invoice_date = cls._get_date(invoice_date)
         oracle_invoice_batch_name = cls._get_oracle_invoice_batch_name(invoice_number)
-        disbursement_method = 'CHQ' if cls.ap_type == EjvFileType.REFUND else 'EFT'
+        # q? does this need to be changed?
+        disbursement_method = DisbursementMethod.CHEQUE if cls.ap_type == EjvFileType.REFUND else DisbursementMethod.EFT
         term = f'{cls.EMPTY:<50}' if cls.ap_type == EjvFileType.REFUND else f'Immediate{cls.EMPTY:<41}'
         ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                     f'{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}GEN {disbursement_method} N' \
@@ -126,6 +127,9 @@ class CgiAP(CgiEjv):
             return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<9}"
         if cls.ap_type == EjvFileType.REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
+        # q? what is the supplier number for EFT Refunds?
+        if cls.ap_type == EjvFileType.EFT_REFUND:
+            return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
         raise RuntimeError('ap_type not selected.')
 
     @classmethod
@@ -135,6 +139,9 @@ class CgiAP(CgiEjv):
             return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<30}"
         if cls.ap_type == EjvFileType.REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
+        # q? what is the distribution vendor number for EFT Refunds?
+        if cls.ap_type == EjvFileType.EFT_REFUND:
+            return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
         raise RuntimeError('ap_type not selected.')
 
     @classmethod
@@ -143,6 +150,9 @@ class CgiAP(CgiEjv):
         if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
             return f"{current_app.config.get('BCA_SUPPLIER_LOCATION'):<3}"
         if cls.ap_type == EjvFileType.REFUND:
+            return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
+        # q? what is the supplier location for EFT Refunds?
+        if cls.ap_type == EjvFileType.EFT_REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
         raise RuntimeError('ap_type not selected.')
 
@@ -163,6 +173,9 @@ class CgiAP(CgiEjv):
             return f'{distribution_code}0000000000{cls.EMPTY:<16}'
         if cls.ap_type == EjvFileType.REFUND:
             return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
+        # q? what is the distribution code for EFT Refunds?
+        if cls.ap_type == EjvFileType.EFT_REFUND:
+            return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
         raise RuntimeError('ap_type not selected.')
 
     @classmethod
@@ -172,12 +185,18 @@ class CgiAP(CgiEjv):
             return f'{invoice_number}'[:30]
         if cls.ap_type == EjvFileType.REFUND:
             return f'REFUND_FAS_RS_{invoice_number}'[:30]
+        # q? what is the oracle invoice batch name for EFT Refunds?
+        if cls.ap_type == EjvFileType.EFT_REFUND:
+            return f'REFUND_FAS_RS_{invoice_number}'[:30]
         raise RuntimeError('ap_type not selected.')
 
     @classmethod
     def _get_line_code(cls, ap_line: APLine):
         # Routing slip refunds always DEBIT the internal GL and mails out cheques.
         if cls.ap_type == EjvFileType.REFUND:
+            return 'D'
+        # q? what is the line code for EFT Refunds?
+        if cls.ap_type == EjvFileType.EFT_REFUND:
             return 'D'
         if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
             if ap_line.is_reversal:

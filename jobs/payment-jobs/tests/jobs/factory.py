@@ -21,9 +21,9 @@ from datetime import datetime, timedelta, timezone
 from random import randrange
 
 from pay_api.models import (
-    CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnameLinks,
-    EFTShortnames, EFTShortnamesHistorical, EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, StatementRecipients, StatementSettings)
+    CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTRefund,
+    EFTShortnameLinks, EFTShortnames, EFTShortnamesHistorical, EFTTransaction, Invoice, InvoiceReference, Payment,
+    PaymentAccount, PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus,
     LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus)
@@ -315,6 +315,25 @@ def factory_create_eft_shortname_historical(payment_account_id=1, related_group_
         transaction_type=transaction_type
     ).save()
     return eft_historical
+
+
+def factory_create_eft_refund(
+    auth_account_id: str = '1234',
+    cas_supplier_number: str = '1234',
+    refund_amount: float = 100.0,
+    refund_email: str = '',
+    short_name_id: int = 1,
+    status: str = CfsAccountStatus.PENDING.value):
+    """Return Factory."""
+    eft_refund = EFTRefund(
+        auth_account_id=auth_account_id,
+        cas_supplier_number=cas_supplier_number,
+        refund_amount=refund_amount,
+        refund_email=refund_email,
+        short_name_id=short_name_id,
+        status=status
+    ).save()
+    return eft_refund
 
 
 def factory_create_account(auth_account_id: str = '1234', payment_method_code: str = PaymentMethod.DIRECT_PAY.value,

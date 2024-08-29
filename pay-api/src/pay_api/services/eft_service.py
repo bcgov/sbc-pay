@@ -240,5 +240,6 @@ class EftService(DepositService):
             refund_email=get_str_by_path(request, 'refundEmail'),
             comment=comment
         )
+        # q? is this the correct status, or does it need to be REFUND_REQUESTED ?
         refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
         return refund
