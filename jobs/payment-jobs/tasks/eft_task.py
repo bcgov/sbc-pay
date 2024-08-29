@@ -252,13 +252,14 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         )):
             raise Exception(f'Active Invoice reference not '  # pylint: disable=broad-exception-raised
                             f'found for invoice id: {invoice.id}')
-        if '-C' in invoice_reference.invoice_number:
+        if invoice_reference.is_consolidated:
             # Note we do the opposite of this in payment_account.
             current_app.logger.info(f'Consolidated invoice found, reversing consolidated '
                                     f'invoice {invoice_reference.invoice_number}.')
             CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
+            # TODO get invoice call.
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 cil_rollup.invoice_id, InvoiceReferenceStatus.CANCELLED.value, exclude_consolidated=True
             )
@@ -306,7 +307,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, invoice_reference_status
         )
-        if invoice_reference and '-C' in invoice_reference.invoice_number:
+        if invoice_reference and invoice_reference.is_consolidated:
             raise BusinessException(f'Cannot reverse a consolidated invoice {invoice_reference.invoice_number}')
         if cil_status_code != EFTCreditInvoiceStatus.CANCELLED.value and not invoice_reference:
             raise Exception(f'{invoice_reference_status} invoice reference '  # pylint: disable=broad-exception-raised
@@ -335,7 +336,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
-            if invoice_reference and '-C' in invoice_reference.invoice_number:
+            if invoice_reference.is_consolidated:
                 raise BusinessException(f'Cannot reverse a consolidated invoice: {invoice_reference.invoice_number}')
             CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value

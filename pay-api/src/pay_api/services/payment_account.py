@@ -626,7 +626,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # Note we do the opposite of this in the EFT task.
             invoice_references = InvoiceReferenceModel.query \
                 .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
-                .filter(~InvoiceReferenceModel.invoice_number.endswith('-C')) \
+                .filter(InvoiceReferenceModel.is_consolidated.is_(False)) \
                 .filter(InvoiceReferenceModel.status == InvoiceReferenceStatus.CANCELLED.value) \
                 .distinct(InvoiceReferenceModel.invoice_number) \
                 .all()

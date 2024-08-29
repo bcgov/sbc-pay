@@ -15,9 +15,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
-from random import randint
 from typing import Dict, List, Optional, Tuple
 
 from dateutil import parser
@@ -606,13 +605,14 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         """Create payment for consolidated invoices and update invoice references."""
         invoice_number_no_prefix = str(consolidated_invoices[-1].id) + '-C'
         if randomize_invoice_number:
-            # We need a random number appended, because it's possible we could have 5 invoices,
+            # We a timestamp appended because it's possible we could have 5 invoices,
             # 1 out of the 5 invoices were recently paid but aren't the last invoice in the list.
             # This would change the total, so the consolidated invoices amount would change.
             # Earlier we already reversed existing consolidated invoices.
             # We can't really adjust invoices, because we aren't getting the line information back,
             # so we'll have to sort to reversing and recreating the consolidated invoices.
-            invoice_number_no_prefix = str(consolidated_invoices[-1].id) + str(randint(1, 999999)) + '-C'
+            invoice_number_no_prefix = str(consolidated_invoices[-1].id) + \
+                datetime.now(tz=timezone.utc).strftime('%H%M%S') + '-C'
         invoice_number = generate_transaction_number(invoice_number_no_prefix)
         invoice_exists = False
         invoice_total = sum(invoice.total - invoice.paid for invoice in consolidated_invoices)
@@ -676,16 +676,16 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                                                                  InvoiceStatus.SETTLEMENT_SCHEDULED]
                                                                                 )
         consolidated_invoices: List[InvoiceModel] = []
-        reversed_invoice_numbers = set()
+        reversed_consolidated_invoices = set()
         for invoice in outstanding_invoices:
             for invoice_reference in invoice.references:
                 invoice_number = invoice_reference.invoice_number
                 if (
-                    invoice_number not in reversed_invoice_numbers
+                    invoice_number not in reversed_consolidated_invoices
                     and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
-                    and '-C' in invoice_number
+                    and invoice_reference.is_consolidated is True
                 ):
-                    reversed_invoice_numbers.add(invoice_number)
+                    reversed_consolidated_invoices.add(invoice_number)
                     CFSService.reverse_invoice(inv_number=invoice_number)
             # Don't reverse original invoice here, we need to do so after receiving payment, otherwise we'll have a
             # consolidated invoice reference active while the regular invoice is reversed. (Scenario where they don't
