@@ -211,7 +211,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         nsf_invoice = next((invoice for invoice in invoices
                             if invoice.payment_method_code == PaymentMethod.CC.value), None)
         payment = PaymentModel.find_by_id(payment_id)
-        receipt_details['invoiceNumber'] = payment.invoice_reference
+        receipt_details['invoiceNumber'] = payment.invoice_number
         receipt_details['receiptNumber'] = payment.receipt_number
         receipt_details['paymentMethodDescription'] = 'Credit Card'
         non_nsf_invoices = [inv for inv in invoices if inv.id != nsf_invoice.id]
