@@ -449,8 +449,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 invoice.payment_date = datetime.now(tz=timezone.utc)
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-                # TODO If it's not PAD, publish message. Refactor and move to pay system service later.
-                if invoice.payment_method_code != PaymentMethod.PAD.value:
+                # TODO If it's not PAD/EFT, publish message. Refactor and move to pay system service later.
+                if invoice.payment_method_code not in [PaymentMethod.PAD.value, PaymentMethod.EFT.value]:
                     current_app.logger.info(f'Release record for invoice : {invoice.id} ')
                     PaymentTransaction.publish_status(transaction_dao, invoice)
 
