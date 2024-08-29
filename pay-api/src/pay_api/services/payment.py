@@ -681,9 +681,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             for invoice_reference in invoice.references:
                 invoice_number = invoice_reference.invoice_number
                 if (
-                    invoice_number not in reversed_consolidated_invoices
-                    and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
-                    and invoice_reference.is_consolidated is True
+                    invoice_number not in reversed_consolidated_invoices and
+                    invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value and
+                    invoice_reference.is_consolidated is True
                 ):
                     reversed_consolidated_invoices.add(invoice_number)
                     CFSService.reverse_invoice(inv_number=invoice_number)
