@@ -647,7 +647,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 InvoiceReferenceModel(invoice_id=invoice.id,
                                       status_code=InvoiceReferenceStatus.ACTIVE.value,
                                       invoice_number=invoice_number,
-                                      reference_number=invoice_response.get('pbc_ref_number')).flush()
+                                      reference_number=invoice_response.get('pbc_ref_number'),
+                                      is_consolidated=True).flush()
 
         payment = Payment.create(payment_method=PaymentMethod.CC.value,
                                  payment_system=PaymentSystem.PAYBC.value,
