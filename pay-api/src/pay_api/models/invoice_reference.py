@@ -55,7 +55,7 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
     created_on = db.Column(db.DateTime, nullable=True, default=lambda: datetime.now(tz=timezone.utc))
-    is_consolidated = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    is_consolidated = db.Column(db.Boolean, nullable=False, default=False, server_default='f', index=True)
 
     invoice_number = db.Column(db.String(50), nullable=True, index=True)
     reference_number = db.Column(db.String(50), nullable=True)

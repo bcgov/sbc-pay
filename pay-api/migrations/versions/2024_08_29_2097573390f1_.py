@@ -23,7 +23,7 @@ depends_on = None
 def upgrade():
     with op.batch_alter_table('invoice_references', schema=None) as batch_op:
         batch_op.add_column(sa.Column('created_on', sa.DateTime(), nullable=True))
-        batch_op.add_column(sa.Column('is_consolidated', sa.Boolean(), nullable=False))
+        batch_op.add_column(sa.Column('is_consolidated', sa.Boolean(), server_default='f', nullable=False))
         batch_op.create_index(batch_op.f('ix_invoice_references_is_consolidated'), ['is_consolidated'], unique=False)
     op.execute("update invoice_references set is_consolidated = 't' where invoice_number like '%-C'")
 
