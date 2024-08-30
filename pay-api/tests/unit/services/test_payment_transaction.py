@@ -214,7 +214,8 @@ def test_transaction_update_completed(session, public_user_mock):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    factory_payment(invoice_number=invoice_reference.invoice_number).save()
+    factory_payment(invoice_number=invoice_reference.invoice_number,
+                    payment_account_id=payment_account.id).save()
 
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id,
