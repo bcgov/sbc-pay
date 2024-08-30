@@ -216,7 +216,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         receipt_details['paymentMethodDescription'] = 'Credit Card'
         non_nsf_invoices = [inv for inv in invoices if inv.id != nsf_invoice.id]
         # We don't generate a CC invoice for EFT overdue payments.
-        if nsf_invoice:
+        if not nsf_invoice:
             nsf_invoice = Invoice()
         nsf_invoice.details = []
         for invoice in non_nsf_invoices:

@@ -616,7 +616,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         invoice_number = generate_transaction_number(invoice_number_no_prefix)
         invoice_exists = False
         invoice_total = sum(invoice.total - invoice.paid for invoice in consolidated_invoices)
-        consolidated_line_items = [invoice.payment_line_items for invoice in consolidated_invoices]
+        consolidated_line_items = [item for invoice in consolidated_invoices for item in invoice.payment_line_items]
         try:
             invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
                                                       inv_number=invoice_number)

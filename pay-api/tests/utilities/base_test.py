@@ -376,6 +376,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
                             bcol_user_id='test',
                             auth_account_id: str = '1234',
                             cfs_account_status: str = CfsAccountStatus.ACTIVE.value,
+                            has_nsf_invoices=None,
+                            has_overdue_invoices=None,
                             name=None,
                             branch_name=None):
     """Return Factory."""
@@ -388,7 +390,9 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
         branch_name=branch_name,
         payment_method=payment_method_code,
         pad_activation_date=datetime.now(tz=timezone.utc),
-        eft_enable=False
+        eft_enable=False,
+        has_nsf_invoices=has_nsf_invoices,
+        has_overdue_invoices=has_overdue_invoices
     ).save()
 
     CfsAccount(cfs_party='11111',
@@ -507,7 +511,7 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0,
                     total=0,
-                    paid=None,
+                    paid=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
                     created_on: datetime = datetime.now(tz=timezone.utc),
                     routing_slip=None,
