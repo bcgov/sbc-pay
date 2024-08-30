@@ -66,7 +66,7 @@ def test_invoice_saved_from_new(session):
     assert invoice.refund is None
     assert invoice.payment_date is None
     assert invoice.total is not None
-    assert invoice.paid is None
+    assert invoice.paid is not None
     assert invoice.payment_line_items is not None
     assert invoice.folio_number is not None
     assert invoice.business_identifier is not None
@@ -94,7 +94,7 @@ def test_invoice_find_by_id(session):
     assert invoice.refund is None
     assert invoice.payment_date is None
     assert invoice.total is not None
-    assert invoice.paid is None
+    assert invoice.paid is not None
     assert not invoice.payment_line_items
 
 
@@ -116,7 +116,7 @@ def test_invoice_with_temproary_business_identifier(session):
     assert invoice.refund is None
     assert invoice.payment_date is None
     assert invoice.total is not None
-    assert invoice.paid is None
+    assert invoice.paid is not None
     assert invoice.payment_line_items is not None
     assert invoice.folio_number is not None
     assert invoice.business_identifier is not None

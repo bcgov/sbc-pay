@@ -227,8 +227,9 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
     invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
     monthly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
                                       payment_method_code=PaymentMethod.EFT.value,
-                                      status_code=InvoiceStatus.APPROVED.value,
-                                      total=50).save()
+                                      status_code=InvoiceStatus.PAID.value,
+                                      total=50,
+                                      paid=50).save()
 
     assert monthly_invoice is not None
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
