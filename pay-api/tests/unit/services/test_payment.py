@@ -132,7 +132,7 @@ def test_search_payment_history(session, test_name, search_filter, view_all,
         if expected_key == 'id' and not search_filter:
             search_filter = {'id': invoice.id}
             expected_value = invoice.id
-        factory_invoice_reference(invoice.id, f'123{i}').save()
+        factory_invoice_reference(invoice_id=invoice.id, invoice_number=f'123{i}').save()
         line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description=f'test{i}')
         line_item.save()
 
@@ -147,7 +147,7 @@ def test_search_payment_history(session, test_name, search_filter, view_all,
     if expected_key == 'id' and not search_filter:
         search_filter = {'id': invoice.id}
         expected_value = invoice.id
-    factory_invoice_reference(invoice.id, '1231').save()
+    factory_invoice_reference(invoice.id, invoice_number='1231').save()
     line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description='test1')
     line_item.save()
 
