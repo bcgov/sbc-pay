@@ -627,7 +627,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # Possible some of these could already be reversed.
             for original_invoice_number in InvoiceReferenceModel.find_non_consolidated_invoice_numbers(invoice_number):
                 try:
-                    CFSService.reverse_invoice(original_invoice_number)
+                    CFSService.reverse_invoice(original_invoice_number[0])
                 except Exception:  # NOQA pylint: disable=broad-except
                     current_app.logger.error(f'Error reversing invoice number: {original_invoice_number}',
                                              exc_info=True)
