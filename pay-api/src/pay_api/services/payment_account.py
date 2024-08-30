@@ -638,11 +638,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 .distinct(InvoiceReferenceModel.invoice_number) \
                 .all()
             # Possible some of these could already be reversed.
-            for original_invoice_numbers in original_invoice_references:
+            for original_invoice_number in original_invoice_references:
                 try:
-                    CFSService.reverse_invoice(original_invoice_numbers)
+                    CFSService.reverse_invoice(original_invoice_number)
                 except Exception:  # NOQA pylint: disable=broad-except
-                    current_app.logger.error(f'Error reversing invoice number: {original_invoice_numbers}',
+                    current_app.logger.error(f'Error reversing invoice number: {original_invoice_number}',
                                              exc_info=True)
             current_app.logger.info(f'Unlocking EFT Frozen Account {pay_account.auth_account_id}')
             pay_account.has_overdue_invoices = None
