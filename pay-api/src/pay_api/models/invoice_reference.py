@@ -14,6 +14,7 @@
 """Model to handle invoice references from third party systems."""
 from __future__ import annotations
 from datetime import datetime, timezone
+from typing import List
 
 from marshmallow import fields
 from sqlalchemy import ForeignKey
@@ -77,6 +78,23 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
         """Return any active Invoice Reference by invoice number."""
         return cls.query.filter_by(invoice_number=invoice_number) \
             .filter_by(status_code=InvoiceReferenceStatus.ACTIVE.value).first()
+
+    @classmethod
+    def find_non_consolidated_invoice_numbers(cls, invoice_number: str) -> List[str]:
+        """Find the original invoice numbers that are not consolidated."""
+        consolidated_invoice_references = db.session.query(InvoiceReference.invoice_id) \
+            .filter(InvoiceReference.invoice_number == invoice_number) \
+            .filter(InvoiceReference.is_consolidated.is_(True)) \
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.COMPLETED.value) \
+            .distinct(InvoiceReference.invoice_id)
+
+        original_invoice_references = db.session.query(InvoiceReference.invoice_number) \
+            .filter(InvoiceReference.is_consolidated.is_(False)) \
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.CANCELLED.value) \
+            .filter(InvoiceReference.invoice_id.in_(consolidated_invoice_references)) \
+            .distinct(InvoiceReference.invoice_number) \
+            .all()
+        return original_invoice_references
 
 
 class InvoiceReferenceSchema(BaseSchema):  # pylint: disable=too-many-ancestors

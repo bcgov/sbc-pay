@@ -46,8 +46,7 @@ from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
-from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency)
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -624,21 +623,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             unlocked = True
         elif pay_account.has_overdue_invoices:
             # Reverse original invoices here, because users can still cancel out of CC payment process and pay via EFT.
-            # Note we do the opposite of this in the EFT task.
-            consolidated_invoice_references = db.session.query(InvoiceReferenceModel.invoice_id) \
-                .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
-                .filter(InvoiceReferenceModel.is_consolidated.is_(True)) \
-                .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value) \
-                .distinct(InvoiceReferenceModel.invoice_id)
-
-            original_invoice_references = db.session.query(InvoiceReferenceModel.invoice_number) \
-                .filter(InvoiceReferenceModel.is_consolidated.is_(False)) \
-                .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.CANCELLED.value) \
-                .filter(InvoiceReferenceModel.invoice_id.in_(consolidated_invoice_references)) \
-                .distinct(InvoiceReferenceModel.invoice_number) \
-                .all()
+            # Note we do the opposite of this in the EFT task, but at a smaller scale (one invoice at a time.)
             # Possible some of these could already be reversed.
-            for original_invoice_number in original_invoice_references:
+            for original_invoice_number in InvoiceReferenceModel.find_non_consolidated_invoice_numbers(invoice_number):
                 try:
                     CFSService.reverse_invoice(original_invoice_number)
                 except Exception:  # NOQA pylint: disable=broad-except
