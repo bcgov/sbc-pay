@@ -573,11 +573,15 @@ def factory_payment_transaction(
     )
 
 
-def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
+def factory_invoice_reference(invoice_id: int,
+                              status_code=InvoiceReferenceStatus.ACTIVE.value,
+                              invoice_number='10021',
+                              is_consolidated=False):
     """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
-                            status_code=InvoiceReferenceStatus.ACTIVE.value,
-                            invoice_number=invoice_number)
+                            status_code=status_code,
+                            invoice_number=invoice_number,
+                            is_consolidated=is_consolidated)
 
 
 def factory_receipt(

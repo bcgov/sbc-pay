@@ -625,18 +625,25 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         elif pay_account.has_overdue_invoices:
             # Reverse original invoices here, because users can still cancel out of CC payment process and pay via EFT.
             # Note we do the opposite of this in the EFT task.
-            invoice_references = InvoiceReferenceModel.query \
+            consolidated_invoice_references = db.session.query(InvoiceReferenceModel.invoice_id) \
                 .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
+                .filter(InvoiceReferenceModel.is_consolidated.is_(True)) \
+                .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value) \
+                .distinct(InvoiceReferenceModel.invoice_id)
+
+            original_invoice_references = db.session.query(InvoiceReferenceModel.invoice_number) \
                 .filter(InvoiceReferenceModel.is_consolidated.is_(False)) \
-                .filter(InvoiceReferenceModel.status == InvoiceReferenceStatus.CANCELLED.value) \
+                .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.CANCELLED.value) \
+                .filter(InvoiceReferenceModel.invoice_id.in_(consolidated_invoice_references)) \
                 .distinct(InvoiceReferenceModel.invoice_number) \
                 .all()
             # Possible some of these could already be reversed.
-            for invoice_reference in invoice_references:
+            for original_invoice_numbers in original_invoice_references:
                 try:
-                    CFSService.reverse_invoice(invoice_reference.invoice_number)
-                except Exception as e:  # NOQA pylint: disable=broad-except
-                    current_app.logger.error(e, exc_info=True)
+                    CFSService.reverse_invoice(original_invoice_numbers)
+                except Exception:  # NOQA pylint: disable=broad-except
+                    current_app.logger.error(f'Error reversing invoice number: {original_invoice_numbers}',
+                                             exc_info=True)
             current_app.logger.info(f'Unlocking EFT Frozen Account {pay_account.auth_account_id}')
             pay_account.has_overdue_invoices = None
             pay_account.save()

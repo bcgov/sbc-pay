@@ -214,10 +214,15 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         receipt_details['invoiceNumber'] = payment.invoice_number
         receipt_details['receiptNumber'] = payment.receipt_number
         receipt_details['paymentMethodDescription'] = 'Credit Card'
-        non_nsf_invoices = [inv for inv in invoices if inv.id != nsf_invoice.id]
+        non_nsf_invoices = [inv for inv in invoices if nsf_invoice is None or inv.id != nsf_invoice.id]
         # We don't generate a CC invoice for EFT overdue payments.
         if not nsf_invoice:
             nsf_invoice = Invoice()
+            nsf_invoice.created_on = payment.payment_date
+            nsf_invoice.paid = 0
+            nsf_invoice.payment_line_items = []
+            nsf_invoice.service_fees = 0
+            nsf_invoice.total = 0
         nsf_invoice.details = []
         for invoice in non_nsf_invoices:
             nsf_invoice.payment_line_items.extend(invoice.payment_line_items)

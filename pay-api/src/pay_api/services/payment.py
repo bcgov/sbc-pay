@@ -530,7 +530,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
     @staticmethod
     def create_account_payment(auth_account_id: str, is_retry_payment: bool,
-                               pay_outstanding_balance: bool = False) -> Payment:
+                               pay_outstanding_balance=False,
+                               all_invoice_statuses=False) -> Payment:
         """Create a payment record for the account."""
         payment: Payment = None
         if is_retry_payment:
@@ -542,7 +543,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             if pay_outstanding_balance and len(payments) == 0:
                 # First time attempting to pay outstanding invoices and there were no previous failures
                 # if there is a failure payment we can follow the normal is_retry_payment flow
-                return Payment._consolidate_invoices_and_pay(auth_account_id)
+                return Payment._consolidate_invoices_and_pay(auth_account_id, all_invoice_statuses)
 
             if len(payments) == 1:
                 can_consolidate_invoice = False
@@ -599,11 +600,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return payment
 
     @staticmethod
-    def create_consolidated_invoices_payment(consolidated_invoices: List[InvoiceModel],
+    def create_consolidated_invoices_payment(invoices: List[InvoiceModel],
                                              cfs_account: CfsAccountModel,
                                              randomize_invoice_number=False):
         """Create payment for consolidated invoices and update invoice references."""
-        invoice_number_no_prefix = str(consolidated_invoices[-1].id) + '-C'
+        inv_no_prefix = str(invoices[-1].id) + '-C'
         if randomize_invoice_number:
             # We timestamp appended because it's possible we could have 5 invoices,
             # 1 out of the 5 invoices were recently paid but aren't the last invoice in the list.
@@ -611,12 +612,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             # Earlier we already reversed existing consolidated invoices.
             # We can't really adjust invoices, because we aren't getting the line information back,
             # so we'll have to sort to reversing and recreating the consolidated invoices.
-            invoice_number_no_prefix = str(consolidated_invoices[-1].id) + \
-                datetime.now(tz=timezone.utc).strftime('%H%M%S') + '-C'
-        invoice_number = generate_transaction_number(invoice_number_no_prefix)
+            inv_no_prefix = f"{str(invoices[-1].id)}-{datetime.now(tz=timezone.utc).strftime('%H%M%S')}-C"
+        invoice_number = generate_transaction_number(inv_no_prefix)
         invoice_exists = False
-        invoice_total = sum(invoice.total - invoice.paid for invoice in consolidated_invoices)
-        consolidated_line_items = [item for invoice in consolidated_invoices for item in invoice.payment_line_items]
+        invoice_total = sum(invoice.total - invoice.paid for invoice in invoices)
+        consolidated_line_items = [item for invoice in invoices for item in invoice.payment_line_items]
         try:
             invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
                                                       inv_number=invoice_number)
@@ -633,11 +633,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         if not invoice_exists:
             invoice_response = CFSService.create_account_invoice(
-                transaction_number=invoice_number_no_prefix,
+                transaction_number=inv_no_prefix,
                 line_items=consolidated_line_items,
                 cfs_account=cfs_account)
 
-        for invoice in consolidated_invoices:
+        for invoice in invoices:
             inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice_id=invoice.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
             if inv_ref and inv_ref.invoice_number != invoice_number:
@@ -659,7 +659,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return payment, invoice_number
 
     @classmethod
-    def _consolidate_invoices_and_pay(cls, auth_account_id: str) -> Payment:
+    def _consolidate_invoices_and_pay(cls, auth_account_id: str, all_invoice_statuses=False) -> Payment:
         """Find outstanding invoices and create a payment.
 
         1. Reverse existing invoices in CFS with credit memos.
@@ -669,13 +669,17 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         """
         pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, pay_account.payment_method)
+        invoice_statuses = [
+            InvoiceStatus.OVERDUE.value
+        ]
+        if all_invoice_statuses:
+            invoice_statuses.extend([
+                InvoiceStatus.APPROVED.value,
+                InvoiceStatus.PARTIAL.value,
+                InvoiceStatus.SETTLEMENT_SCHEDULED
+            ])
 
-        outstanding_invoices = InvoiceModel.find_invoices_by_status_for_account(pay_account.id,
-                                                                                [InvoiceStatus.APPROVED.value,
-                                                                                 InvoiceStatus.OVERDUE.value,
-                                                                                 InvoiceStatus.PARTIAL.value,
-                                                                                 InvoiceStatus.SETTLEMENT_SCHEDULED]
-                                                                                )
+        outstanding_invoices = InvoiceModel.find_invoices_by_status_for_account(pay_account.id, invoice_statuses)
         consolidated_invoices: List[InvoiceModel] = []
         reversed_consolidated_invoices = set()
         for invoice in outstanding_invoices:
