@@ -118,11 +118,12 @@ def test_eft_consolidated_payments(session, client, jwt, app):
     existing_consolidated_invoice_number = generate_transaction_number(str(invoice_exist_consolidation.id) + '-C')
     factory_payment_line_item(invoice_id=invoice_exist_consolidation.id, fee_schedule_id=1).save()
     factory_invoice_reference(invoice_exist_consolidation.id,
-                              invoice_number=existing_consolidated_invoice_number).save()
+                              invoice_number=existing_consolidated_invoice_number,
+                              is_consolidated=True).save()
 
     with patch('pay_api.services.CFSService.reverse_invoice') as mock_reverse_invoice:
         rv = client.post(f'/api/v1/accounts/{payment_account.auth_account_id}/payments?retryFailedPayment=true'
-                         '&payOutstandingBalance=true',
+                         '&payOutstandingBalance=true&allInvoiceStatuses=true',
                          headers=headers)
         # Called once for our invoice with a reference the other two this should skip for.
         mock_reverse_invoice.assert_called_once()
@@ -131,8 +132,14 @@ def test_eft_consolidated_payments(session, client, jwt, app):
     assert len(invoice_with_reference.references) == 2
     assert invoice_with_reference.references[0].status_code == InvoiceReferenceStatus.CANCELLED.value
     assert invoice_with_reference.references[1].status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert invoice_with_reference.references[1].is_consolidated is True
     assert len(invoice_without_reference.references) == 1
     assert invoice_without_reference.references[0].status_code == InvoiceReferenceStatus.ACTIVE.value
-    assert len(invoice_exist_consolidation.references) == 1
-    assert invoice_exist_consolidation.references[0].status_code == InvoiceReferenceStatus.ACTIVE.value
-    assert PaymentModel.query.filter(PaymentModel.invoice_number == existing_consolidated_invoice_number).first()
+    assert invoice_without_reference.references[0].is_consolidated is True
+    assert len(invoice_exist_consolidation.references) == 2
+    assert invoice_exist_consolidation.references[0].status_code == InvoiceReferenceStatus.CANCELLED.value
+    assert invoice_exist_consolidation.references[0].is_consolidated is True
+    assert invoice_exist_consolidation.references[1].status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert invoice_exist_consolidation.references[1].is_consolidated is True
+    assert PaymentModel.query.filter(PaymentModel.invoice_number ==
+                                     invoice_exist_consolidation.references[1].invoice_number).first()

@@ -107,7 +107,7 @@ def test_create_eft_refund(session, client, jwt, app):
                      ),
                      headers=headers)
     inv_id2 = rv.json.get('id')
-    factory_invoice_reference(inv_id2, 'REG3904393').save()
+    factory_invoice_reference(inv_id2, invoice_number='REG3904393').save()
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
