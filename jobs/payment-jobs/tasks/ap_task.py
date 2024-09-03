@@ -21,13 +21,16 @@ from flask import current_app
 from more_itertools import batched
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
+from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
+from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
-from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, RoutingSlipStatus
 from tasks.common.cgi_ap import CgiAP
@@ -60,8 +63,10 @@ class ApTask(CgiAP):
         6. Create AP file and upload to SFTP.
         7. After some time, a feedback file will arrive and Payment-reconciliation queue will set disbursement
            status to COMPLETED or REVERSED (filter out)
-        
         8. Find all EFT refunds with status REFUND_REQUESTED.
+        9. Create AP file and upload to SFTP.
+        10. After some time, a feedback file will arrive and Payment-reconciliation queue will move these
+            EFT refunds to REFUNDED. (filter out)
         """
         cls._create_routing_slip_refund_file()
         cls._create_non_gov_disbursement_file()
@@ -70,45 +75,45 @@ class ApTask(CgiAP):
     @classmethod
     def _create_eft_refund_file(cls):
         """Create AP file for EFT refunds and upload to CGI."""
-        # q? do we need to make a different EjvFileType type for this (EFT_REFUND) ?
         cls.ap_type = EjvFileType.EFT_REFUND
-        # q? do we need a new enum for EFTRefundModel.status (EFTRefundStatus) ?
-        eft_refunds_dao: List[EFTRefundModel] = db.session.query(EFTRefundModel) \
+        eft_refunds_dao: List[tuple[InvoiceModel, EFTRefundModel]] = db.session.query(InvoiceModel, EFTRefundModel) \
+            .join(EFTCreditInvoiceLinkModel, EFTCreditInvoiceLinkModel.invoice_id == InvoiceModel.id) \
+            .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id) \
+            .join(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTCreditModel.short_name_id) \
+            .join(EFTRefundModel, EFTRefundModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id) \
             .filter(EFTRefundModel.status == InvoiceStatus.REFUND_REQUESTED.value) \
             .filter(EFTRefundModel.refund_amount > 0) \
             .all()
-            
+
         current_app.logger.info(f'Found {len(eft_refunds_dao)} to refund.')
         if not eft_refunds_dao:
             return
-                
-        for eft_refunds in list(batched(eft_refunds_dao, 250)):
+
+        for refunds in list(batched(eft_refunds_dao, 250)):
             ejv_file_model: EjvFileModel = EjvFileModel(
                 file_type=cls.ap_type.value,
                 file_ref=cls.get_file_name(),
                 disbursement_status_code=DisbursementStatus.UPLOADED.value
             ).flush()
-            
+
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
             ap_content: str = cls.get_batch_header(batch_number)
             batch_total = 0
-            # q? good til here
-            total_line_count: int = 0
-            for eft_refund in eft_refunds:
-                current_app.logger.info(f'Creating refund for {eft_refund.auth_account_id}, Amount {eft_refund.refund_amount}.')
-                ap_content = f'{ap_content}{cls.get_ap_header(eft_refund.refund_amount, eft_refund.invoice_id, datetime.now(tz=timezone.utc))}'
-                ap_line = APLine(total=eft_refund.refund_amount, invoice_number=eft_refund.invoice_id, line_number=1)
+            line_count_total: int = 0
+            for invoice_refund in refunds:
+                invoice, eft_refund = invoice_refund
+                current_app.logger.info(f'Creating refund for {invoice.id}, Amount {eft_refund.refund_amount}.')
+                ap_content = f'{ap_content}{cls.get_ap_header(
+                    eft_refund.refund_amount, invoice.id, invoice.created_on)}'
+                ap_line = APLine(total=eft_refund.refund_amount, invoice_number=invoice.id, line_number=1)
                 ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
-                ap_content = f'{ap_content}{cls.get_ap_address(eft_refund.details, eft_refund.invoice_id)}'
-                total_line_count += 3
-                if ap_comment := cls.get_ap_comment(eft_refund.details, eft_refund.invoice_id):
-                    ap_content = f'{ap_content}{ap_comment:<40}'
-                    total_line_count += 1
+                line_count_total += 2
                 batch_total += eft_refund.refund_amount
                 eft_refund.status = InvoiceStatus.REFUNDED.value
 
-                cls._create_file_and_upload(ap_content)
-            
+            batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, control_total=line_count_total)
+            ap_content = f'{ap_content}{batch_trailer}'
+            cls._create_file_and_upload(ap_content)
 
     @classmethod
     def _create_routing_slip_refund_file(cls):  # pylint:disable=too-many-locals, too-many-statements
