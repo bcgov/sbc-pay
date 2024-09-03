@@ -19,6 +19,7 @@ depends_on = None
 
 
 def upgrade():
+    op.execute("set statement_timeout=900000;")
     with op.batch_alter_table('invoices', schema=None) as batch_op:
         # existing adhoc on PROD
         op.execute('DROP INDEX IF EXISTS invoices_invoice_status_code_idx;')
