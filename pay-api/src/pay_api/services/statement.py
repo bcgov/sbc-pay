@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
+from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
@@ -385,11 +386,13 @@ class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-
 
         # Unpaid invoice amount total that are not part of a statement yet
         invoices_unpaid_amount = Statement.get_invoices_owing_amount(auth_account_id)
+        short_name_links_count = EFTShortnameLinksModel.get_short_name_links_count(auth_account_id)
 
         return {
             'total_invoice_due': float(invoices_unpaid_amount) if invoices_unpaid_amount else 0,
             'total_due': total_due,
-            'oldest_due_date': oldest_due_date
+            'oldest_due_date': oldest_due_date,
+            'short_name_links_count': short_name_links_count
         }
 
     @staticmethod

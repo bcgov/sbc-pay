@@ -33,9 +33,10 @@ from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
 from pay_api.utils.util import get_local_formatted_date
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_premium_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings,
-    get_auth_premium_user, get_eft_enable_account_payload, get_premium_account_payload)
+    factory_eft_shortname, factory_eft_shortname_link, factory_invoice, factory_invoice_reference, factory_payment,
+    factory_payment_account, factory_payment_line_item, factory_premium_payment_account, factory_statement,
+    factory_statement_invoices, factory_statement_settings, get_auth_premium_user, get_eft_enable_account_payload,
+    get_premium_account_payload)
 
 
 def test_statement_find_by_account(session):
@@ -703,3 +704,29 @@ def localize_date(date: datetime):
     """Localize date object by adding timezone information."""
     pst = pytz.timezone('America/Vancouver')
     return pst.localize(date)
+
+
+def test_get_eft_statement_summary_links_count(session):
+    """Assert that the get statement summary short name links count is correct."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    summary = StatementService.get_summary(payment_account.auth_account_id)
+    assert summary['short_name_links_count'] == 0
+
+    eft_short_name = factory_eft_shortname('TESTSHORTNAME')
+    eft_short_name.save()
+
+    factory_eft_shortname_link(
+        short_name_id=eft_short_name.id,
+        auth_account_id=payment_account.auth_account_id
+    ).save()
+
+    summary = StatementService.get_summary(payment_account.auth_account_id)
+    assert summary['short_name_links_count'] == 1
+
+    factory_eft_shortname_link(
+        short_name_id=eft_short_name.id,
+        auth_account_id='2222'
+    ).save()
+
+    summary = StatementService.get_summary(payment_account.auth_account_id)
+    assert summary['short_name_links_count'] == 2
