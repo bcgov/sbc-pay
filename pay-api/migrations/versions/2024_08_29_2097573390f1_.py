@@ -21,6 +21,7 @@ depends_on = None
 
 
 def upgrade():
+    op.execute("set statement_timeout=900000;")
     with op.batch_alter_table('invoice_references', schema=None) as batch_op:
         batch_op.add_column(sa.Column('created_on', sa.DateTime(), nullable=True))
         batch_op.add_column(sa.Column('is_consolidated', sa.Boolean(), server_default='f', nullable=False))

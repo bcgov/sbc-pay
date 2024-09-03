@@ -22,6 +22,7 @@ depends_on = None
 
 
 def upgrade():
+    op.execute("set statement_timeout=900000;")
     with op.batch_alter_table('statements', schema=None) as batch_op:
         batch_op.add_column(sa.Column('payment_methods', sa.String(length=100), nullable=True))
 

@@ -21,6 +21,7 @@ depends_on = None
 
 
 def upgrade():
+    op.execute("set statement_timeout=900000;")
     with op.batch_alter_table('payment_accounts', schema=None) as batch_op:
         batch_op.add_column(sa.Column('has_nsf_invoices', sa.DateTime(), nullable=True))
         batch_op.add_column(sa.Column('has_overdue_invoices', sa.DateTime(), nullable=True))
