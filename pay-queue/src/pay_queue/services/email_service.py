@@ -15,7 +15,7 @@
 import dataclasses
 import json
 import os
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
@@ -31,7 +31,7 @@ class EmailParams:
     subject: Optional[str] = ''
     file_name: Optional[str] = None
     minio_location: Optional[str] = None
-    error_messages: Optional[List[Any]] = []
+    error_messages: Optional[List[Dict[str, Any]]] = dataclasses.field(default_factory=list)
     ce: Optional[Any] = None
     table_name: Optional[str] = None
 

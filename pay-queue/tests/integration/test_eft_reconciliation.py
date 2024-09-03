@@ -45,8 +45,7 @@ from tests.utilities.factory_utils import factory_eft_header, factory_eft_record
 
 def test_eft_tdi17_fail_header(session, app, client, mocker):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
-    mock_send_email = mocker.patch(
-        'pay_queue.services.email_service.send_error_email')
+    mock_send_email = mocker.patch('pay_api.services.email_service.send_email')
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',

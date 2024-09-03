@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """EFT reconciliation file."""
-import traceback
 from datetime import datetime
 from typing import Dict, List
 
@@ -44,14 +43,11 @@ class EFTReconciliation:  # pylint: disable=too-few-public-methods
         self.minio_location: str = self.msg.get('location')
         self.error_messages: List[Dict[str, any]] = []
 
-    def eft_error_handling(self, row, error_msg: str, ex: Exception = None,
+    def eft_error_handling(self, row, error_msg: str,
                            capture_error: bool = True, table_name: str = None):
         """Handle EFT errors by logging, capturing messages, and optionally sending an email."""
-        if ex:
-            formatted_traceback = ''.join(traceback.TracebackException.from_exception(ex).format())
-            error_msg = f'{error_msg}\n{formatted_traceback}'
         if capture_error:
-            current_app.logger.error(error_msg)
+            current_app.logger.error(error_msg, exc_info=True)
             capture_message(error_msg, level='error')
         self.error_messages.append({'error': error_msg, 'row': row})
         if table_name is not None:
