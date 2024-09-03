@@ -19,6 +19,7 @@ import pytz
 from flask import current_app
 from pay_api.models import db
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
+from pay_api.models.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.non_sufficient_funds import NonSufficientFunds as NonSufficientFundsModel
@@ -148,13 +149,15 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                                                 f' notification for auth_account_id='
                                                 f'{payment_account.auth_account_id}, payment_account_id='
                                                 f'{payment_account.id}')
+                        links_count = EFTShortnameLinksModel.get_short_name_links_count(payment_account.auth_account_id)
                         publish_payment_notification(
                             StatementNotificationInfo(auth_account_id=payment_account.auth_account_id,
                                                       statement=statement,
                                                       action=action,
                                                       due_date=due_date,
                                                       emails=emails,
-                                                      total_amount_owing=total_due))
+                                                      total_amount_owing=total_due,
+                                                      short_name_links_count=links_count))
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
                     f'Error on unpaid statement notification auth_account_id={payment_account.auth_account_id}, '

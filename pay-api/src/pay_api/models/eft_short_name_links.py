@@ -89,6 +89,23 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
                 .filter(cls.status_code.in_(statuses))
                 ).one_or_none()
 
+    @classmethod
+    def get_short_name_links_count(cls, auth_account_id):
+        """Find short name account link by status."""
+        statuses = [EFTShortnameStatus.LINKED.value,
+                    EFTShortnameStatus.PENDING.value]
+        active_link = (cls.query
+                       .filter_by(auth_account_id=auth_account_id)
+                       .filter(cls.status_code.in_(statuses))
+                       ).one_or_none()
+
+        if active_link is None:
+            return 0
+
+        return (cls.query
+                .filter_by(eft_short_name_id=active_link.eft_short_name_id)
+                .filter(cls.status_code.in_(statuses))).count()
+
 
 @define
 class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods

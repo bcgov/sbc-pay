@@ -37,6 +37,7 @@ class StatementNotificationInfo:
     due_date: datetime
     emails: str
     total_amount_owing: float
+    short_name_links_count: int
 
 
 def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, additional_params=None):
@@ -113,7 +114,10 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
         'accountId': info.auth_account_id,
         'dueDate': f'{info.due_date}',
         'statementFrequency': info.statement.frequency,
-        'totalAmountOwing': info.total_amount_owing
+        'statementMonth': info.statement.from_date.strftime('%B'),
+        'statementNumber': info.statement.id,
+        'totalAmountOwing': info.total_amount_owing,
+        'shortNameLinksCount': info.short_name_links_count
     }
     try:
         gcp_queue_publisher.publish_to_queue(
