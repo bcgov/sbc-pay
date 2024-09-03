@@ -2449,7 +2449,7 @@ develop = false
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-connect-common.git"
+url = "https://github.com/seeker25/sbc-connect-common.git"
 reference = "main"
 resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
 subdirectory = "python/sql-versioning"
