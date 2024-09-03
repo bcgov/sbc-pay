@@ -133,7 +133,8 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
                                                                              action=action,
                                                                              due_date=due_date,
                                                                              emails=statement_recipient.email,
-                                                                             total_amount_owing=total_amount_owing))
+                                                                             total_amount_owing=total_amount_owing,
+                                                                             short_name_links_count=0))
 
 
 def test_unpaid_statement_notification_not_sent(setup, session):

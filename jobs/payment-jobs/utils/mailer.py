@@ -37,6 +37,7 @@ class StatementNotificationInfo:
     due_date: datetime
     emails: str
     total_amount_owing: float
+    short_name_links_count: int
 
 
 def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, additional_params=None):
