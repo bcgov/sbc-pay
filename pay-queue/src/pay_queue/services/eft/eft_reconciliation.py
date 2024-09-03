@@ -12,15 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """EFT reconciliation file."""
-import dataclasses
-import json
-import os
 import traceback
 from datetime import datetime
 from typing import Dict, List
 
 from flask import current_app
-from jinja2 import Environment, FileSystemLoader
 from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTFile as EFTFileModel
@@ -29,17 +25,16 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
-from pay_api.services.email_service import send_email as send_email_service
 from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus
 from sentry_sdk import capture_message
 
-from pay_queue.auth import get_token
 from pay_queue.minio import get_object
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
+from pay_queue.services.email_service import send_error_email
 
 
-class EFTReconciliationContext:
-    """Initialize the EFTReconciliationContext."""
+class EFTReconciliation:
+    """Initialize the EFTReconciliation."""
 
     def __init__(self, ce):
         """:param ce: The cloud event object containing relevant data."""
@@ -49,8 +44,8 @@ class EFTReconciliationContext:
         self.minio_location: str = self.msg.get('location')
         self.error_messages: List[Dict[str, any]] = []
 
-    def eft_error_handling(self, row, error_msg: str, ex: Exception = None,  # pylint:disable=too-many-arguments
-                           capture_error: bool = True, send_email: bool = False, table_name: str = None):
+    def eft_error_handling(self, row, error_msg: str, ex: Exception = None,
+                           capture_error: bool = True, table_name: str = None):
         """Handle EFT errors by logging, capturing messages, and optionally sending an email."""
         if ex:
             formatted_traceback = ''.join(traceback.TracebackException.from_exception(ex).format())
@@ -59,37 +54,9 @@ class EFTReconciliationContext:
             current_app.logger.error(error_msg)
             capture_message(error_msg, level='error')
         self.error_messages.append({'error': error_msg, 'row': row})
-        if send_email:
-            self.send_error_email(self.error_messages, table_name)
-
-    def send_error_email(self, error_messages, table_name):
-        """Send the email asynchronously, using the given details."""
-        subject = 'EFT TDI17 Reconciliation Failure'
-        recipient = current_app.config.get('IT_OPS_EMAIL')
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root_dir = os.path.dirname(os.path.dirname(current_dir))
-        templates_dir = os.path.join(project_root_dir, 'templates')
-        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-
-        template = env.get_template('payment_reconciliation_failed_email.html')
-
-        params = {
-            'fileName': self.file_name,
-            'errorMessages': error_messages,
-            'minioLocation': self.minio_location,
-            'payload': json.dumps(dataclasses.asdict(self.ce)),
-            'tableName': table_name
-        }
-
-        html_body = template.render(params)
-
-        token = get_token()
-        send_email_service(
-            recipients=[recipient],
-            subject=subject,
-            html_body=html_body,
-            user=type('User', (), {'bearer_token': token})()
-        )
+        if table_name is not None:
+            subject = 'EFT TDI17 Reconciliation Failure'
+            send_error_email(subject, self.file_name, self.minio_location, self.error_messages, self.ce, table_name)
 
 
 def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
@@ -107,7 +74,7 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     8: Finalize and complete
     """
     # Fetch EFT File
-    context = EFTReconciliationContext(ce)
+    context = EFTReconciliation(ce)
     file = get_object(context.minio_location, context.file_name)
     file_content = file.data.decode('utf-8-sig')
 
@@ -154,7 +121,7 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
         error_msg = f'Failed to process file {context.file_name} with an invalid header or trailer.'
         eft_file_model.status_code = EFTProcessStatus.FAILED.value
         eft_file_model.save()
-        context.eft_error_handling('N/A', error_msg, send_email=True,
+        context.eft_error_handling('N/A', error_msg,
                                    table_name=eft_file_model.__tablename__)
         return
 
@@ -168,8 +135,7 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     for eft_transaction in eft_transactions:
         if eft_transaction.has_errors():  # Flag any instance of an error - will indicate file is partially processed
             has_eft_transaction_errors = True
-            context.eft_error_handling(eft_transaction.index, eft_transaction.errors[0].message, capture_error=False,
-                                       table_name=EFTTransactionModel.__tablename__)
+            context.eft_error_handling(eft_transaction.index, eft_transaction.errors[0].message, capture_error=False)
             _save_eft_transaction(eft_record=eft_transaction, eft_file_model=eft_file_model, is_error=True)
         else:
             # Save TDI17 transaction record
@@ -180,7 +146,7 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     if has_eft_transaction_errors:
         error_msg = f'Failed to process file {context.file_name} has transaction parsing errors.'
         _update_transactions_to_fail(eft_file_model)
-        context.eft_error_handling('N/A', error_msg, send_email=True,
+        context.eft_error_handling('N/A', error_msg,
                                    table_name=eft_file_model.__tablename__)
         return
 
@@ -195,7 +161,7 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
         db.session.rollback()
         _update_transactions_to_fail(eft_file_model)
         error_msg = f'Failed to process file {context.file_name} due to transaction errors.'
-        context.eft_error_handling('N/A', error_msg, send_email=True,
+        context.eft_error_handling('N/A', error_msg,
                                    table_name=eft_file_model.__tablename__)
         return
 
@@ -206,7 +172,7 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     _apply_eft_pending_payments(context, shortname_balance)
 
 
-def _apply_eft_pending_payments(context: EFTReconciliationContext, shortname_balance):
+def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
     """Apply payments to short name links."""
     for shortname in shortname_balance.keys():
         eft_shortname = _get_shortname(shortname)
@@ -232,8 +198,7 @@ def _apply_eft_pending_payments(context: EFTReconciliationContext, shortname_bal
                     # EFT Short name service handles commit and rollback when the action fails, we just need to make
                     # sure we log the error here
                     error_msg = 'error in _apply_eft_pending_payments.'
-                    context.eft_error_handling('N/A', error_msg, ex=exception,
-                                               send_email=True, table_name=eft_shortname.__tablename__)
+                    context.eft_error_handling('N/A', error_msg, ex=exception)
 
 
 def _finalize_process_state(eft_file_model: EFTFileModel):

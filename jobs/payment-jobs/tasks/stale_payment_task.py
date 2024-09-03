@@ -115,5 +115,4 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                         TransactionService.update_transaction(transaction.id, pay_response_url=None)
 
             except Exception as err:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error(err)
-                current_app.logger.error(traceback.format_exc())
+                current_app.logger.error(err, exc_info=True)
