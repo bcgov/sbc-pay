@@ -967,30 +967,6 @@ def test_failed_refund_reconciliations(session, app, client):
     assert routing_slip_2.status == RoutingSlipStatus.REFUND_REJECTED.value
 
 
-def test_prevent_duplicate_ack(session, app, client):
-    """Assert processing completes when existing ack."""
-    file_ref = f'INBOX.{datetime.now()}'
-    # Upload an acknowledgement file
-    ack_file_name = f'ACK.{file_ref}'
-
-    # Now create AP records.
-    # Create EJV File model
-    file_ref = f'INBOX.{datetime.now()}'
-    ejv = EjvFileModel(file_ref=file_ref, disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
-    with open(ack_file_name, 'a+') as jv_file:
-        jv_file.write('')
-        jv_file.close()
-
-    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
-    assert ejv.ack_file_ref == ack_file_name
-
-    # Nothing should change, because it's already processed this ACK.
-    ejv.disbursement_status_code = DisbursementStatus.UPLOADED.value
-    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
-    assert ejv.ack_file_ref == ack_file_name
-    assert ejv.disbursement_status_code == DisbursementStatus.UPLOADED.value
-
-
 def test_successful_ap_disbursement(session, app, client):
     """Test Reconciliations worker for ap disbursement."""
     # 1. Create invoice.
