@@ -119,11 +119,13 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int = 1, filing_
 
 
 def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021',
-                              status_code: str = InvoiceReferenceStatus.ACTIVE.value):
+                              status_code: str = InvoiceReferenceStatus.ACTIVE.value,
+                              is_consolidated=False):
     """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
                             status_code=status_code,
-                            invoice_number=invoice_number).save()
+                            invoice_number=invoice_number,
+                            is_consolidated=is_consolidated).save()
 
 
 def factory_receipt(invoice_id: int, receipt_number: str = '10021'):

@@ -21,6 +21,7 @@ depends_on = None
 
 
 def upgrade():
+    op.execute("set statement_timeout=60000;")
     with op.batch_alter_table('statements', schema=None) as batch_op:
         batch_op.add_column(sa.Column('overdue_notification_date', sa.Date(), nullable=True))
 

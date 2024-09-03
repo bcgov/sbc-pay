@@ -29,7 +29,6 @@ from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.eft_service import EftService
 from pay_api.services.invoice import Invoice as InvoiceService
-from pay_api.utils.constants import CFS_ADJ_ACTIVITY_NAME
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
     PaymentStatus, PaymentSystem, ReverseOperation)
@@ -116,16 +115,15 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def link_electronic_funds_transfers_cfs(cls) -> dict:
         """Replicate linked EFT's as receipts inside of CFS and mark invoices as paid."""
-        target_status = EFTCreditInvoiceStatus.PENDING.value
-        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(target_status)
+        credit_invoice_links = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING.value)
         cls.history_group_ids = set()
         for invoice, cfs_account, cil_rollup in credit_invoice_links:
             try:
                 current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {cil_rollup.id} -'
                                         f' Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}')
-                receipt_number = f'EFTCIL{cil_rollup.id}'
                 if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
                     cls.overdue_account_ids[invoice.payment_account_id] = cfs_account.payment_account
+                receipt_number = f'EFTCIL{cil_rollup.id}'
                 cls._create_receipt_and_invoice(cfs_account, cil_rollup, invoice, receipt_number)
                 cls._update_cil_and_shortname_history(cil_rollup, receipt_number=receipt_number)
                 db.session.commit()
@@ -181,10 +179,13 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         for invoice in invoices:
             cfs_account = CfsAccountModel.find_effective_by_payment_method(invoice.payment_account_id,
                                                                            PaymentMethod.EFT.value)
+            if not cfs_account:
+                current_app.logger.error(f'No EFT CFS Account found for pay account id={invoice.payment_account_id}')
+                continue
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             try:
-                cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
+                cls._handle_invoice_refund(invoice, invoice_reference)
                 db.session.commit()
             except Exception as e:   # NOQA # pylint: disable=broad-except
                 capture_message(
@@ -248,8 +249,29 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         if not (invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
             cil_rollup.invoice_id, InvoiceReferenceStatus.ACTIVE.value
         )):
-            raise Exception(f'Active Invoice reference not '  # pylint: disable=broad-exception-raised
-                            f'found for invoice id: {invoice.id}')
+            raise LookupError(f'Active Invoice reference not '
+                              f'found for invoice id: {invoice.id}')
+        if invoice_reference.is_consolidated:
+            original_invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
+                cil_rollup.invoice_id, InvoiceReferenceStatus.CANCELLED.value, exclude_consolidated=True
+            )
+            if not original_invoice_reference:
+                raise LookupError(f'Non consolidated cancelled invoice reference not '
+                                  f'found for invoice id: {invoice.id}')
+            invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
+                                                      inv_number=original_invoice_reference.invoice_number)
+            cfs_total = Decimal(invoice_response.get('total', '0'))
+            invoice_total_matches = cfs_total == invoice.total
+            if not invoice_total_matches:
+                raise ValueError(f'SBC-PAY Invoice total {invoice.total} does not match CFS total {cfs_total}')
+            # Note we do the opposite of this in payment_account.
+            current_app.logger.info(f'Consolidated invoice found, reversing consolidated '
+                                    f'invoice {invoice_reference.invoice_number}.')
+            CFSService.reverse_invoice(invoice_reference.invoice_number)
+            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
+            invoice_reference.flush()
+            invoice_reference = original_invoice_reference
+
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         invoice_reference.flush()
         # Note: Not creating the entire EFT as a receipt because it can be mapped to multiple CFS accounts.
@@ -284,7 +306,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     def _rollback_receipt_and_invoice(cls, cfs_account: CfsAccountModel,
                                       invoice: InvoiceModel,
                                       receipt_number: str,
-                                      cil_status_code):
+                                      cil_status_code: str):
         """Rollback receipt in CFS and reset invoice status."""
         invoice_reference_requirement = {
             EFTCreditInvoiceStatus.PENDING_REFUND.value: InvoiceReferenceStatus.COMPLETED.value,
@@ -294,14 +316,16 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, invoice_reference_status
         )
+        if invoice_reference and invoice_reference.is_consolidated:
+            raise ValueError(f'Cannot reverse a consolidated invoice {invoice_reference.invoice_number}')
         if cil_status_code != EFTCreditInvoiceStatus.CANCELLED.value and not invoice_reference:
-            raise Exception(f'{invoice_reference_status} invoice reference '  # pylint: disable=broad-exception-raised
-                            f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
+            raise LookupError(f'{invoice_reference_status} invoice reference '
+                              f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
         is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
         is_reversal = not is_invoice_refund
         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         if is_invoice_refund:
-            cls._handle_invoice_refund(cfs_account, invoice, invoice_reference)
+            cls._handle_invoice_refund(invoice, invoice_reference)
         else:
             invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
             invoice.paid = 0
@@ -317,28 +341,16 @@ class EFTTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _handle_invoice_refund(cls,
-                               cfs_account: CfsAccountModel,
                                invoice: InvoiceModel,
                                invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
-            adjustment_lines = cls._build_reversal_adjustment_lines(invoice)
-            CFSService.adjust_invoice(cfs_account, invoice_reference.invoice_number, adjustment_lines=adjustment_lines)
+            if invoice_reference.is_consolidated:
+                raise ValueError(f'Cannot reverse a consolidated invoice: {invoice_reference.invoice_number}')
+            CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.total
         invoice.flush()
-
-    @classmethod
-    def _build_reversal_adjustment_lines(cls, invoice: InvoiceModel) -> list:
-        """Build the adjustment lines for the invoice."""
-        return [
-            {
-                'line_number': line['line_number'],
-                'adjustment_amount': line['unit_price'],
-                'activity_name': CFS_ADJ_ACTIVITY_NAME
-            }
-            for line in CFSService.build_lines(invoice.payment_line_items, negate=True)
-        ]

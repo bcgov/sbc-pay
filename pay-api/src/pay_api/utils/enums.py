@@ -381,6 +381,7 @@ class PaymentDetailsGlStatus(Enum):
     INPRG = 'INPRG'
     RJCT = 'RJCT'  # Should have refundglerrormessage
     CMPLT = 'CMPLT'
+    DECLINED = 'DECLINED'
 
 
 class QueueSources(Enum):

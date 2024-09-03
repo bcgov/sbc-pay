@@ -84,6 +84,7 @@ def test_update_distribution(session, public_user_mock, monkeypatch):
 
     factory_payment(invoice_number=invoice_reference.invoice_number,
                     payment_method_code=PaymentMethod.DIRECT_PAY.value,
+                    payment_account_id=payment_account.id,
                     invoice_amount=30).save()
 
     distribution_id = line.fee_distribution_id

@@ -331,6 +331,11 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Return the created date."""
         return self._dao.created_on
 
+    @created_on.setter
+    def created_on(self, value: datetime):
+        """Set the created date."""
+        self._dao.created_on = value
+
     def commit(self):
         """Save the information to the DB."""
         return self._dao.commit()
