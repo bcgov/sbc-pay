@@ -57,36 +57,8 @@ def reconcile_distributions(msg: Dict[str, any], is_feedback: bool = False):
 
 
 def _update_acknowledgement(msg: Dict[str, any]):
-    # As per documentation, feedback file is timestamped by the date time when it is picked,
-    # so query uploaded jv file records and mark it as acknowledged.
-
-    # Check to see that our ack file doesn't exist, if it exists, skip it.
-    ack_file_name = msg.get('fileName')
-    ack_exists: EjvFileModel = db.session.query(EjvFileModel).filter(
-        EjvFileModel.ack_file_ref == ack_file_name).first()
-    if ack_exists:
-        current_app.logger.warning('Ack file: %s - already exists, possible duplicate, skipping ack.', ack_file_name)
-        return
-
-    ejv_file: EjvFileModel = db.session.query(EjvFileModel).filter(
-        EjvFileModel.disbursement_status_code == DisbursementStatus.UPLOADED.value).one_or_none()
-    ejv_headers: List[EjvHeaderModel] = db.session.query(EjvHeaderModel).filter(
-        EjvHeaderModel.ejv_file_id == ejv_file.id).all()
-
-    ejv_file.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
-    ejv_file.ack_file_ref = ack_file_name
-
-    for ejv_header in ejv_headers:
-        ejv_header.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
-        if ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
-            ejv_links: List[EjvLinkModel] = db.session.query(EjvLinkModel) \
-                .filter(EjvLinkModel.ejv_header_id == ejv_header.id) \
-                .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value) \
-                .all()
-            for ejv_link in ejv_links:
-                invoice: InvoiceModel = InvoiceModel.find_by_id(ejv_link.link_id)
-                invoice.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
-    db.session.commit()
+    """Log the ack file, we don't know which batch it's for."""
+    current_app.logger.info('Ack file received: %s', msg.get('fileName'))
 
 
 def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements

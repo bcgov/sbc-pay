@@ -88,7 +88,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             except Exception as e:  # NOQA # pylint: disable=broad-except disable=invalid-name
                 capture_message(f'Error on processing credit card refund - invoice: {invoice.id}'
                                 f'status={invoice.invoice_status_code} ERROR : {str(e)}', level='error')
-                current_app.logger.error(e)
+                current_app.logger.error(e, exc_info=True)
 
     @classmethod
     def _query_order_status(cls, invoice: Invoice):
