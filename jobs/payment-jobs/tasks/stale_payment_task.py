@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module is being invoked from a job and it cleans up the stale records."""
 import datetime
-import traceback
 
 from flask import current_app
 from pay_api.exceptions import BusinessException, Error

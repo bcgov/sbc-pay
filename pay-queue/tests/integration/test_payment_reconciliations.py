@@ -711,7 +711,7 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     error_messages = [{'error': 'Test error message', 'row': 'row 2'}]
     mocker.patch('pay_queue.services.payment_reconciliations._process_file_content',
                  return_value=(True, error_messages))
-    mock_send_error_email = mocker.patch('pay_queue.services.payment_reconciliations._send_error_email')
+    mock_send_error_email = mocker.patch('pay_queue.services.email_service.send_error_email')
 
     file_name: str = 'BCR_PAYMENT_APPL_20240619.csv'
     date = datetime.now(tz=timezone.utc).isoformat()

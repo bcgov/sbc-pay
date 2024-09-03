@@ -30,10 +30,10 @@ from sentry_sdk import capture_message
 
 from pay_queue.minio import get_object
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
-from pay_queue.services.email_service import send_error_email
+from pay_queue.services.email_service import EmailParams, send_error_email
 
 
-class EFTReconciliation:
+class EFTReconciliation:  # pylint: disable=too-few-public-methods
     """Initialize the EFTReconciliation."""
 
     def __init__(self, ce):
@@ -55,8 +55,15 @@ class EFTReconciliation:
             capture_message(error_msg, level='error')
         self.error_messages.append({'error': error_msg, 'row': row})
         if table_name is not None:
-            subject = 'EFT TDI17 Reconciliation Failure'
-            send_error_email(subject, self.file_name, self.minio_location, self.error_messages, self.ce, table_name)
+            email_service_params = EmailParams(
+                subject='EFT TDI17 Reconciliation Failure',
+                file_name=self.file_name,
+                minio_location=self.minio_location,
+                error_messages=self.error_messages,
+                ce=self.ce,
+                table_name=table_name
+            )
+            send_error_email(email_service_params)
 
 
 def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals

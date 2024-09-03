@@ -47,7 +47,7 @@ from sentry_sdk import capture_message
 
 from pay_queue import config
 from pay_queue.minio import get_object
-from pay_queue.services.email_service import send_error_email
+from pay_queue.services.email_service import EmailParams, send_error_email
 
 from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 
@@ -210,8 +210,15 @@ def reconcile_payments(ce):
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
     if has_errors and not current_app.config.get('DISABLE_CSV_ERROR_EMAIL'):
-        subject = 'Payment Reconciliation Failure'
-        send_error_email(subject, file_name, minio_location, error_messages, ce, cas_settlement.__tablename__)
+        email_service_params = EmailParams(
+            subject='Payment Reconciliation Failure',
+            file_name=file_name,
+            minio_location=minio_location,
+            error_messages=error_messages,
+            ce=ce,
+            table_name=cas_settlement.__tablename__
+        )
+        send_error_email(email_service_params)
 
 
 def _process_file_content(content: str, cas_settlement: CasSettlementModel,
