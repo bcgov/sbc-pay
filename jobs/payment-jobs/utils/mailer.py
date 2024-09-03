@@ -114,7 +114,8 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
         'accountId': info.auth_account_id,
         'dueDate': f'{info.due_date}',
         'statementFrequency': info.statement.frequency,
-        'totalAmountOwing': info.total_amount_owing
+        'totalAmountOwing': info.total_amount_owing,
+        'shortNameLinksCount': info.short_name_links_count
     }
     try:
         gcp_queue_publisher.publish_to_queue(
