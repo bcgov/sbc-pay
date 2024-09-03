@@ -114,6 +114,8 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
         'accountId': info.auth_account_id,
         'dueDate': f'{info.due_date}',
         'statementFrequency': info.statement.frequency,
+        'statementMonth': info.statement.from_date.strftime('%B'),
+        'statementNumber': info.statement.id,
         'totalAmountOwing': info.total_amount_owing,
         'shortNameLinksCount': info.short_name_links_count
     }
