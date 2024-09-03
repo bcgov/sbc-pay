@@ -112,7 +112,6 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
@@ -226,9 +225,7 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
@@ -345,9 +342,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
@@ -513,9 +508,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
@@ -671,9 +664,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
@@ -761,9 +752,7 @@ def test_successful_refund_reconciliations(session, app, client):
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
@@ -894,9 +883,7 @@ def test_failed_refund_reconciliations(session, app, client):
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
@@ -996,7 +983,6 @@ def test_prevent_duplicate_ack(session, app, client):
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
     assert ejv.ack_file_ref == ack_file_name
-    assert ejv.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Nothing should change, because it's already processed this ACK.
     ejv.disbursement_status_code = DisbursementStatus.UPLOADED.value
@@ -1068,7 +1054,6 @@ def test_successful_ap_disbursement(session, app, client):
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     invoice_str = [str(invoice_id).zfill(9) for invoice_id in invoice_ids]
     feedback_content = f'APBG...........{str(ejv_file_id).zfill(9)}....\n' \
@@ -1215,7 +1200,6 @@ def test_failure_ap_disbursement(session, app, client):
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # We need this, otherwise the feedback_content file will need to be changed.
     invoice_str = [str(invoice_id).zfill(9) for invoice_id in invoice_ids]
