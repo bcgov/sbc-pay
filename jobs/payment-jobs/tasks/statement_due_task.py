@@ -19,6 +19,7 @@ import pytz
 from flask import current_app
 from pay_api.models import db
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
+from pay_api.models.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.non_sufficient_funds import NonSufficientFunds as NonSufficientFundsModel
@@ -26,10 +27,10 @@ from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
-from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.services.flags import flags
 from pay_api.services import NonSufficientFundsService
 from pay_api.services.statement import Statement
+from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import current_local_time
 from sentry_sdk import capture_message
@@ -112,8 +113,8 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     def _notify_for_monthly(cls):
         """Notify for unpaid monthly statements with an amount owing."""
         previous_month = cls.statement_date_override or current_local_time().replace(day=1) - timedelta(days=1)
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_month,
-                                                                                        StatementFrequency.MONTHLY)
+        statement_settings = StatementSettingsService.find_accounts_settings_by_frequency(previous_month,
+                                                                                          StatementFrequency.MONTHLY)
         eft_payment_accounts = [pay_account for _, pay_account in statement_settings
                                 if pay_account.payment_method == PaymentMethod.EFT.value]
         if cls.auth_account_override:
@@ -148,13 +149,15 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
                                                 f' notification for auth_account_id='
                                                 f'{payment_account.auth_account_id}, payment_account_id='
                                                 f'{payment_account.id}')
+                        links_count = EFTShortnameLinksModel.get_short_name_links_count(payment_account.auth_account_id)
                         publish_payment_notification(
                             StatementNotificationInfo(auth_account_id=payment_account.auth_account_id,
                                                       statement=statement,
                                                       action=action,
                                                       due_date=due_date,
                                                       emails=emails,
-                                                      total_amount_owing=total_due))
+                                                      total_amount_owing=total_due,
+                                                      short_name_links_count=links_count))
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
                     f'Error on unpaid statement notification auth_account_id={payment_account.auth_account_id}, '

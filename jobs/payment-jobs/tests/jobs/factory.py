@@ -164,11 +164,13 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
 
 
 def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021',
-                              status_code=InvoiceReferenceStatus.ACTIVE.value):
+                              status_code=InvoiceReferenceStatus.ACTIVE.value,
+                              is_consolidated=False):
     """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
                             status_code=status_code,
-                            invoice_number=invoice_number).save()
+                            invoice_number=invoice_number,
+                            is_consolidated=is_consolidated).save()
 
 
 def factory_create_online_banking_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value,

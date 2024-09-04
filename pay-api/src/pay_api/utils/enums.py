@@ -217,11 +217,19 @@ class DisbursementStatus(Enum):
     WAITING_FOR_JOB = 'WAITING_FOR_JOB'
 
 
+class DisbursementMethod(Enum):
+    """Disbursement type codes."""
+
+    EFT = 'EFT'
+    CHEQUE = 'CHQ'
+
+
 class Product(Enum):
     """Product."""
 
     BUSINESS = 'BUSINESS'
     NRO = 'NRO'
+    STRR = 'STRR'
 
 
 class RoutingSlipStatus(Enum):
@@ -273,6 +281,7 @@ class EjvFileType(Enum):
     PAYMENT = 'PAYMENT'
     DISBURSEMENT = 'DISBURSEMENT'
     REFUND = 'REFUND'
+    EFT_REFUND = 'EFT_REFUND'
     NON_GOV_DISBURSEMENT = 'NON_GOV_DISBURSEMENT'
     TRANSFER = 'TRANSFER'
 
@@ -372,6 +381,7 @@ class PaymentDetailsGlStatus(Enum):
     INPRG = 'INPRG'
     RJCT = 'RJCT'  # Should have refundglerrormessage
     CMPLT = 'CMPLT'
+    DECLINED = 'DECLINED'
 
 
 class QueueSources(Enum):

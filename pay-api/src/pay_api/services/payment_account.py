@@ -29,6 +29,7 @@ from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementRecipients as StatementRecipientModel
@@ -606,42 +607,60 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(payment_id: int, payment_account_id: int):
+    def unlock_frozen_accounts(payment_id: int, payment_account_id: int, invoice_number: str):
         """Unlock frozen accounts."""
-        pay_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
-        if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
-            current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
-                                                                                            PaymentMethod.PAD.value)
+        pay_account = PaymentAccountModel.find_by_id(payment_account_id)
+        unlocked = False
+        if pay_account.has_nsf_invoices:
+            current_app.logger.info(f'Unlocking PAD Frozen Account {pay_account.auth_account_id}')
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
+                                                                           PaymentMethod.PAD.value)
             CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
-            payment_account_model = PaymentAccountModel.find_by_id(payment_account_id)
-            payment_account_model.has_nsf_invoices = None
+            pay_account.has_nsf_invoices = None
             pay_account.save()
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
+            unlocked = True
+        elif pay_account.has_overdue_invoices:
+            # Reverse original invoices here, because users can still cancel out of CC payment process and pay via EFT.
+            # Note we do the opposite of this in the EFT task, but at a smaller scale (one invoice at a time.)
+            # Possible some of these could already be reversed.
+            for original_invoice_number in InvoiceReferenceModel.find_non_consolidated_invoice_numbers(invoice_number):
+                try:
+                    CFSService.reverse_invoice(original_invoice_number[0])
+                except Exception:  # NOQA pylint: disable=broad-except
+                    current_app.logger.error(f'Error reversing invoice number: {original_invoice_number}',
+                                             exc_info=True)
+            current_app.logger.info(f'Unlocking EFT Frozen Account {pay_account.auth_account_id}')
+            pay_account.has_overdue_invoices = None
+            pay_account.save()
+            unlocked = True
+        if not unlocked:
+            return
 
-            receipt_info = ReceiptService.get_nsf_receipt_details(payment_id)
-            payload = pay_account.create_account_event_payload(
-                QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
-                receipt_info=receipt_info
-            )
+        receipt_info = ReceiptService.get_nsf_receipt_details(payment_id)
+        pay_account_service = PaymentAccount.find_by_id(payment_account_id)
+        payload = pay_account_service.create_account_event_payload(
+            QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
+            receipt_info=receipt_info
+        )
 
-            try:
-                gcp_queue_publisher.publish_to_queue(
-                    QueueMessage(
-                        source=QueueSources.PAY_API.value,
-                        message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
-                        payload=payload,
-                        topic=current_app.config.get('AUTH_EVENT_TOPIC')
-                    )
+        try:
+            gcp_queue_publisher.publish_to_queue(
+                QueueMessage(
+                    source=QueueSources.PAY_API.value,
+                    message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
+                    payload=payload,
+                    topic=current_app.config.get('AUTH_EVENT_TOPIC')
                 )
-            except Exception as e:  # NOQA pylint: disable=broad-except
-                current_app.logger.error(e)
-                current_app.logger.error(
-                    'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
-                    pay_account.name)
-                capture_message(
-                    f'Notification to Queue failed for the Unlock Account : {payload}.', level='error')
+            )
+        except Exception as e:  # NOQA pylint: disable=broad-except
+            current_app.logger.error(e, exc_info=True)
+            current_app.logger.error(
+                'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
+                pay_account.name)
+            capture_message(
+                f'Notification to Queue failed for the Unlock Account : {payload}.', level='error')
 
     @classmethod
     def delete_account(cls, auth_account_id: str) -> PaymentAccount:

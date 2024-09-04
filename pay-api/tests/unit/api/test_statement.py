@@ -278,6 +278,7 @@ def test_statement_summary(session, client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('totalDue') == float(total_due)
     assert rv.json.get('oldestDueDate') == (oldest_due_date.date() + relativedelta(hours=8)).isoformat()
+    assert rv.json.get('shortNameLinksCount') == 0
 
 
 def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, app):
@@ -312,3 +313,4 @@ def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, 
     assert rv.json.get('totalDue') == 0
     assert rv.json.get('oldestDueDate') is None
     assert rv.json.get('totalInvoiceDue') == float(unpaid_amount)
+    assert rv.json.get('shortNameLinksCount') == 0

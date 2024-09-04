@@ -26,8 +26,10 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment
 from pay_api.services.hashing import HashingService
+from pay_api.services.payment_service import Payment as PaymentService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.enums import (
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus)
 from pay_api.utils.errors import Error
 from tests import skip_in_pod
 from tests.utilities.base_test import (
@@ -151,7 +153,8 @@ def test_transaction_update(session, public_user_mock):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    payment: Payment = factory_payment(invoice_number=invoice_reference.invoice_number).save()
+    payment: Payment = factory_payment(invoice_number=invoice_reference.invoice_number,
+                                       payment_account_id=payment_account.id).save()
 
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id,
@@ -181,7 +184,8 @@ def test_transaction_update_with_no_receipt(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    factory_payment(invoice_number=invoice_reference.invoice_number).save()
+    factory_payment(invoice_number=invoice_reference.invoice_number,
+                    payment_account_id=payment_account.id).save()
 
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id, pay_response_url=None)
@@ -210,7 +214,8 @@ def test_transaction_update_completed(session, public_user_mock):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    factory_payment(invoice_number=invoice_reference.invoice_number).save()
+    factory_payment(invoice_number=invoice_reference.invoice_number,
+                    payment_account_id=payment_account.id).save()
 
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id,
@@ -586,7 +591,8 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
     # Patch transaction and check the status of records
     inv_number_1 = 'REG00001'
     payment_account = factory_payment_account(cfs_account_status=CfsAccountStatus.FREEZE.value,
-                                              payment_method_code='PAD').save()
+                                              payment_method_code='PAD',
+                                              has_nsf_invoices=datetime.now(tz=timezone.utc)).save()
     invoice_1 = factory_invoice(payment_account, total=100)
     invoice_1.save()
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
@@ -624,7 +630,47 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
     payment_2 = Payment.find_by_id(payment_2.id)
     assert payment_2.payment_status_code == 'COMPLETED'
 
-    invoice_1: Invoice = Invoice.find_by_id(invoice_1.id)
+    invoice_1 = Invoice.find_by_id(invoice_1.id)
     assert invoice_1.invoice_status_code == 'PAID'
     cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == 'ACTIVE'
+    assert payment_account.has_nsf_invoices is None
+
+
+def test_patch_transaction_for_eft_overdue(session, monkeypatch):
+    """Assert we can unlock for EFT."""
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account(cfs_account_status=CfsAccountStatus.ACTIVE.value,
+                                              payment_method_code=PaymentMethod.EFT.value,
+                                              has_overdue_invoices=datetime.now(tz=timezone.utc)).save()
+    invoice_1 = factory_invoice(payment_account, total=100, status_code=InvoiceStatus.APPROVED.value)
+    invoice_1.save()
+    invoice_2 = factory_invoice(payment_account, total=100, status_code=InvoiceStatus.OVERDUE.value)
+    invoice_2.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
+    original_invoice_reference = factory_invoice_reference(invoice_2.id, invoice_number=inv_number_1).save()
+
+    def get_receipt(cls, payment_account, pay_response_url: str,
+                    invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
+        return '1234567890', datetime.now(tz=timezone.utc), 100.00
+
+    monkeypatch.setattr('pay_api.services.paybc_service.PaybcService.get_receipt', get_receipt)
+    payment = PaymentService._consolidate_invoices_and_pay(  # pylint: disable=protected-access
+                                                            payment_account.auth_account_id,
+                                                            all_invoice_statuses=False)
+    assert original_invoice_reference.status_code == InvoiceReferenceStatus.CANCELLED.value, \
+        'Invoice reference should be CANCELLED a new invoice reference should be created'
+
+    txn = PaymentTransactionService.create_transaction_for_payment(payment.id, get_paybc_transaction_request())
+    txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url='receipt_number=123451')
+
+    assert txn.status_code == InvoiceReferenceStatus.COMPLETED.value
+    payment = Payment.find_by_id(payment.id)
+    assert payment.payment_status_code == InvoiceReferenceStatus.COMPLETED.value
+
+    invoice_1 = Invoice.find_by_id(invoice_1.id)
+    assert invoice_1.invoice_status_code == InvoiceStatus.APPROVED.value, 'APPROVED should not be updated'
+    invoice_2 = Invoice.find_by_id(invoice_2.id)
+    assert invoice_2.invoice_status_code == InvoiceStatus.PAID.value, 'OVERDUE invoice should be PAID'
+    assert payment_account.has_overdue_invoices is None, 'This flag should be cleared.'

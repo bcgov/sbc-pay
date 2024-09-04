@@ -802,13 +802,13 @@ Flask = "*"
 
 [[package]]
 name = "flask-cors"
-version = "4.0.0"
+version = "5.0.0"
 description = "A Flask extension adding a decorator for CORS support"
 optional = false
 python-versions = "*"
 files = [
-    {file = "Flask-Cors-4.0.0.tar.gz", hash = "sha256:f268522fcb2f73e2ecdde1ef45e2fd5c71cc48fe03cffb4b441c6d1b40684eb0"},
-    {file = "Flask_Cors-4.0.0-py2.py3-none-any.whl", hash = "sha256:bc3492bfd6368d27cfe79c7821df5a8a319e1a6d5eab277a3794be19bdc51783"},
+    {file = "Flask_Cors-5.0.0-py2.py3-none-any.whl", hash = "sha256:b9e307d082a9261c100d8fb0ba909eec6a228ed1b60a8315fd85f783d61910bc"},
+    {file = "flask_cors-5.0.0.tar.gz", hash = "sha256:5aadb4b950c4e93745034594d9f3ea6591f734bb3662e16e255ffbf5e89c88ef"},
 ]
 
 [package.dependencies]
@@ -1049,7 +1049,7 @@ simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 
 [package.source]
 type = "git"
-url = "https://github.com/jxio/sbc-connect-common.git"
+url = "https://github.com/bcgov/sbc-connect-common.git"
 reference = "main"
 resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
 subdirectory = "python/gcp-queue"
@@ -1306,22 +1306,23 @@ protobuf = ">=4.21.6"
 
 [[package]]
 name = "gunicorn"
-version = "21.2.0"
+version = "22.0.0"
 description = "WSGI HTTP Server for UNIX"
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.7"
 files = [
-    {file = "gunicorn-21.2.0-py3-none-any.whl", hash = "sha256:3213aa5e8c24949e792bcacfc176fef362e7aac80b76c56f6b5122bf350722f0"},
-    {file = "gunicorn-21.2.0.tar.gz", hash = "sha256:88ec8bff1d634f98e61b9f65bc4bf3cd918a90806c6f5c48bc5603849ec81033"},
+    {file = "gunicorn-22.0.0-py3-none-any.whl", hash = "sha256:350679f91b24062c86e386e198a15438d53a7a8207235a78ba1b53df4c4378d9"},
+    {file = "gunicorn-22.0.0.tar.gz", hash = "sha256:4a0b436239ff76fb33f11c07a16482c521a7e09c1ce3cc293c2330afe01bec63"},
 ]
 
 [package.dependencies]
 packaging = "*"
 
 [package.extras]
-eventlet = ["eventlet (>=0.24.1)"]
+eventlet = ["eventlet (>=0.24.1,!=0.36.0)"]
 gevent = ["gevent (>=1.4.0)"]
 setproctitle = ["setproctitle"]
+testing = ["coverage", "eventlet", "gevent", "pytest", "pytest-cov"]
 tornado = ["tornado (>=0.2)"]
 
 [[package]]
@@ -1406,13 +1407,13 @@ tests = ["codecov", "coverage", "flake8", "flake8-quotes", "flake8-typing-import
 
 [[package]]
 name = "jinja2"
-version = "3.1.3"
+version = "3.1.4"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "Jinja2-3.1.3-py3-none-any.whl", hash = "sha256:7d6d50dd97d52cbc355597bd845fabfbac3f551e1f99619e39a35ce8c370b5fa"},
-    {file = "Jinja2-3.1.3.tar.gz", hash = "sha256:ac8bd6544d4bb2c9792bf3a159e80bba8fda7f07e81bc3aed565432d5925ba90"},
+    {file = "jinja2-3.1.4-py3-none-any.whl", hash = "sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d"},
+    {file = "jinja2-3.1.4.tar.gz", hash = "sha256:4a3aee7acbbe7303aede8e9648d13b8bf88a429282aa6122a993f0ac800cb369"},
 ]
 
 [package.dependencies]
@@ -2307,7 +2308,7 @@ jaeger-client = "*"
 
 [package.source]
 type = "git"
-url = "https://github.com/jxio/sbc-common-components.git"
+url = "https://github.com/bcgov/sbc-common-components.git"
 reference = "HEAD"
 resolved_reference = "22978d810dc4e85c51c3129936686b0a17124e64"
 subdirectory = "python"
@@ -2449,7 +2450,7 @@ develop = false
 
 [package.source]
 type = "git"
-url = "https://github.com/jxio/sbc-connect-common.git"
+url = "https://github.com/seeker25/sbc-connect-common.git"
 reference = "main"
 resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
 subdirectory = "python/sql-versioning"
@@ -2672,13 +2673,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "werkzeug"
-version = "3.0.1"
+version = "3.0.3"
 description = "The comprehensive WSGI web application library."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "werkzeug-3.0.1-py3-none-any.whl", hash = "sha256:90a285dc0e42ad56b34e696398b8122ee4c681833fb35b8334a095d82c56da10"},
-    {file = "werkzeug-3.0.1.tar.gz", hash = "sha256:507e811ecea72b18a404947aded4b3390e1db8f826b494d76550ef45bb3b1dcc"},
+    {file = "werkzeug-3.0.3-py3-none-any.whl", hash = "sha256:fc9645dc43e03e4d630d23143a04a7f947a9a3b5727cd535fdfe155a17cc48c8"},
+    {file = "werkzeug-3.0.3.tar.gz", hash = "sha256:097e5bfda9f0aba8da6b8545146def481d06aa7d3266e7448e2cccf67dd8bd18"},
 ]
 
 [package.dependencies]
@@ -2793,4 +2794,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "e1cb1f60091c72e5039ae772a126d262725e847c3de811cabafda3085b979c54"
+content-hash = "0c235a2f570821bcb2ff9a0be19e84b3f42172e187012f3bdfadacc7d333542f"

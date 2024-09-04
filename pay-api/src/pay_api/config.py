@@ -68,6 +68,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     """Base class configuration that should set reasonable defaults for all the other configurations."""
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+    CLOUD_PLATFORM = os.getenv('CLOUD_PLATFORM', 'OCP')
 
     SECRET_KEY = 'a secret'
 
@@ -138,6 +139,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', 'business-pay-dev')
     GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
     NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', 'namex-pay-dev')
+    STRR_PAY_TOPIC = os.getenv('STRR_PAY_TOPIC', BUSINESS_PAY_TOPIC)
 
     # API Endpoints
     AUTH_API_URL = os.getenv('AUTH_API_URL', '')
