@@ -347,17 +347,17 @@ def factory_create_eft_shortname_historical(payment_account_id=1, related_group_
 
 
 def factory_create_eft_refund(
-    auth_account_id: str = '1234',
     cas_supplier_number: str = '1234',
+    comment: str = 'Test Comment',
     refund_amount: float = 100.0,
     refund_email: str = '',
     short_name_id: int = 1,
-    status: str = CfsAccountStatus.PENDING.value
+    status: str = InvoiceStatus.REFUND_REQUESTED.value
 ):
     """Return Factory."""
     eft_refund = EFTRefund(
-        auth_account_id=auth_account_id,
         cas_supplier_number=cas_supplier_number,
+        comment=comment,
         refund_amount=refund_amount,
         refund_email=refund_email,
         short_name_id=short_name_id,
