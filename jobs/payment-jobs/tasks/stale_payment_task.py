@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module is being invoked from a job and it cleans up the stale records."""
 import datetime
-import traceback
 
 from flask import current_app
 from pay_api.exceptions import BusinessException, Error
@@ -115,5 +114,4 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                         TransactionService.update_transaction(transaction.id, pay_response_url=None)
 
             except Exception as err:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error(err)
-                current_app.logger.error(traceback.format_exc())
+                current_app.logger.error(err, exc_info=True)

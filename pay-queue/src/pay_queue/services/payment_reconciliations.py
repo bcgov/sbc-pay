@@ -13,8 +13,6 @@
 # limitations under the License.
 """Payment reconciliation file."""
 import csv
-import dataclasses
-import json
 import os
 import traceback
 from datetime import datetime, timezone
@@ -22,7 +20,6 @@ from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from flask import current_app
-from jinja2 import Environment, FileSystemLoader
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
@@ -39,19 +36,17 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
-from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
-    PaymentStatus, QueueSources)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, QueueSources)
 from pay_api.utils.util import get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 from pay_queue import config
-from pay_queue.auth import get_token
 from pay_queue.minio import get_object
+from pay_queue.services.email_service import EmailParams, send_error_email
 
 from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 
@@ -214,7 +209,15 @@ def reconcile_payments(ce):
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
     if has_errors and not current_app.config.get('DISABLE_CSV_ERROR_EMAIL'):
-        _send_error_email(file_name, minio_location, error_messages, ce, cas_settlement.__tablename__)
+        email_service_params = EmailParams(
+            subject='Payment Reconciliation Failure',
+            file_name=file_name,
+            minio_location=minio_location,
+            error_messages=error_messages,
+            ce=ce,
+            table_name=cas_settlement.__tablename__
+        )
+        send_error_email(email_service_params)
 
 
 def _process_file_content(content: str, cas_settlement: CasSettlementModel,
@@ -289,48 +292,6 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
     cas_settlement.processed_on = datetime.now()
     cas_settlement.save()
     return has_errors, error_messages
-
-
-def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too-many-locals
-                      error_messages: List[Dict[str, any]],
-                      ce, table_name: str):
-    """Send the email asynchronously, using the given details."""
-    subject = 'Payment Reconciliation Failure'
-    token = get_token()
-    recipient = current_app.config.get('IT_OPS_EMAIL')
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root_dir = os.path.dirname(current_dir)
-    templates_dir = os.path.join(project_root_dir, 'templates')
-    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-
-    template = env.get_template('payment_reconciliation_failed_email.html')
-
-    params = {
-        'fileName': file_name,
-        'errorMessages': error_messages,
-        'minioLocation': minio_location,
-        'payload': json.dumps(dataclasses.asdict(ce)),
-        'tableName': table_name
-    }
-    html_body = template.render(params)
-    notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
-    notify_body = {
-        'recipients': recipient,
-        'content': {
-            'subject': subject,
-            'body': html_body
-        }
-    }
-    notify_response = OAuthService.post(notify_url, token=token,
-                                        auth_header_type=AuthHeaderType.BEARER,
-                                        content_type=ContentType.JSON, data=notify_body)
-    current_app.logger.info(f'_send_error_email to recipients: {notify_url}, {recipient}')
-    if notify_response:
-        response_json = json.loads(notify_response.text)
-        if response_json.get('notifyStatus', 'FAILURE') != 'FAILURE':
-            current_app.logger.info('_send_error_email notify_response')
-        else:
-            current_app.logger.info('_send_error_email failed')
 
 
 def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
