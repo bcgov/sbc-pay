@@ -86,11 +86,9 @@ class ApTask(CgiAP):
             .all()
 
         current_app.logger.info(f'Found {len(eft_refunds_dao)} to refund.')
-        if not eft_refunds_dao:
-            return
 
         for refunds in list(batched(eft_refunds_dao, 250)):
-            ejv_file_model: EjvFileModel = EjvFileModel(
+            ejv_file_model = EjvFileModel(
                 file_type=cls.ap_type.value,
                 file_ref=cls.get_file_name(),
                 disbursement_status_code=DisbursementStatus.UPLOADED.value

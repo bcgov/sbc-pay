@@ -122,35 +122,35 @@ class CgiAP(CgiEjv):
     @classmethod
     def _supplier_number(cls):
         """Return vendor number."""
-        if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
-            return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<9}"
-        if cls.ap_type == EjvFileType.REFUND:
-            return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
-        if cls.ap_type == EjvFileType.EFT_REFUND:
-            return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
-        raise RuntimeError('ap_type not selected.')
+        match cls.ap_type:
+            case EjvFileType.NON_GOV_DISBURSEMENT:
+                return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<9}"
+            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+                return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
+            case _:
+                raise RuntimeError('ap_type not selected.')
 
     @classmethod
     def _dist_vendor(cls):
         """Return distribution vendor number."""
-        if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
-            return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<30}"
-        if cls.ap_type == EjvFileType.REFUND:
-            return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
-        if cls.ap_type == EjvFileType.EFT_REFUND:
-            return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
-        raise RuntimeError('ap_type not selected.')
+        match cls.ap_type:
+            case EjvFileType.NON_GOV_DISBURSEMENT:
+                return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<30}"
+            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+                return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
+            case _:
+                raise RuntimeError('ap_type not selected.')
 
     @classmethod
     def _supplier_location(cls):
         """Return location."""
-        if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
-            return f"{current_app.config.get('BCA_SUPPLIER_LOCATION'):<3}"
-        if cls.ap_type == EjvFileType.REFUND:
-            return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
-        if cls.ap_type == EjvFileType.EFT_REFUND:
-            return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
-        raise RuntimeError('ap_type not selected.')
+        match cls.ap_type:
+            case EjvFileType.NON_GOV_DISBURSEMENT:
+                return f"{current_app.config.get('BCA_SUPPLIER_LOCATION'):<3}"
+            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+                return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
+            case _:
+                raise RuntimeError('ap_type not selected.')
 
     @classmethod
     def _po_number(cls):
@@ -165,34 +165,32 @@ class CgiAP(CgiEjv):
     @classmethod
     def _distribution(cls, distribution_code: str = None):
         """Return Distribution Code string."""
-        if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
-            return f'{distribution_code}0000000000{cls.EMPTY:<16}'
-        if cls.ap_type == EjvFileType.REFUND:
-            return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
-        if cls.ap_type == EjvFileType.EFT_REFUND:
-            return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
-        raise RuntimeError('ap_type not selected.')
+        match cls.ap_type:
+            case EjvFileType.NON_GOV_DISBURSEMENT:
+                return f'{distribution_code}0000000000{cls.EMPTY:<16}'
+            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+                return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
+            case _:
+                raise RuntimeError('ap_type not selected.')
 
     @classmethod
     def _get_oracle_invoice_batch_name(cls, invoice_number):
         """Return Oracle Invoice Batch Name."""
-        if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
-            return f'{invoice_number}'[:30]
-        if cls.ap_type == EjvFileType.REFUND:
-            return f'REFUND_FAS_RS_{invoice_number}'[:30]
-        if cls.ap_type == EjvFileType.EFT_REFUND:
-            return f'REFUND_FAS_RS_{invoice_number}'[:30]
-        raise RuntimeError('ap_type not selected.')
+        match cls.ap_type:
+            case EjvFileType.NON_GOV_DISBURSEMENT:
+                return f'{invoice_number}'[:30]
+            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+                return f'REFUND_FAS_RS_{invoice_number}'[:30]
+            case _:
+                raise RuntimeError('ap_type not selected.')
 
     @classmethod
     def _get_line_code(cls, ap_line: APLine):
-        # Routing slip refunds always DEBIT the internal GL and mails out cheques.
-        if cls.ap_type == EjvFileType.REFUND:
-            return 'D'
-        if cls.ap_type == EjvFileType.EFT_REFUND:
-            return 'C'
-        if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
-            if ap_line.is_reversal:
-                return 'C'
-            return 'D'
-        raise RuntimeError('ap_type not selected.')
+        """Get line code."""
+        match cls.ap_type:
+            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+                return 'D'
+            case EjvFileType.NON_GOV_DISBURSEMENT:
+                return 'C' if ap_line.is_reversal else 'D'
+            case _:
+                raise RuntimeError('ap_type not selected.')
