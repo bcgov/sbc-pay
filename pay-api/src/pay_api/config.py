@@ -68,6 +68,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     """Base class configuration that should set reasonable defaults for all the other configurations."""
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+    CLOUD_ENVIRONMENT = os.getenv('CLOUD_ENVIRONMENT', 'OCP')
 
     SECRET_KEY = 'a secret'
 
