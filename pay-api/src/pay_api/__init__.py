@@ -51,7 +51,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     db.init_app(app)
     queue.init_app(app)
     if run_mode != 'testing':
-        if app.config.get('CLOUD_ENVIRONMENT') != 'OCP':
+        if app.config.get('CLOUD_PLATFORM') != 'OCP':
             Migrate(app, db)
             app.logger.info('Running migration upgrade.')
             with app.app_context():
