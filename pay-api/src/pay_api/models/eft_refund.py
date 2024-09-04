@@ -40,6 +40,7 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
             'cas_supplier_number',
             'comment',
             'created_on',
+            'disbursement_status_code',
             'id',
             'refund_amount',
             'refund_email',
@@ -54,6 +55,7 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
     cas_supplier_number = db.Column(db.String(), nullable=False)
     comment = db.Column(db.String(), nullable=False)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     refund_email = db.Column(db.String(100), nullable=False)
