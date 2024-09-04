@@ -1,4 +1,4 @@
-"""empty message
+"""Adding disbursement_status_code column to eft_refunds
 
 Revision ID: 6ce240c993e6
 Revises: 2097573390f1
