@@ -19,7 +19,9 @@ from typing import Any, Dict, List, Optional
 
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
-from pay_api.services.email_service import send_email as send_email_service
+from pay_api.exceptions import ServiceUnavailableException
+from pay_api.services.oauth_service import OAuthService
+from pay_api.utils.enums import AuthHeaderType, ContentType
 
 from pay_queue.auth import get_token
 
@@ -56,10 +58,39 @@ def send_error_email(params: EmailParams):
 
     html_body = template.render(email_params)
 
-    token = get_token()
     send_email_service(
         recipients=[recipient],
         subject=params.subject,
-        html_body=html_body,
-        user=type('User', (), {'bearer_token': token})()
+        html_body=html_body
     )
+
+
+def send_email_service(recipients: list, subject: str, html_body: str):
+    """Send the email notification."""
+    token = get_token()
+    current_app.logger.info(f'>send_email to recipients: {recipients}')
+    notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
+
+    success = False
+
+    for recipient in recipients:
+        notify_body = {
+            'recipients': recipient,
+            'content': {
+                'subject': subject,
+                'body': html_body
+            }
+        }
+
+        try:
+            notify_response = OAuthService.post(notify_url, token=token,
+                                                auth_header_type=AuthHeaderType.BEARER,
+                                                content_type=ContentType.JSON, data=notify_body)
+            current_app.logger.info('<send_email notify_response')
+            if notify_response:
+                current_app.logger.info(f'Successfully sent email to {recipient}')
+                success = True
+        except ServiceUnavailableException as e:
+            current_app.logger.error(f'Error sending email to {recipient}: {e}')
+
+    return success
