@@ -215,7 +215,7 @@ class DisbursementStatus(Enum):
     REVERSED = 'REVERSED'
     UPLOADED = 'UPLOADED'
     WAITING_FOR_JOB = 'WAITING_FOR_JOB'
-    
+
 
 class DisbursementMethod(Enum):
     """Disbursement type codes."""
