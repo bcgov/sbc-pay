@@ -56,11 +56,11 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
             app.logger.info('Running migration upgrade.')
             with app.app_context():
                 execute_migrations(app)
+            # Alembic has it's own logging config, we'll need to restore our logging here.
+            setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
             app.logger.info('Finished migration upgrade.')
         else:
             app.logger.info('Migrations were executed on prehook.')
-    # Alembic has it's own logging config, we'll need to restore our logging here.
-    setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
     ma.init_app(app)
     endpoints.init_app(app)
 
