@@ -48,7 +48,7 @@ def worker():
         elif ce.type == QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value:
             reconcile_distributions(ce.data, is_feedback=True)
         elif ce.type == QueueMessageTypes.EFT_FILE_UPLOADED.value:
-            reconcile_eft_payments(ce.data)
+            reconcile_eft_payments(ce)
         elif ce.type in [QueueMessageTypes.INCORPORATION.value, QueueMessageTypes.REGISTRATION.value]:
             update_temporary_identifier(ce.data)
         else:
