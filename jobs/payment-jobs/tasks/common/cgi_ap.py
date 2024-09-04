@@ -126,7 +126,6 @@ class CgiAP(CgiEjv):
             return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<9}"
         if cls.ap_type == EjvFileType.REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
-        # q? what is the supplier number for EFT Refunds?
         if cls.ap_type == EjvFileType.EFT_REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
         raise RuntimeError('ap_type not selected.')
@@ -138,7 +137,6 @@ class CgiAP(CgiEjv):
             return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<30}"
         if cls.ap_type == EjvFileType.REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
-        # q? what is the distribution vendor number for EFT Refunds?
         if cls.ap_type == EjvFileType.EFT_REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
         raise RuntimeError('ap_type not selected.')
@@ -150,7 +148,6 @@ class CgiAP(CgiEjv):
             return f"{current_app.config.get('BCA_SUPPLIER_LOCATION'):<3}"
         if cls.ap_type == EjvFileType.REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
-        # q? what is the supplier location for EFT Refunds?
         if cls.ap_type == EjvFileType.EFT_REFUND:
             return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
         raise RuntimeError('ap_type not selected.')
@@ -172,7 +169,6 @@ class CgiAP(CgiEjv):
             return f'{distribution_code}0000000000{cls.EMPTY:<16}'
         if cls.ap_type == EjvFileType.REFUND:
             return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
-        # q? what is the distribution code for EFT Refunds?
         if cls.ap_type == EjvFileType.EFT_REFUND:
             return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
         raise RuntimeError('ap_type not selected.')
@@ -184,7 +180,6 @@ class CgiAP(CgiEjv):
             return f'{invoice_number}'[:30]
         if cls.ap_type == EjvFileType.REFUND:
             return f'REFUND_FAS_RS_{invoice_number}'[:30]
-        # q? what is the oracle invoice batch name for EFT Refunds?
         if cls.ap_type == EjvFileType.EFT_REFUND:
             return f'REFUND_FAS_RS_{invoice_number}'[:30]
         raise RuntimeError('ap_type not selected.')
@@ -194,9 +189,8 @@ class CgiAP(CgiEjv):
         # Routing slip refunds always DEBIT the internal GL and mails out cheques.
         if cls.ap_type == EjvFileType.REFUND:
             return 'D'
-        # q? what is the line code for EFT Refunds?
         if cls.ap_type == EjvFileType.EFT_REFUND:
-            return 'D'
+            return 'C'
         if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
             if ap_line.is_reversal:
                 return 'C'
