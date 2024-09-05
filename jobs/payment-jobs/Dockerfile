@@ -98,13 +98,11 @@ COPY --chown=web:web ./poetry.lock ./pyproject.toml .
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
   echo "$APP_ENV" \
   && poetry version \
+  && poetry config installer.max-workers 1 \
   && poetry run pip install -U pip \
   && poetry install \
     $(if [ -z ${APP_ENV+x} ] | [ "$APP_ENV" = 'production' ]; then echo '--only main'; fi) \
     --no-interaction --no-ansi
-
-# Concurrent fix until poetry 1.8.3+ is released
-RUN curl https://gist.githubusercontent.com/seeker25/0dd67670f738f1dc2bc24a885ab78914/raw/a858698a81d7b76efe6e1ec3ef9850ae3667f923/executor.py -o /usr/local/venv/lib/python3.12/site-packages/poetry/installation/executor.py
 
 COPY . .
 # Set ownership and permissions
