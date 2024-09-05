@@ -85,7 +85,7 @@ RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     --no-interaction --no-ansi
 
 # Concurrent fix until poetry 1.8.3+ is released
-RUN curl https://raw.githubusercontent.com/python-poetry/poetry/6edb42f4ff437184f948ff958414c5f4c5a34ba3/src/poetry/installation/executor.py -o /usr/local/venv/lib/python3.12/site-packages/poetry/installation/executor.py
+RUN curl https://gist.githubusercontent.com/seeker25/0dd67670f738f1dc2bc24a885ab78914/raw/a858698a81d7b76efe6e1ec3ef9850ae3667f923/executor.py -o /usr/local/venv/lib/python3.12/site-packages/poetry/installation/executor.py
 
 # Running as non-root user:
 USER web
