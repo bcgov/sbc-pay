@@ -10,7 +10,6 @@ python = "^3.12"
 flask = "^3.0.2"
 jsonschema = "4.17.3"
 python-dotenv = "^1.0.1"
-sentry-sdk = {extras = ["flask"], version = "^1.41.0"}
 pycountry = "^23.12.11"
 werkzeug = "^3.0.1"
 minio = "^7.2.5"
