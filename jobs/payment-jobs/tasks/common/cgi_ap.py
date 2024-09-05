@@ -125,8 +125,10 @@ class CgiAP(CgiEjv):
         match cls.ap_type:
             case EjvFileType.NON_GOV_DISBURSEMENT:
                 return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<9}"
-            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+            case EjvFileType.REFUND:
                 return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
+            case EjvFileType.EFT_REFUND:
+                return f"{current_app.config.get('EFT_AP_SUPPLIER_NUMBER'):<9}"
             case _:
                 raise RuntimeError('ap_type not selected.')
 
@@ -136,8 +138,10 @@ class CgiAP(CgiEjv):
         match cls.ap_type:
             case EjvFileType.NON_GOV_DISBURSEMENT:
                 return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<30}"
-            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+            case EjvFileType.REFUND:
                 return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
+            case EjvFileType.EFT_REFUND:
+                return f"{current_app.config.get('EFT_AP_SUPPLIER_NUMBER'):<30}"
             case _:
                 raise RuntimeError('ap_type not selected.')
 
@@ -147,8 +151,10 @@ class CgiAP(CgiEjv):
         match cls.ap_type:
             case EjvFileType.NON_GOV_DISBURSEMENT:
                 return f"{current_app.config.get('BCA_SUPPLIER_LOCATION'):<3}"
-            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+            case EjvFileType.REFUND:
                 return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
+            case EjvFileType.EFT_REFUND:
+                return f"{current_app.config.get('EFT_AP_SUPPLIER_LOCATION'):<3}"
             case _:
                 raise RuntimeError('ap_type not selected.')
 
@@ -168,8 +174,10 @@ class CgiAP(CgiEjv):
         match cls.ap_type:
             case EjvFileType.NON_GOV_DISBURSEMENT:
                 return f'{distribution_code}0000000000{cls.EMPTY:<16}'
-            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+            case EjvFileType.REFUND:
                 return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
+            case EjvFileType.EFT_REFUND:
+                return f"{current_app.config.get('EFT_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
             case _:
                 raise RuntimeError('ap_type not selected.')
 
@@ -179,8 +187,10 @@ class CgiAP(CgiEjv):
         match cls.ap_type:
             case EjvFileType.NON_GOV_DISBURSEMENT:
                 return f'{invoice_number}'[:30]
-            case EjvFileType.REFUND | EjvFileType.EFT_REFUND:
+            case EjvFileType.REFUND:
                 return f'REFUND_FAS_RS_{invoice_number}'[:30]
+            case EjvFileType.EFT_REFUND:
+                return f'REFUND_EFT_{invoice_number}'[:30]
             case _:
                 raise RuntimeError('ap_type not selected.')
 

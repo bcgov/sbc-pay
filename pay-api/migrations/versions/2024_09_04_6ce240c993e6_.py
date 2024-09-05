@@ -21,7 +21,6 @@ depends_on = None
 
 
 def upgrade():
-    op.execute("set statement_timeout=900000;")
     with op.batch_alter_table('eft_refunds', schema=None) as batch_op:
         batch_op.add_column(sa.Column('disbursement_status_code', sa.String(length=20), nullable=True))
         batch_op.create_foreign_key(None, 'disbursement_status_codes', ['disbursement_status_code'], ['code'])

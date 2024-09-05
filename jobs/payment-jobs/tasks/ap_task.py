@@ -82,6 +82,7 @@ class ApTask(CgiAP):
             .join(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTCreditModel.short_name_id) \
             .join(EFTRefundModel, EFTRefundModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id) \
             .filter(EFTRefundModel.status == InvoiceStatus.REFUND_REQUESTED.value) \
+            .filter(EFTRefundModel.disbursement_status_code != DisbursementStatus.UPLOADED.value) \
             .filter(EFTRefundModel.refund_amount > 0) \
             .all()
 
@@ -97,7 +98,7 @@ class ApTask(CgiAP):
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
             ap_content: str = cls.get_batch_header(batch_number)
             batch_total = 0
-            line_count_total: int = 0
+            line_count_total = 0
             for invoice_refund in refunds:
                 invoice, eft_refund = invoice_refund
                 current_app.logger.info(f'Creating refund for {invoice.id}, Amount {eft_refund.refund_amount}.')
