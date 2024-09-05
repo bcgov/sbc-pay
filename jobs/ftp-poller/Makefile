@@ -39,6 +39,7 @@ clean-test: ## clean test files
 install: clean
 	unset HOME ## unset HOME because it's in the DEV .env file, will cause permissions issues
 	pip install poetry ;\
+	poetry config installer.max-workers 1
 	poetry install
 
 #################################################################################
