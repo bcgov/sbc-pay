@@ -9,7 +9,7 @@ readme = "README.md"
 python = "^3.12"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 flask-jwt-oidc = {git = "https://github.com/thorwolpert/flask-jwt-oidc.git"}
-gunicorn = "^21.2.0"
+gunicorn = "^22.0.0"
 flask = "^3.0.2"
 flask-script = "^2.0.6"
 flask-moment = "^1.0.5"
