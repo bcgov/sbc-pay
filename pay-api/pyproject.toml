@@ -41,7 +41,7 @@ gcp-queue = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirect
 greenlet = "3.0.3"
 gunicorn = "22.0.0"
 holidays = "0.37"
-idna = "3.6"
+idna = "3.7"
 itsdangerous = "2.1.2"
 jaeger-client = "4.8.0"
 jsonschema = "4.17.3"
