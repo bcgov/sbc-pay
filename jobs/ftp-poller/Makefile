@@ -39,8 +39,8 @@ clean-test: ## clean test files
 install: clean
 	unset HOME ## unset HOME because it's in the DEV .env file, will cause permissions issues
 	pip install poetry ;\
-	poetry install
 	python -c "import site; import urllib.request; url = 'https://gist.githubusercontent.com/seeker25/0dd67670f738f1dc2bc24a885ab78914/raw/a858698a81d7b76efe6e1ec3ef9850ae3667f923/executor.py'; file_name = site.getsitepackages()[0] + '/poetry/installation/executor.py'; print('Poetry 1.8.3 fix - Copying ' + url + ' to ' + file_name); urllib.request.urlretrieve(url, file_name)"
+	poetry install
 
 #################################################################################
 # COMMANDS - CI                                                                 #
