@@ -77,6 +77,9 @@ RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     $(if [ -z ${APP_ENV+x} ] | [ "$APP_ENV" = 'production' ]; then echo '--only main'; fi) \
     --no-interaction --no-ansi
 
+# Concurrent fix until poetry 1.8.3+ is released
+RUN curl https://raw.githubusercontent.com/python-poetry/poetry/6edb42f4ff437184f948ff958414c5f4c5a34ba3/src/poetry/installation/executor.py -o /usr/local/venv/lib/python3.12/site-packages/poetry/installation/executor.py
+
 # Running as non-root user:
 USER web
 
