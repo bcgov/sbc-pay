@@ -422,7 +422,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-
         if existing_statement and not payment_methods:
             return existing_statement.payment_methods
         if not payment_methods:
-            payment_methods = {pay_account.payment_method}
+            payment_methods = {pay_account.payment_method or ''}
         return ','.join(payment_methods)
 
     @staticmethod
