@@ -50,6 +50,7 @@ from .invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
 from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
 from .non_sufficient_funds import NonSufficientFunds, NonSufficientFundsSchema
 from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
+from .partner_disbursements import PartnerDisbursements
 from .payment import Payment, PaymentSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema, PaymentAccountSearchModel  # noqa: I001
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
