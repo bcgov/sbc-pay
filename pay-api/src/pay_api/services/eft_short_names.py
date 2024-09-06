@@ -315,6 +315,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 link_group_id=link_group_id).flush()
 
             # TODO - (Check for duplicate) pending migration from another PR, uncomment when ready
+            # Move revenue back to original gl.
             # partner_disbursement = PartnerDisbursementsModel(
             #     amount=invoice.total,
             #     disbursement_type=EJVLinkType.PARTNER_DISBURSEMENTS.value,

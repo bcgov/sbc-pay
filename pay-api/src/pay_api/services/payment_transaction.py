@@ -345,8 +345,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         6. Change the status of Payment
         7. Update the transaction record
         """
-        #  TODO for now assumption is this def will be called only for credit card, bcol and internal payments.
-        #  When start to look into the PAD and Online Banking may need to refactor here
+        # Assumption is this def will be called only for credit card, bcol and internal payments.
+        # Doesn't support PAD or ONLINE BANKING.
         transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id(
             transaction_id
         )
@@ -449,7 +449,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 invoice.payment_date = datetime.now(tz=timezone.utc)
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-                # TODO If it's not PAD/EFT, publish message. Refactor and move to pay system service later.
+                # If it's not PAD/EFT, publish message. Refactor and move to pay system service later.
                 if invoice.payment_method_code not in [PaymentMethod.PAD.value, PaymentMethod.EFT.value]:
                     current_app.logger.info(f'Release record for invoice : {invoice.id} ')
                     PaymentTransaction.publish_status(transaction_dao, invoice)

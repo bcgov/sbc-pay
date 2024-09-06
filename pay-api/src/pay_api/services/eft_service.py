@@ -18,6 +18,8 @@ from typing import Any, Dict, List
 
 from flask import current_app
 
+
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -26,6 +28,7 @@ from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
@@ -36,8 +39,8 @@ from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.services.email_service import _render_shortname_details_body, send_email
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem)
+    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
+    PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
@@ -74,6 +77,17 @@ class EftService(DepositService):
                        **kwargs) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
+        if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
+            if corp_type.has_partner_disbursements:
+                PartnerDisbursementsModel(
+                    amount=invoice.total,
+                    disbursement_type=EJVLinkType.INVOICE.value,
+                    is_reversal=False,
+                    is_legacy=False,
+                    partner_code=invoice.corp_type_code,
+                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                    target_id=invoice.id
+                ).flush()
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
@@ -175,10 +189,10 @@ class EftService(DepositService):
     @staticmethod
     def create_receipt(invoice: InvoiceModel, payment: PaymentModel) -> ReceiptModel:
         """Create a receipt record for an invoice payment."""
-        receipt: ReceiptModel = ReceiptModel(receipt_date=payment.payment_date,
-                                             receipt_amount=payment.paid_amount,
-                                             invoice_id=invoice.id,
-                                             receipt_number=payment.receipt_number)
+        receipt = ReceiptModel(receipt_date=payment.payment_date,
+                               receipt_amount=payment.paid_amount,
+                               invoice_id=invoice.id,
+                               receipt_number=payment.receipt_number)
         return receipt
 
     @classmethod
