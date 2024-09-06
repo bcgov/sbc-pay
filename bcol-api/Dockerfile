@@ -77,6 +77,7 @@ COPY --chown=web:web ./README.md /code
 # Project initialization:
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
   echo "$APP_ENV" \
+  && poetry config installer.max-workers 1 \
   && poetry version \
   # Install deps:
   && poetry run pip install -U pip \
