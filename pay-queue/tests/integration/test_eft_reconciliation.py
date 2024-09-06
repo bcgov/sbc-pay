@@ -25,20 +25,27 @@ from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
+from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod
+from pay_api.services import EFTShortNamesService
+from pay_api.utils.enums import (
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus,
+    PaymentMethod, StatementFrequency)
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.services.eft.eft_enums import EFTConstants
-from tests.integration.factory import factory_create_eft_account, factory_invoice
+from tests.integration.factory import (
+    factory_create_eft_account, factory_invoice, factory_statement, factory_statement_invoices,
+    factory_statement_settings)
 from tests.integration.utils import add_file_event_to_queue_and_process, create_and_upload_eft_file
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
 
-def test_eft_tdi17_fail_header(session, app, client):
+def test_eft_tdi17_fail_header(session, app, client, mocker):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
+    mock_send_email = mocker.patch('pay_queue.services.eft.eft_reconciliation.send_error_email')
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -88,9 +95,17 @@ def test_eft_tdi17_fail_header(session, app, client):
 
     assert not bool(eft_transactions)
 
+    mock_send_email.assert_called_once()
+    call_args = mock_send_email.call_args[0]
+    expected_error = 'Failed to process file test_eft_tdi17.txt with an invalid header or trailer.'
+    actual_error = call_args[0].error_messages[0]['error']
+    assert expected_error == actual_error
 
-def test_eft_tdi17_fail_trailer(session, app, client):
+
+def test_eft_tdi17_fail_trailer(session, app, client, mocker):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
+    mock_send_email = mocker.patch(
+        'pay_queue.services.eft.eft_reconciliation.send_error_email')
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -144,9 +159,17 @@ def test_eft_tdi17_fail_trailer(session, app, client):
 
     assert not bool(eft_transactions)
 
+    mock_send_email.assert_called_once()
+    call_args = mock_send_email.call_args[0]
+    expected_error = 'Failed to process file test_eft_tdi17.txt with an invalid header or trailer.'
+    actual_error = call_args[0].error_messages[0]['error']
+    assert expected_error == actual_error
 
-def test_eft_tdi17_fail_transactions(session, app, client):
+
+def test_eft_tdi17_fail_transactions(session, app, client, mocker):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
+    mock_send_email = mocker.patch(
+        'pay_queue.services.eft.eft_reconciliation.send_error_email')
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -202,6 +225,10 @@ def test_eft_tdi17_fail_transactions(session, app, client):
     assert eft_transactions is not None
     assert len(eft_transactions) == 1
     assert eft_transactions[0].error_messages[0] == 'Invalid transaction deposit amount CAD.'
+
+    mock_send_email.assert_called_once()
+    call_args = mock_send_email.call_args[0]
+    assert 'Invalid transaction deposit amount CAD.' == call_args[0].error_messages[0]['error']
 
 
 def test_eft_tdi17_basic_process(session, app, client):
@@ -267,16 +294,14 @@ def test_eft_tdi17_basic_process(session, app, client):
     assert not short_name_link_2
     assert eft_shortnames[1].short_name == 'DEF456'
 
-    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.created_on.asc()).all()
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
     assert eft_credits is not None
     assert len(eft_credits) == 2
-    assert eft_credits[0].payment_account_id is None
     assert eft_credits[0].short_name_id == eft_shortnames[0].id
     assert eft_credits[0].eft_file_id == eft_file_model.id
     assert eft_credits[0].amount == 135
     assert eft_credits[0].remaining_amount == 135
     assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
-    assert eft_credits[1].payment_account_id is None
     assert eft_credits[1].short_name_id == eft_shortnames[1].id
     assert eft_credits[1].eft_file_id == eft_file_model.id
     assert eft_credits[1].amount == 5250
@@ -286,6 +311,23 @@ def test_eft_tdi17_basic_process(session, app, client):
     # Expecting no credit links as they have not been applied to invoices
     eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
     assert not eft_credit_invoice_links
+
+    history: List[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
+    assert_funds_received_history(eft_credits[0], history[0])
+    assert_funds_received_history(eft_credits[1], history[1])
+
+
+def assert_funds_received_history(eft_credit: EFTCreditModel, eft_history: EFTHistoryModel,
+                                  assert_balance: bool = True):
+    """Assert credit and history records match."""
+    assert eft_history.short_name_id == eft_credit.short_name_id
+    assert eft_history.amount == eft_credit.amount
+    assert eft_history.transaction_type == EFTHistoricalTypes.FUNDS_RECEIVED.value
+    assert eft_history.hidden is False
+    assert eft_history.is_processing is False
+    assert eft_history.statement_number is None
+    if assert_balance:
+        assert eft_history.credit_balance == eft_credit.amount
 
 
 def test_eft_tdi17_process(session, app, client):
@@ -354,72 +396,12 @@ def test_eft_tdi17_process(session, app, client):
     assert not short_name_link_2
     assert eft_shortnames[1].short_name == 'ABC123'
 
-    # NOTE THIS NEEDS TO BE RE-WRITTEN INSIDE OF THE JOB.
-    # today = datetime.now().date()
-    # # Assert Invoice is paid
-    # invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    # expected_amount = 100
-    # assert invoice is not None
-    # assert invoice.payment_method_code == PaymentMethod.EFT.value
-    # assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-    # assert invoice.payment_date is not None
-    # assert invoice.payment_date.date() == today
-    # assert invoice.paid == expected_amount
-    # assert invoice.total == expected_amount
-
-    # receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice.id, invoice.id)
-    # assert receipt is not None
-    # assert receipt.receipt_number == str(invoice.id)
-    # assert receipt.receipt_amount == expected_amount
-
-    # expected_invoice_number = f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}'
-    # payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-    # assert payment is not None
-    # assert payment.payment_date.date() == today
-    # assert payment.invoice_number == expected_invoice_number
-    # assert payment.payment_account_id == payment_account.id
-    # assert payment.payment_status_code == PaymentStatus.COMPLETED.value
-    # assert payment.payment_method_code == PaymentMethod.EFT.value
-    # assert payment.invoice_amount == expected_amount
-    # assert payment.paid_amount == expected_amount
-
-    # invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel\
-    #     .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-
-    # assert invoice_reference is not None
-    # assert invoice_reference.invoice_id == invoice.id
-    # assert invoice_reference.invoice_number == payment.invoice_number
-    # assert invoice_reference.invoice_number == expected_invoice_number
-    # assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
-
-    # eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
-    # .order_by(EFTCreditModel.created_on.asc()).all()
-    # assert eft_credits is not None
-    # assert len(eft_credits) == 3
-    # assert eft_credits[0].payment_account_id == payment_account.id
-    # assert eft_credits[0].short_name_id == eft_shortnames[0].id
-    # assert eft_credits[0].eft_file_id == eft_file_model.id
-    # assert eft_credits[0].amount == 100.00
-    # assert eft_credits[0].remaining_amount == 0
-    # assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
-    # assert eft_credits[1].payment_account_id == payment_account.id
-    # assert eft_credits[1].short_name_id == eft_shortnames[0].id
-    # assert eft_credits[1].eft_file_id == eft_file_model.id
-    # assert eft_credits[1].amount == 50.5
-    # assert eft_credits[1].remaining_amount == 50.5
-    # assert eft_credits[1].eft_transaction_id == eft_transactions[1].id
-    # assert eft_credits[2].payment_account_id is None
-    # assert eft_credits[2].short_name_id == eft_shortnames[1].id
-    # assert eft_credits[2].eft_file_id == eft_file_model.id
-    # assert eft_credits[2].amount == 351.5
-    # assert eft_credits[2].remaining_amount == 351.5
-    # assert eft_credits[2].eft_transaction_id == eft_transactions[2].id
-
-    # eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
-    # assert eft_credit_invoice_links is not None
-    # assert len(eft_credit_invoice_links) == 1
-    # assert eft_credit_invoice_links[0].eft_credit_id == eft_credits[0].id
-    # assert eft_credit_invoice_links[0].invoice_id == invoice.id
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
+    history: List[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
+    assert_funds_received_history(eft_credits[0], history[0])
+    assert_funds_received_history(eft_credits[1], history[1], False)
+    assert history[1].credit_balance == eft_credits[0].amount + eft_credits[1].amount
+    assert_funds_received_history(eft_credits[2], history[2])
 
 
 def test_eft_tdi17_rerun(session, app, client):
@@ -517,54 +499,6 @@ def test_eft_tdi17_rerun(session, app, client):
     assert eft_transactions[0].status_code == EFTProcessStatus.COMPLETED.value
     assert eft_transactions[0].deposit_amount_cents == 13500
 
-    # NOTE THIS NEEDS TO BE REWRITTEN IN A JOB
-    # today = datetime.now().date()
-    # # Assert Invoice is paid
-    # invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    # expected_amount = 100
-    # assert invoice is not None
-    # assert invoice.payment_method_code == PaymentMethod.EFT.value
-    # assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-    # assert invoice.payment_date is not None
-    # assert invoice.payment_date.date() == today
-    # assert invoice.paid == expected_amount
-    # assert invoice.total == expected_amount
-
-    # receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice.id, invoice.id)
-    # assert receipt is not None
-    # assert receipt.receipt_number == str(invoice.id)
-    # assert receipt.receipt_amount == expected_amount
-
-    # expected_invoice_number = f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}'
-    # payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-    # assert payment is not None
-    # assert payment.payment_date.date() == today
-    # assert payment.invoice_number == expected_invoice_number
-    # assert payment.payment_account_id == payment_account.id
-    # assert payment.payment_status_code == PaymentStatus.COMPLETED.value
-    # assert payment.payment_method_code == PaymentMethod.EFT.value
-    # assert payment.invoice_amount == expected_amount
-
-    # invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel \
-    #     .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-
-    # assert invoice_reference is not None
-    # assert invoice_reference.invoice_id == invoice.id
-    # assert invoice_reference.invoice_number == payment.invoice_number
-    # assert invoice_reference.invoice_number == expected_invoice_number
-    # assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
-
-    # eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
-    # .order_by(EFTCreditModel.created_on.asc()).all()
-    # assert eft_credits is not None
-    # assert len(eft_credits) == 1
-    # assert eft_credits[0].payment_account_id == payment_account.id
-    # assert eft_credits[0].short_name_id == eft_shortname.id
-    # assert eft_credits[0].eft_file_id == eft_file_model.id
-    # assert eft_credits[0].amount == 135
-    # assert eft_credits[0].remaining_amount == 35
-    # assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
-
 
 def create_test_data():
     """Create test seed data."""
@@ -579,7 +513,10 @@ def create_test_data():
         updated_on=datetime.now()
     ).save()
 
-    invoice: InvoiceModel = factory_invoice(payment_account=payment_account, total=100, service_fees=10.0,
+    invoice: InvoiceModel = factory_invoice(payment_account=payment_account,
+                                            status_code=InvoiceStatus.APPROVED.value,
+                                            total=150.50,
+                                            service_fees=1.50,
                                             payment_method_code=PaymentMethod.EFT.value)
 
     return payment_account, eft_shortname, invoice
@@ -678,3 +615,90 @@ def generate_tdi17_file(file_name: str):
     create_and_upload_eft_file(file_name, [header,
                                            transaction_1, transaction_2, transaction_3, transaction_4,
                                            trailer])
+
+
+def create_statement_from_invoices(account: PaymentAccountModel, invoices: List[InvoiceModel]):
+    """Generate a statement from a list of invoices."""
+    statement_settings = factory_statement_settings(pay_account_id=account.id,
+                                                    frequency=StatementFrequency.MONTHLY.value)
+    statement = factory_statement(payment_account_id=account.id,
+                                  frequency=StatementFrequency.MONTHLY.value,
+                                  statement_settings_id=statement_settings.id)
+    for invoice in invoices:
+        factory_statement_invoices(statement_id=statement.id, invoice_id=invoice.id)
+    return statement
+
+
+def test_apply_pending_payments(session, app, client):
+    """Test automatically applying a pending eft credit invoice link when there is a credit."""
+    payment_account, eft_shortname, invoice = create_test_data()
+    create_statement_from_invoices(payment_account, [invoice])
+    file_name: str = 'test_eft_tdi17.txt'
+    generate_tdi17_file(file_name)
+
+    add_file_event_to_queue_and_process(client,
+                                        file_name=file_name,
+                                        message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
+    short_name_id = eft_shortname.id
+    eft_credit_balance = EFTShortNamesService.get_eft_credit_balance(short_name_id)
+    assert eft_credit_balance == 0
+
+    short_name_links = EFTShortNamesService.get_shortname_links(short_name_id)
+    assert short_name_links['items']
+    assert len(short_name_links['items']) == 1
+
+    short_name_link = short_name_links['items'][0]
+    assert short_name_link.get('has_pending_payment') is True
+    assert short_name_link.get('amount_owing') == 150.50
+
+
+def test_skip_on_existing_pending_payments(session, app, client):
+    """Test auto payment skipping payment when there exists a pending payment."""
+    payment_account, eft_shortname, invoice = create_test_data()
+    file_name: str = 'test_eft_tdi17.txt'
+    generate_tdi17_file(file_name)
+    add_file_event_to_queue_and_process(client,
+                                        file_name=file_name,
+                                        message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
+
+    create_statement_from_invoices(payment_account, [invoice])
+    eft_credits = EFTShortNamesService.get_eft_credits(eft_shortname.id)
+
+    # Add an unexpected PENDING record to test that processing skips for this account
+    EFTCreditInvoiceLinkModel(
+        eft_credit_id=eft_credits[0].id,
+        status_code=EFTCreditInvoiceStatus.PENDING.value,
+        invoice_id=invoice.id,
+        amount=invoice.total,
+        link_group_id=1)
+
+    short_name_id = eft_shortname.id
+    eft_credit_balance = EFTShortNamesService.get_eft_credit_balance(short_name_id)
+    # Assert credit balance is not spent due to an expected already PENDING state
+    assert eft_credit_balance == 150.50
+
+
+def test_skip_on_insufficient_balance(session, app, client):
+    """Test auto payment skipping payment when there is an insufficient eft credit balance."""
+    payment_account, eft_shortname, invoice = create_test_data()
+    invoice.total = 99999
+    invoice.save()
+    file_name: str = 'test_eft_tdi17.txt'
+    generate_tdi17_file(file_name)
+    add_file_event_to_queue_and_process(client,
+                                        file_name=file_name,
+                                        message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
+
+    create_statement_from_invoices(payment_account, [invoice])
+
+    short_name_id = eft_shortname.id
+    eft_credit_balance = EFTShortNamesService.get_eft_credit_balance(short_name_id)
+    assert eft_credit_balance == 150.50
+
+    short_name_links = EFTShortNamesService.get_shortname_links(short_name_id)
+    assert short_name_links['items']
+    assert len(short_name_links['items']) == 1
+
+    short_name_link = short_name_links['items'][0]
+    assert short_name_link.get('has_pending_payment') is False
+    assert short_name_link.get('amount_owing') == 99999

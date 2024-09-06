@@ -14,12 +14,14 @@
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
 from decimal import Decimal
+import json
 from typing import List, Optional
 from urllib.parse import unquote_plus, urlencode
 
 from attrs import define
 from dateutil import parser
 from flask import current_app
+from requests import HTTPError
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -87,6 +89,7 @@ class OrderStatus():
     revenue: List[RevenueLine]
     postedrefundamount: Optional[Decimal]
     refundedamount: Optional[Decimal]
+    paymentstatus: Optional[str]
 
 
 class DirectPayService(PaymentSystemService, OAuthService):
@@ -202,13 +205,30 @@ class DirectPayService(PaymentSystemService, OAuthService):
         refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
         access_token: str = self._get_refund_token().json().get('access_token')
         data = self.build_automated_refund_payload(invoice, refund_partial)
-        refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
-                                    ContentType.JSON, data, auth_header_name='Bearer-Token').json()
-        # Check if approved is 1=Success
-        if refund_response.get('approved') != 1:
-            message = 'Refund error: ' + refund_response.get('message')
-            current_app.logger.error(message)
-            raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
+
+        try:
+            refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
+                                        ContentType.JSON, data, auth_header_name='Bearer-Token').json()
+            # Check if approved is 1=Success
+            if refund_response.get('approved') != 1:
+                message = 'Refund error: ' + refund_response.get('message')
+                current_app.logger.error(message)
+                raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
+
+        except HTTPError as e:
+            current_app.logger.error(f'PayBC Refund request failed: {str(e)}')
+            error_detail = None
+            error = Error.DIRECT_PAY_INVALID_RESPONSE
+            if e.response is not None:
+                try:
+                    error_response = json.loads(e.response.text)
+                    error_detail = error_response.get('errors')
+                except json.JSONDecodeError:
+                    error_detail = 'Error decoding JSON response from PayBC.'
+
+            error.detail = error_detail
+            raise BusinessException(error) from e
+
         current_app.logger.debug('>process_cfs_refund')
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
@@ -340,16 +360,17 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return refund_lines, total
 
     @classmethod
-    def _query_order_status(cls, invoice: InvoiceModel) -> OrderStatus:
+    def query_order_status(cls, invoice: InvoiceModel,
+                           inv_status: InvoiceReferenceStatus = InvoiceReferenceStatus.COMPLETED.value) -> OrderStatus:
         """Request invoice order status from PAYBC."""
         access_token: str = DirectPayService().get_token().json().get('access_token')
         paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
         paybc_svc_base_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
-        completed_reference = list(
-            filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
+        inv_reference = list(
+            filter(lambda reference: (reference.status_code == inv_status),
                    invoice.references))[0]
         payment_url: str = \
-            f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{completed_reference.invoice_number}'
+            f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{inv_reference.invoice_number}'
         payment_response = cls.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
         return Converter().structure(payment_response, OrderStatus)
 
@@ -369,7 +390,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             return refund_payload
 
         refund_lines, total_refund = DirectPayService._build_refund_revenue_lines(refund_partial)
-        paybc_invoice = DirectPayService._query_order_status(invoice)
+        paybc_invoice = DirectPayService.query_order_status(invoice)
         refund_payload.update({
             'refundRevenue': DirectPayService._build_refund_revenue(paybc_invoice, refund_lines),
             'txnAmount': total_refund

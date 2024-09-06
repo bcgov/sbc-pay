@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Tuple
 
 from cattr import Converter
@@ -29,6 +29,7 @@ from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementRecipients as StatementRecipientModel
@@ -36,17 +37,16 @@ from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.auth import get_account_admin_users
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.cfs_service import PaymentSystem as PaymentSystemService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.services.oauth_service import OAuthService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
-from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency)
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -161,6 +161,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 PaymentMethod.EFT.value not in {account.payment_method, target_payment_method}:
             return
 
+        if (account.payment_method == PaymentMethod.EFT.value and
+                flags.is_on('enable-payment-change-from-eft', default=False)):
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_UNSUPPORTED)
+
         account_summary = Statement.get_summary(account.auth_account_id)
         outstanding_balance = account_summary['total_invoice_due'] + account_summary['total_due']
 
@@ -190,16 +194,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 PaymentAccount._check_and_update_statement_notifications(payment_account)
 
     @classmethod
-    @user_context
-    def _get_account_admin_users(cls, payment_account: PaymentAccountModel, **kwargs):
-        """Retrieve account admin users."""
-        return OAuthService.get(
-            current_app.config.get('AUTH_API_ENDPOINT') +
-            f'orgs/{payment_account.auth_account_id}/members?status=ACTIVE&roles=ADMIN',
-            kwargs['user'].bearer_token, AuthHeaderType.BEARER,
-            ContentType.JSON).json()
-
-    @classmethod
     def _check_and_update_statement_notifications(cls, payment_account: PaymentAccountModel):
         """Check and update statement notification and recipients."""
         if payment_account.payment_method != PaymentMethod.EFT.value:
@@ -216,7 +210,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             return
 
         # Auto-populate recipients with current account admins if there are currently none
-        org_admins_response = cls._get_account_admin_users(payment_account)
+        org_admins_response = get_account_admin_users(payment_account.auth_account_id)
 
         members = org_admins_response.get('members') if org_admins_response.get('members', None) else []
         for member in members:
@@ -307,7 +301,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # if distribution code exists, put an end date as previous day and create new.
             dist_code_svc = DistributionCode.find_active_by_account_id(details.payment_account.id)
             if dist_code_svc and dist_code_svc.distribution_code_id:
-                end_date: datetime = datetime.now() - timedelta(days=1)
+                end_date: datetime = datetime.now(tz=timezone.utc) - timedelta(days=1)
                 dist_code_svc.end_date = end_date.date()
                 dist_code_svc.save()
 
@@ -437,12 +431,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         statement_settings_model = StatementSettingsModel(
             frequency=frequency,
             payment_account_id=payment_account_id,
-            from_date=date.today()  # To help with mocking tests - freeze_time doesn't seem to work on the model default
+            # To help with mocking tests - freeze_time doesn't seem to work on the model default
+            from_date=datetime.now(tz=timezone.utc).date()
         )
         statement_settings_model.save()
 
     @classmethod
-    def find_account(cls, authorization: Dict[str, Any]) -> PaymentAccount:
+    def find_account(cls, authorization: Dict[str, Any]) -> PaymentAccount | None:
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_payment_account')
         auth_account_id: str = get_str_by_path(authorization, 'account/id')
@@ -468,33 +463,25 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return account
 
     @classmethod
-    @user_context
-    def _get_non_active_org_ids(cls, **kwargs):
-        """Retrieve inactive org ids to filter out."""
-        url = f'{current_app.config.get("AUTH_API_ENDPOINT")}orgs/simple'
-        url += '?statuses=ACTIVE&excludeStatuses=true&limit=1000000'
-        result = OAuthService.get(endpoint=url,
-                                  token=kwargs['user'].bearer_token,
-                                  auth_header_type=AuthHeaderType.BEARER,
-                                  content_type=ContentType.JSON).json()
-        return [str(org.get('id')) for org in result.get('items')]
-
-    @classmethod
     def search_eft_accounts(cls, search_text: str):
         """Find EFT accounts that are in ACTIVE status (call into AUTH-API to determine)."""
-        non_active_org_ids = cls._get_non_active_org_ids()
-
         search_text = f'%{search_text}%'
-        query = db.session.query(PaymentAccountModel) \
+        query = (
+            db.session.query(PaymentAccountModel)
+            .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id)
+            .filter(and_(CfsAccountModel.payment_method == PaymentMethod.EFT.value,
+                         CfsAccountModel.status.in_([CfsAccountStatus.ACTIVE.value, CfsAccountStatus.PENDING.value])))
             .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
-                    PaymentAccountModel.eft_enable.is_(True)) \
-            .filter(PaymentAccountModel.auth_account_id.notin_(non_active_org_ids)) \
-            .filter(and_(
-                or_(PaymentAccountModel.auth_account_id.ilike(search_text),
-                    PaymentAccountModel.name.ilike(search_text),
-                    and_(PaymentAccountModel.branch_name.ilike(search_text),
-                         PaymentAccountModel.branch_name != ''))
-            ))
+                    PaymentAccountModel.eft_enable.is_(True))
+            .filter(
+                and_(
+                    or_(PaymentAccountModel.auth_account_id.ilike(search_text),
+                        PaymentAccountModel.name.ilike(search_text),
+                        and_(PaymentAccountModel.branch_name.ilike(search_text),
+                             PaymentAccountModel.branch_name != '')
+                        )
+                ))
+        )
         query = query.order_by(desc(PaymentAccountModel.auth_account_id == search_text),
                                PaymentAccountModel.id.desc()
                                )
@@ -620,40 +607,60 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(payment_id: int, payment_account_id: int):
+    def unlock_frozen_accounts(payment_id: int, payment_account_id: int, invoice_number: str):
         """Unlock frozen accounts."""
-        pay_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
-        if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
-            current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
-                                                                                            PaymentMethod.PAD.value)
+        pay_account = PaymentAccountModel.find_by_id(payment_account_id)
+        unlocked = False
+        if pay_account.has_nsf_invoices:
+            current_app.logger.info(f'Unlocking PAD Frozen Account {pay_account.auth_account_id}')
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
+                                                                           PaymentMethod.PAD.value)
             CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
-
+            pay_account.has_nsf_invoices = None
+            pay_account.save()
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
+            unlocked = True
+        elif pay_account.has_overdue_invoices:
+            # Reverse original invoices here, because users can still cancel out of CC payment process and pay via EFT.
+            # Note we do the opposite of this in the EFT task, but at a smaller scale (one invoice at a time.)
+            # Possible some of these could already be reversed.
+            for original_invoice_number in InvoiceReferenceModel.find_non_consolidated_invoice_numbers(invoice_number):
+                try:
+                    CFSService.reverse_invoice(original_invoice_number[0])
+                except Exception:  # NOQA pylint: disable=broad-except
+                    current_app.logger.error(f'Error reversing invoice number: {original_invoice_number}',
+                                             exc_info=True)
+            current_app.logger.info(f'Unlocking EFT Frozen Account {pay_account.auth_account_id}')
+            pay_account.has_overdue_invoices = None
+            pay_account.save()
+            unlocked = True
+        if not unlocked:
+            return
 
-            receipt_info = ReceiptService.get_nsf_receipt_details(payment_id)
-            payload = pay_account.create_account_event_payload(
-                QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
-                receipt_info=receipt_info
-            )
+        receipt_info = ReceiptService.get_nsf_receipt_details(payment_id)
+        pay_account_service = PaymentAccount.find_by_id(payment_account_id)
+        payload = pay_account_service.create_account_event_payload(
+            QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
+            receipt_info=receipt_info
+        )
 
-            try:
-                gcp_queue_publisher.publish_to_queue(
-                    QueueMessage(
-                        source=QueueSources.PAY_API.value,
-                        message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
-                        payload=payload,
-                        topic=current_app.config.get('AUTH_EVENT_TOPIC')
-                    )
+        try:
+            gcp_queue_publisher.publish_to_queue(
+                QueueMessage(
+                    source=QueueSources.PAY_API.value,
+                    message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
+                    payload=payload,
+                    topic=current_app.config.get('AUTH_EVENT_TOPIC')
                 )
-            except Exception as e:  # NOQA pylint: disable=broad-except
-                current_app.logger.error(e)
-                current_app.logger.error(
-                    'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
-                    pay_account.name)
-                capture_message(
-                    f'Notification to Queue failed for the Unlock Account : {payload}.', level='error')
+            )
+        except Exception as e:  # NOQA pylint: disable=broad-except
+            current_app.logger.error(e, exc_info=True)
+            current_app.logger.error(
+                'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
+                pay_account.name)
+            capture_message(
+                f'Notification to Queue failed for the Unlock Account : {payload}.', level='error')
 
     @classmethod
     def delete_account(cls, auth_account_id: str) -> PaymentAccount:

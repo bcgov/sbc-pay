@@ -5,7 +5,7 @@ Revises: 5b1ae231f7d2
 Create Date: 2021-07-13 14:34:48.482182
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, String, Float, text
@@ -63,7 +63,7 @@ def upgrade():
                 "filing_type_code": "WILLRUSH",
                 "corp_type_code": "VS",
                 "fee_code": "EN204",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": None,

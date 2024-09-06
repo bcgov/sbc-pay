@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT short name to BCROS account mapping links."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from _decimal import Decimal
 
@@ -57,7 +57,7 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     eft_short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False, index=True)
     auth_account_id = db.Column('auth_account_id', db.String(50), nullable=False, index=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
     updated_by = db.Column('updated_by', db.String(100), nullable=True)
     updated_by_name = db.Column('updated_by_name', db.String(100), nullable=True)
@@ -88,6 +88,23 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
                 .filter_by(auth_account_id=auth_account_id)
                 .filter(cls.status_code.in_(statuses))
                 ).one_or_none()
+
+    @classmethod
+    def get_short_name_links_count(cls, auth_account_id):
+        """Find short name account link by status."""
+        statuses = [EFTShortnameStatus.LINKED.value,
+                    EFTShortnameStatus.PENDING.value]
+        active_link = (cls.query
+                       .filter_by(auth_account_id=auth_account_id)
+                       .filter(cls.status_code.in_(statuses))
+                       ).one_or_none()
+
+        if active_link is None:
+            return 0
+
+        return (cls.query
+                .filter_by(eft_short_name_id=active_link.eft_short_name_id)
+                .filter(cls.status_code.in_(statuses))).count()
 
 
 @define

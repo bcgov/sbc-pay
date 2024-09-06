@@ -38,5 +38,8 @@ def get_ops_healthz():
 @bp.route('readyz')
 def get_ops_readyz():
     """Return a JSON object that identifies if the service is setupAnd ready to work."""
-    # TODO: add a poll to the DB when called
+    try:
+        db.session.execute(SQL)
+    except exc.SQLAlchemyError:
+        return {'message': 'api is down'}, 500
     return {'message': 'api is ready'}, 200

@@ -353,7 +353,7 @@ class CFSService(OAuthService):
             'gl_date': curr_time,
             'term_name': CFS_TERM_NAME,
             'comments': '',
-            'lines': cls._build_lines(line_items)
+            'lines': cls.build_lines(line_items)
         }
 
         access_token = CFSService.get_token().json().get('access_token')
@@ -372,7 +372,7 @@ class CFSService(OAuthService):
         }.get(operation)
 
     @classmethod
-    def _build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
+    def build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
         """Build lines for the invoice."""
         # Fetch all distribution codes to reduce DB hits. Introduce caching if needed later
         distribution_codes: List[DistributionCodeModel] = DistributionCodeModel.find_all()
@@ -491,8 +491,17 @@ class CFSService(OAuthService):
         return adjustment_response.json()
 
     @classmethod
-    def adjust_invoice(cls, cfs_account: CfsAccountModel, inv_number: str, amount: float):
-        """Add adjustment to the invoice."""
+    def adjust_invoice(cls, cfs_account: CfsAccountModel, inv_number: str, amount=0.0, adjustment_lines=None):
+        """Add adjustment to the invoice.
+
+        Note we use reverse invoice instead of this method to adjust the invoice to zero.
+        For this method, you'd need to know the line numbers, unfortunately we can't query the line numbers from
+        the CFS service.
+        The lines are empty, so we have to guess and build the revenue line items and hopefully they match up
+        as to what we created before. Routing slips only have one payment line item typically with no service fees
+        which makes this part easy, but it gets more complicated when adjusting a rolled up invoice (think PAD).
+
+        """
         current_app.logger.debug('>Creating Adjustment for Invoice: %s', inv_number)
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
@@ -502,7 +511,7 @@ class CFSService(OAuthService):
 
         adjustment = {
             'comment': 'Invoice cancellation',
-            'lines': [
+            'lines': adjustment_lines or [
                 {
                     'line_number': '1',
                     'adjustment_amount': str(amount),
@@ -597,7 +606,7 @@ class CFSService(OAuthService):
             'transaction_date': curr_time,
             'gl_date': curr_time,
             'comments': '',
-            'lines': cls._build_lines(line_items, negate=True)
+            'lines': cls.build_lines(line_items, negate=True)
         }
 
         cms_response = CFSService.post(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, cms_payload)

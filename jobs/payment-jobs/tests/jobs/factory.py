@@ -17,15 +17,17 @@
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from random import randrange
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnameLinks,
-    EFTShortnames, EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, Receipt, Refund,
-    RefundsPartial, RoutingSlip, StatementRecipients, StatementSettings)
+    EFTShortnames, EFTShortnamesHistorical, EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount,
+    PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, Statement, StatementInvoices, StatementRecipients,
+    StatementSettings)
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus,
-    PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus)
+    CfsAccountStatus, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus,
+    LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -50,7 +52,33 @@ def factory_statement_recipient(auth_user_id: int, first_name: str, last_name: s
     ).save()
 
 
-def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date=datetime.now(),
+def factory_statement_invoices(
+        statement_id: str,
+        invoice_id: str):
+    """Return Factory."""
+    return StatementInvoices(statement_id=statement_id,
+                             invoice_id=invoice_id).save()
+
+
+def factory_statement(
+        frequency: str = 'WEEKLY',
+        payment_account_id: str = None,
+        from_date: datetime = datetime.now(tz=timezone.utc),
+        to_date: datetime = datetime.now(tz=timezone.utc),
+        statement_settings_id: str = None,
+        created_on: datetime = datetime.now(tz=timezone.utc),
+        payment_methods: str = PaymentMethod.EFT.value):
+    """Return Factory."""
+    return Statement(frequency=frequency,
+                     statement_settings_id=statement_settings_id,
+                     payment_account_id=payment_account_id,
+                     from_date=from_date,
+                     to_date=to_date,
+                     created_on=created_on,
+                     payment_methods=payment_methods).save()
+
+
+def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date=datetime.now(tz=timezone.utc),
                                to_date=None) -> StatementSettings:
     """Return Factory."""
     return StatementSettings(
@@ -64,7 +92,7 @@ def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date
 def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
-        payment_date: datetime = datetime.now(),
+        payment_date: datetime = datetime.now(tz=timezone.utc),
         invoice_number: str = None,
         payment_account_id: int = None,
         invoice_amount: float = None,
@@ -86,7 +114,7 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0, total=0, paid=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-                    created_on: datetime = datetime.now(),
+                    created_on: datetime = datetime.now(tz=timezone.utc),
                     cfs_account_id: int = 0,
                     routing_slip=None,
                     disbursement_status_code=None
@@ -136,11 +164,13 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
 
 
 def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021',
-                              status_code=InvoiceReferenceStatus.ACTIVE.value):
+                              status_code=InvoiceReferenceStatus.ACTIVE.value,
+                              is_consolidated=False):
     """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
                             status_code=status_code,
-                            invoice_number=invoice_number).save()
+                            invoice_number=invoice_number,
+                            is_consolidated=is_consolidated).save()
 
 
 def factory_create_online_banking_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value,
@@ -158,7 +188,7 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
                                status=CfsAccountStatus.PENDING.value, payment_method=PaymentMethod.PAD.value,
                                confirmation_period: int = 3):
     """Return Factory."""
-    date_after_wait_period = datetime.today() + timedelta(confirmation_period)
+    date_after_wait_period = datetime.now(tz=timezone.utc) + timedelta(confirmation_period)
     account = PaymentAccount(auth_account_id=auth_account_id,
                              payment_method=payment_method,
                              pad_activation_date=date_after_wait_period,
@@ -181,7 +211,7 @@ def factory_routing_slip_account(
         status: str = CfsAccountStatus.PENDING.value,
         total: int = 0,
         remaining_amount: int = 0,
-        routing_slip_date=datetime.now(),
+        routing_slip_date=datetime.now(tz=timezone.utc),
         payment_method=PaymentMethod.CASH.value,
         auth_account_id='1234',
         routing_slip_status=RoutingSlipStatus.ACTIVE.value,
@@ -236,7 +266,7 @@ def factory_create_eft_shortname(short_name: str):
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
-                               updated_by: str = None, updated_on: datetime = datetime.now(),
+                               updated_by: str = None, updated_on: datetime = datetime.now(tz=timezone.utc),
                                status_code: str = EFTShortnameStatus.LINKED.value):
     """Return an EFT short name link model."""
     return EFTShortnameLinks(
@@ -249,15 +279,13 @@ def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234'
     ).save()
 
 
-def factory_create_eft_credit(amount=100, remaining_amount=0, eft_file_id=1, short_name_id=1, payment_account_id=1,
-                              eft_transaction_id=1):
+def factory_create_eft_credit(amount=100, remaining_amount=0, eft_file_id=1, short_name_id=1, eft_transaction_id=1):
     """Return Factory."""
     eft_credit = EFTCredit(
         amount=amount,
         remaining_amount=remaining_amount,
         eft_file_id=eft_file_id,
         short_name_id=short_name_id,
-        payment_account_id=payment_account_id,
         eft_transaction_id=eft_transaction_id
     ).save()
     return eft_credit
@@ -284,16 +312,38 @@ def factory_create_eft_transaction(file_id=1, line_number=1, line_type='T',
     return eft_transaction
 
 
-def factory_create_eft_credit_invoice_link(invoice_id=1, eft_credit_id=1, status_code='PENDING', amount=10):
+def factory_create_eft_credit_invoice_link(invoice_id=1, eft_credit_id=1, status_code='PENDING', amount=10,
+                                           link_group_id=1):
     """Return Factory."""
     eft_credit_invoice_link = EFTCreditInvoiceLink(
         amount=amount,
         invoice_id=invoice_id,
         eft_credit_id=eft_credit_id,
         receipt_number='1234',
-        status_code=status_code
+        status_code=status_code,
+        link_group_id=link_group_id
     ).save()
     return eft_credit_invoice_link
+
+
+def factory_create_eft_shortname_historical(payment_account_id=1, related_group_link_id=1, short_name_id=1,
+                                            statement_number=123,
+                                            transaction_type=EFTHistoricalTypes.STATEMENT_PAID.value):
+    """Return Factory."""
+    eft_historical = EFTShortnamesHistorical(
+        amount=100,
+        created_by='TEST USER',
+        credit_balance=100,
+        hidden=True,
+        is_processing=True,
+        payment_account_id=payment_account_id,
+        related_group_link_id=related_group_link_id,
+        short_name_id=short_name_id,
+        statement_number=statement_number,
+        transaction_date=datetime.now(tz=timezone.utc),
+        transaction_type=transaction_type
+    ).save()
+    return eft_historical
 
 
 def factory_create_account(auth_account_id: str = '1234', payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
@@ -324,17 +374,8 @@ def factory_create_ejv_account(auth_account_id='1234',
                      stob=stob,
                      project_code=project_code,
                      account_id=account.id,
-                     start_date=datetime.today().date(),
+                     start_date=datetime.now(tz=timezone.utc).date(),
                      created_by='test').save()
-    return account
-
-
-def factory_create_wire_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value):
-    """Return Factory."""
-    account = PaymentAccount(auth_account_id=auth_account_id,
-                             payment_method=PaymentMethod.WIRE.value,
-                             name=f'Test {auth_account_id}').save()
-    CfsAccount(status=status, account_id=account.id, payment_method=PaymentMethod.WIRE.value).save()
     return account
 
 
@@ -350,7 +391,7 @@ def factory_distribution(name: str, client: str = '111', reps_centre: str = '222
                             project_code=project_code,
                             service_fee_distribution_code_id=service_fee_dist_id,
                             disbursement_distribution_code_id=disbursement_dist_id,
-                            start_date=datetime.today().date(),
+                            start_date=datetime.now(tz=timezone.utc).date(),
                             created_by='test').save()
 
 
@@ -363,7 +404,7 @@ def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
 def factory_receipt(
         invoice_id: int,
         receipt_number: str = 'TEST1234567890',
-        receipt_date: datetime = datetime.now(),
+        receipt_date: datetime = datetime.now(tz=timezone.utc),
         receipt_amount: float = 10.0
 ):
     """Return Factory."""
@@ -382,7 +423,7 @@ def factory_refund(
     """Return Factory."""
     return Refund(
         routing_slip_id=routing_slip_id,
-        requested_date=datetime.now(),
+        requested_date=datetime.now(tz=timezone.utc),
         reason='TEST',
         requested_by='TEST',
         details=details
@@ -396,7 +437,7 @@ def factory_refund_invoice(
     """Return Factory."""
     return Refund(
         invoice_id=invoice_id,
-        requested_date=datetime.now(),
+        requested_date=datetime.now(tz=timezone.utc),
         reason='TEST',
         requested_by='TEST',
         details=details
@@ -408,7 +449,7 @@ def factory_refund_partial(
         refund_amount: float,
         refund_type: str,
         created_by='test',
-        created_on: datetime = datetime.now()
+        created_on: datetime = datetime.now(tz=timezone.utc)
 ):
     """Return Factory."""
     return RefundsPartial(
@@ -418,3 +459,36 @@ def factory_refund_partial(
         created_by=created_by,
         created_on=created_on
     ).save()
+
+
+def factory_pad_account_payload(account_id: int = randrange(999999), bank_number: str = '001',
+                                transit_number='999',
+                                bank_account='1234567890'):
+    """Return a pad payment account object."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'paymentInfo': {
+            'methodOfPayment': PaymentMethod.PAD.value,
+            'billable': True,
+            'bankTransitNumber': transit_number,
+            'bankInstitutionNumber': bank_number,
+            'bankAccountNumber': bank_account
+        }
+    }
+
+
+def factory_eft_account_payload(payment_method: str = PaymentMethod.EFT.value,
+                                account_id: int = randrange(999999)):
+    """Return a premium eft enable payment account object."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'bcolAccountNumber': '2000000',
+        'bcolUserId': 'U100000',
+        'eft_enable': False,
+        'paymentInfo': {
+            'methodOfPayment': payment_method,
+            'billable': True
+        }
+    }

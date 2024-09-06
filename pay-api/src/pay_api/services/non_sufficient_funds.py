@@ -22,9 +22,12 @@ from sqlalchemy import case, func
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import InvoiceSearchModel, NonSufficientFundsModel, NonSufficientFundsSchema
+from pay_api.models import InvoiceSearchModel, NonSufficientFunds, NonSufficientFundsSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import Statement as StatementModel
+from pay_api.models import StatementDTO
+from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
@@ -39,14 +42,14 @@ class NonSufficientFundsService:
 
     def __init__(self):
         """Initialize the service."""
-        self.dao = NonSufficientFundsModel()
+        self.dao = NonSufficientFunds()
 
     def asdict(self):
         """Return the EFT Short name as a python dict."""
         return Converter().unstructure(NonSufficientFundsSchema.from_row(self.dao))
 
     @staticmethod
-    def populate(value: NonSufficientFundsModel):
+    def populate(value: NonSufficientFunds):
         """Populate Non-Sufficient Funds Service."""
         non_sufficient_funds_service = NonSufficientFundsService()
         non_sufficient_funds_service.dao = value
@@ -72,8 +75,8 @@ class NonSufficientFundsService:
     @staticmethod
     def exists_for_invoice_number(invoice_number: str) -> bool:
         """Return boolean if a row exists for the invoice number."""
-        return (db.session.query(NonSufficientFundsModel)
-                .filter(NonSufficientFundsModel.invoice_number == invoice_number)
+        return (db.session.query(NonSufficientFunds)
+                .filter(NonSufficientFunds.invoice_number == invoice_number)
                 .count()
                 ) > 0
 
@@ -83,8 +86,8 @@ class NonSufficientFundsService:
         query = (db.session.query(
             InvoiceModel, InvoiceReferenceModel)
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
-            .join(NonSufficientFundsModel,
-                  NonSufficientFundsModel.invoice_number == InvoiceReferenceModel.invoice_number)
+            .join(NonSufficientFunds,
+                  NonSufficientFunds.invoice_number == InvoiceReferenceModel.invoice_number)
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
             .filter(PaymentAccountModel.auth_account_id == account_id,
                     InvoiceModel.invoice_status_code != InvoiceStatus.PAID.value)
@@ -101,8 +104,8 @@ class NonSufficientFundsService:
                     else_=0)).label('nsf_amount')
             )
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
-            .join(NonSufficientFundsModel,
-                  NonSufficientFundsModel.invoice_number == InvoiceReferenceModel.invoice_number)
+            .join(NonSufficientFunds,
+                  NonSufficientFunds.invoice_number == InvoiceReferenceModel.invoice_number)
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
             .filter(PaymentAccountModel.auth_account_id == account_id,
@@ -120,25 +123,32 @@ class NonSufficientFundsService:
             )
         )
 
+        statement_ids_query = db.session.query(StatementInvoicesModel.statement_id) \
+            .filter(StatementInvoicesModel.invoice_id.in_(query.with_entities(InvoiceModel.id))) \
+            .distinct(StatementInvoicesModel.statement_id)
+        statements = db.session.query(StatementModel) \
+            .filter(StatementModel.id.in_(statement_ids_query)) \
+            .all()
+
         aggregate_totals = totals_query.one()
         results = query.all()
         total = len(results)
 
-        return results, total, aggregate_totals
+        return results, total, aggregate_totals, statements
 
     @staticmethod
     def find_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices."""
-        results, total, aggregate_totals = NonSufficientFundsService.query_all_non_sufficient_funds_invoices(
-            account_id=account_id)
+        results, total, aggregate_totals, statements = \
+            NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id)
         invoice_search_model = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao, _ in results]
-        converter = Converter()
-        invoice_list = converter.unstructure(invoice_search_model)
-        new_invoices = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
-
+        invoices = Converter().unstructure(invoice_search_model)
+        invoices = [Converter().remove_nones(invoice_dict) for invoice_dict in invoices]
+        statements = StatementDTO.dao_to_dict(statements)
         data = {
             'total': total,
-            'invoices': new_invoices,
+            'invoices': invoices,
+            'statements': statements,
             'total_amount': float(aggregate_totals.total_amount or 0),
             'total_amount_remaining': float(aggregate_totals.total_amount_remaining or 0),
             'nsf_amount': float(aggregate_totals.nsf_amount or 0)
@@ -153,7 +163,7 @@ class NonSufficientFundsService:
         current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
         invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
         payment_account = PaymentAccountModel.find_by_auth_account_id(account_id)
-        cfs_account = CfsAccountModel.find_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
+        cfs_account = CfsAccountModel.find_latest_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
         invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice['invoices'][0]['id'], InvoiceReferenceStatus.ACTIVE.value)
         account_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'

@@ -25,9 +25,9 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnameLinks, EFTShortnames, Invoice,
-    InvoiceReference, NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt,
-    RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile,
+    EFTShortnameLinks, EFTShortnames, Invoice, InvoiceReference, NonSufficientFunds, Payment, PaymentAccount,
+    PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
@@ -376,6 +376,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
                             bcol_user_id='test',
                             auth_account_id: str = '1234',
                             cfs_account_status: str = CfsAccountStatus.ACTIVE.value,
+                            has_nsf_invoices=None,
+                            has_overdue_invoices=None,
                             name=None,
                             branch_name=None):
     """Return Factory."""
@@ -388,7 +390,9 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
         branch_name=branch_name,
         payment_method=payment_method_code,
         pad_activation_date=datetime.now(tz=timezone.utc),
-        eft_enable=False
+        eft_enable=False,
+        has_nsf_invoices=has_nsf_invoices,
+        has_overdue_invoices=has_overdue_invoices
     ).save()
 
     CfsAccount(cfs_party='11111',
@@ -507,7 +511,7 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0,
                     total=0,
-                    paid=None,
+                    paid=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
                     created_on: datetime = datetime.now(tz=timezone.utc),
                     routing_slip=None,
@@ -569,11 +573,15 @@ def factory_payment_transaction(
     )
 
 
-def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
+def factory_invoice_reference(invoice_id: int,
+                              status_code=InvoiceReferenceStatus.ACTIVE.value,
+                              invoice_number='10021',
+                              is_consolidated=False):
     """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
-                            status_code=InvoiceReferenceStatus.ACTIVE.value,
-                            invoice_number=invoice_number)
+                            status_code=status_code,
+                            invoice_number=invoice_number,
+                            is_consolidated=is_consolidated)
 
 
 def factory_receipt(
@@ -609,14 +617,16 @@ def factory_statement(
         from_date: datetime = datetime.now(tz=timezone.utc),
         to_date: datetime = datetime.now(tz=timezone.utc),
         statement_settings_id: str = None,
-        created_on: datetime = datetime.now(tz=timezone.utc)):
+        created_on: datetime = datetime.now(tz=timezone.utc),
+        payment_methods: str = PaymentMethod.EFT.value):
     """Return Factory."""
     return Statement(frequency=frequency,
                      statement_settings_id=statement_settings_id,
                      payment_account_id=payment_account_id,
                      from_date=from_date,
                      to_date=to_date,
-                     created_on=created_on).save()
+                     created_on=created_on,
+                     payment_methods=payment_methods).save()
 
 
 def factory_statement_invoices(
@@ -629,7 +639,7 @@ def factory_statement_invoices(
 
 def activate_pad_account(auth_account_id: str):
     """Activate the pad account."""
-    payment_account: PaymentAccount = PaymentAccount.find_by_auth_account_id(auth_account_id)
+    payment_account = PaymentAccount.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
     payment_account.save()
     cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
@@ -898,7 +908,7 @@ def factory_eft_shortname(short_name: str):
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
-                               updated_by: str = None, updated_on: datetime = datetime.now()):
+                               updated_by: str = None, updated_on: datetime = datetime.now(tz=timezone.utc)):
     """Return an EFT short name link model."""
     return EFTShortnameLinks(
         eft_short_name_id=short_name_id,
@@ -910,9 +920,29 @@ def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234'
     )
 
 
+def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amount=10.00):
+    """Return an EFT Credit."""
+    return EFTCredit(
+        created_on=datetime.now(tz=timezone.utc),
+        amount=amount,
+        remaining_amount=remaining_amount,
+        eft_file_id=eft_file_id,
+        short_name_id=short_name_id
+    )
+
+
+def factory_eft_credit_invoice_link(eft_credit_id, invoice_id, status_code, amount=1, link_group_id=None):
+    """Return an EFT Credit invoice link."""
+    return EFTCreditInvoiceLink(eft_credit_id=eft_credit_id,
+                                invoice_id=invoice_id,
+                                status_code=status_code,
+                                link_group_id=link_group_id,
+                                amount=amount)
+
+
 def factory_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str = None):
     """Return a Non-Sufficient Funds Model."""
-    return NonSufficientFundsModel(invoice_id=invoice_id, invoice_number=invoice_number, description=description)
+    return NonSufficientFunds(invoice_id=invoice_id, invoice_number=invoice_number, description=description)
 
 
 def factory_distribution_code(name: str, client: str = '111', reps_centre: str = '22222', service_line: str = '33333',
@@ -927,7 +957,7 @@ def factory_distribution_code(name: str, client: str = '111', reps_centre: str =
                             project_code=project_code,
                             service_fee_distribution_code_id=service_fee_dist_id,
                             disbursement_distribution_code_id=disbursement_dist_id,
-                            start_date=datetime.today().date(),
+                            start_date=datetime.now(tz=timezone.utc).date(),
                             created_by='test')
 
 

@@ -150,3 +150,33 @@ def docker_compose_files(pytestconfig):
     return [
         os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
     ]
+
+
+@pytest.fixture()
+def admin_users_mock(monkeypatch):
+    """Mock auth rest call to get org admins."""
+    def get_account_admin_users(payment_account):
+        return {
+            'members': [
+                {
+                    'id': 4048,
+                    'membershipStatus': 'ACTIVE',
+                    'membershipTypeCode': 'ADMIN',
+                    'user': {
+                        'contacts': [
+                            {
+                                'email': 'test@test.com',
+                                'phone': '(250) 111-2222',
+                                'phoneExtension': ''
+                            }
+                        ],
+                        'firstname': 'FIRST',
+                        'id': 18,
+                        'lastname': 'LAST',
+                        'loginSource': 'BCSC'
+                    }
+                }
+            ]
+        }
+    monkeypatch.setattr('pay_api.services.auth.get_account_admin_users',
+                        get_account_admin_users)

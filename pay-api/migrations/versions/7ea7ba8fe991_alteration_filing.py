@@ -5,7 +5,7 @@ Revises: cf9a60955b68
 Create Date: 2020-07-27 16:45:41.623672
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, String
@@ -56,7 +56,7 @@ def upgrade():
                 "filing_type_code": "ALTER",
                 "corp_type_code": "BC",
                 "fee_code": "EN105",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": "FUT01",
                 "priority_fee_code": "PRI01",

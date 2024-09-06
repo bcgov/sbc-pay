@@ -19,8 +19,9 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 from decimal import Decimal
 import json
 
-from datetime import datetime
+from datetime import datetime, timezone
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -29,8 +30,8 @@ from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
-    get_claims, get_payment_request, get_payment_request_with_payment_method, get_payment_request_with_service_fees,
-    get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
+    factory_invoice_reference, get_claims, get_payment_request, get_payment_request_with_payment_method,
+    get_payment_request_with_service_fees, get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
 
 
 def test_create_refund(session, client, jwt, app, monkeypatch):
@@ -83,6 +84,45 @@ def test_create_drawdown_refund(session, client, jwt, app):
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
 
 
+def test_create_eft_refund(session, client, jwt, app):
+    """Assert EFT refunds work."""
+    # TODO add more.
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(
+                         get_payment_request_with_payment_method(
+                             business_identifier='CP0002000', payment_method='EFT'
+                         )
+                     ),
+                     headers=headers)
+    inv_id = rv.json.get('id')
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(
+                            get_payment_request_with_payment_method(
+                                business_identifier='CP0002000', payment_method='EFT'
+                            )
+                     ),
+                     headers=headers)
+    inv_id2 = rv.json.get('id')
+    factory_invoice_reference(inv_id2, invoice_number='REG3904393').save()
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+    rv = client.post(f'/api/v1/payment-requests/{inv_id2}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+
+    invoice = InvoiceModel.find_by_id(inv_id)
+    assert invoice.invoice_status_code == InvoiceStatus.CANCELLED.value
+
+    invoice2 = InvoiceModel.find_by_id(inv_id2)
+    assert invoice2.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+
+
 def test_create_pad_refund(session, client, jwt, app):
     """Assert that the endpoint returns 202 and creates a credit on the account."""
     # 1. Create a PAD payment_account and cfs_account.
@@ -103,7 +143,7 @@ def test_create_pad_refund(session, client, jwt, app):
     cfs_account.status = CfsAccountStatus.ACTIVE.value
     cfs_account.save()
 
-    pay_account.pad_activation_date = datetime.now()
+    pay_account.pad_activation_date = datetime.now(tz=timezone.utc)
     pay_account.save()
 
     token = jwt.create_jwt(get_claims(), token_header)
@@ -122,7 +162,7 @@ def test_create_pad_refund(session, client, jwt, app):
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
-    inv.payment_date = datetime.now()
+    inv.payment_date = datetime.now(tz=timezone.utc)
     inv.save()
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
@@ -225,7 +265,7 @@ def test_create_refund_with_existing_routing_slip(session, client,
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
-    inv.payment_date = datetime.now()
+    inv.payment_date = datetime.now(tz=timezone.utc)
     inv.save()
 
     assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
@@ -291,3 +331,41 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     assert rv.status_code == 400
     assert rv.json.get('type') == Error.INVALID_REQUEST.name
     assert RefundModel.find_by_invoice_id(inv_id) is None
+
+
+def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):
+    """Assert that the endpoint returns 400 with detail."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(
+                         get_payment_request_with_payment_method(
+                             business_identifier='CP0002000', payment_method='DIRECT_PAY'
+                         )
+                     ),
+                     headers=headers)
+    inv_id = rv.json.get('id')
+    invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    def mock_process_cfs_refund(self, invoice, payment_account, refund_partial):
+        error = Error.DIRECT_PAY_INVALID_RESPONSE
+        error.detail = ['Transaction does not exist']
+        raise BusinessException(error)
+
+    monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService.process_cfs_refund',
+                        mock_process_cfs_refund)
+
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+
+    assert rv.status_code == 400
+    assert rv.json == {
+        'type': Error.DIRECT_PAY_INVALID_RESPONSE.name,
+        'detail': ['Transaction does not exist']
+    }

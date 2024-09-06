@@ -271,7 +271,7 @@ def rest_call_mock(monkeypatch):
 @pytest.fixture()
 def admin_users_mock(monkeypatch):
     """Mock auth rest call to get org admins."""
-    def _get_account_admin_users(payment_account):
+    def get_account_admin_users(auth_account_id):
         return {
             'members': [
                 {
@@ -294,14 +294,7 @@ def admin_users_mock(monkeypatch):
                 }
             ]
         }
-    monkeypatch.setattr('pay_api.services.payment_account.PaymentAccount._get_account_admin_users',
-                        _get_account_admin_users)
-
-
-@pytest.fixture()
-def non_active_accounts_auth_api_mock(monkeypatch):
-    """Mock auth rest call to get non-active orgs."""
-    def _get_non_active_orgs():
-        return ['911']
-    monkeypatch.setattr('pay_api.services.payment_account.PaymentAccount._get_non_active_org_ids',
-                        _get_non_active_orgs)
+    monkeypatch.setattr('pay_api.services.payment_account.get_account_admin_users',
+                        get_account_admin_users)
+    monkeypatch.setattr('pay_api.services.eft_short_names.get_account_admin_users',
+                        get_account_admin_users)

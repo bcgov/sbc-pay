@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from tests.utilities.base_test import (
     factory_invoice, factory_payment, factory_payment_account, factory_payment_transaction)
@@ -55,25 +55,25 @@ def test_find_older_records(session):
 
     payment_transaction_100_days_old = factory_payment_transaction(
         payment_id=payment.id,
-        transaction_start_time=datetime.now() - timedelta(days=100))
+        transaction_start_time=datetime.now(tz=timezone.utc) - timedelta(days=100))
     payment_transaction_100_days_old.save()
 
     payment_transaction_3_hours_old = factory_payment_transaction(
         payment_id=payment.id,
-        transaction_start_time=datetime.now() - timedelta(
+        transaction_start_time=datetime.now(tz=timezone.utc) - timedelta(
             hours=3))
 
     payment_transaction_3_hours_old.save()
 
     payment_transaction_1_hour_old = factory_payment_transaction(
         payment_id=payment.id,
-        transaction_start_time=datetime.now() - timedelta(
+        transaction_start_time=datetime.now(tz=timezone.utc) - timedelta(
             hours=1))
     payment_transaction_1_hour_old.save()
 
     payment_transaction_2_hours_old = factory_payment_transaction(
         payment_id=payment.id,
-        transaction_start_time=datetime.now() - timedelta(
+        transaction_start_time=datetime.now(tz=timezone.utc) - timedelta(
             hours=2))
     payment_transaction_2_hours_old.save()
 
@@ -81,7 +81,7 @@ def test_find_older_records(session):
                                                              minutes=10)  # find records which are 2.10 hours older
     assert len(all_records) == 2
     for record in all_records:
-        assert record.transaction_start_time < datetime.now() - timedelta(hours=2)
+        assert record.transaction_start_time < datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(hours=2)
 
 
 def test_find_older_records_invalid_status(session):
@@ -104,14 +104,14 @@ def test_find_older_records_invalid_status(session):
 
     payment_transaction_now_draft_3_hours = factory_payment_transaction(
         payment_id=payment.id, status_code='CREATED',
-        transaction_start_time=datetime.now() - timedelta(
+        transaction_start_time=datetime.now(tz=timezone.utc) - timedelta(
             hours=3))
     payment_transaction_now_draft_3_hours.save()  # this is eligible
 
     payment_transaction_now_draft_completed_3_hours = factory_payment_transaction(
         payment_id=payment.id,
         status_code='COMPLETED',
-        transaction_start_time=datetime.now() - timedelta(
+        transaction_start_time=datetime.now(tz=timezone.utc) - timedelta(
             hours=3))
     payment_transaction_now_draft_completed_3_hours.save()  # not eligible
 

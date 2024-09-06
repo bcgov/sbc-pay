@@ -13,15 +13,13 @@
 # limitations under the License.
 """Payment reconciliation file."""
 import csv
-import dataclasses
-import json
 import os
-from datetime import datetime
+import traceback
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from flask import current_app
-from jinja2 import Environment, FileSystemLoader
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
@@ -38,19 +36,17 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
-from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
-    PaymentStatus, QueueSources)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, QueueSources)
 from pay_api.utils.util import get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 from pay_queue import config
-from pay_queue.auth import get_token
 from pay_queue.minio import get_object
+from pay_queue.services.email_service import EmailParams, send_error_email
 
 from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 
@@ -212,10 +208,16 @@ def reconcile_payments(ce):
     error_messages = []
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
-    current_app.logger.info(f'_process_file_content has errors: {has_errors},'
-                            f"generate email: {current_app.config.get('DISABLE_CSV_ERROR_EMAIL')}")
     if has_errors and not current_app.config.get('DISABLE_CSV_ERROR_EMAIL'):
-        _send_error_email(file_name, minio_location, error_messages, msg, cas_settlement.__tablename__)
+        email_service_params = EmailParams(
+            subject='Payment Reconciliation Failure',
+            file_name=file_name,
+            minio_location=minio_location,
+            error_messages=error_messages,
+            ce=ce,
+            table_name=cas_settlement.__tablename__
+        )
+        send_error_email(email_service_params)
 
 
 def _process_file_content(content: str, cas_settlement: CasSettlementModel,
@@ -266,7 +268,7 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
     except Exception as e: # NOQA # pylint: disable=broad-except
         error_msg = f'Error creating payment records: {str(e)}'
         has_errors = True
-        _csv_error_handling('N/A', error_msg, error_messages)
+        _csv_error_handling('N/A', error_msg, error_messages, e)
         return has_errors, error_messages
 
     # Create Credit Records.
@@ -275,7 +277,7 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
     except Exception as e: # NOQA # pylint: disable=broad-except
         error_msg = f'Error creating credit records: {str(e)}'
         has_errors = True
-        _csv_error_handling('N/A', error_msg, error_messages)
+        _csv_error_handling('N/A', error_msg, error_messages, e)
         return has_errors, error_messages
 
     # Sync credit memo and on account credits with CFS
@@ -284,54 +286,12 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
     except Exception as e: # NOQA # pylint: disable=broad-except
         error_msg = f'Error syncing credit records: {str(e)}'
         has_errors = True
-        _csv_error_handling('N/A', error_msg, error_messages)
+        _csv_error_handling('N/A', error_msg, error_messages, e)
         return has_errors, error_messages
 
     cas_settlement.processed_on = datetime.now()
     cas_settlement.save()
     return has_errors, error_messages
-
-
-def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too-many-locals
-                      error_messages: List[Dict[str, any]],
-                      ce, table_name: str):
-    """Send the email asynchronously, using the given details."""
-    subject = 'Payment Reconciliation Failure'
-    token = get_token()
-    recipient = current_app.config.get('IT_OPS_EMAIL')
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root_dir = os.path.dirname(current_dir)
-    templates_dir = os.path.join(project_root_dir, 'templates')
-    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-
-    template = env.get_template('payment_reconciliation_failed_email.html')
-
-    params = {
-        'fileName': file_name,
-        'errorMessages': error_messages,
-        'minioLocation': minio_location,
-        'payload': json.dumps(dataclasses.asdict(ce)),
-        'tableName': table_name
-    }
-    html_body = template.render(params)
-    notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
-    notify_body = {
-        'recipients': recipient,
-        'content': {
-            'subject': subject,
-            'body': html_body
-        }
-    }
-    notify_response = OAuthService.post(notify_url, token=token,
-                                        auth_header_type=AuthHeaderType.BEARER,
-                                        content_type=ContentType.JSON, data=notify_body)
-    current_app.logger.info(f'_send_error_email to recipients: {notify_url}, {recipient}')
-    if notify_response:
-        response_json = json.loads(notify_response.text)
-        if response_json.get('notifyStatus', 'FAILURE') != 'FAILURE':
-            current_app.logger.info('_send_error_email notify_response')
-        else:
-            current_app.logger.info('_send_error_email failed')
 
 
 def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
@@ -425,8 +385,12 @@ def _process_unconsolidated_invoices(row, error_messages: List[Dict[str, any]]) 
     return has_errors
 
 
-def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]]):
-    current_app.logger.info(error_msg)
+def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]],
+                        ex: Exception = None):
+    if ex:
+        formatted_traceback = ''.join(traceback.TracebackException.from_exception(ex).format())
+        error_msg = f'{error_msg}\n{formatted_traceback}'
+    current_app.logger.error(error_msg)
     capture_message(error_msg, level='error')
     error_messages.append({'error': error_msg, 'row': row})
 
@@ -535,7 +499,7 @@ def _process_failed_payments(row):
     payment_account: PaymentAccountModel = _get_payment_account(row)
 
     # If there is a FAILED payment record for this; it means it's a duplicate event. Ignore it.
-    payment: PaymentModel = PaymentModel.find_payment_by_invoice_number_and_status(
+    payment = PaymentModel.find_payment_by_invoice_number_and_status(
         inv_number, PaymentStatus.FAILED.value
     )
     if payment:
@@ -551,6 +515,7 @@ def _process_failed_payments(row):
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
     current_app.logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
+    payment_account.has_nsf_invoices = datetime.now(tz=timezone.utc)
     # Call CFS to stop any further PAD transactions on this account.
     CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
     if is_already_frozen:
@@ -604,6 +569,21 @@ def _create_credit_records(csv_content: str):
                 ).save()
 
 
+def _check_cfs_accounts_for_pad_and_ob(credit):
+    """Ensure we don't have PAD and OB for the same account, because there is no association between CFS and CREDITS."""
+    has_pad = False
+    has_online_banking = False
+    for cfs_account in CfsAccountModel.find_by_account_id(credit.account_id):
+        if cfs_account.payment_method == PaymentMethod.PAD.value:
+            has_pad = True
+        if cfs_account.payment_method == PaymentMethod.ONLINE_BANKING.value:
+            has_online_banking = True
+    if has_pad and has_online_banking:
+        raise Exception(  # pylint: disable=broad-exception-raised
+            'Multiple payment methods for the same account for CREDITS'
+            ' credits has no link to CFS account.')
+
+
 def _sync_credit_records():
     """Sync credit records with CFS."""
     # 1. Get all credit records with balance > 0
@@ -614,14 +594,19 @@ def _sync_credit_records():
     current_app.logger.info('Found %s credit records', len(active_credits))
     account_ids: List[int] = []
     for credit in active_credits:
+        _check_cfs_accounts_for_pad_and_ob(credit)
         cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(credit.account_id,
-                                                                                 PaymentMethod.PAD.value)
+                                                                                 PaymentMethod.PAD.value) \
+            or CfsAccountModel.find_effective_or_latest_by_payment_method(credit.account_id,
+                                                                          PaymentMethod.ONLINE_BANKING.value)
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
-            credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
+            credit_memo = CFSService.get_cms(
+                cfs_account=cfs_account, cms_number=credit.cfs_identifier)
             credit.remaining_amount = abs(float(credit_memo.get('amount_due')))
         else:
-            receipt = CFSService.get_receipt(cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
+            receipt = CFSService.get_receipt(
+                cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
             receipt_amount = float(receipt.get('receipt_amount'))
             applied_amount: float = 0
             for invoice in receipt.get('invoices', []):

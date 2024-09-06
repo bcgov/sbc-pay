@@ -149,7 +149,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     @classmethod
     def _find_payment_account(cls, authorization):
         # find payment account
-        payment_account: PaymentAccount = PaymentAccount.find_account(authorization)
+        payment_account = PaymentAccount.find_account(authorization)
 
         # If there is no payment_account it must be a request with no account (NR, Staff payment etc.)
         # and invoked using a service account or a staff token

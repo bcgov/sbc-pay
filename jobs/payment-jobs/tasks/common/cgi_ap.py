@@ -13,7 +13,7 @@
 # limitations under the License.
 """Base class for CGI AP."""
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import current_app
 from pay_api.utils.enums import EjvFileType
@@ -32,14 +32,14 @@ class CgiAP(CgiEjv):
     def get_batch_header(cls, batch_number, batch_type: str = 'AP'):
         """Return batch header string."""
         return f'{cls._feeder_number()}{batch_type}BH{cls.DELIMITER}{cls._feeder_number()}' \
-               f'{get_fiscal_year(datetime.now())}' \
+               f'{get_fiscal_year(datetime.now(tz=timezone.utc))}' \
                f'{batch_number}{cls._message_version()}{cls.DELIMITER}{os.linesep}'
 
     @classmethod
     def get_batch_trailer(cls, batch_number, batch_total, batch_type: str = 'AP', control_total: int = 0):
         """Return batch trailer string."""
         return f'{cls._feeder_number()}{batch_type}BT{cls.DELIMITER}{cls._feeder_number()}' \
-               f'{get_fiscal_year(datetime.now())}{batch_number}' \
+               f'{get_fiscal_year(datetime.now(tz=timezone.utc))}{batch_number}' \
                f'{control_total:0>15}{cls.format_amount(batch_total)}{cls.DELIMITER}{os.linesep}'
 
     @classmethod
@@ -48,7 +48,7 @@ class CgiAP(CgiEjv):
         invoice_type = 'ST'
         remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
         currency = 'CAD'
-        effective_date = cls._get_date(datetime.now())
+        effective_date = cls._get_date(datetime.now(tz=timezone.utc))
         invoice_date = cls._get_date(invoice_date)
         oracle_invoice_batch_name = cls._get_oracle_invoice_batch_name(invoice_number)
         disbursement_method = 'CHQ' if cls.ap_type == EjvFileType.REFUND else 'EFT'
@@ -66,7 +66,7 @@ class CgiAP(CgiEjv):
         commit_line_number = f'{cls.EMPTY:<4}'
         # Pad Zeros to four digits. EG. 0001
         line_number = f'{ap_line.line_number:04}'
-        effective_date = cls._get_date(datetime.now())
+        effective_date = cls._get_date(datetime.now(tz=timezone.utc))
         line_code = cls._get_line_code(ap_line)
         ap_line = \
             f'{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \

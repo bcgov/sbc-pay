@@ -14,9 +14,10 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
+import pytz
 from dateutil.relativedelta import relativedelta
 from attrs import define
 
@@ -35,6 +36,18 @@ from .invoice_reference import InvoiceReferenceSchema
 from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
+
+
+def determine_overdue_date(context):
+    """Determine the overdue date with the correct time offset."""
+    created_on = context.get_current_parameters()['created_on']
+    target_date = created_on.date() + relativedelta(months=2,
+                                                    day=15)
+    target_datetime = datetime.combine(target_date, datetime.min.time())
+    # Correct for daylight savings.
+    hours = target_datetime.astimezone(pytz.timezone('America/Vancouver')).utcoffset().total_seconds() / 60 / 60
+    target_date = target_datetime.replace(tzinfo=timezone.utc) + relativedelta(hours=-hours)
+    return target_date.replace(tzinfo=None)
 
 
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
@@ -63,6 +76,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             'cfs_account_id',
             'dat_number',
             'details',
+            'disbursement_reversal_date',
             'disbursement_status_code',
             'disbursement_date',
             'filing_id',
@@ -86,7 +100,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_codes.code'), nullable=False)
+    invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_codes.code'), nullable=False, index=True)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     cfs_account_id = db.Column(db.Integer, ForeignKey('cfs_accounts.id'), nullable=True)
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False, index=True)
@@ -94,15 +108,14 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     disbursement_date = db.Column(db.DateTime, nullable=True)
     disbursement_reversal_date = db.Column(db.DateTime, nullable=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now, index=True)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc),
+                           index=True)
 
     business_identifier = db.Column(db.String(20), nullable=True)
     total = db.Column(db.Numeric(19, 2), nullable=False)
     paid = db.Column(db.Numeric(19, 2), nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
-    # default overdue_date to the first of next month
-    overdue_date = db.Column(db.DateTime, nullable=True,
-                             default=lambda: datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1))
+    overdue_date = db.Column(db.DateTime, nullable=True, default=determine_overdue_date)
     refund_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Numeric(19, 2), nullable=True)
     routing_slip = db.Column(db.String(50), nullable=True, index=True)
@@ -145,10 +158,11 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(business_identifier=business_identifier).all()
 
     @classmethod
-    def find_invoices_by_status_for_account(cls, pay_account_id: int, invoice_statuses: List[str]):
+    def find_invoices_by_status_for_account(cls, pay_account_id: int, invoice_statuses: List[str]) -> List[Invoice]:
         """Return invoices by status for an account."""
-        query = cls.query.filter_by(payment_account_id=pay_account_id). \
-            filter(Invoice.invoice_status_code.in_(invoice_statuses))
+        query = cls.query.filter_by(payment_account_id=pay_account_id) \
+            .filter(Invoice.invoice_status_code.in_(invoice_statuses)) \
+            .order_by(Invoice.id)
 
         return query.all()
 
@@ -187,13 +201,26 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             ) |
             (
                 (Invoice.payment_method_code == PaymentMethod.EFT.value) &
-                (Invoice.payment_method_code.in_([InvoiceStatus.CREATED.value, InvoiceStatus.OVERDUE.value])
+                (Invoice.payment_method_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.OVERDUE.value])
                  ) &
                 (Invoice.created_on >= from_date)
             )
         )
 
         return query.all()
+
+    @classmethod
+    def find_created_direct_pay_invoices(cls, days: int = 0, hours: int = 0, minutes: int = 0):
+        """Return recent invoices within a certain time and is not complete.
+
+        Used in the batch job to find orphan records which are untouched for a time.
+        Removed CC payments cause CC use the get receipt route, not the PAYBC invoice status route
+        """
+        earliest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
+        return db.session.query(Invoice) \
+            .filter(Invoice.invoice_status_code == InvoiceStatus.CREATED.value) \
+            .filter(Invoice.payment_method_code.in_([PaymentMethod.DIRECT_PAY.value])) \
+            .filter(Invoice.created_on >= earliest_transaction_time).all()
 
 
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
@@ -279,6 +306,8 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     payment_date: datetime
     refund_date: datetime
     disbursement_date: datetime
+    disbursement_reversal_date: datetime
+    # Add disbursement_reversal_date when CSO is prepared.
 
     @classmethod
     def from_row(cls, row):
@@ -287,6 +316,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
         https://www.attrs.org/en/stable/init.html
         """
         # Similar to _clean_up in InvoiceSchema.
+        # In the future may need to add a mapping from EFT Status: APPROVED -> COMPLETED
         status_code = PaymentStatus.COMPLETED.value if row.invoice_status_code == InvoiceStatus.PAID.value \
             else row.invoice_status_code
         business_identifier = None if row.business_identifier and row.business_identifier.startswith('T') \
@@ -307,4 +337,5 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
                    payment_date=row.payment_date,
                    refund_date=row.refund_date,
                    disbursement_date=row.disbursement_date,
+                   disbursement_reversal_date=row.disbursement_reversal_date,
                    invoice_number=invoice_number)

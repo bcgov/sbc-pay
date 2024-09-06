@@ -23,8 +23,8 @@ from pay_api.services.eft_service import EftService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
 from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
 from pay_api.services.eft_short_names import EFTShortnamesSearch
-from pay_api.services.eft_transactions import EFTTransactions as EFTTransactionService
-from pay_api.services.eft_transactions import EFTTransactionSearch
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTShortnameHistoryService
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorySearch
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
@@ -52,10 +52,13 @@ def get_eft_shortnames():
     account_id = request.args.get('accountId', None)
     account_name = request.args.get('accountName', None)
     account_branch = request.args.get('accountBranch', None)
+    account_id_list = request.args.get('accountIdList', None)
+    account_id_list = account_id_list.split(',') if account_id_list else None
 
     response, status = EFTShortnameService.search(EFTShortnamesSearch(
         id=short_name_id,
         account_id=account_id,
+        account_id_list=account_id_list,
         account_name=account_name,
         account_branch=account_branch,
         amount_owing=string_to_decimal(amount_owing),
@@ -115,21 +118,21 @@ def get_eft_shortname(short_name_id: int):
     return jsonify(response), status
 
 
-@bp.route('/<int:short_name_id>/transactions', methods=['GET', 'OPTIONS'])
+@bp.route('/<int:short_name_id>/history', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
-def get_eft_shortname_transactions(short_name_id: int):
-    """Get EFT short name transactions."""
-    current_app.logger.info('<get_eft_shortname_transactions')
+def get_eft_shortname_history(short_name_id: int):
+    """Get EFT short name history."""
+    current_app.logger.info('<get_eft_shortname_history')
 
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
 
-    response, status = EFTTransactionService.search(short_name_id,
-                                                    EFTTransactionSearch(page=page, limit=limit)), HTTPStatus.OK
-
-    current_app.logger.debug('>get_eft_shortname_transactions')
+    response, status = (EFTShortnameHistoryService.search(short_name_id,
+                                                          EFTShortnameHistorySearch(page=page, limit=limit)),
+                        HTTPStatus.OK)
+    current_app.logger.debug('>get_eft_shortname_history')
     return jsonify(response), status
 
 

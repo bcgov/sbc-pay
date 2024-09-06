@@ -13,7 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to fee and fee schedule."""
 
-from datetime import date, datetime
+from datetime import datetime, timezone
 from operator import or_
 
 from sqlalchemy import Boolean, Date, ForeignKey, cast, func
@@ -65,7 +65,8 @@ class FeeSchedule(db.Model):
     filing_type_code = db.Column(db.String(10), ForeignKey('filing_types.code'), nullable=False)
     corp_type_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=False)
     fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=False)
-    fee_start_date = db.Column('fee_start_date', db.Date, default=date.today(), nullable=False)
+    fee_start_date = db.Column('fee_start_date', db.Date, default=lambda: datetime.now(tz=timezone.utc).date(),
+                               nullable=False)
     fee_end_date = db.Column('fee_end_date', db.Date, default=None, nullable=True)
     future_effective_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
     priority_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
@@ -98,7 +99,7 @@ class FeeSchedule(db.Model):
                                           ):
         """Given a filing_type_code and corp_type, this will return fee schedule."""
         if not valid_date:
-            valid_date = date.today()
+            valid_date = datetime.now(tz=timezone.utc).date()
         fee_schedule = None
 
         if filing_type_code and corp_type_code:
@@ -119,7 +120,7 @@ class FeeSchedule(db.Model):
     @classmethod
     def find_all(cls, corp_type_code: str = None, filing_type_code: str = None, description: str = None):
         """Find all fee schedules matching the filters."""
-        valid_date = date.today()
+        valid_date = datetime.now(tz=timezone.utc).date()
         query = cls.query.filter(FeeSchedule.fee_start_date <= valid_date). \
             filter((FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= valid_date))
 

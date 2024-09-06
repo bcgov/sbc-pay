@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Base class for audit model."""
-from datetime import datetime
+from datetime import datetime, timezone
 
 from marshmallow import fields
 from sqlalchemy.ext.declarative import declared_attr
@@ -27,8 +27,8 @@ class Audit(BaseModel):  # pylint: disable=too-few-public-methods
 
     __abstract__ = True
 
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
-    updated_on = db.Column('updated_on', db.DateTime, default=None, onupdate=datetime.now)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    updated_on = db.Column('updated_on', db.DateTime, default=None, onupdate=lambda: datetime.now(tz=timezone.utc))
 
     @declared_attr
     def created_by(cls):  # pylint:disable=no-self-argument, # noqa: N805

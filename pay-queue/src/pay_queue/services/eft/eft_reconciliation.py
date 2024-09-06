@@ -15,28 +15,54 @@
 from datetime import datetime
 from typing import Dict, List
 
-from _decimal import Decimal
 from flask import current_app
 from pay_api import db
-from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
-from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.services.eft_service import EftService as EFTService
-from pay_api.services.eft_short_names import EFTShortnames
-from pay_api.services.payment import Payment
-from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
+from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
+from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
+from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus
 from sentry_sdk import capture_message
 
 from pay_queue.minio import get_object
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
+from pay_queue.services.email_service import EmailParams, send_error_email
 
 
-def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-locals
+class EFTReconciliation:  # pylint: disable=too-few-public-methods
+    """Initialize the EFTReconciliation."""
+
+    def __init__(self, ce):
+        """:param ce: The cloud event object containing relevant data."""
+        self.ce = ce
+        self.msg = ce.data
+        self.file_name: str = self.msg.get('fileName')
+        self.minio_location: str = self.msg.get('location')
+        self.error_messages: List[Dict[str, any]] = []
+
+    def eft_error_handling(self, row, error_msg: str,
+                           capture_error: bool = True, table_name: str = None):
+        """Handle EFT errors by logging, capturing messages, and optionally sending an email."""
+        if capture_error:
+            current_app.logger.error(error_msg, exc_info=True)
+            capture_message(error_msg, level='error')
+        self.error_messages.append({'error': error_msg, 'row': row})
+        if table_name is not None:
+            email_service_params = EmailParams(
+                subject='EFT TDI17 Reconciliation Failure',
+                file_name=self.file_name,
+                minio_location=self.minio_location,
+                error_messages=self.error_messages,
+                ce=self.ce,
+                table_name=table_name
+            )
+            send_error_email(email_service_params)
+
+
+def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     """Read the TDI17 file, create processing records and update payment details.
 
     1: Check to see if file has been previously processed.
@@ -47,15 +73,12 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     5: Validate and persist transaction details - persist any error messages
     5.1: If transaction details are invalid, set FAIL state and return
     6: Calculate total transaction balance per short name - dictionary
-    7: Apply balance to outstanding EFT invoices - Update invoice paid amount and status, create payment,
-        invoice reference, and receipt
-    8: Create EFT Credit records for left over balances
-    9: Finalize and complete
+    7: Create EFT Credit records for left over balances
+    8: Finalize and complete
     """
     # Fetch EFT File
-    file_name: str = msg.get('fileName')
-    minio_location: str = msg.get('location')
-    file = get_object(minio_location, file_name)
+    context = EFTReconciliation(ce)
+    file = get_object(context.minio_location, context.file_name)
     file_content = file.data.decode('utf-8-sig')
 
     # Split into lines
@@ -63,17 +86,17 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
 
     # Check if there is an existing EFT File record
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
-        EFTFileModel.file_ref == file_name).one_or_none()
+        EFTFileModel.file_ref == context.file_name).one_or_none()
 
     if eft_file_model and eft_file_model.status_code in \
             [EFTProcessStatus.IN_PROGRESS.value, EFTProcessStatus.COMPLETED.value]:
-        current_app.logger.info('File: %s already %s.', file_name, str(eft_file_model.status_code))
+        current_app.logger.info('File: %s already %s.', context.file_name, str(eft_file_model.status_code))
         return
 
     # There is no existing EFT File record - instantiate one
     if eft_file_model is None:
         eft_file_model = EFTFileModel()
-        eft_file_model.file_ref = file_name
+        eft_file_model.file_ref = context.file_name
 
     # EFT File - In Progress
     eft_file_model.status_code = EFTProcessStatus.IN_PROGRESS.value
@@ -98,9 +121,11 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
 
     # If header and/or trailer has errors do not proceed
     if not (eft_header_valid and eft_trailer_valid):
-        current_app.logger.error('Failed to process file %s with an invalid header or trailer.', file_name)
+        error_msg = f'Failed to process file {context.file_name} with an invalid header or trailer.'
         eft_file_model.status_code = EFTProcessStatus.FAILED.value
         eft_file_model.save()
+        context.eft_error_handling('N/A', error_msg,
+                                   table_name=eft_file_model.__tablename__)
         return
 
     has_eft_transaction_errors = False
@@ -113,6 +138,7 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     for eft_transaction in eft_transactions:
         if eft_transaction.has_errors():  # Flag any instance of an error - will indicate file is partially processed
             has_eft_transaction_errors = True
+            context.eft_error_handling(eft_transaction.index, eft_transaction.errors[0].message, capture_error=False)
             _save_eft_transaction(eft_record=eft_transaction, eft_file_model=eft_file_model, is_error=True)
         else:
             # Save TDI17 transaction record
@@ -121,8 +147,10 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     # EFT Transactions have parsing errors - stop and FAIL transactions
     # We want a full file to be parseable as we want to get a full accurate balance before applying them to invoices
     if has_eft_transaction_errors:
-        current_app.logger.error('Failed to process file %s has transaction parsing errors.', file_name)
+        error_msg = f'Failed to process file {context.file_name} has transaction parsing errors.'
         _update_transactions_to_fail(eft_file_model)
+        context.eft_error_handling('N/A', error_msg,
+                                   table_name=eft_file_model.__tablename__)
         return
 
     # Generate dictionary with shortnames and total deposits
@@ -131,18 +159,49 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     # Credit short name and map to eft transaction for tracking
     has_eft_credits_error = _process_eft_credits(shortname_balance, eft_file_model.id)
 
-    # Process payments, update invoice and create receipt
-    has_eft_transaction_errors = _process_eft_payments(shortname_balance, eft_file_model)
-
-    # Mark EFT File partially processed due to transaction errors
     # Rollback EFT transactions and update to FAIL status
     if has_eft_transaction_errors or has_eft_credits_error:
         db.session.rollback()
         _update_transactions_to_fail(eft_file_model)
-        current_app.logger.error('Failed to process file %s due to transaction errors.', file_name)
+        error_msg = f'Failed to process file {context.file_name} due to transaction errors.'
+        context.eft_error_handling('N/A', error_msg,
+                                   table_name=eft_file_model.__tablename__)
         return
 
     _finalize_process_state(eft_file_model)
+
+    # Apply EFT Short name link pending payments after finalizing TDI17 processing to allow
+    # for it to be committed first
+    _apply_eft_pending_payments(context, shortname_balance)
+
+
+def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
+    """Apply payments to short name links."""
+    for shortname in shortname_balance.keys():
+        eft_shortname = _get_shortname(shortname)
+        eft_credit_balance = EFTShortnamesService.get_eft_credit_balance(eft_shortname.id)
+        shortname_links = EFTShortnamesService.get_shortname_links(eft_shortname.id).get('items', [])
+        for shortname_link in shortname_links:
+            # We are expecting pending payments to have been cleared since this runs after the
+            # eft task job. Something may have gone wrong, we will skip this link.
+            if shortname_link.get('has_pending_payment'):
+                error_msg = f'Unexpected pending payment on link: {shortname_link.id}'
+                context.eft_error_handling('N/A', error_msg,
+                                           table_name=eft_shortname.__tablename__)
+                continue
+
+            amount_owing = shortname_link.get('amount_owing')
+            auth_account_id = shortname_link.get('account_id')
+            if 0 < amount_owing <= eft_credit_balance:
+                try:
+                    payload = {'action': EFTPaymentActions.APPLY_CREDITS.value,
+                               'accountId': auth_account_id}
+                    EFTShortnamesService.process_payment_action(eft_shortname.id, payload)
+                except Exception as exception:  # NOQA # pylint: disable=broad-except
+                    # EFT Short name service handles commit and rollback when the action fails, we just need to make
+                    # sure we log the error here
+                    error_msg = 'error in _apply_eft_pending_payments.'
+                    context.eft_error_handling('N/A', error_msg, ex=exception)
 
 
 def _finalize_process_state(eft_file_model: EFTFileModel):
@@ -218,52 +277,17 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                 eft_credit_model.amount = deposit_amount
                 eft_credit_model.remaining_amount = deposit_amount
                 eft_credit_model.eft_transaction_id = eft_transaction['id']
-                db.session.add(eft_credit_model)
+                eft_credit_model.flush()
+
+                credit_balance = EFTShortnamesService.get_eft_credit_balance(eft_credit_model.short_name_id)
+                EFTHistoryService.create_funds_received(EFTHistory(short_name_id=eft_credit_model.short_name_id,
+                                                                   amount=deposit_amount,
+                                                                   credit_balance=credit_balance)).flush()
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_credit_errors = True
-            current_app.logger.error(e)
+            current_app.logger.error(e, exc_info=True)
             capture_message('EFT Failed to set EFT balance.', level='error')
     return has_credit_errors
-
-
-def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bool:
-    """Process payments by creating payment records and updating invoice state."""
-    has_eft_transaction_errors = False
-
-    for shortname in shortname_balance.keys():
-        # Retrieve or Create shortname mapping
-        eft_shortname_model = _get_shortname(shortname)
-        shortname_links = EFTShortnames.get_shortname_links(eft_shortname_model.id)
-
-        #  Skip short names with no links or multiple links (manual processing by staff)
-        if not shortname_links['items'] or len(shortname_links['items']) > 1:
-            continue
-
-        eft_short_link = shortname_links['items'][0]
-        #  Skip if the link is in pending status - this will be officially linked via a scheduled job
-        if eft_short_link['status_code'] == EFTShortnameStatus.PENDING.value:
-            continue
-
-        # No balance to apply - move to next shortname
-        if shortname_balance[shortname]['balance'] <= 0:
-            current_app.logger.warning('UNEXPECTED BALANCE: %s had zero or less balance on file: %s',
-                                       shortname, eft_file.file_ref)
-            continue
-
-        # We have a mapping and can continue processing
-        try:
-            auth_account_id = eft_short_link['account_id']
-            invoices = EFTShortnames.get_invoices_owing(auth_account_id)
-            for invoice in invoices:
-                _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname],
-                             short_name_links=shortname_links['items'])
-
-        except Exception as e:  # NOQA pylint: disable=broad-exception-caught
-            has_eft_transaction_errors = True
-            current_app.logger.error(e)
-            capture_message('EFT Failed to apply balance to invoice.', level='error')
-
-    return has_eft_transaction_errors
 
 
 def _set_eft_header_on_file(eft_header: EFTHeader, eft_file_model: EFTFileModel):
@@ -409,48 +433,3 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
         shortname_balance[shortname].setdefault('transactions', []).append(transaction)
 
     return shortname_balance
-
-
-def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict, short_name_links: List[Dict]):
-    """Pay for an invoice and update invoice state."""
-    payment_date = shortname_balance.get('transaction_date') or datetime.now()
-    balance = shortname_balance.get('balance')
-
-    # # Get the unpaid total - could be partial
-    unpaid_total = _get_invoice_unpaid_total(invoice)
-
-    # Determine the payable amount based on what is available in the shortname balance
-    payable_amount = unpaid_total if balance >= unpaid_total else balance
-
-    # Create the payment record
-    eft_payment_service: EFTService = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
-
-    payment, receipt = eft_payment_service.apply_credit(invoice=invoice,
-                                                        payment_date=payment_date,
-                                                        auto_save=True)
-
-    db.session.add(payment)
-    db.session.add(receipt)
-
-    # Paid - update the shortname balance
-    shortname_balance['balance'] -= payable_amount
-
-    # If the payment amount is at least exactly the unpaid total, unlock associated accounts
-    if payable_amount == unpaid_total:
-        _unlock_associated_frozen_accounts(short_name_links=short_name_links,
-                                           payment=payment)
-
-
-def _get_invoice_unpaid_total(invoice: InvoiceModel) -> Decimal:
-    invoice_total = invoice.total or 0
-    invoice_paid = invoice.paid or 0
-
-    return invoice_total - invoice_paid
-
-
-def _unlock_associated_frozen_accounts(short_name_links: List[Dict], payment: Payment):
-    """Unlock the frozen accounts."""
-    for short_name_link in short_name_links:
-        auth_account_id = short_name_link['account_id']
-        payment_account: PaymentAccountModel = PaymentAccount.find_by_auth_account_id(auth_account_id)
-        PaymentAccount.unlock_frozen_accounts(payment.id, payment_account.id)

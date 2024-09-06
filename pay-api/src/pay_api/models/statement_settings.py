@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
-from datetime import date, datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey
-
-from pay_api.utils.enums import StatementFrequency
-from pay_api.utils.util import get_local_time
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -52,16 +49,15 @@ class StatementSettings(BaseModel):
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
-    from_date = db.Column(db.Date, default=date.today(), nullable=False)
+    from_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
 
     @classmethod
     def find_active_settings(cls, auth_account_id: str, valid_date: datetime):
         """Return active statement setting for the account."""
-        valid_date = get_local_time(valid_date)
         query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
         # need this to strip of the time information from the date
-        todays_datetime = valid_date.today().date()
+        todays_datetime = valid_date.date()
         query = query.filter(StatementSettings.from_date <= todays_datetime). \
             filter((StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= todays_datetime))
 
@@ -73,18 +69,6 @@ class StatementSettings(BaseModel):
         query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
         query = query.filter((StatementSettings.to_date.is_(None)))
         return query.one_or_none()
-
-    @classmethod
-    def find_accounts_settings_by_frequency(cls, valid_date: datetime, frequency: StatementFrequency):
-        """Return active statement setting for the account."""
-        valid_date = get_local_time(valid_date).date()
-        query = db.session.query(StatementSettings, PaymentAccount).join(PaymentAccount)
-
-        query = query.filter(StatementSettings.from_date <= valid_date). \
-            filter((StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= valid_date)). \
-            filter(StatementSettings.frequency == frequency.value)
-
-        return query.all()
 
 
 class StatementSettingsSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors

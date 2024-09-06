@@ -18,7 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -30,7 +30,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod, Role,
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod, Role,
     StatementFrequency)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
@@ -60,7 +60,7 @@ def test_create_eft_short_name_link(session, client, jwt, app):
     assert link_dict['updatedBy'] == 'IDIR/JSMITH'
 
     date_format = '%Y-%m-%dT%H:%M:%S.%f'
-    assert datetime.strptime(link_dict['updatedOn'], date_format).date() == datetime.now().date()
+    assert datetime.strptime(link_dict['updatedOn'], date_format).date() == datetime.now(tz=timezone.utc).date()
 
 
 def test_create_eft_short_name_link_with_credit_and_owing(db, session, client, jwt, app):
@@ -100,6 +100,7 @@ def test_create_eft_short_name_link_with_credit_and_owing(db, session, client, j
     assert rv.status_code == 200
 
     invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                              status_code=InvoiceStatus.APPROVED.value,
                               total=50, paid=0).save()
 
     statement_settings = factory_statement_settings(payment_account_id=payment_account.id,
@@ -661,6 +662,42 @@ def test_search_eft_short_names(session, client, jwt, app):
     # create test data
     data_dict = create_eft_search_data()
 
+    # Assert statement id
+    target_statement_id = data_dict['single-linked']['statement_summary'][0]['statement_id']
+    rv = client.get(f'/api/v1/eft-shortnames?statementId={target_statement_id}', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 3
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert_short_name(result_dict['items'][0],
+                      data_dict['single-linked']['short_name'],
+                      data_dict['single-linked']['accounts'][0],
+                      data_dict['single-linked']['statement_summary'][0])
+
+    # Assert amount owing
+    rv = client.get('/api/v1/eft-shortnames?amountOwing=33.33', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 3
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert result_dict['items'][0]['shortName'] == 'TESTSHORTNAME3'
+    assert_short_name(result_dict['items'][0],
+                      data_dict['multi-linked']['short_name'],
+                      data_dict['multi-linked']['accounts'][1],
+                      data_dict['multi-linked']['statement_summary'][1]
+                      )
+
     # Assert search returns unlinked short names
     rv = client.get('/api/v1/eft-shortnames?state=UNLINKED', headers=headers)
     assert rv.status_code == 200
@@ -695,7 +732,7 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert_short_name(result_dict['items'][1],
                       data_dict['multi-linked']['short_name'],
                       data_dict['multi-linked']['accounts'][0],
-                      data_dict['multi-linked']['statement_summary'][0])
+                      None)  # None because we don't return a statement id if there are no invoices associated.
     assert_short_name(result_dict['items'][2],
                       data_dict['multi-linked']['short_name'],
                       data_dict['multi-linked']['accounts'][1],
@@ -733,7 +770,7 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert_short_name(result_dict['items'][0],
                       data_dict['multi-linked']['short_name'],
                       data_dict['multi-linked']['accounts'][0],
-                      data_dict['multi-linked']['statement_summary'][0])
+                      None)
 
     # Assert search query by no state will return all records
     rv = client.get('/api/v1/eft-shortnames', headers=headers)
@@ -756,7 +793,7 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert_short_name(result_dict['items'][2],
                       data_dict['multi-linked']['short_name'],
                       data_dict['multi-linked']['accounts'][0],
-                      data_dict['multi-linked']['statement_summary'][0])
+                      None)
     assert_short_name(result_dict['items'][3],
                       data_dict['multi-linked']['short_name'],
                       data_dict['multi-linked']['accounts'][1],
@@ -811,6 +848,23 @@ def test_search_eft_short_names(session, client, jwt, app):
 
     # Assert search account id
     rv = client.get('/api/v1/eft-shortnames?state=LINKED&accountId=1111', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name(result_dict['items'][0],
+                      data_dict['single-linked']['short_name'],
+                      data_dict['single-linked']['accounts'][0],
+                      data_dict['single-linked']['statement_summary'][0])
+
+    # Assert search account id list
+    rv = client.get('/api/v1/eft-shortnames?state=LINKED&accountIdList=1111,999', headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json

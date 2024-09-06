@@ -5,14 +5,14 @@ Revises: b6e28faea978
 Create Date: 2021-01-27 14:07:28.400759
 
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
 
-today = datetime.today().strftime('%Y-%m-%d')
+today = datetime.now(tz=timezone.utc).strftime('%Y-%m-%d')
 
 # revision identifiers, used by Alembic.
 revision = '6f0fe9f23d8c'
@@ -98,7 +98,7 @@ def upgrade():
         if service_fee_distribution_code_id is None:
             op.execute(
                 "insert into distribution_codes (created_on, name, client, responsibility_centre, service_line, stob, project_code, start_date, created_by)"
-                f" values ('{datetime.now()}', '{service_fee_memo_name}', '{service_fee_client}', '{service_fee_responsibility_centre}', '{service_fee_line}',"
+                f" values ('{datetime.now(tz=timezone.utc)}', '{service_fee_memo_name}', '{service_fee_client}', '{service_fee_responsibility_centre}', '{service_fee_line}',"
                 f"'{service_fee_stob}', '{service_fee_project_code}', '{today}', 'alembic');")
 
             # Get the inserted record id

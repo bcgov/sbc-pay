@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from flask import current_app
@@ -43,6 +43,8 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     """
     monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code('VS')
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
 
     pad_account = factory_create_pad_account(auth_account_id='1234',
                                              bank_number='001',
@@ -74,7 +76,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
-    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.today()).save()
+    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
 
     EjvPartnerDistributionTask.create_ejv_file()
 
@@ -82,7 +84,8 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice = Invoice.find_by_id(invoice.id)
     assert invoice.disbursement_status_code is None
 
-    day_after_time_delay = datetime.today() + timedelta(days=(current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS') + 1))
+    day_after_time_delay = datetime.now(tz=timezone.utc) + \
+        timedelta(days=(current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS') + 1))
     with freeze_time(day_after_time_delay):
         EjvPartnerDistributionTask.create_ejv_file()
         # Lookup invoice and assert disbursement status
@@ -105,7 +108,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
     ejv_file.disbursement_status_code = DisbursementStatus.COMPLETED.value
     invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-    invoice.refund_date = datetime.now()
+    invoice.refund_date = datetime.now(tz=timezone.utc)
     invoice.save()
 
     EjvPartnerDistributionTask.create_ejv_file()

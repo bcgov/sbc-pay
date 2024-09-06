@@ -7,8 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pay-api = {git = "https://github.com/seeker25/sbc-pay.git", branch = "20596_fixes", subdirectory = "pay-api"}
-gunicorn = "^21.2.0"
+pay-api = {git = "https://github.com/seeker25/sbc-pay.git", branch = "21519", subdirectory = "pay-api"}
 flask = "^3.0.2"
 flask-sqlalchemy = "^3.1.1"
 sqlalchemy = "^2.0.28"
@@ -29,7 +28,6 @@ launchdarkly-server-sdk = "^8.2.1"
 cx-oracle = "^8.3.0"
 more-itertools = "^10.2.0"
 pg8000 = "^1.30.5"
-setuptools = "^70.3.0"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Task to for linking routing slips."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from flask import current_app
@@ -333,7 +333,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             paid=0,
             payment_method_code=PaymentMethod.INTERNAL.value,
             corp_type_code='BCR',
-            created_on=datetime.now(),
+            created_on=datetime.now(tz=timezone.utc),
             created_by='SYSTEM',
             routing_slip=rs_number
         )
@@ -403,7 +403,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 applied_amount += inv.total
                 inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
                 inv.invoice_status_code = InvoiceStatus.PAID.value
-                inv.payment_date = datetime.now()
+                inv.payment_date = datetime.now(tz=timezone.utc)
 
         return applied_amount
 
@@ -442,7 +442,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 receipt_amount = receipt_balance_before_apply - float(receipt_response.json().get('unapplied_amount'))
                 receipt.receipt_amount = receipt_amount
                 receipt.invoice_id = invoice.id
-                receipt.receipt_date = datetime.now()
+                receipt.receipt_date = datetime.now(tz=timezone.utc)
                 receipt.flush()
 
                 invoice_from_cfs = CFSService.get_invoice(active_cfs_account, invoice_number)

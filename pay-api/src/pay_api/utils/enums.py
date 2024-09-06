@@ -211,10 +211,18 @@ class DisbursementStatus(Enum):
 
     ACKNOWLEDGED = 'ACKNOWLEDGED'
     COMPLETED = 'COMPLETED'
+    CANCELLED = 'CANCELLED'
     ERRORED = 'ERRORED'
     REVERSED = 'REVERSED'
     UPLOADED = 'UPLOADED'
     WAITING_FOR_JOB = 'WAITING_FOR_JOB'
+
+
+class DisbursementMethod(Enum):
+    """Disbursement type codes."""
+
+    EFT = 'EFT'
+    CHEQUE = 'CHQ'
 
 
 class Product(Enum):
@@ -222,6 +230,7 @@ class Product(Enum):
 
     BUSINESS = 'BUSINESS'
     NRO = 'NRO'
+    STRR = 'STRR'
 
 
 class RoutingSlipStatus(Enum):
@@ -273,6 +282,7 @@ class EjvFileType(Enum):
     PAYMENT = 'PAYMENT'
     DISBURSEMENT = 'DISBURSEMENT'
     REFUND = 'REFUND'
+    EFT_REFUND = 'EFT_REFUND'
     NON_GOV_DISBURSEMENT = 'NON_GOV_DISBURSEMENT'
     TRANSFER = 'TRANSFER'
 
@@ -356,6 +366,15 @@ class EFTPaymentActions(Enum):
     APPLY_CREDITS = 'APPLY_CREDITS'
 
 
+class EFTHistoricalTypes(Enum):
+    """EFT Short names historical transaction types."""
+
+    FUNDS_RECEIVED = 'FUNDS_RECEIVED'
+    INVOICE_REFUND = 'INVOICE_REFUND'
+    STATEMENT_PAID = 'STATEMENT_PAID'
+    STATEMENT_REVERSE = 'STATEMENT_REVERSE'
+
+
 class PaymentDetailsGlStatus(Enum):
     """Payment details GL status."""
 
@@ -363,6 +382,7 @@ class PaymentDetailsGlStatus(Enum):
     INPRG = 'INPRG'
     RJCT = 'RJCT'  # Should have refundglerrormessage
     CMPLT = 'CMPLT'
+    DECLINED = 'DECLINED'
 
 
 class QueueSources(Enum):
@@ -378,7 +398,7 @@ class EJVLinkType(Enum):
     """EJV link types for ejv_link table."""
 
     INVOICE = 'invoice'
-    REFUND = 'refund'
+    PARTIAL_REFUND = 'partial_refund'
 
 
 class StatementTemplate(Enum):

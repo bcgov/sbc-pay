@@ -228,10 +228,10 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             # do not update these for approval/rejections
             refund.routing_slip_id = rs_model.id
             refund.requested_by = kwargs['user'].user_name
-            refund.requested_date = datetime.now()
+            refund.requested_date = datetime.now(tz=timezone.utc)
         else:
             refund.decision_made_by = kwargs['user'].user_name
-            refund.decision_date = datetime.now()
+            refund.decision_date = datetime.now(tz=timezone.utc)
 
         refund.reason = reason
         if details := request.get('details'):
@@ -269,7 +269,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.invoice_id = invoice_id
         refund.reason = get_str_by_path(request, 'reason')
         refund.requested_by = kwargs['user'].user_name
-        refund.requested_date = datetime.now()
+        refund.requested_date = datetime.now(tz=timezone.utc)
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=invoice.payment_method_code
         )

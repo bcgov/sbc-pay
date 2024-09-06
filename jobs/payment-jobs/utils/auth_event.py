@@ -12,16 +12,16 @@ class AuthEvent:
     """Publishes to the auth-queue as an auth event though PUBSUB, this message gets sent to account-mailer after."""
 
     @staticmethod
-    def publish_lock_account_event(pay_account: PaymentAccountModel):
-        """Publish payment message to the mailer queue."""
+    def publish_lock_account_event(pay_account: PaymentAccountModel, additional_emails=''):
+        """Publish NSF lock account event to the auth queue."""
         try:
-            payload = AuthEvent._create_event_payload(pay_account)
+            payload = AuthEvent._create_event_payload(pay_account, additional_emails)
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_JOBS.value,
                     message_type=QueueMessageTypes.NSF_LOCK_ACCOUNT.value,
                     payload=payload,
-                    topic=current_app.config.get('AUTH_QUEUE_TOPIC')
+                    topic=current_app.config.get('AUTH_EVENT_TOPIC')
                 )
             )
         except Exception:  # NOQA pylint: disable=broad-except
@@ -32,9 +32,33 @@ class AuthEvent:
                             pay_account.auth_account_id}, {payload}.', level='error')
 
     @staticmethod
-    def _create_event_payload(pay_account):
+    def publish_unlock_account_event(payment_account: PaymentAccountModel):
+        """Publish NSF unlock event to the auth queue."""
+        try:
+            unlock_payload = {
+                'accountId': payment_account.auth_account_id,
+                'skipNotification': True
+            }
+            gcp_queue_publisher.publish_to_queue(
+                QueueMessage(
+                    source=QueueSources.PAY_JOBS.value,
+                    message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
+                    payload=unlock_payload,
+                    topic=current_app.config.get('AUTH_EVENT_TOPIC')
+                )
+            )
+        except Exception:  # NOQA pylint: disable=broad-except
+            current_app.logger.error('Error publishing NSF unlock event:', exc_info=True)
+            current_app.logger.warning(f'Notification to Queue failed for the Account {
+                                       payment_account.auth_account_id} - {payment_account.name}')
+            capture_message(f'Notification to Queue failed for the Account {
+                            payment_account.auth_account_id}, {unlock_payload}.', level='error')
+
+    @staticmethod
+    def _create_event_payload(pay_account, additional_emails=''):
         return {
             'accountId': pay_account.auth_account_id,
             'paymentMethod': PaymentMethod.EFT.value,
-            'suspensionReasonCode': SuspensionReasonCodes.OVERDUE_EFT.value
+            'suspensionReasonCode': SuspensionReasonCodes.OVERDUE_EFT.value,
+            'additionalEmails': additional_emails
         }

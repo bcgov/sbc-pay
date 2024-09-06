@@ -17,6 +17,7 @@
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
+from datetime import datetime, timezone
 import json
 from unittest.mock import patch
 
@@ -28,10 +29,11 @@ from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.distribution_code import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.models.invoice import Invoice
+from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     factory_invoice, get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
     get_gov_account_payload_with_no_revenue_account, get_linked_pad_account_payload, get_payment_request,
@@ -53,6 +55,10 @@ def test_account_purchase_history(session, client, jwt, app):
     invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
+    invoice.disbursement_date = datetime.now(tz=timezone.utc)
+    invoice.disbursement_reversal_date = datetime.now(tz=timezone.utc)
+    invoice.save()
+
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries', data=json.dumps({}),
                      headers=headers)
 
@@ -63,7 +69,7 @@ def test_account_purchase_history(session, client, jwt, app):
     assert invoice
     required_fields = ['id', 'corpTypeCode', 'createdOn', 'statusCode', 'total', 'serviceFees',
                        'paid', 'refund', 'folioNumber', 'createdName', 'paymentMethod', 'details',
-                       'businessIdentifier', 'createdBy', 'filingId']
+                       'businessIdentifier', 'createdBy', 'filingId', 'disbursementReversalDate', 'disbursementDate']
 
     for field in required_fields:
         assert field in invoice
@@ -720,7 +726,7 @@ def test_create_sandbox_accounts(session, client, jwt, app, pay_load, is_cfs_acc
         assert rv.json['cfsAccount']['status'] == CfsAccountStatus.ACTIVE.value
 
 
-def test_search_eft_accounts(session, client, jwt, app, admin_users_mock, non_active_accounts_auth_api_mock):
+def test_search_eft_accounts(session, client, jwt, app, admin_users_mock):
     """Assert that the endpoint returns 200."""
     data = get_premium_account_payload(payment_method=PaymentMethod.EFT.value)
     token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
@@ -738,6 +744,11 @@ def test_search_eft_accounts(session, client, jwt, app, admin_users_mock, non_ac
     assert rv.status_code == 202
     assert rv.json.get('accountId') == '911'
     client.patch('/api/v1/accounts/911/eft', data=json.dumps({'eftEnabled': True}), headers=headers)
+
+    payment_account_id = rv.json.get('id')
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account_id, PaymentMethod.EFT.value)
+    cfs_account.status = CfsAccountStatus.INACTIVE.value
+    cfs_account.save()
 
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -771,6 +782,7 @@ def test_switch_eft_account_when_outstanding_balance(session, client, jwt, app, 
     payment_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
 
     factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                    status_code=InvoiceStatus.APPROVED.value,
                     total=50, paid=0).save()
 
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',

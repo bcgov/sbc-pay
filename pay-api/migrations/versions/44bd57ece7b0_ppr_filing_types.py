@@ -7,7 +7,7 @@ Create Date: 2021-09-16 16:25:58.618648
 """
 from alembic import op
 import sqlalchemy as sa
-from datetime import date
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
@@ -51,11 +51,11 @@ def upgrade():
     op.bulk_insert(
         fee_schedule_table,
         [
-            {'filing_type_code': 'FSDIS', 'corp_type_code': 'PPR', 'fee_code': 'EN107', 'fee_start_date': date.today(),
+            {'filing_type_code': 'FSDIS', 'corp_type_code': 'PPR', 'fee_code': 'EN107', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'NCREG', 'corp_type_code': 'PPR', 'fee_code': 'EN107', 'fee_start_date': date.today(),
+            {'filing_type_code': 'NCREG', 'corp_type_code': 'PPR', 'fee_code': 'EN107', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None},
-            {'filing_type_code': 'NCCHG', 'corp_type_code': 'PPR', 'fee_code': 'EN107', 'fee_start_date': date.today(),
+            {'filing_type_code': 'NCCHG', 'corp_type_code': 'PPR', 'fee_code': 'EN107', 'fee_start_date': datetime.now(tz=timezone.utc),
              'fee_end_date': None}
         ]
     )

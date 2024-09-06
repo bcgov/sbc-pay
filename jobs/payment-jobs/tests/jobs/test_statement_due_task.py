@@ -17,7 +17,7 @@
 Test-Suite to ensure that the UnpaidStatementNotifyTask is working as expected.
 """
 import decimal
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from unittest.mock import patch
 
@@ -25,10 +25,11 @@ import pytest
 from faker import Faker
 from flask import Flask
 from freezegun import freeze_time
+from pay_api.models import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.services import Statement as StatementService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
-from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_previous_month_and_year
+from pay_api.utils.util import current_local_time
 
 import config
 from tasks.statement_task import StatementTask
@@ -61,7 +62,7 @@ def create_test_data(payment_method_code: str, payment_date: datetime,
     """Create seed data for tests."""
     account = factory_create_account(auth_account_id='1', payment_method_code=payment_method_code)
     invoice = factory_invoice(payment_account=account, created_on=payment_date,
-                              payment_method_code=payment_method_code, status_code=InvoiceStatus.CREATED.value,
+                              payment_method_code=payment_method_code, status_code=InvoiceStatus.APPROVED.value,
                               total=invoice_total)
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     statement_recipient = factory_statement_recipient(auth_user_id=account.auth_account_id,
@@ -79,24 +80,29 @@ def create_test_data(payment_method_code: str, payment_date: datetime,
     return account, invoice, inv_ref, statement_recipient, statement_settings
 
 
-def test_send_unpaid_statement_notification(setup, session):
+# 1. EFT Invoice created between or on January 1st <-> January 31st
+# 2. Statement Day February 1st
+# 3. 7 day reminder Feb 21th (due date - 7)
+# 4. Final reminder Feb 28th (due date client should be told to pay by this time)
+# 5. Overdue Date and account locked March 15th
+@pytest.mark.parametrize('test_name, action_on, action', [
+    ('reminder', datetime(2023, 2, 21, 8), StatementNotificationAction.REMINDER),
+    ('due', datetime(2023, 2, 28, 8), StatementNotificationAction.DUE),
+    ('overdue', datetime(2023, 3, 15, 8), StatementNotificationAction.OVERDUE)
+])
+def test_send_unpaid_statement_notification(setup, session, test_name, action_on, action):
     """Assert payment reminder event is being sent."""
-    last_month, last_year = get_previous_month_and_year()
-    previous_month_year = datetime(last_year, last_month, 5)
-
-    account, invoice, inv_ref, \
-        statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
-                                                                   previous_month_year,
-                                                                   StatementFrequency.MONTHLY.value,
-                                                                   351.50)
+    account, invoice, _, \
+        statement_recipient, _ = create_test_data(PaymentMethod.EFT.value,
+                                                  datetime(2023, 1, 1, 8),  # Hour 0 doesnt work for CI
+                                                  StatementFrequency.MONTHLY.value,
+                                                  351.50)
     assert invoice.payment_method_code == PaymentMethod.EFT.value
+    assert invoice.overdue_date
     assert account.payment_method == PaymentMethod.EFT.value
 
-    now = current_local_time().replace(hour=1)
-    _, last_day = get_first_and_last_dates_of_month(now.month, now.year)
-
-    # Generate statement for previous month - freeze time to the 1st of the current month
-    with freeze_time(current_local_time().replace(day=1, hour=1)):
+    # Generate statements runs at 8:01 UTC, currently set to 7:01 UTC, should be moved.
+    with freeze_time(datetime(2023, 2, 1, 8, 0, 1)):
         StatementTask.generate_statements()
 
     statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
@@ -110,32 +116,25 @@ def test_send_unpaid_statement_notification(setup, session):
     summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
     total_amount_owing = summary['total_due']
 
-    with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
-        with freeze_time(last_day):
-            StatementDueTask.process_unpaid_statements()
-            mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
-                                                                     statement=statements[0][0],
-                                                                     action=StatementNotificationAction.DUE,
-                                                                     due_date=last_day.date(),
-                                                                     emails=statement_recipient.email,
-                                                                     total_amount_owing=total_amount_owing))
-
-        with freeze_time(last_day - timedelta(days=7)):
-            StatementDueTask.process_unpaid_statements()
-            mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
-                                                                     statement=statements[0][0],
-                                                                     action=StatementNotificationAction.REMINDER,
-                                                                     due_date=last_day.date(),
-                                                                     emails=statement_recipient.email,
-                                                                     total_amount_owing=total_amount_owing))
-        with freeze_time(last_day + timedelta(days=7)):
-            StatementDueTask.process_unpaid_statements()
-            mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
-                                                                     statement=statements[0][0],
-                                                                     action=StatementNotificationAction.OVERDUE,
-                                                                     due_date=last_day.date(),
-                                                                     emails=statement_recipient.email,
-                                                                     total_amount_owing=total_amount_owing))
+    with patch('utils.auth_event.AuthEvent.publish_lock_account_event') as mock_auth_event:
+        with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
+            with freeze_time(action_on):
+                # Statement due task looks at the month before.
+                StatementDueTask.process_unpaid_statements(statement_date_override=datetime(2023, 2, 1, 0))
+                if action == StatementNotificationAction.OVERDUE:
+                    mock_auth_event.assert_called()
+                    assert statements[0][0].overdue_notification_date
+                    assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
+                    assert account.has_overdue_invoices
+                else:
+                    due_date = statements[0][0].to_date + relativedelta(months=1)
+                    mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
+                                                                             statement=statements[0][0],
+                                                                             action=action,
+                                                                             due_date=due_date,
+                                                                             emails=statement_recipient.email,
+                                                                             total_amount_owing=total_amount_owing,
+                                                                             short_name_links_count=0))
 
 
 def test_unpaid_statement_notification_not_sent(setup, session):
@@ -150,30 +149,23 @@ def test_unpaid_statement_notification_not_sent(setup, session):
 
 def test_overdue_invoices_updated(setup, session):
     """Assert invoices are transitioned to overdue status."""
-    invoice_date = current_local_time() + relativedelta(months=-1, day=5)
-
-    # Freeze time to the previous month so the overdue date is set properly and in the past for this test
-    with freeze_time(invoice_date):
-        account, invoice, inv_ref, \
-            statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
-                                                                       invoice_date,
-                                                                       StatementFrequency.MONTHLY.value,
-                                                                       351.50)
-
-    # Freeze time to the current month so the overdue date is in the future for this test
-    with freeze_time(current_local_time().replace(day=5)):
-        invoice2 = factory_invoice(payment_account=account, created_on=current_local_time().date(),
-                                   payment_method_code=PaymentMethod.EFT.value, status_code=InvoiceStatus.CREATED.value,
-                                   total=10.50)
-
+    invoice_date = current_local_time() - relativedelta(months=2, days=15)
+    account, invoice, _, \
+        _, _ = create_test_data(PaymentMethod.EFT.value,
+                                invoice_date,
+                                StatementFrequency.MONTHLY.value,
+                                351.50)
     assert invoice.payment_method_code == PaymentMethod.EFT.value
-    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    invoice2 = factory_invoice(payment_account=account, created_on=current_local_time().date() + relativedelta(hours=1),
+                               payment_method_code=PaymentMethod.EFT.value, status_code=InvoiceStatus.APPROVED.value,
+                               total=10.50)
+
     assert invoice2.payment_method_code == PaymentMethod.EFT.value
-    assert invoice2.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
     assert account.payment_method == PaymentMethod.EFT.value
 
-    # Freeze time to 1st of the month - should trigger overdue status update for previous month invoices
-    with freeze_time(current_local_time().replace(day=1)):
-        StatementDueTask.process_unpaid_statements()
-        assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
-        assert invoice2.invoice_status_code == InvoiceStatus.CREATED.value
+    StatementDueTask.process_unpaid_statements(auth_account_override=account.auth_account_id)
+    assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
+    assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value

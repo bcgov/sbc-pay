@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT TDI17 short name to BCROS account mapping."""
-from datetime import datetime
+from datetime import datetime, timezone
 from _decimal import Decimal
 from attrs import define
 
@@ -46,7 +46,7 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
 
     @classmethod

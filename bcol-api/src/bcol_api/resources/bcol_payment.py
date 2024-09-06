@@ -41,6 +41,7 @@ class AccountPayment(Resource):
     def post():
         """Create a payment record in BCOL."""
         try:
+            is_apply_charge = False
             if _jwt.validate_roles([Role.STAFF.value, Role.EDIT.value]) or _jwt.validate_roles([Role.SYSTEM.value]):
                 is_apply_charge = True
             elif _jwt.validate_roles([Role.ACCOUNT_HOLDER.value]):

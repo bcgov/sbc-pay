@@ -7,7 +7,7 @@ Create Date: 2021-09-23 15:01:20.107083
 """
 from alembic import op
 import sqlalchemy as sa
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, String, Boolean
@@ -67,7 +67,7 @@ def upgrade():
                 'filing_type_code': 'CSBFILE',
                 'corp_type_code': 'CSO',
                 'fee_code': 'EN110',
-                'fee_start_date': date.today(),
+                'fee_start_date': datetime.now(tz=timezone.utc),
                 'fee_end_date': None,
                 'service_fee_code': None
             }

@@ -480,6 +480,7 @@ def test_pad_nsf_reconciliations(session, app, client):
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account_id,
                                                                                     PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
+    assert pay_account.has_nsf_invoices
 
 
 def test_pad_reversal_reconciliations(session, app, client):
@@ -553,6 +554,7 @@ def test_pad_reversal_reconciliations(session, app, client):
 
     cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
+    assert pay_account.has_nsf_invoices
 
     # Receipt should be deleted
     assert ReceiptModel.find_by_id(receipt_id1) is None
@@ -709,7 +711,7 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     error_messages = [{'error': 'Test error message', 'row': 'row 2'}]
     mocker.patch('pay_queue.services.payment_reconciliations._process_file_content',
                  return_value=(True, error_messages))
-    mock_send_error_email = mocker.patch('pay_queue.services.payment_reconciliations._send_error_email')
+    mock_send_error_email = mocker.patch('pay_queue.services.payment_reconciliations.send_error_email')
 
     file_name: str = 'BCR_PAYMENT_APPL_20240619.csv'
     date = datetime.now(tz=timezone.utc).isoformat()
@@ -727,16 +729,11 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
 
-    mock_send_error_email.assert_called_once_with(
-        file_name,
-        'payment-sftp',
-        error_messages,
-        mocker.ANY,
-        CasSettlementModel.__tablename__
-    )
-
     mock_send_error_email.assert_called_once()
     call_args = mock_send_error_email.call_args
-    assert call_args[0][0] == file_name
-    assert call_args[0][1] == 'payment-sftp'
-    assert call_args[0][2] == error_messages
+    email_params = call_args[0][0]
+    assert email_params.subject == 'Payment Reconciliation Failure'
+    assert email_params.file_name == file_name
+    assert email_params.minio_location == 'payment-sftp'
+    assert email_params.error_messages == error_messages
+    assert email_params.table_name == CasSettlementModel.__tablename__

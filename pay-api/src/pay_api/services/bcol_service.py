@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage PayBC interaction."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from flask import current_app
@@ -128,7 +128,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Get receipt from bcol for the receipt number or get receipt against invoice number."""
         current_app.logger.debug('<get_receipt')
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
-        return f'{invoice_reference.invoice_number}', datetime.now(), invoice.total
+        return f'{invoice_reference.invoice_number}', datetime.now(tz=timezone.utc), invoice.total
 
     def _get_fee_code(self, service_fees: float, corp_type: str, is_staff: bool = False):
         """Return BCOL fee code."""

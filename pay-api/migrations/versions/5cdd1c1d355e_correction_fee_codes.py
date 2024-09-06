@@ -5,7 +5,7 @@ Revises: ac01134753e9
 Create Date: 2020-02-13 13:43:53.035222
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
@@ -52,7 +52,7 @@ def upgrade():
                 "filing_type_code": "CRCTN",
                 "corp_type_code": "BC",
                 "fee_code": "EN101",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": "PRI01",
@@ -61,7 +61,7 @@ def upgrade():
                 "filing_type_code": "CRCTN",
                 "corp_type_code": "CP",
                 "fee_code": "EN101",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": None,
                 "priority_fee_code": "PRI01",

@@ -13,8 +13,11 @@
 # limitations under the License.
 
 """This manages all of the email notification service."""
+import os
+from typing import Dict
 
 from flask import current_app
+from jinja2 import Environment, FileSystemLoader
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
@@ -51,3 +54,35 @@ def send_email(recipients: list, subject: str, html_body: str, **kwargs):
             current_app.logger.error(f'Error sending email to {recipient}: {e}')
 
     return success
+
+
+def _render_shortname_details_body(shortname: str, amount: str, comment: str, shortname_id: str) -> str:
+    """Render the email body using the provided template."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root_dir = os.path.dirname(current_dir)
+    templates_dir = os.path.join(project_root_dir, 'templates')
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+    template = env.get_template('eft_refund_notification.html')
+
+    url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{shortname_id}"
+    params = {
+        'shortname': shortname,
+        'refundAmount': amount,
+        'comment': comment,
+        'url': url
+    }
+    return template.render(params)
+
+
+def _render_payment_reversed_template(params: Dict) -> str:
+    """Render short name statement reverse payment template."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root_dir = os.path.dirname(current_dir)
+    templates_dir = os.path.join(project_root_dir, 'templates')
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+    template = env.get_template('eft_reverse_payment.html')
+
+    statement_url = f"{current_app.config.get('AUTH_WEB_URL')}/account/{params['accountId']}/settings/statements"
+    params['statementUrl'] = statement_url
+
+    return template.render(params)

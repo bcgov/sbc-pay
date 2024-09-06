@@ -352,7 +352,6 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         service_fees: float = 0
 
-        # TODO for system accounts with role EXCLUDE_SERVICE_FEES, do not charge service fees for now.
         if not user.is_staff() and \
                 not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles) \
                 and fee_schedule_model.fee.amount > 0 and fee_schedule_model.service_fee:

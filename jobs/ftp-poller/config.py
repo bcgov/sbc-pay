@@ -74,14 +74,17 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_SFTP_DIRECTORY = os.getenv('CGI_SFTP_DIRECTORY', '/data')
 
     # EFT FTP CONFIG
+    BCREG_EFT_FTP_PRIVATE_KEY_LOCATION = os.getenv('BCREG_EFT_FTP_PRIVATE_KEY_LOCATION',
+                                                   '/ftp-poller/key/eft_sftp_priv_key')
     EFT_SFTP_HOST = os.getenv('EFT_SFTP_HOST', 'localhost')
     EFT_SFTP_USER_NAME = os.getenv('EFT_SFTP_USER_NAME', 'foo')
     EFT_SFTP_PASSWORD = os.getenv('EFT_SFTP_PASSWORD', '')
-    EFT_SFTP_DIRECTORY = os.getenv('EFT_SFTP_DIRECTORY', '/eft')
-    EFT_SFTP_BACKUP_DIRECTORY = os.getenv('EFT_SFTP_BACKUP_DIRECTORY', '/backup')
+    EFT_SFTP_DIRECTORY = os.getenv('EFT_SFTP_DIRECTORY', '/outgoing')
+    EFT_SFTP_BACKUP_DIRECTORY = os.getenv('EFT_SFTP_BACKUP_DIRECTORY', '/outgoing-backup')
     EFT_SFTP_VERIFY_HOST = os.getenv('EFT_SFTP_VERIFY_HOST', 'True')
     EFT_SFTP_PORT = os.getenv('EFT_SFTP_PORT', 22)
     EFT_SFTP_HOST_KEY = os.getenv('EFT_SFTP_HOST_KEY', '')
+    BCREG_EFT_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_EFT_FTP_PRIVATE_KEY_PASSPHRASE', '')
 
     # CGI File specific configs
     CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', '.TRG')
@@ -111,7 +114,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
             'FTP_PRIVATE_KEY_LOCATION': BCREG_CGI_FTP_PRIVATE_KEY_LOCATION,  # different user.so not same as CAS
             'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE
         },
-        # FUTURE - specific configuration values TBD - initial set up code
         'EFT': {
             'SFTP_HOST': EFT_SFTP_HOST,
             'SFTP_USERNAME': EFT_SFTP_USER_NAME,
@@ -119,8 +121,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
             'SFTP_VERIFY_HOST': EFT_SFTP_VERIFY_HOST,
             'SFTP_HOST_KEY': EFT_SFTP_HOST_KEY,
             'SFTP_PORT': EFT_SFTP_PORT,
-            'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
-            'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
+            'FTP_PRIVATE_KEY_LOCATION': BCREG_EFT_FTP_PRIVATE_KEY_LOCATION,
+            'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_EFT_FTP_PRIVATE_KEY_PASSPHRASE
         }
     }
 

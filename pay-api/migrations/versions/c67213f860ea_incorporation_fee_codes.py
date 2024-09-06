@@ -5,7 +5,7 @@ Revises: 9c8a93ba9da2
 Create Date: 2021-06-10 14:20:33.590691
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, String, Boolean, text, Integer
@@ -72,7 +72,7 @@ def upgrade():
                 "filing_type_code": "BCINC",
                 "corp_type_code": "LTD",
                 "fee_code": "EN109",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": "FUT01",
                 "priority_fee_code": "PRI01",
@@ -82,7 +82,7 @@ def upgrade():
                 "filing_type_code": "BCINC",
                 "corp_type_code": "BC",
                 "fee_code": "EN109",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": "FUT01",
                 "priority_fee_code": "PRI01",
@@ -92,7 +92,7 @@ def upgrade():
                 "filing_type_code": "BCINC",
                 "corp_type_code": "CCC",
                 "fee_code": "EN109",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": "FUT01",
                 "priority_fee_code": "PRI01",
@@ -102,7 +102,7 @@ def upgrade():
                 "filing_type_code": "BCINC",
                 "corp_type_code": "ULC",
                 "fee_code": "EN113",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None,
                 "future_effective_fee_code": "FUT01",
                 "priority_fee_code": "PRI01",

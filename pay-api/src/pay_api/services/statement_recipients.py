@@ -144,7 +144,7 @@ class StatementRecipients:  # pylint:disable=too-many-instance-attributes
         Update the payment Account.
         Update the recepients
         """
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        payment_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         if payment_account is None:
             payment_account = PaymentAccountModel()
             payment_account.auth_account_id = auth_account_id

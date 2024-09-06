@@ -106,3 +106,13 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             auth_response = {'account': {'id': user.user_name,
                                          'paymentInfo': {'methodOfPayment': PaymentMethod.DIRECT_PAY.value}}}
     return auth_response
+
+
+@user_context
+def get_account_admin_users(auth_account_id, **kwargs):
+    """Retrieve account admin users."""
+    return RestService.get(
+        current_app.config.get('AUTH_API_ENDPOINT') +
+        f'orgs/{auth_account_id}/members?status=ACTIVE&roles=ADMIN',
+        kwargs['user'].bearer_token, AuthHeaderType.BEARER,
+        ContentType.JSON).json()

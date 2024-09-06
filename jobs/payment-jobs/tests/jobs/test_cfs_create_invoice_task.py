@@ -46,7 +46,7 @@ def test_create_pad_invoice_single_transaction(session):
     """Assert PAD invoices are created."""
     # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
@@ -70,7 +70,7 @@ def test_create_pad_invoice_mixed_pli_values(session):
     """Assert PAD invoices are created with total = 0, service fees > 0."""
     # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=1.5,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
@@ -101,7 +101,7 @@ def test_create_rs_invoice_single_transaction(session):
     # Create an account and an invoice for the account
     rs_number = '123'
     account = factory_routing_slip_account(number=rs_number, status=CfsAccountStatus.ACTIVE.value)
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
                               status_code=InvoiceStatus.APPROVED.value,
@@ -147,7 +147,7 @@ def test_create_pad_invoice_single_transaction_run_again(session):
     """Assert PAD invoices are created."""
     # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
@@ -179,7 +179,7 @@ def test_create_pad_invoice_for_frozen_accounts(session):
     """Assert PAD invoices are created."""
     # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.FREEZE.value)
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
@@ -204,7 +204,7 @@ def test_create_pad_invoice_multiple_transactions(session):
     """Assert PAD invoices are created."""
     # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
@@ -229,7 +229,7 @@ def test_create_pad_invoice_before_cutoff(session):
     """Assert PAD invoices are created."""
     # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
-    previous_day = datetime.now() - timedelta(days=2)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=2)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
@@ -254,7 +254,7 @@ def test_create_online_banking_transaction(session):
     """Assert Online Banking invoices are created."""
     # Create an account and an invoice for the account
     account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10, payment_method_code=None)
 
@@ -280,12 +280,12 @@ def test_create_eft_invoice(session):
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
-                              status_code=InvoiceStatus.CREATED.value, payment_method_code=PaymentMethod.EFT.value)
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
 
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
     CreateInvoiceTask.create_invoices()
 
@@ -294,7 +294,7 @@ def test_create_eft_invoice(session):
         find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert invoice_reference
-    assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
 
 def test_create_eft_invoice_rerun(session):
@@ -303,14 +303,14 @@ def test_create_eft_invoice_rerun(session):
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
-                              status_code=InvoiceStatus.CREATED.value, payment_method_code=PaymentMethod.EFT.value)
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
 
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     invoice_response = {'invoice_number': '10021', 'pbc_ref_number': '10005', 'party_number': '11111',
                         'party_name': 'invoice'}
-    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
     with patch.object(CFSService, 'create_account_invoice', return_value=invoice_response) as mock_cfs:
         CreateInvoiceTask.create_invoices()
@@ -321,7 +321,7 @@ def test_create_eft_invoice_rerun(session):
         find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
-    assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
     with patch.object(CFSService, 'create_account_invoice', return_value=invoice_response) as mock_cfs:
         CreateInvoiceTask.create_invoices()
@@ -334,13 +334,13 @@ def test_create_eft_invoice_on_frozen_account(session):
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
-                              status_code=InvoiceStatus.CREATED.value, payment_method_code=PaymentMethod.EFT.value)
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
 
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
     CreateInvoiceTask.create_invoices()
 
@@ -349,7 +349,7 @@ def test_create_eft_invoice_on_frozen_account(session):
         find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref is None
-    assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
 
 def test_create_eft_invoices(session):
@@ -358,14 +358,14 @@ def test_create_eft_invoices(session):
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
-                              status_code=InvoiceStatus.CREATED.value, payment_method_code=PaymentMethod.EFT.value)
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
     # Create another invoice for this account
     invoice2 = factory_invoice(payment_account=account, created_on=previous_day, total=10,
-                               status_code=InvoiceStatus.CREATED.value, payment_method_code=PaymentMethod.EFT.value)
+                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
     fee_schedule2 = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTADD')
     line2 = factory_payment_line_item(invoice2.id, fee_schedule_id=fee_schedule2.fee_schedule_id)
     line2.save()
@@ -373,7 +373,7 @@ def test_create_eft_invoices(session):
     CreateInvoiceTask.create_invoices()
     invoice2 = InvoiceModel.find_by_id(invoice2.id)
     invoice = InvoiceModel.find_by_id(invoice.id)
-    assert invoice2.invoice_status_code == invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice2.invoice_status_code == invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
 
 def test_create_eft_invoice_before_cutoff(session):
@@ -382,12 +382,12 @@ def test_create_eft_invoice_before_cutoff(session):
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=2)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
-                              status_code=InvoiceStatus.CREATED.value, payment_method_code=PaymentMethod.EFT.value)
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
     CreateInvoiceTask.create_invoices()
 
@@ -396,4 +396,4 @@ def test_create_eft_invoice_before_cutoff(session):
         find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref is not None  # As EFT will be summed up for all outstanding invoices
-    assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value

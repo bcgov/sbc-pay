@@ -66,22 +66,25 @@ def post_account_payment(account_id: str):
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         if credit_request.get('paymentMethod') in \
-                (PaymentMethod.EFT.value, PaymentMethod.WIRE.value, PaymentMethod.DRAWDOWN.value):
+                (PaymentMethod.EFT.value, PaymentMethod.DRAWDOWN.value):
             response, status = PaymentService.create_payment_receipt(
                 auth_account_id=account_id,
                 credit_request=credit_request
             ).asdict(), HTTPStatus.CREATED
     else:
         is_retry_payment: bool = request.args.get('retryFailedPayment', 'false').lower() == 'true'
-        pay_outstanding_balance: bool = False
+        pay_outstanding_balance = False
+        all_invoice_statuses = False
 
         if flags.is_on('enable-eft-payment-method', default=False):
             pay_outstanding_balance = request.args.get('payOutstandingBalance', 'false').lower() == 'true'
+            all_invoice_statuses = request.args.get('allInvoiceStatuses', 'false').lower() == 'true'
 
         response, status = PaymentService.create_account_payment(
             auth_account_id=account_id,
             is_retry_payment=is_retry_payment,
-            pay_outstanding_balance=pay_outstanding_balance
+            pay_outstanding_balance=pay_outstanding_balance,
+            all_invoice_statuses=all_invoice_statuses,
         ).asdict(), HTTPStatus.CREATED
 
     current_app.logger.debug('>post_account_payment')

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Model to handle invoice references from third party systems."""
 from __future__ import annotations
+from datetime import datetime, timezone
+from typing import List
 
 from marshmallow import fields
 from sqlalchemy import ForeignKey
@@ -41,8 +43,10 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'created_on',
             'invoice_id',
             'invoice_number',
+            'is_consolidated',
             'reference_number',
             'status_code'
         ]
@@ -50,6 +54,8 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
+    created_on = db.Column(db.DateTime, nullable=True, default=lambda: datetime.now(tz=timezone.utc))
+    is_consolidated = db.Column(db.Boolean, nullable=False, default=False, server_default='f', index=True)
 
     invoice_number = db.Column(db.String(50), nullable=True, index=True)
     reference_number = db.Column(db.String(50), nullable=True)
@@ -57,15 +63,38 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
         'invoice_reference_status_codes.code'), nullable=False, index=True)
 
     @classmethod
-    def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str) -> InvoiceReference:
-        """Return active Invoice Reference by invoice id."""
-        return cls.query.filter_by(invoice_id=invoice_id).filter_by(status_code=status_code).one_or_none()
+    def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str, exclude_consolidated=False) \
+            -> InvoiceReference:
+        """Return Invoice Reference by invoice id by status_code."""
+        query = cls.query.filter_by(invoice_id=invoice_id).filter_by(status_code=status_code)
+        if exclude_consolidated:
+            query = query.filter(InvoiceReference.is_consolidated.is_(False))
+        if status_code == InvoiceReferenceStatus.CANCELLED.value:
+            return query.order_by(InvoiceReference.id.desc()).first()
+        return query.one_or_none()
 
     @classmethod
     def find_any_active_reference_by_invoice_number(cls, invoice_number: str) -> InvoiceReference:
         """Return any active Invoice Reference by invoice number."""
         return cls.query.filter_by(invoice_number=invoice_number) \
             .filter_by(status_code=InvoiceReferenceStatus.ACTIVE.value).first()
+
+    @classmethod
+    def find_non_consolidated_invoice_numbers(cls, invoice_number: str) -> List[str]:
+        """Find the original invoice numbers that are not consolidated."""
+        consolidated_invoice_references = db.session.query(InvoiceReference.invoice_id) \
+            .filter(InvoiceReference.invoice_number == invoice_number) \
+            .filter(InvoiceReference.is_consolidated.is_(True)) \
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.COMPLETED.value) \
+            .distinct(InvoiceReference.invoice_id)
+
+        original_invoice_references = db.session.query(InvoiceReference.invoice_number) \
+            .filter(InvoiceReference.is_consolidated.is_(False)) \
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.CANCELLED.value) \
+            .filter(InvoiceReference.invoice_id.in_(consolidated_invoice_references)) \
+            .distinct(InvoiceReference.invoice_number) \
+            .all()
+        return original_invoice_references
 
 
 class InvoiceReferenceSchema(BaseSchema):  # pylint: disable=too-many-ancestors

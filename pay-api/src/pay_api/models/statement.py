@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
+from __future__ import annotations
+from typing import List
 
+from attr import define
 import pytz
 from marshmallow import fields
 from sqlalchemy import ForeignKey, Integer, cast
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
+from pay_api.utils.converter import Converter
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -47,7 +51,9 @@ class Statement(BaseModel):
             'is_interim_statement',
             'notification_date',
             'notification_status_code',
+            'overdue_notification_date',
             'payment_account_id',
+            'payment_methods',
             'statement_settings_id',
             'to_date'
         ]
@@ -61,10 +67,11 @@ class Statement(BaseModel):
     from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
     is_interim_statement = db.Column('is_interim_statement', db.Boolean(), nullable=False, default=False)
-
+    overdue_notification_date = db.Column(db.Date, default=None, nullable=True)
     created_on = db.Column(db.Date, default=None, nullable=False)
     notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
+    payment_methods = db.Column(db.String(100), nullable=True)
 
     @classmethod
     def find_all_statements_by_notification_status(cls, statuses):
@@ -73,14 +80,15 @@ class Statement(BaseModel):
             .filter(Statement.notification_status_code.in_(statuses)).all()
 
     @classmethod
-    def find_all_payments_and_invoices_for_statement(cls, statement_id: str):
+    def find_all_payments_and_invoices_for_statement(cls, statement_id: str) -> List[Invoice]:
         """Find all payment and invoices specific to a statement."""
         # Import from here as the statement invoice already imports statement and causes circular import.
         from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
 
         query = db.session.query(Invoice) \
             .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
-            .filter(StatementInvoices.statement_id == cast(statement_id, Integer))
+            .filter(StatementInvoices.statement_id == cast(statement_id, Integer)) \
+            .order_by(Invoice.id.asc())
 
         return query.all()
 
@@ -97,5 +105,40 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     from_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     is_overdue = fields.Boolean()
-    payment_methods = fields.List(fields.String())
+    payment_methods = fields.Method(serialize='payment_methods_to_list')
     amount_owing = fields.Float(load_default=0)
+
+    def payment_methods_to_list(self, target):
+        """Convert comma separated string to list."""
+        return target.payment_methods.split(',') if target.payment_methods else []
+
+
+@define
+class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+    """Schema used for Statements to be converted into dtos."""
+
+    id: int
+    is_interim_statement: bool
+    frequency: str
+    from_date: str
+    payment_methods: str
+    to_date: str
+
+    @classmethod
+    def from_row(cls, row):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+
+        """
+        return cls(id=row.id, frequency=row.frequency, from_date=row.from_date,
+                   is_interim_statement=row.is_interim_statement, payment_methods=row.payment_methods,
+                   to_date=row.to_date)
+
+    @classmethod
+    def dao_to_dict(cls, statement_daos: List[Statement]) -> dict[StatementDTO]:
+        """Convert from DAO to DTO dict."""
+        statements_dto = [StatementDTO.from_row(statement) for statement in statement_daos]
+        statements_dict = Converter().unstructure(statements_dto)
+        statements_dict = [Converter().remove_nones(statement_dict) for statement_dict in statements_dict]
+        return statements_dict

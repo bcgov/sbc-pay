@@ -28,8 +28,6 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
     """Create CFS account for routing slip."""
     routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_payment_account_id(pay_account.id)
     try:
-        # TODO add status check so that LINKED etc can be skipped.
-        # for RS , entity/business number=party name ; RS Number=site name
         cfs_account_details: Dict[str, any] = CFSService.create_cfs_account(
             identifier=pay_account.name,
             contact_info={},

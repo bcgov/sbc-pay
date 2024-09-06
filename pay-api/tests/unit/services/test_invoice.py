@@ -22,8 +22,29 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
 from pay_api.services.invoice import Invoice as Invoice_service
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
     factory_invoice, factory_payment, factory_payment_account, factory_payment_line_item)
+
+
+def test_invoice_eft_created_return_completed(session):
+    """Assert that the invoice is saved to the table."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    i = factory_invoice(status_code=InvoiceStatus.APPROVED.value,
+                        payment_account=payment_account,
+                        payment_method_code=PaymentMethod.EFT.value)
+    i.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    invoice = Invoice_service.find_by_id(i.id, skip_auth_check=True).asdict()
+
+    assert invoice is not None
+    assert invoice['payment_method'] == PaymentMethod.EFT.value
+    assert invoice['status_code'] == InvoiceStatus.APPROVED.value
 
 
 def test_invoice_saved_from_new(session):
@@ -45,7 +66,7 @@ def test_invoice_saved_from_new(session):
     assert invoice.refund is None
     assert invoice.payment_date is None
     assert invoice.total is not None
-    assert invoice.paid is None
+    assert invoice.paid is not None
     assert invoice.payment_line_items is not None
     assert invoice.folio_number is not None
     assert invoice.business_identifier is not None
@@ -73,7 +94,7 @@ def test_invoice_find_by_id(session):
     assert invoice.refund is None
     assert invoice.payment_date is None
     assert invoice.total is not None
-    assert invoice.paid is None
+    assert invoice.paid is not None
     assert not invoice.payment_line_items
 
 
@@ -95,7 +116,7 @@ def test_invoice_with_temproary_business_identifier(session):
     assert invoice.refund is None
     assert invoice.payment_date is None
     assert invoice.total is not None
-    assert invoice.paid is None
+    assert invoice.paid is not None
     assert invoice.payment_line_items is not None
     assert invoice.folio_number is not None
     assert invoice.business_identifier is not None

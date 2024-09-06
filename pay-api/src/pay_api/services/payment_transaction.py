@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 import humps
@@ -225,7 +225,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         )
 
         # Check if there is a payment created. If not, create a payment record with status CREATED
-        payment: Payment = Payment.find_payment_for_invoice(invoice_id)
+        payment = Payment.find_payment_for_invoice(invoice_id)
         if not payment:
             # Transaction is against payment, so create a payment if not present.
             invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
@@ -261,7 +261,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if existing_transaction and existing_transaction.status_code != TransactionStatus.CANCELLED.value:
             current_app.logger.info('Found existing transaction. Setting as CANCELLED.')
             existing_transaction.status_code = TransactionStatus.CANCELLED.value
-            existing_transaction.transaction_end_time = datetime.now()
+            existing_transaction.transaction_end_time = datetime.now(tz=timezone.utc)
             existing_transaction.save()
         transaction = PaymentTransaction()
         transaction.payment_id = payment.id
@@ -345,8 +345,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         6. Change the status of Payment
         7. Update the transaction record
         """
-        #  TODO for now assumption is this def will be called only for credit card, bcol and internal payments.
-        #  When start to look into the PAD and Online Banking may need to refactor here
+        # Assumption is this def will be called only for credit card, bcol and internal payments.
+        # Doesn't support PAD or ONLINE BANKING.
         transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id(
             transaction_id
         )
@@ -406,7 +406,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             transaction_dao.pay_system_reason_code = pay_system_reason_code
 
         # Save response URL
-        transaction_dao.transaction_end_time = datetime.now()
+        transaction_dao.transaction_end_time = datetime.now(tz=timezone.utc)
         transaction_dao.pay_response_url = pay_response_url
         transaction_dao = transaction_dao.save()
 
@@ -414,9 +414,11 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             active_failed_payments = Payment.get_failed_payments(auth_account_id=payment_account.auth_account_id)
             current_app.logger.info('active_failed_payments %s', active_failed_payments)
-            if not active_failed_payments:
+            # Note this will take some thought if we have multiple payment methods running at once in the future.
+            if not active_failed_payments or payment_account.has_overdue_invoices:
                 PaymentAccount.unlock_frozen_accounts(payment_id=payment.id,
-                                                      payment_account_id=payment.payment_account_id)
+                                                      payment_account_id=payment.payment_account_id,
+                                                      invoice_number=payment.invoice_number)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
 
@@ -427,7 +429,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     def _update_receipt_details(invoices, payment, receipt_details, transaction_dao):
         """Update receipt details to invoice."""
         payment.paid_amount = receipt_details[2]
-        payment.payment_date = datetime.now()
+        payment.payment_date = datetime.now(tz=timezone.utc)
         transaction_dao.status_code = TransactionStatus.COMPLETED.value
 
         if float(payment.paid_amount) < float(payment.invoice_amount):
@@ -444,11 +446,11 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 PaymentTransaction.__save_receipt(invoice, receipt_details)
                 invoice.paid = invoice.total  # set the paid amount as total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice.payment_date = datetime.now()
+                invoice.payment_date = datetime.now(tz=timezone.utc)
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-                # TODO If it's not PAD, publish message. Refactor and move to pay system service later.
-                if invoice.payment_method_code != PaymentMethod.PAD.value:
+                # If it's not PAD/EFT, publish message. Refactor and move to pay system service later.
+                if invoice.payment_method_code not in [PaymentMethod.PAD.value, PaymentMethod.EFT.value]:
                     current_app.logger.info(f'Release record for invoice : {invoice.id} ')
                     PaymentTransaction.publish_status(transaction_dao, invoice)
 
@@ -506,7 +508,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                     source=QueueSources.PAY_API.value,
                     message_type=QueueMessageTypes.PAYMENT.value,
                     payload=PaymentTransaction.create_event_payload(invoice, status_code),
-                    topic=get_topic_for_corp_type(invoice.corp_type_code)
+                    topic=get_topic_for_corp_type(invoice.corp_type_code),
+                    corp_type=invoice.corp_type_code
                 )
             )
 

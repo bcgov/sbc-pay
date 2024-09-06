@@ -17,7 +17,7 @@
 Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from flask import current_app
@@ -39,7 +39,7 @@ def test_unpaid_one_invoice(session):
     # Create an invoice for this account
     cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=10,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
@@ -51,21 +51,21 @@ def test_unpaid_one_invoice(session):
     time_delay = current_app.config['NOTIFY_AFTER_DAYS']
 
     # invoke one day before the time delay ;shud be no mail
-    day_after_time_delay = datetime.today() + timedelta(days=(time_delay - 1))
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=(time_delay - 1))
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             mock_mailer.assert_not_called()
 
     # exact day , mail shud be invoked
-    day_after_time_delay = datetime.today() + timedelta(days=time_delay)
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay)
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             mock_mailer.assert_called()
 
     # after the time delay day ;shud not get sent
-    day_after_time_delay = datetime.today() + timedelta(days=time_delay + 1)
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay + 1)
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
@@ -80,27 +80,27 @@ def test_unpaid_multiple_invoice(session):
     # Create an invoice for this account
     cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=10,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    factory_invoice(payment_account=account, created_on=datetime.now(), total=200,
+    factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=200,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     factory_invoice(payment_account=account, created_on=previous_day, total=2000,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
     # created two invoices ; so two events
     time_delay = current_app.config['NOTIFY_AFTER_DAYS']
-    day_after_time_delay = datetime.today() + timedelta(days=time_delay)
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay)
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             assert mock_mailer.call_count == 1
 
     # created one invoice yesterday ; so assert one
-    day_after_time_delay = datetime.today() + timedelta(days=time_delay - 1)
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay - 1)
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
@@ -114,13 +114,13 @@ def test_unpaid_invoice_pad(session):
     # Create an invoice for this account
     cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=10,
                               cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
     # invoke today ;no mail
     time_delay = current_app.config['NOTIFY_AFTER_DAYS']
-    day_after_time_delay = datetime.today() + timedelta(days=time_delay)
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay)
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
@@ -138,24 +138,24 @@ def test_unpaid_single_invoice_total(session):
     total_invoice1 = 100
     total_invoice2 = 200
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice1,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=total_invoice1,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     factory_invoice(payment_account=account, created_on=previous_day, total=total_invoice2,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
     # created two invoices ; so two events
     time_delay = current_app.config['NOTIFY_AFTER_DAYS']
-    day_after_time_delay = datetime.today() + timedelta(days=time_delay)
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay)
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice1 + total_invoice2
 
     # created one invoice yesterday ; so assert one
-    day_after_time_delay = datetime.today() + timedelta(days=time_delay - 1)
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay - 1)
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
@@ -175,20 +175,21 @@ def test_unpaid_multiple_invoice_total(session):
     total_invoice2 = 200
     total_invoice3 = 300
 
-    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice1,
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=total_invoice1,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice2,
+    factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc), total=total_invoice2,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
     # this is future invoice
-    factory_invoice(payment_account=account, created_on=datetime.now() + timedelta(days=1), total=total_invoice3,
+    factory_invoice(payment_account=account, created_on=datetime.now(tz=timezone.utc) + timedelta(days=1),
+                    total=total_invoice3,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
     # created two invoices ; so two events
     time_delay = current_app.config['NOTIFY_AFTER_DAYS']
-    day_after_time_delay = datetime.today() + timedelta(days=time_delay)
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay)
     total_amount = total_invoice1 + total_invoice2 + total_invoice3
     # total amount is the same for any day invocation
     with freeze_time(day_after_time_delay):
@@ -197,7 +198,7 @@ def test_unpaid_multiple_invoice_total(session):
             assert mock_mailer.call_count == 1
             assert mock_mailer.call_args.args[2].get('transactionAmount') == total_amount
 
-    one_more_day_delay = datetime.today() + timedelta(days=time_delay + 1)
+    one_more_day_delay = datetime.now(tz=timezone.utc) + timedelta(days=time_delay + 1)
     with freeze_time(one_more_day_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()

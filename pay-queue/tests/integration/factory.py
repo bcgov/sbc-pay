@@ -17,11 +17,11 @@
 Test-Suite to ensure that the service is working as expected.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, Refund, RoutingSlip, StatementSettings)
+    PaymentTransaction, Receipt, Refund, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, RoutingSlipStatus, TransactionStatus)
@@ -45,6 +45,32 @@ def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date
         from_date=from_date,
         to_date=to_date
     ).save()
+
+
+def factory_statement(
+        frequency: str = 'WEEKLY',
+        payment_account_id: str = None,
+        from_date: datetime = datetime.now(tz=timezone.utc),
+        to_date: datetime = datetime.now(tz=timezone.utc),
+        statement_settings_id: str = None,
+        created_on: datetime = datetime.now(tz=timezone.utc),
+        payment_methods: str = PaymentMethod.EFT.value):
+    """Return Factory."""
+    return Statement(frequency=frequency,
+                     statement_settings_id=statement_settings_id,
+                     payment_account_id=payment_account_id,
+                     from_date=from_date,
+                     to_date=to_date,
+                     created_on=created_on,
+                     payment_methods=payment_methods).save()
+
+
+def factory_statement_invoices(
+        statement_id: str,
+        invoice_id: str):
+    """Return Factory."""
+    return StatementInvoices(statement_id=statement_id,
+                             invoice_id=invoice_id).save()
 
 
 def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceStatus.CREATED.value,
@@ -93,11 +119,13 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int = 1, filing_
 
 
 def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021',
-                              status_code: str = InvoiceReferenceStatus.ACTIVE.value):
+                              status_code: str = InvoiceReferenceStatus.ACTIVE.value,
+                              is_consolidated=False):
     """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
                             status_code=status_code,
-                            invoice_number=invoice_number).save()
+                            invoice_number=invoice_number,
+                            is_consolidated=is_consolidated).save()
 
 
 def factory_receipt(invoice_id: int, receipt_number: str = '10021'):
@@ -182,7 +210,7 @@ def factory_create_ejv_account(auth_account_id='1234',
                      stob=stob,
                      project_code=project_code,
                      account_id=account.id,
-                     start_date=datetime.today().date(),
+                     start_date=datetime.now(tz=timezone.utc).date(),
                      created_by='test').save()
     return account
 
@@ -199,7 +227,7 @@ def factory_distribution(name: str, client: str = '111', reps_centre: str = '222
                             project_code=project_code,
                             service_fee_distribution_code_id=service_fee_dist_id,
                             disbursement_distribution_code_id=disbursement_dist_id,
-                            start_date=datetime.today().date(),
+                            start_date=datetime.now(tz=timezone.utc).date(),
                             created_by='test').save()
 
 

@@ -5,7 +5,7 @@ Revises: b05d371ad030
 Create Date: 2020-11-27 10:28:35.417779
 
 """
-from datetime import date
+from datetime import datetime, timezone
 
 from alembic import op
 from sqlalchemy import Date, Float, String
@@ -75,7 +75,7 @@ def upgrade():
                 "filing_type_code": "NSF",
                 "corp_type_code": "BCR",
                 "fee_code": "NSF01",
-                "fee_start_date": date.today(),
+                "fee_start_date": datetime.now(tz=timezone.utc),
                 "fee_end_date": None
             }
         ]

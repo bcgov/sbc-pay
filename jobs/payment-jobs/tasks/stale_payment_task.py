@@ -21,7 +21,11 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db
 from pay_api.services import PaymentService, TransactionService
-from pay_api.utils.enums import PaymentStatus, TransactionStatus
+from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentStatus, TransactionStatus
+
+
+STATUS_PAID = ('PAID', 'CMPLT')
 
 
 class StalePaymentTask:  # pylint: disable=too-few-public-methods
@@ -30,9 +34,10 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def update_stale_payments(cls):
         """Update stale payments."""
-        current_app.logger.info(f'StalePaymentTask Ran at {datetime.datetime.now()}')
+        current_app.logger.info(f'StalePaymentTask Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}')
         cls._update_stale_payments()
         cls._delete_marked_payments()
+        cls._verify_created_direct_pay_invoices()
 
     @classmethod
     def _update_stale_payments(cls):
@@ -50,7 +55,8 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             .all()
 
         if len(stale_transactions) == 0 and len(service_unavailable_transactions) == 0:
-            current_app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
+            current_app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}.'
+                                    'But No records found!')
         for transaction in [*stale_transactions, *service_unavailable_transactions]:
             try:
                 current_app.logger.info(f'Stale Transaction Job found records.Payment Id: {transaction.payment_id}, '
@@ -78,7 +84,8 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         """
         invoices_to_delete = InvoiceModel.find_invoices_marked_for_delete()
         if len(invoices_to_delete) == 0:
-            current_app.logger.info(f'Delete Invoice Job Ran at {datetime.datetime.now()}.But No records found!')
+            current_app.logger.info(f'Delete Invoice Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}.'
+                                    'But No records found!')
         for invoice in invoices_to_delete:
             try:
                 current_app.logger.info(f'Delete Payment Job found records.Payment Id: {invoice.id}')
@@ -87,3 +94,24 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             except BusinessException as err:  # just catch and continue .Don't stop
                 current_app.logger.warn('Error on delete_payment')
                 current_app.logger.warn(err)
+
+    @classmethod
+    def _verify_created_direct_pay_invoices(cls):
+        """Verify recent invoice with PAYBC."""
+        created_invoices = InvoiceModel.find_created_direct_pay_invoices(days=2)
+        current_app.logger.info(f'Found {len(created_invoices)} Created Invoices to be Verified.')
+
+        for invoice in created_invoices:
+            try:
+                current_app.logger.info(f'Verify Invoice Job found records.Invoice Id: {invoice.id}')
+                paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+
+                if paybc_invoice.paymentstatus in STATUS_PAID:
+                    current_app.logger.debug('_update_active_transactions')
+                    transaction = TransactionService.find_active_by_invoice_id(invoice.id)
+                    if transaction:
+                        # check existing payment status in PayBC and save receipt
+                        TransactionService.update_transaction(transaction.id, pay_response_url=None)
+
+            except Exception as err:  # NOQA # pylint: disable=broad-except
+                current_app.logger.error(err, exc_info=True)

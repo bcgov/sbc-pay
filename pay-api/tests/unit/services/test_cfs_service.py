@@ -130,6 +130,6 @@ def test_ensure_totals_quantized(session):
             fee_distribution_id=1,
         )
     ]
-    lines = cfs_service._build_lines(payment_line_items)  # pylint: disable=protected-access
+    lines = cfs_service.build_lines(payment_line_items)  # pylint: disable=protected-access
     # Same distribution code for filing fees and service fees.
     assert float(lines[0]['unit_price']) == 2.8
