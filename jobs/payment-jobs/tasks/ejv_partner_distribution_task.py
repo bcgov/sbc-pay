@@ -17,6 +17,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import List
 
+from decimal import Decimal
 from flask import current_app
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -33,7 +34,6 @@ from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
 from sqlalchemy import Date, and_, cast
 
-from decimal import Decimal
 from tasks.common.cgi_ejv import CgiEjv
 from tasks.common.dataclasses import Disbursement, DisbursementLineItem
 
@@ -76,6 +76,12 @@ class EjvPartnerDistributionTask(CgiEjv):
             .filter(PaymentLineItemModel.total > 0) \
             .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)) \
             .order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id)
+
+        transactions = base_query.filter((InvoiceModel.disbursement_status_code.is_(None)) |
+                                         (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
+            .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+            .all()
 
         # REFUND_REQUESTED for credit card payments, CREDITED for AR and REFUNDED for other payments.
         reversals = base_query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.REFUNDED.value,
@@ -180,7 +186,8 @@ class EjvPartnerDistributionTask(CgiEjv):
                 description = f'{description[:100]:<100}'
                 for credit_debit_row in range(1, 2):
                     target_distribution = cls.get_distribution_string(
-                        disbursement.partner_distribution_code if credit_debit_row == 1 else disbursement.bcreg_distribution_code
+                        disbursement.partner_distribution_code if credit_debit_row == 1 else
+                        disbursement.bcreg_distribution_code
                     )
                     # For payment flow, credit the GL partner code, debit the BCREG GL code.
                     # Reversal is the opposite debit the GL partner code, credit the BCREG GL Code.
