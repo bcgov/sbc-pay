@@ -158,14 +158,15 @@ class EftService(DepositService):
                         if corp_type.has_partner_disbursements:
                             reversal_total += cil.amount
                 
-                PartnerDisbursementsModel(
-                    amount=reversal_total,
-                    is_reversal=True,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                    target_id=invoice.id,
-                    target_type=EJVLinkType.INVOICE.value
-                ).flush()
+                if reversal_total > 0:
+                    PartnerDisbursementsModel(
+                        amount=reversal_total,
+                        is_reversal=True,
+                        partner_code=invoice.corp_type_code,
+                        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                        target_id=invoice.id,
+                        target_type=EJVLinkType.INVOICE.value
+                    ).flush()
 
         current_balance = EFTShortnames.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:

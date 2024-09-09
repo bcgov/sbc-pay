@@ -319,7 +319,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 link_group_id=link_group_id).flush()
 
             if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-                if corp_type.has_partner_disbursements:
+                if corp_type.has_partner_disbursements and current_link.amount > 0:
                     invoice_disbursements.setdefault(invoice, 0)
                     invoice_disbursements[invoice] += current_link.amount
 
