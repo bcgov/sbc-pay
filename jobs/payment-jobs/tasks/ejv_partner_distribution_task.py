@@ -61,7 +61,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         # Internal invoices aren't disbursed to partners, DRAWDOWN is handled by the mainframe.
         # EFT is handled by the PartnerDisbursements table.
         # ##################################################### Original (Legacy way) - invoice.disbursement_status_code
-        # Eventually we'll abanadon this and use the PartnerDisbursements table for all disbursements.
+        # Eventually we'll abandon this and use the PartnerDisbursements table for all disbursements.
         # We'd need a migration and more changes to move it to the table.
         skip_payment_methods = [PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value, PaymentMethod.EFT.value]
         disbursement_date = datetime.now(tz=timezone.utc).replace(tzinfo=None) - \
@@ -108,10 +108,9 @@ class EjvPartnerDistributionTask(CgiEjv):
                 )
             ))
         # ################################################################# END OF Legacy way of handling disbursements.
-
         # Partner disbursements - New
-
-        # TODO  include partial refunds
+        # Partial refunds need to be added to here later, although they should be fairly rare as most of them are from
+        # NRO.
         partner_disbursements = db.session.query(PartnerDisbursementsModel,
                                                  PaymentLineItemModel,
                                                  DistributionCodeModel) \
@@ -122,6 +121,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             .filter(PartnerDisbursementsModel.status_code.is_(None)) \
             .filter(PartnerDisbursementsModel.partner_code == partner.code) \
             .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)) \
+            .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
             .order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id) \
             .all()
 

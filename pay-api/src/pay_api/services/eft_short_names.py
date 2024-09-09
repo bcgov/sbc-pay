@@ -25,6 +25,7 @@ from sqlalchemy.sql.expression import exists
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
@@ -33,6 +34,7 @@ from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
 from pay_api.models import EFTShortnameSchema
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
@@ -44,7 +46,8 @@ from pay_api.services.email_service import _render_payment_reversed_template, se
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTPaymentActions, EFTShortnameStatus, InvoiceStatus, PaymentMethod)
+    DisbursementStatus, EFTCreditInvoiceStatus, EFTPaymentActions, EFTShortnameStatus, EJVLinkType, InvoiceStatus,
+    PaymentMethod)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
@@ -314,16 +317,18 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 invoice_id=invoice.id,
                 link_group_id=link_group_id).flush()
 
-            # TODO - (Check for duplicate) pending migration from another PR, uncomment when ready
-            # Move revenue back to original gl.
-            # partner_disbursement = PartnerDisbursementsModel(
-            #     amount=invoice.total,
-            #     disbursement_type=EJVLinkType.PARTNER_DISBURSEMENTS.value,
-            #     is_reversal=True,
-            #     partner_code=invoice.corp_type_code,
-            #     status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-            #     target_id=invoice.id
-            # ).flush()
+            # TODO roll these up.
+            if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
+                if corp_type.has_partner_disbursements:
+                    PartnerDisbursementsModel(
+                        amount=current_link.amount,
+                        disbursement_type=EJVLinkType.INVOICE.value,
+                        is_reversal=True,
+                        is_legacy=False,
+                        partner_code=invoice.corp_type_code,
+                        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                        target_id=invoice.id
+                    ).flush()
         statement = StatementModel.find_by_id(statement_id)
         EFTHistoryService.create_statement_reverse(
             EFTHistory(short_name_id=short_name_id,
