@@ -323,7 +323,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                               f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
         is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
         is_reversal = not is_invoice_refund
-        CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
+        if receipt_number:
+            CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         if is_invoice_refund:
             cls._handle_invoice_refund(invoice, invoice_reference)
         else:
