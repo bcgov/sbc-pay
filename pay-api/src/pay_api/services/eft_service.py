@@ -81,12 +81,11 @@ class EftService(DepositService):
             if corp_type.has_partner_disbursements:
                 PartnerDisbursementsModel(
                     amount=invoice.total,
-                    disbursement_type=EJVLinkType.INVOICE.value,
                     is_reversal=False,
-                    is_legacy=False,
                     partner_code=invoice.corp_type_code,
                     status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                    target_id=invoice.id
+                    target_id=invoice.id,
+                    target_type=EJVLinkType.INVOICE.value
                 ).flush()
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
@@ -145,6 +144,7 @@ class EftService(DepositService):
             case EFTCreditInvoiceStatus.COMPLETED.value:
                 # 4. EFT Credit Link - COMPLETED
                 # (Invoice needs to be reversed and receipt needs to be reversed.)
+                reversal_total = Decimal('0')
                 for cil in sibling_cils:
                     EFTShortnames.return_eft_credit(cil)
                     EFTCreditInvoiceLinkModel(
@@ -154,6 +154,18 @@ class EftService(DepositService):
                         receipt_number=cil.receipt_number,
                         invoice_id=invoice.id,
                         link_group_id=link_group_id).flush()
+                    if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
+                        if corp_type.has_partner_disbursements:
+                            reversal_total += cil.amount
+                
+                PartnerDisbursementsModel(
+                    amount=reversal_total,
+                    is_reversal=True,
+                    partner_code=invoice.corp_type_code,
+                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                    target_id=invoice.id,
+                    target_type=EJVLinkType.INVOICE.value
+                ).flush()
 
         current_balance = EFTShortnames.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:

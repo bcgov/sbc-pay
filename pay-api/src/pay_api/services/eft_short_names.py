@@ -293,6 +293,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                      InvoiceStatus.CANCELLED.value]
         link_group_id = EFTCreditInvoiceLinkModel.get_next_group_link_seq()
         reversed_credits = 0
+        invoice_disbursements = {}
         for current_link in credit_invoice_links:
             invoice = InvoiceModel.find_by_id(current_link.invoice_id)
 
@@ -317,18 +318,20 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 invoice_id=invoice.id,
                 link_group_id=link_group_id).flush()
 
-            # TODO roll these up.
             if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
                 if corp_type.has_partner_disbursements:
-                    PartnerDisbursementsModel(
-                        amount=current_link.amount,
-                        disbursement_type=EJVLinkType.INVOICE.value,
-                        is_reversal=True,
-                        is_legacy=False,
-                        partner_code=invoice.corp_type_code,
-                        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                        target_id=invoice.id
-                    ).flush()
+                    invoice_disbursements.setdefault(invoice, 0)
+                    invoice_disbursements[invoice] += current_link.amount
+
+        for invoice, total_amount in invoice_disbursements.items():
+            PartnerDisbursementsModel(
+                amount=total_amount,
+                is_reversal=True,
+                partner_code=invoice.corp_type_code,
+                status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                target_id=invoice.id,
+                target_type=EJVLinkType.INVOICE.value
+            ).flush()
         statement = StatementModel.find_by_id(statement_id)
         EFTHistoryService.create_statement_reverse(
             EFTHistory(short_name_id=short_name_id,
