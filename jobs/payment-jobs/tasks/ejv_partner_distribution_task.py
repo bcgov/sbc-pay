@@ -110,7 +110,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         # ################################################################# END OF Legacy way of handling disbursements.
         # Partner disbursements - New
         # Partial refunds need to be added to here later, although they should be fairly rare as most of them are from
-        # NRO.
+        # NRO (NRO is internal, meaning no disbursement needed.)
         partner_disbursements = db.session.query(PartnerDisbursementsModel,
                                                  PaymentLineItemModel,
                                                  DistributionCodeModel) \
