@@ -157,7 +157,7 @@ class EftService(DepositService):
                     if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
                         if corp_type.has_partner_disbursements:
                             reversal_total += cil.amount
-                
+
                 if reversal_total > 0:
                     PartnerDisbursementsModel(
                         amount=reversal_total,
