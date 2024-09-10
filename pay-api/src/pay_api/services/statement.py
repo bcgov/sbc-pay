@@ -237,17 +237,17 @@ class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-
                 .filter(StatementInvoicesModel.statement_id == statement_id))
 
     @staticmethod
-    def get_statement_template(statement: StatementModel, ordered_invoices: List[InvoiceModel]) -> str:
+    def is_eft_statement(statement: StatementModel, ordered_invoices: List[InvoiceModel]) -> bool:
         """Return the statement template name."""
         # Check invoice payment method for statement template
         if ordered_invoices and ordered_invoices[0].payment_method_code == PaymentMethod.EFT.value:
-            return StatementTemplate.EFT_STATEMENT.value
+            return True
 
         # In the event of an empty statement check statement payment methods, could be more than one on transition days
         if PaymentMethod.EFT.value in statement.payment_methods:
-            return StatementTemplate.EFT_STATEMENT.value
+            return True
 
-        return StatementTemplate.STATEMENT_REPORT.value
+        return False
 
     @staticmethod
     def get_invoices_owing_amount(auth_account_id: str):
@@ -337,13 +337,12 @@ class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-
         statement['from_date'] = from_date_string
         statement['to_date'] = to_date_string
 
-        template_name = Statement.get_statement_template(statement_dao, statement_purchases)
         report_inputs = PaymentReportInput(content_type=content_type,
                                            report_name=report_name,
-                                           template_name=template_name,
+                                           template_name=StatementTemplate.STATEMENT_REPORT.value,
                                            results=result_items)
 
-        if template_name == StatementTemplate.EFT_STATEMENT.value:
+        if Statement.is_eft_statement(statement_dao, statement_purchases):
             report_inputs.statement_summary = Statement._populate_statement_summary(statement_dao,
                                                                                     statement_purchases)
 

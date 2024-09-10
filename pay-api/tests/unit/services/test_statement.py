@@ -513,7 +513,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             }
         }
         expected_report_inputs = ReportRequest(report_name=report_name,
-                                               template_name=StatementTemplate.EFT_STATEMENT.value,
+                                               template_name=StatementTemplate.STATEMENT_REPORT.value,
                                                template_vars=expected_template_vars,
                                                populate_page_number=True,
                                                content_type=ContentType.PDF.value)
@@ -693,7 +693,7 @@ def test_get_eft_statement_with_invoices(session):
             }
         }
         expected_report_inputs = ReportRequest(report_name=report_name,
-                                               template_name=StatementTemplate.EFT_STATEMENT.value,
+                                               template_name=StatementTemplate.STATEMENT_REPORT.value,
                                                template_vars=expected_template_vars,
                                                populate_page_number=True,
                                                content_type=ContentType.PDF.value)
