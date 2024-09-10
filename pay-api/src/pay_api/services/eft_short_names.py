@@ -627,6 +627,10 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 InvoiceModel.id == StatementInvoicesModel.invoice_id,
                 InvoiceModel.payment_method_code == PaymentMethod.EFT.value
             )
+        ).filter(
+            InvoiceModel.invoice_status_code.notin_([InvoiceStatus.CANCELLED.value,
+                                                     InvoiceStatus.REFUND_REQUESTED.value,
+                                                     InvoiceStatus.REFUNDED.value])
         ).group_by(StatementModel.payment_account_id)
 
     @classmethod
