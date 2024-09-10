@@ -13,11 +13,12 @@
 # limitations under the License.
 """Service class to control all the operations related to statements."""
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from typing import List
-from dateutil.relativedelta import relativedelta
 
+from dateutil.relativedelta import relativedelta
 from flask import current_app
-from sqlalchemy import Integer, and_, case, cast, exists, func, literal, literal_column, select
+from sqlalchemy import Integer, and_, case, cast, distinct, exists, func, literal, literal_column, select
 from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -34,8 +35,8 @@ from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
-    ContentType, EFTFileLineType, EFTProcessStatus, InvoiceStatus, NotificationStatus, PaymentMethod,
-    StatementFrequency, StatementTemplate)
+    ContentType, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, NotificationStatus,
+    PaymentMethod, StatementFrequency, StatementTemplate)
 from pay_api.utils.util import get_first_and_last_of_frequency, get_local_time
 
 from .payment import Payment as PaymentService
@@ -355,7 +356,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-
         return report_response, report_name
 
     @staticmethod
-    def get_summary(auth_account_id: str, statement_id: str = None):
+    def get_summary(auth_account_id: str, statement_id: str = None, calculate_under_payment: bool = False):
         """Get summary for statements by account id."""
         # Used by payment jobs to get the total due amount for statements, keep in mind when modifying.
         # This is written outside of the model, because we have multiple model references that need to be included.
@@ -392,8 +393,45 @@ class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-
             'total_invoice_due': float(invoices_unpaid_amount) if invoices_unpaid_amount else 0,
             'total_due': total_due,
             'oldest_due_date': oldest_due_date,
-            'short_name_links_count': short_name_links_count
+            'short_name_links_count': short_name_links_count,
+            'is_eft_under_payment': Statement._is_eft_under_payment(auth_account_id, total_due)
+            if calculate_under_payment else None
         }
+
+    @staticmethod
+    def _get_short_name_owing_balance(short_name_id: int) -> Decimal:
+        """Get the total amount owing for a short name statements for all links."""
+        # Pre-filter payment account ids so there is less data to work with
+        accounts_query = (db.session.query(PaymentAccountModel.id)
+                          .join(EFTShortnameLinksModel,
+                                PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
+                          .filter(EFTShortnameLinksModel.eft_short_name_id == short_name_id,
+                                  EFTShortnameLinksModel.status_code.in_([EFTShortnameStatus.LINKED.value,
+                                                                          EFTShortnameStatus.PENDING.value])
+                                  ))
+
+        invoices_subquery = (db.session.query(distinct(InvoiceModel.id),
+                                              InvoiceModel.id,
+                                              InvoiceModel.total,
+                                              InvoiceModel.paid)
+                             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
+                             .filter(and_(InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
+                                          InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value,
+                                                                                InvoiceStatus.OVERDUE.value])))
+                             .filter(
+            InvoiceModel.payment_account_id.in_(accounts_query)).subquery())
+
+        query = db.session.query(func.sum(invoices_subquery.c.total - invoices_subquery.c.paid))
+        owing = query.scalar()
+        return 0 if owing is None else owing
+
+    @staticmethod
+    def _is_eft_under_payment(auth_account_id: str, total_due: float) -> bool:
+        active_link = EFTShortnameLinksModel.find_active_link_by_auth_id(auth_account_id)
+        balance = Statement._get_short_name_owing_balance(active_link.eft_short_name_id) if active_link else 0
+        if 0 < balance < total_due:
+            return True
+        return False
 
     @staticmethod
     def populate_overdue_from_invoices(statements: List[StatementModel]):

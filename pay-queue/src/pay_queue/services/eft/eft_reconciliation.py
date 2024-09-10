@@ -179,7 +179,7 @@ def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
     """Apply payments to short name links."""
     for shortname in shortname_balance.keys():
         eft_shortname = _get_shortname(shortname)
-        eft_credit_balance = EFTShortnamesService.get_eft_credit_balance(eft_shortname.id)
+        eft_credit_balance = EFTCreditModel.get_eft_credit_balance(eft_shortname.id)
         shortname_links = EFTShortnamesService.get_shortname_links(eft_shortname.id).get('items', [])
         for shortname_link in shortname_links:
             # We are expecting pending payments to have been cleared since this runs after the
@@ -279,7 +279,7 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                 eft_credit_model.eft_transaction_id = eft_transaction['id']
                 eft_credit_model.flush()
 
-                credit_balance = EFTShortnamesService.get_eft_credit_balance(eft_credit_model.short_name_id)
+                credit_balance = EFTCreditModel.get_eft_credit_balance(eft_credit_model.short_name_id)
                 EFTHistoryService.create_funds_received(EFTHistory(short_name_id=eft_credit_model.short_name_id,
                                                                    amount=deposit_amount,
                                                                    credit_balance=credit_balance)).flush()
