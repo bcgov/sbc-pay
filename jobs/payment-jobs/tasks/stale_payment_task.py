@@ -23,6 +23,7 @@ from pay_api.models import db
 from pay_api.services import PaymentService, TransactionService
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.utils.enums import InvoiceReferenceStatus, PaymentStatus, TransactionStatus
+from requests import HTTPError
 
 
 STATUS_PAID = ('PAID', 'CMPLT')
@@ -102,12 +103,19 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         current_app.logger.info(f'Found {len(created_invoices)} Created Invoices to be Verified.')
 
         for invoice in created_invoices:
-            current_app.logger.info(f'Verify Invoice Job found records.Invoice Id: {invoice.id}')
-            paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+            try:
+                current_app.logger.info(f'Verify Invoice Job found records.Invoice Id: {invoice.id}')
+                paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
 
-            if paybc_invoice.paymentstatus in STATUS_PAID:
-                current_app.logger.debug('_update_active_transactions')
-                transaction = TransactionService.find_active_by_invoice_id(invoice.id)
-                if transaction:
-                    # check existing payment status in PayBC and save receipt
-                    TransactionService.update_transaction(transaction.id, pay_response_url=None)
+                if paybc_invoice.paymentstatus in STATUS_PAID:
+                    current_app.logger.debug('_update_active_transactions')
+                    transaction = TransactionService.find_active_by_invoice_id(invoice.id)
+                    if transaction:
+                        # check existing payment status in PayBC and save receipt
+                        TransactionService.update_transaction(transaction.id, pay_response_url=None)
+
+            except HTTPError as http_err:
+                if http_err.response is not None and http_err.response.status_code == 404:
+                    current_app.logger.info(f'Invoice not found (404). Skipping invoice id: {invoice.id}')
+                    continue
+                current_app.logger.error(f'Error verifying invoice {invoice.id}: {http_err}', exc_info=True)
