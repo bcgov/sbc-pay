@@ -102,16 +102,12 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         current_app.logger.info(f'Found {len(created_invoices)} Created Invoices to be Verified.')
 
         for invoice in created_invoices:
-            try:
-                current_app.logger.info(f'Verify Invoice Job found records.Invoice Id: {invoice.id}')
-                paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+            current_app.logger.info(f'Verify Invoice Job found records.Invoice Id: {invoice.id}')
+            paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
 
-                if paybc_invoice.paymentstatus in STATUS_PAID:
-                    current_app.logger.debug('_update_active_transactions')
-                    transaction = TransactionService.find_active_by_invoice_id(invoice.id)
-                    if transaction:
-                        # check existing payment status in PayBC and save receipt
-                        TransactionService.update_transaction(transaction.id, pay_response_url=None)
-
-            except Exception as err:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error(err, exc_info=True)
+            if paybc_invoice.paymentstatus in STATUS_PAID:
+                current_app.logger.debug('_update_active_transactions')
+                transaction = TransactionService.find_active_by_invoice_id(invoice.id)
+                if transaction:
+                    # check existing payment status in PayBC and save receipt
+                    TransactionService.update_transaction(transaction.id, pay_response_url=None)
