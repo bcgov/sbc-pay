@@ -19,14 +19,16 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 from datetime import datetime, timezone
+
 from dateutil.relativedelta import relativedelta
 
 from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency
 from tests.utilities.base_test import (
-    factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, get_payment_request,
-    get_payment_request_with_payment_method, token_header)
+    factory_eft_credit, factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice,
+    factory_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings, get_claims,
+    get_payment_request, get_payment_request_with_payment_method, token_header)
 
 
 def test_get_daily_statements(session, client, jwt, app):
@@ -279,7 +281,7 @@ def test_statement_summary(session, client, jwt, app):
     assert rv.json.get('totalDue') == float(total_due)
     assert rv.json.get('oldestDueDate') == (oldest_due_date.date() + relativedelta(hours=8)).isoformat()
     assert rv.json.get('shortNameLinksCount') == 0
-    assert rv.json.get('isEftUnderPayment') is False
+    assert rv.json.get('isEftUnderPayment') is None
 
 
 def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, app):
@@ -315,4 +317,113 @@ def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, 
     assert rv.json.get('oldestDueDate') is None
     assert rv.json.get('totalInvoiceDue') == float(unpaid_amount)
     assert rv.json.get('shortNameLinksCount') == 0
+    assert rv.json.get('isEftUnderPayment') is None
+
+
+def test_statement_summary_single_eft_under_payment(session, client, jwt, app):
+    """Assert the statement summary EFT under payment flag is working as expected for single link."""
+    headers = {
+        'Authorization': f'Bearer {jwt.create_jwt(get_claims(), token_header)}',
+        'content-type': 'application/json'
+    }
+    pay_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
+    factory_eft_shortname_link(
+        short_name_id=short_name.id,
+        auth_account_id=pay_account.auth_account_id,
+        updated_by='TEST'
+    ).save()
+    invoice = factory_invoice(payment_account=pay_account,
+                              payment_method_code=PaymentMethod.EFT.value,
+                              status_code=InvoiceStatus.APPROVED.value,
+                              total=10).save()
+    eft_file = factory_eft_file().save()
+    factory_eft_credit(eft_file_id=eft_file.id, short_name_id=short_name.id, amount=10, remaining_amount=10).save()
+    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
+                                                frequency=StatementFrequency.MONTHLY.value)
+    statement_model = factory_statement(payment_account_id=pay_account.id,
+                                        frequency=StatementFrequency.MONTHLY.value,
+                                        statement_settings_id=settings_model.id)
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
+
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('shortNameLinksCount') == 1
     assert rv.json.get('isEftUnderPayment') is False
+
+    invoice.total = 11
+    invoice.save()
+
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('shortNameLinksCount') == 1
+    assert rv.json.get('isEftUnderPayment') is True
+
+
+def test_statement_summary_multi_eft_under_payment(session, client, jwt, app):
+    """Assert the statement summary EFT under payment flag is working as expected for multi link."""
+    headers = {
+        'Authorization': f'Bearer {jwt.create_jwt(get_claims(), token_header)}',
+        'content-type': 'application/json'
+    }
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
+    pay_account1 = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id='1111').save()
+    pay_account2 = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id='2222').save()
+    eft_file = factory_eft_file().save()
+    factory_eft_shortname_link(short_name_id=short_name.id, auth_account_id=pay_account1.auth_account_id,
+                               updated_by='TEST').save()
+    factory_eft_shortname_link(short_name_id=short_name.id, auth_account_id=pay_account2.auth_account_id,
+                               updated_by='TEST').save()
+    invoice1 = factory_invoice(payment_account=pay_account1, payment_method_code=PaymentMethod.EFT.value,
+                               status_code=InvoiceStatus.APPROVED.value, total=5).save()
+    invoice2 = factory_invoice(payment_account=pay_account2, payment_method_code=PaymentMethod.EFT.value,
+                               status_code=InvoiceStatus.APPROVED.value, total=6).save()
+    invoices_total = invoice1.total + invoice2.total
+    eft_credits = factory_eft_credit(eft_file_id=eft_file.id, short_name_id=short_name.id, amount=invoices_total,
+                                     remaining_amount=invoices_total).save()
+    settings_model = factory_statement_settings(payment_account_id=pay_account1.id,
+                                                frequency=StatementFrequency.MONTHLY.value)
+    statement_model = factory_statement(payment_account_id=pay_account1.id,
+                                        frequency=StatementFrequency.MONTHLY.value,
+                                        statement_settings_id=settings_model.id)
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice1.id)
+
+    settings_model2 = factory_statement_settings(payment_account_id=pay_account2.id,
+                                                 frequency=StatementFrequency.MONTHLY.value)
+    statement_model2 = factory_statement(payment_account_id=pay_account2.id,
+                                         frequency=StatementFrequency.MONTHLY.value,
+                                         statement_settings_id=settings_model2.id)
+    factory_statement_invoices(statement_id=statement_model2.id, invoice_id=invoice2.id)
+
+    rv = client.get(f'/api/v1/accounts/{pay_account1.auth_account_id}/statements/summary',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('totalDue') == invoice1.total
+    assert rv.json.get('shortNameLinksCount') == 2
+    assert rv.json.get('isEftUnderPayment') is False
+
+    rv = client.get(f'/api/v1/accounts/{pay_account2.auth_account_id}/statements/summary',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('totalDue') == invoice2.total
+    assert rv.json.get('shortNameLinksCount') == 2
+    assert rv.json.get('isEftUnderPayment') is False
+
+    eft_credits.remaining_amount = invoices_total - 1
+    eft_credits.save()
+
+    rv = client.get(f'/api/v1/accounts/{pay_account1.auth_account_id}/statements/summary',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('totalDue') == invoice1.total
+    assert rv.json.get('shortNameLinksCount') == 2
+    assert rv.json.get('isEftUnderPayment') is True
+
+    rv = client.get(f'/api/v1/accounts/{pay_account2.auth_account_id}/statements/summary',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('totalDue') == invoice2.total
+    assert rv.json.get('shortNameLinksCount') == 2
+    assert rv.json.get('isEftUnderPayment') is True

@@ -394,8 +394,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-
             'total_due': total_due,
             'oldest_due_date': oldest_due_date,
             'short_name_links_count': short_name_links_count,
-            'is_eft_under_payment': Statement._is_eft_under_payment(auth_account_id, total_due)
-            if calculate_under_payment else None
+            'is_eft_under_payment': Statement._is_eft_under_payment(auth_account_id, calculate_under_payment)
         }
 
     @staticmethod
@@ -426,10 +425,16 @@ class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-
         return 0 if owing is None else owing
 
     @staticmethod
-    def _is_eft_under_payment(auth_account_id: str, total_due: float) -> bool:
-        active_link = EFTShortnameLinksModel.find_active_link_by_auth_id(auth_account_id)
-        balance = Statement._get_short_name_owing_balance(active_link.eft_short_name_id) if active_link else 0
-        if 0 < balance < total_due:
+    def _is_eft_under_payment(auth_account_id: str, calculate_under_payment: bool):
+        if not calculate_under_payment:
+            return None
+        if (active_link := EFTShortnameLinksModel.find_active_link_by_auth_id(auth_account_id)) is None:
+            return None
+
+        short_name_owing = Statement._get_short_name_owing_balance(active_link.eft_short_name_id)
+        balance = EFTCreditModel.get_eft_credit_balance(active_link.eft_short_name_id)
+
+        if 0 < balance < short_name_owing:
             return True
         return False
 
