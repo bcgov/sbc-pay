@@ -74,8 +74,8 @@ class OAuthService:
             raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
             current_app.logger.error(
-                f"HTTPError on POST with status code {response.status_code if response else ''}")
-            if response and response.status_code >= 500:
+                f"HTTPError on POST with status code {exc.response.status_code if exc.response else ''}")
+            if exc.response and exc.response.status_code >= 500:
                 raise ServiceUnavailableException(exc) from exc
             raise exc
         finally:
@@ -123,12 +123,13 @@ class OAuthService:
             current_app.logger.error(exc)
             raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
-            if not response or response.status_code != 404:
-                current_app.logger.error(f"HTTPError on GET with status code {response.status_code if response else ''}")
-            if response is not None:
-                if response.status_code >= 500:
+            if not exc.response or exc.response.status_code != 404:
+                current_app.logger.error('HTTPError on GET with status code '
+                                         f"{exc.response.status_code if exc.response else ''}")
+            if exc.response is not None:
+                if exc.response.status_code >= 500:
                     raise ServiceUnavailableException(exc) from exc
-                if return_none_if_404 and response.status_code == 404:
+                if return_none_if_404 and exc.response.status_code == 404:
                     return None
             raise exc
         finally:
