@@ -2022,8 +2022,8 @@ werkzeug = "3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "fix_logging_404_etc"
-resolved_reference = "00f031f8270551ee16860e3cb5813c5a8ef981c8"
+reference = "logging_changes_part3"
+resolved_reference = "5a6494656564bba0154aed41288ecd751f16d0c2"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3174,4 +3174,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "ce6c9aa5860c030e6a0317c09817fe72ed08b369796420615fa200ac813536a4"
+content-hash = "c6c86abce08f1407ab8893fb5b853e62114733dd0dbbfc42ff48348dde5be418"
