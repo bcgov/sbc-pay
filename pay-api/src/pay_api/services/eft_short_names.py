@@ -76,16 +76,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     """Service to manage EFT short name model operations."""
 
     @staticmethod
-    def get_eft_credit_balance(short_name_id: int) -> Decimal:
-        """Calculate pay account eft balance by account id."""
-        result = db.session.query(func.sum(EFTCreditModel.remaining_amount).label('credit_balance')) \
-            .filter(EFTCreditModel.short_name_id == short_name_id) \
-            .group_by(EFTCreditModel.short_name_id) \
-            .one_or_none()
-
-        return Decimal(result.credit_balance) if result else 0
-
-    @staticmethod
     def get_eft_credits(short_name_id: int) -> List[EFTCreditModel]:
         """Get EFT Credits with a remaining amount."""
         return (db.session.query(EFTCreditModel)
@@ -107,7 +97,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         # Clear any existing pending credit links on this invoice
         cls._cancel_payment_action(short_name_id, payment_account.auth_account_id, invoice_id)
 
-        eft_credit_balance = EFTShortnames.get_eft_credit_balance(short_name_id)
+        eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
         invoice_balance = invoice.total - (invoice.paid or 0)
 
         if eft_credit_balance < invoice_balance:
@@ -327,7 +317,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         EFTHistoryService.create_statement_reverse(
             EFTHistory(short_name_id=short_name_id,
                        amount=reversed_credits,
-                       credit_balance=cls.get_eft_credit_balance(short_name_id),
+                       credit_balance=EFTCreditModel.get_eft_credit_balance(short_name_id),
                        payment_account_id=statement.payment_account_id,
                        related_group_link_id=link_group_id,
                        statement_number=statement_id,
@@ -486,7 +476,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if shortname_link is None:
             raise BusinessException(Error.EFT_SHORT_NAME_NOT_LINKED)
 
-        credit_balance: Decimal = EFTShortnames.get_eft_credit_balance(short_name_id)
+        credit_balance: Decimal = EFTCreditModel.get_eft_credit_balance(short_name_id)
         summary_dict: dict = StatementService.get_summary(auth_account_id)
         total_due = summary_dict['total_due']
 

@@ -118,7 +118,7 @@ class EftService(DepositService):
         sibling_cils = [cil for cil in cils if cil.link_group_id == latest_link.link_group_id]
         latest_eft_credit = EFTCreditModel.find_by_id(latest_link.eft_credit_id)
         link_group_id = EFTCreditInvoiceLinkModel.get_next_group_link_seq()
-        existing_balance = EFTShortnames.get_eft_credit_balance(latest_eft_credit.short_name_id)
+        existing_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
 
         match latest_link.status_code:
             case EFTCreditInvoiceStatus.PENDING.value:
@@ -141,7 +141,7 @@ class EftService(DepositService):
                         invoice_id=invoice.id,
                         link_group_id=link_group_id).flush()
 
-        current_balance = EFTShortnames.get_eft_credit_balance(latest_eft_credit.short_name_id)
+        current_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:
             short_name_history = EFTHistoryModel.find_by_related_group_link_id(latest_link.link_group_id)
             EFTHistoryService.create_invoice_refund(
@@ -208,7 +208,7 @@ class EftService(DepositService):
         """Refund the amount to eft_credits table based on short_name_id."""
         refund_amount = Decimal(amount)
         eft_credits = EFTShortnames.get_eft_credits(shortname_id)
-        eft_credit_balance = EFTShortnames.get_eft_credit_balance(shortname_id)
+        eft_credit_balance = EFTCreditModel.get_eft_credit_balance(shortname_id)
 
         if refund_amount > eft_credit_balance:
             raise BusinessException(Error.INVALID_REFUND)

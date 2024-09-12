@@ -120,7 +120,7 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 204
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
 
     credit_invoice_links = EFTShortnamesService.get_shortname_invoice_links(short_name.id, account.id,
                                                                             [EFTCreditInvoiceStatus.PENDING.value
@@ -140,7 +140,7 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
     assert rv.status_code == 204
     assert sum([eft_credit.remaining_amount for eft_credit in eft_credits + eft_credits_2]) == 300
     # assert eft_credits_2[0].remaining_amount == 300
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 300
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 300
 
 
 def test_eft_cancel_payment_action(session, client, jwt, app):
@@ -170,7 +170,7 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 204
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
 
     credit_offset = 100
     eft_credits[1].remaining_amount += credit_offset
@@ -186,7 +186,7 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
     eft_credits[1].save()
     # Assert no change and rollback was successful
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
 
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.CANCEL.value,
@@ -196,7 +196,7 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
     # Confirm credits have been restored
     assert rv.status_code == 204
     assert all(eft_credit.remaining_amount == eft_credit.amount for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 200
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 200
 
 
 def test_eft_payment_action_schema(db, session, client, jwt, app):
@@ -246,7 +246,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
                      headers=headers)
     assert rv.status_code == 204
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
 
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.REVERSE.value, 'statementId': statement.id}),
@@ -322,4 +322,4 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     assert credit_invoice_links[1].link_group_id is not None
     assert credit_invoice_links[1].amount == credit_invoice_links[0].amount
     assert credit_invoice_links[1].receipt_number == credit_invoice_links[0].receipt_number
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 100
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 100

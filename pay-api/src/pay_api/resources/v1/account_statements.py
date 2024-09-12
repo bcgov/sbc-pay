@@ -76,6 +76,7 @@ def get_account_statement_summary(account_id: str):
     """Create the statement report."""
     current_app.logger.info('<get_account_statement_summary')
     check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
-    response, status = StatementService.get_summary(account_id), HTTPStatus.OK
+    response, status = StatementService.get_summary(auth_account_id=account_id,
+                                                    calculate_under_payment=True), HTTPStatus.OK
     current_app.logger.info('>get_account_statement_summary')
     return jsonify(response), status

@@ -1979,9 +1979,9 @@ werkzeug = "3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "main"
-resolved_reference = "d6b54079b123c7f9ca7bb66e32f044f5fed576e7"
+url = "https://github.com/ochiu/sbc-pay.git"
+reference = "22391-Multi-Account-Under-Payment"
+resolved_reference = "201658e73cca5babea1e93a1918950994e13fc6a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3104,4 +3104,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "127f83ba05ee91825caa0b3c7a3dc447cd2beb650d585c465734cd1617d0fe53"
+content-hash = "5b51f4e5e18c106ac33f562489a1a84cea1ae349a4cd6312f00571d349ab106d"
