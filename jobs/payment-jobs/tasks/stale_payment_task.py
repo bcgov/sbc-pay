@@ -118,7 +118,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                 if http_err.response is not None and http_err.response.status_code == 404:
                     current_app.logger.info(f'Invoice not found (404) at PAYBC. Skipping invoice id: {invoice.id}')
                     continue
-                current_app.logger.error(f'HTTPError on invoice {invoice.id}: {http_err}', exc_info=True)
+                current_app.logger.error(f'HTTPError on verifying invoice {invoice.id}: {http_err}', exc_info=True)
                 raise http_err
             except Exception as err: # NOQA # pylint: disable=broad-except
                 current_app.logger.error(f'Error verifying invoice {invoice.id}: {err}', exc_info=True)
