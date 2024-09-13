@@ -23,6 +23,7 @@ from pay_api.models import db
 from pay_api.services import PaymentService, TransactionService
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.utils.enums import InvoiceReferenceStatus, PaymentStatus, TransactionStatus
+from requests import HTTPError
 
 
 STATUS_PAID = ('PAID', 'CMPLT')
@@ -113,5 +114,9 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                         # check existing payment status in PayBC and save receipt
                         TransactionService.update_transaction(transaction.id, pay_response_url=None)
 
-            except Exception as err:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error(err, exc_info=True)
+            except HTTPError as http_err:
+                if http_err.response is None or http_err.response.status_code != 404:
+                    current_app.logger.error(f'HTTPError on verifying invoice {invoice.id}: {http_err}', exc_info=True)
+                current_app.logger.info(f'Invoice not found (404) at PAYBC. Skipping invoice id: {invoice.id}')
+            except Exception as err: # NOQA # pylint: disable=broad-except
+                current_app.logger.error(f'Error verifying invoice {invoice.id}: {err}', exc_info=True)

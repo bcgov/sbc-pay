@@ -77,7 +77,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                 # Cron is setup to run between 6 to 8 UTC. Feedback is updated after 11pm.
                 current_app.logger.debug(f'Processing invoice: {invoice.id} - created on: {invoice.created_on}')
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
-                if cls._is_glstatus_rejected(status):
+                if cls._is_glstatus_rejected_or_declined(status):
                     cls._refund_error(status, invoice)
                 elif cls._is_status_paid_and_invoice_refund_requested(status, invoice):
                     cls._refund_paid(invoice)
@@ -107,7 +107,8 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _refund_error(cls, status: OrderStatus, invoice: Invoice):
         """Log error for rejected GL status."""
-        current_app.logger.error(f'Refund error - Invoice: {invoice.id} - detected RJCT on refund, contact PAYBC.')
+        current_app.logger.error(f'Refund error - Invoice: {invoice.id} - detected RJCT/DECLINED on refund,'
+                                 "contact PAYBC if it's RJCT.")
         errors = ' '.join([refund_data.refundglerrormessage.strip() for revenue_line in status.revenue
                            for refund_data in revenue_line.refund_data])[:250]
         current_app.logger.error(f'Refund error - Invoice: {invoice.id} - glerrormessage: {errors}')
@@ -134,9 +135,9 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         refund.save()
 
     @staticmethod
-    def _is_glstatus_rejected(status: OrderStatus) -> bool:
+    def _is_glstatus_rejected_or_declined(status: OrderStatus) -> bool:
         """Check for bad refundglstatus."""
-        return any(refund_data.refundglstatus == PaymentDetailsGlStatus.RJCT
+        return any(refund_data.refundglstatus in [PaymentDetailsGlStatus.RJCT, PaymentDetailsGlStatus.DECLINED]
                    for line in status.revenue for refund_data in line.refund_data)
 
     @staticmethod
