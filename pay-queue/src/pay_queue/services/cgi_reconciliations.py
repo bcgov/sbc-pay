@@ -119,7 +119,7 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
                 return_code = line[7:11]
                 return_message = line[11:161]
                 ejv_file.disbursement_status_code = _get_disbursement_status(return_code)
-                ejv_file.message = return_message
+                ejv_file.message = return_message.strip()
                 if ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value:
                     has_errors = True
             elif is_jv_header:
@@ -129,7 +129,7 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
                 ejv_header_return_code = line[271:275]
                 ejv_header.disbursement_status_code = _get_disbursement_status(ejv_header_return_code)
                 ejv_header_error_message = line[275:425]
-                ejv_header.message = ejv_header_error_message
+                ejv_header.message = ejv_header_error_message.strip()
                 if ejv_header.disbursement_status_code == DisbursementStatus.ERRORED.value:
                     has_errors = True
                 # Create a payment record if its a gov account payment.
@@ -165,7 +165,7 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  #
     if line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
         disbursement_status = _get_disbursement_status(invoice_return_code)
         invoice_link.disbursement_status_code = disbursement_status
-        invoice_link.message = invoice_return_message
+        invoice_link.message = invoice_return_message.strip()
         current_app.logger.info('disbursement_status %s', disbursement_status)
         if disbursement_status == DisbursementStatus.ERRORED.value:
             has_errors = True
@@ -186,7 +186,7 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  #
         # This is for gov account payment JV.
         invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
 
-        invoice_link.message = invoice_return_message
+        invoice_link.message = invoice_return_message.strip()
         current_app.logger.info('Invoice ID %s', invoice_id)
         inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice_id, InvoiceReferenceStatus.ACTIVE.value)
@@ -332,7 +332,7 @@ def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-loca
                 return_code = line[7:11]
                 return_message = line[11:161]
                 ejv_file.disbursement_status_code = _get_disbursement_status(return_code)
-                ejv_file.message = return_message
+                ejv_file.message = return_message.strip()
                 if ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value:
                     has_errors = True
             elif is_ap_header:
@@ -384,7 +384,7 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
         .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value) \
         .one_or_none()
     invoice_link.disbursement_status_code = disbursement_status
-    invoice_link.message = ap_header_error_message
+    invoice_link.message = ap_header_error_message.strip()
     if disbursement_status == DisbursementStatus.ERRORED.value:
         invoice.disbursement_status_code = disbursement_status
         has_errors = True
