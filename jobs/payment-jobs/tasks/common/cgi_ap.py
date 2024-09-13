@@ -51,7 +51,8 @@ class CgiAP(CgiEjv):
         effective_date = cls._get_date(datetime.now(tz=timezone.utc))
         invoice_date = cls._get_date(invoice_date)
         oracle_invoice_batch_name = cls._get_oracle_invoice_batch_name(invoice_number)
-        disbursement_method = DisbursementMethod.CHEQUE if cls.ap_type == EjvFileType.REFUND else DisbursementMethod.EFT
+        disbursement_method = (DisbursementMethod.CHEQUE.value
+                               if cls.ap_type == EjvFileType.REFUND else DisbursementMethod.EFT.value)
         term = f'{cls.EMPTY:<50}' if cls.ap_type == EjvFileType.REFUND else f'Immediate{cls.EMPTY:<41}'
         ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                     f'{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}GEN {disbursement_method} N' \

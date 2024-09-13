@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import RoutingSlip
-from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, InvoiceStatus, RoutingSlipStatus
+from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, InvoiceStatus, PaymentMethod, RoutingSlipStatus
 
 from tasks.ap_task import ApTask
 
@@ -38,19 +38,33 @@ def test_eft_refunds(session, monkeypatch):
     1) Create an invoice with refund and status REFUNDED
     2) Run the job and assert status
     """
-    account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    account = factory_create_eft_account(
+        auth_account_id='1',
+        status=CfsAccountStatus.ACTIVE.value
+    )
     invoice = factory_invoice(
         payment_account=account,
+        payment_method_code=PaymentMethod.EFT.value,
         status_code=InvoiceStatus.PAID.value,
-        total=10
+        total=100,
+    )
+    short_name = factory_create_eft_shortname('SHORTNAMETEST')
+    factory_create_eft_refund(
+        disbursement_status_code=DisbursementStatus.ACKNOWLEDGED.value,
+        refund_amount=100,
+        refund_email='test@test.com',
+        short_name_id=short_name.id,
+        status=InvoiceStatus.REFUND_REQUESTED.value
     )
     eft_file = factory_create_eft_file()
-    eft_transaction_id = factory_create_eft_transaction(file_id=eft_file.id).id
-    short_name_id = factory_create_eft_shortname('shortnametest').id
-    factory_create_eft_refund(short_name_id=short_name_id)
-    eft_credit = factory_create_eft_credit(short_name_id=short_name_id, eft_transaction_id=eft_transaction_id)
+    eft_transaction = factory_create_eft_transaction(file_id=eft_file.id)
+    eft_credit = factory_create_eft_credit(
+        short_name_id=short_name.id,
+        eft_transaction_id=eft_transaction.id,
+        eft_file_id=eft_file.id
+    )
     factory_create_eft_credit_invoice_link(invoice_id=invoice.id, eft_credit_id=eft_credit.id)
-    factory_eft_shortname_link(short_name_id=short_name_id)
+    factory_eft_shortname_link(short_name_id=short_name.id)
 
     with patch('pysftp.Connection.put') as mock_upload:
         ApTask.create_ap_files()

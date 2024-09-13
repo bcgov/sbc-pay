@@ -26,8 +26,9 @@ from pay_api.models import (
     PaymentAccount, PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, Statement, StatementInvoices,
     StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus,
-    LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus)
+    CfsAccountStatus, DisbursementStatus, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus,
+    InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem,
+    RoutingSlipStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -352,12 +353,14 @@ def factory_create_eft_refund(
     refund_amount: float = 100.0,
     refund_email: str = '',
     short_name_id: int = 1,
-    status: str = InvoiceStatus.REFUND_REQUESTED.value
+    status: str = InvoiceStatus.REFUND_REQUESTED.value,
+    disbursement_status_code: str = DisbursementStatus.ACKNOWLEDGED.value
 ):
     """Return Factory."""
     eft_refund = EFTRefund(
         cas_supplier_number=cas_supplier_number,
         comment=comment,
+        disbursement_status_code=disbursement_status_code,
         refund_amount=refund_amount,
         refund_email=refund_email,
         short_name_id=short_name_id,
