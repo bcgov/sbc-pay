@@ -13,11 +13,18 @@
 # limitations under the License.
 """Model to track Partner Disbursements, need this table because invoices can be reversed and applied multiple times."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .base_model import BaseModel
 from .db import db
 
+
+"""
+    This is used in three different distinct flows for EFT only currently (provided the partner disbursements enabled):
+    1. Invoice creation - create a Partner Disbursement record
+    2. Invoice reversal - create a Partner Disbursement reversal record
+    3. Statement reversal - EFT specific, create a Partner Disbursement reversal record
+"""
 
 class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the partner disbursements that should be executed."""
@@ -50,7 +57,7 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     amount = db.Column(db.Numeric, nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     feedback_on = db.Column('feedback_on', db.DateTime, nullable=True)
     partner_code = db.Column('partner_code', db.String(50), nullable=False)
     processed_on = db.Column('processed_on', db.DateTime, nullable=True)

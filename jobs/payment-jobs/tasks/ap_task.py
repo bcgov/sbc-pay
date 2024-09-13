@@ -111,7 +111,8 @@ class ApTask(CgiAP):
     @classmethod
     def get_invoices_for_disbursement(cls, partner):
         """Return invoices for disbursement. Used by EJV and AP."""
-        disbursement_date = datetime.today() - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
+        disbursement_date = datetime.now(tz=timezone.utc).replace(tzinfo=None) \
+            - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(
