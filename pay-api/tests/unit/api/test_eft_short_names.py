@@ -31,8 +31,8 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod, Role,
-    StatementFrequency)
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameRefundStatus,
+    EFTShortnameStatus, InvoiceStatus, PaymentMethod, Role, StatementFrequency)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice, factory_payment_account,
@@ -284,10 +284,7 @@ def assert_short_name_summary(result_dict: dict,
     assert result_dict['creditsRemaining'] == expected_credits_remaining
     assert result_dict['linkedAccountsCount'] == expected_linked_accounts_count
     assert datetime.strptime(result_dict['lastPaymentReceivedDate'], date_format) == transaction.deposit_date
-    if shortname_refund is None:
-        assert result_dict['refundStatus'] is None
-    else:
-        assert result_dict['refundStatus'] == shortname_refund.status
+    assert result_dict['refundStatus'] == (shortname_refund.status if shortname_refund is not None else None)
 
 
 def test_eft_short_name_summaries(session, client, jwt, app):
@@ -548,10 +545,10 @@ def create_eft_summary_search_data():
     s1_refund = EFTRefundModel(
         short_name_id=short_name_1.id,
         refund_amount=100.00,
-        cas_supplier_number='SUP123456',
+        cas_supplier_number='123',
         refund_email='test@example.com',
         comment='Test comment',
-        status=EFTShortnameStatus.PENDING_REFUND.value
+        status=EFTShortnameRefundStatus.PENDING_REFUND.value
     ).save()
 
     return short_name_1, s1_transaction1, short_name_2, s2_transaction1, s1_refund
