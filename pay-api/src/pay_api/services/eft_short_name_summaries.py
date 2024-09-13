@@ -25,7 +25,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import db
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
 from pay_api.services.eft_short_names import EFTShortnamesSearch
-from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
 from pay_api.utils.util import unstructure_schema_items
 
 
@@ -82,7 +82,8 @@ class EFTShortnameSummaries:
         """Query for EFT shortname count."""
         # pylint: disable=not-callable
         return (db.session.query(EFTRefundModel.short_name_id, EFTRefundModel.status)
-                .filter(EFTRefundModel.status.in_([EFTCreditInvoiceStatus.PENDING_REFUND])))
+                .filter(EFTRefundModel.status.in_([EFTShortnameStatus.PENDING_REFUND.value]))
+                )
 
     @staticmethod
     def get_remaining_credit_query():

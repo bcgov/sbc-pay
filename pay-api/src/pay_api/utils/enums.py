@@ -355,6 +355,7 @@ class EFTShortnameStatus(Enum):
     LINKED = 'LINKED'
     UNLINKED = 'UNLINKED'
     PENDING = 'PENDING'
+    PENDING_REFUND = 'PENDING_REFUND'
 
 
 class EFTPaymentActions(Enum):

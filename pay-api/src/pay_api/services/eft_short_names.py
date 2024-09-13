@@ -70,7 +70,6 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     state: Optional[List[str]] = None
     page: Optional[int] = 1
     limit: Optional[int] = 10
-    refund_status: Optional[str] = None
 
 
 class EFTShortnames:  # pylint: disable=too-many-instance-attributes
