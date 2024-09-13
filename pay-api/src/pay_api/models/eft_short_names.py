@@ -98,6 +98,7 @@ class EFTShortnameSummarySchema:
     last_payment_received_date: datetime
     credits_remaining: Decimal
     linked_accounts_count: int
+    refund_status: str
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
@@ -109,5 +110,6 @@ class EFTShortnameSummarySchema:
                    short_name=row.short_name,
                    last_payment_received_date=getattr(row, 'last_payment_received_date', None),
                    credits_remaining=getattr(row, 'credits_remaining', None),
-                   linked_accounts_count=getattr(row, 'linked_accounts_count', None)
+                   linked_accounts_count=getattr(row, 'linked_accounts_count', None),
+                   refund_status=getattr(row, 'refund_status', None)
                    )

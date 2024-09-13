@@ -25,7 +25,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import db
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
 from pay_api.services.eft_short_names import EFTShortnamesSearch
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
+from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
 from pay_api.utils.util import unstructure_schema_items
 
 
@@ -81,13 +81,8 @@ class EFTShortnameSummaries:
     def get_shortname_refund_query():
         """Query for EFT shortname count."""
         # pylint: disable=not-callable
-        return (db.session.query(EFTRefundModel.eft_short_name_id,
-                                 func.count(
-                                     EFTShortnameLinksModel.eft_short_name_id
-                                 ).label('count'))
-                .filter(EFTShortnameLinksModel.status_code.in_([EFTShortnameStatus.PENDING.value,
-                                                                EFTShortnameStatus.LINKED.value]))
-                .group_by(EFTShortnameLinksModel.eft_short_name_id))
+        return (db.session.query(EFTRefundModel.short_name_id, EFTRefundModel.status)
+                .filter(EFTRefundModel.status.in_([EFTCreditInvoiceStatus.PENDING_REFUND])))
 
     @staticmethod
     def get_remaining_credit_query():
@@ -122,7 +117,8 @@ class EFTShortnameSummaries:
             EFTShortnameModel.short_name,
             func.coalesce(linked_account_subquery.c.count, 0).label('linked_accounts_count'),
             func.coalesce(credit_remaining_subquery.c.total, 0).label('credits_remaining'),
-            last_payment_subquery.c.deposit_date.label('last_payment_received_date')
+            last_payment_subquery.c.deposit_date.label('last_payment_received_date'),
+            refund_shortname_subquery.c.status.label('refund_status')
         ).outerjoin(
             linked_account_subquery,
             linked_account_subquery.c.eft_short_name_id == EFTShortnameModel.id
@@ -132,7 +128,10 @@ class EFTShortnameSummaries:
         ).outerjoin(
             last_payment_subquery,
             and_(last_payment_subquery.c.short_name_id == EFTShortnameModel.id, last_payment_subquery.c.rn == 1)
-        ))
+        )).outerjoin(
+            refund_shortname_subquery,
+            refund_shortname_subquery.c.short_name_id == EFTShortnameModel.id
+        )
 
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
