@@ -28,10 +28,11 @@ from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod, Role,
-    StatementFrequency)
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameRefundStatus, EFTShortnameStatus,
+    InvoiceStatus, PaymentMethod, Role, StatementFrequency)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice, factory_payment_account,
@@ -274,7 +275,8 @@ def assert_short_name_summary(result_dict: dict,
                               short_name: EFTShortnamesModel,
                               transaction: EFTTransactionModel,
                               expected_credits_remaining: Decimal,
-                              expected_linked_accounts_count: int):
+                              expected_linked_accounts_count: int,
+                              shortname_refund: EFTRefundModel = None):
     """Assert short name summary result."""
     date_format = '%Y-%m-%dT%H:%M:%S'
     assert result_dict['id'] == short_name.id
@@ -282,6 +284,7 @@ def assert_short_name_summary(result_dict: dict,
     assert result_dict['creditsRemaining'] == expected_credits_remaining
     assert result_dict['linkedAccountsCount'] == expected_linked_accounts_count
     assert datetime.strptime(result_dict['lastPaymentReceivedDate'], date_format) == transaction.deposit_date
+    assert result_dict['refundStatus'] == (shortname_refund.status if shortname_refund is not None else None)
 
 
 def test_eft_short_name_summaries(session, client, jwt, app):
@@ -304,7 +307,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
                             name='ABC-123',
                             branch_name='123').save()
 
-    short_name_1, s1_transaction1, short_name_2, s2_transaction1 = create_eft_summary_search_data()
+    short_name_1, s1_transaction1, short_name_2, s2_transaction1, s1_refund = create_eft_summary_search_data()
 
     # Assert short name search brings back both short names
     rv = client.get('/api/v1/eft-shortnames/summaries?shortName=SHORT', headers=headers)
@@ -319,9 +322,9 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict['items'] is not None
     assert len(result_dict['items']) == 2
     assert_short_name_summary(result_dict['items'][0],
-                              short_name_1, s1_transaction1, 204.0, 0)
+                              short_name_1, s1_transaction1, 204.0, 0, s1_refund)
     assert_short_name_summary(result_dict['items'][1],
-                              short_name_2, s2_transaction1, 302.5, 1)
+                              short_name_2, s2_transaction1, 302.5, 1, )
 
     # Assert short name search brings back first short name
     rv = client.get('/api/v1/eft-shortnames/summaries?shortName=name1', headers=headers)
@@ -336,7 +339,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict['items'] is not None
     assert len(result_dict['items']) == 1
     assert_short_name_summary(result_dict['items'][0],
-                              short_name_1, s1_transaction1, 204.0, 0)
+                              short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
     # Assert search linked accounts count
     rv = client.get('/api/v1/eft-shortnames/summaries?linkedAccountsCount=0', headers=headers)
@@ -351,7 +354,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict['items'] is not None
     assert len(result_dict['items']) == 1
     assert_short_name_summary(result_dict['items'][0],
-                              short_name_1, s1_transaction1, 204.0, 0)
+                              short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
     rv = client.get('/api/v1/eft-shortnames/summaries?linkedAccountsCount=1', headers=headers)
     assert rv.status_code == 200
@@ -411,7 +414,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict['items'] is not None
     assert len(result_dict['items']) == 1
     assert_short_name_summary(result_dict['items'][0],
-                              short_name_1, s1_transaction1, 204.0, 0)
+                              short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
     # Assert search query by no state will return all records
     rv = client.get('/api/v1/eft-shortnames/summaries', headers=headers)
@@ -426,7 +429,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict['items'] is not None
     assert len(result_dict['items']) == 2
     assert_short_name_summary(result_dict['items'][0],
-                              short_name_1, s1_transaction1, 204.0, 0)
+                              short_name_1, s1_transaction1, 204.0, 0, s1_refund)
     assert_short_name_summary(result_dict['items'][1],
                               short_name_2, s2_transaction1, 302.5, 1)
 
@@ -443,7 +446,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict['items'] is not None
     assert len(result_dict['items']) == 1
     assert_short_name_summary(result_dict['items'][0],
-                              short_name_1, s1_transaction1, 204.0, 0)
+                              short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
     # Assert search pagination - page 2 works
     rv = client.get('/api/v1/eft-shortnames/summaries?page=2&limit=1', headers=headers)
@@ -539,7 +542,16 @@ def create_eft_summary_search_data():
                    remaining_amount=s2_transaction1.deposit_amount_cents / 100
                    ).save()
 
-    return short_name_1, s1_transaction1, short_name_2, s2_transaction1
+    s1_refund = EFTRefundModel(
+        short_name_id=short_name_1.id,
+        refund_amount=100.00,
+        cas_supplier_number='123',
+        refund_email='test@example.com',
+        comment='Test comment',
+        status=EFTShortnameRefundStatus.PENDING_REFUND.value
+    ).save()
+
+    return short_name_1, s1_transaction1, short_name_2, s2_transaction1, s1_refund
 
 
 def create_eft_search_data():

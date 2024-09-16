@@ -357,6 +357,12 @@ class EFTShortnameStatus(Enum):
     PENDING = 'PENDING'
 
 
+class EFTShortnameRefundStatus(Enum):
+    """EFT Short name refund statuses."""
+
+    PENDING_REFUND = 'PENDING_REFUND'
+
+
 class EFTPaymentActions(Enum):
     """EFT Short name payment actions."""
 
