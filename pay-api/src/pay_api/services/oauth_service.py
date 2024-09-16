@@ -16,6 +16,7 @@ import json
 from collections.abc import Iterable
 from typing import Dict
 
+import re
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
@@ -55,8 +56,10 @@ class OAuthService:
         if content_type == ContentType.JSON:
             data = json.dumps(data, cls=DecimalEncoder)
 
+        safe_headers = headers.copy()
+        safe_headers.pop('Authorization', None)
         current_app.logger.debug(f'Endpoint : {endpoint}')
-        current_app.logger.debug(f'headers : {headers}')
+        current_app.logger.debug(f'headers : {safe_headers}')
         current_app.logger.debug(f'data : {data}')
         response = None
         try:
@@ -91,7 +94,11 @@ class OAuthService:
             if response.headers and isinstance(response.headers, Iterable) and \
                     'Content-Type' in response.headers and \
                     response.headers['Content-Type'] == ContentType.JSON.value:
-                current_app.logger.info(f"response : {response.text if response else ''} ")
+                # Remove authentication from response
+                response_text = response.text if response is not None else ''
+                response_text = re.sub(r'"access_token"\s*:\s*"[^"]*",?\s*', '', response_text)
+                response_text = re.sub(r',\s*}', '}', response_text)
+                current_app.logger.info(f'response : {response_text}')
 
     @staticmethod
     def get(endpoint, token, auth_header_type: AuthHeaderType,  # pylint:disable=too-many-arguments
@@ -109,8 +116,10 @@ class OAuthService:
         if additional_headers is not None:
             headers.update(additional_headers)
 
+        safe_headers = headers.copy()
+        safe_headers.pop('Authorization', None)
         current_app.logger.debug(f'Endpoint : {endpoint}')
-        current_app.logger.debug(f'headers : {headers}')
+        current_app.logger.debug(f'headers : {safe_headers}')
         session = requests.Session()
         if retry_on_failure:
             session.mount(endpoint, RETRY_ADAPTER)
