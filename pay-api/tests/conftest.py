@@ -296,5 +296,5 @@ def admin_users_mock(monkeypatch):
         }
     monkeypatch.setattr('pay_api.services.payment_account.get_account_admin_users',
                         get_account_admin_users)
-    monkeypatch.setattr('pay_api.services.eft_short_names.get_account_admin_users',
+    monkeypatch.setattr('pay_api.services.eft_service.get_account_admin_users',
                         get_account_admin_users)
