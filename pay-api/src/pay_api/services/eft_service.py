@@ -41,7 +41,6 @@ from pay_api.models import RefundPartialLine
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
-from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
     PaymentMethod, PaymentStatus, PaymentSystem)
@@ -478,7 +477,7 @@ class EftService(DepositService):
             case EFTCreditInvoiceStatus.COMPLETED.value:
                 # 4. EFT Credit Link - COMPLETED
                 # (Invoice needs to be reversed and receipt needs to be reversed.)
-                # reversal_total = Decimal('0')
+                reversal_total = Decimal('0')
                 for cil in sibling_cils:
                     EftService._return_eft_credit(cil)
                     EFTCreditInvoiceLinkModel(
