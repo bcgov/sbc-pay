@@ -239,7 +239,7 @@ class EftService(DepositService):
                                      InvoiceStatus.CANCELLED.value]
         link_group_id = EFTCreditInvoiceLinkModel.get_next_group_link_seq()
         reversed_credits = 0
-        # invoice_disbursements = {}
+        invoice_disbursements = {}
         for current_link in credit_invoice_links:
             invoice = InvoiceModel.find_by_id(current_link.invoice_id)
 

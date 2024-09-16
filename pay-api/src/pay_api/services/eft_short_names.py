@@ -24,15 +24,11 @@ from sqlalchemy import and_, case, func, or_
 from sqlalchemy.sql.expression import exists
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import CorpType as CorpTypeModel
-from pay_api.models import EFTCredit as EFTCreditModel
-from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnameLinkSchema
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnameSchema
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
