@@ -662,7 +662,7 @@ def test_skip_on_existing_pending_payments(session, app, client):
                                         message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     create_statement_from_invoices(payment_account, [invoice])
-    eft_credits = EftService._get_eft_credits(eft_shortname.id)
+    eft_credits = EFTCreditModel.get_eft_credits(eft_shortname.id)
 
     # Add an unexpected PENDING record to test that processing skips for this account
     EFTCreditInvoiceLinkModel(

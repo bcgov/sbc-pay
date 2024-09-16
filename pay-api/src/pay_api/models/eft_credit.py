@@ -13,6 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to EFT Credits data."""
 from datetime import datetime, timezone
+from typing import List, Self
 from decimal import Decimal
 
 from sqlalchemy import ForeignKey, func
@@ -72,3 +73,12 @@ class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         return Decimal(result.credit_balance) if result else 0
+
+    @classmethod
+    def get_eft_credits(cls, short_name_id: int) -> List[Self]:
+        """Get EFT Credits with a remaining amount."""
+        return (cls.query(EFTCredit)
+                .filter(EFTCredit.remaining_amount > 0)
+                .filter(EFTCredit.short_name_id == short_name_id)
+                .order_by(EFTCredit.created_on.asc())
+                .all())

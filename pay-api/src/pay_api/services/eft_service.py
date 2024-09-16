@@ -400,7 +400,7 @@ class EftService(DepositService):
         if eft_credit_balance < invoice_balance:
             return
 
-        eft_credits = EftService._get_eft_credits(short_name_id)
+        eft_credits = EFTCreditModel.get_eft_credits(short_name_id)
         for eft_credit in eft_credits:
             credit_invoice_link = EFTCreditInvoiceLinkModel(
                 eft_credit_id=eft_credit.id,
@@ -422,15 +422,6 @@ class EftService(DepositService):
             credit_invoice_link.save_or_add(auto_save)
             eft_credit.remaining_amount = 0
             eft_credit.save_or_add(auto_save)
-
-    @staticmethod
-    def _get_eft_credits(short_name_id: int) -> List[EFTCreditModel]:
-        """Get EFT Credits with a remaining amount."""
-        return (db.session.query(EFTCreditModel)
-                .filter(EFTCreditModel.remaining_amount > 0)
-                .filter(EFTCreditModel.short_name_id == short_name_id)
-                .order_by(EFTCreditModel.created_on.asc())
-                .all())
 
     @staticmethod
     def _return_eft_credit(eft_credit_link: EFTCreditInvoiceLinkModel,
@@ -566,7 +557,7 @@ class EftService(DepositService):
     def _refund_eft_credits(shortname_id: int, amount: str):
         """Refund the amount to eft_credits table based on short_name_id."""
         refund_amount = Decimal(amount)
-        eft_credits = EftService._get_eft_credits(shortname_id)
+        eft_credits = EFTCreditModel.get_eft_credits(shortname_id)
         eft_credit_balance = EFTCreditModel.get_eft_credit_balance(shortname_id)
 
         if refund_amount > eft_credit_balance:
