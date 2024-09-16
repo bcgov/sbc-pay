@@ -29,7 +29,7 @@ from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.services import EftService, EFTShortNamesService
+from pay_api.services import EFTShortNamesService
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus, EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus,
     PaymentMethod, StatementFrequency)
