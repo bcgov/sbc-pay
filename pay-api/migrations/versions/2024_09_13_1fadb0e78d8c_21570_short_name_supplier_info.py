@@ -25,8 +25,16 @@ def upgrade():
         batch_op.add_column(sa.Column('cas_supplier_number', sa.String(25), nullable=True))
         batch_op.add_column(sa.Column('email', sa.String(100), nullable=True))
 
+    with op.batch_alter_table('eft_short_names_history', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('cas_supplier_number', sa.String(25), nullable=True))
+        batch_op.add_column(sa.Column('email', sa.String(100), nullable=True))
+
 
 def downgrade():
     with op.batch_alter_table('eft_short_names', schema=None) as batch_op:
+        batch_op.drop_column('cas_supplier_number')
+        batch_op.drop_column('email')
+
+    with op.batch_alter_table('eft_short_names_history', schema=None) as batch_op:
         batch_op.drop_column('cas_supplier_number')
         batch_op.drop_column('email')
