@@ -11,20 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to track Partner Disbursements, need this table because invoices can be reversed and applied multiple times."""
+"""Model to track Partner Disbursements, need this table because invoices can be reversed and applied multiple times.
+
+This is used in three different distinct flows for EFT only currently (provided the partner disbursements enabled):
+
+1. Invoice creation - create a Partner Disbursement record
+2. Invoice reversal - create a Partner Disbursement reversal record
+3. Statement reversal - EFT specific, create a Partner Disbursement reversal record
+
+"""
 
 from datetime import datetime, timezone
 
 from .base_model import BaseModel
 from .db import db
 
-
-"""
-    This is used in three different distinct flows for EFT only currently (provided the partner disbursements enabled):
-    1. Invoice creation - create a Partner Disbursement record
-    2. Invoice reversal - create a Partner Disbursement reversal record
-    3. Statement reversal - EFT specific, create a Partner Disbursement reversal record
-"""
 
 class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the partner disbursements that should be executed."""

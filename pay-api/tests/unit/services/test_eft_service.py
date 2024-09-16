@@ -25,6 +25,8 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
+from pay_api.models import PartnerDisbursements
+from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTHistoricalTypes, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
@@ -187,6 +189,9 @@ def test_eft_invoice_refund(session, test_name):
                                                     eft_credit_id=eft_credit.id,
                                                     status_code=EFTCreditInvoiceStatus.COMPLETED.value,
                                                     link_group_id=2).save()
+            corp_type = CorpTypeModel.find_by_code('CP')
+            corp_type.has_partner_disbursements = True
+            corp_type.save()
         case _:
             raise NotImplementedError
 
@@ -229,12 +234,19 @@ def test_eft_invoice_refund(session, test_name):
             assert eft_credit.remaining_amount == 4
             assert EFTCreditInvoiceLinkModel.query.count() == 5 + 3
             pending_refund_count = 0
+            amount = 0
             for cil in EFTCreditInvoiceLinkModel.query.all():
                 if cil.status_code == EFTCreditInvoiceStatus.PENDING_REFUND.value:
                     pending_refund_count += 1
+                    amount += cil.amount
             assert pending_refund_count == 3
             eft_history = session.query(EFTHistoryModel).one()
             assert_shortname_refund_history(eft_credit, eft_history, invoice)
+            assert PartnerDisbursements.query.count() == 1
+            partner_disbursement = PartnerDisbursements.query.first()
+            assert partner_disbursement.is_reversal is True
+            assert partner_disbursement.partner_code == 'CP'
+            assert partner_disbursement.amount == amount
         case _:
             raise NotImplementedError
 
@@ -245,3 +257,20 @@ def assert_shortname_refund_history(eft_credit, eft_history, invoice):
     assert eft_history.is_processing is True
     assert eft_history.amount == invoice.total
     assert eft_history.transaction_type == EFTHistoricalTypes.INVOICE_REFUND.value
+
+
+def test_eft_partner_disbursement(session):
+    """Small test to assert if partner disbursement enabled a row is created."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    invoice = factory_invoice(payment_account=payment_account,
+                              status_code=InvoiceStatus.APPROVED.value,
+                              total=5).save()
+    eft_service.create_invoice(payment_account, 10, invoice)
+    assert PartnerDisbursements.query.count() == 0
+
+    corp_type = CorpTypeModel.find_by_code('CP')
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
+
+    eft_service.create_invoice(payment_account, 10, invoice)
+    assert PartnerDisbursements.query.count() == 1

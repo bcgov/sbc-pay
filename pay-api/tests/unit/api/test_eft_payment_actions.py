@@ -25,8 +25,10 @@ from unittest.mock import patch
 
 from dateutil.relativedelta import relativedelta
 
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
+from pay_api.models import PartnerDisbursements
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
@@ -65,6 +67,10 @@ def setup_statement_data(account: PaymentAccountModel, invoice_totals: List[Deci
                                   status_code=InvoiceStatus.APPROVED.value,
                                   total=invoice_total, paid=0).save()
         factory_statement_invoices(statement_id=statement.id, invoice_id=invoice.id)
+
+    corp_type = CorpTypeModel.find_by_code('CP')
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
 
     return statement
 
@@ -323,3 +329,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     assert credit_invoice_links[1].amount == credit_invoice_links[0].amount
     assert credit_invoice_links[1].receipt_number == credit_invoice_links[0].receipt_number
     assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 100
+
+    partner_disbursement = PartnerDisbursements.query.first()
+    assert partner_disbursement.is_reversal is True
+    assert partner_disbursement.amount == 100
