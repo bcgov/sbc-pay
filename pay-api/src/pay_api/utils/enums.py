@@ -228,6 +228,7 @@ class Product(Enum):
     """Product."""
 
     BUSINESS = 'BUSINESS'
+    BUSINESS_SEARCH = 'BUSINESS_SEARCH'
     NRO = 'NRO'
     STRR = 'STRR'
 
