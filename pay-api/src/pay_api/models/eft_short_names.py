@@ -40,7 +40,9 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'cas_supplier_number',
             'created_on',
+            'email',
             'short_name'
         ]
     }
@@ -48,6 +50,8 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
+    email = db.Column(db.String(100), nullable=True)
+    cas_supplier_number = db.Column(db.String(), nullable=True)
 
     @classmethod
     def find_by_short_name(cls, short_name: str):
@@ -65,6 +69,8 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     account_branch: str
     amount_owing: Decimal
     created_on: datetime
+    email: str
+    cas_supplier_number: str
     short_name: str
     statement_id: int
     status_code: str
@@ -83,6 +89,8 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
                    amount_owing=getattr(row, 'total_owing', None),
                    created_on=row.created_on,
                    short_name=row.short_name,
+                   email=getattr(row, 'email'),
+                   cas_supplier_number=getattr(row, 'cas_supplier_number'),
                    statement_id=getattr(row, 'latest_statement_id', None),
                    status_code=getattr(row, 'status_code', None),
                    cfs_account_status=getattr(row, 'cfs_account_status', None)

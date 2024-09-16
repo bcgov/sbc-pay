@@ -25,8 +25,12 @@ def test_eft_short_name_model(session):
     """Assert eft short names are stored."""
     eft_short_name = EFTShortnamesModel()
     eft_short_name.short_name = 'ABC'
+    eft_short_name.cas_supplier_number = '123456'
+    eft_short_name.email = 'test@test.com'
     eft_short_name.save()
 
     assert eft_short_name.id is not None
     assert eft_short_name.short_name == 'ABC'
+    assert eft_short_name.cas_supplier_number == '123456'
+    assert eft_short_name.email == 'test@test.com'
     assert eft_short_name.created_on.date() == datetime.now(tz=timezone.utc).date()

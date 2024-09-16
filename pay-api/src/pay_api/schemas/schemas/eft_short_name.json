@@ -2,25 +2,27 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/eft_short_name",
   "type": "object",
-  "title": "EFT Short name response",
-  "required": [
-    "shortName"
-  ],
+  "title": "EFT Short name patch request",
   "properties": {
-    "shortName": {
-      "$id": "#/properties/shortName",
+    "casSupplierNumber": {
+      "$id": "#/properties/casSupplierNumber",
       "type": "string",
-      "title": "EFT short name",
+      "title": "CAS Supplier Number",
+      "description": "EFT Short name associated CAS supplier number.",
+      "maxLength": 25,
       "examples": [
         "ABC123"
       ]
     },
-    "accountId": {
-      "$id": "#/properties/accountId",
-      "type": ["string", "null"],
-      "title": "BC Registries Account Number",
+    "email": {
+      "$id": "#/properties/email",
+      "type": "string",
+      "title": "Email",
+      "format": "email",
+      "description": "EFT Short name contact email.",
+      "maxLength": 100,
       "examples": [
-        "1234"
+        "test@gmail.com"
       ]
     }
   }
