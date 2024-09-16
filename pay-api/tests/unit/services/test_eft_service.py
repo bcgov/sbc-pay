@@ -28,7 +28,8 @@ from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import PartnerDisbursements
 from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.services.eft_service import EftService
-from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTHistoricalTypes, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import (
+    EFTCreditInvoiceStatus, EFTHistoricalTypes, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_eft_credit, factory_eft_credit_invoice_link, factory_eft_file, factory_eft_shortname, factory_invoice,
@@ -121,7 +122,8 @@ def test_refund_eft_credits_exceed_balance(session):
     ('1_invoice_non_exist'),
     ('2_no_eft_credit_link'),
     ('3_pending_credit_link'),
-    ('4_completed_credit_link')
+    ('4_completed_credit_link'),
+    ('5_consolidated_invoice_block')
 ])
 def test_eft_invoice_refund(session, test_name):
     """Test various scenarios for eft_invoice_refund."""
@@ -164,9 +166,13 @@ def test_eft_invoice_refund(session, test_name):
                                                     eft_credit_id=eft_credit.id,
                                                     status_code=EFTCreditInvoiceStatus.PENDING.value,
                                                     link_group_id=3).save()
-        case '4_completed_credit_link':
-            factory_invoice_reference(invoice_id=invoice.id,
-                                      invoice_number='1234').save()
+        case '4_completed_credit_link' | '5_consolidated_invoice_block':
+            invoice_reference = factory_invoice_reference(invoice_id=invoice.id,
+                                                          invoice_number='1234').save()
+            if test_name == '5_consolidated_invoice_block':
+                invoice_reference.is_consolidated = True
+                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+                invoice_reference.save()
             # Filler rows to make sure COMPLETED is the highest ID
             cil_1 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
                                                     eft_credit_id=eft_credit.id,
@@ -194,6 +200,13 @@ def test_eft_invoice_refund(session, test_name):
             corp_type.save()
         case _:
             raise NotImplementedError
+
+    if test_name == '5_consolidated_invoice_block':
+        with pytest.raises(BusinessException) as excinfo:
+            invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
+            invoice.save()
+        assert excinfo.value.code == Error.INVALID_CONSOLIDATED_REFUND.name
+        return
 
     invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
     invoice.save()
