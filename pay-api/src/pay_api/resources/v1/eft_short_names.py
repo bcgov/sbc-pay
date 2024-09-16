@@ -103,7 +103,7 @@ def get_eft_shortname_summaries():
 
 
 @bp.route('/<int:short_name_id>', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET'])
+@cross_origin(origins='*', methods=['GET', 'PATCH'])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname(short_name_id: int):
@@ -115,6 +115,25 @@ def get_eft_shortname(short_name_id: int):
     else:
         response, status = eft_short_name, HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortname')
+    return jsonify(response), status
+
+
+@bp.route('/<int:short_name_id>', methods=['PATCH'])
+@cross_origin(origins='*')
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def patch_eft_shortname(short_name_id: int):
+    """Patch EFT short name."""
+    current_app.logger.info('<patch_eft_shortname')
+    request_json = request.get_json()
+    valid_format, errors = schema_utils.validate(request_json, 'eft_short_name')
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    try:
+        response, status = EFTShortnameService.patch_shortname(short_name_id, request_json), HTTPStatus.OK
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>patch_eft_shortname')
     return jsonify(response), status
 
 

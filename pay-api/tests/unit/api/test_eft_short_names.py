@@ -930,3 +930,26 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt, app):
 
     assert rv.status_code == 400
     assert 'INVALID_REQUEST' in rv.json['type']
+
+
+def test_patch_shortname(session, client, jwt, app):
+    """Test patch EFT Short name."""
+    data = {'email': 'invalid_email', 'casSupplierNumber': '1234567ABC'}
+
+    short_name = factory_eft_shortname('TEST_SHORTNAME').save()
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}', headers=headers, json=data)
+
+    assert rv.status_code == 400
+    assert 'INVALID_REQUEST' in rv.json['type'], 'Expecting invalid email format.'
+
+    data['email'] = 'test@test.com'
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}', headers=headers, json=data)
+
+    assert rv.status_code == 200
+    result = rv.json
+    assert result is not None
+    assert result['casSupplierNumber'] == data['casSupplierNumber']
+    assert result['email'] == data['email']

@@ -360,6 +360,23 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                    **kwargs)
 
     @classmethod
+    def patch_shortname(cls, short_name_id: int, request: Dict):
+        """Patch EFT short name."""
+        current_app.logger.debug('<patch_shortname')
+        email = request.get('email', None)
+        cas_supplier_number = request.get('casSupplierNumber', None)
+        short_name = EFTShortnameModel.find_by_id(short_name_id)
+
+        if email is not None:
+            short_name.email = email.strip()
+        if cas_supplier_number is not None:
+            short_name.cas_supplier_number = cas_supplier_number.strip()
+        short_name.save()
+
+        current_app.logger.debug('>patch_shortname')
+        return cls.find_by_short_name_id(short_name_id)
+
+    @classmethod
     def patch_shortname_link(cls, link_id: int, request: Dict):
         """Patch EFT short name link."""
         current_app.logger.debug('<patch_shortname_link')
@@ -683,6 +700,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
         query = db.session.query(EFTShortnameModel.id,
                                  EFTShortnameModel.short_name,
+                                 EFTShortnameModel.cas_supplier_number,
+                                 EFTShortnameModel.email,
                                  EFTShortnameModel.created_on)
 
         # Join payment information if this is NOT the count query
