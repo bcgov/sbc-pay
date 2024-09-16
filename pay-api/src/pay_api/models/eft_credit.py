@@ -77,7 +77,7 @@ class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
     @classmethod
     def get_eft_credits(cls, short_name_id: int) -> List[Self]:
         """Get EFT Credits with a remaining amount."""
-        return (cls.query(EFTCredit)
+        return (cls.query
                 .filter(EFTCredit.remaining_amount > 0)
                 .filter(EFTCredit.short_name_id == short_name_id)
                 .order_by(EFTCredit.created_on.asc())
