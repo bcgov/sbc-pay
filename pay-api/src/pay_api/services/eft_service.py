@@ -150,9 +150,9 @@ class EftService(DepositService):
                                              receipt_number=payment.receipt_number)
         return receipt
 
-    @classmethod
+    @staticmethod
     @user_context
-    def create_shortname_refund(cls, request: Dict[str, str], **kwargs) -> Dict[str, str]:
+    def create_shortname_refund(request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create refund."""
         # This method isn't for invoices, it's for shortname only.
         shortname_id = get_str_by_path(request, 'shortNameId')
@@ -305,9 +305,9 @@ class EftService(DepositService):
         credit_links_query = credit_links_query.filter_conditionally(invoice_id, InvoiceModel.id)
         return credit_links_query.all()
 
-    @classmethod
+    @staticmethod
     @user_context
-    def _send_reversed_payment_notification(cls, statement: StatementModel, reversed_amount, **kwargs):
+    def _send_reversed_payment_notification(statement: StatementModel, reversed_amount, **kwargs):
         payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
         summary_dict: dict = StatementService.get_summary(payment_account.auth_account_id)
 
@@ -365,8 +365,8 @@ class EftService(DepositService):
         if date_difference.days > 60:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_REVERSAL_EXCEEDS_SIXTY_DAYS)
 
-    @classmethod
-    def get_statement_credit_invoice_links(cls, shortname_id, statement_id) -> List[EFTCreditInvoiceLinkModel]:
+    @staticmethod
+    def get_statement_credit_invoice_links(shortname_id, statement_id) -> List[EFTCreditInvoiceLinkModel]:
         """Get most recent EFT Credit invoice links associated to a statement and short name."""
         query = (db.session.query(EFTCreditInvoiceLinkModel)
                  .distinct(EFTCreditInvoiceLinkModel.invoice_id)
