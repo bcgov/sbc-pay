@@ -267,7 +267,12 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             # Note we do the opposite of this in payment_account.
             current_app.logger.info(f'Consolidated invoice found, reversing consolidated '
                                     f'invoice {invoice_reference.invoice_number}.')
-            CFSService.reverse_invoice(invoice_reference.invoice_number)
+            # Guard against double reversing an invoice because an invoice reference can have many invoice ids
+            if InvoiceReferenceModel.query.filter(
+                    InvoiceReferenceModel.invoice_number == invoice_reference.invoice_number) \
+                    .filter(InvoiceReferenceModel.is_consolidated.is_(True)) \
+                    .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.CANCELLED.value).count() == 0:
+                CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
             invoice_reference = original_invoice_reference
