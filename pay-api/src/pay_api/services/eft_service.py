@@ -109,6 +109,13 @@ class EftService(DepositService):
                     invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None and not cils:
             return InvoiceStatus.CANCELLED.value
 
+        inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id,
+                                                                      InvoiceReferenceStatus.COMPLETED.value)
+        if inv_ref and inv_ref.is_consolidated:
+            # We can't allow these, because they credit memo the account and don't actually refund.
+            # Also untested with EFT. We want to be able to refund back to the original payment method.
+            raise BusinessException(Error.INVALID_CONSOLIDATED_REFUND)
+
         # 2. No EFT Credit Link - Job needs to reverse invoice in CFS
         # (Invoice needs to be reversed, receipt doesn't exist.)
         if not cils:
