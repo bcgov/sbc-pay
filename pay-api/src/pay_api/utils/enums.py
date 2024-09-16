@@ -229,6 +229,7 @@ class Product(Enum):
     """Product."""
 
     BUSINESS = 'BUSINESS'
+    BUSINESS_SEARCH = 'BUSINESS_SEARCH'
     NRO = 'NRO'
     STRR = 'STRR'
 
@@ -356,6 +357,12 @@ class EFTShortnameStatus(Enum):
     LINKED = 'LINKED'
     UNLINKED = 'UNLINKED'
     PENDING = 'PENDING'
+
+
+class EFTShortnameRefundStatus(Enum):
+    """EFT Short name refund statuses."""
+
+    PENDING_REFUND = 'PENDING_REFUND'
 
 
 class EFTPaymentActions(Enum):
