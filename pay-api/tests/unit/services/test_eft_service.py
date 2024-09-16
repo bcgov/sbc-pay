@@ -74,7 +74,7 @@ def test_refund_eft_credits(session):
     credit2 = MagicMock(remaining_amount=4)
     credit3 = MagicMock(remaining_amount=3)
 
-    with patch('pay_api.services.eft_service.EFTShortnames.get_eft_credits',
+    with patch('pay_api.models.EFTCredit.get_eft_credits',
                return_value=[credit1, credit2, credit3]), \
          patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=9):
         EftService._refund_eft_credits(1, '8')
@@ -105,7 +105,7 @@ def test_refund_eft_credits_exceed_balance(session):
     credit2 = MagicMock(remaining_amount=4)
     credit3 = MagicMock(remaining_amount=3)
 
-    with patch('pay_api.services.eft_service.EFTShortnames.get_eft_credits',
+    with patch('pay_api.models.EFTCredit.get_eft_credits',
                return_value=[credit1, credit2, credit3]), \
          patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=8):
 
