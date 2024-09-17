@@ -1,4 +1,4 @@
-"""Enable partner disbursemnts for certain corp types.
+"""Enable partner disbursements for certain corp types.
 
 Revision ID: 56c4542db0d7
 Revises: aae01971bd53
