@@ -110,10 +110,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
                 except Exception as e:  # NOQA # pylint: disable=broad-except
                     capture_message(
-                        f'Error on canelling Routing Slip invoice: invoice id={invoice.id}, '
+                        f'Error on cancelling Routing Slip invoice: invoice id={invoice.id}, '
                         f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
                     current_app.logger.error(e)
-                    # TODO stop execution ? what should be the invoice stats ; should we set it to error or retry?
                     continue
 
                 invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
