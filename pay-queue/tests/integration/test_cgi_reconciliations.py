@@ -101,7 +101,7 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
 
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -141,7 +141,7 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -216,7 +216,7 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
 
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -255,7 +255,7 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -333,7 +333,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
 
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -372,7 +372,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -499,7 +499,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
                                           f'......................................................................CGI'
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -512,7 +512,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -655,7 +655,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
                                           f'......................................................................CGI'
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -668,7 +668,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -743,7 +743,7 @@ def test_successful_refund_reconciliations(session, app, client):
     # Upload an acknowledgement file
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -815,7 +815,7 @@ def test_successful_refund_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -874,7 +874,7 @@ def test_failed_refund_reconciliations(session, app, client):
     # Upload an acknowledgement file
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -947,7 +947,7 @@ def test_failed_refund_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -1021,7 +1021,7 @@ def test_successful_ap_disbursement(session, app, client):
 
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -1092,7 +1092,7 @@ def test_successful_ap_disbursement(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -1167,7 +1167,7 @@ def test_failure_ap_disbursement(session, app, client):
 
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -1241,7 +1241,7 @@ def test_failure_ap_disbursement(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
