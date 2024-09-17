@@ -33,7 +33,7 @@ class DisbursementLineItem:
     description_identifier: str
     is_reversal: bool
     is_legacy: bool
-    disbursement_type: str
+    target_type: str
     identifier: int
 
 

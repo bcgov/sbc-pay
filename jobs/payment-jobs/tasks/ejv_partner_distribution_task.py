@@ -102,7 +102,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     is_reversal=invoice.invoice_status_code in [InvoiceStatus.REFUNDED.value,
                                                                 InvoiceStatus.REFUND_REQUESTED.value,
                                                                 InvoiceStatus.CREDITED.value],
-                    disbursement_type=EJVLinkType.INVOICE.value,
+                    target_type=EJVLinkType.INVOICE.value,
                     identifier=invoice.id,
                     is_legacy=True
                 )
@@ -118,7 +118,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                   PartnerDisbursementsModel.target_type == EJVLinkType.INVOICE.value)) \
             .join(DistributionCodeModel,
                   DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id) \
-            .filter(PartnerDisbursementsModel.status_code.is_(None)) \
+            .filter(PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value) \
             .filter(PartnerDisbursementsModel.partner_code == partner.code) \
             .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)) \
             .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
@@ -126,17 +126,19 @@ class EjvPartnerDistributionTask(CgiEjv):
             .all()
 
         for partner_disbursement, payment_line_item, distribution_code in partner_disbursements:
-            suffix = 'PR' if partner_disbursement.disbursement_type == EJVLinkType.PARTIAL_REFUND else ''
-            flow_through = f'{partner.target_id}-{partner_disbursement.id}{suffix}'
+            suffix = 'PR' if partner_disbursement.target_type == EJVLinkType.PARTIAL_REFUND else ''
+            flow_through = f'{payment_line_item.invoice_id}-{partner_disbursement.id}'
+            if suffix != '':
+                flow_through += f'-{suffix}'
             disbursement_rows.append(Disbursement(
                 bcreg_distribution_code=distribution_code,
-                partner_distribution_code=distribution_code.partner_distribution_code,
+                partner_distribution_code=distribution_code.disbursement_distribution_code,
                 line_item=DisbursementLineItem(
                     amount=partner_disbursement.amount,
                     flow_through=flow_through,
                     description_identifier='#' + flow_through,
                     is_reversal=partner_disbursement.is_reversal,
-                    disbursement_type=partner_disbursement.disbursement_type,
+                    target_type=partner_disbursement.target_type,
                     identifier=partner_disbursement.target_id,
                     is_legacy=False
                 )
@@ -239,12 +241,12 @@ class EjvPartnerDistributionTask(CgiEjv):
             # process over to something similar: Where we have an entire table setup that
             # is used to track disbursements, instead of just the three column approach that
             # doesn't work when there are multiple reversals etc.
-            partner_disbursement = PartnerDisbursementsModel.find_by_id(target.identifier)
+            partner_disbursement = PartnerDisbursementsModel.find_by_target(target.identifier, 'invoice')
             partner_disbursement.status_code = DisbursementStatus.UPLOADED.value
             partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
 
         db.session.add(EjvLinkModel(link_id=target.identifier,
-                                    link_type=target.disbursement_type,
+                                    link_type=target.target_type,
                                     ejv_header_id=ejv_header_model.id,
                                     disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                     sequence=sequence))
