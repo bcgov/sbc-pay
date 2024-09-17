@@ -163,7 +163,7 @@ class JVDetailsFeedback:
     partner_disbursement: Optional[PartnerDisbursementsModel] = None
 
 
-def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):
+def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number) -> bool:
     """Process JV Details Feedback."""
     details = _build_jv_details(line, receipt_number)
     # If the JV process failed, then mark the GL code against the invoice to be stopped
@@ -203,7 +203,7 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
     return details
 
 
-def _handle_jv_disbursement_feedback(details: JVDetailsFeedback):
+def _handle_jv_disbursement_feedback(details: JVDetailsFeedback) -> bool:
     has_errors = False
     disbursement_status = _get_disbursement_status(details.invoice_return_code)
     details.invoice_link.disbursement_status_code = disbursement_status
@@ -229,7 +229,7 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback):
     return has_errors
 
 
-def _handle_jv_payment_feedback(details: JVDetailsFeedback):
+def _handle_jv_payment_feedback(details: JVDetailsFeedback) -> bool:
     has_errors = False
     # This is for gov account payment JV.
     details.invoice_link.disbursement_status_code = _get_disbursement_status(details.invoice_return_code)
