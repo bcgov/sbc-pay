@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the Payment Reconciliation queue service is working as expected.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
@@ -518,6 +518,7 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
 
     dist_code = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id)
+    original_dist_code = dist_code
     # Update fee dist code to match the requirement.
     dist_code.client = '112'
     dist_code.responsibility_centre = '22222'
@@ -656,15 +657,20 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         assert len(payment) == 1
         assert payment[0][0].paid_amount == inv_total_amount
 
+    # Put these back otherwise the next test will fail.
+    dist_code = original_dist_code
+    dist_code.service_fee_distribution_code_id = None
+    dist_code.save()
+    service_fee_dist_code.delete()
+
 
 def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
     # 3. Create a feedback file and assert status
-
-    corp_type = 'BEN'
-    filing_type = 'BCINC'
+    corp_type = 'CP'
+    filing_type = 'OTFDR'
 
     # Find fee schedule which have service fees.
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
@@ -683,6 +689,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     dist_code.stob = '4444'
     dist_code.project_code = '5555555'
     dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
+    dist_code.disbursement_distribution_code_id = None
     dist_code.save()
 
     # GA
@@ -693,7 +700,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
 
     # Now create JV records.
     # Create EJV File model
-    file_ref = f'INBOX.{datetime.now()}'
+    file_ref = f'INBOX.{datetime.now(tz=timezone.utc)}-5'
     ejv_file = EjvFileModel(file_ref=file_ref,
                             disbursement_status_code=DisbursementStatus.UPLOADED.value,
                             file_type=EjvFileType.PAYMENT.value).save()
@@ -710,7 +717,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
         inv = factory_invoice(payment_account=jv_acc, corp_type_code=corp_type, total=inv_total_amount,
-                              status_code=InvoiceStatus.REFUND_REQUESTED.value, payment_method_code=None)
+                              status_code=InvoiceStatus.REFUND_REQUESTED.value, payment_method_code=None
+                              )
         factory_invoice_reference(inv.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
         line = factory_payment_line_item(invoice_id=inv.id,
                                          fee_schedule_id=fee_schedule.fee_schedule_id,
@@ -768,7 +776,6 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
         jv_file.write('')
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
