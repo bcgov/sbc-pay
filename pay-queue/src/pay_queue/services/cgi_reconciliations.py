@@ -110,10 +110,10 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
         receipt_number: Optional[str] = None
         for line in group_batch.splitlines():
             # For all these indexes refer the sharepoint docs refer : https://github.com/bcgov/entity/issues/6226
-            is_batch_group: bool = line[2:4] == 'BG'
-            is_batch_header: bool = line[2:4] == 'BH'
-            is_jv_header: bool = line[2:4] == 'JH'
-            is_jv_detail: bool = line[2:4] == 'JD'
+            is_batch_group = line[2:4] == 'BG'
+            is_batch_header = line[2:4] == 'BH'
+            is_jv_header = line[2:4] == 'JH'
+            is_jv_detail = line[2:4] == 'JD'
             if is_batch_group:
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
@@ -127,7 +127,7 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
             elif is_jv_header:
                 journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
                 ejv_header_model_id = int(journal_name[2:])
-                ejv_header: EjvHeaderModel = EjvHeaderModel.find_by_id(ejv_header_model_id)
+                ejv_header = EjvHeaderModel.find_by_id(ejv_header_model_id)
                 ejv_header_return_code = line[271:275]
                 ejv_header.disbursement_status_code = _get_disbursement_status(ejv_header_return_code)
                 ejv_header_error_message = line[275:425]
@@ -212,7 +212,7 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
     if disbursement_status == DisbursementStatus.ERRORED.value:
         has_errors = True
         if details.partner_disbursement:
-            details.partner_disbursement.disbursement_status_code = DisbursementStatus.ERRORED.value
+            details.partner_disbursement.status_code = DisbursementStatus.ERRORED.value
             details.partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
         details.invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
         line_items: List[PaymentLineItemModel] = details.invoice.payment_line_items
@@ -294,7 +294,7 @@ def _update_partner_disbursement(partner_disbursement, status_code, effective_da
     """Update the partner disbursement status."""
     if partner_disbursement is None:
         return
-    partner_disbursement.disbursement_status_code = status_code
+    partner_disbursement.status_code = status_code
     partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
     partner_disbursement.feedback_on = effective_date
 
