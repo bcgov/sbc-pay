@@ -68,10 +68,10 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
         invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0,
         fee_schedule_id=fee_schedule.fee_schedule_id
     )
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
     # Check if the disbursement distribution is present for this.
     if not dist_code.disbursement_distribution_code_id:
-        disbursement_distribution_code: DistributionCodeModel = factory_distribution(name='Disbursement')
+        disbursement_distribution_code = factory_distribution(name='Disbursement')
         dist_code.disbursement_distribution_code_id = disbursement_distribution_code.distribution_code_id
         dist_code.save()
 
@@ -166,22 +166,22 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
     partner_code = 'VS'
-    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
         corp_type_code=partner_code, filing_type_code='WILLSEARCH'
     )
 
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            corp_type_code='VS',
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value,
-                                            status_code=InvoiceStatus.PAID.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              corp_type_code='VS',
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+                              status_code=InvoiceStatus.PAID.value)
     invoice_id = invoice.id
-    line_item: PaymentLineItemModel = factory_payment_line_item(
+    line_item = factory_payment_line_item(
         invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0,
         fee_schedule_id=fee_schedule.fee_schedule_id
     )
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
     # Check if the disbursement distribution is present for this.
     if not dist_code.disbursement_distribution_code_id:
         disbursement_distribution_code: DistributionCodeModel = factory_distribution(name='Disbursement')
@@ -199,14 +199,14 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
     # Now create JV records.
     # Create EJV File model
     file_ref = f'INBOX{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id,
-                                                partner_code=partner_code,
-                                                payment_account_id=pay_account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id,
+                                partner_code=partner_code,
+                                payment_account_id=pay_account.id).save()
     ejv_header_id = ejv_header.id
     EjvLinkModel(
         link_id=invoice.id,
@@ -287,21 +287,21 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
         corp_type_code=partner_code, filing_type_code='WILLSEARCH'
     )
 
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            corp_type_code='VS',
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value,
-                                            status_code=InvoiceStatus.PAID.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              corp_type_code='VS',
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+                              status_code=InvoiceStatus.PAID.value)
     invoice_id = invoice.id
-    line_item: PaymentLineItemModel = factory_payment_line_item(
+    line_item = factory_payment_line_item(
         invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0,
         fee_schedule_id=fee_schedule.fee_schedule_id
     )
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
     # Check if the disbursement distribution is present for this.
     if not dist_code.disbursement_distribution_code_id:
-        disbursement_distribution_code: DistributionCodeModel = factory_distribution(name='Disbursement')
+        disbursement_distribution_code = factory_distribution(name='Disbursement')
         dist_code.disbursement_distribution_code_id = disbursement_distribution_code.distribution_code_id
         dist_code.save()
 
@@ -317,14 +317,14 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     # Now create JV records.
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id,
-                                                partner_code=partner_code,
-                                                payment_account_id=pay_account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id,
+                                partner_code=partner_code,
+                                payment_account_id=pay_account.id).save()
     ejv_header_id = ejv_header.id
     EjvLinkModel(
         link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
@@ -400,7 +400,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
     filing_type = 'BCINC'
 
     # Find fee schedule which have service fees.
-    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
     # Create a service fee distribution code
     service_fee_dist_code = factory_distribution(name='service fee', client='112', reps_centre='99999',
                                                  service_line='99999',
@@ -429,9 +429,9 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
     # Now create JV records.
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                          file_type=EjvFileType.PAYMENT.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                            file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
     feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
@@ -447,15 +447,15 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
         inv = factory_invoice(payment_account=jv_acc, corp_type_code=corp_type, total=inv_total_amount,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
         factory_invoice_reference(inv.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
-        line: PaymentLineItemModel = factory_payment_line_item(invoice_id=inv.id,
-                                                               fee_schedule_id=fee_schedule.fee_schedule_id,
-                                                               filing_fees=100,
-                                                               total=100,
-                                                               service_fees=1.5,
-                                                               fee_dist_id=dist_code.distribution_code_id)
+        line = factory_payment_line_item(invoice_id=inv.id,
+                                         fee_schedule_id=fee_schedule.fee_schedule_id,
+                                         filing_fees=100,
+                                         total=100,
+                                         service_fees=1.5,
+                                         fee_dist_id=dist_code.distribution_code_id)
         inv_ids.append(inv.id)
-        ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                    ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
+        ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                    ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
 
         EjvLinkModel(link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
                      ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
@@ -548,7 +548,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
         assert payment[0][0].paid_amount == inv_total_amount
 
 
-def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
+def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -558,14 +558,14 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     filing_type = 'BCINC'
 
     # Find fee schedule which have service fees.
-    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
     # Create a service fee distribution code
     service_fee_dist_code = factory_distribution(name='service fee', client='112', reps_centre='99999',
                                                  service_line='99999',
                                                  stob='9999', project_code='9999999')
     service_fee_dist_code.save()
 
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
+    dist_code = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id)
     # Update fee dist code to match the requirement.
     dist_code.client = '112'
@@ -585,9 +585,9 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     # Now create JV records.
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                          file_type=EjvFileType.PAYMENT.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                            file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
     feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
@@ -603,15 +603,15 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
         inv = factory_invoice(payment_account=jv_acc, corp_type_code=corp_type, total=inv_total_amount,
                               status_code=InvoiceStatus.REFUND_REQUESTED.value, payment_method_code=None)
         factory_invoice_reference(inv.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
-        line: PaymentLineItemModel = factory_payment_line_item(invoice_id=inv.id,
-                                                               fee_schedule_id=fee_schedule.fee_schedule_id,
-                                                               filing_fees=100,
-                                                               total=100,
-                                                               service_fees=1.5,
-                                                               fee_dist_id=dist_code.distribution_code_id)
+        line = factory_payment_line_item(invoice_id=inv.id,
+                                         fee_schedule_id=fee_schedule.fee_schedule_id,
+                                         filing_fees=100,
+                                         total=100,
+                                         service_fees=1.5,
+                                         fee_dist_id=dist_code.distribution_code_id)
         inv_ids.append(inv.id)
-        ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                    ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
+        ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                    ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
 
         EjvLinkModel(
             link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
@@ -683,7 +683,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     # Assert invoice and receipt records
     for inv_id in inv_ids:
-        invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+        invoice = InvoiceModel.find_by_id(inv_id)
         assert invoice.disbursement_status_code is None
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
         assert invoice.refund_date == datetime(2023, 5, 29)
@@ -735,9 +735,9 @@ def test_successful_refund_reconciliations(session, app, client):
     # Now create AP records.
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          file_type=EjvFileType.REFUND.value,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            file_type=EjvFileType.REFUND.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
     # Upload an acknowledgement file
@@ -1001,13 +1001,13 @@ def test_successful_ap_disbursement(session, app, client):
     factory_refund(invoice_id=refund_invoice.id)
 
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
 
     EjvLinkModel(
         link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
@@ -1147,13 +1147,13 @@ def test_failure_ap_disbursement(session, app, client):
     factory_refund(invoice_id=refund_invoice.id)
 
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
 
     EjvLinkModel(
         link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,

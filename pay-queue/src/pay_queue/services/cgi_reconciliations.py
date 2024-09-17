@@ -175,6 +175,7 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):
         has_errors = _handle_jv_payment_feedback(details)
     return has_errors
 
+
 def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
     line = _fix_invoice_line(line)
     details = JVDetailsFeedback(
