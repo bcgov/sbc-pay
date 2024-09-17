@@ -66,3 +66,8 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
     status_code = db.Column('status_code', db.String(25), nullable=False)
     target_id = db.Column(db.Integer, nullable=True)
     target_type = db.Column(db.String(50), nullable=True)
+
+    @classmethod
+    def find_by_target(cls, target_id: int, target_type: str):
+        """Find the Partner Disbursement by target."""
+        return cls.query.filter_by(target_id=target_id, target_type=target_type).first()
