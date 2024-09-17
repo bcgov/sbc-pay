@@ -36,6 +36,7 @@ from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
     PaymentMethod, PaymentStatus, RoutingSlipStatus)
 from sbc_common_components.utils.enums import QueueMessageTypes
+from sqlalchemy import text
 
 from tests.integration.utils import add_file_event_to_queue_and_process
 
@@ -504,7 +505,6 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
     # 3. Create a feedback file and assert status
-
     corp_type = 'BEN'
     filing_type = 'BCINC'
 
@@ -513,18 +513,17 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
     # Create a service fee distribution code
     service_fee_dist_code = factory_distribution(name='service fee', client='112', reps_centre='99999',
                                                  service_line='99999',
-                                                 stob='9999', project_code='9999999')
+                                                 stob='9999', project_code='9999998')
     service_fee_dist_code.save()
 
     dist_code = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id)
-    original_dist_code = dist_code
     # Update fee dist code to match the requirement.
     dist_code.client = '112'
     dist_code.responsibility_centre = '22222'
     dist_code.service_line = '33333'
     dist_code.stob = '4444'
-    dist_code.project_code = '5555555'
+    dist_code.project_code = '5555559'
     dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
     dist_code.save()
 
@@ -657,12 +656,6 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         assert len(payment) == 1
         assert payment[0][0].paid_amount == inv_total_amount
 
-    # Put these back otherwise the next test will fail.
-    dist_code = original_dist_code
-    dist_code.service_fee_distribution_code_id = None
-    dist_code.save()
-    service_fee_dist_code.delete()
-
 
 def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
@@ -671,6 +664,12 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     # 3. Create a feedback file and assert status
     corp_type = 'CP'
     filing_type = 'OTFDR'
+
+    InvoiceModel.query.delete()
+    # Reset the sequence, because the unit test is only dealing with 1 character for the invoice id.
+    # This becomes more apparent when running unit tests in parallel.
+    db.session.execute(text('ALTER SEQUENCE invoices_id_seq RESTART WITH 1'))
+    db.session.commit()
 
     # Find fee schedule which have service fees.
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
@@ -687,9 +686,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     dist_code.responsibility_centre = '22222'
     dist_code.service_line = '33333'
     dist_code.stob = '4444'
-    dist_code.project_code = '5555555'
+    dist_code.project_code = '5555557'
     dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
-    dist_code.disbursement_distribution_code_id = None
     dist_code.save()
 
     # GA
@@ -700,7 +698,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
 
     # Now create JV records.
     # Create EJV File model
-    file_ref = f'INBOX.{datetime.now(tz=timezone.utc)}-5'
+    file_ref = f'INBOX.{datetime.now(tz=timezone.utc)}'
     ejv_file = EjvFileModel(file_ref=file_ref,
                             disbursement_status_code=DisbursementStatus.UPLOADED.value,
                             file_type=EjvFileType.PAYMENT.value).save()
