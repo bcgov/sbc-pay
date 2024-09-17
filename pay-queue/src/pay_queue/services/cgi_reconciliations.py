@@ -169,9 +169,10 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number) -> 
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
     current_app.logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
-    if details.line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
+    credit_or_debit_line = details.line[104:105]
+    if credit_or_debit_line == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
         has_errors = _handle_jv_disbursement_feedback(details, has_errors)
-    elif details.line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
+    elif credit_or_debit_line == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
         has_errors = _handle_jv_payment_feedback(details, has_errors)
     return has_errors
 
