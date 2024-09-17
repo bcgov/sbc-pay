@@ -177,11 +177,11 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):
 
 
 def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
+    # Work around for CAS, they said fix the feedback files.
     line = _fix_invoice_line(line)
     details = JVDetailsFeedback(
         journal_name=line[7:17],
         ejv_header_model_id=int(line[7:17][2:]),
-        # Work around for CAS, they said fix the feedback files.
         line=line,
         flowthrough=line[205:315].strip(),
         invoice_return_code=line[315:319],
