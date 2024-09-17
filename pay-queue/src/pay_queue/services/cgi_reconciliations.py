@@ -170,9 +170,9 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number) -> 
     # for further JV process for the credit GL.
     current_app.logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
     if details.line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
-        has_errors = _handle_jv_disbursement_feedback(details)
+        has_errors = _handle_jv_disbursement_feedback(details, has_errors)
     elif details.line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
-        has_errors = _handle_jv_payment_feedback(details)
+        has_errors = _handle_jv_payment_feedback(details, has_errors)
     return has_errors
 
 
@@ -203,8 +203,7 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
     return details
 
 
-def _handle_jv_disbursement_feedback(details: JVDetailsFeedback) -> bool:
-    has_errors = False
+def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: bool) -> bool:
     disbursement_status = _get_disbursement_status(details.invoice_return_code)
     details.invoice_link.disbursement_status_code = disbursement_status
     details.invoice_link.message = details.invoice_return_message.strip()
@@ -229,8 +228,7 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback) -> bool:
     return has_errors
 
 
-def _handle_jv_payment_feedback(details: JVDetailsFeedback) -> bool:
-    has_errors = False
+def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) -> bool:
     # This is for gov account payment JV.
     details.invoice_link.disbursement_status_code = _get_disbursement_status(details.invoice_return_code)
     details.invoice_link.message = details.invoice_return_message.strip()
