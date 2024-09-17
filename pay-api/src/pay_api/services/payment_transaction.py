@@ -345,7 +345,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         6. Change the status of Payment
         7. Update the transaction record
         """
-        # Assumption is this def will be called only for credit card, bcol and internal payments.
+        # Assumption this will be called only for credit card, bcol and internal payments.
         # Doesn't support PAD or ONLINE BANKING.
         transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id(
             transaction_id
