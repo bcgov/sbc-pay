@@ -163,6 +163,45 @@ class JVDetailsFeedback:
     partner_disbursement: Optional[PartnerDisbursementsModel] = None
 
 
+def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):
+    """Process JV Details Feedback."""
+    details = _build_jv_details(line, receipt_number)
+    # If the JV process failed, then mark the GL code against the invoice to be stopped
+    # for further JV process for the credit GL.
+    current_app.logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
+    if details.line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
+        has_errors = _handle_jv_disbursement_feedback(details)
+    elif details.line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
+        has_errors = _handle_jv_payment_feedback(details)
+    return has_errors
+
+def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
+    line = _fix_invoice_line(line)
+    details = JVDetailsFeedback(
+        journal_name=line[7:17],
+        ejv_header_model_id=int(line[7:17][2:]),
+        # Work around for CAS, they said fix the feedback files.
+        line=line,
+        flowthrough=line[205:315].strip(),
+        invoice_return_code=line[315:319],
+        invoice_return_message=line[319:469],
+        receipt_number=receipt_number
+    )
+    if '-' in details.flowthrough:
+        invoice_id = int(details.flowthrough.split('-')[0])
+        partner_disbursement_id = int(details.flowthrough.split('-')[1])
+        details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
+    else:
+        invoice_id = int(details.flowthrough)
+    current_app.logger.info('Invoice id - %s', invoice_id)
+    details.invoice = InvoiceModel.find_by_id(invoice_id)
+    details.invoice_link = db.session.query(EjvLinkModel).filter(
+        EjvLinkModel.ejv_header_id == details.ejv_header_model_id).filter(
+        EjvLinkModel.link_id == invoice_id).filter(
+        EjvLinkModel.link_type == EJVLinkType.INVOICE.value).one_or_none()
+    return details
+
+
 def _handle_jv_disbursement_feedback(details: JVDetailsFeedback):
     has_errors = False
     disbursement_status = _get_disbursement_status(details.invoice_return_code)
@@ -231,46 +270,6 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback):
     return has_errors
 
 
-def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
-    line = _fix_invoice_line(line)
-    details = JVDetailsFeedback(
-        journal_name=line[7:17],
-        ejv_header_model_id=int(line[7:17][2:]),
-        # Work around for CAS, they said fix the feedback files.
-        line=line,
-        flowthrough=line[205:315].strip(),
-        invoice_return_code=line[315:319],
-        invoice_return_message=line[319:469],
-        receipt_number=receipt_number
-    )
-    if '-' in details.flowthrough:
-        invoice_id = int(details.flowthrough.split('-')[0])
-        partner_disbursement_id = int(details.flowthrough.split('-')[1])
-        details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
-    else:
-        invoice_id = int(details.flowthrough)
-    current_app.logger.info('Invoice id - %s', invoice_id)
-    details.invoice = InvoiceModel.find_by_id(invoice_id)
-    details.invoice_link = db.session.query(EjvLinkModel).filter(
-        EjvLinkModel.ejv_header_id == details.ejv_header_model_id).filter(
-        EjvLinkModel.link_id == invoice_id).filter(
-        EjvLinkModel.link_type == EJVLinkType.INVOICE.value).one_or_none()
-    return details
-
-
-def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):
-    """Process JV Details Feedback."""
-    details = _build_jv_details(line, receipt_number)
-    # If the JV process failed, then mark the GL code against the invoice to be stopped
-    # for further JV process for the credit GL.
-    current_app.logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
-    if details.line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
-        has_errors = _handle_jv_disbursement_feedback(details)
-    elif details.line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
-        has_errors = _handle_jv_payment_feedback(details)
-    return has_errors
-
-
 def _set_invoice_jv_reversal(invoice: InvoiceModel, effective_date: datetime, is_reversal: bool):
     # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
     if is_reversal:
@@ -291,6 +290,15 @@ def _fix_invoice_line(line):
     return line
 
 
+def _update_partner_disbursement(partner_disbursement, status_code, effective_date):
+    """Update the partner disbursement status."""
+    if partner_disbursement is None:
+        return
+    partner_disbursement.disbursement_status_code = status_code
+    partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
+    partner_disbursement.feedback_on = effective_date
+
+
 def _update_invoice_disbursement_status(invoice: InvoiceModel,
                                         effective_date: datetime,
                                         partner_disbursement: PartnerDisbursementsModel):
@@ -298,17 +306,11 @@ def _update_invoice_disbursement_status(invoice: InvoiceModel,
     # Look up partner disbursements table and update the status.
     if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value,
                                        InvoiceStatus.CREDITED.value):
-        if partner_disbursement:
-            partner_disbursement.disbursement_status_code = DisbursementStatus.REVERSED.value
-            partner_disbursement.feedback_on = effective_date
-            partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
+        _update_partner_disbursement(partner_disbursement, DisbursementStatus.REVERSED.value, effective_date)
         invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
         invoice.disbursement_reversal_date = effective_date
     else:
-        if partner_disbursement:
-            partner_disbursement.disbursement_status_code = DisbursementStatus.COMPLETED.value
-            partner_disbursement.feedback_on = effective_date
-            partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
+        _update_partner_disbursement(partner_disbursement, DisbursementStatus.COMPLETED.value, effective_date)
         invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
         invoice.disbursement_date = effective_date
 
