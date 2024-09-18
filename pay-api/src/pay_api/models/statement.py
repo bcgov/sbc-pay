@@ -14,6 +14,7 @@
 """Model to handle statements data."""
 from __future__ import annotations
 from typing import List
+from dateutil.relativedelta import relativedelta
 
 from attr import define
 import pytz
@@ -131,9 +132,9 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
         https://www.attrs.org/en/stable/init.html
 
         """
-        return cls(id=row.id, frequency=row.frequency, from_date=row.from_date,
+        return cls(id=row.id, frequency=row.frequency, from_date=(row.from_date + relativedelta(hours=8)).isoformat(),
                    is_interim_statement=row.is_interim_statement, payment_methods=row.payment_methods,
-                   to_date=row.to_date)
+                   to_date=(row.to_date + relativedelta(hours=8)).isoformat())
 
     @classmethod
     def dao_to_dict(cls, statement_daos: List[Statement]) -> dict[StatementDTO]:

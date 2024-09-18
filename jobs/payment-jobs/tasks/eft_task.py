@@ -264,10 +264,15 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice_total_matches = cfs_total == invoice.total
             if not invoice_total_matches:
                 raise ValueError(f'SBC-PAY Invoice total {invoice.total} does not match CFS total {cfs_total}')
-            # Note we do the opposite of this in payment_account.
-            current_app.logger.info(f'Consolidated invoice found, reversing consolidated '
-                                    f'invoice {invoice_reference.invoice_number}.')
-            CFSService.reverse_invoice(invoice_reference.invoice_number)
+            # Guard against double reversing an invoice because an invoice reference can have many invoice ids
+            if InvoiceReferenceModel.query.filter(
+                    InvoiceReferenceModel.invoice_number == invoice_reference.invoice_number) \
+                    .filter(InvoiceReferenceModel.is_consolidated.is_(True)) \
+                    .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.CANCELLED.value).count() == 0:
+                # Note we do the opposite of this in payment_account.
+                current_app.logger.info(f'Consolidated invoice found, reversing consolidated '
+                                        f'invoice {invoice_reference.invoice_number}.')
+                CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
             invoice_reference = original_invoice_reference
@@ -323,7 +328,8 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                               f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
         is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
         is_reversal = not is_invoice_refund
-        CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
+        if receipt_number:
+            CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         if is_invoice_refund:
             cls._handle_invoice_refund(invoice, invoice_reference)
         else:

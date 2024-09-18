@@ -13,7 +13,10 @@
 # limitations under the License.
 """Model to handle all operations related to EFT Credits data."""
 from datetime import datetime, timezone
-from sqlalchemy import ForeignKey
+from typing import List, Self
+from decimal import Decimal
+
+from sqlalchemy import ForeignKey, func
 
 from .base_model import BaseModel
 from .db import db
@@ -60,3 +63,22 @@ class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
     def find_by_payment_account_id(cls, payment_account_id: int):
         """Find EFT Credit by payment account id."""
         return cls.query.filter_by(payment_account_id=payment_account_id).all()
+
+    @classmethod
+    def get_eft_credit_balance(cls, short_name_id: int) -> Decimal:
+        """Calculate pay account eft balance by account id."""
+        result = cls.query.with_entities(func.sum(cls.remaining_amount).label('credit_balance')) \
+            .filter(cls.short_name_id == short_name_id) \
+            .group_by(cls.short_name_id) \
+            .one_or_none()
+
+        return Decimal(result.credit_balance) if result else 0
+
+    @classmethod
+    def get_eft_credits(cls, short_name_id: int) -> List[Self]:
+        """Get EFT Credits with a remaining amount."""
+        return (cls.query
+                .filter(EFTCredit.remaining_amount > 0)
+                .filter(EFTCredit.short_name_id == short_name_id)
+                .order_by(EFTCredit.created_on.asc())
+                .all())

@@ -16,6 +16,7 @@ import json
 from collections.abc import Iterable
 from typing import Dict
 
+import re
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
@@ -55,8 +56,10 @@ class OAuthService:
         if content_type == ContentType.JSON:
             data = json.dumps(data, cls=DecimalEncoder)
 
+        safe_headers = headers.copy()
+        safe_headers.pop('Authorization', None)
         current_app.logger.debug(f'Endpoint : {endpoint}')
-        current_app.logger.debug(f'headers : {headers}')
+        current_app.logger.debug(f'headers : {safe_headers}')
         current_app.logger.debug(f'data : {data}')
         response = None
         try:
@@ -74,8 +77,8 @@ class OAuthService:
             raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
             current_app.logger.error(
-                f"HTTPError on POST with status code {response.status_code if response else ''}")
-            if response and response.status_code >= 500:
+                f"HTTPError on POST with status code {exc.response.status_code if exc.response is not None else ''}")
+            if exc.response and exc.response.status_code >= 500:
                 raise ServiceUnavailableException(exc) from exc
             raise exc
         finally:
@@ -91,7 +94,11 @@ class OAuthService:
             if response.headers and isinstance(response.headers, Iterable) and \
                     'Content-Type' in response.headers and \
                     response.headers['Content-Type'] == ContentType.JSON.value:
-                current_app.logger.info(f"response : {response.text if response else ''} ")
+                # Remove authentication from response
+                response_text = response.text if response is not None else ''
+                response_text = re.sub(r'"access_token"\s*:\s*"[^"]*",?\s*', '', response_text)
+                response_text = re.sub(r',\s*}', '}', response_text)
+                current_app.logger.info(f'response : {response_text}')
 
     @staticmethod
     def get(endpoint, token, auth_header_type: AuthHeaderType,  # pylint:disable=too-many-arguments
@@ -109,8 +116,10 @@ class OAuthService:
         if additional_headers is not None:
             headers.update(additional_headers)
 
+        safe_headers = headers.copy()
+        safe_headers.pop('Authorization', None)
         current_app.logger.debug(f'Endpoint : {endpoint}')
-        current_app.logger.debug(f'headers : {headers}')
+        current_app.logger.debug(f'headers : {safe_headers}')
         session = requests.Session()
         if retry_on_failure:
             session.mount(endpoint, RETRY_ADAPTER)
@@ -123,11 +132,13 @@ class OAuthService:
             current_app.logger.error(exc)
             raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
-            current_app.logger.error(f"HTTPError on GET with status code {response.status_code if response else ''}")
-            if response is not None:
-                if response.status_code >= 500:
+            if exc.response is None or exc.response.status_code != 404:
+                current_app.logger.error('HTTPError on GET with status code '
+                                         f"{exc.response.status_code if exc.response is not None else ''}")
+            if exc.response is not None:
+                if exc.response.status_code >= 500:
                     raise ServiceUnavailableException(exc) from exc
-                if return_none_if_404 and response.status_code == 404:
+                if return_none_if_404 and exc.response.status_code == 404:
                     return None
             raise exc
         finally:

@@ -290,7 +290,7 @@ def get_topic_for_corp_type(corp_type: str):
     if corp_type == CorpType.NRO.value:
         return current_app.config.get('NAMEX_PAY_TOPIC')
     product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get('product')
-    if product_code == Product.BUSINESS.value:
+    if product_code in [Product.BUSINESS.value, Product.BUSINESS_SEARCH.value]:
         return current_app.config.get('BUSINESS_PAY_TOPIC')
     if product_code == Product.STRR.value:
         return current_app.config.get('STRR_PAY_TOPIC')

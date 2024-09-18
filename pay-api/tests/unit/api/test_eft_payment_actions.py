@@ -29,7 +29,7 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
-from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
+from pay_api.services import EftService
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus, EFTPaymentActions, InvoiceStatus, PaymentMethod, Role, StatementFrequency)
 from pay_api.utils.errors import Error
@@ -107,9 +107,9 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
     assert rv.status_code == 400
     assert rv.json['type'] == Error.EFT_INSUFFICIENT_CREDITS.name
 
-    credit_invoice_links = EFTShortnamesService.get_shortname_invoice_links(short_name.id, account.id,
-                                                                            [EFTCreditInvoiceStatus.PENDING.value
-                                                                             ])
+    credit_invoice_links = EftService._get_shortname_invoice_links(short_name.id, account.id,
+                                                                   [EFTCreditInvoiceStatus.PENDING.value
+                                                                    ])
     assert not credit_invoice_links
 
     eft_credits = setup_eft_credits(short_name=short_name, credit_amounts=[50, 25, 125])
@@ -120,11 +120,11 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 204
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
 
-    credit_invoice_links = EFTShortnamesService.get_shortname_invoice_links(short_name.id, account.id,
-                                                                            [EFTCreditInvoiceStatus.PENDING.value
-                                                                             ])
+    credit_invoice_links = EftService._get_shortname_invoice_links(short_name.id, account.id,
+                                                                   [EFTCreditInvoiceStatus.PENDING.value
+                                                                    ])
     assert credit_invoice_links
     assert len(credit_invoice_links) == 4
     link_group_id = credit_invoice_links[0].link_group_id
@@ -140,7 +140,7 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
     assert rv.status_code == 204
     assert sum([eft_credit.remaining_amount for eft_credit in eft_credits + eft_credits_2]) == 300
     # assert eft_credits_2[0].remaining_amount == 300
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 300
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 300
 
 
 def test_eft_cancel_payment_action(session, client, jwt, app):
@@ -170,7 +170,7 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 204
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
 
     credit_offset = 100
     eft_credits[1].remaining_amount += credit_offset
@@ -186,7 +186,7 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
     eft_credits[1].save()
     # Assert no change and rollback was successful
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
 
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.CANCEL.value,
@@ -196,7 +196,7 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
     # Confirm credits have been restored
     assert rv.status_code == 204
     assert all(eft_credit.remaining_amount == eft_credit.amount for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 200
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 200
 
 
 def test_eft_payment_action_schema(db, session, client, jwt, app):
@@ -246,7 +246,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
                      headers=headers)
     assert rv.status_code == 204
     assert all(eft_credit.remaining_amount == 0 for eft_credit in eft_credits)
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
 
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                      data=json.dumps({'action': EFTPaymentActions.REVERSE.value, 'statementId': statement.id}),
@@ -254,8 +254,8 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     assert rv.status_code == 400
     assert rv.json['type'] == Error.EFT_PAYMENT_ACTION_CREDIT_LINK_STATUS_INVALID.name
 
-    credit_invoice_links = EFTShortnamesService.get_shortname_invoice_links(short_name.id, account.id,
-                                                                            [EFTCreditInvoiceStatus.PENDING.value])
+    credit_invoice_links = EftService._get_shortname_invoice_links(short_name.id, account.id,
+                                                                   [EFTCreditInvoiceStatus.PENDING.value])
     for link in credit_invoice_links:
         assert link.link_group_id is not None
         link.status_code = EFTCreditInvoiceStatus.COMPLETED.value
@@ -295,23 +295,23 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     invoices[0].invoice_status_code = InvoiceStatus.PAID.value
     invoices[0].save()
 
-    credit_invoice_links = EFTShortnamesService.get_shortname_invoice_links(short_name.id, account.id,
-                                                                            [EFTCreditInvoiceStatus.COMPLETED.value,
-                                                                             ])
+    credit_invoice_links = EftService._get_shortname_invoice_links(short_name.id, account.id,
+                                                                   [EFTCreditInvoiceStatus.COMPLETED.value,
+                                                                    ])
     credit_invoice_links[0].receipt_number = 'ABC123'
     credit_invoice_links[0].save()
-    with patch('pay_api.services.eft_short_names.send_email') as mock_email:
+    with patch('pay_api.services.eft_service.send_email') as mock_email:
         rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/payment',
                          data=json.dumps({'action': EFTPaymentActions.REVERSE.value, 'statementId': statement.id}),
                          headers=headers)
         assert rv.status_code == 204
         mock_email.assert_called_once()
 
-    credit_invoice_links = EFTShortnamesService.get_shortname_invoice_links(short_name.id, account.id,
-                                                                            [EFTCreditInvoiceStatus.PENDING.value,
-                                                                             EFTCreditInvoiceStatus.COMPLETED.value,
-                                                                             EFTCreditInvoiceStatus.PENDING_REFUND.value
-                                                                             ])
+    credit_invoice_links = EftService._get_shortname_invoice_links(short_name.id, account.id,
+                                                                   [EFTCreditInvoiceStatus.PENDING.value,
+                                                                    EFTCreditInvoiceStatus.COMPLETED.value,
+                                                                    EFTCreditInvoiceStatus.PENDING_REFUND.value
+                                                                    ])
     assert credit_invoice_links
     assert len(credit_invoice_links) == 2
     assert credit_invoice_links[0].status_code == EFTCreditInvoiceStatus.COMPLETED.value
@@ -322,4 +322,4 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     assert credit_invoice_links[1].link_group_id is not None
     assert credit_invoice_links[1].amount == credit_invoice_links[0].amount
     assert credit_invoice_links[1].receipt_number == credit_invoice_links[0].receipt_number
-    assert EFTShortnamesService.get_eft_credit_balance(short_name.id) == 100
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 100

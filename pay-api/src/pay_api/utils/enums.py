@@ -228,6 +228,7 @@ class Product(Enum):
     """Product."""
 
     BUSINESS = 'BUSINESS'
+    BUSINESS_SEARCH = 'BUSINESS_SEARCH'
     NRO = 'NRO'
     STRR = 'STRR'
 
@@ -357,6 +358,12 @@ class EFTShortnameStatus(Enum):
     PENDING = 'PENDING'
 
 
+class EFTShortnameRefundStatus(Enum):
+    """EFT Short name refund statuses."""
+
+    PENDING_REFUND = 'PENDING_REFUND'
+
+
 class EFTPaymentActions(Enum):
     """EFT Short name payment actions."""
 
@@ -403,7 +410,6 @@ class EJVLinkType(Enum):
 class StatementTemplate(Enum):
     """Statement report templates."""
 
-    EFT_STATEMENT = 'eft_statement'
     STATEMENT_REPORT = 'statement_report'
 
 
