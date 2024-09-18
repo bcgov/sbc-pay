@@ -1981,7 +1981,7 @@ werkzeug = "3.0.3"
 type = "git"
 url = "https://github.com/ochiu/sbc-pay.git"
 reference = "22982-EFT-Wire"
-resolved_reference = "421d47587ab171ec8f20b749c91462ddb489455e"
+resolved_reference = "a2fe75dfc54f2531981ddfc95d4aad74c4e15a84"
 subdirectory = "pay-api"
 
 [[package]]
