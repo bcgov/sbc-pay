@@ -18,7 +18,8 @@ Test-Suite to ensure that the EFT Credit invoice link model is working as expect
 """
 
 from pay_api.models import EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnames, EFTTransaction
-from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
+from pay_api.utils.enums import (
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, EFTShortnameType)
 from tests.utilities.base_test import factory_invoice, factory_payment_account
 
 
@@ -35,6 +36,7 @@ def test_eft_credit_invoice_link(session):
     eft_short_name = EFTShortnames()
     eft_short_name.auth_account_id = payment_account.auth_account_id
     eft_short_name.status_code = EFTShortnameStatus.LINKED.value
+    eft_short_name.type = EFTShortnameType.EFT.value
     eft_short_name.short_name = 'TESTSHORTNAME'
     eft_short_name.save()
 

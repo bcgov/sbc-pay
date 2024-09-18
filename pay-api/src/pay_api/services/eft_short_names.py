@@ -58,6 +58,7 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     credit_remaining: Optional[Decimal] = None
     linked_accounts_count: Optional[int] = None
     short_name: Optional[str] = None
+    short_name_type: Optional[str] = None
     statement_id: Optional[int] = None
     state: Optional[List[str]] = None
     page: Optional[int] = 1
@@ -359,6 +360,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
         query = db.session.query(EFTShortnameModel.id,
                                  EFTShortnameModel.short_name,
+                                 EFTShortnameModel.type,
                                  EFTShortnameModel.cas_supplier_number,
                                  EFTShortnameModel.email,
                                  EFTShortnameModel.created_on)
@@ -423,6 +425,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         query = cls.get_link_state_filters(search_criteria, query, links_subquery)
         # Short name filters
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
+        query = query.filter_conditionally(search_criteria.short_name_type, EFTShortnameModel.type)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
         if not is_count:
             query = query.order_by(EFTShortnameModel.short_name.asc(), links_subquery.c.auth_account_id.asc())

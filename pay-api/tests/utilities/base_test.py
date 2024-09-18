@@ -30,8 +30,8 @@ from pay_api.models import (
     PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
-    PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
+    CfsAccountStatus, EFTShortnameStatus, EFTShortnameType, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus,
+    PaymentMethod, PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
 
 
 token_header = {
@@ -902,9 +902,9 @@ def factory_eft_file(file_ref: str = 'test_ref.txt'):
     return EFTFile(file_ref=file_ref).save()
 
 
-def factory_eft_shortname(short_name: str):
+def factory_eft_shortname(short_name: str, short_name_type: str = EFTShortnameType.EFT.value):
     """Return an EFT short name model."""
-    return EFTShortnames(short_name=short_name)
+    return EFTShortnames(short_name=short_name, type=short_name_type)
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',

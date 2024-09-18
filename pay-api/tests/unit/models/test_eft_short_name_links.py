@@ -18,23 +18,14 @@ Test-Suite to ensure that the EFT Short names model is working as expected.
 """
 from datetime import datetime, timezone
 
-from pay_api.models.eft_short_names import EFTShortnames as EFTShortnamesModel
 from pay_api.models.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.utils.enums import EFTShortnameStatus
-
-
-def create_short_name_data():
-    """Create shortname seed data for test."""
-    eft_short_name = EFTShortnamesModel()
-    eft_short_name.short_name = 'ABC'
-    eft_short_name.save()
-
-    return eft_short_name
+from tests.utilities.base_test import factory_eft_shortname
 
 
 def test_eft_short_name_defaults(session):
     """Assert eft short name link defaults are stored."""
-    eft_short_name = create_short_name_data()
+    eft_short_name = factory_eft_shortname('ABC').save()
     eft_short_name_link = EFTShortnameLinksModel()
     eft_short_name_link.eft_short_name_id = eft_short_name.id
     eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value
@@ -53,7 +44,7 @@ def test_eft_short_name_defaults(session):
 
 def test_eft_short_name_all_attributes(session):
     """Assert eft short name link defaults are stored."""
-    eft_short_name = create_short_name_data()
+    eft_short_name = factory_eft_shortname('ABC').save()
     eft_short_name_link = EFTShortnameLinksModel()
     eft_short_name_link.eft_short_name_id = eft_short_name.id
     eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value

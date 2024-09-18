@@ -18,9 +18,9 @@ Test-Suite to ensure that the EFT Credits model is working as expected.
 """
 from datetime import datetime, timezone
 
-from pay_api.models import EFTCredit, EFTFile, EFTShortnames, EFTTransaction
+from pay_api.models import EFTCredit, EFTFile, EFTTransaction
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus
-from tests.utilities.base_test import factory_payment_account
+from tests.utilities.base_test import factory_eft_shortname, factory_payment_account
 
 
 def test_eft_credits(session):
@@ -30,8 +30,7 @@ def test_eft_credits(session):
 
     assert payment_account.id is not None
 
-    eft_short_name = EFTShortnames()
-    eft_short_name.short_name = 'TESTSHORTNAME'
+    eft_short_name = factory_eft_shortname('TESTSHORTNAME')
     eft_short_name.save()
 
     eft_file = EFTFile()

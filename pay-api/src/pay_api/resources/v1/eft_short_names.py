@@ -48,6 +48,7 @@ def get_eft_shortnames():
     amount_owing = request.args.get('amountOwing', None)
     short_name = request.args.get('shortName', None)
     short_name_id = request.args.get('shortNameId', None)
+    short_name_type = request.args.get('shortNameType', None)
     statement_id = request.args.get('statementId', None)
     account_id = request.args.get('accountId', None)
     account_name = request.args.get('accountName', None)
@@ -63,6 +64,7 @@ def get_eft_shortnames():
         account_branch=account_branch,
         amount_owing=string_to_decimal(amount_owing),
         short_name=short_name,
+        short_name_type=short_name_type,
         statement_id=string_to_int(statement_id),
         state=state,
         page=page,
@@ -83,6 +85,7 @@ def get_eft_shortname_summaries():
     limit: int = int(request.args.get('limit', '10'))
     short_name = request.args.get('shortName', None)
     short_name_id = request.args.get('shortNameId', None)
+    short_name_type = request.args.get('shortNameType', None)
     credits_remaining = request.args.get('creditsRemaining', None)
     linked_accounts_count = request.args.get('linkedAccountsCount', None)
     payment_received_start_date = request.args.get('paymentReceivedStartDate', None)
@@ -95,6 +98,7 @@ def get_eft_shortname_summaries():
         credit_remaining=string_to_decimal(credits_remaining),
         linked_accounts_count=string_to_int(linked_accounts_count),
         short_name=short_name,
+        short_name_type=short_name_type,
         page=page,
         limit=limit)), HTTPStatus.OK
 
