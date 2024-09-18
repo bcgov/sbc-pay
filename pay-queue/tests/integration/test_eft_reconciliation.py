@@ -31,8 +31,8 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import EFTShortNamesService
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus,
-    PaymentMethod, StatementFrequency, EFTShortnameType)
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, EFTShortnameType,
+    InvoiceStatus, PaymentMethod, StatementFrequency)
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.services.eft import EFTRecord
@@ -538,7 +538,7 @@ def generate_basic_tdi17_file(file_name: str):
                                        transaction_description=f'{EFTRecord.EFT_DESCRIPTION_PATTERN} ABC123',
                                        deposit_amount='13500', currency='', exchange_adj_amount='0',
                                        deposit_amount_cad='13500', destination_bank_number='0003',
-                                       batch_number='002400986', jv_type='I', jv_number='002425669', 
+                                       batch_number='002400986', jv_type='I', jv_number='002425669',
                                        transaction_date='')
 
     transaction_2 = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value, ministry_code='AT',

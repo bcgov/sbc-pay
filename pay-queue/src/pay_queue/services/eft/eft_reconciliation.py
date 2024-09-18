@@ -447,7 +447,7 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
 
 
 def _filter_eft_transactions(eft_transactions: List[EFTRecord], eft_location_id: str) -> List[EFTRecord]:
-    """Filter down EFT Transactions"""
+    """Filter down EFT Transactions."""
     eft_transactions = [
         transaction for transaction in eft_transactions
         if (transaction.has_errors() or (transaction.short_name_type in [
