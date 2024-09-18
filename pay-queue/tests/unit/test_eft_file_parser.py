@@ -196,6 +196,7 @@ def test_eft_parse_record():
     assert record.jv_type == 'I'
     assert record.jv_number == '002425669'
     assert record.transaction_date == transaction_date
+    assert record.short_name_type is None
 
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -224,7 +225,7 @@ def test_eft_parse_record():
     assert record.deposit_datetime == deposit_datetime
     assert record.location_id == '85004'
     assert record.transaction_sequence == '002'
-    assert record.transaction_description == 'FUNDS TRANSFER CR TT INTERBLOCK C'
+    assert record.transaction_description == 'INTERBLOCK C'
     assert record.deposit_amount == 525000
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
@@ -234,6 +235,7 @@ def test_eft_parse_record():
     assert record.jv_type == 'I'
     assert record.jv_number == '002425669'
     assert record.transaction_date == transaction_date
+    assert record.short_name_type == EFTShortnameType.WIRE.value
 
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -242,7 +244,7 @@ def test_eft_parse_record():
                                  deposit_time='0000',
                                  location_id='85004',
                                  transaction_sequence='003',
-                                 transaction_description='DEPOSIT          27',
+                                 transaction_description='MISC PAYMENT ABC1234567',
                                  deposit_amount='951250',
                                  currency='',
                                  exchange_adj_amount='0',
@@ -262,7 +264,7 @@ def test_eft_parse_record():
     assert record.deposit_datetime == deposit_datetime
     assert record.location_id == '85004'
     assert record.transaction_sequence == '003'
-    assert record.transaction_description == 'DEPOSIT          27'
+    assert record.transaction_description == 'ABC1234567'
     assert record.deposit_amount == 951250
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
@@ -272,6 +274,7 @@ def test_eft_parse_record():
     assert record.jv_type == 'I'
     assert record.jv_number == '002425669'
     assert record.transaction_date == transaction_date
+    assert record.short_name_type == EFTShortnameType.EFT.value
 
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -280,7 +283,7 @@ def test_eft_parse_record():
                                  deposit_time='0000',
                                  location_id='85004',
                                  transaction_sequence='004',
-                                 transaction_description='FUNDS TRANSFER CR TT INTERBLOCK C',
+                                 transaction_description='MISC PAYMENT BCONLINE INTERBLOCK C',
                                  deposit_amount='2125000',
                                  currency='',
                                  exchange_adj_amount='0',
@@ -300,7 +303,7 @@ def test_eft_parse_record():
     assert record.deposit_datetime == deposit_datetime
     assert record.location_id == '85004'
     assert record.transaction_sequence == '004'
-    assert record.transaction_description == 'FUNDS TRANSFER CR TT INTERBLOCK C'
+    assert record.transaction_description == 'MISC PAYMENT BCONLINE INTERBLOCK C'
     assert record.deposit_amount == 2125000
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
@@ -310,6 +313,7 @@ def test_eft_parse_record():
     assert record.jv_type == 'I'
     assert record.jv_number == '002425669'
     assert record.transaction_date == transaction_date
+    assert record.short_name_type is None
 
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
