@@ -109,20 +109,7 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     eft_file_model.status_code = EFTProcessStatus.IN_PROGRESS.value
     eft_file_model.save()
 
-    # EFT File parsed data holders
-    eft_header: EFTHeader = None
-    eft_trailer: EFTTrailer = None
-    eft_transactions: List[EFTRecord] = []
-
-    # Read and parse EFT file header, trailer, transactions
-    for index, line in enumerate(lines):
-        if index == 0:
-            eft_header = EFTHeader(line, index)
-        elif index == len(lines) - 1:
-            eft_trailer = EFTTrailer(line, index)
-        else:
-            eft_transactions.append(EFTRecord(line, index))
-
+    eft_header, eft_trailer, eft_transactions = _parse_tdi17_lines(lines)
     eft_header_valid = _process_eft_header(eft_header, eft_file_model)
     eft_trailer_valid = _process_eft_trailer(eft_trailer, eft_file_model)
 
@@ -179,6 +166,21 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     # Apply EFT Short name link pending payments after finalizing TDI17 processing to allow
     # for it to be committed first
     _apply_eft_pending_payments(context, shortname_balance)
+
+
+def _parse_tdi17_lines(eft_lines: List[str]):
+    """Parse EFT file header, trailer, transactions."""
+    eft_header: EFTHeader = None
+    eft_trailer: EFTTrailer = None
+    eft_transactions: List[EFTRecord] = []
+    for index, line in enumerate(eft_lines):
+        if index == 0:
+            eft_header = EFTHeader(line, index)
+        elif index == len(eft_lines) - 1:
+            eft_trailer = EFTTrailer(line, index)
+        else:
+            eft_transactions.append(EFTRecord(line, index))
+    return eft_header, eft_trailer, eft_transactions
 
 
 def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
