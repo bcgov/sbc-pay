@@ -349,6 +349,13 @@ class EFTFileLineType(Enum):
     TRAILER = 'TRAILER'
 
 
+class EFTShortnameType(Enum):
+    """EFT Short name types."""
+
+    EFT = 'EFT'
+    WIRE = 'WIRE'
+
+
 class EFTShortnameStatus(Enum):
     """EFT Short name statuses."""
 

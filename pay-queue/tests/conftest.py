@@ -171,3 +171,8 @@ def mock_pub_sub_call(mocker):
             raise CancelledError('This is a mock')
 
     mocker.patch('google.cloud.pubsub_v1.PublisherClient', PublisherMock)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_eft_tdi17_location_id(app):
+    app.config['EFT_TDI17_LOCATION_ID'] = '85004'

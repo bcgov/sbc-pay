@@ -19,13 +19,13 @@ Test-Suite to ensure that the EFT Refund model is working as expected.
 
 from pay_api.models import db
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
-from pay_api.models.eft_short_names import EFTShortnames
+from tests.utilities.base_test import factory_eft_shortname
 
 
 def test_eft_refund_defaults(session):
     """Assert EFT refund defaults are stored."""
     # Ensure the required entry exists in the related table
-    short_name = EFTShortnames(short_name='Test Short Name')
+    short_name = factory_eft_shortname(short_name='Test Short Name')
     db.session.add(short_name)
     db.session.commit()
     short_name_id = short_name.id
@@ -58,7 +58,7 @@ def test_eft_refund_defaults(session):
 def test_eft_refund_all_attributes(session):
     """Assert all EFT refund attributes are stored."""
     # Ensure the required entry exists in the related table
-    short_name = EFTShortnames(short_name='Test Short Name')
+    short_name = factory_eft_shortname(short_name='Test Short Name')
     db.session.add(short_name)
     db.session.commit()
     short_name_id = short_name.id

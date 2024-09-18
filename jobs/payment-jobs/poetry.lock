@@ -2021,9 +2021,9 @@ werkzeug = "3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "22969"
-resolved_reference = "0dcbdfa25862ebd09569d48602756dc332e03b5e"
+url = "https://github.com/ochiu/sbc-pay.git"
+reference = "22982-EFT-Wire"
+resolved_reference = "421d47587ab171ec8f20b749c91462ddb489455e"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3174,4 +3174,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "d4366abd146c06f59a58d760deea1ce0aca5d9f9319ecc385683c186ba51da83"
+content-hash = "39199fd3bec6c68570595ed9226bf6b79b1e36fe2e93ef3e3b7e1ec981f32e42"

@@ -43,7 +43,8 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
             'cas_supplier_number',
             'created_on',
             'email',
-            'short_name'
+            'short_name',
+            'type'
         ]
     }
 
@@ -52,11 +53,13 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
     email = db.Column(db.String(100), nullable=True)
     cas_supplier_number = db.Column(db.String(), nullable=True)
+    type = db.Column(db.String(), nullable=False)
 
     @classmethod
-    def find_by_short_name(cls, short_name: str):
+    def find_by_short_name(cls, short_name: str, short_name_type: str):
         """Find by eft short name."""
-        return cls.query.filter_by(short_name=short_name).one_or_none()
+        return (cls.query.filter_by(short_name=short_name)
+                .filter_by(type=short_name_type).one_or_none())
 
 
 @define
@@ -72,6 +75,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     email: str
     cas_supplier_number: str
     short_name: str
+    short_name_type: str
     statement_id: int
     status_code: str
     cfs_account_status: str
@@ -89,6 +93,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
                    amount_owing=getattr(row, 'total_owing', None),
                    created_on=row.created_on,
                    short_name=row.short_name,
+                   short_name_type=row.type,
                    email=getattr(row, 'email'),
                    cas_supplier_number=getattr(row, 'cas_supplier_number'),
                    statement_id=getattr(row, 'latest_statement_id', None),
@@ -103,6 +108,7 @@ class EFTShortnameSummarySchema:
 
     id: int
     short_name: str
+    short_name_type: str
     last_payment_received_date: datetime
     credits_remaining: Decimal
     linked_accounts_count: int
@@ -116,6 +122,7 @@ class EFTShortnameSummarySchema:
         """
         return cls(id=row.id,
                    short_name=row.short_name,
+                   short_name_type=row.type,
                    last_payment_received_date=getattr(row, 'last_payment_received_date', None),
                    credits_remaining=getattr(row, 'credits_remaining', None),
                    linked_accounts_count=getattr(row, 'linked_accounts_count', None),

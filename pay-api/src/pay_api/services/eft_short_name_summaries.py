@@ -116,6 +116,7 @@ class EFTShortnameSummaries:
         query = (db.session.query(
             EFTShortnameModel.id,
             EFTShortnameModel.short_name,
+            EFTShortnameModel.type,
             func.coalesce(linked_account_subquery.c.count, 0).label('linked_accounts_count'),
             func.coalesce(credit_remaining_subquery.c.total, 0).label('credits_remaining'),
             last_payment_subquery.c.deposit_date.label('last_payment_received_date'),
@@ -135,6 +136,7 @@ class EFTShortnameSummaries:
         )
 
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
+        query = query.filter_conditionally(search_criteria.short_name_type, EFTShortnameModel.type)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
         query = query.filter_conditional_date_range(start_date=search_criteria.deposit_start_date,
                                                     end_date=search_criteria.deposit_end_date,
