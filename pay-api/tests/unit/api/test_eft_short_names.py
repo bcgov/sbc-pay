@@ -32,7 +32,7 @@ from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameRefundStatus, EFTShortnameStatus,
-    InvoiceStatus, PaymentMethod, Role, StatementFrequency, EFTShortnameType)
+    EFTShortnameType, InvoiceStatus, PaymentMethod, Role, StatementFrequency)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice, factory_payment_account,
