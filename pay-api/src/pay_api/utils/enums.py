@@ -387,6 +387,11 @@ class EFTHistoricalTypes(Enum):
     STATEMENT_PAID = 'STATEMENT_PAID'
     STATEMENT_REVERSE = 'STATEMENT_REVERSE'
 
+    # Short name refund statuses
+    SN_REFUND_PENDING_APPROVAL = 'SN_REFUND_PENDING_APPROVAL'
+    SN_REFUND_APPROVED = 'SN_REFUND_APPROVED'
+    SN_REFUND_REJECTED = 'SN_REFUND_REJECTED'
+
 
 class PaymentDetailsGlStatus(Enum):
     """Payment details GL status."""

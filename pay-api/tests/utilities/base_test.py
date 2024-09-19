@@ -25,7 +25,7 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile,
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTRefund,
     EFTShortnameLinks, EFTShortnames, Invoice, InvoiceReference, NonSufficientFunds, Payment, PaymentAccount,
     PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -928,6 +928,18 @@ def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amoun
         remaining_amount=remaining_amount,
         eft_file_id=eft_file_id,
         short_name_id=short_name_id
+    )
+
+
+def factory_eft_refund(short_name_id, refund_amount, cas_supplier_number='1234567',
+                       refund_email='test@test.com', comment='test comment'):
+    """Return an EFT Refund."""
+    return EFTRefund(
+        short_name_id=short_name_id,
+        refund_amount=refund_amount,
+        cas_supplier_number=cas_supplier_number,
+        refund_email=refund_email,
+        comment=comment
     )
 
 

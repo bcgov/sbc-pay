@@ -162,15 +162,23 @@ class EftService(DepositService):
 
         current_app.logger.debug(f'Starting shortname refund : {shortname_id}')
 
-        refund = EftService._create_refund_model(request, shortname_id, amount, comment)
+        refund = EftService._create_refund_model(request, shortname_id, amount, comment).flush()
         EftService._refund_eft_credits(int(shortname_id), amount)
+
+        EFTHistoryService.create_shortname_refund(
+            EFTHistory(short_name_id=shortname_id,
+                       amount=amount,
+                       credit_balance=EFTCreditModel.get_eft_credit_balance(int(shortname_id)),
+                       eft_refund_id=refund.id,
+                       is_processing=False,
+                       hidden=False)).flush()
 
         recipients = EFTRefundEmailList.find_all_emails()
         subject = f'Pending Refund Request for Short Name {shortname}'
         html_body = _render_shortname_details_body(shortname, amount, comment, shortname_id)
 
         send_email(recipients, subject, html_body, **kwargs)
-        refund.save()
+        db.session.commit()
 
     @staticmethod
     def apply_payment_action(short_name_id: int, auth_account_id: str):
@@ -574,7 +582,7 @@ class EftService(DepositService):
             credit.remaining_amount -= deduction
             refund_amount -= deduction
 
-            credit.save()
+            credit.flush()
 
     @staticmethod
     def _create_refund_model(request: Dict[str, str],
