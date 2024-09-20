@@ -39,7 +39,9 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
             'auth_account_id',
             'cas_supplier_number',
             'comment',
+            'created_by',
             'created_on',
+            'decline_reason',
             'id',
             'refund_amount',
             'refund_email',
@@ -53,6 +55,8 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     cas_supplier_number = db.Column(db.String(), nullable=False)
     comment = db.Column(db.String(), nullable=False)
+    decline_reason = db.Column(db.String(), nullable=True)
+    created_by = db.Column('created_by', db.String(100), nullable=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
