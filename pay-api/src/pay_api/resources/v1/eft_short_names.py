@@ -17,15 +17,16 @@ from http import HTTPStatus
 from flask import Blueprint, current_app, jsonify, request
 from flask_cors import cross_origin
 
-from pay_api.dtos.eft_shortname import EFTShortNameGetRequest, EFTShortNameRefundGetRequest, EFTShortNameRefundPatchRequest, EFTShortNameSummaryGetRequest
+from pay_api.dtos.eft_shortname import (
+    EFTShortNameGetRequest, EFTShortNameRefundGetRequest, EFTShortNameRefundPatchRequest, EFTShortNameSummaryGetRequest)
 from pay_api.exceptions import BusinessException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.eft_refund import EFTRefund as EFTRefundService
+from pay_api.services.eft_short_name_historical import EFTShortNameHistorical as EFTShortnameHistoryService
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorySearch
 from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
 from pay_api.services.eft_short_names import EFTShortnamesSearch
-from pay_api.services.eft_short_name_historical import EFTShortNameHistorical as EFTShortnameHistoryService
-from pay_api.services.eft_short_name_historical import EFTShortnameHistorySearch
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
@@ -228,7 +229,6 @@ def post_eft_statement_payment(short_name_id: int):
 @_jwt.has_one_of_roles([Role.EFT_REFUND.value, Role.EFT_REFUND_APPROVER.value])
 def get_shortname_refunds():
     """Get all short name refunds."""
-    # TODO unit test spec update
     request_data = EFTShortNameRefundGetRequest.from_dict(request.args.to_dict())
     current_app.logger.info('<get_shortname_refunds')
     refunds = EFTRefundService.get_shortname_refunds(request_data)
@@ -237,7 +237,7 @@ def get_shortname_refunds():
 
 
 @bp.route('/shortname-refund', methods=['POST', 'OPTIONS'])
-@cross_origin(origins='*', methods=['POST'])
+@cross_origin(origins='*')
 @_jwt.has_one_of_roles([Role.EFT_REFUND.value, Role.EFT_REFUND_APPROVER.value])
 def post_shortname_refund():
     """Create the Refund for the Shortname."""
@@ -264,13 +264,8 @@ def patch_shortname_refund(eft_refund_id: int):
     """Patch EFT short name link."""
     current_app.logger.info('<patch_eft_shortname_link')
     request_json = request.get_json()
-    valid_format, errors = schema_utils.validate(request_json, 'refund_shortname')
-    # TODO unit test spec update
-    if not valid_format:
-        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     short_name_refund = EFTShortNameRefundPatchRequest.from_dict(request_json)
     try:
-        # Status, Reason, Comment, declined_reason
         if EFTRefundService.find_refund_by_id(eft_refund_id):
             response, status = EFTRefundService.update_shortname_refund(eft_refund_id, short_name_refund), HTTPStatus.OK
         else:

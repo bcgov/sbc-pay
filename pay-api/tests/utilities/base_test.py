@@ -931,16 +931,17 @@ def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amoun
     )
 
 
-def factory_eft_refund(short_name_id, refund_amount, cas_supplier_number='1234567',
-                       refund_email='test@test.com', comment='test comment'):
+def factory_eft_refund(short_name_id, refund_amount=10.00, cas_supplier_number='1234567',
+                       refund_email='test@test.com', comment='test comment', status='PENDING'):
     """Return an EFT Refund."""
     return EFTRefund(
         short_name_id=short_name_id,
         refund_amount=refund_amount,
         cas_supplier_number=cas_supplier_number,
         refund_email=refund_email,
-        comment=comment
-    )
+        comment=comment,
+        status=status
+    ).save()
 
 
 def factory_eft_credit_invoice_link(eft_credit_id, invoice_id, status_code, amount=1, link_group_id=None):

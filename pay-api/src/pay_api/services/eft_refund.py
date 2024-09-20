@@ -13,7 +13,7 @@ from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink as EFTCr
 from pay_api.models import EFTShortNamesHistorical as EFTHistoryModel
 from pay_api.services.email_service import _render_shortname_details_body, send_email
 from pay_api.services.eft_short_name_historical import EFTShortNameHistorical as EFTHistoryService
-from pay_api.utils.enums import EFTCreditInvoiceStatus, InvoiceStatus
+from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTShortnameRefundStatus, InvoiceStatus
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
 
@@ -158,12 +158,15 @@ class EFTRefund:
     @staticmethod
     def update_shortname_refund(refund_id: int, data: EFTShortNameRefundPatchRequest) -> EFTRefundModel:
         """Update the refund status."""
-        refund = EFTRefundModel.find_pending_refund(refund_id)
+        refund = EFTRefundModel.find_by_id(refund_id)
+        if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
+            raise BusinessException(Error.REFUND_ALREADY_FINALIZED)
         refund.comment = data.comment
-        refund.decline_reason = data.declined_reason
+        if data.status == EFTShortnameRefundStatus.REJECTED.value:
+            refund.decline_reason = data.declined_reason
         refund.status = data.status
         refund.save()
-        return refund
+        return refund.to_dict()
 
     @staticmethod
     def _create_refund_model(request: dict, shortname_id: str, amount: str, comment: str) -> EFTRefundModel:

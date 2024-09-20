@@ -22,6 +22,9 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from unittest.mock import patch
 
+import pytest
+
+from pay_api.dtos.eft_shortname import EFTShortNameRefundPatchRequest
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
 from pay_api.models import EFTFile as EFTFileModel
@@ -36,9 +39,9 @@ from pay_api.utils.enums import (
     EFTShortnameStatus, EFTShortnameType, InvoiceStatus, PaymentMethod, Role, StatementFrequency)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
-    factory_eft_credit, factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice,
-    factory_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings, get_claims,
-    token_header)
+    factory_eft_credit, factory_eft_file, factory_eft_refund, factory_eft_shortname, factory_eft_shortname_link,
+    factory_invoice, factory_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings,
+    get_claims, token_header)
 
 
 def test_create_eft_short_name_link(session, client, jwt, app):
@@ -552,7 +555,7 @@ def create_eft_summary_search_data():
         cas_supplier_number='123',
         refund_email='test@example.com',
         comment='Test comment',
-        status=EFTShortnameRefundStatus.PENDING_REFUND.value
+        status=EFTShortnameRefundStatus.PENDING_APPROVAL.value
     ).save()
 
     return short_name_1, s1_transaction1, short_name_2, s2_transaction1, s1_refund
@@ -952,20 +955,67 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
     assert 'INVALID_REQUEST' in rv.json['type']
 
 
-def test_get_shortname_refund(client, jwt):
+@pytest.mark.parametrize('query_string, test_name, count', [
+    ('', 'get_all', 3),
+    ('?status=APPROVED,PENDING_APPROVAL', 'status_filter_multiple', 2),
+    ('?status=REJECTED', 'status_filter_rejected', 1),
+])
+def test_get_shortname_refund(session, client, jwt, query_string, test_name, count):
+    """Test get short name refund."""
+    short_name = factory_eft_shortname('TEST_SHORTNAME').save()
+    factory_eft_refund(short_name_id=short_name.id,
+                       status=EFTShortnameRefundStatus.APPROVED.value)
+    factory_eft_refund(short_name_id=short_name.id,
+                       status=EFTShortnameRefundStatus.PENDING_APPROVAL.value)
+    factory_eft_refund(short_name_id=short_name.id,
+                       status=EFTShortnameRefundStatus.REJECTED.value)
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.get('/api/v1/eft-shortnames/shortname-refund', headers=headers)
+    rv = client.get(f'/api/v1/eft-shortnames/shortname-refund{query_string}', headers=headers)
     assert rv.status_code == 200
+    assert len(rv.json) == count
 
 
-def test_patch_shortname_refund(client):
-    data = {
-        'invalid_field': 'invalid_value'
-    }
-    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
+@pytest.mark.parametrize('payload, test_name, role', [
+    (EFTShortNameRefundPatchRequest(
+        comment='Test comment',
+        decline_reason='Test reason',
+        status=EFTShortnameRefundStatus.APPROVED.value
+    ).to_dict(), 'valid_full_patch_refund', Role.EFT_REFUND_APPROVER.value),
+    ({}, 'unauthorized', Role.EFT_REFUND.value),
+    (EFTShortNameRefundPatchRequest(
+        comment='Test comment',
+        decline_reason='Test reason',
+        status=EFTShortnameRefundStatus.PENDING_APPROVAL.value
+    ).to_dict(
+    ), 'bad_transition', Role.EFT_REFUND_APPROVER.value),
+])
+def test_patch_shortname_refund(session, client, jwt, payload, test_name, role):
+    """Test patch short name refund."""
+    short_name = factory_eft_shortname('TEST_SHORTNAME').save()
+    refund = factory_eft_refund(short_name_id=short_name.id,
+                                status=EFTShortnameRefundStatus.PENDING_APPROVAL.value)
+    if test_name == 'bad_transition':
+        refund.status = EFTShortnameRefundStatus.APPROVED.value
+        refund.save()
+    token = jwt.create_jwt(get_claims(roles=[role]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
+    rv = client.patch(f'/api/v1/eft-shortnames/shortname-refund/{refund.id}', headers=headers, json=payload)
+    match test_name:
+        case 'unauthorized':
+            assert rv.status_code == 401
+        case 'bad_transition' | 'invalid_patch_refund':
+            assert rv.status_code == 400
+            assert 'REFUND_ALREADY_FINALIZED' in rv.json['type']
+        case 'valid_full_patch_refund':
+            assert rv.status_code == 200
+            assert rv.json['status'] == EFTShortnameRefundStatus.APPROVED.value
+            assert rv.json['comment'] == 'Test comment'
+            # Can't set declined reason on an approved.
+            assert 'declineReason' not in rv.json
+        case _:
+            raise ValueError(f'Invalid test case {test_name}')
+
 
 def test_patch_shortname(session, client, jwt):
     """Test patch EFT Short name."""

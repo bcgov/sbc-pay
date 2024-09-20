@@ -7,8 +7,8 @@
 In the near future, will find a library that generates our API spec based off of these DTOs.
 """
 from decimal import Decimal
-from attrs import define
 from typing import List
+from attrs import define
 
 from pay_api.utils.converter import Converter
 
@@ -66,13 +66,17 @@ class EFTShortNameRefundPatchRequest:
     """EFT Short name refund DTO."""
 
     comment: str
-    declined_reason: str
+    decline_reason: str
     status: str
 
     @classmethod
     def from_dict(cls, data: dict):
         """Convert from request json to EFTShortNameRefundDTO."""
         return Converter(camel_to_snake_case=True).structure(data, EFTShortNameRefundPatchRequest)
+
+    def to_dict(self):
+        """Convert from EFTShortNameRefundDTO to request json."""
+        return Converter(snake_case_to_camel=True).unstructure(self)
 
 
 @define
@@ -84,4 +88,6 @@ class EFTShortNameRefundGetRequest:
     @classmethod
     def from_dict(cls, data: dict):
         """Convert from request json to EFTShortNameRefundDTO."""
-        EFTShortNameRefundGetRequest(statuses=data.get('status', []))
+        input_string = data.get('status', '')
+        statuses = input_string.split(',') if input_string else []
+        return EFTShortNameRefundGetRequest(statuses=statuses)

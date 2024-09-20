@@ -67,7 +67,7 @@ from .statement_invoices import StatementInvoices, StatementInvoicesSchema  # no
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
-from .comment import Comment, CommentSchema # This has to be at the bottom otherwise FeeSchedule errors
+from .comment import Comment, CommentSchema  # This has to be at the bottom otherwise FeeSchedule errors
 
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)
