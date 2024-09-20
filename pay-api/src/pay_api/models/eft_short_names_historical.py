@@ -23,7 +23,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-attributes
+class EFTShortNamesHistorical(BaseModel):
     """This class manages all EFT Short name historical data."""
 
     __tablename__ = 'eft_short_names_historical'

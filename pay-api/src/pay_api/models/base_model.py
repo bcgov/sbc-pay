@@ -52,6 +52,10 @@ class BaseModel(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    def to_dict(self):
+        """Quick and easy way to convert to a dict."""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
     @staticmethod
     def rollback():
         """RollBack."""

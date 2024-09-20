@@ -72,7 +72,7 @@ class DistributionCodeLink(BaseModel):
         BaseModel.commit()
 
 
-class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-instance-attributes
+class DistributionCode(Audit, Versioned, BaseModel):
     """This class manages all of the base data about distribution code.
 
     Distribution code holds details on the codes for how the collected payment is going to be distributed.

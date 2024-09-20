@@ -20,7 +20,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
+class EFTRefund(BaseModel):
     """This class manages the file data for EFT Refunds."""
 
     __tablename__ = 'eft_refunds'
@@ -66,3 +66,12 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
     updated_by = db.Column('updated_by', db.String(100), nullable=True)
     updated_by_name = db.Column('updated_by_name', db.String(100), nullable=True)
     updated_on = db.Column('updated_on', db.DateTime, nullable=True)
+
+
+    @classmethod
+    def find_refunds(cls, statuses: List[str]):
+            query = EFTRefundModel.query
+        if data.statuses:
+            query = query.filter(EFTRefundModel.status.in_(data.statuses))
+        refunds = query.all()
+        return [refund.to_dict() for refund in refunds]

@@ -22,7 +22,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
+class EFTCredit(BaseModel):
     """This class manages all of the base data for EFT credits."""
 
     __tablename__ = 'eft_credits'

@@ -20,10 +20,10 @@ from typing import Optional
 from sqlalchemy import and_, case, exists, false, func, select
 from sqlalchemy.orm import aliased
 
-from pay_api.models import EFTShortnamesHistorical as EFTShortnamesHistoricalModel
+from pay_api.models import EFTShortNamesHistorical as EFTShortnamesHistoricalModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
-from pay_api.models.eft_short_names_historical import EFTShortnameHistorySchema
+from pay_api.models import EFTShortnameHistorySchema
 from pay_api.utils.enums import EFTHistoricalTypes
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
@@ -53,7 +53,7 @@ class EFTShortnameHistorySearch:
     limit: Optional[int] = 10
 
 
-class EFTShortnameHistorical:
+class EFTShortNameHistorical:
     """Service to manage EFT Short name historical data."""
 
     @staticmethod
@@ -66,7 +66,7 @@ class EFTShortnameHistorical:
             hidden=history.hidden,
             is_processing=history.is_processing,
             short_name_id=history.short_name_id,
-            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_date=EFTShortNameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.FUNDS_RECEIVED.value
         )
 
@@ -84,7 +84,7 @@ class EFTShortnameHistorical:
             related_group_link_id=history.related_group_link_id,
             short_name_id=history.short_name_id,
             statement_number=history.statement_number,
-            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_date=EFTShortNameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.STATEMENT_PAID.value
         )
 
@@ -102,7 +102,7 @@ class EFTShortnameHistorical:
             related_group_link_id=history.related_group_link_id,
             short_name_id=history.short_name_id,
             statement_number=history.statement_number,
-            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_date=EFTShortNameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.STATEMENT_REVERSE.value
         )
 
@@ -121,7 +121,7 @@ class EFTShortnameHistorical:
             short_name_id=history.short_name_id,
             statement_number=history.statement_number,
             invoice_id=history.invoice_id,
-            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_date=EFTShortNameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.INVOICE_REFUND.value
         )
 
@@ -137,7 +137,7 @@ class EFTShortnameHistorical:
             is_processing=history.is_processing,
             short_name_id=history.short_name_id,
             eft_refund_id=history.eft_refund_id,
-            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_date=EFTShortNameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
         )
 

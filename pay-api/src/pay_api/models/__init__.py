@@ -31,10 +31,11 @@ from .eft_credit import EFTCredit
 from .eft_credit_invoice_link import EFTCreditInvoiceLink
 from .eft_file import EFTFile
 from .eft_process_status_code import EFTProcessStatusCode
-from .eft_short_names import EFTShortnames, EFTShortnameSchema, EFTShortnameSummarySchema
-from .eft_short_names_historical import EFTShortnamesHistorical
 from .eft_refund import EFTRefund
+from .eft_refund_email_list import EFTRefundEmailList
 from .eft_short_name_links import EFTShortnameLinks, EFTShortnameLinkSchema
+from .eft_short_names import EFTShortnames, EFTShortnameSchema, EFTShortnameSummarySchema
+from .eft_short_names_historical import EFTShortnameHistorySchema, EFTShortNamesHistorical
 from .eft_transaction import EFTTransaction, EFTTransactionSchema
 from .ejv_file import EjvFile
 from .ejv_header import EjvHeader
@@ -61,13 +62,12 @@ from .refund import Refund
 from .refunds_partial import RefundPartialLine, RefundsPartial
 from .routing_slip import RoutingSlip, RoutingSlipSchema
 from .routing_slip_status_code import RoutingSlipStatusCode, RoutingSlipStatusCodeSchema
-from .statement import StatementDTO, Statement, StatementSchema
+from .statement import Statement, StatementDTO, StatementSchema
 from .statement_invoices import StatementInvoices, StatementInvoicesSchema  # noqa: I005
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
-from .comment import Comment, CommentSchema
-from .eft_refund_email_list import EFTRefundEmailList
+from .comment import Comment, CommentSchema # This has to be at the bottom otherwise FeeSchedule errors
 
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

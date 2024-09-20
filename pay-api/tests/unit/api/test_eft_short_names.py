@@ -27,7 +27,7 @@ from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
-from pay_api.models import EFTShortnamesHistorical as EFTShortnamesHistoryModel
+from pay_api.models import EFTShortNamesHistorical as EFTShortnamesHistoryModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
@@ -899,7 +899,7 @@ def test_search_eft_short_names(session, client, jwt, app):
                       data_dict['single-linked']['statement_summary'][0])
 
 
-def test_post_shortname_refund_success(db, session, client, jwt, app):
+def test_post_shortname_refund_success(db, session, client, jwt):
     """Test successful creation of a shortname refund."""
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -918,7 +918,7 @@ def test_post_shortname_refund_success(db, session, client, jwt, app):
         'refundEmail': 'test@example.com',
         'comment': 'Refund for overpayment'
     }
-    with patch('pay_api.services.eft_service.send_email') as mock_email:
+    with patch('pay_api.services.eft_refund.send_email') as mock_email:
         rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
         assert rv.status_code == 202
         mock_email.assert_called_once()
@@ -939,22 +939,35 @@ def test_post_shortname_refund_success(db, session, client, jwt, app):
     assert history_record.transaction_type == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
 
 
-def test_post_shortname_refund_invalid_request(client, mocker, jwt, app):
+def test_post_shortname_refund_invalid_request(client, mocker, jwt):
     """Test handling of invalid request format."""
     data = {
         'invalid_field': 'invalid_value'
     }
-
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
     rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
 
     assert rv.status_code == 400
     assert 'INVALID_REQUEST' in rv.json['type']
 
 
-def test_patch_shortname(session, client, jwt, app):
+def test_get_shortname_refund(client, jwt):
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.get('/api/v1/eft-shortnames/shortname-refund', headers=headers)
+    assert rv.status_code == 200
+
+
+def test_patch_shortname_refund(client):
+    data = {
+        'invalid_field': 'invalid_value'
+    }
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
+
+def test_patch_shortname(session, client, jwt):
     """Test patch EFT Short name."""
     data = {'email': 'invalid_email', 'casSupplierNumber': '1234567ABC'}
 

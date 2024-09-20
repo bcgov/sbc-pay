@@ -57,6 +57,16 @@
         "test@gmail.com"
       ]
     },
+    "status": {
+      "$id":"#/properties/status",
+      "type":"string",
+      "title":"Status",
+      "description":"Status.",
+      "default":"",
+      "examples":[
+        "ACTIVE"
+      ]
+    },
     "comment":{
       "$id":"#/properties/comment",
       "type":"string",

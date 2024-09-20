@@ -19,7 +19,7 @@ from .base_model import BaseModel
 from .db import db, ma
 
 
-class Credit(BaseModel):  # pylint:disable=too-many-instance-attributes
+class Credit(BaseModel):
     """This class manages all of the base data about Credit."""
 
     __tablename__ = 'credits'

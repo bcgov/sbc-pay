@@ -29,7 +29,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class CfsAccount(Versioned, BaseModel):  # pylint:disable=too-many-instance-attributes
+class CfsAccount(Versioned, BaseModel):
     """This class manages all of the base data about PayBC Account."""
 
     __tablename__ = 'cfs_accounts'

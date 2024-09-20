@@ -139,6 +139,7 @@ class Role(Enum):
     VIEW_ALL_TRANSACTIONS = 'view_all_transactions'
     MANAGE_EFT = 'manage_eft'
     EFT_REFUND = 'eft_refund'
+    EFT_REFUND_APPROVER = 'eft_refund_approver'
 
 
 class Code(Enum):
