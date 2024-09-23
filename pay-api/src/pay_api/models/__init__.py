@@ -35,7 +35,7 @@ from .eft_refund import EFTRefund
 from .eft_refund_email_list import EFTRefundEmailList
 from .eft_short_name_links import EFTShortnameLinks, EFTShortnameLinkSchema
 from .eft_short_names import EFTShortnames, EFTShortnameSchema, EFTShortnameSummarySchema
-from .eft_short_names_historical import EFTShortnameHistorySchema, EFTShortNamesHistorical
+from .eft_short_names_historical import EFTShortnameHistorySchema, EFTShortnamesHistorical
 from .eft_transaction import EFTTransaction, EFTTransactionSchema
 from .ejv_file import EjvFile
 from .ejv_header import EjvHeader
