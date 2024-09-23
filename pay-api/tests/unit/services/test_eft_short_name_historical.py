@@ -20,7 +20,7 @@ from datetime import datetime
 
 from freezegun import freeze_time
 
-from pay_api.models.eft_short_names_historical import EFTShortNamesHistorical as EFTShortnameHistory
+from pay_api.models.eft_short_names_historical import EFTShortnamesHistorical as EFTShortnameHistory
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTShortnameHistoryService
 from pay_api.utils.enums import EFTHistoricalTypes, InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (

@@ -20,7 +20,7 @@ from typing import Optional
 from sqlalchemy import and_, case, exists, false, func, select
 from sqlalchemy.orm import aliased
 
-from pay_api.models import EFTShortNamesHistorical as EFTShortnamesHistoricalModel
+from pay_api.models import EFTShortnamesHistorical as EFTShortnamesHistoricalModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
 from pay_api.models import EFTShortnameHistorySchema

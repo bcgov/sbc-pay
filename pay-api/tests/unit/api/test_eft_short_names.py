@@ -30,7 +30,7 @@ from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
-from pay_api.models import EFTShortNamesHistorical as EFTShortnamesHistoryModel
+from pay_api.models import EFTShortnamesHistorical as EFTShortnamesHistoryModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel

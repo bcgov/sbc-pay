@@ -10,7 +10,7 @@ from pay_api.models import PaymentAccount
 from pay_api.models.eft_refund_email_list import EFTRefundEmailList
 from pay_api.models.eft_credit import EFTCredit as EFTCreditModel
 from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
-from pay_api.models import EFTShortNamesHistorical as EFTHistoryModel
+from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.services.email_service import _render_shortname_details_body, send_email
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTShortnameRefundStatus, InvoiceStatus

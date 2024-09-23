@@ -23,7 +23,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EFTShortNamesHistorical(BaseModel):
+class EFTShortnamesHistorical(BaseModel):
     """This class manages all EFT Short name historical data."""
 
     __tablename__ = 'eft_short_names_historical'
@@ -81,7 +81,7 @@ class EFTShortNamesHistorical(BaseModel):
     @classmethod
     def find_by_eft_refund_id(cls, eft_refund_id: int) -> Self:
         """Find historical records by EFT refund id."""
-        return cls.query.filter_by(eft_refund_id=eft_refund_id).order_by(EFTShortNamesHistorical.id.desc()).all()
+        return cls.query.filter_by(eft_refund_id=eft_refund_id).order_by(EFTShortnamesHistorical.id.desc()).all()
 
 
 @define

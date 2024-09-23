@@ -24,7 +24,7 @@ import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
-from pay_api.models import EFTShortNamesHistorical as EFTHistoryModel
+from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.services.eft_service import EftService
 from pay_api.services.eft_refund import EFTRefund as EFTRefundService
 from pay_api.utils.enums import (

@@ -18,7 +18,7 @@ Test-Suite to ensure that the EFT Short names historical model is working as exp
 """
 from datetime import datetime, timezone
 
-from pay_api.models import EFTShortNamesHistorical
+from pay_api.models import EFTShortnamesHistorical
 from pay_api.utils.enums import EFTHistoricalTypes
 from tests.utilities.base_test import factory_eft_shortname, factory_payment_account
 
@@ -34,7 +34,7 @@ def test_eft_short_names_historical(session):
     eft_short_name.save()
 
     now_date = datetime.now(tz=timezone.utc).date()
-    default_historical = EFTShortNamesHistorical(
+    default_historical = EFTShortnamesHistorical(
         amount=151.50,
         created_by='USER1',
         credit_balance=1234.50,
@@ -43,7 +43,7 @@ def test_eft_short_names_historical(session):
         transaction_type=EFTHistoricalTypes.FUNDS_RECEIVED.value
     ).save()
 
-    default_historical = EFTShortNamesHistorical.find_by_id(default_historical.id)
+    default_historical = EFTShortnamesHistorical.find_by_id(default_historical.id)
     assert default_historical.id is not None
     assert default_historical.amount == 151.50
     assert default_historical.created_on.date() == now_date
@@ -58,7 +58,7 @@ def test_eft_short_names_historical(session):
     assert default_historical.transaction_date.date() == now_date
     assert default_historical.transaction_type == EFTHistoricalTypes.FUNDS_RECEIVED.value
 
-    short_name_historical = EFTShortNamesHistorical(
+    short_name_historical = EFTShortnamesHistorical(
         amount=123.50,
         created_by='USER1',
         credit_balance=456.50,
@@ -72,7 +72,7 @@ def test_eft_short_names_historical(session):
         transaction_type=EFTHistoricalTypes.STATEMENT_PAID.value
     ).save()
 
-    short_name_historical = EFTShortNamesHistorical.find_by_id(short_name_historical.id)
+    short_name_historical = EFTShortnamesHistorical.find_by_id(short_name_historical.id)
 
     assert short_name_historical.id is not None
     assert short_name_historical.amount == 123.50
