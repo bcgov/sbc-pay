@@ -66,8 +66,8 @@ class EFTShortNameRefundPatchRequest:
     """EFT Short name refund DTO."""
 
     comment: str
-    decline_reason: str
     status: str
+    decline_reason: str = None
 
     @classmethod
     def from_dict(cls, data: dict):

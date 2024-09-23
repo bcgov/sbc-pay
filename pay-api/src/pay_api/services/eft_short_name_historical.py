@@ -53,7 +53,7 @@ class EFTShortnameHistorySearch:
     limit: Optional[int] = 10
 
 
-class EFTShortNameHistorical:
+class EFTShortnameHistorical:
     """Service to manage EFT Short name historical data."""
 
     @staticmethod
@@ -66,7 +66,7 @@ class EFTShortNameHistorical:
             hidden=history.hidden,
             is_processing=history.is_processing,
             short_name_id=history.short_name_id,
-            transaction_date=EFTShortNameHistorical.transaction_date_now(),
+            transaction_date=EFTShortnameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.FUNDS_RECEIVED.value
         )
 
@@ -84,7 +84,7 @@ class EFTShortNameHistorical:
             related_group_link_id=history.related_group_link_id,
             short_name_id=history.short_name_id,
             statement_number=history.statement_number,
-            transaction_date=EFTShortNameHistorical.transaction_date_now(),
+            transaction_date=EFTShortnameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.STATEMENT_PAID.value
         )
 
@@ -102,7 +102,7 @@ class EFTShortNameHistorical:
             related_group_link_id=history.related_group_link_id,
             short_name_id=history.short_name_id,
             statement_number=history.statement_number,
-            transaction_date=EFTShortNameHistorical.transaction_date_now(),
+            transaction_date=EFTShortnameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.STATEMENT_REVERSE.value
         )
 
@@ -121,7 +121,7 @@ class EFTShortNameHistorical:
             short_name_id=history.short_name_id,
             statement_number=history.statement_number,
             invoice_id=history.invoice_id,
-            transaction_date=EFTShortNameHistorical.transaction_date_now(),
+            transaction_date=EFTShortnameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.INVOICE_REFUND.value
         )
 
@@ -137,7 +137,7 @@ class EFTShortNameHistorical:
             is_processing=history.is_processing,
             short_name_id=history.short_name_id,
             eft_refund_id=history.eft_refund_id,
-            transaction_date=EFTShortNameHistorical.transaction_date_now(),
+            transaction_date=EFTShortnameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
         )
 

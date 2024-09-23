@@ -44,7 +44,7 @@ from pay_api.utils.user_context import user_context
 
 from .auth import get_account_admin_users
 from .deposit_service import DepositService
-from .eft_short_name_historical import EFTShortNameHistorical as EFTHistoryService
+from .eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from .eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from .eft_refund import EFTRefund as EFTRefundService
 from .email_service import _render_payment_reversed_template, send_email

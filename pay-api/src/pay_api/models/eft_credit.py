@@ -80,5 +80,6 @@ class EFTCredit(BaseModel):
         return (cls.query
                 .filter(EFTCredit.remaining_amount > 0)
                 .filter(EFTCredit.short_name_id == short_name_id)
+                .with_for_update()
                 .order_by(EFTCredit.created_on.asc())
                 .all())

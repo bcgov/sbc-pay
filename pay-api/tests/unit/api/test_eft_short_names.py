@@ -976,25 +976,32 @@ def test_get_shortname_refund(session, client, jwt, query_string, test_name, cou
     assert len(rv.json) == count
 
 
-@pytest.mark.parametrize('payload, test_name, role', [
-    (EFTShortNameRefundPatchRequest(
+@pytest.mark.parametrize('test_name, payload, role', [
+    ('valid_approved_refund', EFTShortNameRefundPatchRequest(
         comment='Test comment',
         decline_reason='Test reason',
         status=EFTShortnameRefundStatus.APPROVED.value
-    ).to_dict(), 'valid_full_patch_refund', Role.EFT_REFUND_APPROVER.value),
-    ({}, 'unauthorized', Role.EFT_REFUND.value),
-    (EFTShortNameRefundPatchRequest(
+    ).to_dict(), Role.EFT_REFUND_APPROVER.value),
+    ('valid_rejected_refund', EFTShortNameRefundPatchRequest(
+        comment='Test comment',
+        decline_reason='Test reason',
+        status=EFTShortnameRefundStatus.REJECTED.value
+    ).to_dict(), Role.EFT_REFUND_APPROVER.value),
+    ('unauthorized', {}, Role.EFT_REFUND.value),
+    ('bad_transition', EFTShortNameRefundPatchRequest(
         comment='Test comment',
         decline_reason='Test reason',
         status=EFTShortnameRefundStatus.PENDING_APPROVAL.value
-    ).to_dict(
-    ), 'bad_transition', Role.EFT_REFUND_APPROVER.value),
+    ).to_dict(), Role.EFT_REFUND_APPROVER.value),
 ])
 def test_patch_shortname_refund(session, client, jwt, payload, test_name, role):
     """Test patch short name refund."""
     short_name = factory_eft_shortname('TEST_SHORTNAME').save()
-    refund = factory_eft_refund(short_name_id=short_name.id,
+    refund = factory_eft_refund(short_name_id=short_name.id, refund_amount=10,
                                 status=EFTShortnameRefundStatus.PENDING_APPROVAL.value)
+    eft_file = factory_eft_file().save()
+    eft_credit = EFTCreditModel(eft_file_id=eft_file.id, short_name_id=short_name.id,
+                                amount=100, remaining_amount=90).save()
     if test_name == 'bad_transition':
         refund.status = EFTShortnameRefundStatus.APPROVED.value
         refund.save()
@@ -1007,12 +1014,22 @@ def test_patch_shortname_refund(session, client, jwt, payload, test_name, role):
         case 'bad_transition' | 'invalid_patch_refund':
             assert rv.status_code == 400
             assert 'REFUND_ALREADY_FINALIZED' in rv.json['type']
-        case 'valid_full_patch_refund':
+        case 'valid_approved_refund':
             assert rv.status_code == 200
             assert rv.json['status'] == EFTShortnameRefundStatus.APPROVED.value
             assert rv.json['comment'] == 'Test comment'
-            # Can't set declined reason on an approved.
-            assert 'declineReason' not in rv.json
+        case 'valid_rejected_refund':
+            assert rv.status_code == 200
+            assert rv.json['status'] == EFTShortnameRefundStatus.REJECTED.value
+            assert rv.json['comment'] == 'Test comment'
+            # assert EFTHistoryModel
+            history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]
+            assert history
+            assert history.amount == -10
+            assert history.credit_balance == 90 + 10
+            eft_credit = EFTCreditModel.find_by_id(eft_credit.id)
+            assert eft_credit.remaining_amount == 90 + 10
+            assert rv.json['declineReason']
         case _:
             raise ValueError(f'Invalid test case {test_name}')
 

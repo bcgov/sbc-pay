@@ -81,7 +81,7 @@ class EFTShortNamesHistorical(BaseModel):
     @classmethod
     def find_by_eft_refund_id(cls, eft_refund_id: int) -> Self:
         """Find historical records by EFT refund id."""
-        return cls.query.filter_by(eft_refund_id=eft_refund_id).one_or_none()
+        return cls.query.filter_by(eft_refund_id=eft_refund_id).order_by(EFTShortNamesHistorical.id.desc()).all()
 
 
 @define

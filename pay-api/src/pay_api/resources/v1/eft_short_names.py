@@ -22,7 +22,7 @@ from pay_api.dtos.eft_shortname import (
 from pay_api.exceptions import BusinessException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.eft_refund import EFTRefund as EFTRefundService
-from pay_api.services.eft_short_name_historical import EFTShortNameHistorical as EFTShortnameHistoryService
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTShortnameHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorySearch
 from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService

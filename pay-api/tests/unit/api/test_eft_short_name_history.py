@@ -21,7 +21,7 @@ from datetime import datetime
 import pytest
 from freezegun import freeze_time
 
-from pay_api.services.eft_short_name_historical import EFTShortNameHistorical as EFTHistoryService
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.utils.enums import EFTHistoricalTypes, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (

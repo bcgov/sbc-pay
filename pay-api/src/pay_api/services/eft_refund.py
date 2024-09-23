@@ -12,7 +12,7 @@ from pay_api.models.eft_credit import EFTCredit as EFTCreditModel
 from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortNamesHistorical as EFTHistoryModel
 from pay_api.services.email_service import _render_shortname_details_body, send_email
-from pay_api.services.eft_short_name_historical import EFTShortNameHistorical as EFTHistoryService
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTShortnameRefundStatus, InvoiceStatus
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
@@ -28,8 +28,11 @@ class EFTRefund:
         # This method isn't for invoices, it's for shortname only.
         shortname_id = get_str_by_path(request, 'shortNameId')
         shortname = get_str_by_path(request, 'shortName')
-        amount = get_str_by_path(request, 'refundAmount')
+        amount = Decimal(get_str_by_path(request, 'refundAmount'))
         comment = get_str_by_path(request, 'comment')
+
+        if amount <= 0:
+            raise BusinessException(Error.INVALID_REFUND)
 
         current_app.logger.debug(f'Starting shortname refund : {shortname_id}')
 
@@ -133,9 +136,8 @@ class EFTRefund:
         return InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
-    def refund_eft_credits(shortname_id: int, amount: str):
+    def refund_eft_credits(shortname_id: int, refund_amount: Decimal):
         """Refund the amount to eft_credits table based on short_name_id."""
-        refund_amount = Decimal(amount)
         eft_credits = EFTCreditModel.get_eft_credits(shortname_id)
         eft_credit_balance = EFTCreditModel.get_eft_credit_balance(shortname_id)
 
@@ -143,7 +145,7 @@ class EFTRefund:
             raise BusinessException(Error.INVALID_REFUND)
 
         for credit in eft_credits:
-            if refund_amount <= 0:
+            if refund_amount == 0:
                 break
             credit_amount = Decimal(credit.remaining_amount)
             if credit_amount <= 0:
@@ -162,14 +164,22 @@ class EFTRefund:
         if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
             raise BusinessException(Error.REFUND_ALREADY_FINALIZED)
         refund.comment = data.comment
-        if data.status == EFTShortnameRefundStatus.REJECTED.value:
-            refund.decline_reason = data.declined_reason
         refund.status = data.status
-        refund.save()
+        refund.decline_reason = data.decline_reason
+        refund.save_or_add(auto_save=False)
+        if data.status == EFTShortnameRefundStatus.REJECTED.value:
+            EFTRefund.refund_eft_credits(refund.short_name_id, -refund.refund_amount)
+            EFTHistoryService.create_shortname_refund(
+                EFTHistoryModel(short_name_id=refund.short_name_id,
+                                amount=-refund.refund_amount,
+                                credit_balance=EFTCreditModel.get_eft_credit_balance(refund.short_name_id),
+                                eft_refund_id=refund.id,
+                                is_processing=False,
+                                hidden=False)).save()
         return refund.to_dict()
 
     @staticmethod
-    def _create_refund_model(request: dict, shortname_id: str, amount: str, comment: str) -> EFTRefundModel:
+    def _create_refund_model(request: dict, shortname_id: str, amount: Decimal, comment: str) -> EFTRefundModel:
         """Create and return the EFTRefundModel instance."""
         # AP refund job should pick up this row and send back the amount in the refund via cheque.
         # For example if we had $500 on the EFT Shortname credits and we want to refund $300,
