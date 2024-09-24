@@ -76,11 +76,11 @@ class ApTask(CgiAP):
     def _create_eft_refund_file(cls):
         """Create AP file for EFT refunds and upload to CGI."""
         cls.ap_type = EjvFileType.EFT_REFUND
-        eft_refunds_dao: List[tuple[InvoiceModel, EFTRefundModel]] = db.session.query(InvoiceModel, EFTRefundModel) \
-            .join(EFTCreditInvoiceLinkModel, EFTCreditInvoiceLinkModel.invoice_id == InvoiceModel.id) \
-            .join(EFTCreditModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id) \
-            .join(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTCreditModel.short_name_id) \
-            .join(EFTRefundModel, EFTRefundModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id) \
+        eft_refunds_dao: List[EFTRefundModel] = db.session.query(EFTRefundModel) \
+            .join(EFTShortnameLinksModel, EFTRefundModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id) \
+            .join(EFTCreditModel, EFTCreditModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id) \
+            .join(EFTCreditInvoiceLinkModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id) \
+            .join(InvoiceModel, EFTCreditInvoiceLinkModel.invoice_id == InvoiceModel.id) \
             .filter(EFTRefundModel.status == InvoiceStatus.REFUND_REQUESTED.value) \
             .filter(EFTRefundModel.disbursement_status_code != DisbursementStatus.UPLOADED.value) \
             .filter(EFTRefundModel.refund_amount > 0) \
@@ -94,22 +94,26 @@ class ApTask(CgiAP):
                 file_ref=cls.get_file_name(),
                 disbursement_status_code=DisbursementStatus.UPLOADED.value
             ).flush()
-
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
             ap_content: str = cls.get_batch_header(batch_number)
             batch_total = 0
             line_count_total = 0
-            for invoice_refund in refunds:
-                invoice, eft_refund = invoice_refund
-                current_app.logger.info(f'Creating refund for Invoice {invoice.id}, Amount {eft_refund.refund_amount}.')
+            for eft_refund in refunds:
+                current_app.logger.info(
+                    f'Creating refund for EFT Refund {eft_refund.id}, Amount {eft_refund.refund_amount}.')
                 ap_content = f'{ap_content}{cls.get_ap_header(
-                    eft_refund.refund_amount, invoice.id, invoice.created_on, eft_refund.cas_supplier_number)}'
+                    eft_refund.refund_amount, eft_refund.id, eft_refund.created_on, eft_refund.cas_supplier_number)}'
                 ap_line = APLine(
                     total=eft_refund.refund_amount,
-                    invoice_number=invoice.id,
+                    invoice_number=eft_refund.id,
                     line_number=line_count_total + 1)
                 ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line, eft_refund.cas_supplier_number)}'
                 line_count_total += 2
+                if ap_comment := cls.get_eft_ap_comment(
+                    eft_refund.comment, eft_refund.id, eft_refund.short_name_id, eft_refund.cas_supplier_number
+                ):
+                    ap_content = f'{ap_content}{ap_comment:<40}'
+                    line_count_total += 1
                 batch_total += eft_refund.refund_amount
                 eft_refund.disbursement_status_code = DisbursementStatus.UPLOADED.value
 
@@ -150,7 +154,7 @@ class ApTask(CgiAP):
                 ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
                 ap_content = f'{ap_content}{cls.get_ap_address(refund.details, rs.number)}'
                 total_line_count += 3
-                if ap_comment := cls.get_ap_comment(refund.details, rs.number):
+                if ap_comment := cls.get_rs_ap_comment(refund.details, rs.number):
                     ap_content = f'{ap_content}{ap_comment:<40}'
                     total_line_count += 1
                 batch_total += rs.refund_amount

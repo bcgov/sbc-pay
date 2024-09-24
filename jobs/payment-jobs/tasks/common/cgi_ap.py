@@ -54,9 +54,9 @@ class CgiAP(CgiEjv):
         disbursement_method = (DisbursementMethod.CHEQUE.value
                                if cls.ap_type == EjvFileType.REFUND else DisbursementMethod.EFT.value)
         term = f'{cls.EMPTY:<50}' if cls.ap_type == EjvFileType.REFUND else f'Immediate{cls.EMPTY:<41}'
-        ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number(supplier_number)}{cls._supplier_location()}' \
-                    f'{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}GEN {disbursement_method} N' \
-                    f'{remit_code}{cls.format_amount(total)}{currency}{effective_date}' \
+        ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number(supplier_number)}' \
+                    f'{cls._supplier_location()}{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}' \
+                    f'GEN {disbursement_method} N{remit_code}{cls.format_amount(total)}{currency}{effective_date}' \
                     f'{term}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}' \
                     f'{oracle_invoice_batch_name:<30}{cls.EMPTY:<9}Y{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}'
         return ap_header
@@ -70,12 +70,12 @@ class CgiAP(CgiEjv):
         effective_date = cls._get_date(datetime.now(tz=timezone.utc))
         line_code = cls._get_line_code(ap_line)
         ap_line = \
-            f'{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number(supplier_number)}{cls._supplier_location()}' \
-            f'{ap_line.invoice_number:<50}{line_number}{commit_line_number}{cls.format_amount(ap_line.total)}' \
-            f'{line_code}{cls._distribution(ap_line.distribution)}{cls.EMPTY:<55}{effective_date}{cls.EMPTY:<10}' \
-            f'{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<20}{cls.EMPTY:<4}' \
-            f'{cls.EMPTY:<30}{cls.EMPTY:<25}{cls.EMPTY:<30}{cls.EMPTY:<8}{cls.EMPTY:<1}{cls._dist_vendor(supplier_number)}' \
-            f'{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}'
+            f'{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number(supplier_number)}' \
+            f'{cls._supplier_location()}{ap_line.invoice_number:<50}{line_number}{commit_line_number}' \
+            f'{cls.format_amount(ap_line.total)}{line_code}{cls._distribution(ap_line.distribution)}{cls.EMPTY:<55}' \
+            f'{effective_date}{cls.EMPTY:<10}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}' \
+            f'{cls.EMPTY:<20}{cls.EMPTY:<4}{cls.EMPTY:<30}{cls.EMPTY:<25}{cls.EMPTY:<30}{cls.EMPTY:<8}{cls.EMPTY:<1}' \
+            f'{cls._dist_vendor(supplier_number)}{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}'
         return ap_line
 
     @classmethod
@@ -109,7 +109,17 @@ class CgiAP(CgiEjv):
         return ap_address
 
     @classmethod
-    def get_ap_comment(cls, refund_details, routing_slip_number, supplier_number: str = None):
+    def get_eft_ap_comment(cls, comment, refund_id, short_name_id, supplier_number):
+        """Get AP Comment Override. EFT only."""
+        line_text = '0001'
+        combined_comment = f'{short_name_id} - {comment}'[:40]
+        ap_comment = f'{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number(supplier_number)}' \
+                     f'{cls._supplier_location()}{refund_id:<50}{line_text}{combined_comment}' \
+                     f'{cls.DELIMITER}{os.linesep}'
+        return ap_comment
+
+    @classmethod
+    def get_rs_ap_comment(cls, refund_details, routing_slip_number, supplier_number: str = None):
         """Get AP Comment Override. Routing slip only."""
         if not (cheque_advice := refund_details.get('chequeAdvice', '')):
             return None
@@ -124,29 +134,27 @@ class CgiAP(CgiEjv):
     def _supplier_number(cls, supplier_number: str = None):
         """Return vendor number."""
         if supplier_number:
-            return f"{supplier_number:<9}"
-        else:
-            match cls.ap_type:
-                case EjvFileType.NON_GOV_DISBURSEMENT:
-                    return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<9}"
-                case EjvFileType.REFUND:
-                    return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
-                case _:
-                    raise RuntimeError('ap_type not selected.')
+            return f'{supplier_number:<9}'
+        match cls.ap_type:
+            case EjvFileType.NON_GOV_DISBURSEMENT:
+                return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<9}"
+            case EjvFileType.REFUND:
+                return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
+            case _:
+                raise RuntimeError('ap_type not selected.')
 
     @classmethod
     def _dist_vendor(cls, supplier_number: str = None):
         """Return distribution vendor number."""
         if supplier_number:
-            return f"{supplier_number:<30}"
-        else:
-            match cls.ap_type:
-                case EjvFileType.NON_GOV_DISBURSEMENT:
-                    return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<30}"
-                case EjvFileType.REFUND:
-                    return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
-                case _:
-                    raise RuntimeError('ap_type not selected.')
+            return f'{supplier_number:<30}'
+        match cls.ap_type:
+            case EjvFileType.NON_GOV_DISBURSEMENT:
+                return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<30}"
+            case EjvFileType.REFUND:
+                return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
+            case _:
+                raise RuntimeError('ap_type not selected.')
 
     @classmethod
     def _supplier_location(cls):
