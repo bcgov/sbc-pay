@@ -103,12 +103,12 @@ class ApTask(CgiAP):
                 invoice, eft_refund = invoice_refund
                 current_app.logger.info(f'Creating refund for Invoice {invoice.id}, Amount {eft_refund.refund_amount}.')
                 ap_content = f'{ap_content}{cls.get_ap_header(
-                    eft_refund.refund_amount, invoice.id, invoice.created_on)}'
+                    eft_refund.refund_amount, invoice.id, invoice.created_on, eft_refund.cas_supplier_number)}'
                 ap_line = APLine(
                     total=eft_refund.refund_amount,
                     invoice_number=invoice.id,
                     line_number=line_count_total + 1)
-                ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
+                ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line, eft_refund.cas_supplier_number)}'
                 line_count_total += 2
                 batch_total += eft_refund.refund_amount
                 eft_refund.disbursement_status_code = DisbursementStatus.UPLOADED.value
