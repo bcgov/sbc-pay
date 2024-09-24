@@ -32,7 +32,6 @@ from .eft_credit_invoice_link import EFTCreditInvoiceLink
 from .eft_file import EFTFile
 from .eft_process_status_code import EFTProcessStatusCode
 from .eft_refund import EFTRefund
-from .eft_refund_email_list import EFTRefundEmailList
 from .eft_short_name_links import EFTShortnameLinks, EFTShortnameLinkSchema
 from .eft_short_names import EFTShortnames, EFTShortnameSchema, EFTShortnameSummarySchema
 from .eft_short_names_historical import EFTShortnameHistorySchema, EFTShortnamesHistorical

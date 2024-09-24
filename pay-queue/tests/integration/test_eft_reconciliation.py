@@ -507,7 +507,7 @@ def create_test_data():
     eft_shortname: EFTShortnameModel = (EFTShortnameModel(short_name='TESTSHORTNAME',
                                                           type=EFTShortnameType.EFT.value).save())
     EFTShortnameLinksModel(
-        eft_short_name_id=eft_shortname.id,
+        eft_short_name_id=eft_short_name.id,
         auth_account_id=payment_account.auth_account_id,
         status_code=EFTShortnameStatus.LINKED.value,
         updated_by='IDIR/JSMITH',
@@ -644,7 +644,7 @@ def test_apply_pending_payments(session, app, client):
     add_file_event_to_queue_and_process(client,
                                         file_name=file_name,
                                         message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
-    short_name_id = eft_shortname.id
+    short_name_id = eft_short_name.id
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     assert eft_credit_balance == 0
 
@@ -667,7 +667,7 @@ def test_skip_on_existing_pending_payments(session, app, client):
                                         message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     create_statement_from_invoices(payment_account, [invoice])
-    eft_credits = EFTCreditModel.get_eft_credits(eft_shortname.id)
+    eft_credits = EFTCreditModel.get_eft_credits(eft_short_name.id)
 
     # Add an unexpected PENDING record to test that processing skips for this account
     EFTCreditInvoiceLinkModel(
@@ -677,7 +677,7 @@ def test_skip_on_existing_pending_payments(session, app, client):
         amount=invoice.total,
         link_group_id=1)
 
-    short_name_id = eft_shortname.id
+    short_name_id = eft_short_name.id
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     # Assert credit balance is not spent due to an expected already PENDING state
     assert eft_credit_balance == 150.50
@@ -696,7 +696,7 @@ def test_skip_on_insufficient_balance(session, app, client):
 
     create_statement_from_invoices(payment_account, [invoice])
 
-    short_name_id = eft_shortname.id
+    short_name_id = eft_short_name.id
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     assert eft_credit_balance == 150.50
 

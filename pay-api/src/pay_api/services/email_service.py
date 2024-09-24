@@ -21,17 +21,16 @@ from attr import define
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 from pay_api.exceptions import ServiceUnavailableException
+from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.serializable import Serializable
-from pay_api.utils.user_context import user_context
 
 
-@user_context
-def send_email(recipients: list, subject: str, body: str, **kwargs):
+def send_email(recipients: list, subject: str, body: str):
     """Send the email notification."""
     # Note if we send HTML in the body, we aren't sending through GCNotify, ideally we'd like to send through GCNotify.
-    token = kwargs['user'].bearer_token
+    token = get_service_account_token()
     current_app.logger.info(f'>send_email to recipients: {recipients}')
     notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
 
@@ -72,13 +71,16 @@ class ShortNameRefundEmailContent(Serializable):
     status: str
     url: str
 
-    def render_body(self) -> str:
+    def render_body(self, is_for_client=False) -> str:
         """Render the email body using the provided template."""
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root_dir = os.path.dirname(current_dir)
         templates_dir = os.path.join(project_root_dir, 'templates')
         env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-        template = env.get_template('eft_refund_notification.html')
+        if is_for_client:
+            template = env.get_template('eft_refund_notification_client.html')
+        else:
+            template = env.get_template('eft_refund_notification_staff.html')
         return template.render(self.to_dict())
 
 

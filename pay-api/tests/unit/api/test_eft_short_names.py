@@ -902,7 +902,7 @@ def test_search_eft_short_names(session, client, jwt, app):
                       data_dict['single-linked']['statement_summary'][0])
 
 
-def test_post_shortname_refund_success(db, session, client, jwt):
+def test_post_shortname_refund_success(db, session, client, jwt, emails_with_keycloak_role_mock):
     """Test successful creation of a shortname refund."""
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -995,7 +995,8 @@ def test_get_shortname_refund(session, client, jwt, query_string, test_name, cou
         status=EFTShortnameRefundStatus.PENDING_APPROVAL.value
     ).to_dict(), Role.EFT_REFUND_APPROVER.value),
 ])
-def test_patch_shortname_refund(session, client, jwt, payload, test_name, role):
+def test_patch_shortname_refund(session, client, jwt, payload, test_name, role,
+                                send_email_mock, emails_with_keycloak_role_mock):
     """Test patch short name refund."""
     short_name = factory_eft_shortname('TEST_SHORTNAME').save()
     refund = factory_eft_refund(short_name_id=short_name.id, refund_amount=10,
