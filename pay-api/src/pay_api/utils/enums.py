@@ -321,6 +321,13 @@ class CfsReceiptStatus(Enum):
 
     REV = 'REV'
 
+class EFTRefundStatus(Enum):
+    """EFT Refund Status."""
+
+    APPROVED = 'APPROVED'
+    REJECTED = 'REJECTED'
+    PENDING_APPROVAL = 'PENDING_APPROVAL'
+
 
 class EFTCreditInvoiceStatus(Enum):
     """EFT Credit Invoice Link Status."""
