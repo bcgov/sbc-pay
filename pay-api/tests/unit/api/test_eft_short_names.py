@@ -957,8 +957,9 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
 
 @pytest.mark.parametrize('query_string, test_name, count', [
     ('', 'get_all', 3),
-    ('?status=APPROVED,PENDING_APPROVAL', 'status_filter_multiple', 2),
-    ('?status=REJECTED', 'status_filter_rejected', 1),
+    (f'?status={EFTShortnameRefundStatus.APPROVED.value},{
+     EFTShortnameRefundStatus.PENDING_APPROVAL.value}', 'status_filter_multiple', 2),
+    (f'?status={EFTShortnameRefundStatus.DECLINED.value}', 'status_filter_rejected', 1),
 ])
 def test_get_shortname_refund(session, client, jwt, query_string, test_name, count):
     """Test get short name refund."""
@@ -968,7 +969,7 @@ def test_get_shortname_refund(session, client, jwt, query_string, test_name, cou
     factory_eft_refund(short_name_id=short_name.id,
                        status=EFTShortnameRefundStatus.PENDING_APPROVAL.value)
     factory_eft_refund(short_name_id=short_name.id,
-                       status=EFTShortnameRefundStatus.REJECTED.value)
+                       status=EFTShortnameRefundStatus.DECLINED.value)
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     rv = client.get(f'/api/v1/eft-shortnames/shortname-refund{query_string}', headers=headers)
@@ -985,7 +986,7 @@ def test_get_shortname_refund(session, client, jwt, query_string, test_name, cou
     ('valid_rejected_refund', EFTShortNameRefundPatchRequest(
         comment='Test comment',
         decline_reason='Test reason',
-        status=EFTShortnameRefundStatus.REJECTED.value
+        status=EFTShortnameRefundStatus.DECLINED.value
     ).to_dict(), Role.EFT_REFUND_APPROVER.value),
     ('unauthorized', {}, Role.EFT_REFUND.value),
     ('bad_transition', EFTShortNameRefundPatchRequest(
@@ -1020,7 +1021,7 @@ def test_patch_shortname_refund(session, client, jwt, payload, test_name, role):
             assert rv.json['comment'] == 'Test comment'
         case 'valid_rejected_refund':
             assert rv.status_code == 200
-            assert rv.json['status'] == EFTShortnameRefundStatus.REJECTED.value
+            assert rv.json['status'] == EFTShortnameRefundStatus.DECLINED.value
             assert rv.json['comment'] == 'Test comment'
             # assert EFTHistoryModel
             history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]

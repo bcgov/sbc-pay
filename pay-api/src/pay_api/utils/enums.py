@@ -371,7 +371,7 @@ class EFTShortnameRefundStatus(Enum):
 
     APPROVED = 'APPROVED'
     PENDING_APPROVAL = 'PENDING_APPROVAL'
-    REJECTED = 'REJECTED'
+    DECLINED = 'DECLINED'
 
 
 class EFTPaymentActions(Enum):
@@ -393,7 +393,7 @@ class EFTHistoricalTypes(Enum):
     # Short name refund statuses
     SN_REFUND_PENDING_APPROVAL = 'SN_REFUND_PENDING_APPROVAL'
     SN_REFUND_APPROVED = 'SN_REFUND_APPROVED'
-    SN_REFUND_REJECTED = 'SN_REFUND_REJECTED'
+    SN_REFUND_DECLINED = 'SN_REFUND_DECLINED'
 
 
 class PaymentDetailsGlStatus(Enum):

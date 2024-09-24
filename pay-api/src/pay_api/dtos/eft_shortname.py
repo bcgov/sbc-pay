@@ -10,11 +10,11 @@ from decimal import Decimal
 from typing import List
 from attrs import define
 
-from pay_api.utils.converter import Converter
+from pay_api.utils.serializable import Serializable
 
 
 @define
-class EFTShortNameGetRequest:
+class EFTShortNameGetRequest(Serializable):
     """EFT Short name search."""
 
     short_name: str = None
@@ -33,7 +33,7 @@ class EFTShortNameGetRequest:
     @classmethod
     def from_dict(cls, data: dict):
         """Convert from request args to EFTShortNameSearchDTO."""
-        dto = Converter(camel_to_snake_case=True).structure(data, EFTShortNameGetRequest)
+        dto = super().from_dict(data)
         # In the future, we'll need a cleaner way to handle this.
         dto.state = dto.state.split(',') if dto.state else None
         dto.account_id_list = dto.account_id_list.split(',') if dto.account_id_list else None
@@ -41,7 +41,7 @@ class EFTShortNameGetRequest:
 
 
 @define
-class EFTShortNameSummaryGetRequest:
+class EFTShortNameSummaryGetRequest(Serializable):
     """EFT Short name summary search."""
 
     short_name: str = None
@@ -54,29 +54,14 @@ class EFTShortNameSummaryGetRequest:
     page: int = 1
     limit: int = 10
 
-    @classmethod
-    def from_dict(cls, data: dict):
-        """Convert from request args to EFTShortNameSummarySearchDTO."""
-        dto = Converter(camel_to_snake_case=True).structure(data, EFTShortNameSummaryGetRequest)
-        return dto
-
 
 @define
-class EFTShortNameRefundPatchRequest:
+class EFTShortNameRefundPatchRequest(Serializable):
     """EFT Short name refund DTO."""
 
     comment: str
     status: str
     decline_reason: str = None
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        """Convert from request json to EFTShortNameRefundDTO."""
-        return Converter(camel_to_snake_case=True).structure(data, EFTShortNameRefundPatchRequest)
-
-    def to_dict(self):
-        """Convert from EFTShortNameRefundDTO to request json."""
-        return Converter(snake_case_to_camel=True).unstructure(self)
 
 
 @define

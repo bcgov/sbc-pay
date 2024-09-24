@@ -11,7 +11,8 @@ from pay_api.models.eft_refund_email_list import EFTRefundEmailList
 from pay_api.models.eft_credit import EFTCredit as EFTCreditModel
 from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
-from pay_api.services.email_service import _render_shortname_details_body, send_email
+from pay_api.models import EFTShortnames as EFTShortnamesModel
+from pay_api.services.email_service import ShortNameRefundEmailContent, send_email
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTShortnameRefundStatus, InvoiceStatus
 from pay_api.utils.user_context import user_context
@@ -26,8 +27,7 @@ class EFTRefund:
     def create_shortname_refund(request: dict, **kwargs):
         """Create refund."""
         # This method isn't for invoices, it's for shortname only.
-        shortname_id = get_str_by_path(request, 'shortNameId')
-        shortname = get_str_by_path(request, 'shortName')
+        shortname_id = int(get_str_by_path(request, 'shortNameId'))
         amount = Decimal(get_str_by_path(request, 'refundAmount'))
         comment = get_str_by_path(request, 'comment')
 
@@ -36,21 +36,29 @@ class EFTRefund:
 
         current_app.logger.debug(f'Starting shortname refund : {shortname_id}')
 
+        shortname = EFTShortnamesModel.find_by_id(shortname_id)
         refund = EFTRefund._create_refund_model(request, shortname_id, amount, comment)
-        EFTRefund.refund_eft_credits(int(shortname_id), amount)
+        EFTRefund.refund_eft_credits(shortname_id, amount)
 
         history = EFTHistoryService.create_shortname_refund(
             EFTHistoryModel(short_name_id=shortname_id,
                             amount=amount,
-                            credit_balance=EFTCreditModel.get_eft_credit_balance(int(shortname_id)),
+                            credit_balance=EFTCreditModel.get_eft_credit_balance(shortname_id),
                             eft_refund_id=refund.id,
                             is_processing=False,
                             hidden=False)).flush()
 
         recipients = EFTRefundEmailList.find_all_emails()
-        subject = f'Pending Refund Request for Short Name {shortname}'
-        html_body = _render_shortname_details_body(shortname, amount, comment, shortname_id)
-
+        subject = f'Pending Refund Request for Short Name {shortname.short_name}'
+        html_body = ShortNameRefundEmailContent(
+            comment=comment,
+            decline_reason=refund.decline_reason,
+            refund_amount=amount,
+            short_name_id=shortname_id,
+            short_name=shortname.short_name,
+            status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
+            url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{shortname_id}",
+        ).render_body()
         send_email(recipients, subject, html_body, **kwargs)
         history.save()
         refund.save()
@@ -158,7 +166,8 @@ class EFTRefund:
             credit.save()
 
     @staticmethod
-    def update_shortname_refund(refund_id: int, data: EFTShortNameRefundPatchRequest) -> EFTRefundModel:
+    @user_context
+    def update_shortname_refund(refund_id: int, data: EFTShortNameRefundPatchRequest, **kwargs) -> EFTRefundModel:
         """Update the refund status."""
         refund = EFTRefundModel.find_by_id(refund_id)
         if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
@@ -167,19 +176,47 @@ class EFTRefund:
         refund.status = data.status
         refund.decline_reason = data.decline_reason
         refund.save_or_add(auto_save=False)
-        if data.status == EFTShortnameRefundStatus.REJECTED.value:
-            EFTRefund.refund_eft_credits(refund.short_name_id, -refund.refund_amount)
-            EFTHistoryService.create_shortname_refund(
-                EFTHistoryModel(short_name_id=refund.short_name_id,
-                                amount=-refund.refund_amount,
-                                credit_balance=EFTCreditModel.get_eft_credit_balance(refund.short_name_id),
-                                eft_refund_id=refund.id,
-                                is_processing=False,
-                                hidden=False)).save()
+        shortname = EFTShortnamesModel.find_by_id(refund.short_name_id)
+        recipients = EFTRefundEmailList.find_all_emails()
+        match data.status:
+            case EFTShortnameRefundStatus.DECLINED.value:
+                EFTRefund.refund_eft_credits(refund.short_name_id, -refund.refund_amount)
+                EFTHistoryService.create_shortname_refund(
+                    EFTHistoryModel(short_name_id=refund.short_name_id,
+                                    amount=-refund.refund_amount,
+                                    credit_balance=EFTCreditModel.get_eft_credit_balance(refund.short_name_id),
+                                    eft_refund_id=refund.id,
+                                    is_processing=False,
+                                    hidden=False)).save()
+                subject = f'Declined Refund Request for Short Name {shortname.short_name}'
+                body = ShortNameRefundEmailContent(
+                    comment=refund.comment,
+                    decline_reason=refund.decline_reason,
+                    refund_amount=refund.refund_amount,
+                    short_name_id=refund.short_name_id,
+                    short_name=shortname.short_name,
+                    status=data.status,
+                    url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{refund.short_name_id}",
+                ).render_body()
+                send_email(recipients, subject, body, **kwargs)
+            case EFTShortnameRefundStatus.APPROVED.value:
+                subject = f'Approved Refund Request for Short Name {shortname.short_name}'
+                body = ShortNameRefundEmailContent(
+                    comment=refund.comment,
+                    decline_reason=refund.decline_reason,
+                    refund_amount=refund.refund_amount,
+                    short_name_id=refund.short_name_id,
+                    short_name=shortname.short_name,
+                    status=data.status,
+                    url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{refund.short_name_id}",
+                ).render_body()
+                send_email(recipients, subject, body, **kwargs)
+            case _:
+                pass
         return refund.to_dict()
 
     @staticmethod
-    def _create_refund_model(request: dict, shortname_id: str, amount: Decimal, comment: str) -> EFTRefundModel:
+    def _create_refund_model(request: dict, shortname_id: int, amount: Decimal, comment: str) -> EFTRefundModel:
         """Create and return the EFTRefundModel instance."""
         # AP refund job should pick up this row and send back the amount in the refund via cheque.
         # For example if we had $500 on the EFT Shortname credits and we want to refund $300,

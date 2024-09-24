@@ -308,7 +308,7 @@ class EftService(DepositService):
 
         send_email(recipients=recipients,
                    subject='Outstanding Balance Adjustment Notice',
-                   html_body=_render_payment_reversed_template(email_params),
+                   body=_render_payment_reversed_template(email_params),
                    **kwargs)
 
     @staticmethod
