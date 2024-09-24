@@ -2,7 +2,7 @@
 
 Revision ID: a15bb93d4e89
 Revises: 1fadb0e78d8c
-Create Date: 2024-09-18 00:31:32.880154
+Create Date: 2024-09-24 00:31:32.880154
 
 """
 from alembic import op
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 # Please ignore those lines and don't include in migration.
 
 revision = 'a15bb93d4e89'
-down_revision = '1fadb0e78d8c'
+down_revision = '29f59e6f147b'
 branch_labels = None
 depends_on = None
 
