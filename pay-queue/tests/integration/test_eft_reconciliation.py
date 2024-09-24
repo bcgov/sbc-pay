@@ -503,9 +503,9 @@ def test_eft_tdi17_rerun(session, app, client):
 
 def create_test_data():
     """Create test seed data."""
-    payment_account: PaymentAccountModel = factory_create_eft_account()
-    eft_shortname: EFTShortnameModel = (EFTShortnameModel(short_name='TESTSHORTNAME',
-                                                          type=EFTShortnameType.EFT.value).save())
+    payment_account = factory_create_eft_account()
+    eft_short_name = (EFTShortnameModel(short_name='TESTSHORTNAME',
+                                        type=EFTShortnameType.EFT.value).save())
     EFTShortnameLinksModel(
         eft_short_name_id=eft_short_name.id,
         auth_account_id=payment_account.auth_account_id,
@@ -521,7 +521,7 @@ def create_test_data():
                                             service_fees=1.50,
                                             payment_method_code=PaymentMethod.EFT.value)
 
-    return payment_account, eft_shortname, invoice
+    return payment_account, eft_short_name, invoice
 
 
 def generate_basic_tdi17_file(file_name: str):
@@ -636,7 +636,7 @@ def create_statement_from_invoices(account: PaymentAccountModel, invoices: List[
 
 def test_apply_pending_payments(session, app, client):
     """Test automatically applying a pending eft credit invoice link when there is a credit."""
-    payment_account, eft_shortname, invoice = create_test_data()
+    payment_account, eft_short_name, invoice = create_test_data()
     create_statement_from_invoices(payment_account, [invoice])
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
@@ -659,7 +659,7 @@ def test_apply_pending_payments(session, app, client):
 
 def test_skip_on_existing_pending_payments(session, app, client):
     """Test auto payment skipping payment when there exists a pending payment."""
-    payment_account, eft_shortname, invoice = create_test_data()
+    payment_account, eft_short_name, invoice = create_test_data()
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
     add_file_event_to_queue_and_process(client,
@@ -685,7 +685,7 @@ def test_skip_on_existing_pending_payments(session, app, client):
 
 def test_skip_on_insufficient_balance(session, app, client):
     """Test auto payment skipping payment when there is an insufficient eft credit balance."""
-    payment_account, eft_shortname, invoice = create_test_data()
+    payment_account, eft_short_name, invoice = create_test_data()
     invoice.total = 99999
     invoice.save()
     file_name: str = 'test_eft_tdi17.txt'
