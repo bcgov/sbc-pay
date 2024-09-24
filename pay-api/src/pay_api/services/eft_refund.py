@@ -144,26 +144,46 @@ class EFTRefund:
         return InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
-    def refund_eft_credits(shortname_id: int, refund_amount: Decimal):
+    def reverse_eft_credits(shortname_id: int, amount: Decimal):
+        """Reverse the amount to eft_credits table based on short_name_id."""
+        eft_credits = EFTCreditModel.get_eft_credits(shortname_id, include_zero_remaining=True)
+        for credit in eft_credits:
+            if credit.remaining_amount == credit.amount:
+                continue
+            if credit.remaining_amount > credit.amount:
+                raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)
+
+            credit_adjustment = min(amount, credit.amount - credit.remaining_amount)
+            amount -= credit_adjustment
+            credit.remaining_amount += credit_adjustment
+            credit.flush()
+
+        # Scenario where we tried to reverse an amount all the credits,
+        # but for some reason our refund was more than the original amount on the credits.
+        if amount > 0:
+            raise BusinessException(Error.INVALID_REFUND)
+
+    @staticmethod
+    def refund_eft_credits(shortname_id: int, amount: Decimal):
         """Refund the amount to eft_credits table based on short_name_id."""
         eft_credits = EFTCreditModel.get_eft_credits(shortname_id)
         eft_credit_balance = EFTCreditModel.get_eft_credit_balance(shortname_id)
-
-        if refund_amount > eft_credit_balance:
+        if amount > eft_credit_balance or amount <= 0:
             raise BusinessException(Error.INVALID_REFUND)
 
         for credit in eft_credits:
-            if refund_amount == 0:
-                break
             credit_amount = Decimal(credit.remaining_amount)
             if credit_amount <= 0:
                 continue
 
-            deduction = min(refund_amount, credit_amount)
+            deduction = min(amount, credit_amount)
             credit.remaining_amount -= deduction
-            refund_amount -= deduction
+            amount -= deduction
 
-            credit.save()
+            credit.flush()
+        # Scenario where we couldn't subtract the remaining amount from the credits.
+        if amount > 0:
+            raise BusinessException(Error.INVALID_REFUND)
 
     @staticmethod
     @user_context
@@ -180,7 +200,7 @@ class EFTRefund:
         recipients = EFTRefundEmailList.find_all_emails()
         match data.status:
             case EFTShortnameRefundStatus.DECLINED.value:
-                EFTRefund.refund_eft_credits(refund.short_name_id, -refund.refund_amount)
+                EFTRefund.reverse_eft_credits(refund.short_name_id, refund.refund_amount)
                 EFTHistoryService.create_shortname_refund(
                     EFTHistoryModel(short_name_id=refund.short_name_id,
                                     amount=-refund.refund_amount,

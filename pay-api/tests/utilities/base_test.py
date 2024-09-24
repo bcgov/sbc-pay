@@ -893,7 +893,7 @@ def factory_comments(routing_slip_number: str, username: str = 'comment_user', c
     comment = Comment(submitter_name=username,
                       routing_slip_number=routing_slip_number,
                       comment=comment
-                      )
+                      ).save()
     return comment
 
 
@@ -904,7 +904,7 @@ def factory_eft_file(file_ref: str = 'test_ref.txt'):
 
 def factory_eft_shortname(short_name: str, short_name_type: str = EFTShortnameType.EFT.value):
     """Return an EFT short name model."""
-    return EFTShortnames(short_name=short_name, type=short_name_type)
+    return EFTShortnames(short_name=short_name, type=short_name_type).save()
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
@@ -917,7 +917,7 @@ def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234'
         updated_by=updated_by,
         updated_by_name=updated_by,
         updated_on=updated_on
-    )
+    ).save()
 
 
 def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amount=10.00):
@@ -928,7 +928,7 @@ def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amoun
         remaining_amount=remaining_amount,
         eft_file_id=eft_file_id,
         short_name_id=short_name_id
-    )
+    ).save()
 
 
 def factory_eft_refund(short_name_id, refund_amount=10.00, cas_supplier_number='1234567',
