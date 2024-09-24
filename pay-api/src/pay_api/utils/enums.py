@@ -321,6 +321,7 @@ class CfsReceiptStatus(Enum):
 
     REV = 'REV'
 
+
 class EFTRefundStatus(Enum):
     """EFT Refund Status."""
 
