@@ -32,7 +32,9 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, RoutingSlipStatus
+from pay_api.utils.enums import (
+    DisbursementStatus, EFTShortnameRefundStatus, EjvFileType, EJVLinkType, RoutingSlipStatus
+)
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APLine
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
@@ -81,7 +83,7 @@ class ApTask(CgiAP):
             .join(EFTCreditModel, EFTCreditModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id) \
             .join(EFTCreditInvoiceLinkModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id) \
             .join(InvoiceModel, EFTCreditInvoiceLinkModel.invoice_id == InvoiceModel.id) \
-            .filter(EFTRefundModel.status == InvoiceStatus.REFUND_REQUESTED.value) \
+            .filter(EFTRefundModel.status == EFTShortnameRefundStatus.APPROVED.value) \
             .filter(EFTRefundModel.disbursement_status_code != DisbursementStatus.UPLOADED.value) \
             .filter(EFTRefundModel.refund_amount > 0) \
             .all()
