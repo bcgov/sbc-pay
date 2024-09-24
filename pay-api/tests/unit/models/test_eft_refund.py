@@ -19,13 +19,13 @@ Test-Suite to ensure that the EFT Refund model is working as expected.
 
 from pay_api.models import db
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
-from pay_api.models.eft_short_names import EFTShortnames
+from tests.utilities.base_test import factory_eft_shortname
 
 
 def test_eft_refund_defaults(session):
     """Assert EFT refund defaults are stored."""
     # Ensure the required entry exists in the related table
-    short_name = EFTShortnames(short_name='Test Short Name')
+    short_name = factory_eft_shortname(short_name='Test Short Name')
     db.session.add(short_name)
     db.session.commit()
     short_name_id = short_name.id
@@ -58,26 +58,26 @@ def test_eft_refund_defaults(session):
 def test_eft_refund_all_attributes(session):
     """Assert all EFT refund attributes are stored."""
     # Ensure the required entry exists in the related table
-    short_name = EFTShortnames(short_name='Test Short Name')
-    db.session.add(short_name)
-    db.session.commit()
-    short_name_id = short_name.id
-
+    short_name = factory_eft_shortname(short_name='Test Short Name').save()
     refund_amount = 150.00
     cas_supplier_number = 'SUP654321'
     refund_email = 'updated@example.com'
     comment = 'Updated comment'
     status = 'COMPLETED'
+    created_by = 'user111'
+    decline_reason = 'Decline reason comment'
     updated_by = 'user123'
     updated_by_name = 'User Name'
 
     eft_refund = EFTRefundModel(
-        short_name_id=short_name_id,
+        short_name_id=short_name.id,
         refund_amount=refund_amount,
         cas_supplier_number=cas_supplier_number,
         refund_email=refund_email,
         comment=comment,
+        decline_reason=decline_reason,
         status=status,
+        created_by=created_by,
         updated_by=updated_by,
         updated_by_name=updated_by_name,
     )
@@ -86,11 +86,13 @@ def test_eft_refund_all_attributes(session):
     eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()
 
     assert eft_refund is not None
-    assert eft_refund.short_name_id == short_name_id
+    assert eft_refund.short_name_id == short_name.id
     assert eft_refund.refund_amount == refund_amount
     assert eft_refund.cas_supplier_number == cas_supplier_number
     assert eft_refund.refund_email == refund_email
     assert eft_refund.comment == comment
+    assert eft_refund.decline_reason == decline_reason
     assert eft_refund.status == status
+    assert eft_refund.created_by == created_by
     assert eft_refund.updated_by == updated_by
     assert eft_refund.updated_by_name == updated_by_name

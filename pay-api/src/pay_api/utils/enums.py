@@ -349,6 +349,13 @@ class EFTFileLineType(Enum):
     TRAILER = 'TRAILER'
 
 
+class EFTShortnameType(Enum):
+    """EFT Short name types."""
+
+    EFT = 'EFT'
+    WIRE = 'WIRE'
+
+
 class EFTShortnameStatus(Enum):
     """EFT Short name statuses."""
 
@@ -379,6 +386,11 @@ class EFTHistoricalTypes(Enum):
     INVOICE_REFUND = 'INVOICE_REFUND'
     STATEMENT_PAID = 'STATEMENT_PAID'
     STATEMENT_REVERSE = 'STATEMENT_REVERSE'
+
+    # Short name refund statuses
+    SN_REFUND_PENDING_APPROVAL = 'SN_REFUND_PENDING_APPROVAL'
+    SN_REFUND_APPROVED = 'SN_REFUND_APPROVED'
+    SN_REFUND_REJECTED = 'SN_REFUND_REJECTED'
 
 
 class PaymentDetailsGlStatus(Enum):

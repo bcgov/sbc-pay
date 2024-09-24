@@ -26,7 +26,7 @@ from pay_api.models import (
     PaymentAccount, PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, Statement, StatementInvoices,
     StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus,
+    CfsAccountStatus, DisbursementStatus, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, EFTShortnameType,
     InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem,
     RoutingSlipStatus)
 
@@ -258,10 +258,11 @@ def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.P
     return payment_account
 
 
-def factory_create_eft_shortname(short_name: str):
+def factory_create_eft_shortname(short_name: str, short_name_type: str = EFTShortnameType.EFT.value):
     """Return Factory."""
     short_name = EFTShortnames(
-        short_name=short_name
+        short_name=short_name,
+        type=short_name_type
     ).save()
     return short_name
 

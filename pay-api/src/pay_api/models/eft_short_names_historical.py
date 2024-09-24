@@ -45,6 +45,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
             'created_on',
             'credit_balance',
             'description',
+            'eft_refund_id',
             'hidden',
             'invoice_id',
             'is_processing',
@@ -61,6 +62,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
     created_by = db.Column(db.String, nullable=True)
     created_on = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     credit_balance = db.Column(db.Numeric(19, 2), nullable=False)
+    eft_refund_id = db.Column(db.Integer, ForeignKey('eft_refunds.id'), nullable=True, index=True)
     hidden = db.Column(db.Boolean(), nullable=False, default=False, index=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=True, index=True)
     is_processing = db.Column(db.Boolean(), nullable=False, default=False)
@@ -75,6 +77,11 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
     def find_by_related_group_link_id(cls, group_link_id: int) -> Self:
         """Find historical records by related EFT Credit Invoice Link group id."""
         return cls.query.filter_by(related_group_link_id=group_link_id).one_or_none()
+
+    @classmethod
+    def find_by_eft_refund_id(cls, eft_refund_id: int) -> Self:
+        """Find historical records by EFT refund id."""
+        return cls.query.filter_by(eft_refund_id=eft_refund_id).one_or_none()
 
 
 @define

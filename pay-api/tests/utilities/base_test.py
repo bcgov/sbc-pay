@@ -25,13 +25,13 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile,
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTRefund,
     EFTShortnameLinks, EFTShortnames, Invoice, InvoiceReference, NonSufficientFunds, Payment, PaymentAccount,
     PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
-    PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
+    CfsAccountStatus, EFTShortnameStatus, EFTShortnameType, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus,
+    PaymentMethod, PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
 
 
 token_header = {
@@ -902,9 +902,9 @@ def factory_eft_file(file_ref: str = 'test_ref.txt'):
     return EFTFile(file_ref=file_ref).save()
 
 
-def factory_eft_shortname(short_name: str):
+def factory_eft_shortname(short_name: str, short_name_type: str = EFTShortnameType.EFT.value):
     """Return an EFT short name model."""
-    return EFTShortnames(short_name=short_name)
+    return EFTShortnames(short_name=short_name, type=short_name_type)
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
@@ -928,6 +928,18 @@ def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amoun
         remaining_amount=remaining_amount,
         eft_file_id=eft_file_id,
         short_name_id=short_name_id
+    )
+
+
+def factory_eft_refund(short_name_id, refund_amount, cas_supplier_number='1234567',
+                       refund_email='test@test.com', comment='test comment'):
+    """Return an EFT Refund."""
+    return EFTRefund(
+        short_name_id=short_name_id,
+        refund_amount=refund_amount,
+        cas_supplier_number=cas_supplier_number,
+        refund_email=refund_email,
+        comment=comment
     )
 
 

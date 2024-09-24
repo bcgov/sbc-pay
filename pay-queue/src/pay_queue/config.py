@@ -92,7 +92,7 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
     CONNECT_TIMEOUT = int(os.getenv('CONNECT_TIMEOUT', '10'))
 
     # EFT Config
-    EFT_INVOICE_PREFIX = os.getenv('EFT_INVOICE_PREFIX', 'REG')
+    EFT_TDI17_LOCATION_ID = os.getenv('EFT_TDI17_LOCATION_ID')
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')

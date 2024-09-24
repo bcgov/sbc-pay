@@ -42,6 +42,7 @@ class EFTShortnameHistory:  # pylint: disable=too-many-instance-attributes
     hidden: Optional[bool] = False
     is_processing: Optional[bool] = False
     invoice_id: Optional[int] = None
+    eft_refund_id: Optional[int] = None
 
 
 @dataclass
@@ -122,6 +123,22 @@ class EFTShortnameHistorical:
             invoice_id=history.invoice_id,
             transaction_date=EFTShortnameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.INVOICE_REFUND.value
+        )
+
+    @staticmethod
+    @user_context
+    def create_shortname_refund(history: EFTShortnameHistory, **kwargs) -> EFTShortnamesHistoricalModel:
+        """Create EFT Short name refund historical record."""
+        return EFTShortnamesHistoricalModel(
+            amount=history.amount,
+            created_by=kwargs['user'].user_name,
+            credit_balance=history.credit_balance,
+            hidden=history.hidden,
+            is_processing=history.is_processing,
+            short_name_id=history.short_name_id,
+            eft_refund_id=history.eft_refund_id,
+            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_type=EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
         )
 
     @staticmethod
