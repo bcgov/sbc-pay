@@ -208,6 +208,7 @@ class EFTShortnameHistorical:
                                   history_model.amount,
                                   history_model.credit_balance,
                                   history_model.invoice_id,
+                                  history_model.eft_refund_id,
                                   history_model.statement_number,
                                   history_model.transaction_date,
                                   history_model.transaction_type,
