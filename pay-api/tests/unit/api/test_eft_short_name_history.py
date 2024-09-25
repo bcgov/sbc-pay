@@ -53,13 +53,6 @@ def setup_test_data(exclude_history: bool = False):
                                                               related_group_link_id=2,
                                                               statement_number=1234)).save()
 
-        EFTHistoryService.create_shortname_refund(EFTHistory(short_name_id=short_name.id,
-                                                             amount=351.50,
-                                                             credit_balance=351.50,
-                                                             payment_account_id=payment_account.id,
-                                                             related_group_link_id=2,
-                                                             statement_number=1234)).save()
-
     return payment_account, short_name
 
 
