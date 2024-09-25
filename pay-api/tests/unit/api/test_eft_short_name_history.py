@@ -25,7 +25,7 @@ from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.utils.enums import EFTHistoricalTypes, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    factory_eft_shortname, factory_invoice, factory_payment_account, get_claims, token_header, factory_eft_refund)
+    factory_eft_refund, factory_eft_shortname, factory_invoice, factory_payment_account, get_claims, token_header)
 
 
 def setup_test_data(exclude_history: bool = False):
