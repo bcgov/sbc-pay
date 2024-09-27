@@ -25,7 +25,7 @@ from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.utils.enums import EFTHistoricalTypes, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    factory_eft_shortname, factory_invoice, factory_payment_account, get_claims, token_header)
+    factory_eft_refund, factory_eft_shortname, factory_invoice, factory_payment_account, get_claims, token_header)
 
 
 def setup_test_data(exclude_history: bool = False):
@@ -52,13 +52,6 @@ def setup_test_data(exclude_history: bool = False):
                                                               payment_account_id=payment_account.id,
                                                               related_group_link_id=2,
                                                               statement_number=1234)).save()
-
-        EFTHistoryService.create_shortname_refund(EFTHistory(short_name_id=short_name.id,
-                                                             amount=351.50,
-                                                             credit_balance=351.50,
-                                                             payment_account_id=payment_account.id,
-                                                             related_group_link_id=2,
-                                                             statement_number=1234)).save()
 
     return payment_account, short_name
 
@@ -180,6 +173,47 @@ def test_search_invoice_refund_history(session, client, jwt, app):
         assert invoice_refund['invoiceId'] == invoice.id
         assert invoice_refund['statementNumber'] == 1234
         assert invoice_refund['transactionType'] == EFTHistoricalTypes.INVOICE_REFUND.value
+        assert invoice_refund['transactionDate'] == transaction_date
+
+
+def test_search_shortname_refund_history(session, client, jwt, app):
+    """Assert that EFT short names refund history can be searched."""
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    transaction_date = datetime(2024, 7, 31, 0, 0, 0)
+    with freeze_time(transaction_date):
+        payment_account, short_name = setup_test_data(exclude_history=True)
+        eft_refund = factory_eft_refund(short_name.id, refund_amount=100).save()
+        EFTHistoryService.create_shortname_refund(
+            EFTHistory(short_name_id=short_name.id,
+                       amount=100,
+                       credit_balance=0,
+                       eft_refund_id=eft_refund.id,
+                       is_processing=False,
+                       hidden=False)).save()
+
+        rv = client.get(f'/api/v1/eft-shortnames/{short_name.id}/history', headers=headers)
+        result_dict = rv.json
+        assert result_dict is not None
+        assert result_dict['page'] == 1
+        assert result_dict['total'] == 1
+        assert result_dict['limit'] == 10
+        assert result_dict['items'] is not None
+        assert len(result_dict['items']) == 1
+
+        transaction_date = EFTHistoryService.transaction_date_now().strftime('%Y-%m-%dT%H:%M:%S')
+        invoice_refund = result_dict['items'][0]
+        assert invoice_refund['historicalId'] is not None
+        assert invoice_refund['isReversible'] is False
+        assert invoice_refund['accountId'] is None
+        assert invoice_refund['accountBranch'] is None
+        assert invoice_refund['accountName'] is None
+        assert invoice_refund['amount'] == 100
+        assert invoice_refund['shortNameBalance'] == 0
+        assert invoice_refund['shortNameId'] == short_name.id
+        assert invoice_refund['invoiceId'] is None
+        assert invoice_refund['statementNumber'] is None
+        assert invoice_refund['transactionType'] == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
         assert invoice_refund['transactionDate'] == transaction_date
 
 
