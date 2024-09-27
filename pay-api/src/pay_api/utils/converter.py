@@ -12,7 +12,7 @@ from cattrs.gen import make_dict_structure_fn, make_dict_unstructure_fn, overrid
 class Converter(cattrs.Converter):
     """Addon to cattr converter."""
 
-    def __init__(self, camel_to_snake_case: bool = False, enum_to_value: bool = False):
+    def __init__(self, camel_to_snake_case: bool = False, snake_case_to_camel=False, enum_to_value: bool = False):
         """Initialize function, add in extra unstructure hooks."""
         super().__init__()
         # More from cattrs-extras/blob/master/src/cattrs_extras/converter.py
@@ -31,12 +31,41 @@ class Converter(cattrs.Converter):
                 has, self._to_snake_case_structure
             )
 
+        if snake_case_to_camel:
+            self.register_unstructure_hook_factory(
+                has, self._to_camel_case_unstructure
+            )
+
+            self.register_structure_hook_factory(
+                has, self._to_camel_case_structure
+            )
+
     def _to_snake_case(self, camel_str: str) -> str:
         return re.sub(r'(?<!^)(?=[A-Z])', '_', camel_str).lower()
 
     def _to_camel_case(self, snake_str: str) -> str:
         components = snake_str.split('_')
         return components[0] + ''.join(x.title() for x in components[1:])
+
+    def _to_camel_case_unstructure(self, cls):
+        return make_dict_unstructure_fn(
+            cls,
+            self,
+            **{
+                a.name: override(rename=self._to_camel_case(a.name))
+                for a in fields(cls)
+            }
+        )
+
+    def _to_camel_case_structure(self, cls):
+        return make_dict_structure_fn(
+            cls,
+            self,
+            **{
+                a.name: override(rename=self._to_camel_case(a.name))
+                for a in fields(cls)
+            }
+        )
 
     def _to_snake_case_unstructure(self, cls):
         return make_dict_unstructure_fn(

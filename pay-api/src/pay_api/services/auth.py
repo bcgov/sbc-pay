@@ -13,9 +13,11 @@
 # limitations under the License.
 
 """This manages all of the authorization service."""
+import base64
 from flask import abort, current_app, g
 
 from pay_api.services.code import Code as CodeService
+from pay_api.services.flags import flags
 from pay_api.services.oauth_service import OAuthService as RestService
 from pay_api.utils.enums import AccountType, AuthHeaderType, Code, ContentType, PaymentMethod, Role
 from pay_api.utils.user_context import UserContext, user_context
@@ -111,8 +113,39 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 @user_context
 def get_account_admin_users(auth_account_id, **kwargs):
     """Retrieve account admin users."""
+    # Only works for STAFF and ADMINS of the org.
     return RestService.get(
         current_app.config.get('AUTH_API_ENDPOINT') +
         f'orgs/{auth_account_id}/members?status=ACTIVE&roles=ADMIN',
         kwargs['user'].bearer_token, AuthHeaderType.BEARER,
         ContentType.JSON).json()
+
+
+def get_emails_with_keycloak_role(role: str) -> str:
+    """Retrieve emails with the specified keycloak role."""
+    users = get_users_with_keycloak_role(role)
+    # Purpose of this is so our TEST users don't get hammered with emails, also our tester can easily switch this on.
+    if override_emails := flags.is_on('override-eft-refund-emails', default=False):
+        return override_emails
+    return ','.join([user['email'] for user in users])
+
+
+def get_users_with_keycloak_role(role: str) -> dict:
+    """Retrieve users with the specified keycloak role."""
+    url = current_app.config.get('AUTH_API_ENDPOINT') + f'keycloak/users?role={role}'
+    return RestService.get(url, get_service_account_token(), AuthHeaderType.BEARER, ContentType.JSON).json()
+
+
+def get_service_account_token():
+    """Get service account token."""
+    issuer_url = current_app.config.get('JWT_OIDC_ISSUER')
+    token_url = issuer_url + '/protocol/openid-connect/token'
+    service_account_id = current_app.config.get('KEYCLOAK_SERVICE_ACCOUNT_ID')
+    service_account_secret = current_app.config.get('KEYCLOAK_SERVICE_ACCOUNT_SECRET')
+    auth_str = f'{service_account_id}:{service_account_secret}'
+    basic_auth_encoded = base64.b64encode(auth_str.encode('utf-8')).decode('utf-8')
+    data = 'grant_type=client_credentials'
+    token_response = RestService.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC, ContentType.FORM_URL_ENCODED,
+                                      data)
+    bearer_token = token_response.json()['access_token']
+    return bearer_token

@@ -52,7 +52,7 @@ def test_eft_refund_defaults(session):
     assert eft_refund.comment == 'Test comment'
     assert eft_refund.status is None
     assert eft_refund.updated_by is None
-    assert eft_refund.updated_by_name is None
+    assert eft_refund.updated_name is None
 
 
 def test_eft_refund_all_attributes(session):
@@ -67,7 +67,7 @@ def test_eft_refund_all_attributes(session):
     created_by = 'user111'
     decline_reason = 'Decline reason comment'
     updated_by = 'user123'
-    updated_by_name = 'User Name'
+    updated_name = 'User Name'
 
     eft_refund = EFTRefundModel(
         short_name_id=short_name.id,
@@ -79,7 +79,7 @@ def test_eft_refund_all_attributes(session):
         status=status,
         created_by=created_by,
         updated_by=updated_by,
-        updated_by_name=updated_by_name,
+        updated_name=updated_name,
     )
     eft_refund.save()
 
@@ -95,4 +95,4 @@ def test_eft_refund_all_attributes(session):
     assert eft_refund.status == status
     assert eft_refund.created_by == created_by
     assert eft_refund.updated_by == updated_by
-    assert eft_refund.updated_by_name == updated_by_name
+    assert eft_refund.updated_name == updated_name

@@ -23,7 +23,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-attributes
+class EFTShortnamesHistorical(BaseModel):
     """This class manages all EFT Short name historical data."""
 
     __tablename__ = 'eft_short_names_historical'
@@ -81,7 +81,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
     @classmethod
     def find_by_eft_refund_id(cls, eft_refund_id: int) -> Self:
         """Find historical records by EFT refund id."""
-        return cls.query.filter_by(eft_refund_id=eft_refund_id).one_or_none()
+        return cls.query.filter_by(eft_refund_id=eft_refund_id).order_by(EFTShortnamesHistorical.id.desc()).all()
 
 
 @define

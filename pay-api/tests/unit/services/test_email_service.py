@@ -15,7 +15,7 @@
 """Tests for Email Service."""
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from pay_api.services.email_service import send_email
 from pay_api.utils.enums import AuthHeaderType, ContentType
@@ -25,32 +25,15 @@ def test_send_email(app, monkeypatch):
     """Test send email."""
     app.config['NOTIFY_API_ENDPOINT'] = 'http://test_notify_api_endpoint/'
 
-    def token_info():  # pylint: disable=unused-argument; mocks of library methods
-        return {
-            'username': 'service account',
-            'realm_access': {
-                'roles': [
-                    'system',
-                    'edit'
-                ]
-            }
-        }
-
-    def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
-        return 'test_token'
-
-    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
-    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+    monkeypatch.setattr('pay_api.services.email_service.get_service_account_token', lambda: 'test')
 
     with app.app_context():
         with patch('pay_api.services.email_service.OAuthService.post') as mock_post:
-            mock_user = MagicMock()
-            mock_user.bearer_token = 'test_token'
             mock_post.return_value.text = json.dumps({'notifyStatus': 'SUCCESS'})
-            result = send_email(['recipient@example.com'], 'Subject', 'Body', user=mock_user)
-            mock_post.assert_called_once_with(
+            result = send_email(['recipient@example.com'], 'Subject', 'Body')
+            mock_post.assert_called_with(
                 'http://test_notify_api_endpoint/notify/',
-                token='test_token',
+                token='test',
                 auth_header_type=AuthHeaderType.BEARER,
                 content_type=ContentType.JSON,
                 data={
@@ -61,4 +44,4 @@ def test_send_email(app, monkeypatch):
                     }
                 }
             )
-            assert result is True
+        assert result is True

@@ -22,7 +22,7 @@ from pay_api.models import StatementRecipientsSchema as NotificationSchema
 from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 
 
-class StatementRecipients:  # pylint:disable=too-many-instance-attributes
+class StatementRecipients:
     """Service to manage statement related operations."""
 
     def __init__(self):

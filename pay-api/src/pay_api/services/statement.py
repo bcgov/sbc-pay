@@ -43,7 +43,7 @@ from .payment import Payment as PaymentService
 from .payment import PaymentReportInput
 
 
-class Statement:  # pylint:disable=too-many-instance-attributes,too-many-public-methods
+class Statement:  # pylint:disable=too-many-public-methods
     """Service to manage statement related operations."""
 
     def __init__(self):

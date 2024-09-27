@@ -82,7 +82,7 @@ class EFTShortnameSummaries:
     def get_shortname_refund_query():
         """Query for EFT shortname refund."""
         return (db.session.query(EFTRefundModel.short_name_id, EFTRefundModel.status)
-                .filter(EFTRefundModel.status.in_([EFTShortnameRefundStatus.PENDING_REFUND.value]))
+                .filter(EFTRefundModel.status.in_([EFTShortnameRefundStatus.PENDING_APPROVAL.value]))
                 .distinct(EFTRefundModel.short_name_id))
 
     @staticmethod
