@@ -26,7 +26,7 @@ from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
 
-class StatementSettings:  # pylint:disable=too-many-instance-attributes
+class StatementSettings:
     """Service to manage statement related operations."""
 
     def __init__(self):

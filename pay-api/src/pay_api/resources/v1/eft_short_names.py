@@ -17,19 +17,22 @@ from http import HTTPStatus
 from flask import Blueprint, current_app, jsonify, request
 from flask_cors import cross_origin
 
+from pay_api.dtos.eft_shortname import (
+    EFTShortNameGetRequest, EFTShortNameRefundGetRequest, EFTShortNameRefundPatchRequest, EFTShortNameSummaryGetRequest)
 from pay_api.exceptions import BusinessException, error_to_response
 from pay_api.schemas import utils as schema_utils
-from pay_api.services.eft_service import EftService
-from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
-from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
-from pay_api.services.eft_short_names import EFTShortnamesSearch
+from pay_api.services.eft_refund import EFTRefund as EFTRefundService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTShortnameHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorySearch
+from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
+from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
+from pay_api.services.eft_short_names import EFTShortnamesSearch
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.util import string_to_date, string_to_decimal, string_to_int
+
 
 bp = Blueprint('EFT_SHORT_NAMES', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/eft-shortnames')
 
@@ -41,36 +44,21 @@ bp = Blueprint('EFT_SHORT_NAMES', __name__, url_prefix=f'{EndpointEnum.API_V1.va
 def get_eft_shortnames():
     """Get all eft short name records."""
     current_app.logger.info('<get_eft_shortnames')
-
-    state = request.args.get('state').split(',') if request.args.get('state', None) else None
-    page: int = int(request.args.get('page', '1'))
-    limit: int = int(request.args.get('limit', '10'))
-    amount_owing = request.args.get('amountOwing', None)
-    short_name = request.args.get('shortName', None)
-    short_name_id = request.args.get('shortNameId', None)
-    short_name_type = request.args.get('shortNameType', None)
-    statement_id = request.args.get('statementId', None)
-    account_id = request.args.get('accountId', None)
-    account_name = request.args.get('accountName', None)
-    account_branch = request.args.get('accountBranch', None)
-    account_id_list = request.args.get('accountIdList', None)
-    account_id_list = account_id_list.split(',') if account_id_list else None
-
+    request_data = EFTShortNameGetRequest.from_dict(request.args.to_dict())
     response, status = EFTShortnameService.search(EFTShortnamesSearch(
-        id=short_name_id,
-        account_id=account_id,
-        account_id_list=account_id_list,
-        account_name=account_name,
-        account_branch=account_branch,
-        amount_owing=string_to_decimal(amount_owing),
-        short_name=short_name,
-        short_name_type=short_name_type,
-        statement_id=string_to_int(statement_id),
-        state=state,
-        page=page,
-        limit=limit)), HTTPStatus.OK
+        id=request_data.short_name_id,
+        account_id=request_data.account_id,
+        account_id_list=request_data.account_id_list,
+        account_name=request_data.account_name,
+        account_branch=request_data.account_branch,
+        amount_owing=string_to_decimal(request_data.amount_owing),
+        short_name=request_data.short_name,
+        short_name_type=request_data.short_name_type,
+        statement_id=string_to_int(request_data.statement_id),
+        state=request_data.state,
+        page=request_data.page,
+        limit=request_data.limit)), HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortnames')
-
     return jsonify(response), status
 
 
@@ -81,26 +69,17 @@ def get_eft_shortnames():
 def get_eft_shortname_summaries():
     """Get all eft short name summaries."""
     current_app.logger.info('<get_eft_shortname_summaries')
-    page: int = int(request.args.get('page', '1'))
-    limit: int = int(request.args.get('limit', '10'))
-    short_name = request.args.get('shortName', None)
-    short_name_id = request.args.get('shortNameId', None)
-    short_name_type = request.args.get('shortNameType', None)
-    credits_remaining = request.args.get('creditsRemaining', None)
-    linked_accounts_count = request.args.get('linkedAccountsCount', None)
-    payment_received_start_date = request.args.get('paymentReceivedStartDate', None)
-    payment_received_end_date = request.args.get('paymentReceivedEndDate', None)
-
+    request_data = EFTShortNameSummaryGetRequest.from_dict(request.args.to_dict())
     response, status = EFTShortnameSummariesService.search(EFTShortnamesSearch(
-        id=string_to_int(short_name_id),
-        deposit_start_date=string_to_date(payment_received_start_date),
-        deposit_end_date=string_to_date(payment_received_end_date),
-        credit_remaining=string_to_decimal(credits_remaining),
-        linked_accounts_count=string_to_int(linked_accounts_count),
-        short_name=short_name,
-        short_name_type=short_name_type,
-        page=page,
-        limit=limit)), HTTPStatus.OK
+        id=string_to_int(request_data.short_name_id),
+        deposit_start_date=string_to_date(request_data.payment_received_start_date),
+        deposit_end_date=string_to_date(request_data.payment_received_end_date),
+        credit_remaining=string_to_decimal(request_data.credits_remaining),
+        linked_accounts_count=string_to_int(request_data.linked_accounts_count),
+        short_name=request_data.short_name,
+        short_name_type=request_data.short_name_type,
+        page=request_data.page,
+        limit=request_data.limit)), HTTPStatus.OK
 
     current_app.logger.debug('>get_eft_shortname_summaries')
     return jsonify(response), status
@@ -245,10 +224,21 @@ def post_eft_statement_payment(short_name_id: int):
     return jsonify(response), status
 
 
+@bp.route('/shortname-refund', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET', 'POST', 'PATCH'])
+@_jwt.has_one_of_roles([Role.EFT_REFUND.value, Role.EFT_REFUND_APPROVER.value])
+def get_shortname_refunds():
+    """Get all short name refunds."""
+    request_data = EFTShortNameRefundGetRequest.from_dict(request.args.to_dict())
+    current_app.logger.info('<get_shortname_refunds')
+    refunds = EFTRefundService.get_shortname_refunds(request_data)
+    current_app.logger.info('<get_shortname_refund')
+    return jsonify(refunds), HTTPStatus.OK
+
+
 @bp.route('/shortname-refund', methods=['POST', 'OPTIONS'])
-@cross_origin(origins='*', methods=['POST'])
-@_jwt.has_one_of_roles(
-    [Role.SYSTEM.value, Role.EFT_REFUND.value])
+@cross_origin(origins='*')
+@_jwt.has_one_of_roles([Role.EFT_REFUND.value, Role.EFT_REFUND_APPROVER.value])
 def post_shortname_refund():
     """Create the Refund for the Shortname."""
     current_app.logger.info('<post_shortname_refund')
@@ -257,10 +247,31 @@ def post_shortname_refund():
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
-        response = EftService.create_shortname_refund(request_json)
+        response = EFTRefundService.create_shortname_refund(request_json)
         status = HTTPStatus.ACCEPTED
     except BusinessException as exception:
         return exception.response()
 
-    current_app.logger.debug('>post_fas_refund')
+    current_app.logger.debug('>post_shortname_refund')
+    return jsonify(response), status
+
+
+@bp.route('/shortname-refund/<int:eft_refund_id>', methods=['PATCH'])
+@cross_origin(origins='*')
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.EFT_REFUND_APPROVER.value])
+def patch_shortname_refund(eft_refund_id: int):
+    """Patch EFT short name link."""
+    current_app.logger.info('<patch_eft_shortname_link')
+    request_json = request.get_json()
+    short_name_refund = EFTShortNameRefundPatchRequest.from_dict(request_json)
+    try:
+        if EFTRefundService.find_refund_by_id(eft_refund_id):
+            response, status = EFTRefundService.update_shortname_refund(eft_refund_id, short_name_refund), HTTPStatus.OK
+        else:
+            response, status = {}, HTTPStatus.NOT_FOUND
+    except BusinessException as exception:
+        return exception.response()
+
+    current_app.logger.debug('>patch_eft_shortname_link')
     return jsonify(response), status

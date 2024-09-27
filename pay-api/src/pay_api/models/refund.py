@@ -21,7 +21,7 @@ from .base_model import BaseModel
 from .db import db, ma
 
 
-class Refund(BaseModel):  # pylint:disable=too-many-instance-attributes
+class Refund(BaseModel):
     """This class manages all of the base data about Refunds."""
 
     __tablename__ = 'refunds'

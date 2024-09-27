@@ -23,9 +23,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.services.eft_service import EftService
+from pay_api.services.eft_refund import EFTRefund as EFTRefundService
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus, EFTHistoricalTypes, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
 from pay_api.utils.errors import Error
@@ -77,7 +79,7 @@ def test_refund_eft_credits(session):
     with patch('pay_api.models.EFTCredit.get_eft_credits',
                return_value=[credit1, credit2, credit3]), \
          patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=9):
-        EftService._refund_eft_credits(1, '8')
+        EFTRefundService.refund_eft_credits(1, 8)
         assert credit1.remaining_amount == 0
         assert credit2.remaining_amount == 0
         assert credit3.remaining_amount == 1
@@ -86,7 +88,7 @@ def test_refund_eft_credits(session):
         credit2.remaining_amount = 5
 
         with patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=10):
-            EftService._refund_eft_credits(1, '7')
+            EFTRefundService.refund_eft_credits(1, 7)
             assert credit1.remaining_amount == 0
             assert credit2.remaining_amount == 3
 
@@ -94,9 +96,40 @@ def test_refund_eft_credits(session):
         credit2.remaining_amount = 2
 
         with patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=7):
-            EftService._refund_eft_credits(1, '1')
+            EFTRefundService.refund_eft_credits(1, 1)
             assert credit1.remaining_amount == 4
             assert credit2.remaining_amount == 2
+
+
+@pytest.mark.parametrize('test_name', [
+    ('reverse_eft_credit_success'),
+    ('reverse_eft_credit_leftover_fail'),
+    ('reverse_eft_credit_remaining_higher_than_original_amount_fail'),
+])
+def test_refund_eft_credit_reversal(session, test_name):
+    """Test refund eft credit reversal."""
+    file = factory_eft_file().save()
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME123').save()
+    match test_name:
+        case 'reverse_eft_credit_success':
+            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=10)
+            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=7)
+            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=9)
+            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=1, remaining_amount=0)
+            EFTRefundService.reverse_eft_credits(short_name.id, 5)
+            assert EFTCreditModel.query.filter_by(remaining_amount=10).count() == 3
+            assert EFTCreditModel.query.filter_by(remaining_amount=1).count() == 1
+        case 'reverse_eft_credit_leftover_fail':
+            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=10)
+            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=9)
+            with pytest.raises(BusinessException) as excinfo:
+                EFTRefundService.reverse_eft_credits(short_name.id, 5)
+                assert excinfo.value.code == Error.INVALID_REFUND.name
+        case 'reverse_eft_credit_remaining_higher_than_original_amount_fail':
+            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=15)
+            with pytest.raises(BusinessException) as excinfo:
+                EFTRefundService.reverse_eft_credits(short_name.id, 5)
+                assert excinfo.value.code == Error.INVALID_REFUND.name
 
 
 def test_refund_eft_credits_exceed_balance(session):
@@ -110,7 +143,7 @@ def test_refund_eft_credits_exceed_balance(session):
          patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=8):
 
         with pytest.raises(BusinessException) as excinfo:
-            EftService._refund_eft_credits(1, '20')
+            EFTRefundService.refund_eft_credits(1, 20)
 
         assert excinfo.value.code == Error.INVALID_REFUND.name
 
@@ -130,9 +163,9 @@ def test_eft_invoice_refund(session, test_name):
                               status_code=InvoiceStatus.APPROVED.value,
                               total=5).save()
     eft_file = factory_eft_file().save()
-    shortname = factory_eft_shortname(short_name='TESTSHORTNAME123').save()
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME123').save()
     eft_credit = factory_eft_credit(eft_file_id=eft_file.id,
-                                    short_name_id=shortname.id,
+                                    short_name_id=short_name.id,
                                     amount=10,
                                     remaining_amount=1).save()
     match test_name:

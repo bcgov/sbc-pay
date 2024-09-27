@@ -298,3 +298,26 @@ def admin_users_mock(monkeypatch):
                         get_account_admin_users)
     monkeypatch.setattr('pay_api.services.eft_service.get_account_admin_users',
                         get_account_admin_users)
+
+
+@pytest.fixture()
+def emails_with_keycloak_role_mock(monkeypatch):
+    """Mock auth rest call to get org admins."""
+    def get_emails_with_keycloak_role(role):
+        return 'hello@goodnight.com'
+
+    monkeypatch.setattr('pay_api.services.auth.get_emails_with_keycloak_role',
+                        get_emails_with_keycloak_role)
+    monkeypatch.setattr('pay_api.services.eft_refund.get_emails_with_keycloak_role',
+                        get_emails_with_keycloak_role)
+
+
+@pytest.fixture()
+def send_email_mock(monkeypatch):
+    """Mock send_email."""
+    def send_email(recipients, subject, body):
+        return True
+
+    # Note this needs to be moved to a prism spec, we need to come up with one for NotifyAPI.
+    monkeypatch.setattr('pay_api.services.email_service.send_email', send_email)
+    monkeypatch.setattr('pay_api.services.eft_refund.send_email', send_email)
