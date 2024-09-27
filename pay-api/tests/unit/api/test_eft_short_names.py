@@ -39,9 +39,9 @@ from pay_api.utils.enums import (
     EFTShortnameStatus, EFTShortnameType, InvoiceStatus, PaymentMethod, Role, StatementFrequency)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
-    factory_eft_credit, factory_eft_file, factory_eft_refund, factory_eft_shortname, factory_eft_shortname_link,
-    factory_invoice, factory_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings,
-    get_claims, token_header)
+    factory_eft_credit, factory_eft_file, factory_eft_history, factory_eft_refund, factory_eft_shortname,
+    factory_eft_shortname_link, factory_invoice, factory_payment_account, factory_statement, factory_statement_invoices,
+    factory_statement_settings, get_claims, token_header)
 
 
 def test_create_eft_short_name_link(session, client, jwt, app):
@@ -1004,6 +1004,7 @@ def test_patch_shortname_refund(session, client, jwt, payload, test_name, role,
     eft_file = factory_eft_file().save()
     eft_credit = EFTCreditModel(eft_file_id=eft_file.id, short_name_id=short_name.id,
                                 amount=100, remaining_amount=90).save()
+    eft_history = factory_eft_history(short_name.id, refund.id, 10, 10)
     if test_name == 'bad_transition':
         refund.status = EFTShortnameRefundStatus.APPROVED.value
         refund.save()
@@ -1020,15 +1021,15 @@ def test_patch_shortname_refund(session, client, jwt, payload, test_name, role,
             assert rv.status_code == 200
             assert rv.json['status'] == EFTShortnameRefundStatus.APPROVED.value
             assert rv.json['comment'] == 'Test comment'
+            assert eft_history.transaction_type == EFTHistoricalTypes.SN_REFUND_APPROVED.value
         case 'valid_rejected_refund':
             assert rv.status_code == 200
             assert rv.json['status'] == EFTShortnameRefundStatus.DECLINED.value
             assert rv.json['comment'] == 'Test comment'
-            # assert EFTHistoryModel
             history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]
             assert history
-            assert history.amount == -10
             assert history.credit_balance == 90 + 10
+            assert history.transaction_type == EFTHistoricalTypes.SN_REFUND_DECLINED.value
             eft_credit = EFTCreditModel.find_by_id(eft_credit.id)
             assert eft_credit.remaining_amount == 90 + 10
             assert rv.json['declineReason']

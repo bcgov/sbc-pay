@@ -26,13 +26,13 @@ from faker import Faker
 
 from pay_api.models import (
     CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTRefund,
-    EFTShortnameLinks, EFTShortnames, Invoice, InvoiceReference, NonSufficientFunds, Payment, PaymentAccount,
-    PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    EFTShortnameLinks, EFTShortnames, EFTShortnamesHistorical, Invoice, InvoiceReference, NonSufficientFunds, Payment,
+    PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices,
+    StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameStatus, EFTShortnameType, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus,
-    PaymentMethod, PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
-
+    CfsAccountStatus, EFTHistoricalTypes, EFTShortnameStatus, EFTShortnameType, InvoiceReferenceStatus, InvoiceStatus,
+    LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
 
 token_header = {
     'alg': 'RS256',
@@ -929,6 +929,18 @@ def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amoun
         eft_file_id=eft_file_id,
         short_name_id=short_name_id
     ).save()
+
+
+def factory_eft_history(short_name_id, refund_id, amount=10.00, credit_balance=10.00):
+    """Return an EFT Shortnames Historical."""
+    return EFTShortnamesHistorical(short_name_id=short_name_id,
+                                   amount=amount,
+                                   credit_balance=credit_balance,
+                                   eft_refund_id=refund_id,
+                                   is_processing=False,
+                                   hidden=False,
+                                   transaction_date=datetime.now(tz=timezone.utc),
+                                   transaction_type=EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value).save()
 
 
 def factory_eft_refund(short_name_id, refund_amount=10.00, cas_supplier_number='1234567',

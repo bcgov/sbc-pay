@@ -200,7 +200,7 @@ class EFTRefund:
         match data.status:
             case EFTShortnameRefundStatus.DECLINED.value:
                 EFTRefund.reverse_eft_credits(refund.short_name_id, refund.refund_amount)
-                history = EFTHistoryModel.find_by_eft_refund_id(refund.id)
+                history = EFTHistoryModel.find_by_eft_refund_id(refund.id)[0]
                 history.transaction_type = EFTHistoricalTypes.SN_REFUND_DECLINED.value
                 history.credit_balance = EFTCreditModel.get_eft_credit_balance(refund.short_name_id)
                 history.save()
@@ -217,7 +217,7 @@ class EFTRefund:
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
                 send_email(expense_authority_recipients, subject, body)
             case EFTShortnameRefundStatus.APPROVED.value:
-                history = EFTHistoryModel.find_by_eft_refund_id(refund.id)
+                history = EFTHistoryModel.find_by_eft_refund_id(refund.id)[0]
                 history.transaction_type = EFTHistoricalTypes.SN_REFUND_APPROVED.value
                 history.save()
                 subject = f'Approved Refund Request for Short Name {short_name.short_name}'
