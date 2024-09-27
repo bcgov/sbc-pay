@@ -20,7 +20,6 @@ from decimal import Decimal
 from attr import define
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
-from pay_api.exceptions import ServiceUnavailableException
 from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
@@ -53,7 +52,7 @@ def send_email(recipients: list, subject: str, body: str):
             if notify_response:
                 current_app.logger.info(f'Successfully sent email to {recipient}')
                 success = True
-        except ServiceUnavailableException as e:
+        except Exception as e:  # NOQA pylint:disable=broad-except
             current_app.logger.error(f'Error sending email to {recipient}: {e}')
 
     return success

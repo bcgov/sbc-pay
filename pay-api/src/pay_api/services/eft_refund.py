@@ -14,7 +14,8 @@ from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.email_service import ShortNameRefundEmailContent, send_email
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
-from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTShortnameRefundStatus, InvoiceStatus, Role
+from pay_api.utils.enums import (
+    EFTCreditInvoiceStatus, EFTHistoricalTypes, EFTShortnameRefundStatus, InvoiceStatus, Role)
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
 
@@ -199,13 +200,10 @@ class EFTRefund:
         match data.status:
             case EFTShortnameRefundStatus.DECLINED.value:
                 EFTRefund.reverse_eft_credits(refund.short_name_id, refund.refund_amount)
-                EFTHistoryService.create_shortname_refund(
-                    EFTHistoryModel(short_name_id=refund.short_name_id,
-                                    amount=-refund.refund_amount,
-                                    credit_balance=EFTCreditModel.get_eft_credit_balance(refund.short_name_id),
-                                    eft_refund_id=refund.id,
-                                    is_processing=False,
-                                    hidden=False)).save()
+                history = EFTHistoryModel.find_by_eft_refund_id(refund.id)
+                history.transaction_type = EFTHistoricalTypes.SN_REFUND_DECLINED.value
+                history.credit_balance = EFTCreditModel.get_eft_credit_balance(refund.short_name_id)
+                history.save()
                 subject = f'Declined Refund Request for Short Name {short_name.short_name}'
                 body = ShortNameRefundEmailContent(
                     comment=refund.comment,
@@ -219,6 +217,9 @@ class EFTRefund:
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
                 send_email(expense_authority_recipients, subject, body)
             case EFTShortnameRefundStatus.APPROVED.value:
+                history = EFTHistoryModel.find_by_eft_refund_id(refund.id)
+                history.transaction_type = EFTHistoricalTypes.SN_REFUND_APPROVED.value
+                history.save()
                 subject = f'Approved Refund Request for Short Name {short_name.short_name}'
                 content = ShortNameRefundEmailContent(
                     comment=refund.comment,
