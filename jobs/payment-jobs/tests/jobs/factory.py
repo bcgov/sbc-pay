@@ -354,7 +354,7 @@ def factory_create_eft_refund(
     refund_amount: float = 100.0,
     refund_email: str = '',
     short_name_id: int = 1,
-    status: str = InvoiceStatus.REFUND_REQUESTED.value,
+    status: str = InvoiceStatus.APPROVED.value,
     disbursement_status_code: str = DisbursementStatus.ACKNOWLEDGED.value
 ):
     """Return Factory."""

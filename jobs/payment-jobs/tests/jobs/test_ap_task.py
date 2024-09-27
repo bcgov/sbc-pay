@@ -20,7 +20,9 @@ from unittest.mock import patch
 
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import RoutingSlip
-from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, InvoiceStatus, PaymentMethod, RoutingSlipStatus
+from pay_api.utils.enums import (
+    CfsAccountStatus, DisbursementStatus, EFTShortnameRefundStatus, InvoiceStatus, PaymentMethod, RoutingSlipStatus
+)
 
 from tasks.ap_task import ApTask
 
@@ -54,7 +56,7 @@ def test_eft_refunds(session, monkeypatch):
         refund_amount=100,
         refund_email='test@test.com',
         short_name_id=short_name.id,
-        status=InvoiceStatus.REFUND_REQUESTED.value
+        status=EFTShortnameRefundStatus.APPROVED.value
     )
     eft_file = factory_create_eft_file()
     eft_transaction = factory_create_eft_transaction(file_id=eft_file.id)

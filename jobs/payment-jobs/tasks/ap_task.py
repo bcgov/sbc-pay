@@ -65,7 +65,7 @@ class ApTask(CgiAP):
         6. Create AP file and upload to SFTP.
         7. After some time, a feedback file will arrive and Payment-reconciliation queue will set disbursement
            status to COMPLETED or REVERSED (filter out)
-        8. Find all EFT refunds with status REFUND_REQUESTED.
+        8. Find all EFT refunds with status APPROVED.
         9. Create AP file and upload to SFTP.
         10. After some time, a feedback file will arrive and Payment-reconciliation queue will move these
             EFT refunds to REFUNDED. (filter out)
