@@ -2023,7 +2023,7 @@ werkzeug = "3.0.3"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "21519"
-resolved_reference = "8dc888540e0921530d8dd394bc377def589489d0"
+resolved_reference = "90b6041cc6718a8964f1175d19e8a1b42a62732a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2831,8 +2831,8 @@ develop = false
 [package.source]
 type = "git"
 url = "https://github.com/bcgov/sbc-connect-common.git"
-reference = "HEAD"
-resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
+reference = "main"
+resolved_reference = "43411ed428c4c4b89bea1ac6acdb10077f247d2b"
 subdirectory = "python/sql-versioning"
 
 [[package]]
