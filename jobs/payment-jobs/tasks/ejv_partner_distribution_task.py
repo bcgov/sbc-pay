@@ -37,6 +37,9 @@ from sqlalchemy import Date, and_, cast
 from tasks.common.cgi_ejv import CgiEjv
 from tasks.common.dataclasses import Disbursement, DisbursementLineItem
 
+# Just a warning for this code, there aren't decent unit tests that test this. If you're changing this job, you'll need
+# to do a side by side file comparison to previous versions to ensure that the changes are correct.
+
 
 class EjvPartnerDistributionTask(CgiEjv):
     """Task to create EJV Files."""
@@ -56,7 +59,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         cls._create_ejv_file_for_partner(batch_type='GA')  # External ministry
 
     @staticmethod
-    def get_disbursement_by_distribution_for_partner(partner) -> List[Disbursement]:
+    def get_disbursement_by_distribution_for_partner(partner):
         """Return disbursements dataclass for partners."""
         # Internal invoices aren't disbursed to partners, DRAWDOWN is handled by the mainframe.
         # EFT is handled by the PartnerDisbursements table.
@@ -91,10 +94,14 @@ class EjvPartnerDistributionTask(CgiEjv):
             .all()
 
         disbursement_rows = []
+        distribution_code_totals = {}
         for invoice, payment_line_item, distribution_code in transactions + reversals:
+            distribution_code_totals.setdefault(distribution_code.distribution_code_id, 0)
+            distribution_code_totals[distribution_code.distribution_code_id] += payment_line_item.total
             disbursement_rows.append(Disbursement(
                 bcreg_distribution_code=distribution_code,
                 partner_distribution_code=distribution_code.disbursement_distribution_code,
+                target=invoice,
                 line_item=DisbursementLineItem(
                     amount=payment_line_item.total,
                     flow_through=f'{invoice.id:<110}',
@@ -103,8 +110,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                                                                 InvoiceStatus.REFUND_REQUESTED.value,
                                                                 InvoiceStatus.CREDITED.value],
                     target_type=EJVLinkType.INVOICE.value,
-                    identifier=invoice.id,
-                    is_legacy=True
+                    identifier=invoice.id
                 )
             ))
         # ################################################################# END OF Legacy way of handling disbursements.
@@ -130,21 +136,23 @@ class EjvPartnerDistributionTask(CgiEjv):
             flow_through = f'{payment_line_item.invoice_id}-{partner_disbursement.id}'
             if suffix != '':
                 flow_through += f'-{suffix}'
+            distribution_code_totals.setdefault(distribution_code.distribution_code_id, 0)
+            distribution_code_totals[distribution_code.distribution_code_id] += partner_disbursement.amount
             disbursement_rows.append(Disbursement(
                 bcreg_distribution_code=distribution_code,
                 partner_distribution_code=distribution_code.disbursement_distribution_code,
+                target=partner_disbursement,
                 line_item=DisbursementLineItem(
                     amount=partner_disbursement.amount,
                     flow_through=flow_through,
                     description_identifier='#' + flow_through,
                     is_reversal=partner_disbursement.is_reversal,
                     target_type=partner_disbursement.target_type,
-                    identifier=partner_disbursement.target_id,
-                    is_legacy=False
+                    identifier=partner_disbursement.target_id
                 )
             ))
         disbursement_rows.sort(key=lambda x: x.bcreg_distribution_code.distribution_code_id)
-        return disbursement_rows
+        return disbursement_rows, distribution_code_totals
 
     @classmethod
     def _create_ejv_file_for_partner(cls, batch_type: str):  # pylint:disable=too-many-locals, too-many-statements
@@ -165,7 +173,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         # Each of the partner will go as a JV Header and transactions as JV Details.
         for partner in cls._get_partners_by_batch_type(batch_type):
             current_app.logger.info(partner)
-            if not (disbursements := cls.get_disbursement_by_distribution_for_partner(partner)):
+            disbursements, distribution_code_totals = cls.get_disbursement_by_distribution_for_partner(partner)
+            if not disbursements:
                 continue
 
             ejv_header_model = EjvHeaderModel(
@@ -175,18 +184,24 @@ class EjvPartnerDistributionTask(CgiEjv):
             ).flush()
             journal_name = cls.get_journal_name(ejv_header_model.id)
             sequence = 1
+
+            last_distribution_code = None
             for disbursement in disbursements:
                 # debit_distribution and credit_distribution stays as is for invoices which are not PAID
-                ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                            cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
-                                                              journal_name, disbursement.line_item.amount))
-                control_total += 1
+                if last_distribution_code != disbursement.bcreg_distribution_code.distribution_code_id:
+                    header_total = distribution_code_totals[disbursement.bcreg_distribution_code.distribution_code_id]
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
+                                                cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
+                                                                  journal_name, header_total))
+                    control_total += 1
+                    last_distribution_code = disbursement.bcreg_distribution_code.distribution_code_id
+
                 line_number = 1
                 batch_total += disbursement.line_item.amount
                 dl = disbursement.line_item
                 description = disbursement_desc[:-len(dl.description_identifier)] + dl.description_identifier
                 description = f'{description[:100]:<100}'
-                for credit_debit_row in range(1, 2):
+                for credit_debit_row in range(1, 3):
                     target_distribution = cls.get_distribution_string(
                         disbursement.partner_distribution_code if credit_debit_row == 1 else
                         disbursement.bcreg_distribution_code
@@ -208,7 +223,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     line_number += 1
                     control_total += 1
 
-                cls._update_disbursement_status_and_ejv_link(dl, ejv_header_model, sequence)
+                cls._update_disbursement_status_and_ejv_link(disbursement, ejv_header_model, sequence)
                 sequence += 1
 
             db.session.flush()
@@ -229,24 +244,24 @@ class EjvPartnerDistributionTask(CgiEjv):
 
     @classmethod
     def _update_disbursement_status_and_ejv_link(cls,
-                                                 target: Disbursement,
+                                                 disbursement: Disbursement,
                                                  ejv_header_model: EjvHeaderModel,
                                                  sequence: int):
         """Update disbursement status and create EJV Link."""
-        if target.is_legacy:
-            invoice = InvoiceModel.find_by_id(target.identifier)
-            invoice.disbursement_status_code = DisbursementStatus.UPLOADED.value
-        else:
+        if isinstance(disbursement.target, InvoiceModel):
+            disbursement.target.disbursement_status_code = DisbursementStatus.UPLOADED.value
+        elif isinstance(disbursement.target, PartnerDisbursementsModel):
             # Only EFT is using partner disbursements table for now, eventually we want to move our disbursement
             # process over to something similar: Where we have an entire table setup that
             # is used to track disbursements, instead of just the three column approach that
             # doesn't work when there are multiple reversals etc.
-            partner_disbursement = PartnerDisbursementsModel.find_by_target(target.identifier, 'invoice')
-            partner_disbursement.status_code = DisbursementStatus.UPLOADED.value
-            partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
+            disbursement.target.status_code = DisbursementStatus.UPLOADED.value
+            disbursement.target.processed_on = datetime.now(tz=timezone.utc)
+        else:
+            raise NotImplementedError('Unknown disbursement type')
 
-        db.session.add(EjvLinkModel(link_id=target.identifier,
-                                    link_type=target.target_type,
+        db.session.add(EjvLinkModel(link_id=disbursement.line_item.identifier,
+                                    link_type=disbursement.line_item.target_type,
                                     ejv_header_id=ejv_header_model.id,
                                     disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                     sequence=sequence))

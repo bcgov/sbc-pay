@@ -19,6 +19,7 @@ from typing import List, Optional
 from dataclass_wizard import JSONWizard
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PartnerDisbursements as PartnerDisbursementModel
 from pay_api.models import PaymentLineItem as LineItemModel
 from pay_api.utils.enums import InvoiceStatus
 from tasks.common.enums import PaymentDetailsGlStatus
@@ -32,7 +33,6 @@ class DisbursementLineItem:
     flow_through: str
     description_identifier: str
     is_reversal: bool
-    is_legacy: bool
     target_type: str
     identifier: int
 
@@ -44,6 +44,7 @@ class Disbursement:
     bcreg_distribution_code: DistributionCodeModel
     partner_distribution_code: DistributionCodeModel
     line_item: DisbursementLineItem
+    target: InvoiceModel | PartnerDisbursementModel
 
 
 @dataclass
