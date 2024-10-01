@@ -21,8 +21,7 @@ from unittest.mock import patch
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import RoutingSlip
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EFTShortnameRefundStatus, InvoiceStatus, PaymentMethod, RoutingSlipStatus
-)
+    CfsAccountStatus, DisbursementStatus, EFTShortnameRefundStatus, InvoiceStatus, PaymentMethod, RoutingSlipStatus)
 
 from tasks.ap_task import ApTask
 
