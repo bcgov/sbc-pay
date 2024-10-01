@@ -121,7 +121,7 @@ class EFTRefund:
                         if corp_type.has_partner_disbursements:
                             reversal_total += cil.amount
 
-                if reversal_total > 0:
+                if reversal_total - invoice.service_fees > 0:
                     PartnerDisbursementsModel(
                         amount=reversal_total - invoice.service_fees,
                         is_reversal=True,
