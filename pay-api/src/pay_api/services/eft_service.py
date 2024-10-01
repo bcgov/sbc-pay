@@ -85,7 +85,7 @@ class EftService(DepositService):
         if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
             if corp_type.has_partner_disbursements:
                 PartnerDisbursementsModel(
-                    amount=invoice.total,
+                    amount=invoice.total - invoice.service_fees,
                     is_reversal=False,
                     partner_code=invoice.corp_type_code,
                     status_code=DisbursementStatus.WAITING_FOR_JOB.value,
@@ -244,14 +244,15 @@ class EftService(DepositService):
                     invoice_disbursements[invoice] += current_link.amount
 
         for invoice, total_amount in invoice_disbursements.items():
-            PartnerDisbursementsModel(
-                amount=total_amount,
-                is_reversal=True,
-                partner_code=invoice.corp_type_code,
-                status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                target_id=invoice.id,
-                target_type=EJVLinkType.INVOICE.value
-            ).flush()
+            if total_amount - invoice.service_fees > 0:
+                PartnerDisbursementsModel(
+                    amount=total_amount - invoice.service_fees,
+                    is_reversal=True,
+                    partner_code=invoice.corp_type_code,
+                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                    target_id=invoice.id,
+                    target_type=EJVLinkType.INVOICE.value
+                ).flush()
         statement = StatementModel.find_by_id(statement_id)
         EFTHistoryService.create_statement_reverse(
             EFTHistory(short_name_id=short_name_id,

@@ -123,7 +123,7 @@ class EFTRefund:
 
                 if reversal_total > 0:
                     PartnerDisbursementsModel(
-                        amount=reversal_total,
+                        amount=reversal_total - invoice.service_fees,
                         is_reversal=True,
                         partner_code=invoice.corp_type_code,
                         status_code=DisbursementStatus.WAITING_FOR_JOB.value,
