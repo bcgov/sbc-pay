@@ -19,11 +19,13 @@ Test-Suite to ensure that the EFT Short names model is working as expected.
 from datetime import datetime, timezone
 
 from pay_api.models.eft_short_names import EFTShortnames as EFTShortnamesModel
+from pay_api.utils.enums import EFTShortnameType
 
 
 def test_eft_short_name_model(session):
     """Assert eft short names are stored."""
     eft_short_name = EFTShortnamesModel()
+    eft_short_name.type = EFTShortnameType.EFT.value
     eft_short_name.short_name = 'ABC'
     eft_short_name.cas_supplier_number = '123456'
     eft_short_name.email = 'test@test.com'
@@ -31,6 +33,7 @@ def test_eft_short_name_model(session):
 
     assert eft_short_name.id is not None
     assert eft_short_name.short_name == 'ABC'
+    assert eft_short_name.type == EFTShortnameType.EFT.value
     assert eft_short_name.cas_supplier_number == '123456'
     assert eft_short_name.email == 'test@test.com'
     assert eft_short_name.created_on.date() == datetime.now(tz=timezone.utc).date()

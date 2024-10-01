@@ -17,16 +17,6 @@
         "24"
       ]
     },
-    "short_name":{
-      "$id":"#/properties/shortName",
-      "type":"string",
-      "title":"Short Name",
-      "description":"short name.",
-      "default":"",
-      "examples":[
-        "24"
-      ]
-    },
     "refund_amount":{
       "$id":"#/properties/refundAmount",
       "type":"number",

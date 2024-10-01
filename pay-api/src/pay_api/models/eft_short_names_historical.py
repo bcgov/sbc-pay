@@ -23,7 +23,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-attributes
+class EFTShortnamesHistorical(BaseModel):
     """This class manages all EFT Short name historical data."""
 
     __tablename__ = 'eft_short_names_historical'
@@ -45,6 +45,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
             'created_on',
             'credit_balance',
             'description',
+            'eft_refund_id',
             'hidden',
             'invoice_id',
             'is_processing',
@@ -61,6 +62,7 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
     created_by = db.Column(db.String, nullable=True)
     created_on = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     credit_balance = db.Column(db.Numeric(19, 2), nullable=False)
+    eft_refund_id = db.Column(db.Integer, ForeignKey('eft_refunds.id'), nullable=True, index=True)
     hidden = db.Column(db.Boolean(), nullable=False, default=False, index=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=True, index=True)
     is_processing = db.Column(db.Boolean(), nullable=False, default=False)
@@ -76,6 +78,11 @@ class EFTShortnamesHistorical(BaseModel):  # pylint:disable=too-many-instance-at
         """Find historical records by related EFT Credit Invoice Link group id."""
         return cls.query.filter_by(related_group_link_id=group_link_id).one_or_none()
 
+    @classmethod
+    def find_by_eft_refund_id(cls, eft_refund_id: int) -> Self:
+        """Find historical records by EFT refund id."""
+        return cls.query.filter_by(eft_refund_id=eft_refund_id).order_by(EFTShortnamesHistorical.id.desc()).all()
+
 
 @define
 class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
@@ -87,6 +94,7 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
     account_branch: str
     amount: Decimal
     invoice_id: int
+    eft_refund_id: int
     statement_number: int
     short_name_id: int
     short_name_balance: Decimal
@@ -109,6 +117,7 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
                    account_name=getattr(row, 'account_name', None),
                    account_branch=getattr(row, 'account_branch', None),
                    invoice_id=getattr(row, 'invoice_id', None),
+                   eft_refund_id=getattr(row, 'eft_refund_id', None),
                    statement_number=getattr(row, 'statement_number', None),
                    transaction_date=getattr(row, 'transaction_date', None),
                    transaction_type=getattr(row, 'transaction_type', None),

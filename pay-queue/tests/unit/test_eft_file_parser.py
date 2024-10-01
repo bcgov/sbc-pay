@@ -18,6 +18,8 @@ Test-Suite to ensure that the EFT File parser is working as intended.
 """
 from datetime import datetime
 
+from pay_api.utils.enums import EFTShortnameType
+
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
 from pay_queue.services.eft.eft_enums import EFTConstants
 from pay_queue.services.eft.eft_errors import EFTError
@@ -194,6 +196,7 @@ def test_eft_parse_record():
     assert record.jv_type == 'I'
     assert record.jv_number == '002425669'
     assert record.transaction_date == transaction_date
+    assert record.short_name_type is None
 
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -222,7 +225,7 @@ def test_eft_parse_record():
     assert record.deposit_datetime == deposit_datetime
     assert record.location_id == '85004'
     assert record.transaction_sequence == '002'
-    assert record.transaction_description == 'FUNDS TRANSFER CR TT INTERBLOCK C'
+    assert record.transaction_description == 'INTERBLOCK C'
     assert record.deposit_amount == 525000
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
@@ -232,6 +235,7 @@ def test_eft_parse_record():
     assert record.jv_type == 'I'
     assert record.jv_number == '002425669'
     assert record.transaction_date == transaction_date
+    assert record.short_name_type == EFTShortnameType.WIRE.value
 
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -240,7 +244,7 @@ def test_eft_parse_record():
                                  deposit_time='0000',
                                  location_id='85004',
                                  transaction_sequence='003',
-                                 transaction_description='DEPOSIT          27',
+                                 transaction_description='MISC PAYMENT ABC1234567',
                                  deposit_amount='951250',
                                  currency='',
                                  exchange_adj_amount='0',
@@ -260,7 +264,7 @@ def test_eft_parse_record():
     assert record.deposit_datetime == deposit_datetime
     assert record.location_id == '85004'
     assert record.transaction_sequence == '003'
-    assert record.transaction_description == 'DEPOSIT          27'
+    assert record.transaction_description == 'ABC1234567'
     assert record.deposit_amount == 951250
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
@@ -270,6 +274,7 @@ def test_eft_parse_record():
     assert record.jv_type == 'I'
     assert record.jv_number == '002425669'
     assert record.transaction_date == transaction_date
+    assert record.short_name_type == EFTShortnameType.EFT.value
 
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -278,7 +283,7 @@ def test_eft_parse_record():
                                  deposit_time='0000',
                                  location_id='85004',
                                  transaction_sequence='004',
-                                 transaction_description='FUNDS TRANSFER CR TT INTERBLOCK C',
+                                 transaction_description='MISC PAYMENT BCONLINE INTERBLOCK C',
                                  deposit_amount='2125000',
                                  currency='',
                                  exchange_adj_amount='0',
@@ -298,7 +303,7 @@ def test_eft_parse_record():
     assert record.deposit_datetime == deposit_datetime
     assert record.location_id == '85004'
     assert record.transaction_sequence == '004'
-    assert record.transaction_description == 'FUNDS TRANSFER CR TT INTERBLOCK C'
+    assert record.transaction_description == 'MISC PAYMENT BCONLINE INTERBLOCK C'
     assert record.deposit_amount == 2125000
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
@@ -308,6 +313,7 @@ def test_eft_parse_record():
     assert record.jv_type == 'I'
     assert record.jv_number == '002425669'
     assert record.transaction_date == transaction_date
+    assert record.short_name_type is None
 
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -555,7 +561,7 @@ def test_eft_parse_file():
         assert eft_records[0].jv_type == 'I'
         assert eft_records[0].jv_number == '002425669'
         assert eft_records[0].transaction_date is None
-        assert not eft_records[0].is_eft
+        assert eft_records[0].short_name_type is None
 
         assert eft_records[1].index == 2
         assert eft_records[1].record_type == '2'
@@ -564,7 +570,7 @@ def test_eft_parse_file():
         assert eft_records[1].deposit_datetime == datetime(2023, 8, 10, 0, 0)
         assert eft_records[1].location_id == '85004'
         assert eft_records[1].transaction_sequence == '002'
-        assert eft_records[1].transaction_description == 'FUNDS TRANSFER CR TT INTERBLOCK C'
+        assert eft_records[1].transaction_description == 'HSIMPSON'
         assert eft_records[1].deposit_amount == 525000
         assert eft_records[1].currency == EFTConstants.CURRENCY_CAD.value
         assert eft_records[1].exchange_adj_amount == 0
@@ -574,7 +580,7 @@ def test_eft_parse_file():
         assert eft_records[1].jv_type == 'I'
         assert eft_records[1].jv_number == '002425669'
         assert eft_records[1].transaction_date is None
-        assert not eft_records[1].is_eft
+        assert eft_records[1].short_name_type == EFTShortnameType.WIRE.value
 
         assert eft_records[2].index == 3
         assert eft_records[2].record_type == '2'
@@ -583,7 +589,7 @@ def test_eft_parse_file():
         assert eft_records[2].deposit_datetime == datetime(2023, 8, 10, 0, 0)
         assert eft_records[2].location_id == '85004'
         assert eft_records[2].transaction_sequence == '003'
-        assert eft_records[2].transaction_description == 'DEPOSIT          27'
+        assert eft_records[2].transaction_description == 'ABC1234567'
         assert eft_records[2].deposit_amount == 951250
         assert eft_records[2].currency == EFTConstants.CURRENCY_CAD.value
         assert eft_records[2].exchange_adj_amount == 0
@@ -593,7 +599,7 @@ def test_eft_parse_file():
         assert eft_records[2].jv_type == 'I'
         assert eft_records[2].jv_number == '002425669'
         assert eft_records[2].transaction_date is None
-        assert not eft_records[2].is_eft
+        assert eft_records[2].short_name_type == EFTShortnameType.EFT.value
 
         assert eft_records[3].index == 4
         assert eft_records[3].record_type == '2'
@@ -602,7 +608,7 @@ def test_eft_parse_file():
         assert eft_records[3].deposit_datetime == datetime(2023, 8, 10, 0, 0)
         assert eft_records[3].location_id == '85004'
         assert eft_records[3].transaction_sequence == '004'
-        assert eft_records[3].transaction_description == 'FUNDS TRANSFER CR TT INTERBLOCK C'
+        assert eft_records[3].transaction_description == 'INTERBLOCK C'
         assert eft_records[3].deposit_amount == 2125000
         assert eft_records[3].currency == EFTConstants.CURRENCY_CAD.value
         assert eft_records[3].exchange_adj_amount == 0
@@ -612,7 +618,7 @@ def test_eft_parse_file():
         assert eft_records[3].jv_type == 'I'
         assert eft_records[3].jv_number == '002425669'
         assert eft_records[3].transaction_date is None
-        assert not eft_records[3].is_eft
+        assert eft_records[3].short_name_type == EFTShortnameType.WIRE.value
 
         assert eft_records[4].index == 5
         assert eft_records[4].record_type == '2'
@@ -631,4 +637,4 @@ def test_eft_parse_file():
         assert eft_records[4].jv_type == 'I'
         assert eft_records[4].jv_number == '002425836'
         assert eft_records[4].transaction_date is None
-        assert not eft_records[4].is_eft
+        assert eft_records[4].short_name_type is None

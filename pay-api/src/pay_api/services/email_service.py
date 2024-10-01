@@ -15,19 +15,21 @@
 """This manages all of the email notification service."""
 import os
 from typing import Dict
+from decimal import Decimal
 
+from attr import define
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
-from pay_api.exceptions import ServiceUnavailableException
+from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
-from pay_api.utils.user_context import user_context
+from pay_api.utils.serializable import Serializable
 
 
-@user_context
-def send_email(recipients: list, subject: str, html_body: str, **kwargs):
+def send_email(recipients: list, subject: str, body: str):
     """Send the email notification."""
-    token = kwargs['user'].bearer_token
+    # Note if we send HTML in the body, we aren't sending through GCNotify, ideally we'd like to send through GCNotify.
+    token = get_service_account_token()
     current_app.logger.info(f'>send_email to recipients: {recipients}')
     notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
 
@@ -38,7 +40,7 @@ def send_email(recipients: list, subject: str, html_body: str, **kwargs):
             'recipients': recipient,
             'content': {
                 'subject': subject,
-                'body': html_body
+                'body': body
             }
         }
 
@@ -50,28 +52,35 @@ def send_email(recipients: list, subject: str, html_body: str, **kwargs):
             if notify_response:
                 current_app.logger.info(f'Successfully sent email to {recipient}')
                 success = True
-        except ServiceUnavailableException as e:
+        except Exception as e:  # NOQA pylint:disable=broad-except
             current_app.logger.error(f'Error sending email to {recipient}: {e}')
 
     return success
 
 
-def _render_shortname_details_body(shortname: str, amount: str, comment: str, shortname_id: str) -> str:
-    """Render the email body using the provided template."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root_dir = os.path.dirname(current_dir)
-    templates_dir = os.path.join(project_root_dir, 'templates')
-    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-    template = env.get_template('eft_refund_notification.html')
+@define
+class ShortNameRefundEmailContent(Serializable):
+    """Short name refund email."""
 
-    url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{shortname_id}"
-    params = {
-        'shortname': shortname,
-        'refundAmount': amount,
-        'comment': comment,
-        'url': url
-    }
-    return template.render(params)
+    comment: str
+    decline_reason: str
+    refund_amount: Decimal
+    short_name_id: int
+    short_name: str
+    status: str
+    url: str
+
+    def render_body(self, is_for_client=False) -> str:
+        """Render the email body using the provided template."""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root_dir = os.path.dirname(current_dir)
+        templates_dir = os.path.join(project_root_dir, 'templates')
+        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+        if is_for_client:
+            template = env.get_template('eft_refund_notification_client.html')
+        else:
+            template = env.get_template('eft_refund_notification_staff.html')
+        return template.render(self.to_dict())
 
 
 def _render_payment_reversed_template(params: Dict) -> str:

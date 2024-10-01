@@ -1,0 +1,16 @@
+# {{ state }} Refund Request for Short Name {{ shortname }}
+
+There is a refund request of ${{ refundAmount }} for short name: {{ shortname }}
+{% if state == 'APPROVED' %}
+    is now approved.
+{% elif state == 'DECLINED' %}
+    is declined with the following message: {{ decline_message }}
+{% elif state == 'PENDING' %}
+    .
+{% else %}
+    .
+{% endif %}
+
+Please review the information using the following link:
+
+[Log in to view details]({{ url }})

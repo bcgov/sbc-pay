@@ -23,7 +23,7 @@ from sqlalchemy.orm import aliased
 from pay_api.models import EFTShortnamesHistorical as EFTShortnamesHistoricalModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
-from pay_api.models.eft_short_names_historical import EFTShortnameHistorySchema
+from pay_api.models import EFTShortnameHistorySchema
 from pay_api.utils.enums import EFTHistoricalTypes
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
@@ -42,6 +42,7 @@ class EFTShortnameHistory:  # pylint: disable=too-many-instance-attributes
     hidden: Optional[bool] = False
     is_processing: Optional[bool] = False
     invoice_id: Optional[int] = None
+    eft_refund_id: Optional[int] = None
 
 
 @dataclass
@@ -125,6 +126,22 @@ class EFTShortnameHistorical:
         )
 
     @staticmethod
+    @user_context
+    def create_shortname_refund(history: EFTShortnameHistory, **kwargs) -> EFTShortnamesHistoricalModel:
+        """Create EFT Short name refund historical record."""
+        return EFTShortnamesHistoricalModel(
+            amount=history.amount,
+            created_by=kwargs['user'].user_name,
+            credit_balance=history.credit_balance,
+            hidden=history.hidden,
+            is_processing=history.is_processing,
+            short_name_id=history.short_name_id,
+            eft_refund_id=history.eft_refund_id,
+            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_type=EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
+        )
+
+    @staticmethod
     def transaction_date_now() -> datetime:
         """Construct transaction datetime using the utc timezone."""
         return datetime.now(tz=timezone.utc)
@@ -191,6 +208,7 @@ class EFTShortnameHistorical:
                                   history_model.amount,
                                   history_model.credit_balance,
                                   history_model.invoice_id,
+                                  history_model.eft_refund_id,
                                   history_model.statement_number,
                                   history_model.transaction_date,
                                   history_model.transaction_type,

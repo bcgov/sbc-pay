@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT REFUNDS, this is picked up by the AP job to mail out."""
-from datetime import datetime, timezone
+from typing import List
 
 from sqlalchemy import ForeignKey
 
-from .base_model import BaseModel
+from .audit import Audit
 from .db import db
 
 
-class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
+class EFTRefund(Audit):
     """This class manages the file data for EFT Refunds."""
 
     __tablename__ = 'eft_refunds'
@@ -39,26 +39,35 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
             'auth_account_id',
             'cas_supplier_number',
             'comment',
+            'created_by',
+            'created_name'
             'created_on',
+            'decline_reason',
             'id',
             'refund_amount',
             'refund_email',
             'short_name_id',
             'status',
-            'updated_by_name',
             'updated_by',
+            'updated_name',
             'updated_on'
         ]
     }
 
     cas_supplier_number = db.Column(db.String(), nullable=False)
     comment = db.Column(db.String(), nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    decline_reason = db.Column(db.String(), nullable=True)
+    created_by = db.Column('created_by', db.String(100), nullable=True)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     refund_email = db.Column(db.String(100), nullable=False)
     short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
     status = db.Column(db.String(25), nullable=True)
-    updated_by = db.Column('updated_by', db.String(100), nullable=True)
-    updated_by_name = db.Column('updated_by_name', db.String(100), nullable=True)
-    updated_on = db.Column('updated_on', db.DateTime, nullable=True)
+
+    @classmethod
+    def find_refunds(cls, statuses: List[str]):
+        """Return all refunds by status."""
+        query = cls.query
+        if statuses:
+            query = cls.query.filter(EFTRefund.status.in_(statuses))
+        return query.all()

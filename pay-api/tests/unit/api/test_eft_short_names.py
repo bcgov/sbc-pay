@@ -20,23 +20,28 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 import json
 from datetime import datetime, timezone
 from decimal import Decimal
+from unittest.mock import patch
 
+import pytest
+
+from pay_api.dtos.eft_shortname import EFTShortNameRefundPatchRequest
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
+from pay_api.models import EFTShortnamesHistorical as EFTShortnamesHistoryModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
-from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameRefundStatus, EFTShortnameStatus,
-    InvoiceStatus, PaymentMethod, Role, StatementFrequency)
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameRefundStatus,
+    EFTShortnameStatus, EFTShortnameType, InvoiceStatus, PaymentMethod, Role, StatementFrequency)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
-    factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice, factory_payment_account,
-    factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, token_header)
+    factory_eft_credit, factory_eft_file, factory_eft_history, factory_eft_refund, factory_eft_shortname,
+    factory_eft_shortname_link, factory_invoice, factory_payment_account, factory_statement, factory_statement_invoices,
+    factory_statement_settings, get_claims, token_header)
 
 
 def test_create_eft_short_name_link(session, client, jwt, app):
@@ -281,6 +286,7 @@ def assert_short_name_summary(result_dict: dict,
     date_format = '%Y-%m-%dT%H:%M:%S'
     assert result_dict['id'] == short_name.id
     assert result_dict['shortName'] == short_name.short_name
+    assert result_dict['shortNameType'] == short_name.type
     assert result_dict['creditsRemaining'] == expected_credits_remaining
     assert result_dict['linkedAccountsCount'] == expected_linked_accounts_count
     assert datetime.strptime(result_dict['lastPaymentReceivedDate'], date_format) == transaction.deposit_date
@@ -468,7 +474,8 @@ def create_eft_summary_search_data():
     """Create seed data for EFT summary searches."""
     eft_file: EFTFileModel = factory_eft_file()
     short_name_1 = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
-    short_name_2 = factory_eft_shortname(short_name='TESTSHORTNAME2').save()
+    short_name_2 = factory_eft_shortname(short_name='TESTSHORTNAME2',
+                                         short_name_type=EFTShortnameType.WIRE.value).save()
     factory_eft_shortname_link(
         short_name_id=short_name_2.id,
         auth_account_id='1234',
@@ -548,7 +555,7 @@ def create_eft_summary_search_data():
         cas_supplier_number='123',
         refund_email='test@example.com',
         comment='Test comment',
-        status=EFTShortnameRefundStatus.PENDING_REFUND.value
+        status=EFTShortnameRefundStatus.PENDING_APPROVAL.value
     ).save()
 
     return short_name_1, s1_transaction1, short_name_2, s2_transaction1, s1_refund
@@ -573,7 +580,8 @@ def create_eft_search_data():
     short_name_unlinked = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
 
     # Create single linked short name
-    short_name_linked = factory_eft_shortname(short_name='TESTSHORTNAME2').save()
+    short_name_linked = (factory_eft_shortname(short_name='TESTSHORTNAME2', short_name_type=EFTShortnameType.WIRE.value)
+                         .save())
     factory_eft_shortname_link(
         short_name_id=short_name_linked.id,
         auth_account_id=payment_account_1.auth_account_id,
@@ -639,6 +647,7 @@ def assert_short_name(result_dict: dict, short_name: EFTShortnamesModel,
                       statement_summary=None):
     """Assert short name result."""
     assert result_dict['shortName'] == short_name.short_name
+    assert result_dict['shortNameType'] == short_name.type
 
     if not payment_account:
         assert result_dict['accountId'] is None
@@ -893,46 +902,142 @@ def test_search_eft_short_names(session, client, jwt, app):
                       data_dict['single-linked']['statement_summary'][0])
 
 
-def test_post_shortname_refund_success(client, mocker, jwt, app):
+def test_post_shortname_refund_success(db, session, client, jwt, emails_with_keycloak_role_mock):
     """Test successful creation of a shortname refund."""
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    mock_create_shortname_refund = mocker.patch.object(EftService, 'create_shortname_refund')
-    mock_create_shortname_refund.return_value = {'refundId': '12345'}
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
+                                              auth_account_id='1234').save()
+    eft_file = factory_eft_file().save()
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
+    factory_eft_credit(eft_file_id=eft_file.id, short_name_id=short_name.id, amount=100, remaining_amount=100).save()
 
     data = {
-                'shortNameId': '12345',
-                'authAccountId': '123',
-                'refundAmount': 100.00,
-                'casSupplierNum': 'CAS123',
-                'refundEmail': 'test@example.com',
-                'comment': 'Refund for overpayment'
-            }
+        'shortNameId': short_name.id,
+        'authAccountId': payment_account.auth_account_id,
+        'refundAmount': 100.00,
+        'casSupplierNum': 'CAS123',
+        'refundEmail': 'test@example.com',
+        'comment': 'Refund for overpayment'
+    }
+    with patch('pay_api.services.eft_refund.send_email') as mock_email:
+        rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
+        assert rv.status_code == 202
+        mock_email.assert_called_once()
 
-    rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
+    eft_refund = db.session.query(EFTRefundModel).one_or_none()
+    assert eft_refund.id is not None
+    assert eft_refund.short_name_id == short_name.id
+    assert eft_refund.refund_amount == 100.00
+    assert eft_refund.cas_supplier_number == 'CAS123'
+    assert eft_refund.refund_email == 'test@example.com'
+    assert eft_refund.comment == 'Refund for overpayment'
 
-    assert rv.status_code == 202
-    assert rv.json == {'refundId': '12345'}
-    mock_create_shortname_refund.assert_called_once_with(data)
+    history_record = db.session.query(EFTShortnamesHistoryModel).one_or_none()
+    assert history_record is not None
+    assert history_record.amount == 100
+    assert history_record.eft_refund_id == eft_refund.id
+    assert history_record.credit_balance == 0
+    assert history_record.transaction_type == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
 
 
-def test_post_shortname_refund_invalid_request(client, mocker, jwt, app):
+def test_post_shortname_refund_invalid_request(client, mocker, jwt):
     """Test handling of invalid request format."""
     data = {
         'invalid_field': 'invalid_value'
     }
-
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
     rv = client.post('/api/v1/eft-shortnames/shortname-refund', headers=headers, json=data)
 
     assert rv.status_code == 400
     assert 'INVALID_REQUEST' in rv.json['type']
 
 
-def test_patch_shortname(session, client, jwt, app):
+@pytest.mark.parametrize('query_string, test_name, count', [
+    ('', 'get_all', 3),
+    (f'?status={EFTShortnameRefundStatus.APPROVED.value},{
+     EFTShortnameRefundStatus.PENDING_APPROVAL.value}', 'status_filter_multiple', 2),
+    (f'?status={EFTShortnameRefundStatus.DECLINED.value}', 'status_filter_rejected', 1),
+])
+def test_get_shortname_refund(session, client, jwt, query_string, test_name, count):
+    """Test get short name refund."""
+    short_name = factory_eft_shortname('TEST_SHORTNAME').save()
+    factory_eft_refund(short_name_id=short_name.id,
+                       status=EFTShortnameRefundStatus.APPROVED.value)
+    factory_eft_refund(short_name_id=short_name.id,
+                       status=EFTShortnameRefundStatus.PENDING_APPROVAL.value)
+    factory_eft_refund(short_name_id=short_name.id,
+                       status=EFTShortnameRefundStatus.DECLINED.value)
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.get(f'/api/v1/eft-shortnames/shortname-refund{query_string}', headers=headers)
+    assert rv.status_code == 200
+    assert len(rv.json) == count
+
+
+@pytest.mark.parametrize('test_name, payload, role', [
+    ('valid_approved_refund', EFTShortNameRefundPatchRequest(
+        comment='Test comment',
+        decline_reason='Test reason',
+        status=EFTShortnameRefundStatus.APPROVED.value
+    ).to_dict(), Role.EFT_REFUND_APPROVER.value),
+    ('valid_rejected_refund', EFTShortNameRefundPatchRequest(
+        comment='Test comment',
+        decline_reason='Test reason',
+        status=EFTShortnameRefundStatus.DECLINED.value
+    ).to_dict(), Role.EFT_REFUND_APPROVER.value),
+    ('unauthorized', {}, Role.EFT_REFUND.value),
+    ('bad_transition', EFTShortNameRefundPatchRequest(
+        comment='Test comment',
+        decline_reason='Test reason',
+        status=EFTShortnameRefundStatus.PENDING_APPROVAL.value
+    ).to_dict(), Role.EFT_REFUND_APPROVER.value),
+])
+def test_patch_shortname_refund(session, client, jwt, payload, test_name, role,
+                                send_email_mock, emails_with_keycloak_role_mock):
+    """Test patch short name refund."""
+    short_name = factory_eft_shortname('TEST_SHORTNAME').save()
+    refund = factory_eft_refund(short_name_id=short_name.id, refund_amount=10,
+                                status=EFTShortnameRefundStatus.PENDING_APPROVAL.value)
+    eft_file = factory_eft_file().save()
+    eft_credit = EFTCreditModel(eft_file_id=eft_file.id, short_name_id=short_name.id,
+                                amount=100, remaining_amount=90).save()
+    eft_history = factory_eft_history(short_name.id, refund.id, 10, 10)
+    if test_name == 'bad_transition':
+        refund.status = EFTShortnameRefundStatus.APPROVED.value
+        refund.save()
+    token = jwt.create_jwt(get_claims(roles=[role]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.patch(f'/api/v1/eft-shortnames/shortname-refund/{refund.id}', headers=headers, json=payload)
+    match test_name:
+        case 'unauthorized':
+            assert rv.status_code == 401
+        case 'bad_transition' | 'invalid_patch_refund':
+            assert rv.status_code == 400
+            assert 'REFUND_ALREADY_FINALIZED' in rv.json['type']
+        case 'valid_approved_refund':
+            assert rv.status_code == 200
+            assert rv.json['status'] == EFTShortnameRefundStatus.APPROVED.value
+            assert rv.json['comment'] == 'Test comment'
+            assert eft_history.transaction_type == EFTHistoricalTypes.SN_REFUND_APPROVED.value
+        case 'valid_rejected_refund':
+            assert rv.status_code == 200
+            assert rv.json['status'] == EFTShortnameRefundStatus.DECLINED.value
+            assert rv.json['comment'] == 'Test comment'
+            history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]
+            assert history
+            assert history.credit_balance == 90 + 10
+            assert history.transaction_type == EFTHistoricalTypes.SN_REFUND_DECLINED.value
+            eft_credit = EFTCreditModel.find_by_id(eft_credit.id)
+            assert eft_credit.remaining_amount == 90 + 10
+            assert rv.json['declineReason']
+        case _:
+            raise ValueError(f'Invalid test case {test_name}')
+
+
+def test_patch_shortname(session, client, jwt):
     """Test patch EFT Short name."""
     data = {'email': 'invalid_email', 'casSupplierNumber': '1234567ABC'}
 

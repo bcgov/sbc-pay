@@ -31,10 +31,11 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import EFTShortNamesService
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus,
-    PaymentMethod, StatementFrequency)
+    EFTCreditInvoiceStatus, EFTFileLineType, EFTHistoricalTypes, EFTProcessStatus, EFTShortnameStatus, EFTShortnameType,
+    InvoiceStatus, PaymentMethod, StatementFrequency)
 from sbc_common_components.utils.enums import QueueMessageTypes
 
+from pay_queue.services.eft import EFTRecord
 from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import (
     factory_create_eft_account, factory_invoice, factory_statement, factory_statement_invoices,
@@ -502,10 +503,11 @@ def test_eft_tdi17_rerun(session, app, client):
 
 def create_test_data():
     """Create test seed data."""
-    payment_account: PaymentAccountModel = factory_create_eft_account()
-    eft_shortname: EFTShortnameModel = EFTShortnameModel(short_name='TESTSHORTNAME').save()
+    payment_account = factory_create_eft_account()
+    eft_short_name = (EFTShortnameModel(short_name='TESTSHORTNAME',
+                                        type=EFTShortnameType.EFT.value).save())
     EFTShortnameLinksModel(
-        eft_short_name_id=eft_shortname.id,
+        eft_short_name_id=eft_short_name.id,
         auth_account_id=payment_account.auth_account_id,
         status_code=EFTShortnameStatus.LINKED.value,
         updated_by='IDIR/JSMITH',
@@ -519,7 +521,7 @@ def create_test_data():
                                             service_fees=1.50,
                                             payment_method_code=PaymentMethod.EFT.value)
 
-    return payment_account, eft_shortname, invoice
+    return payment_account, eft_short_name, invoice
 
 
 def generate_basic_tdi17_file(file_name: str):
@@ -533,15 +535,16 @@ def generate_basic_tdi17_file(file_name: str):
     transaction_1 = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value, ministry_code='AT',
                                        program_code='0146', deposit_date='20230810', deposit_time='0000',
                                        location_id='85004', transaction_sequence='001',
-                                       transaction_description='MISC PAYMENT ABC123', deposit_amount='13500',
-                                       currency='', exchange_adj_amount='0', deposit_amount_cad='13500',
-                                       destination_bank_number='0003', batch_number='002400986', jv_type='I',
-                                       jv_number='002425669', transaction_date='')
+                                       transaction_description=f'{EFTRecord.EFT_DESCRIPTION_PATTERN} ABC123',
+                                       deposit_amount='13500', currency='', exchange_adj_amount='0',
+                                       deposit_amount_cad='13500', destination_bank_number='0003',
+                                       batch_number='002400986', jv_type='I', jv_number='002425669',
+                                       transaction_date='')
 
     transaction_2 = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value, ministry_code='AT',
                                        program_code='0146', deposit_date='20230810', deposit_time='',
                                        location_id='85004', transaction_sequence='002',
-                                       transaction_description='MISC PAYMENT DEF456',
+                                       transaction_description=f'{EFTRecord.WIRE_DESCRIPTION_PATTERN} DEF456',
                                        deposit_amount='525000', currency='', exchange_adj_amount='0',
                                        deposit_amount_cad='525000', destination_bank_number='0003',
                                        batch_number='002400986', jv_type='I', jv_number='002425669',
@@ -559,7 +562,7 @@ def generate_basic_tdi17_file(file_name: str):
     transaction_4 = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value, ministry_code='AT',
                                        program_code='0146', deposit_date='20230810', deposit_time='0000',
                                        location_id='85004', transaction_sequence='004',
-                                       transaction_description='MISC PAYMENT BCONLINE SHOULDIGNORE',
+                                       transaction_description=f'{EFTRecord.PAD_DESCRIPTION_PATTERN} SHOULDIGNORE',
                                        deposit_amount='525000', currency='', exchange_adj_amount='0',
                                        deposit_amount_cad='525000', destination_bank_number='0003',
                                        batch_number='002400986', jv_type='I', jv_number='002425669',
@@ -581,15 +584,16 @@ def generate_tdi17_file(file_name: str):
     transaction_1 = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value, ministry_code='AT',
                                        program_code='0146', deposit_date='20230810', deposit_time='0000',
                                        location_id='85004', transaction_sequence='001',
-                                       transaction_description='MISC PAYMENT TESTSHORTNAME', deposit_amount='10000',
-                                       currency='', exchange_adj_amount='0', deposit_amount_cad='10000',
-                                       destination_bank_number='0003', batch_number='002400986', jv_type='I',
-                                       jv_number='002425669', transaction_date='')
+                                       transaction_description=f'{EFTRecord.EFT_DESCRIPTION_PATTERN} TESTSHORTNAME',
+                                       deposit_amount='10000', currency='', exchange_adj_amount='0',
+                                       deposit_amount_cad='10000', destination_bank_number='0003',
+                                       batch_number='002400986', jv_type='I', jv_number='002425669',
+                                       transaction_date='')
 
     transaction_2 = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value, ministry_code='AT',
                                        program_code='0146', deposit_date='20230810', deposit_time='',
                                        location_id='85004', transaction_sequence='002',
-                                       transaction_description='MISC PAYMENT TESTSHORTNAME',
+                                       transaction_description=f'{EFTRecord.EFT_DESCRIPTION_PATTERN} TESTSHORTNAME',
                                        deposit_amount='5050', currency='', exchange_adj_amount='0',
                                        deposit_amount_cad='5050', destination_bank_number='0003',
                                        batch_number='002400986', jv_type='I', jv_number='002425669',
@@ -598,15 +602,16 @@ def generate_tdi17_file(file_name: str):
     transaction_3 = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value, ministry_code='AT',
                                        program_code='0146', deposit_date='20230810', deposit_time='0000',
                                        location_id='85004', transaction_sequence='003',
-                                       transaction_description='MISC PAYMENT ABC123', deposit_amount='35150',
-                                       currency='', exchange_adj_amount='0', deposit_amount_cad='35150',
-                                       destination_bank_number='0003', batch_number='002400986', jv_type='I',
-                                       jv_number='002425669', transaction_date='')
+                                       transaction_description=f'{EFTRecord.WIRE_DESCRIPTION_PATTERN} ABC123',
+                                       deposit_amount='35150', currency='', exchange_adj_amount='0',
+                                       deposit_amount_cad='35150', destination_bank_number='0003',
+                                       batch_number='002400986', jv_type='I', jv_number='002425669',
+                                       transaction_date='')
 
     transaction_4 = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value, ministry_code='AT',
                                        program_code='0146', deposit_date='20230810', deposit_time='0000',
                                        location_id='85004', transaction_sequence='004',
-                                       transaction_description='MISC PAYMENT BCONLINE SHOULDIGNORE',
+                                       transaction_description=f'{EFTRecord.PAD_DESCRIPTION_PATTERN} SHOULDIGNORE',
                                        deposit_amount='525000', currency='', exchange_adj_amount='0',
                                        deposit_amount_cad='525000', destination_bank_number='0003',
                                        batch_number='002400986', jv_type='I', jv_number='002425669',
@@ -631,7 +636,7 @@ def create_statement_from_invoices(account: PaymentAccountModel, invoices: List[
 
 def test_apply_pending_payments(session, app, client):
     """Test automatically applying a pending eft credit invoice link when there is a credit."""
-    payment_account, eft_shortname, invoice = create_test_data()
+    payment_account, eft_short_name, invoice = create_test_data()
     create_statement_from_invoices(payment_account, [invoice])
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
@@ -639,7 +644,7 @@ def test_apply_pending_payments(session, app, client):
     add_file_event_to_queue_and_process(client,
                                         file_name=file_name,
                                         message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
-    short_name_id = eft_shortname.id
+    short_name_id = eft_short_name.id
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     assert eft_credit_balance == 0
 
@@ -654,7 +659,7 @@ def test_apply_pending_payments(session, app, client):
 
 def test_skip_on_existing_pending_payments(session, app, client):
     """Test auto payment skipping payment when there exists a pending payment."""
-    payment_account, eft_shortname, invoice = create_test_data()
+    payment_account, eft_short_name, invoice = create_test_data()
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
     add_file_event_to_queue_and_process(client,
@@ -662,7 +667,7 @@ def test_skip_on_existing_pending_payments(session, app, client):
                                         message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     create_statement_from_invoices(payment_account, [invoice])
-    eft_credits = EFTCreditModel.get_eft_credits(eft_shortname.id)
+    eft_credits = EFTCreditModel.get_eft_credits(eft_short_name.id)
 
     # Add an unexpected PENDING record to test that processing skips for this account
     EFTCreditInvoiceLinkModel(
@@ -672,7 +677,7 @@ def test_skip_on_existing_pending_payments(session, app, client):
         amount=invoice.total,
         link_group_id=1)
 
-    short_name_id = eft_shortname.id
+    short_name_id = eft_short_name.id
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     # Assert credit balance is not spent due to an expected already PENDING state
     assert eft_credit_balance == 150.50
@@ -680,7 +685,7 @@ def test_skip_on_existing_pending_payments(session, app, client):
 
 def test_skip_on_insufficient_balance(session, app, client):
     """Test auto payment skipping payment when there is an insufficient eft credit balance."""
-    payment_account, eft_shortname, invoice = create_test_data()
+    payment_account, eft_short_name, invoice = create_test_data()
     invoice.total = 99999
     invoice.save()
     file_name: str = 'test_eft_tdi17.txt'
@@ -691,7 +696,7 @@ def test_skip_on_insufficient_balance(session, app, client):
 
     create_statement_from_invoices(payment_account, [invoice])
 
-    short_name_id = eft_shortname.id
+    short_name_id = eft_short_name.id
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     assert eft_credit_balance == 150.50
 

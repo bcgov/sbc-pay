@@ -20,10 +20,9 @@ from typing import Any, Dict, List, Optional
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 from pay_api.exceptions import ServiceUnavailableException
+from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
-
-from pay_queue.auth import get_token
 
 
 @dataclasses.dataclass
@@ -67,7 +66,8 @@ def send_error_email(params: EmailParams):
 
 def send_email_service(recipients: list, subject: str, html_body: str):
     """Send the email notification."""
-    token = get_token()
+    # Refactor this common code to PAY-API.
+    token = get_service_account_token()
     current_app.logger.info(f'>send_email to recipients: {recipients}')
     notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
 

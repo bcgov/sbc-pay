@@ -15,6 +15,8 @@
 import decimal
 from datetime import datetime
 
+from pay_api.utils.enums import EFTShortnameType
+
 from pay_queue.services.eft.eft_base import EFTBase
 from pay_queue.services.eft.eft_enums import EFTConstants
 from pay_queue.services.eft.eft_errors import EFTError
@@ -26,13 +28,14 @@ class EFTRecord(EFTBase):
 
     PAD_DESCRIPTION_PATTERN = 'MISC PAYMENT BCONLINE'
     EFT_DESCRIPTION_PATTERN = 'MISC PAYMENT'
+    WIRE_DESCRIPTION_PATTERN = 'FUNDS TRANSFER CR TT'
 
     ministry_code: str
     program_code: str
     location_id: str
     deposit_datetime: datetime
     transaction_sequence: str  # optional
-    transaction_description: str
+    transaction_description: str = None
     deposit_amount: decimal
     currency: str  # blank = CAD, US = USD
     exchange_adj_amount: decimal  # in cents
@@ -42,7 +45,7 @@ class EFTRecord(EFTBase):
     jv_type: str  # I = inter, J = intra; mandatory if JV batch specified
     jv_number: str  # mandatory if JV batch specified
     transaction_date: datetime  # optional
-    is_eft: bool = False  # Used to help with filtering transactions as not all transactions will necessary be EFT
+    short_name_type: str = None
 
     def __init__(self, content: str, index: int):
         """Return an EFT Transaction record."""
@@ -100,12 +103,17 @@ class EFTRecord(EFTBase):
             else self.parse_date(transaction_date, EFTError.INVALID_TRANSACTION_DATE)
 
     def parse_transaction_description(self):
-        """Determine if the transaction is an EFT and parse it."""
+        """Determine if the transaction is an EFT/Wire and parse it."""
         if not self.transaction_description:
             return
 
-        # Check if this a PAD or EFT Transaction - ignore non EFT Transactions
+        if self.transaction_description.startswith(self.WIRE_DESCRIPTION_PATTERN):
+            self.short_name_type = EFTShortnameType.WIRE.value
+            self.transaction_description = self.transaction_description[len(self.WIRE_DESCRIPTION_PATTERN):].strip()
+            return
+
+        # Check if this a PAD or EFT Transaction
         if self.transaction_description.startswith(self.EFT_DESCRIPTION_PATTERN) \
                 and not self.transaction_description.startswith(self.PAD_DESCRIPTION_PATTERN):
-            self.is_eft = True
+            self.short_name_type = EFTShortnameType.EFT.value
             self.transaction_description = self.transaction_description[len(self.EFT_DESCRIPTION_PATTERN):].strip()

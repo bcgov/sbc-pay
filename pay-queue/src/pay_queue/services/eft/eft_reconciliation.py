@@ -24,7 +24,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
-from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus
+from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus, EFTShortnameType
 from sentry_sdk import capture_message
 
 from pay_queue.minio import get_object
@@ -76,8 +76,15 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     7: Create EFT Credit records for left over balances
     8: Finalize and complete
     """
-    # Fetch EFT File
     context = EFTReconciliation(ce)
+
+    # Used to filter transactions by location id to isolate EFT specific transactions from the TDI17
+    eft_location_id = current_app.config.get('EFT_TDI17_LOCATION_ID')
+    if eft_location_id is None:
+        context.eft_error_handling('N/A', 'Missing EFT_TDI17_LOCATION_ID configuration')
+        return
+
+    # Fetch EFT File
     file = get_object(context.minio_location, context.file_name)
     file_content = file.data.decode('utf-8-sig')
 
@@ -102,20 +109,7 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     eft_file_model.status_code = EFTProcessStatus.IN_PROGRESS.value
     eft_file_model.save()
 
-    # EFT File parsed data holders
-    eft_header: EFTHeader = None
-    eft_trailer: EFTTrailer = None
-    eft_transactions: List[EFTRecord] = []
-
-    # Read and parse EFT file header, trailer, transactions
-    for index, line in enumerate(lines):
-        if index == 0:
-            eft_header = EFTHeader(line, index)
-        elif index == len(lines) - 1:
-            eft_trailer = EFTTrailer(line, index)
-        else:
-            eft_transactions.append(EFTRecord(line, index))
-
+    eft_header, eft_trailer, eft_transactions = _parse_tdi17_lines(lines)
     eft_header_valid = _process_eft_header(eft_header, eft_file_model)
     eft_trailer_valid = _process_eft_trailer(eft_trailer, eft_file_model)
 
@@ -130,9 +124,8 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
 
     has_eft_transaction_errors = False
 
-    # Include only transactions that are eft or has an error - ignore non EFT
-    eft_transactions = [transaction for transaction in eft_transactions
-                        if transaction.has_errors() or transaction.is_eft]
+    # Include only transactions that are eft/wire or has an error - ignore non EFT/Wire
+    eft_transactions = _filter_eft_transactions(eft_transactions, eft_location_id)
 
     # Parse EFT Transactions
     for eft_transaction in eft_transactions:
@@ -175,19 +168,35 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     _apply_eft_pending_payments(context, shortname_balance)
 
 
+def _parse_tdi17_lines(eft_lines: List[str]):
+    """Parse EFT file header, trailer, transactions."""
+    eft_header: EFTHeader = None
+    eft_trailer: EFTTrailer = None
+    eft_transactions: List[EFTRecord] = []
+    for index, line in enumerate(eft_lines):
+        if index == 0:
+            eft_header = EFTHeader(line, index)
+        elif index == len(eft_lines) - 1:
+            eft_trailer = EFTTrailer(line, index)
+        else:
+            eft_transactions.append(EFTRecord(line, index))
+    return eft_header, eft_trailer, eft_transactions
+
+
 def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
     """Apply payments to short name links."""
     for shortname in shortname_balance.keys():
-        eft_shortname = _get_shortname(shortname)
-        eft_credit_balance = EFTCreditModel.get_eft_credit_balance(eft_shortname.id)
-        shortname_links = EFTShortnamesService.get_shortname_links(eft_shortname.id).get('items', [])
+        short_name_type = shortname_balance[shortname]['short_name_type']
+        eft_short_name = _get_shortname(shortname, short_name_type)
+        eft_credit_balance = EFTCreditModel.get_eft_credit_balance(eft_short_name.id)
+        shortname_links = EFTShortnamesService.get_shortname_links(eft_short_name.id).get('items', [])
         for shortname_link in shortname_links:
             # We are expecting pending payments to have been cleared since this runs after the
             # eft task job. Something may have gone wrong, we will skip this link.
             if shortname_link.get('has_pending_payment'):
                 error_msg = f'Unexpected pending payment on link: {shortname_link.id}'
                 context.eft_error_handling('N/A', error_msg,
-                                           table_name=eft_shortname.__tablename__)
+                                           table_name=eft_short_name.__tablename__)
                 continue
 
             amount_owing = shortname_link.get('amount_owing')
@@ -196,7 +205,7 @@ def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
                 try:
                     payload = {'action': EFTPaymentActions.APPLY_CREDITS.value,
                                'accountId': auth_account_id}
-                    EFTShortnamesService.process_payment_action(eft_shortname.id, payload)
+                    EFTShortnamesService.process_payment_action(eft_short_name.id, payload)
                 except Exception as exception:  # NOQA # pylint: disable=broad-except
                     # EFT Short name service handles commit and rollback when the action fails, we just need to make
                     # sure we log the error here
@@ -253,14 +262,15 @@ def _process_eft_credits(shortname_balance, eft_file_id):
     has_credit_errors = False
     for shortname in shortname_balance.keys():
         try:
-            eft_shortname = _get_shortname(shortname)
+            short_name_type = shortname_balance[shortname]['short_name_type']
+            eft_short_name = _get_shortname(shortname, short_name_type)
             eft_transactions = shortname_balance[shortname]['transactions']
 
             for eft_transaction in eft_transactions:
                 # Check if there is an existing eft credit for this file and transaction
                 eft_credit_model = db.session.query(EFTCreditModel) \
                     .filter(EFTCreditModel.eft_file_id == eft_file_id) \
-                    .filter(EFTCreditModel.short_name_id == eft_shortname.id) \
+                    .filter(EFTCreditModel.short_name_id == eft_short_name.id) \
                     .filter(EFTCreditModel.eft_transaction_id == eft_transaction['id']) \
                     .one_or_none()
 
@@ -273,7 +283,7 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                     continue
 
                 eft_credit_model.eft_file_id = eft_file_id
-                eft_credit_model.short_name_id = eft_shortname.id
+                eft_credit_model.short_name_id = eft_short_name.id
                 eft_credit_model.amount = deposit_amount
                 eft_credit_model.remaining_amount = deposit_amount
                 eft_credit_model.eft_transaction_id = eft_transaction['id']
@@ -353,9 +363,10 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
     if eft_transaction_model is None:
         eft_transaction_model = EFTTransactionModel()
 
-    if eft_record.transaction_description:
-        eft_short_name: EFTShortnameModel = _get_shortname(eft_record.transaction_description)
-        eft_transaction_model.short_name_id = eft_short_name.id if eft_short_name else None
+    if eft_record.transaction_description and eft_record.short_name_type:
+        eft_short_name: EFTShortnameModel = _get_shortname(eft_record.transaction_description,
+                                                           eft_record.short_name_type)
+        eft_transaction_model.short_name_id = eft_short_name.id
 
     eft_transaction_model.line_type = line_type
     eft_transaction_model.line_number = eft_record.index
@@ -399,18 +410,20 @@ def _update_transactions_to_complete(eft_file_model: EFTFileModel) -> int:
     return result
 
 
-def _get_shortname(short_name: str) -> EFTShortnameModel:
+def _get_shortname(short_name: str, short_name_type: str) -> EFTShortnameModel:
     """Save short name if it doesn't exist."""
-    eft_shortname = db.session.query(EFTShortnameModel) \
+    eft_short_name = db.session.query(EFTShortnameModel) \
         .filter(EFTShortnameModel.short_name == short_name) \
+        .filter(EFTShortnameModel.type == short_name_type) \
         .one_or_none()
 
-    if eft_shortname is None:
-        eft_shortname = EFTShortnameModel()
-        eft_shortname.short_name = short_name
-        eft_shortname.save()
+    if eft_short_name is None:
+        eft_short_name = EFTShortnameModel()
+        eft_short_name.short_name = short_name
+        eft_short_name.type = short_name_type
+        eft_short_name.save()
 
-    return eft_shortname
+    return eft_short_name
 
 
 def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
@@ -422,14 +435,26 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
         if eft_transaction.has_errors():
             continue
 
-        shortname = eft_transaction.transaction_description
-        transaction_date = eft_transaction.transaction_date
+        short_name = eft_transaction.transaction_description
+        shortname_type = eft_transaction.short_name_type
         deposit_amount = eft_transaction.deposit_amount_cad / 100
         transaction = {'id': eft_transaction.id, 'deposit_amount': deposit_amount}
 
-        shortname_balance.setdefault(shortname, {'balance': 0})
-        shortname_balance[shortname]['transaction_date'] = transaction_date
-        shortname_balance[shortname]['balance'] += deposit_amount
-        shortname_balance[shortname].setdefault('transactions', []).append(transaction)
+        shortname_balance.setdefault(short_name, {'balance': 0})
+        shortname_balance[short_name]['short_name_type'] = shortname_type
+        shortname_balance[short_name]['balance'] += deposit_amount
+        shortname_balance[short_name].setdefault('transactions', []).append(transaction)
 
     return shortname_balance
+
+
+def _filter_eft_transactions(eft_transactions: List[EFTRecord], eft_location_id: str) -> List[EFTRecord]:
+    """Filter down EFT Transactions."""
+    eft_transactions = [
+        transaction for transaction in eft_transactions
+        if (transaction.has_errors() or (transaction.short_name_type in [
+            EFTShortnameType.EFT.value,
+            EFTShortnameType.WIRE.value
+        ] and transaction.location_id == eft_location_id))
+    ]
+    return eft_transactions

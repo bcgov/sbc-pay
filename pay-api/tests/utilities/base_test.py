@@ -25,14 +25,14 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile,
-    EFTShortnameLinks, EFTShortnames, Invoice, InvoiceReference, NonSufficientFunds, Payment, PaymentAccount,
-    PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTRefund,
+    EFTShortnameLinks, EFTShortnames, EFTShortnamesHistorical, Invoice, InvoiceReference, NonSufficientFunds, Payment,
+    PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices,
+    StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
-    PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
-
+    CfsAccountStatus, EFTHistoricalTypes, EFTShortnameStatus, EFTShortnameType, InvoiceReferenceStatus, InvoiceStatus,
+    LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
 
 token_header = {
     'alg': 'RS256',
@@ -893,7 +893,7 @@ def factory_comments(routing_slip_number: str, username: str = 'comment_user', c
     comment = Comment(submitter_name=username,
                       routing_slip_number=routing_slip_number,
                       comment=comment
-                      )
+                      ).save()
     return comment
 
 
@@ -902,9 +902,9 @@ def factory_eft_file(file_ref: str = 'test_ref.txt'):
     return EFTFile(file_ref=file_ref).save()
 
 
-def factory_eft_shortname(short_name: str):
+def factory_eft_shortname(short_name: str, short_name_type: str = EFTShortnameType.EFT.value):
     """Return an EFT short name model."""
-    return EFTShortnames(short_name=short_name)
+    return EFTShortnames(short_name=short_name, type=short_name_type).save()
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
@@ -917,7 +917,7 @@ def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234'
         updated_by=updated_by,
         updated_by_name=updated_by,
         updated_on=updated_on
-    )
+    ).save()
 
 
 def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amount=10.00):
@@ -928,7 +928,32 @@ def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amoun
         remaining_amount=remaining_amount,
         eft_file_id=eft_file_id,
         short_name_id=short_name_id
-    )
+    ).save()
+
+
+def factory_eft_history(short_name_id, refund_id, amount=10.00, credit_balance=10.00):
+    """Return an EFT Shortnames Historical."""
+    return EFTShortnamesHistorical(short_name_id=short_name_id,
+                                   amount=amount,
+                                   credit_balance=credit_balance,
+                                   eft_refund_id=refund_id,
+                                   is_processing=False,
+                                   hidden=False,
+                                   transaction_date=datetime.now(tz=timezone.utc),
+                                   transaction_type=EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value).save()
+
+
+def factory_eft_refund(short_name_id, refund_amount=10.00, cas_supplier_number='1234567',
+                       refund_email='test@test.com', comment='test comment', status='PENDING'):
+    """Return an EFT Refund."""
+    return EFTRefund(
+        short_name_id=short_name_id,
+        refund_amount=refund_amount,
+        cas_supplier_number=cas_supplier_number,
+        refund_email=refund_email,
+        comment=comment,
+        status=status
+    ).save()
 
 
 def factory_eft_credit_invoice_link(eft_credit_id, invoice_id, status_code, amount=1, link_group_id=None):
