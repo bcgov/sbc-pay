@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT REFUNDS, this is picked up by the AP job to mail out."""
+from datetime import datetime, timezone
 from typing import List
 
 from sqlalchemy import ForeignKey
