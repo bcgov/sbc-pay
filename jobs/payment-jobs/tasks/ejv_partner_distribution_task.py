@@ -186,6 +186,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             sequence = 1
 
             last_distribution_code = None
+            line_number = 1
             for disbursement in disbursements:
                 # debit_distribution and credit_distribution stays as is for invoices which are not PAID
                 if last_distribution_code != disbursement.bcreg_distribution_code.distribution_code_id:
@@ -195,8 +196,8 @@ class EjvPartnerDistributionTask(CgiEjv):
                                                                   journal_name, header_total))
                     control_total += 1
                     last_distribution_code = disbursement.bcreg_distribution_code.distribution_code_id
+                    line_number = 1
 
-                line_number = 1
                 batch_total += disbursement.line_item.amount
                 dl = disbursement.line_item
                 description = disbursement_desc[:-len(dl.description_identifier)] + dl.description_identifier
