@@ -1,8 +1,8 @@
 """Adding disbursement_status_code column to eft_refunds
 
-Revision ID: a15bb93d4e89
+Revision ID: 9e5c82dfe9c7
 Revises: 87a09ba91c0d
-Create Date: 2024-09-24 00:31:32.880154
+Create Date: 2024-10-01 08:19:52.425041
 
 """
 from alembic import op
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 # For disbursement_distribution_code_id, service_fee_distribution_code_id
 # Please ignore those lines and don't include in migration.
 
-revision = 'a15bb93d4e89'
+revision = '9e5c82dfe9c7'
 down_revision = '87a09ba91c0d'
 branch_labels = None
 depends_on = None
