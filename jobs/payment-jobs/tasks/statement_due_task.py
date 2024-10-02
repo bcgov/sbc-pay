@@ -57,23 +57,46 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     statement_date_override = None
 
     @classmethod
-    def process_unpaid_statements(cls, action_date_override=None,
+    def process_override_command(cls, action, date_override):
+        """Process override action."""
+        if date_override is None:
+            current_app.logger.error(f'Expecting date override for action: {action}.')
+
+        date_override = datetime.strptime(date_override, '%Y-%m-%d')
+        match action:
+            case 'NOTIFICATION':
+                cls.action_date_override = date_override.date()
+                cls.statement_date_override = date_override
+                cls._notify_for_monthly()
+            case 'OVERDUE':
+                cls.action_date_override = date_override
+                cls._update_invoice_overdue_status()
+            case _:
+                current_app.logger.error(f'Unsupported action override: {action}.')
+
+    @classmethod
+    def process_unpaid_statements(cls,
+                                  action_override=None,
+                                  date_override=None,
                                   auth_account_override=None, statement_date_override=None):
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
         if eft_enabled:
-            cls.action_date_override = action_date_override
             cls.auth_account_override = auth_account_override
             cls.statement_date_override = statement_date_override
-            cls._update_invoice_overdue_status()
-            cls._notify_for_monthly()
+
+            if action_override is not None and len(action_override.strip()) > 0:
+                cls.process_override_command(action_override, date_override)
+            else:
+                cls._update_invoice_overdue_status()
+                cls._notify_for_monthly()
 
     @classmethod
     def _update_invoice_overdue_status(cls):
         """Update the status of any invoices that are overdue."""
         # Needs to be non timezone aware.
         if cls.action_date_override:
-            now = datetime.strptime(cls.action_date_override, '%Y-%m-%d').replace(hour=8)
+            now = cls.action_date_override.replace(hour=8)
             offset_hours = -now.astimezone(pytz.timezone('America/Vancouver')).utcoffset().total_seconds() / 60 / 60
             now = now.replace(hour=int(offset_hours), minute=0, second=0)
         else:
@@ -202,7 +225,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
 
         # Needs to be non timezone aware for comparison.
         if cls.action_date_override:
-            now_date = datetime.strptime(cls.action_date_override, '%Y-%m-%d').date()
+            now_date = cls.action_date_override
         else:
             now_date = datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
 
