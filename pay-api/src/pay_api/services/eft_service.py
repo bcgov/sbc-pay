@@ -244,7 +244,6 @@ class EftService(DepositService):
                     invoice_disbursements[invoice] += current_link.amount
 
         for invoice, total_amount in invoice_disbursements.items():
-            # We don't handle partial refunds.
             if total_amount != invoice.total:
                 raise BusinessException(Error.EFT_PARTIAL_REFUND)
 
