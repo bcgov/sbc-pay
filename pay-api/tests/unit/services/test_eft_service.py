@@ -289,6 +289,8 @@ def test_eft_invoice_refund(session, test_name):
             assert cil_3.status_code == EFTCreditInvoiceStatus.COMPLETED.value
             assert cil_4.status_code == EFTCreditInvoiceStatus.COMPLETED.value
             assert cil_5.status_code == EFTCreditInvoiceStatus.COMPLETED.value
+            assert cil_6.status_code == EFTCreditInvoiceStatus.COMPLETED.value
+            assert cil_7.status_code == EFTCreditInvoiceStatus.COMPLETED.value
             assert eft_credit.remaining_amount == 6
             pending_refund_count = 0
             amount = 0
