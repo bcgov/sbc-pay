@@ -13,14 +13,18 @@
 # limitations under the License.
 """Task to create AP file for FAS refunds and Disbursement via EFT for non-government orgs without a GL."""
 
+import time
+from datetime import date, datetime, timedelta, timezone
 from typing import List
 
-from datetime import date, datetime, timedelta, timezone
-import time
 from flask import current_app
 from more_itertools import batched
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
+from pay_api.models import EFTRefund as EFTRefundModel
+from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvLink as EjvLinkModel
@@ -30,8 +34,10 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod, RoutingSlipStatus)
+    DisbursementStatus, EFTShortnameRefundStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod,
+    RoutingSlipStatus)
 from sqlalchemy import Date, cast
+
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APLine
 
@@ -61,9 +67,63 @@ class ApTask(CgiAP):
         6. Create AP file and upload to SFTP.
         7. After some time, a feedback file will arrive and Payment-reconciliation queue will set disbursement
            status to COMPLETED or REVERSED (filter out)
+        8. Find all EFT refunds with status APPROVED.
+        9. Create AP file and upload to SFTP.
+        10. After some time, a feedback file will arrive and Payment-reconciliation queue will move these
+            EFT refunds to REFUNDED. (filter out)
         """
         cls._create_routing_slip_refund_file()
         cls._create_non_gov_disbursement_file()
+        cls._create_eft_refund_file()
+
+    @classmethod
+    def _create_eft_refund_file(cls):
+        """Create AP file for EFT refunds and upload to CGI."""
+        cls.ap_type = EjvFileType.EFT_REFUND
+        eft_refunds_dao: List[EFTRefundModel] = db.session.query(EFTRefundModel) \
+            .join(EFTShortnameLinksModel, EFTRefundModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id) \
+            .join(EFTCreditModel, EFTCreditModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id) \
+            .join(EFTCreditInvoiceLinkModel, EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id) \
+            .join(InvoiceModel, EFTCreditInvoiceLinkModel.invoice_id == InvoiceModel.id) \
+            .filter(EFTRefundModel.status == EFTShortnameRefundStatus.APPROVED.value) \
+            .filter(EFTRefundModel.disbursement_status_code != DisbursementStatus.UPLOADED.value) \
+            .filter(EFTRefundModel.refund_amount > 0) \
+            .all()
+
+        current_app.logger.info(f'Found {len(eft_refunds_dao)} to refund.')
+
+        for refunds in list(batched(eft_refunds_dao, 250)):
+            ejv_file_model = EjvFileModel(
+                file_type=cls.ap_type.value,
+                file_ref=cls.get_file_name(),
+                disbursement_status_code=DisbursementStatus.UPLOADED.value
+            ).flush()
+            batch_number: str = cls.get_batch_number(ejv_file_model.id)
+            ap_content: str = cls.get_batch_header(batch_number)
+            batch_total = 0
+            line_count_total = 0
+            for eft_refund in refunds:
+                current_app.logger.info(
+                    f'Creating refund for EFT Refund {eft_refund.id}, Amount {eft_refund.refund_amount}.')
+                ap_content = f'{ap_content}{cls.get_ap_header(
+                    eft_refund.refund_amount, eft_refund.id, eft_refund.created_on, eft_refund.cas_supplier_number)}'
+                ap_line = APLine(
+                    total=eft_refund.refund_amount,
+                    invoice_number=eft_refund.id,
+                    line_number=line_count_total + 1)
+                ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line, eft_refund.cas_supplier_number)}'
+                line_count_total += 2
+                if ap_comment := cls.get_eft_ap_comment(
+                    eft_refund.comment, eft_refund.id, eft_refund.short_name_id, eft_refund.cas_supplier_number
+                ):
+                    ap_content = f'{ap_content}{ap_comment:<40}'
+                    line_count_total += 1
+                batch_total += eft_refund.refund_amount
+                eft_refund.disbursement_status_code = DisbursementStatus.UPLOADED.value
+
+            batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, control_total=line_count_total)
+            ap_content = f'{ap_content}{batch_trailer}'
+            cls._create_file_and_upload(ap_content)
 
     @classmethod
     def _create_routing_slip_refund_file(cls):  # pylint:disable=too-many-locals, too-many-statements
@@ -98,7 +158,7 @@ class ApTask(CgiAP):
                 ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
                 ap_content = f'{ap_content}{cls.get_ap_address(refund.details, rs.number)}'
                 total_line_count += 3
-                if ap_comment := cls.get_ap_comment(refund.details, rs.number):
+                if ap_comment := cls.get_rs_ap_comment(refund.details, rs.number):
                     ap_content = f'{ap_content}{ap_comment:<40}'
                     total_line_count += 1
                 batch_total += rs.refund_amount
