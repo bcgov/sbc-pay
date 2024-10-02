@@ -22,6 +22,11 @@ depends_on = None
 
 def upgrade():
   op.execute("update corp_types set has_partner_disbursements = 't' where code in ('CSO', 'VS')")
+  op.execute("""insert into partner_disbursements (amount, created_on, partner_code, is_reversal, status_code, target_id, target_type)
+            select (i.total - i.service_fees) as amount, now() as created_on, i.corp_type_code as partner_code, 'f' as is_reversal,
+                    'WAITING_FOR_JOB' as status_code, i.id as target_id, 'INVOICE' as target_type from invoices i where invoice_status_code in ('APPROVED', 'PAID')
+                                                                                                                    and corp_type_code in ('CSO','VS') and payment_method_code = 'EFT' 
+            """)
 
 def downgrade():
   op.execute("update corp_types set has_partner_disbursements = 'f' where code in ('CSO', 'VS')")
