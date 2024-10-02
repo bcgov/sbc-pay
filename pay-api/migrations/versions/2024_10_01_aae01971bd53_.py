@@ -2,7 +2,7 @@
 Also add in partner disbursements.
 
 Revision ID: aae01971bd53
-Revises: 87a09ba91c0d
+Revises: 9e5c82dfe9c7
 Create Date: 2024-09-06 10:51:20.058891
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'aae01971bd53'
-down_revision = '87a09ba91c0d'
+down_revision = '9e5c82dfe9c7'
 branch_labels = None
 depends_on = None
 
