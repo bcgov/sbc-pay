@@ -50,13 +50,14 @@ def test_eft_refunds(session, monkeypatch):
         total=100,
     )
     short_name = factory_create_eft_shortname('SHORTNAMETEST')
-    factory_create_eft_refund(
+    eft_refund = factory_create_eft_refund(
         disbursement_status_code=DisbursementStatus.ACKNOWLEDGED.value,
         refund_amount=100,
         refund_email='test@test.com',
         short_name_id=short_name.id,
         status=EFTShortnameRefundStatus.APPROVED.value
     )
+    eft_refund.save()
     eft_file = factory_create_eft_file()
     eft_transaction = factory_create_eft_transaction(file_id=eft_file.id)
     eft_credit = factory_create_eft_credit(

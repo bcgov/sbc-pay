@@ -365,8 +365,9 @@ def factory_create_eft_refund(
         refund_amount=refund_amount,
         refund_email=refund_email,
         short_name_id=short_name_id,
-        status=status
-    ).save()
+        status=status,
+        created_on=datetime.now(tz=timezone.utc)
+    )
     return eft_refund
 
 
