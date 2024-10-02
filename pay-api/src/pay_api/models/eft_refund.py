@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT REFUNDS, this is picked up by the AP job to mail out."""
+from datetime import datetime, timezone
 from typing import List
 
 from sqlalchemy import ForeignKey
@@ -42,6 +43,7 @@ class EFTRefund(Audit):
             'created_by',
             'created_name'
             'created_on',
+            'disbursement_status_code',
             'decline_reason',
             'id',
             'refund_amount',
@@ -58,6 +60,8 @@ class EFTRefund(Audit):
     comment = db.Column(db.String(), nullable=False)
     decline_reason = db.Column(db.String(), nullable=True)
     created_by = db.Column('created_by', db.String(100), nullable=True)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     refund_email = db.Column(db.String(100), nullable=False)

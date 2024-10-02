@@ -185,6 +185,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_AP_REMITTANCE_CODE = os.getenv('CGI_AP_REMITTANCE_CODE', '78')
     BCA_SUPPLIER_NUMBER = os.getenv('BCA_SUPPLIER_NUMBER', '')
     BCA_SUPPLIER_LOCATION = os.getenv('BCA_SUPPLIER_LOCATION', '')
+    EFT_AP_DISTRIBUTION = os.getenv('EFT_AP_DISTRIBUTION', '')
+    EFT_AP_SUPPLIER_LOCATION = os.getenv('EFT_AP_SUPPLIER_LOCATION', '')
 
     # FAS Client and secret
     CFS_FAS_CLIENT_ID = os.getenv('CFS_FAS_CLIENT_ID', '')

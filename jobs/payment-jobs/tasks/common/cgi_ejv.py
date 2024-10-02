@@ -135,7 +135,7 @@ class CgiEjv:
         return f'{cls.ministry()}{ejv_header_id:0>8}'
 
     @classmethod
-    def get_batch_number(cls, ejv_file_id: int):
+    def get_batch_number(cls, ejv_file_id: int) -> str:
         """Return batch number."""
         return f'{ejv_file_id:0>9}'
 
