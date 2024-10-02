@@ -216,7 +216,8 @@ class DisbursementStatus(Enum):
     ERRORED = 'ERRORED'
     REVERSED = 'REVERSED'
     UPLOADED = 'UPLOADED'
-    WAITING_FOR_JOB = 'WAITING_FOR_JOB'
+    # Could be waiting for receipt in the job.
+    WAITING_FOR_RECEIPT = 'WAITING_FOR_RECEIPT'
 
 
 class DisbursementMethod(Enum):

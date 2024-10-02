@@ -88,7 +88,7 @@ class EftService(DepositService):
                     amount=invoice.total - invoice.service_fees,
                     is_reversal=False,
                     partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                    status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
                     target_id=invoice.id,
                     target_type=EJVLinkType.INVOICE.value
                 ).flush()
@@ -252,7 +252,7 @@ class EftService(DepositService):
                     amount=total_amount - invoice.service_fees,
                     is_reversal=True,
                     partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                    status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
                     target_id=invoice.id,
                     target_type=EJVLinkType.INVOICE.value
                 ).flush()
