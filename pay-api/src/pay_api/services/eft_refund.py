@@ -117,19 +117,22 @@ class EFTRefund:
                         receipt_number=cil.receipt_number,
                         invoice_id=invoice.id,
                         link_group_id=link_group_id).flush()
-                    if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-                        if corp_type.has_partner_disbursements:
-                            reversal_total += cil.amount
+                    reversal_total += cil.amount
 
-                if reversal_total - invoice.service_fees > 0:
-                    PartnerDisbursementsModel(
-                        amount=reversal_total - invoice.service_fees,
-                        is_reversal=True,
-                        partner_code=invoice.corp_type_code,
-                        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                        target_id=invoice.id,
-                        target_type=EJVLinkType.INVOICE.value
-                    ).flush()
+                # We don't handle partial refunds.
+                if reversal_total != invoice.total:
+                    raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)
+
+                if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
+                    if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:
+                        PartnerDisbursementsModel(
+                            amount=invoice.total - invoice.service_fees,
+                            is_reversal=True,
+                            partner_code=invoice.corp_type_code,
+                            status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                            target_id=invoice.id,
+                            target_type=EJVLinkType.INVOICE.value
+                        ).flush()
 
         current_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:

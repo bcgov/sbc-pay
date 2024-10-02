@@ -83,7 +83,7 @@ class EftService(DepositService):
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
         if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-            if corp_type.has_partner_disbursements:
+            if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:
                 PartnerDisbursementsModel(
                     amount=invoice.total - invoice.service_fees,
                     is_reversal=False,
@@ -244,6 +244,10 @@ class EftService(DepositService):
                     invoice_disbursements[invoice] += current_link.amount
 
         for invoice, total_amount in invoice_disbursements.items():
+            # We don't handle partial refunds.
+            if total_amount != invoice.total:
+                raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)
+
             if total_amount - invoice.service_fees > 0:
                 PartnerDisbursementsModel(
                     amount=total_amount - invoice.service_fees,
