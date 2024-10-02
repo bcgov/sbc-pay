@@ -100,7 +100,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
         amount=10,
         is_reversal=False,
         partner_code=eft_invoice.corp_type_code,
-        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+        status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
         target_id=eft_invoice.id,
         target_type=EJVLinkType.INVOICE.value
     ).save()
@@ -140,7 +140,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
     invoice.refund_date = datetime.now(tz=timezone.utc)
     invoice.save()
-    partner_disbursement.status = DisbursementStatus.WAITING_FOR_JOB.value
+    partner_disbursement.status = DisbursementStatus.WAITING_FOR_RECEIPT.value
     partner_disbursement.is_reversal = True
     partner_disbursement.save()
 
