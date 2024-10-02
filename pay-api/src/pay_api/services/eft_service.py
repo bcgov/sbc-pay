@@ -246,7 +246,7 @@ class EftService(DepositService):
         for invoice, total_amount in invoice_disbursements.items():
             # We don't handle partial refunds.
             if total_amount != invoice.total:
-                raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)
+                raise BusinessException(Error.EFT_PARTIAL_REFUND)
 
             if total_amount - invoice.service_fees > 0:
                 PartnerDisbursementsModel(

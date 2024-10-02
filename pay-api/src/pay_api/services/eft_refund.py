@@ -119,9 +119,8 @@ class EFTRefund:
                         link_group_id=link_group_id).flush()
                     reversal_total += cil.amount
 
-                # We don't handle partial refunds.
                 if reversal_total != invoice.total:
-                    raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)
+                    raise BusinessException(Error.EFT_PARTIAL_REFUND)
 
                 if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
                     if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:

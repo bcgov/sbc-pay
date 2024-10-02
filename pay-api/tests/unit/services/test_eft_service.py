@@ -156,7 +156,8 @@ def test_refund_eft_credits_exceed_balance(session):
     ('2_no_eft_credit_link'),
     ('3_pending_credit_link'),
     ('4_completed_credit_link'),
-    ('5_consolidated_invoice_block')
+    ('5_consolidated_invoice_block'),
+    ('6_partial_refund_block'),
 ])
 def test_eft_invoice_refund(session, test_name):
     """Test various scenarios for eft_invoice_refund."""
@@ -199,7 +200,7 @@ def test_eft_invoice_refund(session, test_name):
                                                     eft_credit_id=eft_credit.id,
                                                     status_code=EFTCreditInvoiceStatus.PENDING.value,
                                                     link_group_id=3).save()
-        case '4_completed_credit_link' | '5_consolidated_invoice_block':
+        case '4_completed_credit_link' | '5_consolidated_invoice_block' | '6_partial_refund_block':
             invoice_reference = factory_invoice_reference(invoice_id=invoice.id,
                                                           invoice_number='1234').save()
             if test_name == '5_consolidated_invoice_block':
@@ -228,17 +229,28 @@ def test_eft_invoice_refund(session, test_name):
                                                     eft_credit_id=eft_credit.id,
                                                     status_code=EFTCreditInvoiceStatus.COMPLETED.value,
                                                     link_group_id=2).save()
+            if test_name != '6_partial_refund_block':
+                cil_6 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
+                                                        eft_credit_id=eft_credit.id,
+                                                        status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                                                        link_group_id=2).save()
+                cil_7 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
+                                                        eft_credit_id=eft_credit.id,
+                                                        status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                                                        link_group_id=2).save()
             corp_type = CorpTypeModel.find_by_code('CP')
             corp_type.has_partner_disbursements = True
             corp_type.save()
         case _:
             raise NotImplementedError
 
-    if test_name == '5_consolidated_invoice_block':
+    if test_name in ('5_consolidated_invoice_block', '6_partial_refund_block'):
         with pytest.raises(BusinessException) as excinfo:
             invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
             invoice.save()
-        assert excinfo.value.code == Error.INVALID_CONSOLIDATED_REFUND.name
+        error = Error.INVALID_CONSOLIDATED_REFUND.value if test_name == '5_consolidated_invoice_block' \
+            else Error.EFT_PARTIAL_REFUND.value
+        assert excinfo.value.code == error[0]
         return
 
     invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
@@ -277,15 +289,16 @@ def test_eft_invoice_refund(session, test_name):
             assert cil_3.status_code == EFTCreditInvoiceStatus.COMPLETED.value
             assert cil_4.status_code == EFTCreditInvoiceStatus.COMPLETED.value
             assert cil_5.status_code == EFTCreditInvoiceStatus.COMPLETED.value
-            assert eft_credit.remaining_amount == 4
-            assert EFTCreditInvoiceLinkModel.query.count() == 5 + 3
+            assert eft_credit.remaining_amount == 6
             pending_refund_count = 0
             amount = 0
             for cil in EFTCreditInvoiceLinkModel.query.all():
                 if cil.status_code == EFTCreditInvoiceStatus.PENDING_REFUND.value:
                     pending_refund_count += 1
                     amount += cil.amount
-            assert pending_refund_count == 3
+            assert pending_refund_count == 5
+            # 7 originally
+            assert EFTCreditInvoiceLinkModel.query.count() == 7 + pending_refund_count
             eft_history = session.query(EFTHistoryModel).one()
             assert_shortname_refund_history(eft_credit, eft_history, invoice)
             assert PartnerDisbursements.query.count() == 1
