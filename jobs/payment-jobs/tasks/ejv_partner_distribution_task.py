@@ -209,8 +209,9 @@ class EjvPartnerDistributionTask(CgiEjv):
                     )
                     # For payment flow, credit the GL partner code, debit the BCREG GL code.
                     # Reversal is the opposite debit the GL partner code, credit the BCREG GL Code.
-                    credit_debit = 'D' if dl.is_reversal and credit_debit_row == 1 else \
-                        'C' if credit_debit_row == 1 else 'D'
+                    credit_debit = 'C' if credit_debit_row == 1 else 'D'
+                    if dl.is_reversal is True:
+                        credit_debit = 'D' if credit_debit == 'C' else 'C'
                     jv_line = cls.get_jv_line(batch_type,
                                               target_distribution,
                                               description,

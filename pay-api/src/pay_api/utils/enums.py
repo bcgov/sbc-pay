@@ -411,10 +411,10 @@ class PaymentDetailsGlStatus(Enum):
 class QueueSources(Enum):
     """Queue sources for PAY."""
 
-    PAY_API = 'pay-api'
-    PAY_JOBS = 'pay-jobs'
-    PAY_QUEUE = 'pay-queue'
-    FTP_POLLER = 'ftp-poller'
+    PAY_API = 'PAY-API'
+    PAY_JOBS = 'PAY-JOBS'
+    PAY_QUEUE = 'PAY-QUEUE'
+    FTP_POLLER = 'FTP-POLLER'
 
 
 class EJVLinkType(Enum):
