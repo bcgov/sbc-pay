@@ -212,5 +212,24 @@ WHERE pid in (146105,
               146355,
               146394
     );
- 
- 
+
+23. How do I use overrides to send EFT statement reminders/due notifications or set overdue on invoices?
+    
+Provide the override action, date override and auth account id. If there is no accountId, it will be applied environment wide.     
+`python3 invoke_jobs.py STATEMENTS_DUE <action> <dateOverride> <accountId>`
+
+Supported Actions:
+
+NOTIFICATION - send payment reminder or due notification based on date override.
+e.g. Payment Reminder (date override should be 7 days before the last day)
+`python3 invoke_jobs.py STATEMENTS_DUE NOTIFICATION 2024-10-24 1234`
+
+e.g. Payment Due (date override should be on the last day of the month)
+`python3 invoke_jobs.py STATEMENTS_DUE NOTIFICATION 2024-10-31 1234`
+
+OVERDUE - set invoices that are overdue to overdue status
+e.g. Set overdue status for overdue invoices on auth account 1234.
+`python3 invoke_jobs.py STATEMENTS_DUE NOTIFICATION 2024-10-15 1234`
+
+Date Override: The date you want to emulate the job is running on.
+Account Id: The auth account id to run the job against.
