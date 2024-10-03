@@ -176,7 +176,7 @@ def test_overdue_invoices_updated(setup, session):
     ('due', '2023-02-28', StatementNotificationAction.DUE),
     ('overdue', '2023-03-15', StatementNotificationAction.OVERDUE)
 ])
-def test_statement_due_overrides_override(setup, session, test_name, date_override, action):
+def test_statement_due_overrides(setup, session, test_name, date_override, action):
     """Assert payment reminder event is being sent."""
     account, invoice, _, \
         statement_recipient, _ = create_test_data(PaymentMethod.EFT.value,
