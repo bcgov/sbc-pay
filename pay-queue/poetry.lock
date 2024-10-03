@@ -1980,8 +1980,8 @@ werkzeug = "3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "21537"
-resolved_reference = "aaec435d35acdb06683937827f0b73e38251f897"
+reference = "21519"
+resolved_reference = "468f2b01d32a4f9dd0c43a649203a0b5bf713f50"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2641,13 +2641,13 @@ files = [
 
 [[package]]
 name = "sentry-sdk"
-version = "2.13.0"
+version = "2.14.0"
 description = "Python client for Sentry (https://sentry.io)"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "sentry_sdk-2.13.0-py2.py3-none-any.whl", hash = "sha256:6beede8fc2ab4043da7f69d95534e320944690680dd9a963178a49de71d726c6"},
-    {file = "sentry_sdk-2.13.0.tar.gz", hash = "sha256:8d4a576f7a98eb2fdb40e13106e41f330e5c79d72a68be1316e7852cf4995260"},
+    {file = "sentry_sdk-2.14.0-py2.py3-none-any.whl", hash = "sha256:b8bc3dc51d06590df1291b7519b85c75e2ced4f28d9ea655b6d54033503b5bf4"},
+    {file = "sentry_sdk-2.14.0.tar.gz", hash = "sha256:1e0e2eaf6dad918c7d1e0edac868a7bf20017b177f242cefe2a6bcd47955961d"},
 ]
 
 [package.dependencies]
@@ -3104,4 +3104,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "1f549058e6873465c87ef26cd34c5e532b607e0ff6cc77c09707f258168e84da"
+content-hash = "33f79252ad025320c5d0dfad84d6402383f5b1394947896e65fa019bb947b008"

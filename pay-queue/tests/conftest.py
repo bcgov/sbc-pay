@@ -19,7 +19,7 @@ import pytest
 from flask_migrate import Migrate, upgrade
 from google.api_core.exceptions import NotFound
 from google.cloud import pubsub
-from pay_api import db as _db
+from pay_api.models import db as _db
 from pay_api.services.gcp_queue import GcpQueue
 from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
@@ -77,6 +77,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
             sess = db._make_scoped_session(dict(bind=conn))  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
+            old_session = db.session
             db.session = sess
             db.session.commit = nested.commit
             db.session.rollback = nested.rollback
@@ -102,6 +103,8 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
             finally:
                 db.session.remove()
                 transaction.rollback()
+                event.remove(sess, 'after_transaction_end', restart_savepoint)
+                db.session = old_session
 
 
 @pytest.fixture(scope='session', autouse=True)

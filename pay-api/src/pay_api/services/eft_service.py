@@ -20,6 +20,8 @@ from typing import Any, Dict, List
 from flask import current_app
 from sqlalchemy import and_, func
 
+
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -28,6 +30,7 @@ from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
@@ -35,10 +38,9 @@ from pay_api.models import RefundPartialLine
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
-# from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem)
+    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
+    PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 
@@ -80,6 +82,16 @@ class EftService(DepositService):
                        **kwargs) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
+        if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
+            if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:
+                PartnerDisbursementsModel(
+                    amount=invoice.total - invoice.service_fees,
+                    is_reversal=False,
+                    partner_code=invoice.corp_type_code,
+                    status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+                    target_id=invoice.id,
+                    target_type=EJVLinkType.INVOICE.value
+                ).flush()
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
@@ -141,10 +153,10 @@ class EftService(DepositService):
     @staticmethod
     def create_receipt(invoice: InvoiceModel, payment: PaymentModel) -> ReceiptModel:
         """Create a receipt record for an invoice payment."""
-        receipt: ReceiptModel = ReceiptModel(receipt_date=payment.payment_date,
-                                             receipt_amount=payment.paid_amount,
-                                             invoice_id=invoice.id,
-                                             receipt_number=payment.receipt_number)
+        receipt = ReceiptModel(receipt_date=payment.payment_date,
+                               receipt_amount=payment.paid_amount,
+                               invoice_id=invoice.id,
+                               receipt_number=payment.receipt_number)
         return receipt
 
     @staticmethod
@@ -201,7 +213,7 @@ class EftService(DepositService):
                                      InvoiceStatus.CANCELLED.value]
         link_group_id = EFTCreditInvoiceLinkModel.get_next_group_link_seq()
         reversed_credits = 0
-        # invoice_disbursements = {}
+        invoice_disbursements = {}
         for current_link in credit_invoice_links:
             invoice = InvoiceModel.find_by_id(current_link.invoice_id)
 
@@ -226,20 +238,24 @@ class EftService(DepositService):
                 invoice_id=invoice.id,
                 link_group_id=link_group_id).flush()
 
-            # if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-            #     if corp_type.has_partner_disbursements and current_link.amount > 0:
-            #         invoice_disbursements.setdefault(invoice, 0)
-            #         invoice_disbursements[invoice] += current_link.amount
+            if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
+                if corp_type.has_partner_disbursements and current_link.amount > 0:
+                    invoice_disbursements.setdefault(invoice, 0)
+                    invoice_disbursements[invoice] += current_link.amount
 
-        # for invoice, total_amount in invoice_disbursements.items():
-        #     PartnerDisbursementsModel(
-        #         amount=total_amount,
-        #         is_reversal=True,
-        #         partner_code=invoice.corp_type_code,
-        #         status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-        #         target_id=invoice.id,
-        #         target_type=EJVLinkType.INVOICE.value
-        #     ).flush()
+        for invoice, total_amount in invoice_disbursements.items():
+            if total_amount != invoice.total:
+                raise BusinessException(Error.EFT_PARTIAL_REFUND)
+
+            if total_amount - invoice.service_fees > 0:
+                PartnerDisbursementsModel(
+                    amount=total_amount - invoice.service_fees,
+                    is_reversal=True,
+                    partner_code=invoice.corp_type_code,
+                    status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+                    target_id=invoice.id,
+                    target_type=EJVLinkType.INVOICE.value
+                ).flush()
         statement = StatementModel.find_by_id(statement_id)
         EFTHistoryService.create_statement_reverse(
             EFTHistory(short_name_id=short_name_id,

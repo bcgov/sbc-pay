@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the Payment Reconciliation queue service is working as expected.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
@@ -25,9 +25,9 @@ from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
@@ -36,6 +36,7 @@ from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
     PaymentMethod, PaymentStatus, RoutingSlipStatus)
 from sbc_common_components.utils.enums import QueueMessageTypes
+from sqlalchemy import text
 
 from tests.integration.utils import add_file_event_to_queue_and_process
 
@@ -53,25 +54,29 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
     partner_code = 'VS'
-    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
         corp_type_code=partner_code, filing_type_code='WILLSEARCH'
     )
 
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            corp_type_code='VS',
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value,
-                                            status_code=InvoiceStatus.PAID.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              corp_type_code='VS',
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+                              status_code=InvoiceStatus.PAID.value)
+    eft_invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                                  corp_type_code='VS',
+                                  payment_method_code=PaymentMethod.EFT.value,
+                                  status_code=InvoiceStatus.PAID.value)
     invoice_id = invoice.id
-    line_item: PaymentLineItemModel = factory_payment_line_item(
+    line_item = factory_payment_line_item(
         invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0,
         fee_schedule_id=fee_schedule.fee_schedule_id
     )
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
     # Check if the disbursement distribution is present for this.
     if not dist_code.disbursement_distribution_code_id:
-        disbursement_distribution_code: DistributionCodeModel = factory_distribution(name='Disbursement')
+        disbursement_distribution_code = factory_distribution(name='Disbursement')
         dist_code.disbursement_distribution_code_id = disbursement_distribution_code.distribution_code_id
         dist_code.save()
 
@@ -79,42 +84,58 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
     factory_invoice_reference(
         invoice_id=invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.COMPLETED.value
     )
+    factory_invoice_reference(
+        invoice_id=eft_invoice.id, invoice_number='1234567899', status_code=InvoiceReferenceStatus.COMPLETED.value
+    )
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
 
-    # Now create JV records.
-    # Create EJV File model
+    partner_disbursement = PartnerDisbursementsModel(
+        amount=10,
+        is_reversal=False,
+        partner_code=eft_invoice.corp_type_code,
+        status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+        target_id=eft_invoice.id,
+        target_type=EJVLinkType.INVOICE.value
+    ).save()
+
+    eft_flowthrough = f'{eft_invoice.id}-{partner_disbursement.id}'
+
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id,
-                                                partner_code=partner_code,
-                                                payment_account_id=pay_account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id,
+                                partner_code=partner_code,
+                                payment_account_id=pay_account.id).save()
     ejv_header_id = ejv_header.id
     EjvLinkModel(
         link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
         ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
+    EjvLinkModel(
+        link_id=eft_invoice.id, link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    ).save()
+
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
+    # Has legacy and added in PartnerDisbursements rows.
     feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
                        f'..BH...0000.................................................................................' \
                        f'.....................................................................CGI\n' \
@@ -125,23 +146,35 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
                        f'.......................................................................CGI\n' \
                        f'..JD...FI0000000{ejv_header_id}0000120230529................................................' \
                        f'...........000000000090.00D.................................................................' \
-                       f'...................................{invoice_id}                                             ' \
+                       f'..................................#{invoice_id}                                             ' \
                        f'                                                                0000........................' \
                        f'............................................................................................' \
                        f'..................................CGI\n' \
                        f'..JD...FI0000000{ejv_header_id}0000220230529................................................' \
                        f'...........000000000090.00C.................................................................' \
-                       f'...................................{invoice_id}                                             ' \
+                       f'..................................#{invoice_id}                                             ' \
                        f'                                                                0000........................' \
                        f'............................................................................................' \
                        f'..................................CGI\n' \
-                       f'..BT.......FI0000000{ejv_header_id}000000000000002000000000090.000000.......................' \
+                       f'..JD...FI0000000{ejv_header_id}0000120230529................................................' \
+                       f'...........000000000090.00D.................................................................' \
+                       f'..................................#{eft_flowthrough}                                        ' \
+                       f'                                                                0000........................' \
+                       f'............................................................................................' \
+                       f'..................................CGI\n' \
+                       f'..JD...FI0000000{ejv_header_id}0000220230529................................................' \
+                       f'...........000000000090.00C.................................................................' \
+                       f'..................................#{eft_flowthrough}                                        ' \
+                       f'                                                                0000........................' \
+                       f'............................................................................................' \
+                       f'..................................CGI\n' \
+                       f'..BT.......FI0000000{ejv_header_id}000000000000002000000000180.000000.......................' \
                        f'............................................................................................' \
                        f'...................................CGI'
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -156,6 +189,9 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     invoice = InvoiceModel.find_by_id(invoice_id)
     assert invoice.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    assert partner_disbursement.status_code == DisbursementStatus.COMPLETED.value
+    assert partner_disbursement.feedback_on
+    assert partner_disbursement.processed_on
 
 
 def test_failed_partner_ejv_reconciliations(session, app, client):
@@ -166,25 +202,29 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
     partner_code = 'VS'
-    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
         corp_type_code=partner_code, filing_type_code='WILLSEARCH'
     )
 
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            corp_type_code='VS',
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value,
-                                            status_code=InvoiceStatus.PAID.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              corp_type_code='VS',
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+                              status_code=InvoiceStatus.PAID.value)
+    eft_invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                                  corp_type_code='VS',
+                                  payment_method_code=PaymentMethod.EFT.value,
+                                  status_code=InvoiceStatus.PAID.value)
     invoice_id = invoice.id
-    line_item: PaymentLineItemModel = factory_payment_line_item(
+    line_item = factory_payment_line_item(
         invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0,
         fee_schedule_id=fee_schedule.fee_schedule_id
     )
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
     # Check if the disbursement distribution is present for this.
     if not dist_code.disbursement_distribution_code_id:
-        disbursement_distribution_code: DistributionCodeModel = factory_distribution(name='Disbursement')
+        disbursement_distribution_code = factory_distribution(name='Disbursement')
         dist_code.disbursement_distribution_code_id = disbursement_distribution_code.distribution_code_id
         dist_code.save()
     disbursement_distribution_code_id = dist_code.disbursement_distribution_code_id
@@ -193,20 +233,32 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
     factory_invoice_reference(
         invoice_id=invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.COMPLETED.value
     )
+    factory_invoice_reference(
+        invoice_id=eft_invoice.id, invoice_number='1234567899', status_code=InvoiceReferenceStatus.COMPLETED.value
+    )
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
 
-    # Now create JV records.
-    # Create EJV File model
+    partner_disbursement = PartnerDisbursementsModel(
+        amount=10,
+        is_reversal=False,
+        partner_code=eft_invoice.corp_type_code,
+        status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+        target_id=eft_invoice.id,
+        target_type=EJVLinkType.INVOICE.value
+    ).save()
+
+    eft_flowthrough = f'{eft_invoice.id}-{partner_disbursement.id}'
+
     file_ref = f'INBOX{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id,
-                                                partner_code=partner_code,
-                                                payment_account_id=pay_account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id,
+                                partner_code=partner_code,
+                                payment_account_id=pay_account.id).save()
     ejv_header_id = ejv_header.id
     EjvLinkModel(
         link_id=invoice.id,
@@ -214,9 +266,14 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
         ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
+    EjvLinkModel(
+        link_id=eft_invoice.id, link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    ).save()
+
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -229,6 +286,7 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
+    # Has legacy flow and PartnerDisbursements entries
     feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
                        f'..BH...1111TESTERRORMESSAGE................................................................' \
                        f'......................................................................CGI\n' \
@@ -239,23 +297,35 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
                        f'...........................................................................CGI\n' \
                        f'..JD...FI0000000{ejv_header_id}00001.......................................................' \
                        f'............000000000090.00D...............................................................' \
-                       f'.....................................{invoice_id}                                          ' \
+                       f'....................................#{invoice_id}                                          ' \
                        f'                                                                   1111TESTERRORMESSAGE....' \
                        f'...........................................................................................' \
                        f'.......................................CGI\n' \
                        f'..JD...FI0000000{ejv_header_id}00002.......................................................' \
                        f'............000000000090.00C...............................................................' \
-                       f'.....................................{invoice_id}                                          ' \
+                       f'....................................#{invoice_id}                                          ' \
                        f'                                                                   1111TESTERRORMESSAGE....' \
                        f'...........................................................................................' \
                        f'.......................................CGI\n' \
-                       f'..BT...........FI0000000{ejv_header_id}000000000000002000000000090.001111TESTERRORMESSAGE..' \
+                       f'..JD...FI0000000{ejv_header_id}00001.......................................................' \
+                       f'............000000000090.00D...............................................................' \
+                       f'....................................#{eft_flowthrough}                                     ' \
+                       f'                                                                      1111TESTERRORMESSAGE.' \
+                       f'...........................................................................................' \
+                       f'..........................................CGI\n' \
+                       f'..JD...FI0000000{ejv_header_id}00002.......................................................' \
+                       f'............000000000090.00C...............................................................' \
+                       f'....................................#{eft_flowthrough}                                     ' \
+                       f'                                                                      1111TESTERRORMESSAGE.' \
+                       f'...........................................................................................' \
+                       f'..........................................CGI\n' \
+                       f'..BT...........FI0000000{ejv_header_id}000000000000002000000000180.001111TESTERRORMESSAGE..' \
                        f'...........................................................................................' \
                        f'.........................................CGI\n'
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -272,6 +342,8 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
     assert invoice.disbursement_status_code == DisbursementStatus.ERRORED.value
     disbursement_distribution_code = DistributionCodeModel.find_by_id(disbursement_distribution_code_id)
     assert disbursement_distribution_code.stop_ejv
+    assert partner_disbursement.status_code == DisbursementStatus.ERRORED.value
+    assert partner_disbursement.processed_on
 
 
 def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
@@ -283,25 +355,29 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     # 5. Assert that the payment to partner account is reversed.
     cfs_account_number = '1234'
     partner_code = 'VS'
-    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
         corp_type_code=partner_code, filing_type_code='WILLSEARCH'
     )
 
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            corp_type_code='VS',
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value,
-                                            status_code=InvoiceStatus.PAID.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              corp_type_code='VS',
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+                              status_code=InvoiceStatus.PAID.value)
+    eft_invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                                  corp_type_code='VS',
+                                  payment_method_code=PaymentMethod.EFT.value,
+                                  status_code=InvoiceStatus.PAID.value)
     invoice_id = invoice.id
-    line_item: PaymentLineItemModel = factory_payment_line_item(
+    line_item = factory_payment_line_item(
         invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0,
         fee_schedule_id=fee_schedule.fee_schedule_id
     )
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
     # Check if the disbursement distribution is present for this.
     if not dist_code.disbursement_distribution_code_id:
-        disbursement_distribution_code: DistributionCodeModel = factory_distribution(name='Disbursement')
+        disbursement_distribution_code = factory_distribution(name='Disbursement')
         dist_code.disbursement_distribution_code_id = disbursement_distribution_code.distribution_code_id
         dist_code.save()
 
@@ -309,31 +385,51 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     factory_invoice_reference(
         invoice_id=invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.COMPLETED.value
     )
+    factory_invoice_reference(
+        invoice_id=eft_invoice.id, invoice_number='1234567899', status_code=InvoiceReferenceStatus.COMPLETED.value
+    )
     invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
-    # Set as disbursement complete.
     invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
     invoice = invoice.save()
 
-    # Now create JV records.
-    # Create EJV File model
+    eft_invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
+    eft_invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+    eft_invoice = eft_invoice.save()
+
+    partner_disbursement = PartnerDisbursementsModel(
+        amount=10,
+        is_reversal=True,
+        partner_code=eft_invoice.corp_type_code,
+        status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+        target_id=eft_invoice.id,
+        target_type=EJVLinkType.INVOICE.value
+    ).save()
+
+    eft_flowthrough = f'{eft_invoice.id}-{partner_disbursement.id}'
+
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id,
-                                                partner_code=partner_code,
-                                                payment_account_id=pay_account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id,
+                                partner_code=partner_code,
+                                payment_account_id=pay_account.id).save()
     ejv_header_id = ejv_header.id
     EjvLinkModel(
         link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
         ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
+    EjvLinkModel(
+        link_id=eft_invoice.id, link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    ).save()
+
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -346,6 +442,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
+    # Has legacy flow and PartnerDisbursements entries
     feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
                        f'..BH...0000.................................................................................' \
                        f'.....................................................................CGI\n' \
@@ -356,65 +453,77 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
                        f'.......................................................................CGI\n' \
                        f'..JD...FI0000000{ejv_header_id}0000120230529................................................' \
                        f'...........000000000090.00C.................................................................' \
-                       f'...................................{invoice_id}                                             ' \
+                       f'..................................#{invoice_id}                                             ' \
                        f'                                                                0000........................' \
                        f'............................................................................................' \
                        f'..................................CGI\n' \
                        f'..JD...FI0000000{ejv_header_id}0000220230529................................................' \
                        f'...........000000000090.00D.................................................................' \
-                       f'...................................{invoice_id}                                             ' \
+                       f'..................................#{invoice_id}                                             ' \
                        f'                                                                0000........................' \
                        f'............................................................................................' \
                        f'..................................CGI\n' \
-                       f'..BT.......FI0000000{ejv_header_id}000000000000002000000000090.000000.......................' \
+                       f'..JD...FI0000000{ejv_header_id}0000120230529................................................' \
+                       f'...........000000000090.00C.................................................................' \
+                       f'...................................{eft_flowthrough}                                        ' \
+                       f'                                                                0000........................' \
+                       f'............................................................................................' \
+                       f'..................................CGI\n' \
+                       f'..JD...FI0000000{ejv_header_id}0000220230529................................................' \
+                       f'...........000000000090.00D.................................................................' \
+                       f'...................................{eft_flowthrough}                                        ' \
+                       f'                                                                0000........................' \
+                       f'............................................................................................' \
+                       f'..................................CGI\n' \
+                       f'..BT.......FI0000000{ejv_header_id}000000000000002000000000180.000000.......................' \
                        f'............................................................................................' \
                        f'...................................CGI'
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
-    # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     invoice = InvoiceModel.find_by_id(invoice_id)
     assert invoice.disbursement_status_code == DisbursementStatus.REVERSED.value
     assert invoice.disbursement_reversal_date == datetime(2023, 5, 29)
+    assert partner_disbursement.status_code == DisbursementStatus.REVERSED.value
+    assert partner_disbursement.feedback_on
+    assert partner_disbursement.processed_on
 
 
-def test_succesful_payment_ejv_reconciliations(session, app, client):
+def test_successful_payment_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
     # 3. Create a feedback file and assert status
-
     corp_type = 'BEN'
     filing_type = 'BCINC'
 
     # Find fee schedule which have service fees.
-    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
     # Create a service fee distribution code
     service_fee_dist_code = factory_distribution(name='service fee', client='112', reps_centre='99999',
                                                  service_line='99999',
-                                                 stob='9999', project_code='9999999')
+                                                 stob='9999', project_code='9999998')
     service_fee_dist_code.save()
 
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
+    dist_code = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id)
     # Update fee dist code to match the requirement.
     dist_code.client = '112'
     dist_code.responsibility_centre = '22222'
     dist_code.service_line = '33333'
     dist_code.stob = '4444'
-    dist_code.project_code = '5555555'
+    dist_code.project_code = '5555559'
     dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
     dist_code.save()
 
@@ -429,9 +538,9 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
     # Now create JV records.
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                          file_type=EjvFileType.PAYMENT.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                            file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
     feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
@@ -447,15 +556,15 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
         inv = factory_invoice(payment_account=jv_acc, corp_type_code=corp_type, total=inv_total_amount,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
         factory_invoice_reference(inv.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
-        line: PaymentLineItemModel = factory_payment_line_item(invoice_id=inv.id,
-                                                               fee_schedule_id=fee_schedule.fee_schedule_id,
-                                                               filing_fees=100,
-                                                               total=100,
-                                                               service_fees=1.5,
-                                                               fee_dist_id=dist_code.distribution_code_id)
+        line = factory_payment_line_item(invoice_id=inv.id,
+                                         fee_schedule_id=fee_schedule.fee_schedule_id,
+                                         filing_fees=100,
+                                         total=100,
+                                         service_fees=1.5,
+                                         fee_dist_id=dist_code.distribution_code_id)
         inv_ids.append(inv.id)
-        ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                    ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
+        ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                    ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
 
         EjvLinkModel(link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
                      ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
@@ -499,7 +608,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
                                           f'......................................................................CGI'
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -512,7 +621,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -527,11 +636,11 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     # Assert invoice and receipt records
     for inv_id in inv_ids:
-        invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+        invoice = InvoiceModel.find_by_id(inv_id)
         assert invoice.disbursement_status_code is None
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert invoice.payment_date == datetime(2023, 5, 29)
-        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+        invoice_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
             inv_id, InvoiceReferenceStatus.COMPLETED.value
         )
         assert invoice_ref
@@ -541,38 +650,43 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
     # Assert payment records
     for jv_account_id in jv_account_ids:
         account = PaymentAccountModel.find_by_id(jv_account_id)
-        payment: PaymentModel = PaymentModel.search_account_payments(auth_account_id=account.auth_account_id,
-                                                                     payment_status=PaymentStatus.COMPLETED.value,
-                                                                     page=1, limit=100)[0]
+        payment = PaymentModel.search_account_payments(auth_account_id=account.auth_account_id,
+                                                       payment_status=PaymentStatus.COMPLETED.value,
+                                                       page=1, limit=100)[0]
         assert len(payment) == 1
         assert payment[0][0].paid_amount == inv_total_amount
 
 
-def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
+def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
     # 3. Create a feedback file and assert status
+    corp_type = 'CP'
+    filing_type = 'OTFDR'
 
-    corp_type = 'BEN'
-    filing_type = 'BCINC'
+    InvoiceModel.query.delete()
+    # Reset the sequence, because the unit test is only dealing with 1 character for the invoice id.
+    # This becomes more apparent when running unit tests in parallel.
+    db.session.execute(text('ALTER SEQUENCE invoices_id_seq RESTART WITH 1'))
+    db.session.commit()
 
     # Find fee schedule which have service fees.
-    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
     # Create a service fee distribution code
     service_fee_dist_code = factory_distribution(name='service fee', client='112', reps_centre='99999',
                                                  service_line='99999',
                                                  stob='9999', project_code='9999999')
     service_fee_dist_code.save()
 
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
+    dist_code = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id)
     # Update fee dist code to match the requirement.
     dist_code.client = '112'
     dist_code.responsibility_centre = '22222'
     dist_code.service_line = '33333'
     dist_code.stob = '4444'
-    dist_code.project_code = '5555555'
+    dist_code.project_code = '5555557'
     dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
     dist_code.save()
 
@@ -584,10 +698,10 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
 
     # Now create JV records.
     # Create EJV File model
-    file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                          file_type=EjvFileType.PAYMENT.value).save()
+    file_ref = f'INBOX.{datetime.now(tz=timezone.utc)}'
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                            file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
     feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
@@ -601,17 +715,18 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
         inv = factory_invoice(payment_account=jv_acc, corp_type_code=corp_type, total=inv_total_amount,
-                              status_code=InvoiceStatus.REFUND_REQUESTED.value, payment_method_code=None)
+                              status_code=InvoiceStatus.REFUND_REQUESTED.value, payment_method_code=None
+                              )
         factory_invoice_reference(inv.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
-        line: PaymentLineItemModel = factory_payment_line_item(invoice_id=inv.id,
-                                                               fee_schedule_id=fee_schedule.fee_schedule_id,
-                                                               filing_fees=100,
-                                                               total=100,
-                                                               service_fees=1.5,
-                                                               fee_dist_id=dist_code.distribution_code_id)
+        line = factory_payment_line_item(invoice_id=inv.id,
+                                         fee_schedule_id=fee_schedule.fee_schedule_id,
+                                         filing_fees=100,
+                                         total=100,
+                                         service_fees=1.5,
+                                         fee_dist_id=dist_code.distribution_code_id)
         inv_ids.append(inv.id)
-        ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                    ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
+        ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                    ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
 
         EjvLinkModel(
             link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
@@ -655,11 +770,10 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
                                           f'......................................................................CGI'
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
@@ -668,7 +782,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -683,11 +797,11 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     # Assert invoice and receipt records
     for inv_id in inv_ids:
-        invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+        invoice = InvoiceModel.find_by_id(inv_id)
         assert invoice.disbursement_status_code is None
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
         assert invoice.refund_date == datetime(2023, 5, 29)
-        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+        invoice_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
             inv_id, InvoiceReferenceStatus.COMPLETED.value
         )
         assert invoice_ref
@@ -695,9 +809,9 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     # Assert payment records
     for jv_account_id in jv_account_ids:
         account = PaymentAccountModel.find_by_id(jv_account_id)
-        payment: PaymentModel = PaymentModel.search_account_payments(auth_account_id=account.auth_account_id,
-                                                                     payment_status=PaymentStatus.COMPLETED.value,
-                                                                     page=1, limit=100)[0]
+        payment = PaymentModel.search_account_payments(auth_account_id=account.auth_account_id,
+                                                       payment_status=PaymentStatus.COMPLETED.value,
+                                                       page=1, limit=100)[0]
         assert len(payment) == 1
         assert payment[0][0].paid_amount == inv_total_amount
 
@@ -735,15 +849,15 @@ def test_successful_refund_reconciliations(session, app, client):
     # Now create AP records.
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          file_type=EjvFileType.REFUND.value,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            file_type=EjvFileType.REFUND.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
     # Upload an acknowledgement file
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -815,7 +929,7 @@ def test_successful_refund_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -866,15 +980,15 @@ def test_failed_refund_reconciliations(session, app, client):
     # Now create AP records.
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          file_type=EjvFileType.REFUND.value,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            file_type=EjvFileType.REFUND.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
     # Upload an acknowledgement file
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -947,7 +1061,7 @@ def test_failed_refund_reconciliations(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -1001,13 +1115,13 @@ def test_successful_ap_disbursement(session, app, client):
     factory_refund(invoice_id=refund_invoice.id)
 
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
 
     EjvLinkModel(
         link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
@@ -1021,7 +1135,7 @@ def test_successful_ap_disbursement(session, app, client):
 
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -1092,7 +1206,7 @@ def test_successful_ap_disbursement(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 
@@ -1147,13 +1261,13 @@ def test_failure_ap_disbursement(session, app, client):
     factory_refund(invoice_id=refund_invoice.id)
 
     file_ref = f'INBOX.{datetime.now()}'
-    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
-                                          file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
-                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file = EjvFileModel(file_ref=file_ref,
+                            file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
-    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
+    ejv_header = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
 
     EjvLinkModel(
         link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
@@ -1167,7 +1281,7 @@ def test_failure_ap_disbursement(session, app, client):
 
     ack_file_name = f'ACK.{file_ref}'
 
-    with open(ack_file_name, 'a+') as jv_file:
+    with open(ack_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write('')
         jv_file.close()
 
@@ -1241,7 +1355,7 @@ def test_failure_ap_disbursement(session, app, client):
 
     feedback_file_name = f'FEEDBACK.{file_ref}'
 
-    with open(feedback_file_name, 'a+') as jv_file:
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
 

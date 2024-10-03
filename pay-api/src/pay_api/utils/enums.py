@@ -212,10 +212,12 @@ class DisbursementStatus(Enum):
 
     ACKNOWLEDGED = 'ACKNOWLEDGED'
     COMPLETED = 'COMPLETED'
+    CANCELLED = 'CANCELLED'
     ERRORED = 'ERRORED'
     REVERSED = 'REVERSED'
     UPLOADED = 'UPLOADED'
-    WAITING_FOR_JOB = 'WAITING_FOR_JOB'
+    # Could be waiting for receipt in the job.
+    WAITING_FOR_RECEIPT = 'WAITING_FOR_RECEIPT'
 
 
 class DisbursementMethod(Enum):
@@ -409,17 +411,17 @@ class PaymentDetailsGlStatus(Enum):
 class QueueSources(Enum):
     """Queue sources for PAY."""
 
-    PAY_API = 'pay-api'
-    PAY_JOBS = 'pay-jobs'
-    PAY_QUEUE = 'pay-queue'
-    FTP_POLLER = 'ftp-poller'
+    PAY_API = 'PAY-API'
+    PAY_JOBS = 'PAY-JOBS'
+    PAY_QUEUE = 'PAY-QUEUE'
+    FTP_POLLER = 'FTP-POLLER'
 
 
 class EJVLinkType(Enum):
     """EJV link types for ejv_link table."""
 
     INVOICE = 'invoice'
-    REFUND = 'refund'
+    PARTIAL_REFUND = 'partial_refund'
 
 
 class StatementTemplate(Enum):

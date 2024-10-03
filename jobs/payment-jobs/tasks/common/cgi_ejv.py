@@ -148,7 +148,8 @@ class CgiEjv:
     def create_inbox_and_trg_files(cls, ejv_content):
         """Create inbox and trigger files."""
         file_path: str = tempfile.gettempdir()
-        file_path_with_name = f'{file_path}/{cls.get_file_name()}'
+        file_name = cls.get_file_name()
+        file_path_with_name = f'{file_path}/{file_name}'
         trg_file_path = f'{file_path_with_name}.{cls.get_trg_suffix()}'
         with open(file_path_with_name, 'a+', encoding='utf-8') as jv_file:
             jv_file.write(ejv_content)
@@ -157,4 +158,4 @@ class CgiEjv:
         with open(trg_file_path, 'a+', encoding='utf-8') as trg_file:
             trg_file.write('')
             trg_file.close()
-        return file_path_with_name, trg_file_path
+        return file_path_with_name, trg_file_path, file_name

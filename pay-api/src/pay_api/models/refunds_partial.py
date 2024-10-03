@@ -44,8 +44,6 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
             'created_by',
             'created_on',
             'created_name',
-            'disbursement_status_code',
-            'disbursement_date',
             'payment_line_item_id',
             'refund_amount',
             'refund_type',
@@ -59,8 +57,6 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     payment_line_item_id = db.Column(db.Integer, ForeignKey('payment_line_items.id'), nullable=False, index=True)
     refund_amount = db.Column(db.Numeric(19, 2), nullable=False)
     refund_type = db.Column(db.String(50), nullable=True)
-    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
-    disbursement_date = db.Column(db.DateTime, nullable=True)
 
 
 @define

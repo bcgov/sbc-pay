@@ -22,8 +22,10 @@ import pytest
 from flask import current_app
 from freezegun import freeze_time
 from pay_api.models import CorpType as CorpTypeModel
-from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, db
-from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, InvoiceStatus, PaymentMethod
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
+from pay_api.models import db
+from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, EJVLinkType, InvoiceStatus, PaymentMethod
 
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
@@ -43,6 +45,8 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     """
     monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code('VS')
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
 
     pad_account = factory_create_pad_account(auth_account_id='1234',
                                              bank_number='001',
@@ -76,6 +80,31 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
     factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
 
+    eft_invoice = factory_invoice(payment_account=pad_account,
+                                  corp_type_code=corp_type.code,
+                                  total=11.5,
+                                  payment_method_code=PaymentMethod.EFT.value,
+                                  status_code='PAID')
+
+    factory_payment_line_item(invoice_id=eft_invoice.id,
+                              fee_schedule_id=fee_schedule.fee_schedule_id,
+                              filing_fees=10,
+                              total=10,
+                              service_fees=1.5,
+                              fee_dist_id=fee_distribution.distribution_code_id)
+
+    inv_ref = factory_invoice_reference(invoice_id=eft_invoice.id)
+    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
+    factory_receipt(invoice_id=eft_invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+    partner_disbursement = PartnerDisbursementsModel(
+        amount=10,
+        is_reversal=False,
+        partner_code=eft_invoice.corp_type_code,
+        status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+        target_id=eft_invoice.id,
+        target_type=EJVLinkType.INVOICE.value
+    ).save()
+
     EjvPartnerDistributionTask.create_ejv_file()
 
     # Lookup invoice and assert disbursement status
@@ -101,6 +130,9 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
         assert ejv_file
         assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value, f'{batch_type}'
 
+        assert partner_disbursement.status_code == DisbursementStatus.UPLOADED.value
+        assert partner_disbursement.processed_on
+
     # Reverse those payments and assert records.
     # Set the status of invoice as disbursement completed, so that reversal can kick start.
     invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
@@ -108,8 +140,13 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
     invoice.refund_date = datetime.now(tz=timezone.utc)
     invoice.save()
+    partner_disbursement.status = DisbursementStatus.WAITING_FOR_RECEIPT.value
+    partner_disbursement.is_reversal = True
+    partner_disbursement.save()
 
     EjvPartnerDistributionTask.create_ejv_file()
     # Lookup invoice and assert disbursement status
     invoice = Invoice.find_by_id(invoice.id)
     assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert partner_disbursement.status_code == DisbursementStatus.UPLOADED.value
+    assert partner_disbursement.processed_on
