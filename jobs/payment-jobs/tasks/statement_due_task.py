@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to notify user for any outstanding statement."""
+from calendar import monthrange
 from datetime import datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
 
 import pytz
 from flask import current_app
@@ -220,7 +220,7 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         # 3. 7 day reminder Feb 21th (due date - 7)
         # 4. Final reminder Feb 28th (due date client should be told to pay by this time)
         # 5. Overdue Date and account locked March 15th
-        day_invoice_due = statement.to_date + relativedelta(months=1)
+        day_invoice_due = cls._get_last_day_of_next_month(statement.to_date)
         seven_days_before_invoice_due = day_invoice_due - timedelta(days=7)
 
         # Needs to be non timezone aware for comparison.
@@ -245,3 +245,9 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
 
         current_app.logger.error(f'No recipients found for payment_account_id: {statement.payment_account_id}. Skip.')
         return None
+
+    @classmethod
+    def _get_last_day_of_next_month(cls, date):
+        """Find the last day of the next month."""
+        next_month = date.replace(day=1) + timedelta(days=32)
+        return next_month.replace(day=monthrange(next_month.year, next_month.month)[1])
