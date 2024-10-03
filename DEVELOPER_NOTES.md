@@ -229,7 +229,7 @@ e.g. Payment Due (date override should be on the last day of the month)
 
 OVERDUE - set invoices that are overdue to overdue status
 e.g. Set overdue status for overdue invoices on auth account 1234.
-`python3 invoke_jobs.py STATEMENTS_DUE NOTIFICATION 2024-10-15 1234`
+`python3 invoke_jobs.py STATEMENTS_DUE OVERDUE 2024-10-15 1234`
 
 Date Override: The date you want to emulate the job is running on.
 Account Id: The auth account id to run the job against.
