@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to notify user for any outstanding statement."""
+from calendar import monthrange
 from datetime import datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
 
 import pytz
 from flask import current_app
@@ -57,23 +57,46 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     statement_date_override = None
 
     @classmethod
-    def process_unpaid_statements(cls, action_date_override=None,
+    def process_override_command(cls, action, date_override):
+        """Process override action."""
+        if date_override is None:
+            current_app.logger.error(f'Expecting date override for action: {action}.')
+
+        date_override = datetime.strptime(date_override, '%Y-%m-%d')
+        match action:
+            case 'NOTIFICATION':
+                cls.action_date_override = date_override.date()
+                cls.statement_date_override = date_override
+                cls._notify_for_monthly()
+            case 'OVERDUE':
+                cls.action_date_override = date_override
+                cls._update_invoice_overdue_status()
+            case _:
+                current_app.logger.error(f'Unsupported action override: {action}.')
+
+    @classmethod
+    def process_unpaid_statements(cls,
+                                  action_override=None,
+                                  date_override=None,
                                   auth_account_override=None, statement_date_override=None):
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
         if eft_enabled:
-            cls.action_date_override = action_date_override
             cls.auth_account_override = auth_account_override
             cls.statement_date_override = statement_date_override
-            cls._update_invoice_overdue_status()
-            cls._notify_for_monthly()
+
+            if action_override is not None and len(action_override.strip()) > 0:
+                cls.process_override_command(action_override, date_override)
+            else:
+                cls._update_invoice_overdue_status()
+                cls._notify_for_monthly()
 
     @classmethod
     def _update_invoice_overdue_status(cls):
         """Update the status of any invoices that are overdue."""
         # Needs to be non timezone aware.
         if cls.action_date_override:
-            now = datetime.strptime(cls.action_date_override, '%Y-%m-%d').replace(hour=8)
+            now = cls.action_date_override.replace(hour=8)
             offset_hours = -now.astimezone(pytz.timezone('America/Vancouver')).utcoffset().total_seconds() / 60 / 60
             now = now.replace(hour=int(offset_hours), minute=0, second=0)
         else:
@@ -197,12 +220,12 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         # 3. 7 day reminder Feb 21th (due date - 7)
         # 4. Final reminder Feb 28th (due date client should be told to pay by this time)
         # 5. Overdue Date and account locked March 15th
-        day_invoice_due = statement.to_date + relativedelta(months=1)
+        day_invoice_due = cls._get_last_day_of_next_month(statement.to_date)
         seven_days_before_invoice_due = day_invoice_due - timedelta(days=7)
 
         # Needs to be non timezone aware for comparison.
         if cls.action_date_override:
-            now_date = datetime.strptime(cls.action_date_override, '%Y-%m-%d').date()
+            now_date = cls.action_date_override
         else:
             now_date = datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
 
@@ -222,3 +245,9 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
 
         current_app.logger.error(f'No recipients found for payment_account_id: {statement.payment_account_id}. Skip.')
         return None
+
+    @classmethod
+    def _get_last_day_of_next_month(cls, date):
+        """Find the last day of the next month."""
+        next_month = date.replace(day=1) + timedelta(days=32)
+        return next_month.replace(day=monthrange(next_month.year, next_month.month)[1])

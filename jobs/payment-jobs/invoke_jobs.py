@@ -125,9 +125,13 @@ def run(job_name, argument=None):
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             application.logger.info('<<<< Completed Sending notification for OB invoices >>>>')
         case 'STATEMENTS_DUE':
-            action_date_override = argument[0] if len(argument) >= 1 else None
-            auth_account_override = argument[1] if len(argument) >= 2 else None
-            StatementDueTask.process_unpaid_statements(action_date_override=action_date_override,
+            action_override = argument[0] if len(argument) >= 1 else None
+            date_override = argument[1] if len(argument) >= 2 else None
+            auth_account_override = argument[2] if len(argument) >= 3 else None
+
+            application.logger.info(f'{action_override} {date_override} {auth_account_override}')
+            StatementDueTask.process_unpaid_statements(action_override=action_override,
+                                                       date_override=date_override,
                                                        auth_account_override=auth_account_override)
             application.logger.info(
                 '<<<< Completed Sending notification for unpaid statements >>>>')

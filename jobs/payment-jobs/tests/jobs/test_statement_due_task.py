@@ -169,3 +169,59 @@ def test_overdue_invoices_updated(setup, session):
     StatementDueTask.process_unpaid_statements(auth_account_override=account.auth_account_id)
     assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
     assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+@pytest.mark.parametrize('test_name, date_override, action', [
+    ('reminder', '2023-02-21', StatementNotificationAction.REMINDER),
+    ('due', '2023-02-28', StatementNotificationAction.DUE),
+    ('overdue', '2023-03-15', StatementNotificationAction.OVERDUE)
+])
+def test_statement_due_overrides(setup, session, test_name, date_override, action):
+    """Assert payment reminder event is being sent."""
+    account, invoice, _, \
+        statement_recipient, _ = create_test_data(PaymentMethod.EFT.value,
+                                                  datetime(2023, 1, 1, 8),  # Hour 0 doesnt work for CI
+                                                  StatementFrequency.MONTHLY.value,
+                                                  351.50)
+    assert invoice.payment_method_code == PaymentMethod.EFT.value
+    assert invoice.overdue_date
+    assert account.payment_method == PaymentMethod.EFT.value
+
+    # Generate statements runs at 8:01 UTC, currently set to 7:01 UTC, should be moved.
+    with freeze_time(datetime(2023, 2, 1, 8, 0, 1)):
+        StatementTask.generate_statements()
+
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    assert statements is not None
+    assert len(statements) == 2  # items results and page total
+    assert len(statements[0]) == 1  # items
+    invoices = StatementInvoicesModel.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices is not None
+    assert invoices[0].invoice_id == invoice.id
+
+    summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
+    total_amount_owing = summary['total_due']
+
+    with patch('utils.auth_event.AuthEvent.publish_lock_account_event') as mock_auth_event:
+        with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
+            # Statement due task looks at the month before.
+            if test_name == 'overdue':
+                StatementDueTask.process_unpaid_statements(action_override='OVERDUE',
+                                                           date_override=date_override)
+
+            StatementDueTask.process_unpaid_statements(action_override='NOTIFICATION',
+                                                       date_override=date_override)
+            if action == StatementNotificationAction.OVERDUE:
+                mock_auth_event.assert_called()
+                assert statements[0][0].overdue_notification_date
+                assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
+                assert account.has_overdue_invoices
+            else:
+                due_date = statements[0][0].to_date + relativedelta(months=1)
+                mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
+                                                                         statement=statements[0][0],
+                                                                         action=action,
+                                                                         due_date=due_date,
+                                                                         emails=statement_recipient.email,
+                                                                         total_amount_owing=total_amount_owing,
+                                                                         short_name_links_count=0))
