@@ -98,16 +98,8 @@ push: #build ## Push the docker container to the registry & tag latest
     docker tag $(DOCKER_NAME) $(REGISTRY_IMAGE):latest ;\
     docker push $(REGISTRY_IMAGE):latest
 
-VAULTS=`cat devops/vaults.json`
 update-env: ## Update env from 1pass
-	oc -n "$(OPS_REPOSITORY)-$(TAG_NAME)" exec "dc/vault-service-$(TAG_NAME)" -- ./scripts/1pass.sh \
-		-m "secret" \
-		-e "$(TAG_NAME)" \
-		-a "$(DOCKER_NAME)-$(TAG_NAME)" \
-		-n "$(OPENSHIFT_REPOSITORY)-$(TAG_NAME)" \
-		-v "$(VAULTS)" \
-		-r "true" \
-		-f "false"
+	@echo "update-env is disabled for now as 1pass cli to OCP is broken."
 
 tag: push ## tag image
 	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):latest $(DOCKER_NAME):$(TAG_NAME)
