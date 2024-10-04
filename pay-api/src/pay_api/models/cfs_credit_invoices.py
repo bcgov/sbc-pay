@@ -42,6 +42,7 @@ class CFSCreditInvoices(BaseModel):
             'amount_applied',
             'cfs_account',
             'cfs_identifier',
+            'credit_id',
             'created_on',
             'invoice_account',
             'invoice_number'
@@ -54,6 +55,7 @@ class CFSCreditInvoices(BaseModel):
     amount_applied = db.Column(db.Numeric, nullable=False)
     cfs_account = db.Column(db.String(50), nullable=False, index=True)
     cfs_identifier = db.Column(db.String(50), nullable=False, index=True)
+    credit_id = db.Column(db.Integer, ForeignKey('credits.id'), nullable=True, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     invoice_amount = db.Column(db.Numeric, nullable=False)
     invoice_number = db.Column(db.String(50), nullable=False)
