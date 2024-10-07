@@ -40,6 +40,7 @@ class CfsCreditInvoices(BaseModel):
             'id',
             'account_id',
             'amount_applied',
+            'application_id',
             'cfs_account',
             'cfs_identifier',
             'credit_id',
@@ -53,6 +54,7 @@ class CfsCreditInvoices(BaseModel):
 
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     amount_applied = db.Column(db.Numeric, nullable=False)
+    application_id = db.Column(db.Integer, nullable=False, index=True, unique=True)
     cfs_account = db.Column(db.String(50), nullable=False, index=True)
     cfs_identifier = db.Column(db.String(50), nullable=False, index=True)
     credit_id = db.Column(db.Integer, ForeignKey('credits.id'), nullable=True, index=True)

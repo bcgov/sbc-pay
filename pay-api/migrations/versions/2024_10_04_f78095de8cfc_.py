@@ -25,6 +25,7 @@ def upgrade():
     op.create_table('cfs_credit_invoices',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('account_id', sa.Integer(), nullable=True),
+    sa.Column('application_id', sa.Integer(), nullable=False, unique=True),
     sa.Column('amount_applied', sa.Numeric(), nullable=False),
     sa.Column('cfs_account', sa.String(length=50), nullable=False),
     sa.Column('cfs_identifier', sa.String(length=50), nullable=False),
@@ -38,6 +39,7 @@ def upgrade():
     )
     with op.batch_alter_table('cfs_credit_invoices', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_cfs_credit_invoices_account_id'), ['account_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_cfs_credit_invoices_application_id'), ['application_id'], unique=True)
         batch_op.create_index(batch_op.f('ix_cfs_credit_invoices_cfs_account'), ['cfs_account'], unique=False)
         batch_op.create_index(batch_op.f('ix_cfs_credit_invoices_cfs_identifier'), ['cfs_identifier'], unique=False)
         batch_op.create_index(batch_op.f('ix_cfs_credit_invoices_credit_id'), ['credit_id'], unique=False)
@@ -51,6 +53,7 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_cfs_credit_invoices_credit_id'))
         batch_op.drop_index(batch_op.f('ix_cfs_credit_invoices_cfs_identifier'))
         batch_op.drop_index(batch_op.f('ix_cfs_credit_invoices_cfs_account'))
+        batch_op.drop_index(batch_op.f('ix_cfs_credit_invoices_application_id'))
         batch_op.drop_index(batch_op.f('ix_cfs_credit_invoices_account_id'))
 
     op.drop_table('cfs_credit_invoices')
