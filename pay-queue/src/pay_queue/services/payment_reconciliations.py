@@ -135,10 +135,10 @@ def _handle_credit_invoices_and_adjust_invoice_paid(cfs_identifier: str, payment
     for row in payment_lines:
         application_id = _get_row_value(row, Column.APP_ID)
         if CfsCreditInvoices.find_by_application_id(application_id):
-            current_app.logger.error(f'Credit invoices exists with application_id {application_id}.')
+            current_app.logger.warning(f'Credit invoices exists with application_id {application_id}.')
             continue
         if not (credit := CreditModel.find_by_cfs_identifier(cfs_identifier=cfs_identifier, credit_memo=True)):
-            current_app.logger.error(f'Credit with cfs_identifier {cfs_identifier} not found.')
+            current_app.logger.warning(f'Credit with cfs_identifier {cfs_identifier} not found.')
             continue
         invoice_number = _get_row_value(row, Column.TARGET_TXN_NO)
         CfsCreditInvoices(
@@ -171,7 +171,7 @@ def _handle_credit_invoices_and_adjust_invoice_paid(cfs_identifier: str, payment
             invoice.flush()
 
         if amount >= 0:
-            current_app.logger.error(f'Amount {amount} remaining after applying to invoices {invoice_number}.')
+            current_app.logger.warning(f'Amount {amount} remaining after applying to invoices {invoice_number}.')
 
 
 def _save_payment(payment_date, inv_number, invoice_amount,  # pylint: disable=too-many-arguments

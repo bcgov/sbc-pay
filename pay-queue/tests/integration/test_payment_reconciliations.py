@@ -699,6 +699,7 @@ async def test_credits(session, app, client, monkeypatch):
     assert credit.remaining_amount == cm_amount - cm_used_amount
     # Credit Invoices assertions
     # Invoice paid assertion
+    # TODO - Add more assertions for the credit invoices
     assert True
 
 
