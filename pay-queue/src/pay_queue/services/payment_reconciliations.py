@@ -22,6 +22,7 @@ from typing import Dict, List, Tuple
 from flask import current_app
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import CfsCreditInvoices
 from pay_api.models import Credit as CreditModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -54,9 +55,8 @@ from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransac
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
 
 
-def _create_payment_records(csv_content: str):
-    """Create payment records by grouping the lines with target transaction number."""
-    # Iterate the rows and create a dict with key as the source transaction number.
+def _build_source_txns(csv_content: str):
+    """Iterate the rows and create a dict with key as the source transaction number."""
     source_txns: Dict[str, List[Dict[str, str]]] = {}
     for row in csv.DictReader(csv_content.splitlines()):
         # Convert lower case keys to avoid any key mismatch
@@ -66,56 +66,64 @@ def _create_payment_records(csv_content: str):
             source_txns[source_txn_number] = [row]
         else:
             source_txns[source_txn_number].append(row)
+    return source_txns
+
+
+def _create_payment_records(csv_content: str):
+    """Create payment records by grouping the lines with target transaction number."""
+    source_txns: Dict[str, List[Dict[str, str]]] = _build_source_txns(csv_content)
     # Iterate the grouped source transactions and create payment record.
     # For PAD payments, create one payment record per row
     # For Online Banking payments, add up the ONAC receipts and payments against invoices.
     # For EFT, WIRE, Drawdown balance transfer mark the payment as COMPLETED
-    # For Credit Memos, do nothing.
+    # For Credit Memos, populate the cfs_credit_invoices table.
     for source_txn_number, payment_lines in source_txns.items():
-        settlement_type: str = _get_settlement_type(payment_lines)
-        if settlement_type in (RecordType.PAD.value, RecordType.PADR.value, RecordType.PAYR.value):
-            for row in payment_lines:
-                inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
-                invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
+        match _get_settlement_type(payment_lines):
+            case RecordType.PAD.value | RecordType.PADR.value | RecordType.PAYR.value:
+                for row in payment_lines:
+                    inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
+                    invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
+                    payment_date = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
+                    status = PaymentStatus.COMPLETED.value \
+                        if _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PAID.value.lower() \
+                        else PaymentStatus.FAILED.value
+                    paid_amount = 0
+                    if status == PaymentStatus.COMPLETED.value:
+                        paid_amount = float(_get_row_value(row, Column.APP_AMOUNT))
+                    elif _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PARTIAL.value.lower():
+                        paid_amount = invoice_amount - float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
 
-                payment_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
-                status = PaymentStatus.COMPLETED.value \
-                    if _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PAID.value.lower() \
-                    else PaymentStatus.FAILED.value
+                    _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, status,
+                                  PaymentMethod.PAD.value,
+                                  source_txn_number)
+            case RecordType.BOLP.value:
+                # Add up the amount together for Online Banking
                 paid_amount = 0
-                if status == PaymentStatus.COMPLETED.value:
-                    paid_amount = float(_get_row_value(row, Column.APP_AMOUNT))
-                elif _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PARTIAL.value.lower():
-                    paid_amount = invoice_amount - float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
+                inv_number = None
+                invoice_amount = 0
+                payment_date = datetime.strptime(_get_row_value(payment_lines[0], Column.APP_DATE), '%d-%b-%y')
+                for row in payment_lines:
+                    paid_amount += float(_get_row_value(row,
+                                         Column.APP_AMOUNT))
 
-                _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, status,
-                              PaymentMethod.PAD.value,
-                              source_txn_number)
-        elif settlement_type == RecordType.BOLP.value:
-            # Add up the amount together for Online Banking
-            paid_amount = 0
-            inv_number = None
-            invoice_amount = 0
-            payment_date: datetime = datetime.strptime(_get_row_value(payment_lines[0], Column.APP_DATE), '%d-%b-%y')
-            for row in payment_lines:
-                paid_amount += float(_get_row_value(row, Column.APP_AMOUNT))
+                # If the payment exactly covers the amount for invoice, then populate invoice amount and number
+                if len(payment_lines) == 1:
+                    row = payment_lines[0]
+                    invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
+                    inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
 
-            # If the payment exactly covers the amount for invoice, then populate invoice amount and number
-            if len(payment_lines) == 1:
-                row = payment_lines[0]
-                invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
-                inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
+                _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
+                              PaymentMethod.ONLINE_BANKING.value, source_txn_number)
+                _publish_online_banking_mailer_events(
+                    payment_lines, paid_amount)
 
-            _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
-                          PaymentMethod.ONLINE_BANKING.value, source_txn_number)
-            _publish_online_banking_mailer_events(payment_lines, paid_amount)
-
-        elif settlement_type == RecordType.EFTP.value:
-            # Find the payment using receipt_number and mark it as COMPLETED
-            payment: PaymentModel = db.session.query(PaymentModel).filter(
-                PaymentModel.receipt_number == source_txn_number).one_or_none()
-            payment.payment_status_code = PaymentStatus.COMPLETED.value
-
+            case RecordType.EFTP.value:
+                # Find the payment using receipt_number and mark it as COMPLETED
+                payment = db.session.query(PaymentModel).filter(
+                    PaymentModel.receipt_number == source_txn_number).one_or_none()
+                payment.payment_status_code = PaymentStatus.COMPLETED.value
+            case _:
+                pass
         db.session.commit()
 
 
@@ -271,7 +279,6 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
         _csv_error_handling('N/A', error_msg, error_messages, e)
         return has_errors, error_messages
 
-    # Create Credit Records.
     try:
         _create_credit_records(content)
     except Exception as e: # NOQA # pylint: disable=broad-except
@@ -280,9 +287,8 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
         _csv_error_handling('N/A', error_msg, error_messages, e)
         return has_errors, error_messages
 
-    # Sync credit memo and on account credits with CFS
     try:
-        _sync_credit_records()
+        _sync_credit_records_with_cfs()
     except Exception as e: # NOQA # pylint: disable=broad-except
         error_msg = f'Error syncing credit records: {str(e)}'
         has_errors = True
@@ -395,6 +401,50 @@ def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]
     error_messages.append({'error': error_msg, 'row': row})
 
 
+def _handle_credit_invoices_and_adjust_invoice_paid(row):
+    """Create CfsCreditInvoices and adjust the invoice paid amount."""
+    application_id = _get_row_value(row, Column.APP_ID)
+    cfs_identifier = _get_row_value(row, Column.SOURCE_TXN_NO)
+    if CfsCreditInvoices.find_by_application_id(application_id):
+        current_app.logger.warning(f'Credit invoices exists with application_id {application_id}.')
+        return
+    if not (credit := CreditModel.find_by_cfs_identifier(cfs_identifier=cfs_identifier, credit_memo=True)):
+        current_app.logger.warning(f'Credit with cfs_identifier {cfs_identifier} not found.')
+        return
+    invoice_number = _get_row_value(row, Column.TARGET_TXN_NO)
+    CfsCreditInvoices(
+        account_id=_get_payment_account(row).id,
+        amount_applied=Decimal(_get_row_value(row, Column.APP_AMOUNT)),
+        application_id=application_id,
+        cfs_account=_get_row_value(row, Column.CUSTOMER_ACC),
+        cfs_identifier=cfs_identifier,
+        created_on=datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y'),
+        credit_id=credit.id,
+        invoice_amount=Decimal(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
+        invoice_number=invoice_number
+    ).save()
+
+    amount = CfsCreditInvoices.credit_for_invoice_number(invoice_number)
+    invoices = db.session.query(InvoiceModel) \
+        .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
+        .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
+        .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value) \
+        .filter(InvoiceReferenceModel.is_consolidated.is_(False)) \
+        .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+        .order_by(InvoiceModel.id.asc()) \
+        .all()
+    for invoice in invoices:
+        if amount <= 0:
+            break
+        paid_adjustment = min(amount, invoice.total)
+        invoice.paid = invoice.total - paid_adjustment
+        amount -= paid_adjustment
+        invoice.save()
+
+    if amount >= 0:
+        current_app.logger.warning(f'Amount {amount} remaining after applying to invoices {invoice_number}.')
+
+
 def _process_credit_on_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
     has_errors = False
     # Credit memo can happen for any type of accounts.
@@ -430,17 +480,17 @@ def _process_paid_invoices(inv_references, row):
     Update payment_transaction as COMPLETED.
     """
     for inv_ref in inv_references:
-        invoice: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
+        invoice = InvoiceModel.find_by_id(inv_ref.invoice_id)
         if invoice.payment_method_code == PaymentMethod.CC.value:
             current_app.logger.info('Cannot mark CC invoices as PAID.')
             return
 
-    receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
-    receipt_number: str = _get_row_value(row, Column.SOURCE_TXN_NO)
+    receipt_date = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
+    receipt_number = _get_row_value(row, Column.SOURCE_TXN_NO)
     for inv_ref in inv_references:
         inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
         # Find invoice, update status
-        inv: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
+        inv = InvoiceModel.find_by_id(inv_ref.invoice_id)
         _validate_account(inv, row)
         current_app.logger.debug('PAID Invoice. Invoice Reference ID : %s, invoice ID : %s',
                                  inv_ref.id, inv_ref.invoice_id)
@@ -537,7 +587,7 @@ def _process_failed_payments(row):
         if receipt:
             db.session.delete(receipt)
         # Find invoice and update the status to SETTLEMENT_SCHED
-        invoice: InvoiceModel = InvoiceModel.find_by_id(identifier=inv_reference.invoice_id)
+        invoice = InvoiceModel.find_by_id(identifier=inv_reference.invoice_id)
         invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
         invoice.paid = 0
 
@@ -568,6 +618,13 @@ def _create_credit_records(csv_content: str):
                     account_id=pay_account.id
                 ).save()
 
+    for row in csv.DictReader(csv_content.splitlines()):
+        row = dict((k.lower(), v) for k, v in row.items())
+        record_type = _get_row_value(row, Column.RECORD_TYPE)
+        target_txn = _get_row_value(row, Column.TARGET_TXN)
+        if record_type == RecordType.CMAP.value and target_txn == TargetTransaction.INV.value:
+            _handle_credit_invoices_and_adjust_invoice_paid(row)
+
 
 def _check_cfs_accounts_for_pad_and_ob(credit):
     """Ensure we don't have PAD and OB for the same account, because there is no association between CFS and CREDITS."""
@@ -584,7 +641,7 @@ def _check_cfs_accounts_for_pad_and_ob(credit):
             ' credits has no link to CFS account.')
 
 
-def _sync_credit_records():
+def _sync_credit_records_with_cfs():
     """Sync credit records with CFS."""
     # 1. Get all credit records with balance > 0
     # 2. If it's on account receipt call receipt endpoint and calculate balance.
@@ -622,7 +679,7 @@ def _sync_credit_records():
         credit_total: float = 0
         for account_credit in account_credits:
             credit_total += account_credit.remaining_amount
-        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
+        pay_account = PaymentAccountModel.find_by_id(account_id)
         pay_account.credit = credit_total
         pay_account.save()
 
