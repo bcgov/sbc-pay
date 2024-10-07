@@ -54,6 +54,7 @@ class CfsCreditInvoices(BaseModel):
 
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     amount_applied = db.Column(db.Numeric, nullable=False)
+    # External application_id that comes straight from the CSV, looks like an identifier in an external system.
     application_id = db.Column(db.Integer, nullable=True, index=True, unique=True)
     cfs_account = db.Column(db.String(50), nullable=False, index=True)
     cfs_identifier = db.Column(db.String(50), nullable=False, index=True)

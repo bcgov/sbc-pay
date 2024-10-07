@@ -71,7 +71,6 @@ def _build_source_txns(csv_content: str):
 
 def _create_payment_records(csv_content: str):
     """Create payment records by grouping the lines with target transaction number."""
-    # Iterate the rows and create a dict with key as the source transaction number.
     source_txns: Dict[str, List[Dict[str, str]]] = _build_source_txns(csv_content)
     # Iterate the grouped source transactions and create payment record.
     # For PAD payments, create one payment record per row
@@ -123,21 +122,21 @@ def _create_payment_records(csv_content: str):
                 PaymentModel.receipt_number == source_txn_number).one_or_none()
             payment.payment_status_code = PaymentStatus.COMPLETED.value
         elif settlement_type == RecordType.CMAP.value:
-            _handle_credit_memos(cfs_identifier=source_txn_number, payment_lines=payment_lines)
+            _handle_credit_invoices_and_adjust_invoice_paid(source_txn_number, payment_lines)
         db.session.commit()
 
 
-def _handle_credit_memos(cfs_identifier: str, payment_lines: List[str]):
-    """Handle the credit memos."""
+def _handle_credit_invoices_and_adjust_invoice_paid(cfs_identifier: str, payment_lines: List[str]):
+    """Create """
     invoice_numbers = set()
     for row in payment_lines:
         application_id = _get_row_value(row, Column.APP_ID)
         if CfsCreditInvoices.find_by_application_id(application_id):
             current_app.logger.info(f'Credit invoices exists with application_id {application_id}.')
-            return
+            continue
         if not (credit := CreditModel.find_by_cfs_identifier(cfs_identifier=cfs_identifier, credit_memo=True)):
             current_app.logger.error(f'Credit with cfs_identifier {cfs_identifier} not found.')
-            return
+            continue
         invoice_number = _get_row_value(row, Column.TARGET_TXN_NO)
         CfsCreditInvoices(
             account_id=_get_payment_account(row).id,
