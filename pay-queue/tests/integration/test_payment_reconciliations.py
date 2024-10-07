@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 import pytest
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import CfsCreditInvoices as CfsCreditInvoicesModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
@@ -616,8 +617,7 @@ async def test_eft_wire_reconciliations(session, app, client):
     assert payment.receipt_number == receipt
 
 
-@pytest.mark.asyncio
-async def test_credits(session, app, client, monkeypatch):
+def test_credits(session, app, client, monkeypatch):
     """Test Reconciliations worker."""
     # 1. Create payment account.
     # 2. Create payment db record.
@@ -636,7 +636,7 @@ async def test_credits(session, app, client, monkeypatch):
     invoice_number = '1234567890'
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
 
-    eft_wire_receipt = 'RCPT0012345'
+    receipt_number = 'RCPT0012345'
     onac_amount = 100
     cm_identifier = 1000
     cm_amount = 100
@@ -647,7 +647,7 @@ async def test_credits(session, app, client, monkeypatch):
                  payment_account_id=pay_account.id,
                  payment_date=datetime.now(),
                  paid_amount=onac_amount,
-                 receipt_number=eft_wire_receipt).save()
+                 receipt_number=receipt_number).save()
 
     credit = CreditModel(cfs_identifier=cm_identifier,
                          is_credit_memo=True,
@@ -672,19 +672,20 @@ async def test_credits(session, app, client, monkeypatch):
     monkeypatch.setattr('pay_api.services.cfs_service.CFSService.get_cms', mock_cms)
 
     file_name = 'cas_settlement_file.csv'
-    date = datetime.now().strftime('%d-%b-%y')
+    date = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+    date_str = date.strftime('%d-%b-%y')
 
-    row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, eft_wire_receipt, 100001, date, onac_amount,
-           cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.ON_ACC.value]
+    row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, receipt_number, 100001, date_str, onac_amount,
+           cfs_account_number, TargetTransaction.RECEIPT.value, receipt_number, onac_amount, 0, Status.ON_ACC.value]
 
     credit_invoices_row = [
-        RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, cm_identifier, 100002, date, cm_amount,
-        cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.PAID.value
+        RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, cm_identifier, 100003, date_str, 2.5,
+        cfs_account_number, TargetTransaction.INV.value, invoice_number, 100, 0, Status.PAID.value
     ]
 
     credit_invoices_row2 = [
-        RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, cm_identifier, 100002, date, cm_amount,
-        cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.PAID.value
+        RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, cm_identifier, 100004, date_str, 5.5,
+        cfs_account_number, TargetTransaction.INV.value, invoice_number, 100, 0, Status.PAID.value
     ]
 
     create_and_upload_settlement_file(file_name, [row, credit_invoices_row, credit_invoices_row2])
@@ -697,10 +698,24 @@ async def test_credits(session, app, client, monkeypatch):
     assert pay_account.credit == onac_amount + cm_amount - cm_used_amount
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
-    # Credit Invoices assertions
-    # Invoice paid assertion
-    # TODO - Add more assertions for the credit invoices
-    assert True
+
+    credit_invoices = CfsCreditInvoicesModel.query.all()
+    assert len(credit_invoices) == 2
+    assert credit_invoices[0].account_id == pay_account.id
+    assert credit_invoices[0].amount_applied == 2.5
+    assert credit_invoices[0].application_id == 100003
+    assert credit_invoices[0].cfs_account == cfs_account_number
+    assert credit_invoices[0].cfs_identifier == str(cm_identifier)
+    assert credit_invoices[0].created_on == date
+    assert credit_invoices[0].credit_id == credit_id
+    assert credit_invoices[0].invoice_number == invoice_number
+    assert credit_invoices[0].invoice_amount == 100
+    assert credit_invoices[1].amount_applied == 5.5
+    assert credit_invoices[1].application_id == 100004
+    assert credit_invoices[1].cfs_identifier == str(cm_identifier)
+    assert credit_invoices[1].invoice_number == invoice_number
+    invoice = InvoiceModel.find_by_id(invoice.id)
+    assert invoice.paid == 100 - 8.0
 
 
 def test_unconsolidated_invoices_errors(session, app, client, mocker):
