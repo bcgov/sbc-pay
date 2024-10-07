@@ -89,7 +89,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
         """Notify for over payments and short name unlinked for thirty days."""
         try:
             cls.short_names = {}
-            if cls.date_override:
+            if date_override:
                 cls.date_override = datetime.strptime(date_override, '%Y-%m-%d') if date_override else None
                 current_app.logger.info(f'Using date override : {date_override}')
 
