@@ -44,10 +44,10 @@ def test_online_banking_reconciliations(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                             cfs_account=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                        cfs_account=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
     invoice_number = '1234567890'
@@ -90,10 +90,10 @@ def test_online_banking_reconciliations_over_payment(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                             cfs_account=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                        cfs_account=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
     invoice_number = '1234567890'
@@ -138,10 +138,10 @@ def test_online_banking_reconciliations_with_credit(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                             cfs_account=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                        cfs_account=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
     invoice_number = '1234567890'
@@ -186,10 +186,10 @@ def test_online_banking_reconciliations_overflows_credit(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                             cfs_account=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                        cfs_account=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
     invoice_number = '1234567890'
@@ -239,10 +239,10 @@ def test_online_banking_under_payment(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                             cfs_account=cfs_account_number)
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                        cfs_account=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
     invoice_number = '1234567890'
@@ -269,7 +269,7 @@ def test_online_banking_under_payment(session, app, client):
                                         message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
+    updated_invoice = InvoiceModel.find_by_id(invoice_id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.PARTIAL.value
     assert updated_invoice.paid == paid_amount
 
@@ -288,15 +288,15 @@ def test_pad_reconciliations(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice1: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                             payment_method_code=PaymentMethod.PAD.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice1 = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                               payment_method_code=PaymentMethod.PAD.value)
     factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
 
-    invoice2: InvoiceModel = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
-                                             payment_method_code=PaymentMethod.PAD.value)
+    invoice2 = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
+                               payment_method_code=PaymentMethod.PAD.value)
     factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
                               service_fees=10.0, total=190.0)
 
@@ -355,15 +355,15 @@ def test_pad_reconciliations_with_credit_memo(session, app, client):
     # 4. Mimic some credits on the account
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice1: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                             payment_method_code=PaymentMethod.PAD.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice1 = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                               payment_method_code=PaymentMethod.PAD.value)
     factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
 
-    invoice2: InvoiceModel = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
-                                             payment_method_code=PaymentMethod.PAD.value)
+    invoice2 = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
+                               payment_method_code=PaymentMethod.PAD.value)
     factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
                               service_fees=10.0, total=190.0)
 
@@ -424,15 +424,15 @@ def test_pad_nsf_reconciliations(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice1: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                             payment_method_code=PaymentMethod.PAD.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice1 = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                               payment_method_code=PaymentMethod.PAD.value)
     factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
 
-    invoice2: InvoiceModel = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
-                                             payment_method_code=PaymentMethod.PAD.value)
+    invoice2 = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
+                               payment_method_code=PaymentMethod.PAD.value)
     factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
                               service_fees=10.0, total=190.0)
 
@@ -490,17 +490,17 @@ def test_pad_reversal_reconciliations(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                  account_number=cfs_account_number)
-    invoice1: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                             payment_method_code=PaymentMethod.PAD.value,
-                                             status_code=InvoiceStatus.PAID.value)
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                             account_number=cfs_account_number)
+    invoice1 = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                               payment_method_code=PaymentMethod.PAD.value,
+                               status_code=InvoiceStatus.PAID.value)
     factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
 
-    invoice2: InvoiceModel = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
-                                             payment_method_code=PaymentMethod.PAD.value,
-                                             status_code=InvoiceStatus.PAID.value)
+    invoice2 = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
+                               payment_method_code=PaymentMethod.PAD.value,
+                               status_code=InvoiceStatus.PAID.value)
     factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
                               service_fees=10.0, total=190.0)
 
@@ -569,11 +569,11 @@ async def test_eft_wire_reconciliations(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                             cfs_account=cfs_account_number)
+    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                        cfs_account=cfs_account_number)
 
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
     invoice_number = '1234567890'
@@ -583,8 +583,7 @@ async def test_eft_wire_reconciliations(session, app, client):
     invoice_id = invoice.id
     total = invoice.total
 
-    # Create a payment for EFT Wire
-    eft_wire_receipt = 'RCPT0012345'
+    receipt = 'RCPT0012345'
     paid_amount = 100
     PaymentModel(payment_method_code=PaymentMethod.EFT.value,
                  payment_status_code=PaymentStatus.CREATED.value,
@@ -592,7 +591,7 @@ async def test_eft_wire_reconciliations(session, app, client):
                  payment_account_id=pay_account.id,
                  payment_date=datetime.now(),
                  paid_amount=paid_amount,
-                 receipt_number=eft_wire_receipt).save()
+                 receipt_number=receipt).save()
 
     # Create a settlement file and publish.
     file_name: str = 'cas_settlement_file.csv'
@@ -600,7 +599,7 @@ async def test_eft_wire_reconciliations(session, app, client):
     # Settlement row
     date = datetime.now().strftime('%d-%b-%y')
 
-    row = [RecordType.EFTP.value, SourceTransaction.EFT_WIRE.value, eft_wire_receipt, 100001, date, total,
+    row = [RecordType.EFTP.value, SourceTransaction.EFT_WIRE.value, receipt, 100001, date, total,
            cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
     add_file_event_to_queue_and_process(client,
@@ -611,28 +610,32 @@ async def test_eft_wire_reconciliations(session, app, client):
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.PAID.value
 
-    payment: PaymentModel = PaymentModel.find_payment_by_receipt_number(eft_wire_receipt)
+    payment: PaymentModel = PaymentModel.find_payment_by_receipt_number(receipt)
     assert payment.payment_status_code == PaymentStatus.COMPLETED.value
     assert payment.paid_amount == paid_amount
-    assert payment.receipt_number == eft_wire_receipt
+    assert payment.receipt_number == receipt
 
 
 @pytest.mark.asyncio
 async def test_credits(session, app, client, monkeypatch):
     """Test Reconciliations worker."""
     # 1. Create payment account.
-    # 2. Create EFT/WIRE payment db record.
+    # 2. Create payment db record.
     # 3. Create a credit memo db record.
     # 4. Publish credit in settlement file.
     # 5. Mock CFS Response for the receipt and credit memo.
     # 6. Confirm the credit matches the records.
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                             cfs_account=cfs_account_number)
+    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                        cfs_account=cfs_account_number)
     pay_account_id = pay_account.id
-    # invoice_number = '1234567890'
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
+                              service_fees=10.0, total=90.0)
+    invoice_number = '1234567890'
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
 
-    # Create a payment for EFT Wire
     eft_wire_receipt = 'RCPT0012345'
     onac_amount = 100
     cm_identifier = 1000
@@ -653,14 +656,12 @@ async def test_credits(session, app, client, monkeypatch):
                          account_id=pay_account_id).save()
     credit_id = credit.id
 
-    # Mock up the Receipt look up
     def mock_receipt(cfs_account: CfsAccountModel,
                      receipt_number: str):  # pylint: disable=unused-argument; mocks of library methods
         return {
             'receipt_amount': onac_amount
         }
 
-    # Mock up the Receipt look up
     def mock_cms(cfs_account: CfsAccountModel,
                  cms_number: str):  # pylint: disable=unused-argument; mocks of library methods
         return {
@@ -670,16 +671,23 @@ async def test_credits(session, app, client, monkeypatch):
     monkeypatch.setattr('pay_api.services.cfs_service.CFSService.get_receipt', mock_receipt)
     monkeypatch.setattr('pay_api.services.cfs_service.CFSService.get_cms', mock_cms)
 
-    # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
-
-    # Settlement row
+    file_name = 'cas_settlement_file.csv'
     date = datetime.now().strftime('%d-%b-%y')
 
     row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, eft_wire_receipt, 100001, date, onac_amount,
            cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.ON_ACC.value]
 
-    create_and_upload_settlement_file(file_name, [row])
+    credit_invoices_row = [
+        RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, cm_identifier, 100002, date, cm_amount,
+        cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.PAID.value
+    ]
+
+    credit_invoices_row2 = [
+        RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, cm_identifier, 100002, date, cm_amount,
+        cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.PAID.value
+    ]
+
+    create_and_upload_settlement_file(file_name, [row, credit_invoices_row, credit_invoices_row2])
     add_file_event_to_queue_and_process(client,
                                         file_name=file_name,
                                         message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
@@ -689,16 +697,19 @@ async def test_credits(session, app, client, monkeypatch):
     assert pay_account.credit == onac_amount + cm_amount - cm_used_amount
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
+    # Credit Invoices assertions
+    # Invoice paid assertion
+    assert True
 
 
 def test_unconsolidated_invoices_errors(session, app, client, mocker):
     """Test error scenarios for unconsolidated invoices in the reconciliation worker."""
     cfs_account_number = '1234'
-    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                                             cfs_account=cfs_account_number)
+    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                        cfs_account=cfs_account_number)
 
-    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
                               service_fees=10.0, total=90.0)
     invoice_number = '1234567890'

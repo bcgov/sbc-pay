@@ -515,11 +515,11 @@ def create_test_data():
         updated_on=datetime.now()
     ).save()
 
-    invoice: InvoiceModel = factory_invoice(payment_account=payment_account,
-                                            status_code=InvoiceStatus.APPROVED.value,
-                                            total=150.50,
-                                            service_fees=1.50,
-                                            payment_method_code=PaymentMethod.EFT.value)
+    invoice = factory_invoice(payment_account=payment_account,
+                              status_code=InvoiceStatus.APPROVED.value,
+                              total=150.50,
+                              service_fees=1.50,
+                              payment_method_code=PaymentMethod.EFT.value)
 
     return payment_account, eft_short_name, invoice
 

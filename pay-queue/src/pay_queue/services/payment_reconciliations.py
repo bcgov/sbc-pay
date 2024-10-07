@@ -485,7 +485,7 @@ def _process_paid_invoices(inv_references, row):
     Update payment_transaction as COMPLETED.
     """
     for inv_ref in inv_references:
-        invoice: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
+        invoice = InvoiceModel.find_by_id(inv_ref.invoice_id)
         if invoice.payment_method_code == PaymentMethod.CC.value:
             current_app.logger.info('Cannot mark CC invoices as PAID.')
             return
@@ -592,7 +592,7 @@ def _process_failed_payments(row):
         if receipt:
             db.session.delete(receipt)
         # Find invoice and update the status to SETTLEMENT_SCHED
-        invoice: InvoiceModel = InvoiceModel.find_by_id(identifier=inv_reference.invoice_id)
+        invoice = InvoiceModel.find_by_id(identifier=inv_reference.invoice_id)
         invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
         invoice.paid = 0
 
@@ -677,7 +677,7 @@ def _sync_credit_records():
         credit_total: float = 0
         for account_credit in account_credits:
             credit_total += account_credit.remaining_amount
-        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
+        pay_account = PaymentAccountModel.find_by_id(account_id)
         pay_account.credit = credit_total
         pay_account.save()
 
@@ -729,7 +729,7 @@ def _publish_payment_event(inv: InvoiceModel):
                         level='error')
 
 
-def _publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
+def _publish_mailer_events(message_type: str, pay_account, row: Dict[str, str]):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     payload = _create_event_payload(pay_account, row)
@@ -795,7 +795,7 @@ def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amoun
                         level='error')
 
 
-def _publish_account_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
+def _publish_account_events(message_type: str, pay_account, row: Dict[str, str]):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     payload = _create_event_payload(pay_account, row)
