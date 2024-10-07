@@ -1,4 +1,4 @@
-"""empty message
+"""Add in CFS credit invoices table which is parsed from the CSV feedback.
 
 Revision ID: f78095de8cfc
 Revises: 56c4542db0d7
