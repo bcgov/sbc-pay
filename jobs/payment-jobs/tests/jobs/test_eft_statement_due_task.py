@@ -33,7 +33,7 @@ from pay_api.utils.util import current_local_time
 
 import config
 from tasks.statement_task import StatementTask
-from tasks.statement_due_task import StatementDueTask
+from tasks.eft_statement_due_task import EFTStatementDueTask
 from utils.enums import StatementNotificationAction
 from utils.mailer import StatementNotificationInfo
 
@@ -117,10 +117,10 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
     total_amount_owing = summary['total_due']
 
     with patch('utils.auth_event.AuthEvent.publish_lock_account_event') as mock_auth_event:
-        with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
+        with patch('tasks.eft_statement_due_task.publish_payment_notification') as mock_mailer:
             with freeze_time(action_on):
                 # Statement due task looks at the month before.
-                StatementDueTask.process_unpaid_statements(statement_date_override=datetime(2023, 2, 1, 0))
+                EFTStatementDueTask.process_unpaid_statements(statement_date_override=datetime(2023, 2, 1, 0))
                 if action == StatementNotificationAction.OVERDUE:
                     mock_auth_event.assert_called()
                     assert statements[0][0].overdue_notification_date
@@ -140,10 +140,10 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
 def test_unpaid_statement_notification_not_sent(setup, session):
     """Assert payment reminder event is not being sent."""
     # Assert notification was published to the mailer queue
-    with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
+    with patch('tasks.eft_statement_due_task.publish_payment_notification') as mock_mailer:
         # Freeze time to 10th of the month - should not trigger any notification
         with freeze_time(current_local_time().replace(day=10)):
-            StatementDueTask.process_unpaid_statements()
+            EFTStatementDueTask.process_unpaid_statements()
             mock_mailer.assert_not_called()
 
 
@@ -166,7 +166,7 @@ def test_overdue_invoices_updated(setup, session):
     assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
     assert account.payment_method == PaymentMethod.EFT.value
 
-    StatementDueTask.process_unpaid_statements(auth_account_override=account.auth_account_id)
+    EFTStatementDueTask.process_unpaid_statements(auth_account_override=account.auth_account_id)
     assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
     assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
 
@@ -203,14 +203,14 @@ def test_statement_due_overrides(setup, session, test_name, date_override, actio
     total_amount_owing = summary['total_due']
 
     with patch('utils.auth_event.AuthEvent.publish_lock_account_event') as mock_auth_event:
-        with patch('tasks.statement_due_task.publish_payment_notification') as mock_mailer:
+        with patch('tasks.eft_statement_due_task.publish_payment_notification') as mock_mailer:
             # Statement due task looks at the month before.
             if test_name == 'overdue':
-                StatementDueTask.process_unpaid_statements(action_override='OVERDUE',
-                                                           date_override=date_override)
+                EFTStatementDueTask.process_unpaid_statements(action_override='OVERDUE',
+                                                              date_override=date_override)
 
-            StatementDueTask.process_unpaid_statements(action_override='NOTIFICATION',
-                                                       date_override=date_override)
+            EFTStatementDueTask.process_unpaid_statements(action_override='NOTIFICATION',
+                                                          date_override=date_override)
             if action == StatementNotificationAction.OVERDUE:
                 mock_auth_event.assert_called()
                 assert statements[0][0].overdue_notification_date
