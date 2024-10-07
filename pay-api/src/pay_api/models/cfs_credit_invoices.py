@@ -65,7 +65,7 @@ class CfsCreditInvoices(BaseModel):
     @classmethod
     def credit_for_invoice_number(cls, invoice_number: str):
         """Return the credit associated with the invoice number."""
-        return cls.query.with_entities(func.sum(CfsCreditInvoices.amount_applied).label('invoice_total')) \
+        return cls.query.with_entities(func.sum(CfsCreditInvoices.amount_applied).label('credit_invoice_total')) \
             .filter_by(invoice_number=invoice_number).scalar()
 
     @classmethod
