@@ -78,56 +78,60 @@ def _create_payment_records(csv_content: str):
     # For EFT, WIRE, Drawdown balance transfer mark the payment as COMPLETED
     # For Credit Memos, populate the cfs_credit_invoices table.
     for source_txn_number, payment_lines in source_txns.items():
-        settlement_type: str = _get_settlement_type(payment_lines)
-        if settlement_type in (RecordType.PAD.value, RecordType.PADR.value, RecordType.PAYR.value):
-            for row in payment_lines:
-                inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
-                invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
+        match _get_settlement_type(payment_lines):
+            case RecordType.PAD.value | RecordType.PADR.value | RecordType.PAYR.value:
+                for row in payment_lines:
+                    inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
+                    invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
+                    payment_date = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
+                    status = PaymentStatus.COMPLETED.value \
+                        if _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PAID.value.lower() \
+                        else PaymentStatus.FAILED.value
+                    paid_amount = 0
+                    if status == PaymentStatus.COMPLETED.value:
+                        paid_amount = float(_get_row_value(row, Column.APP_AMOUNT))
+                    elif _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PARTIAL.value.lower():
+                        paid_amount = invoice_amount - float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
 
-                payment_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
-                status = PaymentStatus.COMPLETED.value \
-                    if _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PAID.value.lower() \
-                    else PaymentStatus.FAILED.value
+                    _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, status,
+                                  PaymentMethod.PAD.value,
+                                  source_txn_number)
+            case RecordType.BOLP.value:
+                # Add up the amount together for Online Banking
                 paid_amount = 0
-                if status == PaymentStatus.COMPLETED.value:
-                    paid_amount = float(_get_row_value(row, Column.APP_AMOUNT))
-                elif _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PARTIAL.value.lower():
-                    paid_amount = invoice_amount - float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
+                inv_number = None
+                invoice_amount = 0
+                payment_date = datetime.strptime(_get_row_value(payment_lines[0], Column.APP_DATE), '%d-%b-%y')
+                for row in payment_lines:
+                    paid_amount += float(_get_row_value(row,
+                                         Column.APP_AMOUNT))
 
-                _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, status,
-                              PaymentMethod.PAD.value,
-                              source_txn_number)
-        elif settlement_type == RecordType.BOLP.value:
-            # Add up the amount together for Online Banking
-            paid_amount = 0
-            inv_number = None
-            invoice_amount = 0
-            payment_date: datetime = datetime.strptime(_get_row_value(payment_lines[0], Column.APP_DATE), '%d-%b-%y')
-            for row in payment_lines:
-                paid_amount += float(_get_row_value(row, Column.APP_AMOUNT))
+                # If the payment exactly covers the amount for invoice, then populate invoice amount and number
+                if len(payment_lines) == 1:
+                    row = payment_lines[0]
+                    invoice_amount = float(_get_row_value(
+                        row, Column.TARGET_TXN_ORIGINAL))
+                    inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
 
-            # If the payment exactly covers the amount for invoice, then populate invoice amount and number
-            if len(payment_lines) == 1:
-                row = payment_lines[0]
-                invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
-                inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
+                _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
+                              PaymentMethod.ONLINE_BANKING.value, source_txn_number)
+                _publish_online_banking_mailer_events(
+                    payment_lines, paid_amount)
 
-            _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
-                          PaymentMethod.ONLINE_BANKING.value, source_txn_number)
-            _publish_online_banking_mailer_events(payment_lines, paid_amount)
-
-        elif settlement_type == RecordType.EFTP.value:
-            # Find the payment using receipt_number and mark it as COMPLETED
-            payment: PaymentModel = db.session.query(PaymentModel).filter(
-                PaymentModel.receipt_number == source_txn_number).one_or_none()
-            payment.payment_status_code = PaymentStatus.COMPLETED.value
-        elif settlement_type == RecordType.CMAP.value:
-            _handle_credit_invoices_and_adjust_invoice_paid(source_txn_number, payment_lines)
+            case RecordType.EFTP.value:
+                # Find the payment using receipt_number and mark it as COMPLETED
+                payment = db.session.query(PaymentModel).filter(
+                    PaymentModel.receipt_number == source_txn_number).one_or_none()
+                payment.payment_status_code = PaymentStatus.COMPLETED.value
+            case RecordType.CMAP.value:
+                _handle_credit_invoices_and_adjust_invoice_paid(source_txn_number, payment_lines)
+            case _:
+                pass
         db.session.commit()
 
 
 def _handle_credit_invoices_and_adjust_invoice_paid(cfs_identifier: str, payment_lines: List[str]):
-    """Create """
+    """Create CfsCreditInvoices and adjust the invoice paid amount."""
     invoice_numbers = set()
     for row in payment_lines:
         application_id = _get_row_value(row, Column.APP_ID)
