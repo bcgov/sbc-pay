@@ -45,7 +45,7 @@ class CfsCreditInvoices(BaseModel):
             'cfs_identifier',
             'created_on',
             'credit_id',
-            'invoice_account',
+            'invoice_amount',
             'invoice_number'
         ]
     }
