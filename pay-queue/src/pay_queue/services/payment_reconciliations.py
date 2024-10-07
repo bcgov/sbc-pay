@@ -729,7 +729,7 @@ def _publish_payment_event(inv: InvoiceModel):
                         level='error')
 
 
-def _publish_mailer_events(message_type: str, pay_account, row: Dict[str, str]):
+def _publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     payload = _create_event_payload(pay_account, row)
@@ -795,7 +795,7 @@ def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amoun
                         level='error')
 
 
-def _publish_account_events(message_type: str, pay_account, row: Dict[str, str]):
+def _publish_account_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     payload = _create_event_payload(pay_account, row)
