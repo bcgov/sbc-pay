@@ -25,7 +25,7 @@ def upgrade():
     op.create_table('cfs_credit_invoices',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('account_id', sa.Integer(), nullable=True),
-    sa.Column('application_id', sa.Integer(), nullable=False, unique=True),
+    sa.Column('application_id', sa.Integer(), nullable=True, unique=True),
     sa.Column('amount_applied', sa.Numeric(), nullable=False),
     sa.Column('cfs_account', sa.String(length=50), nullable=False),
     sa.Column('cfs_identifier', sa.String(length=50), nullable=False),

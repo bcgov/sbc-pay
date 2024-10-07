@@ -54,7 +54,7 @@ class CfsCreditInvoices(BaseModel):
 
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     amount_applied = db.Column(db.Numeric, nullable=False)
-    application_id = db.Column(db.Integer, nullable=False, index=True, unique=True)
+    application_id = db.Column(db.Integer, nullable=True, index=True, unique=True)
     cfs_account = db.Column(db.String(50), nullable=False, index=True)
     cfs_identifier = db.Column(db.String(50), nullable=False, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))

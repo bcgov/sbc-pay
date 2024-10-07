@@ -22,6 +22,7 @@ from typing import Dict, List, Tuple
 from flask import current_app
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import CfsCreditInvoices
 from pay_api.models import Credit as CreditModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -54,9 +55,8 @@ from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransac
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
 
 
-def _create_payment_records(csv_content: str):
-    """Create payment records by grouping the lines with target transaction number."""
-    # Iterate the rows and create a dict with key as the source transaction number.
+def _build_source_txns(csv_content: str):
+    """Iterate the rows and create a dict with key as the source transaction number."""
     source_txns: Dict[str, List[Dict[str, str]]] = {}
     for row in csv.DictReader(csv_content.splitlines()):
         # Convert lower case keys to avoid any key mismatch
@@ -66,11 +66,18 @@ def _create_payment_records(csv_content: str):
             source_txns[source_txn_number] = [row]
         else:
             source_txns[source_txn_number].append(row)
+    return source_txns
+
+
+def _create_payment_records(csv_content: str):
+    """Create payment records by grouping the lines with target transaction number."""
+    # Iterate the rows and create a dict with key as the source transaction number.
+    source_txns: Dict[str, List[Dict[str, str]]] = _build_source_txns(csv_content)
     # Iterate the grouped source transactions and create payment record.
     # For PAD payments, create one payment record per row
     # For Online Banking payments, add up the ONAC receipts and payments against invoices.
     # For EFT, WIRE, Drawdown balance transfer mark the payment as COMPLETED
-    # For Credit Memos, do nothing.
+    # For Credit Memos, populate the cfs_credit_invoices table.
     for source_txn_number, payment_lines in source_txns.items():
         settlement_type: str = _get_settlement_type(payment_lines)
         if settlement_type in (RecordType.PAD.value, RecordType.PADR.value, RecordType.PAYR.value):
@@ -115,8 +122,54 @@ def _create_payment_records(csv_content: str):
             payment: PaymentModel = db.session.query(PaymentModel).filter(
                 PaymentModel.receipt_number == source_txn_number).one_or_none()
             payment.payment_status_code = PaymentStatus.COMPLETED.value
-
+        elif settlement_type == RecordType.CMAP.value:
+            _handle_credit_memos(cfs_identifier=source_txn_number, payment_lines=payment_lines)
         db.session.commit()
+
+
+def _handle_credit_memos(cfs_identifier: str, payment_lines: List[str]):
+    """Handle the credit memos."""
+    invoice_numbers = set()
+    for row in payment_lines:
+        application_id = _get_row_value(row, Column.APP_ID)
+        if CfsCreditInvoices.find_by_application_id(application_id):
+            current_app.logger.info(f'Credit invoices exists with application_id {application_id}.')
+            return
+        if not (credit := CreditModel.find_by_cfs_identifier(cfs_identifier=cfs_identifier, credit_memo=True)):
+            current_app.logger.error(f'Credit with cfs_identifier {cfs_identifier} not found.')
+            return
+        invoice_number = _get_row_value(row, Column.TARGET_TXN_NO)
+        CfsCreditInvoices(
+            account_id=_get_payment_account(row).id,
+            amount_applied=float(_get_row_value(row, Column.APP_AMOUNT)),
+            application_id=application_id,
+            cfs_account=_get_row_value(row, Column.CUSTOMER_ACC),
+            cfs_identifier=cfs_identifier,
+            created_on=_get_row_value(row, Column.APP_DATE),
+            credit_id=credit.id,
+            invoice_amount=float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
+            invoice_number=invoice_number
+        ).flush()
+        invoice_numbers.add(invoice_number)
+
+    for invoice_number in invoice_numbers:
+        amount = CfsCreditInvoices.credit_for_invoice_number(invoice_number)
+        invoices = db.session.query(InvoiceModel) \
+            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
+            .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+            .order_by(InvoiceModel.id.asc()) \
+            .all()
+        for invoice in invoices:
+            if amount <= 0:
+                break
+            paid_adjustment = min(amount, invoice.total)
+            invoice.paid = paid_adjustment
+            amount -= paid_adjustment
+            invoice.flush()
+
+        if amount >= 0:
+            current_app.logger.error(f'Amount {amount} remaining after applying to invoices {invoice_number}.')
 
 
 def _save_payment(payment_date, inv_number, invoice_amount,  # pylint: disable=too-many-arguments
