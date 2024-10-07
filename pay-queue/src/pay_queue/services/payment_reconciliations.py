@@ -422,7 +422,7 @@ def _handle_credit_invoices_and_adjust_invoice_paid(row):
         credit_id=credit.id,
         invoice_amount=Decimal(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
         invoice_number=invoice_number
-    ).flush()
+    ).save()
 
     amount = CfsCreditInvoices.credit_for_invoice_number(invoice_number)
     invoices = db.session.query(InvoiceModel) \
@@ -439,7 +439,7 @@ def _handle_credit_invoices_and_adjust_invoice_paid(row):
         paid_adjustment = min(amount, invoice.total)
         invoice.paid = invoice.total - paid_adjustment
         amount -= paid_adjustment
-        invoice.flush()
+        invoice.save()
 
     if amount >= 0:
         current_app.logger.warning(f'Amount {amount} remaining after applying to invoices {invoice_number}.')
