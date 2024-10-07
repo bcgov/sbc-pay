@@ -109,8 +109,7 @@ def _create_payment_records(csv_content: str):
                 # If the payment exactly covers the amount for invoice, then populate invoice amount and number
                 if len(payment_lines) == 1:
                     row = payment_lines[0]
-                    invoice_amount = float(_get_row_value(
-                        row, Column.TARGET_TXN_ORIGINAL))
+                    invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
                     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
 
                 _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
