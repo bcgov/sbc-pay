@@ -116,63 +116,55 @@ def test_over_payment_notification_not_sent(session):
     ('no-notifications', datetime(2024, 10, 1, 5),
      datetime(2024, 10, 31, 5), None)
 ])
-def test_over_payment_notification_unlinked(session, test_name, created_on_date, execution_date, assert_calls_override):
+def test_over_payment_notification_unlinked(session, test_name, created_on_date, execution_date, assert_calls_override,
+                                            emails_with_keycloak_role_mock, send_email_mock):
     """Assert notification is being sent for unlinked accounts."""
     unlinked_shortname, inactive_link_shortname, _ = create_unlinked_short_names_data(
         created_on_date)
-    with patch('tasks.eft_overpayment_notification_task.send_email') as mock_mailer:
-        with patch('tasks.eft_overpayment_notification_task.get_emails_with_keycloak_role', ) as mock_auth:
-            expected_email = 'test@email.com'
-            expected_subject = 'Pending Unsettled Amount for Short Name'
-            mock_auth.return_value = expected_email
-            with freeze_time(execution_date):
-                EFTOverpaymentNotificationTask.process_overpayment_notification()
-                expected_calls = [
-                    call(recipients=expected_email,
-                         subject=f'{expected_subject} {unlinked_shortname.short_name}',
-                         body=ANY),
-                    call(recipients=expected_email,
-                         subject=f'{expected_subject} {inactive_link_shortname.short_name}',
-                         body=ANY),
-                ] if assert_calls_override is None else []
-            mock_mailer.assert_has_calls(expected_calls, any_order=True)
-            assert mock_mailer.call_count == len(expected_calls)
+    expected_email = 'test@email.com'
+    expected_subject = 'Pending Unsettled Amount for Short Name'
+    with freeze_time(execution_date):
+        EFTOverpaymentNotificationTask.process_overpayment_notification()
+        expected_calls = [
+            call(recipients=expected_email,
+                 subject=f'{expected_subject} {unlinked_shortname.short_name}',
+                 body=ANY),
+            call(recipients=expected_email,
+                 subject=f'{expected_subject} {inactive_link_shortname.short_name}',
+                 body=ANY),
+        ] if assert_calls_override is None else []
+    send_email_mock.assert_has_calls(expected_calls, any_order=True)
+    assert send_email_mock.call_count == len(expected_calls)
 
 
-def test_over_payment_notification_linked(session):
+def test_over_payment_notification_linked(session, emails_with_keycloak_role_mock, send_email_mock):
     """Assert notification is being sent for linked accounts."""
     linked_shortname, _ = create_linked_short_names_data(
         datetime(2024, 10, 1, 5))
-    with patch('tasks.eft_overpayment_notification_task.send_email') as mock_mailer:
-        with patch('tasks.eft_overpayment_notification_task.get_emails_with_keycloak_role', ) as mock_auth:
-            expected_email = 'test@email.com'
-            expected_subject = 'Pending Unsettled Amount for Short Name'
-            mock_auth.return_value = expected_email
-            with freeze_time(datetime(2024, 10, 1, 7)):
-                EFTOverpaymentNotificationTask.process_overpayment_notification()
-                expected_calls = [
-                    call(recipients=expected_email,
-                         subject=f'{expected_subject} {linked_shortname.short_name}',
-                         body=ANY),
-                ]
-            mock_mailer.assert_has_calls(expected_calls, any_order=True)
-            assert mock_mailer.call_count == len(expected_calls)
+    expected_email = 'test@email.com'
+    expected_subject = 'Pending Unsettled Amount for Short Name'
+    with freeze_time(datetime(2024, 10, 1, 7)):
+        EFTOverpaymentNotificationTask.process_overpayment_notification()
+        expected_calls = [
+            call(recipients=expected_email,
+                 subject=f'{expected_subject} {linked_shortname.short_name}',
+                 body=ANY),
+        ]
+    send_email_mock.assert_has_calls(expected_calls, any_order=True)
+    assert send_email_mock.call_count == len(expected_calls)
 
 
-def test_over_payment_notification_override(session):
+def test_over_payment_notification_override(session, emails_with_keycloak_role_mock, send_email_mock):
     """Assert notification is being sent with date override."""
     linked_shortname, _ = create_linked_short_names_data(
         datetime(2024, 10, 1, 5))
-    with patch('tasks.eft_overpayment_notification_task.send_email') as mock_mailer:
-        with patch('tasks.eft_overpayment_notification_task.get_emails_with_keycloak_role', ) as mock_auth:
-            expected_email = 'test@email.com'
-            expected_subject = 'Pending Unsettled Amount for Short Name'
-            mock_auth.return_value = expected_email
-            EFTOverpaymentNotificationTask.process_overpayment_notification(date_override='2024-10-01')
-            expected_calls = [
-                call(recipients=expected_email,
-                     subject=f'{expected_subject} {linked_shortname.short_name}',
-                     body=ANY),
-            ]
-            mock_mailer.assert_has_calls(expected_calls, any_order=True)
-            assert mock_mailer.call_count == len(expected_calls)
+    expected_email = 'test@email.com'
+    expected_subject = 'Pending Unsettled Amount for Short Name'
+    EFTOverpaymentNotificationTask.process_overpayment_notification(date_override='2024-10-01')
+    expected_calls = [
+        call(recipients=expected_email,
+             subject=f'{expected_subject} {linked_shortname.short_name}',
+             body=ANY),
+    ]
+    send_email_mock.assert_has_calls(expected_calls, any_order=True)
+    assert send_email_mock.call_count == len(expected_calls)
