@@ -13,7 +13,7 @@
 # limitations under the License.
 """Model that is populated from feedback files."""
 from datetime import datetime, timezone
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, func
 
 from .base_model import BaseModel
 from .db import db
@@ -21,7 +21,7 @@ from .db import db
 
 # NOTE THIS IS SPECIFIC ONLY FOR PAD / ONLINE BANKING CREDIT MEMOS.
 # This can also be seen in the ar_applied_receivables table in the CAS datawarehouse.
-class CFSCreditInvoices(BaseModel):
+class CfsCreditInvoices(BaseModel):
     """This class manages the mapping from cfs account credit memos to invoices."""
 
     __tablename__ = 'cfs_credit_invoices'
@@ -59,3 +59,9 @@ class CFSCreditInvoices(BaseModel):
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     invoice_amount = db.Column(db.Numeric, nullable=False)
     invoice_number = db.Column(db.String(50), nullable=False)
+
+    @classmethod
+    def credit_for_invoice_number(cls, invoice_number: str):
+        """Return the credit associated with the invoice number."""
+        return cls.query.with_entities(func.sum(CfsCreditInvoices.amount_applied).label('invoice_total')) \
+            .filter_by(invoice_number=invoice_number).scalar()

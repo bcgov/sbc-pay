@@ -23,7 +23,7 @@ from .cfs_account import CfsAccount, CfsAccountSchema
 from .cfs_account_status_code import CfsAccountStatusCode, CfsAccountStatusCodeSchema
 from .corp_type import CorpType, CorpTypeSchema  # noqa: I001
 from .credit import Credit
-from .cfs_credit_invoices import CFSCreditInvoices
+from .cfs_credit_invoices import CfsCreditInvoices
 from .custom_query import CustomQuery
 from .db import db, ma  # noqa: I001
 from .disbursement_status_code import DisbursementStatusCode
