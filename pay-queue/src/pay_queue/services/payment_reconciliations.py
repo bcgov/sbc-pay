@@ -428,6 +428,8 @@ def _handle_credit_invoices_and_adjust_invoice_paid(row):
     invoices = db.session.query(InvoiceModel) \
         .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
         .filter(InvoiceReferenceModel.invoice_number == invoice_number) \
+        .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value) \
+        .filter(InvoiceReferenceModel.is_consolidated.is_(False)) \
         .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
         .order_by(InvoiceModel.id.asc()) \
         .all()
