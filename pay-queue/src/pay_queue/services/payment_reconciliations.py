@@ -135,7 +135,7 @@ def _handle_credit_invoices_and_adjust_invoice_paid(cfs_identifier: str, payment
     for row in payment_lines:
         application_id = _get_row_value(row, Column.APP_ID)
         if CfsCreditInvoices.find_by_application_id(application_id):
-            current_app.logger.info(f'Credit invoices exists with application_id {application_id}.')
+            current_app.logger.error(f'Credit invoices exists with application_id {application_id}.')
             continue
         if not (credit := CreditModel.find_by_cfs_identifier(cfs_identifier=cfs_identifier, credit_memo=True)):
             current_app.logger.error(f'Credit with cfs_identifier {cfs_identifier} not found.')
@@ -143,13 +143,13 @@ def _handle_credit_invoices_and_adjust_invoice_paid(cfs_identifier: str, payment
         invoice_number = _get_row_value(row, Column.TARGET_TXN_NO)
         CfsCreditInvoices(
             account_id=_get_payment_account(row).id,
-            amount_applied=float(_get_row_value(row, Column.APP_AMOUNT)),
+            amount_applied=Decimal(_get_row_value(row, Column.APP_AMOUNT)),
             application_id=application_id,
             cfs_account=_get_row_value(row, Column.CUSTOMER_ACC),
             cfs_identifier=cfs_identifier,
             created_on=_get_row_value(row, Column.APP_DATE),
             credit_id=credit.id,
-            invoice_amount=float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
+            invoice_amount=Decimal(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
             invoice_number=invoice_number
         ).flush()
         invoice_numbers.add(invoice_number)
