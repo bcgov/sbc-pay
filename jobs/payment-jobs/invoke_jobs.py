@@ -149,7 +149,6 @@ def run(job_name, argument=None):
             application.logger.info('<<<< Completed EFT tasks >>>>')
         case 'EFT_OVERPAYMENT':
             date_override = argument[0] if len(argument) >= 1 else None
-            auth_account_override = argument[1] if len(argument) >= 2 else None
             EFTOverpaymentNotificationTask.process_overpayment_notification(date_override=date_override)
             application.logger.info(
                 '<<<< Completed Sending notification for EFT Over Payment >>>>')
