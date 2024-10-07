@@ -39,7 +39,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
     short_names: dict = {}
 
     @classmethod
-    def _get_base_query(cls):
+    def _get_short_names_with_credits_remaining(cls):
         """Create base query for returning short names with any remaining credits by filter date."""
         query = (db.session.query(EFTShortnameModel)
                  .distinct(EFTShortnameModel.id)
@@ -53,7 +53,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
     def _get_today_overpaid_linked_short_names(cls):
         """Get linked short names that have received a payment today and overpaid."""
         filter_date = cls.date_override if cls.date_override is not None else datetime.now(tz=timezone.utc).date()
-        query = (cls._get_base_query()
+        query = (cls._get_short_names_with_credits_remaining()
                  .join(EFTShortnameLinkModel,
                        and_(EFTShortnameLinkModel.eft_short_name_id == EFTShortnameModel.id,
                             EFTShortnameLinkModel.status_code.in_([EFTShortnameStatus.LINKED.value,
@@ -67,7 +67,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
         """Get short names that have been unlinked for a duration in days."""
         execution_date = cls.date_override if cls.date_override is not None else datetime.now(tz=timezone.utc).date()
         duration_date = execution_date - timedelta(days=days_duration)
-        query = (cls._get_base_query()
+        query = (cls._get_short_names_with_credits_remaining()
                  .outerjoin(EFTShortnameLinkModel,
                             and_(EFTShortnameLinkModel.eft_short_name_id == EFTShortnameModel.id,
                                  EFTShortnameLinkModel.status_code.in_([EFTShortnameStatus.LINKED.value,
@@ -114,15 +114,17 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def _send_notifications(cls):
         """Send over payment notification."""
-        if cls.short_names:
-            qualified_receiver_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND.value)
-            for short_name_id, name in cls.short_names.items():
-                credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
-                template_params = {
-                    'shortNameId': short_name_id,
-                    'shortName': name,
-                    'unsettledAmount': f'{credit_balance:,.2f}'
-                }
-                send_email(recipients=qualified_receiver_recipients,
-                           subject=f'Pending Unsettled Amount for Short Name {name}',
-                           body=_render_eft_overpayment_template(template_params))
+        if cls.short_names is None:
+            return
+
+        qualified_receiver_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND.value)
+        for short_name_id, name in cls.short_names.items():
+            credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
+            template_params = {
+                'shortNameId': short_name_id,
+                'shortName': name,
+                'unsettledAmount': f'{credit_balance:,.2f}'
+            }
+            send_email(recipients=qualified_receiver_recipients,
+                       subject=f'Pending Unsettled Amount for Short Name {name}',
+                       body=_render_eft_overpayment_template(template_params))
