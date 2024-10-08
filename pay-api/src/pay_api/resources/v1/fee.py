@@ -27,22 +27,24 @@ from pay_api.utils.enums import Role
 from pay_api.utils.util import convert_to_bool
 
 
-bp = Blueprint('FEES', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/fees')
+bp = Blueprint("FEES", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/fees")
 
 
-@bp.route('/<string:corp_type>/<string:filing_type_code>', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET'])
+@bp.route("/<string:corp_type>/<string:filing_type_code>", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET"])
 @_jwt.has_one_of_roles([Role.VIEWER.value, Role.EDITOR.value, Role.STAFF.value])
 def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
     """Calculate the fee for the filing using the corp type/filing type and return fee."""
-    date = request.args.get('date', datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT))
-    is_priority = convert_to_bool(request.args.get('priority', 'False'))
-    is_future_effective = convert_to_bool(request.args.get('futureEffective', 'False'))
-    jurisdiction = request.args.get('jurisdiction', DEFAULT_JURISDICTION)
-    quantity = int(request.args.get('quantity', 1))
+    date = request.args.get(
+        "date", datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT)
+    )
+    is_priority = convert_to_bool(request.args.get("priority", "False"))
+    is_future_effective = convert_to_bool(request.args.get("futureEffective", "False"))
+    jurisdiction = request.args.get("jurisdiction", DEFAULT_JURISDICTION)
+    quantity = int(request.args.get("quantity", 1))
     waive_fees = False
     if _jwt.validate_roles([Role.STAFF.value]):
-        waive_fees = convert_to_bool(request.args.get('waiveFees', 'False'))
+        waive_fees = convert_to_bool(request.args.get("waiveFees", "False"))
 
     try:
         response, status = (
@@ -54,7 +56,7 @@ def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
                 is_priority=is_priority,
                 is_future_effective=is_future_effective,
                 waive_fees=waive_fees,
-                quantity=quantity
+                quantity=quantity,
             ).asdict(),
             HTTPStatus.OK,
         )

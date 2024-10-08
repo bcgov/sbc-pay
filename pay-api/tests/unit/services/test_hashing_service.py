@@ -19,14 +19,16 @@ from pay_api.services.hashing import HashingService
 
 def test_encode_and_verify_success(session):  # pylint:disable=unused-argument
     """Test encode and verify the checksum."""
-    param = 'Hello World'
+    param = "Hello World"
     encode_string = HashingService.encode(param)
     assert HashingService.is_valid_checksum(param, encode_string) is True
 
 
-def test_encode_and_verify_failure_random_string(session):  # pylint:disable=unused-argument
+def test_encode_and_verify_failure_random_string(
+    session,
+):  # pylint:disable=unused-argument
     """Test encoding and failure verification."""
-    param = 'Hello World'
-    param2 = 'some random strimg'
+    param = "Hello World"
+    param2 = "some random strimg"
     encode_string = HashingService.encode(param)
     assert HashingService.is_valid_checksum(param2, encode_string) is False

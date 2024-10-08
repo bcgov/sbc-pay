@@ -21,19 +21,25 @@ from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
 from pay_api.utils.endpoints_enums import EndpointEnum
 
-bp = Blueprint('FEE_SCHEDULE', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/fees/schedules')
+bp = Blueprint(
+    "FEE_SCHEDULE", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/fees/schedules"
+)
 
 
-@bp.route('', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET'])
+@bp.route("", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET"])
 def get_fee_schedules():
     """Calculate the fee for the filing using the corp type/filing type and return fee."""
     try:
-        corp_type = request.args.get('corp_type', None)
-        filing_type = request.args.get('filing_type', None)
-        description = request.args.get('description', None)
+        corp_type = request.args.get("corp_type", None)
+        filing_type = request.args.get("filing_type", None)
+        description = request.args.get("description", None)
         response, status = (
-            FeeSchedule.find_all(corp_type=corp_type, filing_type_code=filing_type, description=description),
+            FeeSchedule.find_all(
+                corp_type=corp_type,
+                filing_type_code=filing_type,
+                description=description,
+            ),
             HTTPStatus.OK,
         )
     except BusinessException as exception:

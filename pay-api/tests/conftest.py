@@ -27,16 +27,17 @@ from pay_api import setup_jwt_manager
 from pay_api.models import db as _db
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def app():
     """Return a session-wide application configured in TEST mode."""
-    _app = create_app('testing')
+    _app = create_app("testing")
     return _app
 
 
 @pytest.fixture(autouse=True)
 def mock_pub_sub_call(mocker):
     """Mock pub sub call."""
+
     class Expando(object):
         """Expando class."""
 
@@ -47,6 +48,7 @@ def mock_pub_sub_call(mocker):
             def result():
                 """Return true for mock."""
                 return True
+
             self.result = result
 
         def publish(self, *args, **kwargs):
@@ -55,36 +57,36 @@ def mock_pub_sub_call(mocker):
             ex.result = self.result
             return ex
 
-    mocker.patch('google.cloud.pubsub_v1.PublisherClient', PublisherMock)
+    mocker.patch("google.cloud.pubsub_v1.PublisherClient", PublisherMock)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def app_request():
     """Return a session-wide application configured in TEST mode."""
-    _app = create_app('testing')
+    _app = create_app("testing")
     return _app
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def client(app):  # pylint: disable=redefined-outer-name
     """Return a session-wide Flask test client."""
     return app.test_client()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def jwt(app):
     """Return session-wide jwt manager."""
     return _jwt
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def client_ctx(app):
     """Return session-wide Flask test client."""
     with app.test_client() as _client:
         yield _client
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     with app.app_context():
@@ -97,13 +99,15 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         return _db
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a function-scoped session."""
     with app.app_context():
         with db.engine.connect() as conn:
             transaction = conn.begin()
-            sess = db._make_scoped_session(dict(bind=conn))  # pylint: disable=protected-access
+            sess = db._make_scoped_session(
+                dict(bind=conn)
+            )  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
             old_session = db.session
@@ -111,7 +115,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
             db.session.commit = nested.commit
             db.session.rollback = nested.rollback
 
-            @event.listens_for(sess, 'after_transaction_end')
+            @event.listens_for(sess, "after_transaction_end")
             def restart_savepoint(sess2, trans):  # pylint: disable=unused-variable
                 nonlocal nested
                 if trans.nested:
@@ -132,192 +136,190 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
             finally:
                 db.session.remove()
                 transaction.rollback()
-                event.remove(sess, 'after_transaction_end', restart_savepoint)
+                event.remove(sess, "after_transaction_end", restart_savepoint)
                 db.session = old_session
 
 
 @pytest.fixture()
 def auth_mock(monkeypatch):
     """Mock check_auth."""
-    monkeypatch.setattr('pay_api.services.auth.check_auth', lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "pay_api.services.auth.check_auth", lambda *args, **kwargs: None
+    )
 
 
 @pytest.fixture()
 def public_user_mock(monkeypatch):
     """Mock user_context."""
+
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
-            'username': 'public user',
-            'realm_access': {
-                'roles': [
-                    'public_user',
-                    'edit'
-                ]
-            }
+            "username": "public user",
+            "realm_access": {"roles": ["public_user", "edit"]},
         }
 
     def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
-        return 'test'
+        return "test"
 
-    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
-    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token", mock_auth)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token_info", token_info)
 
 
 @pytest.fixture()
 def staff_user_mock(monkeypatch):
     """Mock user_context."""
+
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
-        return {
-            'username': 'staff user',
-            'realm_access': {
-                'roles': [
-                    'staff',
-                    'edit'
-                ]
-            }
-        }
+        return {"username": "staff user", "realm_access": {"roles": ["staff", "edit"]}}
 
     def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
-        return 'test'
+        return "test"
 
-    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
-    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token", mock_auth)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token_info", token_info)
 
 
 @pytest.fixture()
 def system_user_mock(monkeypatch):
     """Mock user_context."""
+
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
-            'username': 'system user',
-            'realm_access': {
-                'roles': [
-                    'system',
-                    'edit'
-                ]
-            }
+            "username": "system user",
+            "realm_access": {"roles": ["system", "edit"]},
         }
 
     def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
-        return 'test'
+        return "test"
 
-    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
-    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token", mock_auth)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token_info", token_info)
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def auto(docker_services, app):
     """Spin up a keycloak instance and initialize jwt."""
-    if app.config['USE_TEST_KEYCLOAK_DOCKER']:
-        docker_services.start('keycloak')
-        docker_services.wait_for_service('keycloak', 8081)
+    if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
+        docker_services.start("keycloak")
+        docker_services.wait_for_service("keycloak", 8081)
 
     setup_jwt_manager(app, _jwt)
-    if app.config['USE_DOCKER_MOCK']:
-        docker_services.start('bcol')
-        docker_services.start('auth')
-        docker_services.start('paybc')
-        docker_services.start('reports')
-        docker_services.start('proxy')
+    if app.config["USE_DOCKER_MOCK"]:
+        docker_services.start("bcol")
+        docker_services.start("auth")
+        docker_services.start("paybc")
+        docker_services.start("reports")
+        docker_services.start("proxy")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def docker_compose_files(pytestconfig):
     """Get the docker-compose.yml absolute path."""
     return [
-        os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
+        os.path.join(str(pytestconfig.rootdir), "tests/docker", "docker-compose.yml")
     ]
 
 
 @pytest.fixture()
 def premium_user_mock(monkeypatch):
     """Mock auth."""
+
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
             {
-                'orgMembership': 'OWNER',
-                'roles': ['view', 'edit'],
-                'business': {
-                    'folioNumber': 'MOCK1234',
-                    'name': 'Mock Business'
-                },
-                'account': {
-                    'accountType': 'PREMIUM',
-                    'paymentPreference': {
-                        'methodOfPayment': 'DRAWDOWN',
-                        'bcOnlineUserId': 'PB25020',
-                        'bcOnlineAccountId': ''
+                "orgMembership": "OWNER",
+                "roles": ["view", "edit"],
+                "business": {"folioNumber": "MOCK1234", "name": "Mock Business"},
+                "account": {
+                    "accountType": "PREMIUM",
+                    "paymentPreference": {
+                        "methodOfPayment": "DRAWDOWN",
+                        "bcOnlineUserId": "PB25020",
+                        "bcOnlineAccountId": "",
                     },
-                    'id': '1234',
-                    'name': 'Mock Account'
+                    "id": "1234",
+                    "name": "Mock Account",
                 },
-                'corp_type_code': ''
+                "corp_type_code": "",
             }
         }
 
     def account_id():
-        return '1'
+        return "1"
 
-    monkeypatch.setattr('pay_api.services.auth.check_auth', token_info)
-    monkeypatch.setattr('pay_api.utils.user_context.get_auth_account_id', account_id)
+    monkeypatch.setattr("pay_api.services.auth.check_auth", token_info)
+    monkeypatch.setattr("pay_api.utils.user_context.get_auth_account_id", account_id)
 
 
 @pytest.fixture()
 def rest_call_mock(monkeypatch):
     """Mock rest_call_mock."""
-    monkeypatch.setattr('pay_api.services.oauth_service.OAuthService.post', lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "pay_api.services.oauth_service.OAuthService.post", lambda *args, **kwargs: None
+    )
 
 
 @pytest.fixture()
 def admin_users_mock(monkeypatch):
     """Mock auth rest call to get org admins."""
+
     def get_account_admin_users(auth_account_id):
         return {
-            'members': [
+            "members": [
                 {
-                    'id': 4048,
-                    'membershipStatus': 'ACTIVE',
-                    'membershipTypeCode': 'ADMIN',
-                    'user': {
-                        'contacts': [
+                    "id": 4048,
+                    "membershipStatus": "ACTIVE",
+                    "membershipTypeCode": "ADMIN",
+                    "user": {
+                        "contacts": [
                             {
-                                'email': 'test@test.com',
-                                'phone': '(250) 111-2222',
-                                'phoneExtension': ''
+                                "email": "test@test.com",
+                                "phone": "(250) 111-2222",
+                                "phoneExtension": "",
                             }
                         ],
-                        'firstname': 'FIRST',
-                        'id': 18,
-                        'lastname': 'LAST',
-                        'loginSource': 'BCSC'
-                    }
+                        "firstname": "FIRST",
+                        "id": 18,
+                        "lastname": "LAST",
+                        "loginSource": "BCSC",
+                    },
                 }
             ]
         }
-    monkeypatch.setattr('pay_api.services.payment_account.get_account_admin_users',
-                        get_account_admin_users)
-    monkeypatch.setattr('pay_api.services.eft_service.get_account_admin_users',
-                        get_account_admin_users)
+
+    monkeypatch.setattr(
+        "pay_api.services.payment_account.get_account_admin_users",
+        get_account_admin_users,
+    )
+    monkeypatch.setattr(
+        "pay_api.services.eft_service.get_account_admin_users", get_account_admin_users
+    )
 
 
 @pytest.fixture()
 def emails_with_keycloak_role_mock(monkeypatch):
     """Mock auth rest call to get org admins."""
-    def get_emails_with_keycloak_role(role):
-        return 'hello@goodnight.com'
 
-    monkeypatch.setattr('pay_api.services.auth.get_emails_with_keycloak_role',
-                        get_emails_with_keycloak_role)
-    monkeypatch.setattr('pay_api.services.eft_refund.get_emails_with_keycloak_role',
-                        get_emails_with_keycloak_role)
+    def get_emails_with_keycloak_role(role):
+        return "hello@goodnight.com"
+
+    monkeypatch.setattr(
+        "pay_api.services.auth.get_emails_with_keycloak_role",
+        get_emails_with_keycloak_role,
+    )
+    monkeypatch.setattr(
+        "pay_api.services.eft_refund.get_emails_with_keycloak_role",
+        get_emails_with_keycloak_role,
+    )
 
 
 @pytest.fixture()
 def send_email_mock(monkeypatch):
     """Mock send_email."""
+
     def send_email(recipients, subject, body):
         return True
 
     # Note this needs to be moved to a prism spec, we need to come up with one for NotifyAPI.
-    monkeypatch.setattr('pay_api.services.email_service.send_email', send_email)
-    monkeypatch.setattr('pay_api.services.eft_refund.send_email', send_email)
+    monkeypatch.setattr("pay_api.services.email_service.send_email", send_email)
+    monkeypatch.setattr("pay_api.services.eft_refund.send_email", send_email)

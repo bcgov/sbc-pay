@@ -112,7 +112,7 @@ class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many
     @staticmethod
     def create(invoice_id: int, invoice_number: str, reference_number: str):
         """Create invoice reference record."""
-        current_app.logger.debug('<create')
+        current_app.logger.debug("<create")
         i = InvoiceReference()
         i.invoice_id = invoice_id
         i.status_code = InvoiceReferenceStatus.ACTIVE.value
@@ -120,29 +120,33 @@ class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many
         i.reference_number = reference_number
 
         i._dao = i.save()  # pylint: disable=protected-access
-        current_app.logger.debug('>create')
+        current_app.logger.debug(">create")
         return i
 
     @staticmethod
     def find_active_reference_by_invoice_id(inv_id: int):
         """Find invoice reference by invoice id."""
-        ref_dao = ReferenceModel.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.ACTIVE.value)
+        ref_dao = ReferenceModel.find_by_invoice_id_and_status(
+            inv_id, InvoiceReferenceStatus.ACTIVE.value
+        )
         invoice_reference = None
         if ref_dao:
             invoice_reference = InvoiceReference()
             invoice_reference._dao = ref_dao  # pylint: disable=protected-access
 
-        current_app.logger.debug('>find_reference_by_invoice_id')
+        current_app.logger.debug(">find_reference_by_invoice_id")
         return invoice_reference
 
     @staticmethod
     def find_completed_reference_by_invoice_id(inv_id: int):
         """Find invoice reference by invoice id."""
-        ref_dao = ReferenceModel.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.COMPLETED.value)
+        ref_dao = ReferenceModel.find_by_invoice_id_and_status(
+            inv_id, InvoiceReferenceStatus.COMPLETED.value
+        )
         invoice_reference = InvoiceReference()
         invoice_reference._dao = ref_dao  # pylint: disable=protected-access
 
-        current_app.logger.debug('>find_reference_by_invoice_id')
+        current_app.logger.debug(">find_reference_by_invoice_id")
         return invoice_reference
 
     @staticmethod
@@ -152,5 +156,5 @@ class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many
         invoice_reference = InvoiceReference()
         invoice_reference._dao = ref_dao  # pylint: disable=protected-access
 
-        current_app.logger.debug('>find_any_active_reference_by_invoice_number')
+        current_app.logger.debug(">find_any_active_reference_by_invoice_number")
         return invoice_reference

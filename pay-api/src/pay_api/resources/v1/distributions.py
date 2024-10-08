@@ -26,11 +26,15 @@ from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 
 
-bp = Blueprint('DISTRIBUTIONS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/fees/distributions')
+bp = Blueprint(
+    "DISTRIBUTIONS",
+    __name__,
+    url_prefix=f"{EndpointEnum.API_V1.value}/fees/distributions",
+)
 
 
-@bp.route('/<int:distribution_code_id>', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET', 'PUT'])
+@bp.route("/<int:distribution_code_id>", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET", "PUT"])
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def get_fee_distribution(distribution_code_id: int):
     """Return distribution by provided id."""
@@ -45,16 +49,18 @@ def get_fee_distribution(distribution_code_id: int):
     return jsonify(response), status
 
 
-@bp.route('/<int:distribution_code_id>', methods=['PUT'])
-@cross_origin(origins='*')
+@bp.route("/<int:distribution_code_id>", methods=["PUT"])
+@cross_origin(origins="*")
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def put_fee_distribution(distribution_code_id: int):
     """Update distribution from the payload."""
     request_json = request.get_json()
 
-    valid_format, errors = schema_utils.validate(request_json, 'distribution_code')
+    valid_format, errors = schema_utils.validate(request_json, "distribution_code")
     if not valid_format:
-        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+        return error_to_response(
+            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
+        )
 
     try:
         response, status = (
@@ -66,8 +72,8 @@ def put_fee_distribution(distribution_code_id: int):
     return jsonify(response), status
 
 
-@bp.route('', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET', 'POST'])
+@bp.route("", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET", "POST"])
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def get_fee_distributions():
     """Return all distributions."""
@@ -82,16 +88,18 @@ def get_fee_distributions():
     return jsonify(response), status
 
 
-@bp.route('', methods=['POST'])
-@cross_origin(origins='*')
+@bp.route("", methods=["POST"])
+@cross_origin(origins="*")
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def post_fee_distribution():
     """Create a new distribution from the payload."""
     request_json = request.get_json()
 
-    valid_format, errors = schema_utils.validate(request_json, 'distribution_code')
+    valid_format, errors = schema_utils.validate(request_json, "distribution_code")
     if not valid_format:
-        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+        return error_to_response(
+            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
+        )
 
     try:
         response, status = (
@@ -103,14 +111,16 @@ def post_fee_distribution():
     return jsonify(response), status
 
 
-@bp.route('/<int:distribution_code_id>/schedules', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET', 'POST'])
+@bp.route("/<int:distribution_code_id>/schedules", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET", "POST"])
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def get_fee_distribution_schedules(distribution_code_id: int):
     """Return all fee schedules linked to the distribution."""
     try:
         response, status = (
-            DistributionCodeService.find_fee_schedules_by_distribution_id(distribution_code_id),
+            DistributionCodeService.find_fee_schedules_by_distribution_id(
+                distribution_code_id
+            ),
             HTTPStatus.OK,
         )
 
@@ -119,8 +129,8 @@ def get_fee_distribution_schedules(distribution_code_id: int):
     return jsonify(response), status
 
 
-@bp.route('/<int:distribution_code_id>/schedules', methods=['POST'])
-@cross_origin(origins='*')
+@bp.route("/<int:distribution_code_id>/schedules", methods=["POST"])
+@cross_origin(origins="*")
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def post_fee_distribution_schedule(distribution_code_id: int):
     """Create link between distribution and fee schedule."""

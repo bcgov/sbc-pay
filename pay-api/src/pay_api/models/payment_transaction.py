@@ -28,10 +28,12 @@ from .base_schema import BaseSchema
 from .db import db
 
 
-class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+class PaymentTransaction(
+    BaseModel
+):  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """This class manages all of the base data about Payment Transaction."""
 
-    __tablename__ = 'payment_transactions'
+    __tablename__ = "payment_transactions"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -43,28 +45,32 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'status_code',
-            'client_system_url',
-            'pay_system_url',
-            'pay_response_url',
-            'pay_system_reason_code',
-            'payment_id',
-            'transaction_end_time',
-            'transaction_start_time'
+        "include_properties": [
+            "id",
+            "status_code",
+            "client_system_url",
+            "pay_system_url",
+            "pay_response_url",
+            "pay_system_reason_code",
+            "payment_id",
+            "transaction_end_time",
+            "transaction_start_time",
         ]
     }
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    status_code = db.Column(db.String(20), ForeignKey('transaction_status_codes.code'), nullable=False)
-    payment_id = db.Column(db.Integer, ForeignKey('payments.id'), nullable=False)
+    status_code = db.Column(
+        db.String(20), ForeignKey("transaction_status_codes.code"), nullable=False
+    )
+    payment_id = db.Column(db.Integer, ForeignKey("payments.id"), nullable=False)
     client_system_url = db.Column(db.String(500), nullable=True)
     pay_system_url = db.Column(db.String(2000), nullable=True)
     pay_response_url = db.Column(db.String(2000), nullable=True)
     pay_system_reason_code = db.Column(db.String(2000), nullable=True)
 
-    transaction_start_time = db.Column(db.DateTime, default=lambda: datetime.now(tz=timezone.utc), nullable=False)
+    transaction_start_time = db.Column(
+        db.DateTime, default=lambda: datetime.now(tz=timezone.utc), nullable=False
+    )
     transaction_end_time = db.Column(db.DateTime, nullable=True)
 
     @classmethod
@@ -75,8 +81,11 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
     @classmethod
     def find_active_by_payment_id(cls, payment_id: int):
         """Return Active Payment Transactions by payment identifier."""
-        return cls.query.filter_by(payment_id=payment_id).filter_by(
-            status_code=TransactionStatus.CREATED.value).one_or_none()
+        return (
+            cls.query.filter_by(payment_id=payment_id)
+            .filter_by(status_code=TransactionStatus.CREATED.value)
+            .one_or_none()
+        )
 
     @classmethod
     def find_active_by_invoice_id(cls, invoice_id: int):
@@ -86,13 +95,18 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
         from .invoice_reference import InvoiceReference
         from .payment import Payment
 
-        query = db.session.query(PaymentTransaction) \
-            .join(Payment) \
-            .join(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
-            .join(Invoice, InvoiceReference.invoice_id == Invoice.id) \
-            .filter(Invoice.id == invoice_id) \
-            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value) \
+        query = (
+            db.session.query(PaymentTransaction)
+            .join(Payment)
+            .join(
+                InvoiceReference,
+                InvoiceReference.invoice_number == Payment.invoice_number,
+            )
+            .join(Invoice, InvoiceReference.invoice_id == Invoice.id)
+            .filter(Invoice.id == invoice_id)
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value)
             .filter(PaymentTransaction.status_code == TransactionStatus.CREATED.value)
+        )
 
         return query.one_or_none()
 
@@ -104,13 +118,18 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
         from .invoice_reference import InvoiceReference
         from .payment import Payment
 
-        query = db.session.query(PaymentTransaction) \
-            .join(Payment) \
-            .join(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
-            .join(Invoice, InvoiceReference.invoice_id == Invoice.id) \
-            .filter(Invoice.id == invoice_id) \
-            .filter(PaymentTransaction.status_code == TransactionStatus.COMPLETED.value) \
+        query = (
+            db.session.query(PaymentTransaction)
+            .join(Payment)
+            .join(
+                InvoiceReference,
+                InvoiceReference.invoice_number == Payment.invoice_number,
+            )
+            .join(Invoice, InvoiceReference.invoice_id == Invoice.id)
+            .filter(Invoice.id == invoice_id)
+            .filter(PaymentTransaction.status_code == TransactionStatus.COMPLETED.value)
             .order_by(PaymentTransaction.transaction_end_time.desc())
+        )
 
         return query.first()
 
@@ -122,11 +141,16 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
         from .invoice_reference import InvoiceReference
         from .payment import Payment
 
-        query = db.session.query(PaymentTransaction) \
-            .join(Payment) \
-            .join(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
-            .join(Invoice, InvoiceReference.invoice_id == Invoice.id) \
+        query = (
+            db.session.query(PaymentTransaction)
+            .join(Payment)
+            .join(
+                InvoiceReference,
+                InvoiceReference.invoice_number == Payment.invoice_number,
+            )
+            .join(Invoice, InvoiceReference.invoice_id == Invoice.id)
             .filter(Invoice.id == invoice_id)
+        )
 
         return query.all()
 
@@ -139,15 +163,26 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .payment import Payment
 
-        oldest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
-        completed_status = [TransactionStatus.COMPLETED.value, TransactionStatus.CANCELLED.value,
-                            TransactionStatus.FAILED.value]
-        return db.session.query(PaymentTransaction)\
-            .join(Payment, Payment.id == PaymentTransaction.payment_id)\
-            .filter(PaymentTransaction.status_code.notin_(completed_status))\
-            .filter(PaymentTransaction.transaction_start_time < oldest_transaction_time) \
-            .filter(Payment.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])) \
+        oldest_transaction_time = datetime.now(tz=timezone.utc) - (
+            timedelta(days=days, hours=hours, minutes=minutes)
+        )
+        completed_status = [
+            TransactionStatus.COMPLETED.value,
+            TransactionStatus.CANCELLED.value,
+            TransactionStatus.FAILED.value,
+        ]
+        return (
+            db.session.query(PaymentTransaction)
+            .join(Payment, Payment.id == PaymentTransaction.payment_id)
+            .filter(PaymentTransaction.status_code.notin_(completed_status))
+            .filter(PaymentTransaction.transaction_start_time < oldest_transaction_time)
+            .filter(
+                Payment.payment_method_code.in_(
+                    [PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value]
+                )
+            )
             .all()
+        )
 
 
 class PaymentTransactionSchema(BaseSchema):  # pylint: disable=too-many-ancestors
@@ -158,9 +193,11 @@ class PaymentTransactionSchema(BaseSchema):  # pylint: disable=too-many-ancestor
 
         model = PaymentTransaction
 
-    status_code = fields.String(data_key='status_code')
-    payment_id = fields.Integer(data_key='payment_id')
-    transaction_end_time = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE),
-                                           data_key='end_time')
-    transaction_start_time = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE),
-                                             data_key='start_time')
+    status_code = fields.String(data_key="status_code")
+    payment_id = fields.Integer(data_key="payment_id")
+    transaction_end_time = fields.DateTime(
+        tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE), data_key="end_time"
+    )
+    transaction_start_time = fields.DateTime(
+        tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE), data_key="start_time"
+    )

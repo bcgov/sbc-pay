@@ -38,20 +38,24 @@ from tests.utilities.base_test import get_unlinked_pad_account_payload
 
 def test_paybc_system_factory(session, public_user_mock):
     """Assert a paybc service is returned."""
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import (
+        PaymentSystemFactory,
+    )  # noqa I001; errors out the test case
 
     # Test for CC and CP
-    instance = PaymentSystemFactory.create(payment_method='CC', corp_type='CP')
+    instance = PaymentSystemFactory.create(payment_method="CC", corp_type="CP")
     assert isinstance(instance, PaybcService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for CC and CP
-    instance = PaymentSystemFactory.create(payment_method=PaymentMethod.DIRECT_PAY.value, corp_type='CP')
+    instance = PaymentSystemFactory.create(
+        payment_method=PaymentMethod.DIRECT_PAY.value, corp_type="CP"
+    )
     assert isinstance(instance, DirectPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for CC and CP with zero fees
-    instance = PaymentSystemFactory.create(fees=0, payment_method='CC', corp_type='CP')
+    instance = PaymentSystemFactory.create(fees=0, payment_method="CC", corp_type="CP")
     assert isinstance(instance, InternalPayService)
     assert isinstance(instance, PaymentSystemService)
 
@@ -61,17 +65,23 @@ def test_paybc_system_factory(session, public_user_mock):
     assert isinstance(instance, PaymentSystemService)
 
     # Test for Direct Pay Service
-    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.DIRECT_PAY.value)
+    instance = PaymentSystemFactory.create_from_payment_method(
+        PaymentMethod.DIRECT_PAY.value
+    )
     assert isinstance(instance, DirectPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for Internal Service
-    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.INTERNAL.value)
+    instance = PaymentSystemFactory.create_from_payment_method(
+        PaymentMethod.INTERNAL.value
+    )
     assert isinstance(instance, InternalPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for BCOL Service
-    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.DRAWDOWN.value)
+    instance = PaymentSystemFactory.create_from_payment_method(
+        PaymentMethod.DRAWDOWN.value
+    )
     assert isinstance(instance, BcolService)
     assert isinstance(instance, PaymentSystemService)
 
@@ -84,63 +94,77 @@ def test_paybc_system_factory(session, public_user_mock):
 
 def test_internal_staff_factory(session, staff_user_mock):
     """Test payment system creation for staff users."""
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import (
+        PaymentSystemFactory,
+    )  # noqa I001; errors out the test case
 
     # Test for CC and CP with staff role
-    instance = PaymentSystemFactory.create(payment_method='CC')
+    instance = PaymentSystemFactory.create(payment_method="CC")
     assert isinstance(instance, InternalPayService)
     assert isinstance(instance, PaymentSystemService)
 
 
 def test_bcol_factory_for_public(session, public_user_mock):
     """Test payment system creation for BCOL payment instances."""
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import (
+        PaymentSystemFactory,
+    )  # noqa I001; errors out the test case
 
-    instance = PaymentSystemFactory.create(payment_method='DRAWDOWN')
+    instance = PaymentSystemFactory.create(payment_method="DRAWDOWN")
     assert isinstance(instance, BcolService)
     assert isinstance(instance, PaymentSystemService)
 
 
 def test_bcol_factory_for_system(session, system_user_mock):
     """Test payment system creation for BCOL payment instances."""
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import (
+        PaymentSystemFactory,
+    )  # noqa I001; errors out the test case
 
     # Try a DRAWDOWN for system user
-    instance = PaymentSystemFactory.create(payment_method='DRAWDOWN')
+    instance = PaymentSystemFactory.create(payment_method="DRAWDOWN")
     assert isinstance(instance, BcolService)
 
     # Create with not specifying a payment_method
-    instance = PaymentSystemFactory.create(account_info={'bcolAccountNumber': '10000'})
+    instance = PaymentSystemFactory.create(account_info={"bcolAccountNumber": "10000"})
     assert isinstance(instance, BcolService)
 
 
 def test_pad_factory_for_system_fails(session, system_user_mock):
     """Test payment system creation for PAD payment instances."""
     from pay_api.exceptions import BusinessException
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import (
+        PaymentSystemFactory,
+    )  # noqa I001; errors out the test case
 
     pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
     # Try a DRAWDOWN for system user
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentSystemFactory.create(payment_method='PAD', payment_account=pad_account)
+        PaymentSystemFactory.create(payment_method="PAD", payment_account=pad_account)
     assert excinfo.value.code == Error.ACCOUNT_IN_PAD_CONFIRMATION_PERIOD.name
 
-    time_delay = current_app.config['PAD_CONFIRMATION_PERIOD_IN_DAYS']
-    with freeze_time(datetime.now(tz=timezone.utc) + timedelta(days=time_delay + 1, minutes=1)):
-        instance = PaymentSystemFactory.create(payment_method='PAD', payment_account=pad_account)
+    time_delay = current_app.config["PAD_CONFIRMATION_PERIOD_IN_DAYS"]
+    with freeze_time(
+        datetime.now(tz=timezone.utc) + timedelta(days=time_delay + 1, minutes=1)
+    ):
+        instance = PaymentSystemFactory.create(
+            payment_method="PAD", payment_account=pad_account
+        )
         assert isinstance(instance, PadService)
 
 
 def test_invalid_pay_system(session, public_user_mock):
     """Test invalid data."""
     from pay_api.exceptions import BusinessException
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import (
+        PaymentSystemFactory,
+    )  # noqa I001; errors out the test case
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentSystemFactory.create(payment_method=None, corp_type=None)
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentSystemFactory.create(payment_method='XXX', corp_type='XXX')
+        PaymentSystemFactory.create(payment_method="XXX", corp_type="XXX")
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name

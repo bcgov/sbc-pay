@@ -55,7 +55,11 @@ class BaseModel(db.Model):
     def to_dict(self):
         """Quick and easy way to convert to a dict."""
         # We need a better way to do this in the future.
-        return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns if getattr(self, c.name) is not None}
+        return {
+            c.name: str(getattr(self, c.name))
+            for c in self.__table__.columns
+            if getattr(self, c.name) is not None
+        }
 
     @staticmethod
     def rollback():

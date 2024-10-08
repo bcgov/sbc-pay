@@ -28,13 +28,26 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.enums import (
+    CfsAccountStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    StatementFrequency,
+)
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_outstanding_txns_from_date
 from tests.utilities.base_test import (
-    factory_invoice, factory_payment_account, factory_premium_payment_account, get_auth_basic_user,
-    get_auth_premium_user, get_basic_account_payload, get_eft_enable_account_payload, get_linked_pad_account_payload,
-    get_premium_account_payload, get_unlinked_pad_account_payload)
+    factory_invoice,
+    factory_payment_account,
+    factory_premium_payment_account,
+    get_auth_basic_user,
+    get_auth_premium_user,
+    get_basic_account_payload,
+    get_eft_enable_account_payload,
+    get_linked_pad_account_payload,
+    get_premium_account_payload,
+    get_unlinked_pad_account_payload,
+)
 
 
 def test_account_saved_from_new(session):
@@ -50,7 +63,9 @@ def test_account_saved_from_new(session):
 
 def test_direct_pay_account_saved_from_new(session):
     """Assert that the payment is saved to the table."""
-    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment_account = factory_payment_account(
+        payment_method_code=PaymentMethod.DIRECT_PAY.value
+    )
     payment_account.save()
 
     pa = PaymentAccountService.find_account(get_auth_basic_user())
@@ -73,12 +88,15 @@ def test_premium_account_saved_from_new(session):
 def test_create_pad_account(session):
     """Assert that pad account details are created."""
     pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
-    assert pad_account.bank_number == get_unlinked_pad_account_payload().get('paymentInfo'). \
-        get('bankInstitutionNumber')
-    assert pad_account.bank_account_number == get_unlinked_pad_account_payload(). \
-        get('paymentInfo').get('bankAccountNumber')
-    assert pad_account.bank_branch_number == get_unlinked_pad_account_payload(). \
-        get('paymentInfo').get('bankTransitNumber')
+    assert pad_account.bank_number == get_unlinked_pad_account_payload().get(
+        "paymentInfo"
+    ).get("bankInstitutionNumber")
+    assert pad_account.bank_account_number == get_unlinked_pad_account_payload().get(
+        "paymentInfo"
+    ).get("bankAccountNumber")
+    assert pad_account.bank_branch_number == get_unlinked_pad_account_payload().get(
+        "paymentInfo"
+    ).get("bankTransitNumber")
     assert pad_account.payment_method == PaymentMethod.PAD.value
     assert pad_account.cfs_account_id
     assert pad_account.cfs_account is None
@@ -89,9 +107,13 @@ def test_create_pad_account(session):
 def test_create_pad_account_but_eft_is_active(session, admin_users_mock):
     """Assert updating PAD to EFT works."""
     # Create a EFT Account first
-    eft_account = PaymentAccountService.create(get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value))
+    eft_account = PaymentAccountService.create(
+        get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value)
+    )
     # Account should default to EFT because it was the original method and there is a waiting period for pad.
-    eft_account = PaymentAccountService.update(eft_account.auth_account_id, get_unlinked_pad_account_payload())
+    eft_account = PaymentAccountService.update(
+        eft_account.auth_account_id, get_unlinked_pad_account_payload()
+    )
     assert eft_account.payment_method == PaymentMethod.EFT.value
     assert eft_account.cfs_account_id
 
@@ -101,7 +123,9 @@ def test_create_pad_account_to_drawdown(session):
     # Create a PAD Account first
     pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
     # Update this payment account with drawdown and assert payment method
-    bcol_account = PaymentAccountService.update(pad_account.auth_account_id, get_premium_account_payload())
+    bcol_account = PaymentAccountService.update(
+        pad_account.auth_account_id, get_premium_account_payload()
+    )
     assert bcol_account.auth_account_id == bcol_account.auth_account_id
     assert bcol_account.payment_method == PaymentMethod.DRAWDOWN.value
 
@@ -112,8 +136,11 @@ def test_create_bcol_account_to_pad(session):
     bcol_account = PaymentAccountService.create(get_premium_account_payload())
     # Update to PAD - Keep the pad activation_date in the past.
     PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(
-        tz=timezone.utc) - timedelta(days=1)
-    pad_account = PaymentAccountService.update(bcol_account.auth_account_id, get_unlinked_pad_account_payload())
+        tz=timezone.utc
+    ) - timedelta(days=1)
+    pad_account = PaymentAccountService.update(
+        bcol_account.auth_account_id, get_unlinked_pad_account_payload()
+    )
 
     assert bcol_account.auth_account_id == bcol_account.auth_account_id
     assert pad_account.payment_method == PaymentMethod.PAD.value
@@ -124,12 +151,17 @@ def test_create_bcol_account_to_pad(session):
 
     # Reset activation date.
     PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(
-        tz=timezone.utc) + timedelta(days=1)
+        tz=timezone.utc
+    ) + timedelta(days=1)
     # back to BCOL
-    pad_account = PaymentAccountService.update(bcol_account.auth_account_id, get_premium_account_payload())
+    pad_account = PaymentAccountService.update(
+        bcol_account.auth_account_id, get_premium_account_payload()
+    )
     assert pad_account.payment_method == PaymentMethod.DRAWDOWN.value
     # back to PAD, should not return PAD, should return DRAWDOWN, due to activation date.
-    pad_account = PaymentAccountService.update(bcol_account.auth_account_id, get_unlinked_pad_account_payload())
+    pad_account = PaymentAccountService.update(
+        bcol_account.auth_account_id, get_unlinked_pad_account_payload()
+    )
     assert pad_account.payment_method == PaymentMethod.DRAWDOWN.value
     # This information wont show in the service, but will show on the get with asdict.
     assert not pad_account.cfs_account_id
@@ -138,26 +170,29 @@ def test_create_bcol_account_to_pad(session):
 def test_create_pad_to_bcol_to_pad(session):
     """Assert that update from BCOL to PAD works."""
     # Create a PAD Account first
-    auth_account_id = '123'
-    pad_account_1 = PaymentAccountService.create(get_unlinked_pad_account_payload(
-        account_id=auth_account_id, bank_number='009')
+    auth_account_id = "123"
+    pad_account_1 = PaymentAccountService.create(
+        get_unlinked_pad_account_payload(account_id=auth_account_id, bank_number="009")
     )
-    assert pad_account_1.bank_number == '009'
+    assert pad_account_1.bank_number == "009"
 
     # Update this payment account with drawdown and assert payment method
     bcol_account = PaymentAccountService.update(
-        pad_account_1.auth_account_id, get_premium_account_payload(account_id=auth_account_id)
+        pad_account_1.auth_account_id,
+        get_premium_account_payload(account_id=auth_account_id),
     )
     assert bcol_account.auth_account_id == bcol_account.auth_account_id
     assert bcol_account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Make sure our activation date is past and update to PAD again.
     PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(
-        tz=timezone.utc) - timedelta(days=1)
+        tz=timezone.utc
+    ) - timedelta(days=1)
     pad_account_2 = PaymentAccountService.update(
-        pad_account_1.auth_account_id, get_unlinked_pad_account_payload(account_id=auth_account_id, bank_number='010')
+        pad_account_1.auth_account_id,
+        get_unlinked_pad_account_payload(account_id=auth_account_id, bank_number="010"),
     )
-    assert pad_account_2.bank_number == '010'
+    assert pad_account_2.bank_number == "010"
     assert pad_account_2.payment_method == PaymentMethod.PAD.value
     assert pad_account_2.cfs_account_id != pad_account_1.cfs_account_id
 
@@ -165,7 +200,8 @@ def test_create_pad_to_bcol_to_pad(session):
 def test_create_online_banking_account(session):
     """Assert that create online banking account works."""
     online_banking_account = PaymentAccountService.create(
-        get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value))
+        get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
+    )
     assert online_banking_account.payment_method == PaymentMethod.ONLINE_BANKING.value
     assert online_banking_account.cfs_account_id
     assert online_banking_account.cfs_account is None
@@ -185,8 +221,10 @@ def test_create_online_credit_account(session):
 def test_update_credit_to_online_banking(session):
     """Assert that update from credit card to online banking works."""
     credit_account = PaymentAccountService.create(get_basic_account_payload())
-    online_banking_account = PaymentAccountService.update(credit_account.auth_account_id, get_basic_account_payload(
-        payment_method=PaymentMethod.ONLINE_BANKING.value))
+    online_banking_account = PaymentAccountService.update(
+        credit_account.auth_account_id,
+        get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value),
+    )
     assert online_banking_account.payment_method == PaymentMethod.ONLINE_BANKING.value
     assert online_banking_account.cfs_account_id
     assert online_banking_account.cfs_account is None
@@ -198,27 +236,37 @@ def test_update_credit_to_online_banking(session):
 def test_update_online_banking_to_credit(session):
     """Assert that update from online banking to credit card works."""
     online_banking_account = PaymentAccountService.create(
-        get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value))
-    credit_account = PaymentAccountService.update(online_banking_account.auth_account_id, get_basic_account_payload())
+        get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
+    )
+    credit_account = PaymentAccountService.update(
+        online_banking_account.auth_account_id, get_basic_account_payload()
+    )
     assert credit_account.payment_method == PaymentMethod.DIRECT_PAY.value
 
 
-@pytest.mark.parametrize('payload', [
-    get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value),
-    get_basic_account_payload(),
-    get_premium_account_payload(),
-    get_linked_pad_account_payload(),
-    get_unlinked_pad_account_payload()
-])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value),
+        get_basic_account_payload(),
+        get_premium_account_payload(),
+        get_linked_pad_account_payload(),
+        get_unlinked_pad_account_payload(),
+    ],
+)
 def test_delete_account(session, payload):
     """Assert that delete payment account works."""
     pay_account: PaymentAccountService = PaymentAccountService.create(payload)
-    PaymentAccountService.delete_account(payload.get('accountId'))
+    PaymentAccountService.delete_account(payload.get("accountId"))
 
     # Try to find the account by id.
     pay_account = PaymentAccountService.find_by_id(pay_account.id)
     for cfs_account in CfsAccountModel.find_by_account_id(pay_account.id):
-        assert cfs_account.status == CfsAccountStatus.INACTIVE.value if cfs_account else True
+        assert (
+            cfs_account.status == CfsAccountStatus.INACTIVE.value
+            if cfs_account
+            else True
+        )
 
 
 def test_delete_account_failures(session):
@@ -235,7 +283,7 @@ def test_delete_account_failures(session):
     pay_account.save()
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentAccountService.delete_account(payload.get('accountId'))
+        PaymentAccountService.delete_account(payload.get("accountId"))
 
     assert excinfo.value.code == Error.OUTSTANDING_CREDIT.code
 
@@ -243,37 +291,43 @@ def test_delete_account_failures(session):
     pay_account.credit = 0
     pay_account.save()
 
-    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, PaymentMethod.PAD.value)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(
+        pay_account.id, PaymentMethod.PAD.value
+    )
     cfs_account.status = CfsAccountStatus.FREEZE.value
     cfs_account.save()
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentAccountService.delete_account(payload.get('accountId'))
+        PaymentAccountService.delete_account(payload.get("accountId"))
 
     assert excinfo.value.code == Error.FROZEN_ACCOUNT.code
 
     # Now mark the status ACTIVE and create transactions within configured time.
-    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, PaymentMethod.PAD.value)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(
+        pay_account.id, PaymentMethod.PAD.value
+    )
     cfs_account.status = CfsAccountStatus.ACTIVE.value
     cfs_account.save()
 
     created_on: datetime = get_outstanding_txns_from_date() + timedelta(minutes=1)
-    factory_invoice(pay_account, payment_method_code=PaymentMethod.PAD.value, created_on=created_on,
-                    status_code=InvoiceStatus.PAID.value).save()
+    factory_invoice(
+        pay_account,
+        payment_method_code=PaymentMethod.PAD.value,
+        created_on=created_on,
+        status_code=InvoiceStatus.PAID.value,
+    ).save()
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentAccountService.delete_account(payload.get('accountId'))
+        PaymentAccountService.delete_account(payload.get("accountId"))
 
     assert excinfo.value.code == Error.TRANSACTIONS_IN_PROGRESS.code
 
 
-@pytest.mark.parametrize('payload', [
-    get_eft_enable_account_payload()
-])
+@pytest.mark.parametrize("payload", [get_eft_enable_account_payload()])
 def test_patch_account(session, payload):
     """Assert that patch payment account works."""
     pay_account: PaymentAccountService = PaymentAccountService.create(payload)
-    PaymentAccountService.enable_eft(payload.get('accountId'))
+    PaymentAccountService.enable_eft(payload.get("accountId"))
 
     # Try to find the account by id.
     pay_account = PaymentAccountService.find_by_id(pay_account.id)
@@ -284,42 +338,56 @@ def test_eft_payment_method_settings(session, client, jwt, app, admin_users_mock
     """Assert EFT payment method statement settings are applied."""
     # Validate on account create with EFT payment method that statement settings are automatically set to MONTHLY
     payment_account: PaymentAccountService = PaymentAccountService.create(
-        get_premium_account_payload(payment_method=PaymentMethod.EFT.value))
+        get_premium_account_payload(payment_method=PaymentMethod.EFT.value)
+    )
 
     assert payment_account is not None
     assert payment_account.payment_method == PaymentMethod.EFT.value
 
-    statement_settings: StatementSettingsModel = StatementSettingsModel\
-        .find_active_settings(str(payment_account.auth_account_id), datetime.now(tz=timezone.utc))
+    statement_settings: StatementSettingsModel = (
+        StatementSettingsModel.find_active_settings(
+            str(payment_account.auth_account_id), datetime.now(tz=timezone.utc)
+        )
+    )
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value
 
     # Validate statement notifications enabled and recipients set up
-    statement_recipients: List[StatementRecipientModel] = StatementRecipientModel \
-        .find_all_recipients(payment_account.auth_account_id)
+    statement_recipients: List[StatementRecipientModel] = (
+        StatementRecipientModel.find_all_recipients(payment_account.auth_account_id)
+    )
 
     assert statement_recipients
     assert len(statement_recipients) == 1
 
     # Validate on account update to EFT payment method that statement settings are automatically set to MONTHLY
     payment_account_2: PaymentAccountService = PaymentAccountService.create(
-        get_premium_account_payload(account_id=payment_account.id + 1,
-                                    payment_method=PaymentMethod.ONLINE_BANKING.value))
+        get_premium_account_payload(
+            account_id=payment_account.id + 1,
+            payment_method=PaymentMethod.ONLINE_BANKING.value,
+        )
+    )
 
     assert payment_account_2 is not None
     assert payment_account_2.payment_method == PaymentMethod.ONLINE_BANKING.value
 
-    payment_account_2 = PaymentAccountService\
-        .update(payment_account_2.auth_account_id,
-                get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
-                                               account_id=payment_account_2.auth_account_id))
+    payment_account_2 = PaymentAccountService.update(
+        payment_account_2.auth_account_id,
+        get_eft_enable_account_payload(
+            payment_method=PaymentMethod.EFT.value,
+            account_id=payment_account_2.auth_account_id,
+        ),
+    )
 
     assert payment_account_2 is not None
     assert payment_account_2.payment_method == PaymentMethod.EFT.value
 
-    statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_latest_settings(str(payment_account_2.auth_account_id))
+    statement_settings: StatementSettingsModel = (
+        StatementSettingsModel.find_latest_settings(
+            str(payment_account_2.auth_account_id)
+        )
+    )
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value
@@ -330,12 +398,12 @@ def test_payment_account_service_with_cfs_account(session):
     payment_account = PaymentAccountModel()
     payment_account.flush()
 
-    cfs_account = '123'
-    cfs_party = '456'
-    cfs_site = '789'
-    bank_number = '001'
-    bank_branch_number = '002'
-    bank_account_number = '003'
+    cfs_account = "123"
+    cfs_party = "456"
+    cfs_site = "789"
+    bank_number = "001"
+    bank_branch_number = "002"
+    bank_account_number = "003"
     CfsAccountModel(
         account_id=payment_account.id,
         cfs_account=cfs_account,
@@ -344,7 +412,7 @@ def test_payment_account_service_with_cfs_account(session):
         bank_number=bank_number,
         bank_branch_number=bank_branch_number,
         bank_account_number=bank_account_number,
-        status=CfsAccountStatus.PENDING.value
+        status=CfsAccountStatus.PENDING.value,
     ).flush()
 
     payment_account_service = PaymentAccountService.find_by_id(payment_account.id)

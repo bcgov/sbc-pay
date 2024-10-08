@@ -19,8 +19,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from pay_api.models.corp_type import CorpType, CorpTypeSchema
 from pay_api.models.error_code import ErrorCode, ErrorCodeSchema
 from pay_api.models.fee_code import FeeCode, FeeCodeSchema
-from pay_api.models.invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
-from pay_api.models.routing_slip_status_code import RoutingSlipStatusCode, RoutingSlipStatusCodeSchema
+from pay_api.models.invoice_status_code import (
+    InvoiceStatusCode,
+    InvoiceStatusCodeSchema,
+)
+from pay_api.models.routing_slip_status_code import (
+    RoutingSlipStatusCode,
+    RoutingSlipStatusCodeSchema,
+)
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code as CodeValue
 
@@ -35,15 +41,12 @@ class Code:
             for code in CodeValue:
                 Code.find_code_values_by_type(code.value)
         except SQLAlchemyError as e:
-            current_app.logger.info('Error on building cache {}', e)
+            current_app.logger.info("Error on building cache {}", e)
 
     @classmethod
-    def find_code_values_by_type(
-            cls,
-            code_type: str
-    ):
+    def find_code_values_by_type(cls, code_type: str):
         """Find code values by code type."""
-        current_app.logger.debug(f'<find_code_values_by_type : {code_type}')
+        current_app.logger.debug(f"<find_code_values_by_type : {code_type}")
         response = {}
 
         # Get from cache and if still none look up in database
@@ -69,21 +72,23 @@ class Code:
                 codes_response = schema.dump(codes_models, many=True)
                 cache.set(code_type, codes_response)
 
-        response['codes'] = codes_response
-        current_app.logger.debug('>find_code_values_by_type')
+        response["codes"] = codes_response
+        current_app.logger.debug(">find_code_values_by_type")
         return response
 
     @classmethod
-    def find_code_value_by_type_and_code(
-            cls,
-            code_type: str,
-            code: str
-    ):
+    def find_code_value_by_type_and_code(cls, code_type: str, code: str):
         """Find code values by code type and code."""
-        current_app.logger.debug(f'<find_code_value_by_type_and_code : {code_type} - {code}')
+        current_app.logger.debug(
+            f"<find_code_value_by_type_and_code : {code_type} - {code}"
+        )
         code_response = {}
         if cache.get(code_type):
-            filtered_codes = [cd for cd in cache.get(code_type) if cd.get('type') == code or cd.get('code') == code]
+            filtered_codes = [
+                cd
+                for cd in cache.get(code_type)
+                if cd.get("type") == code or cd.get("code") == code
+            ]
             if filtered_codes:
                 code_response = filtered_codes[0]
         else:
@@ -99,5 +104,5 @@ class Code:
                 codes_model = CorpType.find_by_code(code)
                 schema = CorpTypeSchema()
                 code_response = schema.dump(codes_model, many=False)
-        current_app.logger.debug('>find_code_value_by_type_and_code')
+        current_app.logger.debug(">find_code_value_by_type_and_code")
         return code_response

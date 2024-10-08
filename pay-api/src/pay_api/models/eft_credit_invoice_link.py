@@ -24,7 +24,7 @@ from ..utils.enums import EFTCreditInvoiceStatus
 class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages linkages between EFT Credits and invoices."""
 
-    __tablename__ = 'eft_credit_invoice_links'
+    __tablename__ = "eft_credit_invoice_links"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -36,40 +36,54 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'amount',
-            'created_on',
-            'eft_credit_id',
-            'invoice_id',
-            'link_group_id',
-            'receipt_number',
-            'status_code'
+        "include_properties": [
+            "id",
+            "amount",
+            "created_on",
+            "eft_credit_id",
+            "invoice_id",
+            "link_group_id",
+            "receipt_number",
+            "status_code",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
-    eft_credit_id = db.Column(db.Integer, ForeignKey('eft_credits.id'), nullable=False, index=True)
+    invoice_id = db.Column(
+        db.Integer, ForeignKey("invoices.id"), nullable=False, index=True
+    )
+    eft_credit_id = db.Column(
+        db.Integer, ForeignKey("eft_credits.id"), nullable=False, index=True
+    )
     amount = db.Column(db.Numeric(19, 2), nullable=True)
-    status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    status_code = db.Column("status_code", db.String(25), nullable=False, index=True)
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
     receipt_number = db.Column(db.String(50), nullable=True)
     link_group_id = db.Column(db.Integer, nullable=True)
 
     @classmethod
     def find_pending_invoice_links(cls, invoice_id: int):
         """Find active link by short name and account."""
-        return (cls.query
-                .filter_by(invoice_id=invoice_id)
-                .filter(cls.status_code.in_([EFTCreditInvoiceStatus.PENDING.value]))
-                ).one_or_none()
+        return (
+            cls.query.filter_by(invoice_id=invoice_id).filter(
+                cls.status_code.in_([EFTCreditInvoiceStatus.PENDING.value])
+            )
+        ).one_or_none()
 
     @classmethod
     def find_by_invoice_id(cls, invoice_id: int):
         """Find links by invoice id."""
         # Order is important here, we use it in the jobs.
-        return cls.query.filter_by(invoice_id=invoice_id).order_by(EFTCreditInvoiceLink.id.desc()).all()
+        return (
+            cls.query.filter_by(invoice_id=invoice_id)
+            .order_by(EFTCreditInvoiceLink.id.desc())
+            .all()
+        )
 
     @classmethod
     def get_next_group_link_seq(cls):

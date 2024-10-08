@@ -25,7 +25,7 @@ from tests.utilities.base_test import factory_eft_shortname
 def test_eft_refund_defaults(session):
     """Assert EFT refund defaults are stored."""
     # Ensure the required entry exists in the related table
-    short_name = factory_eft_shortname(short_name='Test Short Name')
+    short_name = factory_eft_shortname(short_name="Test Short Name")
     db.session.add(short_name)
     db.session.commit()
     short_name_id = short_name.id
@@ -33,23 +33,27 @@ def test_eft_refund_defaults(session):
     eft_refund = EFTRefundModel(
         short_name_id=short_name_id,
         refund_amount=100.00,
-        cas_supplier_number='SUP123456',
-        refund_email='test@example.com',
-        comment='Test comment'
+        cas_supplier_number="SUP123456",
+        refund_email="test@example.com",
+        comment="Test comment",
     )
     eft_refund.save()
 
     # Retrieve and assert the EFT refund
-    eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()
+    eft_refund = (
+        db.session.query(EFTRefundModel)
+        .filter(EFTRefundModel.id == eft_refund.id)
+        .one_or_none()
+    )
 
     assert eft_refund.id is not None
     assert eft_refund.created_on is not None
     assert eft_refund.updated_on is None
     assert eft_refund.short_name_id == short_name_id
     assert eft_refund.refund_amount == 100.00
-    assert eft_refund.cas_supplier_number == 'SUP123456'
-    assert eft_refund.refund_email == 'test@example.com'
-    assert eft_refund.comment == 'Test comment'
+    assert eft_refund.cas_supplier_number == "SUP123456"
+    assert eft_refund.refund_email == "test@example.com"
+    assert eft_refund.comment == "Test comment"
     assert eft_refund.status is None
     assert eft_refund.updated_by is None
     assert eft_refund.updated_name is None
@@ -58,16 +62,16 @@ def test_eft_refund_defaults(session):
 def test_eft_refund_all_attributes(session):
     """Assert all EFT refund attributes are stored."""
     # Ensure the required entry exists in the related table
-    short_name = factory_eft_shortname(short_name='Test Short Name').save()
+    short_name = factory_eft_shortname(short_name="Test Short Name").save()
     refund_amount = 150.00
-    cas_supplier_number = 'SUP654321'
-    refund_email = 'updated@example.com'
-    comment = 'Updated comment'
-    status = 'COMPLETED'
-    created_by = 'user111'
-    decline_reason = 'Decline reason comment'
-    updated_by = 'user123'
-    updated_name = 'User Name'
+    cas_supplier_number = "SUP654321"
+    refund_email = "updated@example.com"
+    comment = "Updated comment"
+    status = "COMPLETED"
+    created_by = "user111"
+    decline_reason = "Decline reason comment"
+    updated_by = "user123"
+    updated_name = "User Name"
 
     eft_refund = EFTRefundModel(
         short_name_id=short_name.id,
@@ -83,7 +87,11 @@ def test_eft_refund_all_attributes(session):
     )
     eft_refund.save()
 
-    eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()
+    eft_refund = (
+        db.session.query(EFTRefundModel)
+        .filter(EFTRefundModel.id == eft_refund.id)
+        .one_or_none()
+    )
 
     assert eft_refund is not None
     assert eft_refund.short_name_id == short_name.id

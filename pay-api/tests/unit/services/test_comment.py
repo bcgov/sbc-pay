@@ -31,32 +31,30 @@ def test_create_comment(session, monkeypatch):
 
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
-            'username': 'service account',
-            'realm_access': {
-                'roles': [
-                    'system',
-                    'edit'
-                ]
-            }
+            "username": "service account",
+            "realm_access": {"roles": ["system", "edit"]},
         }
 
     def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
-        return 'test'
-    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
-    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+        return "test"
+
+    monkeypatch.setattr("pay_api.utils.user_context._get_token", mock_auth)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token_info", token_info)
 
     payment_account = factory_payment_account()
     payment_account.save()
-    rs = factory_routing_slip(payment_account_id=payment_account.id, number='test_number')
+    rs = factory_routing_slip(
+        payment_account_id=payment_account.id, number="test_number"
+    )
     rs.save()
 
-    CommentService.create(comment_value='test', rs_number=rs.number)
+    CommentService.create(comment_value="test", rs_number=rs.number)
     result = CommentService.find_all_comments_for_a_routingslip(rs.number)
 
     assert result
-    comments = result.get('comments')
+    comments = result.get("comments")
     assert len(comments) == 1
-    assert comments[0].get('routing_slip_number') == rs.number
+    assert comments[0].get("routing_slip_number") == rs.number
 
 
 def test_create_comment_invalid_case(session, monkeypatch):
@@ -65,20 +63,16 @@ def test_create_comment_invalid_case(session, monkeypatch):
 
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
-            'username': 'service account',
-            'realm_access': {
-                'roles': [
-                    'system',
-                    'edit'
-                ]
-            }
+            "username": "service account",
+            "realm_access": {"roles": ["system", "edit"]},
         }
 
     def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
-        return 'test'
-    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
-    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+        return "test"
+
+    monkeypatch.setattr("pay_api.utils.user_context._get_token", mock_auth)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token_info", token_info)
 
     with pytest.raises(Exception) as exception_info:
-        CommentService.create(comment_value='test', rs_number='invalid')
+        CommentService.create(comment_value="test", rs_number="invalid")
     assert exception_info.type == BusinessException

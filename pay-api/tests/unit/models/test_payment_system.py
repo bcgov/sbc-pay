@@ -20,7 +20,7 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 from pay_api.models.payment_system import PaymentSystem
 
 
-def factory_payment_system(code: str = 'PAYBC', description='PayBC'):
+def factory_payment_system(code: str = "PAYBC", description="PayBC"):
     """Return Factory."""
     return PaymentSystem(code=code, description=description)
 
@@ -30,6 +30,6 @@ def test_payment_system(session):
 
     Start with a blank database.
     """
-    payment_method = factory_payment_system(code='XX', description='TEST')
+    payment_method = factory_payment_system(code="XX", description="TEST")
     payment_method.save()
-    assert payment_method.code == 'XX'
+    assert payment_method.code == "XX"

@@ -126,19 +126,27 @@ class StatementRecipients:
     @staticmethod
     def find_statement_notification_details(auth_account_id: str):
         """Find statements by account id."""
-        current_app.logger.debug(f'<find_statement_notification_details {auth_account_id}')
+        current_app.logger.debug(
+            f"<find_statement_notification_details {auth_account_id}"
+        )
         recipients = StatementRecipientsModel.find_all_recipients(auth_account_id)
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        payment_account: PaymentAccountModel = (
+            PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        )
         data = {
-            'recipients': NotificationSchema().dump(recipients, many=True),
-            'statement_notification_enabled': getattr(payment_account, 'statement_notification_enabled', False)
+            "recipients": NotificationSchema().dump(recipients, many=True),
+            "statement_notification_enabled": getattr(
+                payment_account, "statement_notification_enabled", False
+            ),
         }
 
-        current_app.logger.debug('>find_statement_notification_details')
+        current_app.logger.debug(">find_statement_notification_details")
         return data
 
     @staticmethod
-    def update_statement_notification_details(auth_account_id: str, notification_details: Tuple[Dict[str, Any]]):
+    def update_statement_notification_details(
+        auth_account_id: str, notification_details: Tuple[Dict[str, Any]]
+    ):
         """Update statements notification settings by account id.
 
         Update the payment Account.
@@ -148,20 +156,22 @@ class StatementRecipients:
         if payment_account is None:
             payment_account = PaymentAccountModel()
             payment_account.auth_account_id = auth_account_id
-        payment_account.name = notification_details.get('accountName')
-        payment_account.statement_notification_enabled = notification_details.get('statementNotificationEnabled')
+        payment_account.name = notification_details.get("accountName")
+        payment_account.statement_notification_enabled = notification_details.get(
+            "statementNotificationEnabled"
+        )
         payment_account.save()
         recepient_list: list = []
 
         # if no object is passed , dont update anything.Empty list passed means , delete everything
-        if (recepients := notification_details.get('recipients')) is not None:
+        if (recepients := notification_details.get("recipients")) is not None:
             StatementRecipientsModel.delete_all_recipients(payment_account.id)
             for rec in recepients or []:
                 recipient = StatementRecipientsModel()
-                recipient.auth_user_id = rec.get('authUserId')
-                recipient.firstname = rec.get('firstname')
-                recipient.lastname = rec.get('lastname')
-                recipient.email = rec.get('email')
+                recipient.auth_user_id = rec.get("authUserId")
+                recipient.firstname = rec.get("firstname")
+                recipient.lastname = rec.get("lastname")
+                recipient.email = rec.get("email")
                 recipient.payment_account_id = payment_account.id
                 recepient_list.append(recipient)
             StatementRecipientsModel.bulk_save_recipients(recepient_list)

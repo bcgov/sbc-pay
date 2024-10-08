@@ -32,7 +32,7 @@ class DistributionCodeLink(BaseModel):
     Distribution code holds details on the codes for how the collected payment is going to be distributed.
     """
 
-    __tablename__ = 'distribution_code_links'
+    __tablename__ = "distribution_code_links"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -44,25 +44,32 @@ class DistributionCodeLink(BaseModel):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'distribution_code_id',
-            'distribution_link_id',
-            'fee_schedule_id'
+        "include_properties": [
+            "distribution_code_id",
+            "distribution_link_id",
+            "fee_schedule_id",
         ]
     }
 
     distribution_link_id = db.Column(db.Integer, primary_key=True)
-    fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedules.fee_schedule_id'))
-    distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'))
+    fee_schedule_id = db.Column(db.Integer, ForeignKey("fee_schedules.fee_schedule_id"))
+    distribution_code_id = db.Column(
+        db.Integer, ForeignKey("distribution_codes.distribution_code_id")
+    )
 
     @classmethod
     def find_fee_schedules_by_distribution_id(cls, distribution_code_id: int):
         """Find all distribution codes."""
         from .fee_schedule import FeeSchedule  # pylint: disable=import-outside-toplevel
 
-        query = db.session.query(FeeSchedule). \
-            join(DistributionCodeLink, DistributionCodeLink.fee_schedule_id == FeeSchedule.fee_schedule_id). \
-            filter(DistributionCodeLink.distribution_code_id == distribution_code_id)
+        query = (
+            db.session.query(FeeSchedule)
+            .join(
+                DistributionCodeLink,
+                DistributionCodeLink.fee_schedule_id == FeeSchedule.fee_schedule_id,
+            )
+            .filter(DistributionCodeLink.distribution_code_id == distribution_code_id)
+        )
         return query.all()
 
     @classmethod
@@ -78,7 +85,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
     Distribution code holds details on the codes for how the collected payment is going to be distributed.
     """
 
-    __tablename__ = 'distribution_codes'
+    __tablename__ = "distribution_codes"
 
     distribution_code_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
@@ -89,38 +96,62 @@ class DistributionCode(Audit, Versioned, BaseModel):
     stob = db.Column(db.String(50), nullable=True)
     project_code = db.Column(db.String(50), nullable=True)
 
-    start_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
+    start_date = db.Column(
+        db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False
+    )
     end_date = db.Column(db.Date, default=None, nullable=True)
-    stop_ejv = db.Column('stop_ejv', Boolean(), default=False)
+    stop_ejv = db.Column("stop_ejv", Boolean(), default=False)
 
-    service_fee_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
-                                                 nullable=True)
-    disbursement_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
-                                                  nullable=True)
+    service_fee_distribution_code_id = db.Column(
+        db.Integer, ForeignKey("distribution_codes.distribution_code_id"), nullable=True
+    )
+    disbursement_distribution_code_id = db.Column(
+        db.Integer, ForeignKey("distribution_codes.distribution_code_id"), nullable=True
+    )
     # account id for distribution codes for gov account. None for distribution codes for filing types
-    account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+    account_id = db.Column(
+        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
+    )
 
-    service_fee_distribution_code = relationship('DistributionCode', foreign_keys=[service_fee_distribution_code_id],
-                                                 remote_side=[distribution_code_id], lazy='select')
-    disbursement_distribution_code = relationship('DistributionCode', foreign_keys=[disbursement_distribution_code_id],
-                                                  remote_side=[distribution_code_id], lazy='select')
-    account = relationship('PaymentAccount', lazy='joined')
+    service_fee_distribution_code = relationship(
+        "DistributionCode",
+        foreign_keys=[service_fee_distribution_code_id],
+        remote_side=[distribution_code_id],
+        lazy="select",
+    )
+    disbursement_distribution_code = relationship(
+        "DistributionCode",
+        foreign_keys=[disbursement_distribution_code_id],
+        remote_side=[distribution_code_id],
+        lazy="select",
+    )
+    account = relationship("PaymentAccount", lazy="joined")
 
     def __str__(self):
         """Override to string."""
-        return f'{self.name} ({self.client}.{self.responsibility_centre}.{self.service_line}.' \
-               f'{self.stob}.{self.project_code})'
+        return (
+            f"{self.name} ({self.client}.{self.responsibility_centre}.{self.service_line}."
+            f"{self.stob}.{self.project_code})"
+        )
 
     @classmethod
     def find_all(cls, include_gov_account_gl_codes: bool = False):
         """Find all distribution codes."""
         valid_date = datetime.now(tz=timezone.utc).date()
-        query = cls.query.filter(DistributionCode.start_date <= valid_date). \
-            filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date)). \
-            order_by(DistributionCode.name.asc())
+        query = (
+            cls.query.filter(DistributionCode.start_date <= valid_date)
+            .filter(
+                (DistributionCode.end_date.is_(None))
+                | (DistributionCode.end_date >= valid_date)
+            )
+            .order_by(DistributionCode.name.asc())
+        )
 
-        query = query.filter(DistributionCode.account_id.isnot(None)) if include_gov_account_gl_codes \
+        query = (
+            query.filter(DistributionCode.account_id.isnot(None))
+            if include_gov_account_gl_codes
             else query.filter(DistributionCode.account_id.is_(None))
+        )
 
         return query.all()
 
@@ -128,17 +159,24 @@ class DistributionCode(Audit, Versioned, BaseModel):
     def find_by_service_fee_distribution_id(cls, service_fee_distribution_code_id):
         """Find by service fee distribution id."""
         return cls.query.filter(
-            DistributionCode.service_fee_distribution_code_id == service_fee_distribution_code_id).all()
+            DistributionCode.service_fee_distribution_code_id
+            == service_fee_distribution_code_id
+        ).all()
 
     @classmethod
     def find_by_active_for_fee_schedule(cls, fee_schedule_id: int):
         """Return active distribution for fee schedule."""
         valid_date = datetime.now(tz=timezone.utc).date()
-        query = db.session.query(DistributionCode). \
-            join(DistributionCodeLink). \
-            filter(DistributionCodeLink.fee_schedule_id == fee_schedule_id). \
-            filter(DistributionCode.start_date <= valid_date). \
-            filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
+        query = (
+            db.session.query(DistributionCode)
+            .join(DistributionCodeLink)
+            .filter(DistributionCodeLink.fee_schedule_id == fee_schedule_id)
+            .filter(DistributionCode.start_date <= valid_date)
+            .filter(
+                (DistributionCode.end_date.is_(None))
+                | (DistributionCode.end_date >= valid_date)
+            )
+        )
 
         distribution_code = query.one_or_none()
         return distribution_code
@@ -147,27 +185,36 @@ class DistributionCode(Audit, Versioned, BaseModel):
     def find_by_active_for_account(cls, account_id: int):
         """Return active distribution for account."""
         valid_date = datetime.now(tz=timezone.utc).date()
-        query = db.session.query(DistributionCode). \
-            filter(DistributionCode.account_id == account_id). \
-            filter(DistributionCode.start_date <= valid_date). \
-            filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
+        query = (
+            db.session.query(DistributionCode)
+            .filter(DistributionCode.account_id == account_id)
+            .filter(DistributionCode.start_date <= valid_date)
+            .filter(
+                (DistributionCode.end_date.is_(None))
+                | (DistributionCode.end_date >= valid_date)
+            )
+        )
 
         distribution_code = query.one_or_none()
         return distribution_code
 
 
-class DistributionCodeLinkSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
+class DistributionCodeLinkSchema(
+    ma.SQLAlchemyAutoSchema
+):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the DistributionCodeLink."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = DistributionCodeLink
-        exclude = ['disbursement']
+        exclude = ["disbursement"]
         load_instance = True
 
 
-class DistributionCodeSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
+class DistributionCodeSchema(
+    AuditSchema, BaseSchema
+):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the DistributionCode."""
 
     class Meta:  # pylint: disable=too-few-public-methods
@@ -175,6 +222,10 @@ class DistributionCodeSchema(AuditSchema, BaseSchema):  # pylint: disable=too-ma
 
         model = DistributionCode
 
-    service_fee_distribution_code_id = fields.String(data_key='service_fee_distribution_code_id')
-    disbursement_distribution_code_id = fields.String(data_key='disbursement_distribution_code_id')
-    account_id = fields.String(data_key='account_id')
+    service_fee_distribution_code_id = fields.String(
+        data_key="service_fee_distribution_code_id"
+    )
+    disbursement_distribution_code_id = fields.String(
+        data_key="disbursement_distribution_code_id"
+    )
+    account_id = fields.String(data_key="account_id")

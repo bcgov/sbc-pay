@@ -43,7 +43,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self._total = None
         self._quantity: int = 1
         self._line_item_status_code: str = None
-        self._waived_fees = Decimal('0')
+        self._waived_fees = Decimal("0")
         self._waived_by: str = None
         self._fee_distribution_id: int = None
         self._fee_distribution: DistributionCodeModel = None
@@ -274,8 +274,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
     @user_context
     def create(invoice_id: int, fee: FeeSchedule, **kwargs):
         """Create Payment Line Item record."""
-        current_app.logger.debug('<create')
-        user: UserContext = kwargs['user']
+        current_app.logger.debug("<create")
+        user: UserContext = kwargs["user"]
         p = PaymentLineItem()
         p.invoice_id = invoice_id
         p.total = fee.total_excluding_service_fees
@@ -294,7 +294,9 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         # Set distribution details to line item
         distribution_code = None
         if p.total > 0 or p.service_fees > 0:
-            distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee.fee_schedule_id)
+            distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(
+                fee.fee_schedule_id
+            )
             p.fee_distribution_id = distribution_code.distribution_code_id
 
         if fee.waived_fee_amount > 0:
@@ -310,7 +312,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
 
         # Set distribution model to avoid more queries to DB
         p.fee_distribution = distribution_code
-        current_app.logger.debug('>create')
+        current_app.logger.debug(">create")
         return p
 
     @staticmethod
@@ -321,5 +323,5 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         line = PaymentLineItem()
         line._dao = line_dao  # pylint: disable=protected-access
 
-        current_app.logger.debug('>find_by_id')
+        current_app.logger.debug(">find_by_id")
         return line

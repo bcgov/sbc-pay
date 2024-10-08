@@ -27,40 +27,66 @@ class Audit(BaseModel):  # pylint: disable=too-few-public-methods
 
     __abstract__ = True
 
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
-    updated_on = db.Column('updated_on', db.DateTime, default=None, onupdate=lambda: datetime.now(tz=timezone.utc))
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
+    updated_on = db.Column(
+        "updated_on",
+        db.DateTime,
+        default=None,
+        onupdate=lambda: datetime.now(tz=timezone.utc),
+    )
 
     @declared_attr
     def created_by(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Return created by."""
-        return db.Column('created_by', db.String(50), nullable=False, default=cls._get_user_name)
+        return db.Column(
+            "created_by", db.String(50), nullable=False, default=cls._get_user_name
+        )
 
     @declared_attr
     def created_name(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Return created name."""
-        return db.Column('created_name', db.String(100), nullable=True, default=cls._get_name)
+        return db.Column(
+            "created_name", db.String(100), nullable=True, default=cls._get_name
+        )
 
     @declared_attr
     def updated_by(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Return updated by."""
-        return db.Column('updated_by', db.String(50), nullable=True, default=None, onupdate=cls._get_user_name)
+        return db.Column(
+            "updated_by",
+            db.String(50),
+            nullable=True,
+            default=None,
+            onupdate=cls._get_user_name,
+        )
 
     @declared_attr
     def updated_name(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Return updated by."""
-        return db.Column('updated_name', db.String(50), nullable=True, default=None, onupdate=cls._get_name)
+        return db.Column(
+            "updated_name",
+            db.String(50),
+            nullable=True,
+            default=None,
+            onupdate=cls._get_name,
+        )
 
     @staticmethod
     @user_context
     def _get_user_name(**kwargs):
         """Return current user user_name."""
-        return kwargs['user'].user_name
+        return kwargs["user"].user_name
 
     @staticmethod
     @user_context
     def _get_name(**kwargs):
         """Return current user's name."""
-        return kwargs['user'].name
+        return kwargs["user"].name
 
 
 class AuditSchema:  # pylint: disable=too-many-ancestors, too-few-public-methods

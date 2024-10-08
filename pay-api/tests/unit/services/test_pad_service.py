@@ -31,25 +31,27 @@ pad_service = PadService()
 def test_create_account(session):
     """Test create_account."""
     payment_info = {
-        'bankInstitutionNumber': 111,
-        'bankTransitNumber': 222,
-        'bankAccountNumber': 33333333
+        "bankInstitutionNumber": 111,
+        "bankTransitNumber": 222,
+        "bankAccountNumber": 33333333,
     }
-    account = pad_service.create_account(identifier='100', contact_info={}, payment_info=payment_info)
+    account = pad_service.create_account(
+        identifier="100", contact_info={}, payment_info=payment_info
+    )
     assert account
-    assert account.bank_number == payment_info.get('bankInstitutionNumber')
+    assert account.bank_number == payment_info.get("bankInstitutionNumber")
 
 
 def test_get_payment_system_code(session):
     """Test get_payment_system_code."""
     code = pad_service.get_payment_system_code()
-    assert code == 'PAYBC'
+    assert code == "PAYBC"
 
 
 def test_get_payment_method_code(session):
     """Test get_payment_method_code."""
     code = pad_service.get_payment_method_code()
-    assert code == 'PAD'
+    assert code == "PAD"
 
 
 def test_has_no_payment_blockers(session):
@@ -62,7 +64,9 @@ def test_has_no_payment_blockers(session):
 
 def test_has_payment_blockers(session):
     """Test for payment blockers."""
-    payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
+    payment_account = factory_payment_account(
+        payment_method_code=PaymentMethod.PAD.value
+    )
     payment_account.has_nsf_invoices = datetime.now(tz=timezone.utc)
     payment_account.save()
 

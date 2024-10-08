@@ -41,8 +41,13 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         """Return ONLINE_BANKING as the system code."""
         return PaymentMethod.ONLINE_BANKING.value
 
-    def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
-                       **kwargs) -> CfsAccountModel:
+    def create_account(
+        self,
+        identifier: str,
+        contact_info: Dict[str, Any],
+        payment_info: Dict[str, Any],
+        **kwargs
+    ) -> CfsAccountModel:
         """Create an account for the online banking."""
         # Create CFS Account model instance and set the status as PENDING
         cfs_account = CfsAccountModel()
@@ -50,13 +55,23 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         cfs_account.payment_method = PaymentMethod.ONLINE_BANKING.value
         return cfs_account
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
-                       **kwargs) -> InvoiceReference:
+    def create_invoice(
+        self,
+        payment_account: PaymentAccount,
+        line_items: List[PaymentLineItem],
+        invoice: Invoice,
+        **kwargs
+    ) -> InvoiceReference:
         """Return a static invoice number for online banking."""
         self.ensure_no_payment_blockers(payment_account)
         # Do nothing here as the roll up happens later after creation of invoice.
 
-    def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
+    def get_receipt(
+        self,
+        payment_account: PaymentAccount,
+        pay_response_url: str,
+        invoice_reference: InvoiceReference,
+    ):
         """Get the receipt details by calling PayBC web service."""
 
     def apply_credit(self, invoice: Invoice) -> None:
@@ -65,11 +80,14 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
-        current_app.logger.debug('<cancel_invoice %s, %s', payment_account, inv_number)
+        current_app.logger.debug("<cancel_invoice %s, %s", payment_account, inv_number)
         self.reverse_invoice(inv_number)
 
-    def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount,
-                           refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
+    def process_cfs_refund(
+        self,
+        invoice: InvoiceModel,
+        payment_account: PaymentAccount,
+        refund_partial: List[RefundPartialLine],
+    ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         return super()._refund_and_create_credit_memo(invoice)

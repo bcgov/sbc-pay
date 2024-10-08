@@ -32,9 +32,11 @@ class FeeSchedule(db.Model):
     Fee schedule holds the data related to filing type and fee code which is used to calculate the fees for a filing
     """
 
-    __tablename__ = 'fee_schedules'
+    __tablename__ = "fee_schedules"
     __table_args__ = (
-        db.UniqueConstraint('filing_type_code', 'corp_type_code', 'fee_code', name='unique_fee_sched_1'),
+        db.UniqueConstraint(
+            "filing_type_code", "corp_type_code", "fee_code", name="unique_fee_sched_1"
+        ),
     )
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
@@ -47,66 +49,102 @@ class FeeSchedule(db.Model):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'corp_type_code',
-            'fee_code',
-            'fee_end_date',
-            'fee_schedule_id',
-            'fee_start_date',
-            'filing_type_code',
-            'future_effective_fee_code',
-            'priority_fee_code',
-            'service_fee_code',
-            'variable'
+        "include_properties": [
+            "corp_type_code",
+            "fee_code",
+            "fee_end_date",
+            "fee_schedule_id",
+            "fee_start_date",
+            "filing_type_code",
+            "future_effective_fee_code",
+            "priority_fee_code",
+            "service_fee_code",
+            "variable",
         ]
     }
 
     fee_schedule_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    filing_type_code = db.Column(db.String(10), ForeignKey('filing_types.code'), nullable=False)
-    corp_type_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=False)
-    fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=False)
-    fee_start_date = db.Column('fee_start_date', db.Date, default=lambda: datetime.now(tz=timezone.utc).date(),
-                               nullable=False)
-    fee_end_date = db.Column('fee_end_date', db.Date, default=None, nullable=True)
-    future_effective_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
-    priority_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
-    service_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
-    variable = db.Column(Boolean(), default=False, comment='Flag to indicate if the fee is variable')
+    filing_type_code = db.Column(
+        db.String(10), ForeignKey("filing_types.code"), nullable=False
+    )
+    corp_type_code = db.Column(
+        db.String(10), ForeignKey("corp_types.code"), nullable=False
+    )
+    fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=False)
+    fee_start_date = db.Column(
+        "fee_start_date",
+        db.Date,
+        default=lambda: datetime.now(tz=timezone.utc).date(),
+        nullable=False,
+    )
+    fee_end_date = db.Column("fee_end_date", db.Date, default=None, nullable=True)
+    future_effective_fee_code = db.Column(
+        db.String(10), ForeignKey("fee_codes.code"), nullable=True
+    )
+    priority_fee_code = db.Column(
+        db.String(10), ForeignKey("fee_codes.code"), nullable=True
+    )
+    service_fee_code = db.Column(
+        db.String(10), ForeignKey("fee_codes.code"), nullable=True
+    )
+    variable = db.Column(
+        Boolean(), default=False, comment="Flag to indicate if the fee is variable"
+    )
 
-    filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy='joined', innerjoin=True)
-    corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy='joined', innerjoin=True)
+    filing_type = relationship(
+        FilingType, foreign_keys=[filing_type_code], lazy="joined", innerjoin=True
+    )
+    corp_type = relationship(
+        CorpType, foreign_keys=[corp_type_code], lazy="joined", innerjoin=True
+    )
 
-    fee = relationship(FeeCode, foreign_keys=[fee_code], lazy='select', innerjoin=True)
-    future_effective_fee = relationship(FeeCode, foreign_keys=[future_effective_fee_code], lazy='select',
-                                        innerjoin=False)
-    priority_fee = relationship(FeeCode, foreign_keys=[priority_fee_code], lazy='select', innerjoin=False)
-    service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy='select', innerjoin=False)
+    fee = relationship(FeeCode, foreign_keys=[fee_code], lazy="select", innerjoin=True)
+    future_effective_fee = relationship(
+        FeeCode,
+        foreign_keys=[future_effective_fee_code],
+        lazy="select",
+        innerjoin=False,
+    )
+    priority_fee = relationship(
+        FeeCode, foreign_keys=[priority_fee_code], lazy="select", innerjoin=False
+    )
+    service_fee = relationship(
+        FeeCode, foreign_keys=[service_fee_code], lazy="select", innerjoin=False
+    )
 
     @declared_attr
     def distribution_codes(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Distribution code relationship."""
-        return relationship('DistributionCode', secondary='distribution_code_links', backref='fee_schedules',
-                            lazy='dynamic')
+        return relationship(
+            "DistributionCode",
+            secondary="distribution_code_links",
+            backref="fee_schedules",
+            lazy="dynamic",
+        )
 
     def __str__(self):
         """Override to string."""
-        return f'{self.corp_type_code} - {self.filing_type_code}'
+        return f"{self.corp_type_code} - {self.filing_type_code}"
 
     @classmethod
-    def find_by_filing_type_and_corp_type(cls, corp_type_code: str,
-                                          filing_type_code: str,
-                                          valid_date: datetime = None
-                                          ):
+    def find_by_filing_type_and_corp_type(
+        cls, corp_type_code: str, filing_type_code: str, valid_date: datetime = None
+    ):
         """Given a filing_type_code and corp_type, this will return fee schedule."""
         if not valid_date:
             valid_date = datetime.now(tz=timezone.utc).date()
         fee_schedule = None
 
         if filing_type_code and corp_type_code:
-            query = cls.query.filter_by(filing_type_code=filing_type_code). \
-                filter_by(corp_type_code=corp_type_code). \
-                filter(FeeSchedule.fee_start_date <= cast(valid_date, Date)). \
-                filter((FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= cast(valid_date, Date)))
+            query = (
+                cls.query.filter_by(filing_type_code=filing_type_code)
+                .filter_by(corp_type_code=corp_type_code)
+                .filter(FeeSchedule.fee_start_date <= cast(valid_date, Date))
+                .filter(
+                    (FeeSchedule.fee_end_date.is_(None))
+                    | (FeeSchedule.fee_end_date >= cast(valid_date, Date))
+                )
+            )
 
             fee_schedule = query.one_or_none()
 
@@ -118,11 +156,18 @@ class FeeSchedule(db.Model):
         return cls.query.get(fee_schedule_id)
 
     @classmethod
-    def find_all(cls, corp_type_code: str = None, filing_type_code: str = None, description: str = None):
+    def find_all(
+        cls,
+        corp_type_code: str = None,
+        filing_type_code: str = None,
+        description: str = None,
+    ):
         """Find all fee schedules matching the filters."""
         valid_date = datetime.now(tz=timezone.utc).date()
-        query = cls.query.filter(FeeSchedule.fee_start_date <= valid_date). \
-            filter((FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= valid_date))
+        query = cls.query.filter(FeeSchedule.fee_start_date <= valid_date).filter(
+            (FeeSchedule.fee_end_date.is_(None))
+            | (FeeSchedule.fee_end_date >= valid_date)
+        )
 
         if filing_type_code:
             query = query.filter_by(filing_type_code=filing_type_code)
@@ -131,13 +176,16 @@ class FeeSchedule(db.Model):
             query = query.filter_by(corp_type_code=corp_type_code)
 
         if description:
-            descriptions = description.replace(' ', '%')
-            query = query.join(CorpType,
-                               CorpType.code == FeeSchedule.corp_type_code). \
-                join(FilingType, FilingType.code == FeeSchedule.filing_type_code)
+            descriptions = description.replace(" ", "%")
+            query = query.join(
+                CorpType, CorpType.code == FeeSchedule.corp_type_code
+            ).join(FilingType, FilingType.code == FeeSchedule.filing_type_code)
             query = query.filter(
-                or_(func.lower(FilingType.description).contains(descriptions.lower()),
-                    func.lower(CorpType.description).contains(descriptions.lower())))
+                or_(
+                    func.lower(FilingType.description).contains(descriptions.lower()),
+                    func.lower(CorpType.description).contains(descriptions.lower()),
+                )
+            )
 
         return query.all()
 
@@ -155,10 +203,19 @@ class FeeScheduleSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-an
 
         model = FeeSchedule
         load_instance = True
-        exclude = ['distribution_codes']
+        exclude = ["distribution_codes"]
 
     # pylint: disable=no-member
-    corp_type = ma.Nested(CorpTypeSchema, many=False, data_key='corp_type_code',
-                          exclude=['bcol_code_full_service_fee', 'bcol_code_partial_service_fee',
-                                   'bcol_code_no_service_fee', 'bcol_staff_fee_code', 'batch_type'])
-    filing_type = ma.Nested(FilingTypeSchema, many=False, data_key='filing_type_code')
+    corp_type = ma.Nested(
+        CorpTypeSchema,
+        many=False,
+        data_key="corp_type_code",
+        exclude=[
+            "bcol_code_full_service_fee",
+            "bcol_code_partial_service_fee",
+            "bcol_code_no_service_fee",
+            "bcol_staff_fee_code",
+            "batch_type",
+        ],
+    )
+    filing_type = ma.Nested(FilingTypeSchema, many=False, data_key="filing_type_code")

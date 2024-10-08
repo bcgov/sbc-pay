@@ -26,10 +26,12 @@ class CustomQuery(Query):  # pylint: disable=too-many-ancestors
         if search_criteria is False:
             return self
         if search_criteria is None:
-            raise ValueError('Invalid search criteria None, not True or False')
+            raise ValueError("Invalid search criteria None, not True or False")
         return self.filter(model_attribute == search_criteria)
 
-    def filter_conditionally(self, search_criteria, model_attribute, is_like: bool = False):
+    def filter_conditionally(
+        self, search_criteria, model_attribute, is_like: bool = False
+    ):
         """Add query filter if present."""
         if search_criteria is None:
             return self
@@ -41,18 +43,27 @@ class CustomQuery(Query):  # pylint: disable=too-many-ancestors
         if is_like:
             # Ensure any updates for this kind of LIKE searches are using SQL Alchemy functions as it uses
             # bind variables to mitigate SQL Injection
-            return self.filter(func.lower(model_attribute).ilike(f'%{search_criteria}%'))
+            return self.filter(
+                func.lower(model_attribute).ilike(f"%{search_criteria}%")
+            )
 
         return self.filter(model_attribute == search_criteria)
 
-    def filter_conditional_date_range(self, start_date: date, end_date: date, model_attribute):
+    def filter_conditional_date_range(
+        self, start_date: date, end_date: date, model_attribute
+    ):
         """Add query filter for a date range if present."""
         # Dates in DB are stored as UTC, you may need to take into account timezones and adjust the input dates
         # depending on the needs
         query = self
 
         if start_date and end_date:
-            return query.filter(and_(func.DATE(model_attribute) >= start_date, func.DATE(model_attribute) <= end_date))
+            return query.filter(
+                and_(
+                    func.DATE(model_attribute) >= start_date,
+                    func.DATE(model_attribute) <= end_date,
+                )
+            )
 
         if start_date:
             query = query.filter(func.DATE(model_attribute) >= start_date)

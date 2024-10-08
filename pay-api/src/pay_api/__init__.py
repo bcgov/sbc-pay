@@ -38,10 +38,10 @@ from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 
 
-setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
+setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
 
 
-def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
+def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.env = run_mode
@@ -50,26 +50,25 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     flags.init_app(app)
     db.init_app(app)
     queue.init_app(app)
-    if run_mode != 'testing':
-        if app.config.get('CLOUD_PLATFORM') != 'OCP':
+    if run_mode != "testing":
+        if app.config.get("CLOUD_PLATFORM") != "OCP":
             Migrate(app, db)
-            app.logger.info('Running migration upgrade.')
+            app.logger.info("Running migration upgrade.")
             with app.app_context():
                 execute_migrations(app)
             # Alembic has it's own logging config, we'll need to restore our logging here.
-            setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
-            app.logger.info('Finished migration upgrade.')
+            setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
+            app.logger.info("Finished migration upgrade.")
         else:
-            app.logger.info('Migrations were executed on prehook.')
+            app.logger.info("Migrations were executed on prehook.")
     ma.init_app(app)
     endpoints.init_app(app)
 
     # Configure Sentry
-    if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
-        if app.config.get('SENTRY_DSN', None):  # pragma: no cover
+    if str(app.config.get("SENTRY_ENABLE")).lower() == "true":
+        if app.config.get("SENTRY_DSN", None):  # pragma: no cover
             sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
-                dsn=app.config.get('SENTRY_DSN'),
-                integrations=[FlaskIntegration()]
+                dsn=app.config.get("SENTRY_DSN"), integrations=[FlaskIntegration()]
             )
 
     app.after_request(convert_to_camel)
@@ -85,13 +84,14 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
         return response
 
     def set_access_control_header(response):
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, registries-trace-id, ' \
-            'Account-Id'
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = (
+            "Authorization, Content-Type, registries-trace-id, " "Account-Id"
+        )
 
     def add_version(response):  # pylint: disable=unused-variable
         version = get_run_version()
-        response.headers['API'] = f'pay_api/{version}'
+        response.headers["API"] = f"pay_api/{version}"
         return response
 
     register_shellcontext(app)
@@ -102,19 +102,20 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
 def execute_migrations(app):
     """Execute the database migrations."""
     try:
-        upgrade(directory='migrations', revision='head', sql=False, tag=None)
+        upgrade(directory="migrations", revision="head", sql=False, tag=None)
     except Exception as e:  # NOQA pylint: disable=broad-except
         app.logger.disabled = False
-        app.logger.error('Error processing migrations:', exc_info=True)
+        app.logger.error("Error processing migrations:", exc_info=True)
         raise e
 
 
 def setup_jwt_manager(app, jwt_manager):
     """Use flask app to configure the JWTManager to work for a particular Realm."""
-    def get_roles(a_dict):
-        return a_dict['realm_access']['roles']  # pragma: no cover
 
-    app.config['JWT_ROLE_CALLBACK'] = get_roles
+    def get_roles(a_dict):
+        return a_dict["realm_access"]["roles"]  # pragma: no cover
+
+    app.config["JWT_ROLE_CALLBACK"] = get_roles
 
     jwt_manager.init_app(app)
 
@@ -125,7 +126,7 @@ def register_shellcontext(app):
 
     def shell_context():
         """Shell context objects."""
-        return {'app': app, 'jwt': jwt, 'db': db, 'models': models}  # pragma: no cover
+        return {"app": app, "jwt": jwt, "db": db, "models": models}  # pragma: no cover
 
     app.shell_context_processor(shell_context)
 
@@ -135,10 +136,13 @@ def build_cache(app):
     cache.init_app(app)
     with app.app_context():
         cache.clear()
-        if not app.config.get('TESTING', False):
+        if not app.config.get("TESTING", False):
             try:
-                from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+                from pay_api.services.code import (
+                    Code as CodeService,
+                )  # pylint: disable=import-outside-toplevel
+
                 CodeService.build_all_codes_cache()
             except Exception as e:  # NOQA pylint:disable=broad-except
-                app.logger.error('Error on caching ')
+                app.logger.error("Error on caching ")
                 app.logger.error(e)

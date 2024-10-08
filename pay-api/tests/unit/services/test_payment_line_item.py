@@ -21,7 +21,12 @@ from pay_api.models import FeeSchedule, Invoice, InvoiceSchema
 from pay_api.services.payment_line_item import PaymentLineItem as PaymentLineService
 from pay_api.utils.enums import LineItemStatus
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment,
+    factory_payment_account,
+    factory_payment_line_item,
+)
 
 
 def test_line_saved_from_new(session):
@@ -33,11 +38,16 @@ def test_line_saved_from_new(session):
     invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
-    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    line = factory_payment_line_item(
+        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id
+    )
     line.save()
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id,
-                                     status=LineItemStatus.CANCELLED.value)
+    line = factory_payment_line_item(
+        invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        status=LineItemStatus.CANCELLED.value,
+    )
     line.save()
 
     p = PaymentLineService.find_by_id(line.id)
@@ -55,8 +65,8 @@ def test_line_saved_from_new(session):
     invoice = Invoice.find_by_id(invoice.id)
     schema = InvoiceSchema()
     d = schema.dump(invoice)
-    assert d.get('id') == invoice.id
-    assert len(d.get('line_items')) == 1
+    assert d.get("id") == invoice.id
+    assert len(d.get("line_items")) == 1
 
 
 def test_line_invalid_lookup(session):

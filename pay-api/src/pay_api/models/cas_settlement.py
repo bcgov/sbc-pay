@@ -22,7 +22,7 @@ from .db import db
 class CasSettlement(BaseModel):  # pylint: disable=too-few-public-methods
     """This class keeps track of the settlements from CAS, usually provided in CSV format."""
 
-    __tablename__ = 'cas_settlements'
+    __tablename__ = "cas_settlements"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -34,15 +34,15 @@ class CasSettlement(BaseModel):  # pylint: disable=too-few-public-methods
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'file_name',
-            'processed_on',
-            'received_on'
-        ]
+        "include_properties": ["id", "file_name", "processed_on", "received_on"]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    received_on = db.Column('received_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    received_on = db.Column(
+        "received_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
     file_name = db.Column(db.String, nullable=False)
-    processed_on = db.Column('processed_on', db.DateTime, nullable=True)
+    processed_on = db.Column("processed_on", db.DateTime, nullable=True)

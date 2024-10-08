@@ -18,24 +18,26 @@ Test-Suite to ensure that the EFT Short names model is working as expected.
 """
 from datetime import datetime, timezone
 
-from pay_api.models.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksModel
+from pay_api.models.eft_short_name_links import (
+    EFTShortnameLinks as EFTShortnameLinksModel,
+)
 from pay_api.utils.enums import EFTShortnameStatus
 from tests.utilities.base_test import factory_eft_shortname
 
 
 def test_eft_short_name_defaults(session):
     """Assert eft short name link defaults are stored."""
-    eft_short_name = factory_eft_shortname('ABC').save()
+    eft_short_name = factory_eft_shortname("ABC").save()
     eft_short_name_link = EFTShortnameLinksModel()
     eft_short_name_link.eft_short_name_id = eft_short_name.id
     eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value
-    eft_short_name_link.auth_account_id = '1234'
+    eft_short_name_link.auth_account_id = "1234"
     eft_short_name_link.save()
 
     assert eft_short_name_link.id is not None
     assert eft_short_name_link.eft_short_name_id == eft_short_name.id
     assert eft_short_name_link.created_on.date() == datetime.now(tz=timezone.utc).date()
-    assert eft_short_name_link.auth_account_id == '1234'
+    assert eft_short_name_link.auth_account_id == "1234"
     assert eft_short_name_link.status_code == EFTShortnameStatus.PENDING.value
     assert eft_short_name_link.updated_by is None
     assert eft_short_name_link.updated_by_name is None
@@ -44,21 +46,21 @@ def test_eft_short_name_defaults(session):
 
 def test_eft_short_name_all_attributes(session):
     """Assert eft short name link defaults are stored."""
-    eft_short_name = factory_eft_shortname('ABC').save()
+    eft_short_name = factory_eft_shortname("ABC").save()
     eft_short_name_link = EFTShortnameLinksModel()
     eft_short_name_link.eft_short_name_id = eft_short_name.id
     eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value
-    eft_short_name_link.auth_account_id = '1234'
-    eft_short_name_link.updated_by_name = 'name'
-    eft_short_name_link.updated_by = 'userid'
+    eft_short_name_link.auth_account_id = "1234"
+    eft_short_name_link.updated_by_name = "name"
+    eft_short_name_link.updated_by = "userid"
     eft_short_name_link.updated_on = datetime.now(tz=timezone.utc)
     eft_short_name_link.save()
 
     assert eft_short_name_link.id is not None
     assert eft_short_name_link.eft_short_name_id == eft_short_name.id
     assert eft_short_name_link.created_on.date() == datetime.now(tz=timezone.utc).date()
-    assert eft_short_name_link.auth_account_id == '1234'
+    assert eft_short_name_link.auth_account_id == "1234"
     assert eft_short_name_link.status_code == EFTShortnameStatus.PENDING.value
-    assert eft_short_name_link.updated_by == 'userid'
-    assert eft_short_name_link.updated_by_name == 'name'
+    assert eft_short_name_link.updated_by == "userid"
+    assert eft_short_name_link.updated_by_name == "name"
     assert eft_short_name_link.updated_on.date() == datetime.now(tz=timezone.utc).date()

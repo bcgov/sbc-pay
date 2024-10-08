@@ -14,7 +14,10 @@
 """Manage the Feature Flags initialization, setup and service."""
 import logging
 from flask import current_app
-from ldclient import get as ldclient_get, set_config as ldclient_set_config  # noqa: I001
+from ldclient import (
+    get as ldclient_get,
+    set_config as ldclient_set_config,
+)  # noqa: I001
 from ldclient.config import Config  # noqa: I005
 from ldclient import Context
 from ldclient.integrations import Files
@@ -22,7 +25,7 @@ from ldclient.integrations import Files
 from pay_api.utils import user_context
 
 
-class Flags():
+class Flags:
     """Wrapper around the feature flag system.
 
     calls FAIL to FALSE
@@ -45,47 +48,56 @@ class Flags():
     def init_app(self, app):
         """Initialize the Feature Flag environment."""
         self.app = app
-        self.sdk_key = app.config.get('PAY_LD_SDK_KEY')
+        self.sdk_key = app.config.get("PAY_LD_SDK_KEY")
 
-        if self.sdk_key or app.env != 'production':
+        if self.sdk_key or app.env != "production":
 
-            if app.env == 'testing':
-                factory = Files.new_data_source(paths=['flags.json'], auto_update=True)
-                config = Config(sdk_key=self.sdk_key,
-                                update_processor_class=factory,
-                                send_events=False)
+            if app.env == "testing":
+                factory = Files.new_data_source(paths=["flags.json"], auto_update=True)
+                config = Config(
+                    sdk_key=self.sdk_key,
+                    update_processor_class=factory,
+                    send_events=False,
+                )
             else:
                 config = Config(sdk_key=self.sdk_key)
 
             ldclient_set_config(config)
             client = ldclient_get()
 
-            app.extensions['featureflags'] = client
+            app.extensions["featureflags"] = client
 
     def _get_client(self):
         try:
-            client = current_app.extensions['featureflags']
+            client = current_app.extensions["featureflags"]
         except KeyError:
             try:
                 self.init_app(current_app)
-                client = current_app.extensions['featureflags']
+                client = current_app.extensions["featureflags"]
             except KeyError:
-                logging.warning("Couldn\'t retrieve launch darkly client from extensions.")
+                logging.warning(
+                    "Couldn't retrieve launch darkly client from extensions."
+                )
                 client = None
 
         return client
 
     @staticmethod
     def _get_anonymous_user():
-        return Context.create('anonymous')
+        return Context.create("anonymous")
 
     @staticmethod
     def _user_as_key(user: user_context):
-        return Context.builder(user.sub)\
-            .set('userName', user.user_name)\
-            .set('firstName', user.first_name).build()
+        return (
+            Context.builder(user.sub)
+            .set("userName", user.user_name)
+            .set("firstName", user.first_name)
+            .build()
+        )
 
-    def is_on(self, flag: str, default: bool = False, user: user_context = None) -> bool:
+    def is_on(
+        self, flag: str, default: bool = False, user: user_context = None
+    ) -> bool:
         """Assert that the flag is set for this user."""
         client = self._get_client()
 

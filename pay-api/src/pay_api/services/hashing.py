@@ -25,12 +25,12 @@ class HashingService:
     @staticmethod
     def encode(param: str) -> str:
         """Return a hashed string using the static salt from config."""
-        current_app.logger.debug(f'encoding for string {param}')
-        api_key = current_app.config.get('PAYBC_DIRECT_PAY_API_KEY')
-        return hashlib.md5(f'{param}{api_key}'.encode()).hexdigest()
+        current_app.logger.debug(f"encoding for string {param}")
+        api_key = current_app.config.get("PAYBC_DIRECT_PAY_API_KEY")
+        return hashlib.md5(f"{param}{api_key}".encode()).hexdigest()
 
     @staticmethod
     def is_valid_checksum(param: str, hash_val: str) -> bool:
         """Validate if the checksum matches."""
-        api_key = current_app.config.get('PAYBC_DIRECT_PAY_API_KEY')
-        return hashlib.md5(f'{param}{api_key}'.encode()).hexdigest() == hash_val
+        api_key = current_app.config.get("PAYBC_DIRECT_PAY_API_KEY")
+        return hashlib.md5(f"{param}{api_key}".encode()).hexdigest() == hash_val

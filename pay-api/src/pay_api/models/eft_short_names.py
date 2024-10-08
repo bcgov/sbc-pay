@@ -23,10 +23,12 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
+class EFTShortnames(
+    Versioned, BaseModel
+):  # pylint: disable=too-many-instance-attributes
     """This class manages the EFT short names."""
 
-    __tablename__ = 'eft_short_names'
+    __tablename__ = "eft_short_names"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -38,19 +40,24 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'cas_supplier_number',
-            'created_on',
-            'email',
-            'short_name',
-            'type'
+        "include_properties": [
+            "id",
+            "cas_supplier_number",
+            "created_on",
+            "email",
+            "short_name",
+            "type",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
-    short_name = db.Column('short_name', db.String, nullable=False, index=True)
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
+    short_name = db.Column("short_name", db.String, nullable=False, index=True)
     email = db.Column(db.String(100), nullable=True)
     cas_supplier_number = db.Column(db.String(), nullable=True)
     type = db.Column(db.String(), nullable=False)
@@ -58,8 +65,11 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     @classmethod
     def find_by_short_name(cls, short_name: str, short_name_type: str):
         """Find by eft short name."""
-        return (cls.query.filter_by(short_name=short_name)
-                .filter_by(type=short_name_type).one_or_none())
+        return (
+            cls.query.filter_by(short_name=short_name)
+            .filter_by(type=short_name_type)
+            .one_or_none()
+        )
 
 
 @define
@@ -86,20 +96,21 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id,
-                   account_id=getattr(row, 'auth_account_id', None),
-                   account_name=getattr(row, 'account_name', None),
-                   account_branch=getattr(row, 'account_branch', None),
-                   amount_owing=getattr(row, 'total_owing', None),
-                   created_on=row.created_on,
-                   short_name=row.short_name,
-                   short_name_type=row.type,
-                   email=getattr(row, 'email'),
-                   cas_supplier_number=getattr(row, 'cas_supplier_number'),
-                   statement_id=getattr(row, 'latest_statement_id', None),
-                   status_code=getattr(row, 'status_code', None),
-                   cfs_account_status=getattr(row, 'cfs_account_status', None)
-                   )
+        return cls(
+            id=row.id,
+            account_id=getattr(row, "auth_account_id", None),
+            account_name=getattr(row, "account_name", None),
+            account_branch=getattr(row, "account_branch", None),
+            amount_owing=getattr(row, "total_owing", None),
+            created_on=row.created_on,
+            short_name=row.short_name,
+            short_name_type=row.type,
+            email=getattr(row, "email"),
+            cas_supplier_number=getattr(row, "cas_supplier_number"),
+            statement_id=getattr(row, "latest_statement_id", None),
+            status_code=getattr(row, "status_code", None),
+            cfs_account_status=getattr(row, "cfs_account_status", None),
+        )
 
 
 @define
@@ -120,11 +131,12 @@ class EFTShortnameSummarySchema:
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id,
-                   short_name=row.short_name,
-                   short_name_type=row.type,
-                   last_payment_received_date=getattr(row, 'last_payment_received_date', None),
-                   credits_remaining=getattr(row, 'credits_remaining', None),
-                   linked_accounts_count=getattr(row, 'linked_accounts_count', None),
-                   refund_status=getattr(row, 'refund_status', None)
-                   )
+        return cls(
+            id=row.id,
+            short_name=row.short_name,
+            short_name_type=row.type,
+            last_payment_received_date=getattr(row, "last_payment_received_date", None),
+            credits_remaining=getattr(row, "credits_remaining", None),
+            linked_accounts_count=getattr(row, "linked_accounts_count", None),
+            refund_status=getattr(row, "refund_status", None),
+        )

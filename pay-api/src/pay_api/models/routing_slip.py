@@ -40,7 +40,7 @@ from .refund import Refund, RefundSchema
 class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Routing Slip."""
 
-    __tablename__ = 'routing_slips'
+    __tablename__ = "routing_slips"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -52,79 +52,99 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'cas_version_suffix',
-            'created_by',
-            'created_name',
-            'created_on',
-            'number',
-            'parent_number',
-            'payment_account_id',
-            'refund_amount',
-            'remaining_amount',
-            'routing_slip_date',
-            'status',
-            'total',
-            'total_usd',
-            'updated_by',
-            'updated_name',
-            'updated_on'
+        "include_properties": [
+            "id",
+            "cas_version_suffix",
+            "created_by",
+            "created_name",
+            "created_on",
+            "number",
+            "parent_number",
+            "payment_account_id",
+            "refund_amount",
+            "remaining_amount",
+            "routing_slip_date",
+            "status",
+            "total",
+            "total_usd",
+            "updated_by",
+            "updated_name",
+            "updated_on",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     number = db.Column(db.String(), unique=True)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
-    status = db.Column(db.String(), ForeignKey('routing_slip_status_codes.code'), nullable=True, index=True)
+    payment_account_id = db.Column(
+        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
+    )
+    status = db.Column(
+        db.String(),
+        ForeignKey("routing_slip_status_codes.code"),
+        nullable=True,
+        index=True,
+    )
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
     routing_slip_date = db.Column(db.Date, nullable=False)
-    parent_number = db.Column(db.String(), ForeignKey('routing_slips.number'), nullable=True)
+    parent_number = db.Column(
+        db.String(), ForeignKey("routing_slips.number"), nullable=True
+    )
     refund_amount = db.Column(db.Numeric(), nullable=True, default=0)
-    total_usd = db.Column(db.Numeric(), nullable=True)  # Capture total usd payments if one of payments has USD payment
+    total_usd = db.Column(
+        db.Numeric(), nullable=True
+    )  # Capture total usd payments if one of payments has USD payment
     # It's not possible to update a receipt's amount or number in CAS (PUT/PATCH).
     # Allows to create a new receipt in CAS for the same routing slip number.
     # Earlier versions should be adjusted to zero before increasing the cas_version_suffix.
     cas_version_suffix = db.Column(db.Integer, default=1)
 
-    payment_account = relationship(PaymentAccount,
-                                   primaryjoin='and_(RoutingSlip.payment_account_id == PaymentAccount.id)',
-                                   foreign_keys=[payment_account_id], lazy='select', innerjoin=True)
-    payments = relationship(Payment,
-                            primaryjoin='and_(RoutingSlip.payment_account_id == foreign(Payment.payment_account_id))',
-                            viewonly=True,
-                            lazy='joined'
-                            )
+    payment_account = relationship(
+        PaymentAccount,
+        primaryjoin="and_(RoutingSlip.payment_account_id == PaymentAccount.id)",
+        foreign_keys=[payment_account_id],
+        lazy="select",
+        innerjoin=True,
+    )
+    payments = relationship(
+        Payment,
+        primaryjoin="and_(RoutingSlip.payment_account_id == foreign(Payment.payment_account_id))",
+        viewonly=True,
+        lazy="joined",
+    )
 
-    invoices = relationship(Invoice,
-                            primaryjoin='and_(RoutingSlip.number == foreign(Invoice.routing_slip), '
-                                        f'Invoice.payment_method_code.in_('
-                                        f"['{PaymentMethod.INTERNAL.value}']))",
-                            viewonly=True,
-                            lazy='joined'
-                            )
+    invoices = relationship(
+        Invoice,
+        primaryjoin="and_(RoutingSlip.number == foreign(Invoice.routing_slip), "
+        f"Invoice.payment_method_code.in_("
+        f"['{PaymentMethod.INTERNAL.value}']))",
+        viewonly=True,
+        lazy="joined",
+    )
 
-    refunds = relationship(Refund, viewonly=True,
-                           primaryjoin=f'and_(RoutingSlip.id == Refund.routing_slip_id,'
-                                       f'RoutingSlip.status.in_('
-                                       f'[f"{RoutingSlipStatus.REFUND_REQUESTED.value}",'
-                                       f'f"{RoutingSlipStatus.ACTIVE.value}",'
-                                       f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}",'
-                                       f'f"{RoutingSlipStatus.REFUND_COMPLETED.value}",'
-                                       f'f"{RoutingSlipStatus.REFUND_REJECTED.value}",'
-                                       f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}"]))',
-                           lazy='joined')
+    refunds = relationship(
+        Refund,
+        viewonly=True,
+        primaryjoin=f"and_(RoutingSlip.id == Refund.routing_slip_id,"
+        f"RoutingSlip.status.in_("
+        f'[f"{RoutingSlipStatus.REFUND_REQUESTED.value}",'
+        f'f"{RoutingSlipStatus.ACTIVE.value}",'
+        f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}",'
+        f'f"{RoutingSlipStatus.REFUND_COMPLETED.value}",'
+        f'f"{RoutingSlipStatus.REFUND_REJECTED.value}",'
+        f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}"]))',
+        lazy="joined",
+    )
 
-    parent = relationship('RoutingSlip', remote_side=[number], lazy='select')
+    parent = relationship("RoutingSlip", remote_side=[number], lazy="select")
 
     def generate_cas_receipt_number(self) -> str:
         """Return a unique identifier - receipt number for CAS."""
         receipt_number: str = self.number
         if self.parent_number:
-            receipt_number += 'L'
+            receipt_number += "L"
         if self.cas_version_suffix > 1:
-            receipt_number += f'R{self.cas_version_suffix}'
+            receipt_number += f"R{self.cas_version_suffix}"
         return receipt_number
 
     @classmethod
@@ -143,61 +163,82 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(payment_account_id=payment_account_id).one_or_none()
 
     @classmethod
-    def find_all_by_payment_account_id(cls, payment_account_id: str) -> List[RoutingSlip]:
+    def find_all_by_payment_account_id(
+        cls, payment_account_id: str
+    ) -> List[RoutingSlip]:
         """Return a routing slip by payment account number."""
         return cls.query.filter_by(payment_account_id=payment_account_id).all()
 
     @classmethod
-    def search(cls, search_filter: Dict,  # pylint: disable=too-many-arguments, too-many-locals
-               page: int, limit: int, return_all: bool) -> (List[RoutingSlip], int):
+    def search(
+        cls,
+        search_filter: Dict,  # pylint: disable=too-many-arguments, too-many-locals
+        page: int,
+        limit: int,
+        return_all: bool,
+    ) -> (List[RoutingSlip], int):
         """Search for routing slips by the criteria provided."""
-        query = db.session.query(RoutingSlip).\
-            outerjoin(RoutingSlip.payments).\
-            outerjoin(RoutingSlip.payment_account).\
-            outerjoin(RoutingSlip.invoices).\
-            options(
-                    # This lazy loads all the invoice relationships.
-                    lazyload('*'),
-                    # load_only only loads the desired columns.
-                    load_only(RoutingSlip.created_name,
-                              RoutingSlip.status,
-                              RoutingSlip.number,
-                              RoutingSlip.routing_slip_date,
-                              RoutingSlip.remaining_amount,
-                              RoutingSlip.total),
-                    contains_eager(RoutingSlip.payments).load_only(Payment.cheque_receipt_number,
-                                                                   Payment.receipt_number,
-                                                                   Payment.payment_method_code,
-                                                                   Payment.payment_status_code),
-                    contains_eager(RoutingSlip.payment_account).load_only(PaymentAccount.name,
-                                                                          PaymentAccount.payment_method),
-                    contains_eager(RoutingSlip.invoices).load_only(Invoice.routing_slip,
-                                                                   Invoice.folio_number,
-                                                                   Invoice.business_identifier,
-                                                                   Invoice.corp_type_code)
-                   )
+        query = (
+            db.session.query(RoutingSlip)
+            .outerjoin(RoutingSlip.payments)
+            .outerjoin(RoutingSlip.payment_account)
+            .outerjoin(RoutingSlip.invoices)
+            .options(
+                # This lazy loads all the invoice relationships.
+                lazyload("*"),
+                # load_only only loads the desired columns.
+                load_only(
+                    RoutingSlip.created_name,
+                    RoutingSlip.status,
+                    RoutingSlip.number,
+                    RoutingSlip.routing_slip_date,
+                    RoutingSlip.remaining_amount,
+                    RoutingSlip.total,
+                ),
+                contains_eager(RoutingSlip.payments).load_only(
+                    Payment.cheque_receipt_number,
+                    Payment.receipt_number,
+                    Payment.payment_method_code,
+                    Payment.payment_status_code,
+                ),
+                contains_eager(RoutingSlip.payment_account).load_only(
+                    PaymentAccount.name, PaymentAccount.payment_method
+                ),
+                contains_eager(RoutingSlip.invoices).load_only(
+                    Invoice.routing_slip,
+                    Invoice.folio_number,
+                    Invoice.business_identifier,
+                    Invoice.corp_type_code,
+                ),
+            )
+        )
 
-        if rs_number := search_filter.get('routingSlipNumber', None):
-            query = query.filter(RoutingSlip.number.ilike('%' + rs_number + '%'))
+        if rs_number := search_filter.get("routingSlipNumber", None):
+            query = query.filter(RoutingSlip.number.ilike("%" + rs_number + "%"))
 
-        if status := search_filter.get('status', None):
+        if status := search_filter.get("status", None):
             query = query.filter(RoutingSlip.status == status)
 
-        if exclude_statuses := search_filter.get('excludeStatuses', None):
+        if exclude_statuses := search_filter.get("excludeStatuses", None):
             query = query.filter(~RoutingSlip.status.in_(exclude_statuses))
 
-        if total_amount := search_filter.get('totalAmount', None):
+        if total_amount := search_filter.get("totalAmount", None):
             query = query.filter(RoutingSlip.total == total_amount)
 
-        if remaining_amount := search_filter.get('remainingAmount', None):
-            query = query.filter(RoutingSlip.remaining_amount == cast(remaining_amount.replace('$', ''), Numeric))
+        if remaining_amount := search_filter.get("remainingAmount", None):
+            query = query.filter(
+                RoutingSlip.remaining_amount
+                == cast(remaining_amount.replace("$", ""), Numeric)
+            )
 
         query = cls._add_date_filter(query, search_filter)
 
-        if initiator := search_filter.get('initiator', None):
-            query = query.filter(RoutingSlip.created_name.ilike('%' + initiator + '%'))  # pylint: disable=no-member
+        if initiator := search_filter.get("initiator", None):
+            query = query.filter(
+                RoutingSlip.created_name.ilike("%" + initiator + "%")
+            )  # pylint: disable=no-member
 
-        if business_identifier := search_filter.get('businessIdentifier', None):
+        if business_identifier := search_filter.get("businessIdentifier", None):
             query = query.filter(Invoice.business_identifier == business_identifier)
 
         query = cls._add_receipt_number(query, search_filter)
@@ -210,11 +251,13 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         query = query.order_by(RoutingSlip.created_on.desc())
 
         if not return_all:
-            sub_query = query.with_entities(RoutingSlip.id).\
-                             group_by(RoutingSlip.id).\
-                             limit(limit).\
-                             offset((page - 1) * limit).\
-                             subquery()
+            sub_query = (
+                query.with_entities(RoutingSlip.id)
+                .group_by(RoutingSlip.id)
+                .limit(limit)
+                .offset((page - 1) * limit)
+                .subquery()
+            )
             query = query.filter(RoutingSlip.id.in_(sub_query.select()))
 
         result = query.all()
@@ -228,79 +271,107 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         created_from: datetime = None
         created_to: datetime = None
 
-        if end_date := get_str_by_path(search_filter, 'dateFilter/endDate'):
+        if end_date := get_str_by_path(search_filter, "dateFilter/endDate"):
             created_to = datetime.strptime(end_date, DT_SHORT_FORMAT)
-        if start_date := get_str_by_path(search_filter, 'dateFilter/startDate'):
+        if start_date := get_str_by_path(search_filter, "dateFilter/startDate"):
             created_from = datetime.strptime(start_date, DT_SHORT_FORMAT)
         # if passed in details
         if created_to and created_from:
             # Truncate time for from date and add max time for to date
-            tz_name = current_app.config['LEGISLATIVE_TIMEZONE']
+            tz_name = current_app.config["LEGISLATIVE_TIMEZONE"]
             tz_local = pytz.timezone(tz_name)
 
-            created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
-            created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
+            created_from = created_from.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ).astimezone(tz_local)
+            created_to = created_to.replace(
+                hour=23, minute=59, second=59, microsecond=999999
+            ).astimezone(tz_local)
 
             # If the dateFilter/target is provided then filter on that column, else filter on routing_slip_date
-            target_date = getattr(RoutingSlip,
-                                  get_str_by_path(search_filter, 'dateFilter/target') or 'routing_slip_date')
+            target_date = getattr(
+                RoutingSlip,
+                get_str_by_path(search_filter, "dateFilter/target")
+                or "routing_slip_date",
+            )
 
             query = query.filter(
-                func.timezone(tz_name, func.timezone('UTC', target_date))
-                    .between(created_from, created_to))
+                func.timezone(tz_name, func.timezone("UTC", target_date)).between(
+                    created_from, created_to
+                )
+            )
         return query
 
     @classmethod
     def _add_receipt_number(cls, query, search_filter):
         conditions = []
-        if receipt_number := search_filter.get('receiptNumber', None):
+        if receipt_number := search_filter.get("receiptNumber", None):
             conditions.append(
-                and_(Payment.payment_account_id == PaymentAccount.id,
-                     and_(Payment.cheque_receipt_number == receipt_number,
-                          Payment.payment_method_code == PaymentMethod.CASH.value)))
-        if cheque_receipt_number := search_filter.get('chequeReceiptNumber', None):
+                and_(
+                    Payment.payment_account_id == PaymentAccount.id,
+                    and_(
+                        Payment.cheque_receipt_number == receipt_number,
+                        Payment.payment_method_code == PaymentMethod.CASH.value,
+                    ),
+                )
+            )
+        if cheque_receipt_number := search_filter.get("chequeReceiptNumber", None):
             conditions.append(
-                and_(Payment.payment_account_id == PaymentAccount.id,
-                     and_(Payment.cheque_receipt_number == cheque_receipt_number,
-                          Payment.payment_method_code == PaymentMethod.CHEQUE.value)))
+                and_(
+                    Payment.payment_account_id == PaymentAccount.id,
+                    and_(
+                        Payment.cheque_receipt_number == cheque_receipt_number,
+                        Payment.payment_method_code == PaymentMethod.CHEQUE.value,
+                    ),
+                )
+            )
         if conditions:
             query = query.filter(*conditions)
         return query
 
     @classmethod
     def _add_folio_filter(cls, query, search_filter):
-        if folio_number := search_filter.get('folioNumber', None):
-            query = query.filter(
-                Invoice.routing_slip == RoutingSlip.number).filter(
-                    Invoice.folio_number == folio_number)
+        if folio_number := search_filter.get("folioNumber", None):
+            query = query.filter(Invoice.routing_slip == RoutingSlip.number).filter(
+                Invoice.folio_number == folio_number
+            )
         return query
 
     @classmethod
     def _add_entity_filter(cls, query, search_filter):
-        if account_name := search_filter.get('accountName', None):
+        if account_name := search_filter.get("accountName", None):
             query = query.filter(
-                and_(PaymentAccount.id == RoutingSlip.payment_account_id,
-                     PaymentAccount.name.ilike('%' + account_name + '%')))
+                and_(
+                    PaymentAccount.id == RoutingSlip.payment_account_id,
+                    PaymentAccount.name.ilike("%" + account_name + "%"),
+                )
+            )
         return query
 
 
-class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors, too-few-public-methods
+class RoutingSlipSchema(
+    AuditSchema, BaseSchema
+):  # pylint: disable=too-many-ancestors, too-few-public-methods
     """Main schema used to serialize the Routing Slip."""
 
     class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = RoutingSlip
-        exclude = ['parent']
+        exclude = ["parent"]
 
-    total = fields.Float(data_key='total')
-    remaining_amount = fields.Float(data_key='remaining_amount')
-    refund_amount = fields.Float(data_key='refund_amount')
+    total = fields.Float(data_key="total")
+    remaining_amount = fields.Float(data_key="remaining_amount")
+    refund_amount = fields.Float(data_key="refund_amount")
     # pylint: disable=no-member
-    payments = ma.Nested(PaymentSchema, many=True, data_key='payments')
-    payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key='payment_account')
-    refunds = ma.Nested(RefundSchema, many=True, data_key='refunds')
-    invoices = ma.Nested(InvoiceSchema, many=True, data_key='invoices', exclude=['_links'])
-    status = fields.String(data_key='status')
-    parent_number = fields.String(data_key='parent_number')
-    total_usd = fields.Float(data_key='total_usd')
+    payments = ma.Nested(PaymentSchema, many=True, data_key="payments")
+    payment_account = ma.Nested(
+        PaymentAccountSchema, many=False, data_key="payment_account"
+    )
+    refunds = ma.Nested(RefundSchema, many=True, data_key="refunds")
+    invoices = ma.Nested(
+        InvoiceSchema, many=True, data_key="invoices", exclude=["_links"]
+    )
+    status = fields.String(data_key="status")
+    parent_number = fields.String(data_key="parent_number")
+    total_usd = fields.Float(data_key="total_usd")

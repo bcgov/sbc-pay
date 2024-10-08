@@ -22,7 +22,7 @@ from .db import db
 class EjvLink(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages linkages between EJV and invoices."""
 
-    __tablename__ = 'ejv_links'
+    __tablename__ = "ejv_links"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -34,23 +34,29 @@ class EjvLink(BaseModel):  # pylint: disable=too-few-public-methods
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'disbursement_status_code',
-            'ejv_header_id',
-            'link_id',
-            'link_type',
-            'message',
-            'sequence'
+        "include_properties": [
+            "id",
+            "disbursement_status_code",
+            "ejv_header_id",
+            "link_id",
+            "link_type",
+            "message",
+            "sequence",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
-    ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False, index=True)
-    link_id = db.Column(db.Integer, nullable=True, index=True)  # Repurposed for generic linking
+    disbursement_status_code = db.Column(
+        db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True
+    )
+    ejv_header_id = db.Column(
+        db.Integer, ForeignKey("ejv_headers.id"), nullable=False, index=True
+    )
+    link_id = db.Column(
+        db.Integer, nullable=True, index=True
+    )  # Repurposed for generic linking
     link_type = db.Column(db.String(50), nullable=True, index=True)
-    message = db.Column('message', db.String, nullable=True, index=False)
+    message = db.Column("message", db.String, nullable=True, index=False)
     sequence = db.Column(db.Integer, nullable=True)
 
     @classmethod

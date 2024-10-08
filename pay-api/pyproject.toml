@@ -103,6 +103,7 @@ pydocstyle = "^6.3.0"
 isort = "^5.13.2"
 lovely-pytest-docker = "^0.3.1"
 faker = "^24.2.0"
+black = "^24.10.0"
 
 [build-system]
 requires = ["poetry-core"]

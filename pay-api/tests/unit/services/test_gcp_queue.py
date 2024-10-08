@@ -34,61 +34,73 @@ from pay_api.utils.enums import TransactionStatus
 @pytest.fixture()
 def mock_publisher_client():
     """Mock the PublisherClient used in GcpQueue."""
-    with patch('google.cloud.pubsub_v1.PublisherClient') as publisher:
+    with patch("google.cloud.pubsub_v1.PublisherClient") as publisher:
         yield publisher.return_value
 
 
 @pytest.fixture()
 def mock_credentials():
     """Mock Credentials."""
-    with patch('google.auth.jwt.Credentials') as mock:
+    with patch("google.auth.jwt.Credentials") as mock:
         mock.from_service_account_info.return_value = MagicMock()
         yield mock
 
 
 def test_publish_to_queue_success(app, mock_credentials, mock_publisher_client):
     """Test publishing to GCP PubSub Queue successfully."""
-    with patch.object(GcpQueue, 'publish') as mock_publisher:
+    with patch.object(GcpQueue, "publish") as mock_publisher:
         with app.app_context():
             queue_message = QueueMessage(
-                source='test-source',
-                message_type='test-message-type',
-                payload={'key': 'value'},
-                topic='projects/project-id/topics/topic'
+                source="test-source",
+                message_type="test-message-type",
+                payload={"key": "value"},
+                topic="projects/project-id/topics/topic",
             )
 
             publish_to_queue(queue_message)
-            mock_publisher.assert_called_once_with('projects/project-id/topics/topic', ANY)
+            mock_publisher.assert_called_once_with(
+                "projects/project-id/topics/topic", ANY
+            )
 
 
 def test_publish_to_queue_no_topic(app, mock_credentials, mock_publisher_client):
     """Test that publish_to_queue does not publish if no topic is set."""
-    with patch.object(GcpQueue, 'publish') as mock_publisher:
+    with patch.object(GcpQueue, "publish") as mock_publisher:
         with app.app_context():
             queue_message = QueueMessage(
-                source='test-source',
-                message_type='test-message-type',
-                payload={'key': 'value'},
-                topic=None
+                source="test-source",
+                message_type="test-message-type",
+                payload={"key": "value"},
+                topic=None,
             )
             publish_to_queue(queue_message)
             mock_publisher.publish.assert_not_called()
 
 
-@pytest.mark.skip(reason='ADHOC only test.')
+@pytest.mark.skip(reason="ADHOC only test.")
 def test_gcp_pubsub_connectivity(monkeypatch):
     """Test that a queue can publish to gcp pubsub."""
     # We don't want any of the monkeypatches by the fixtures.
     monkeypatch.undo()
-    load_dotenv('.env')
-    app_prod = create_app('production')
-    payload = humps.camelize(asdict(PaymentToken(55, TransactionStatus.COMPLETED.value, 55, 'NRO')))
+    load_dotenv(".env")
+    app_prod = create_app("production")
+    payload = humps.camelize(
+        asdict(PaymentToken(55, TransactionStatus.COMPLETED.value, 55, "NRO"))
+    )
     with app_prod.app_context():
         gcp_queue_publisher.publish_to_queue(
-            QueueMessage(source='test', message_type='bc.registry.payment', payload=payload,
-                         topic=app_prod.config.get('NAMEX_PAY_TOPIC'))
+            QueueMessage(
+                source="test",
+                message_type="bc.registry.payment",
+                payload=payload,
+                topic=app_prod.config.get("NAMEX_PAY_TOPIC"),
+            )
         )
         gcp_queue_publisher.publish_to_queue(
-            QueueMessage(source='test', message_type='test', payload={'key': 'value'},
-                         topic=app_prod.config.get('ACCOUNT_MAILER_TOPIC'))
+            QueueMessage(
+                source="test",
+                message_type="test",
+                payload={"key": "value"},
+                topic=app_prod.config.get("ACCOUNT_MAILER_TOPIC"),
+            )
         )

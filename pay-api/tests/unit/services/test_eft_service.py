@@ -31,11 +31,22 @@ from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.services.eft_service import EftService
 from pay_api.services.eft_refund import EFTRefund as EFTRefundService
 from pay_api.utils.enums import (
-    EFTCreditInvoiceStatus, EFTHistoricalTypes, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
+    EFTCreditInvoiceStatus,
+    EFTHistoricalTypes,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
-    factory_eft_credit, factory_eft_credit_invoice_link, factory_eft_file, factory_eft_shortname, factory_invoice,
-    factory_invoice_reference, factory_payment_account)
+    factory_eft_credit,
+    factory_eft_credit_invoice_link,
+    factory_eft_file,
+    factory_eft_shortname,
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment_account,
+)
 
 
 eft_service = EftService()
@@ -44,18 +55,20 @@ eft_service = EftService()
 def test_get_payment_system_code(session):
     """Test get_payment_system_code."""
     code = eft_service.get_payment_system_code()
-    assert code == 'PAYBC'
+    assert code == "PAYBC"
 
 
 def test_get_payment_method_code(session):
     """Test get_payment_method_code."""
     code = eft_service.get_payment_method_code()
-    assert code == 'EFT'
+    assert code == "EFT"
 
 
 def test_has_no_payment_blockers(session):
     """Test for no payment blockers."""
-    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    payment_account = factory_payment_account(
+        payment_method_code=PaymentMethod.EFT.value
+    )
     payment_account.save()
     eft_service.ensure_no_payment_blockers(payment_account)
     assert True
@@ -63,7 +76,9 @@ def test_has_no_payment_blockers(session):
 
 def test_has_payment_blockers(session):
     """Test has payment blockers."""
-    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    payment_account = factory_payment_account(
+        payment_method_code=PaymentMethod.EFT.value
+    )
     payment_account.has_overdue_invoices = datetime.now(tz=timezone.utc)
     payment_account.save()
 
@@ -78,9 +93,13 @@ def test_refund_eft_credits(session):
     credit2 = MagicMock(remaining_amount=4)
     credit3 = MagicMock(remaining_amount=3)
 
-    with patch('pay_api.models.EFTCredit.get_eft_credits',
-               return_value=[credit1, credit2, credit3]), \
-         patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=9):
+    with (
+        patch(
+            "pay_api.models.EFTCredit.get_eft_credits",
+            return_value=[credit1, credit2, credit3],
+        ),
+        patch("pay_api.models.EFTCredit.get_eft_credit_balance", return_value=9),
+    ):
         EFTRefundService.refund_eft_credits(1, 8)
         assert credit1.remaining_amount == 0
         assert credit2.remaining_amount == 0
@@ -89,7 +108,7 @@ def test_refund_eft_credits(session):
         credit1.remaining_amount = 5
         credit2.remaining_amount = 5
 
-        with patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=10):
+        with patch("pay_api.models.EFTCredit.get_eft_credit_balance", return_value=10):
             EFTRefundService.refund_eft_credits(1, 7)
             assert credit1.remaining_amount == 0
             assert credit2.remaining_amount == 3
@@ -97,38 +116,76 @@ def test_refund_eft_credits(session):
         credit1.remaining_amount = 5
         credit2.remaining_amount = 2
 
-        with patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=7):
+        with patch("pay_api.models.EFTCredit.get_eft_credit_balance", return_value=7):
             EFTRefundService.refund_eft_credits(1, 1)
             assert credit1.remaining_amount == 4
             assert credit2.remaining_amount == 2
 
 
-@pytest.mark.parametrize('test_name', [
-    ('reverse_eft_credit_success'),
-    ('reverse_eft_credit_leftover_fail'),
-    ('reverse_eft_credit_remaining_higher_than_original_amount_fail'),
-])
+@pytest.mark.parametrize(
+    "test_name",
+    [
+        ("reverse_eft_credit_success"),
+        ("reverse_eft_credit_leftover_fail"),
+        ("reverse_eft_credit_remaining_higher_than_original_amount_fail"),
+    ],
+)
 def test_refund_eft_credit_reversal(session, test_name):
     """Test refund eft credit reversal."""
     file = factory_eft_file().save()
-    short_name = factory_eft_shortname(short_name='TESTSHORTNAME123').save()
+    short_name = factory_eft_shortname(short_name="TESTSHORTNAME123").save()
     match test_name:
-        case 'reverse_eft_credit_success':
-            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=10)
-            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=7)
-            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=9)
-            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=1, remaining_amount=0)
+        case "reverse_eft_credit_success":
+            factory_eft_credit(
+                eft_file_id=file.id,
+                short_name_id=short_name.id,
+                amount=10,
+                remaining_amount=10,
+            )
+            factory_eft_credit(
+                eft_file_id=file.id,
+                short_name_id=short_name.id,
+                amount=10,
+                remaining_amount=7,
+            )
+            factory_eft_credit(
+                eft_file_id=file.id,
+                short_name_id=short_name.id,
+                amount=10,
+                remaining_amount=9,
+            )
+            factory_eft_credit(
+                eft_file_id=file.id,
+                short_name_id=short_name.id,
+                amount=1,
+                remaining_amount=0,
+            )
             EFTRefundService.reverse_eft_credits(short_name.id, 5)
             assert EFTCreditModel.query.filter_by(remaining_amount=10).count() == 3
             assert EFTCreditModel.query.filter_by(remaining_amount=1).count() == 1
-        case 'reverse_eft_credit_leftover_fail':
-            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=10)
-            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=9)
+        case "reverse_eft_credit_leftover_fail":
+            factory_eft_credit(
+                eft_file_id=file.id,
+                short_name_id=short_name.id,
+                amount=10,
+                remaining_amount=10,
+            )
+            factory_eft_credit(
+                eft_file_id=file.id,
+                short_name_id=short_name.id,
+                amount=10,
+                remaining_amount=9,
+            )
             with pytest.raises(BusinessException) as excinfo:
                 EFTRefundService.reverse_eft_credits(short_name.id, 5)
                 assert excinfo.value.code == Error.INVALID_REFUND.name
-        case 'reverse_eft_credit_remaining_higher_than_original_amount_fail':
-            factory_eft_credit(eft_file_id=file.id, short_name_id=short_name.id, amount=10, remaining_amount=15)
+        case "reverse_eft_credit_remaining_higher_than_original_amount_fail":
+            factory_eft_credit(
+                eft_file_id=file.id,
+                short_name_id=short_name.id,
+                amount=10,
+                remaining_amount=15,
+            )
             with pytest.raises(BusinessException) as excinfo:
                 EFTRefundService.reverse_eft_credits(short_name.id, 5)
                 assert excinfo.value.code == Error.INVALID_REFUND.name
@@ -140,9 +197,13 @@ def test_refund_eft_credits_exceed_balance(session):
     credit2 = MagicMock(remaining_amount=4)
     credit3 = MagicMock(remaining_amount=3)
 
-    with patch('pay_api.models.EFTCredit.get_eft_credits',
-               return_value=[credit1, credit2, credit3]), \
-         patch('pay_api.models.EFTCredit.get_eft_credit_balance', return_value=8):
+    with (
+        patch(
+            "pay_api.models.EFTCredit.get_eft_credits",
+            return_value=[credit1, credit2, credit3],
+        ),
+        patch("pay_api.models.EFTCredit.get_eft_credit_balance", return_value=8),
+    ):
 
         with pytest.raises(BusinessException) as excinfo:
             EFTRefundService.refund_eft_credits(1, 20)
@@ -150,128 +211,177 @@ def test_refund_eft_credits_exceed_balance(session):
         assert excinfo.value.code == Error.INVALID_REFUND.name
 
 
-@pytest.mark.parametrize('test_name', [
-    ('0_no_invoice_reference_cil_exists'),
-    ('1_invoice_non_exist'),
-    ('2_no_eft_credit_link'),
-    ('3_pending_credit_link'),
-    ('4_completed_credit_link'),
-    ('5_consolidated_invoice_block'),
-    ('6_partial_refund_block'),
-])
+@pytest.mark.parametrize(
+    "test_name",
+    [
+        ("0_no_invoice_reference_cil_exists"),
+        ("1_invoice_non_exist"),
+        ("2_no_eft_credit_link"),
+        ("3_pending_credit_link"),
+        ("4_completed_credit_link"),
+        ("5_consolidated_invoice_block"),
+        ("6_partial_refund_block"),
+    ],
+)
 def test_eft_invoice_refund(session, test_name):
     """Test various scenarios for eft_invoice_refund."""
-    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
-    invoice = factory_invoice(payment_account=payment_account,
-                              status_code=InvoiceStatus.APPROVED.value,
-                              total=5).save()
+    payment_account = factory_payment_account(
+        payment_method_code=PaymentMethod.EFT.value
+    )
+    invoice = factory_invoice(
+        payment_account=payment_account,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=5,
+    ).save()
     eft_file = factory_eft_file().save()
-    short_name = factory_eft_shortname(short_name='TESTSHORTNAME123').save()
-    eft_credit = factory_eft_credit(eft_file_id=eft_file.id,
-                                    short_name_id=short_name.id,
-                                    amount=10,
-                                    remaining_amount=1).save()
+    short_name = factory_eft_shortname(short_name="TESTSHORTNAME123").save()
+    eft_credit = factory_eft_credit(
+        eft_file_id=eft_file.id,
+        short_name_id=short_name.id,
+        amount=10,
+        remaining_amount=1,
+    ).save()
     match test_name:
-        case '0_no_invoice_reference_cil_exists':
-            cil_1 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.PENDING.value,
-                                                    link_group_id=2).save()
-        case '1_invoice_non_exist':
+        case "0_no_invoice_reference_cil_exists":
+            cil_1 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.PENDING.value,
+                link_group_id=2,
+            ).save()
+        case "1_invoice_non_exist":
             pass
-        case '2_no_eft_credit_link':
-            factory_invoice_reference(invoice_id=invoice.id, invoice_number='1234').save()
-        case '3_pending_credit_link':
-            factory_invoice_reference(invoice_id=invoice.id, invoice_number='1234').save()
+        case "2_no_eft_credit_link":
+            factory_invoice_reference(
+                invoice_id=invoice.id, invoice_number="1234"
+            ).save()
+        case "3_pending_credit_link":
+            factory_invoice_reference(
+                invoice_id=invoice.id, invoice_number="1234"
+            ).save()
             # Filler rows to make sure PENDING is the highest ID
-            cil_1 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.COMPLETED.value,
-                                                    link_group_id=1).save()
-            cil_2 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.REFUNDED.value,
-                                                    link_group_id=2).save()
-            cil_3 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.PENDING.value,
-                                                    link_group_id=3).save()
-            cil_4 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.PENDING.value,
-                                                    link_group_id=3).save()
-        case '4_completed_credit_link' | '5_consolidated_invoice_block' | '6_partial_refund_block':
-            invoice_reference = factory_invoice_reference(invoice_id=invoice.id,
-                                                          invoice_number='1234').save()
-            if test_name == '5_consolidated_invoice_block':
+            cil_1 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                link_group_id=1,
+            ).save()
+            cil_2 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.REFUNDED.value,
+                link_group_id=2,
+            ).save()
+            cil_3 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.PENDING.value,
+                link_group_id=3,
+            ).save()
+            cil_4 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.PENDING.value,
+                link_group_id=3,
+            ).save()
+        case (
+            "4_completed_credit_link"
+            | "5_consolidated_invoice_block"
+            | "6_partial_refund_block"
+        ):
+            invoice_reference = factory_invoice_reference(
+                invoice_id=invoice.id, invoice_number="1234"
+            ).save()
+            if test_name == "5_consolidated_invoice_block":
                 invoice_reference.is_consolidated = True
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
                 invoice_reference.save()
             # Filler rows to make sure COMPLETED is the highest ID
-            cil_1 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.REFUNDED.value,
-                                                    link_group_id=1).save()
+            cil_1 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.REFUNDED.value,
+                link_group_id=1,
+            ).save()
             # This row has a different link_group_id, it wont be included.
-            cil_2 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.COMPLETED.value,
-                                                    link_group_id=5).save()
-            cil_3 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.COMPLETED.value,
-                                                    link_group_id=2).save()
-            cil_4 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.COMPLETED.value,
-                                                    link_group_id=2).save()
-            cil_5 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                    eft_credit_id=eft_credit.id,
-                                                    status_code=EFTCreditInvoiceStatus.COMPLETED.value,
-                                                    link_group_id=2).save()
-            if test_name != '6_partial_refund_block':
-                cil_6 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                        eft_credit_id=eft_credit.id,
-                                                        status_code=EFTCreditInvoiceStatus.COMPLETED.value,
-                                                        link_group_id=2).save()
-                cil_7 = factory_eft_credit_invoice_link(invoice_id=invoice.id,
-                                                        eft_credit_id=eft_credit.id,
-                                                        status_code=EFTCreditInvoiceStatus.COMPLETED.value,
-                                                        link_group_id=2).save()
-            corp_type = CorpTypeModel.find_by_code('CP')
+            cil_2 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                link_group_id=5,
+            ).save()
+            cil_3 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                link_group_id=2,
+            ).save()
+            cil_4 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                link_group_id=2,
+            ).save()
+            cil_5 = factory_eft_credit_invoice_link(
+                invoice_id=invoice.id,
+                eft_credit_id=eft_credit.id,
+                status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                link_group_id=2,
+            ).save()
+            if test_name != "6_partial_refund_block":
+                cil_6 = factory_eft_credit_invoice_link(
+                    invoice_id=invoice.id,
+                    eft_credit_id=eft_credit.id,
+                    status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                    link_group_id=2,
+                ).save()
+                cil_7 = factory_eft_credit_invoice_link(
+                    invoice_id=invoice.id,
+                    eft_credit_id=eft_credit.id,
+                    status_code=EFTCreditInvoiceStatus.COMPLETED.value,
+                    link_group_id=2,
+                ).save()
+            corp_type = CorpTypeModel.find_by_code("CP")
             corp_type.has_partner_disbursements = True
             corp_type.save()
         case _:
             raise NotImplementedError
 
-    if test_name in ('5_consolidated_invoice_block', '6_partial_refund_block'):
+    if test_name in ("5_consolidated_invoice_block", "6_partial_refund_block"):
         with pytest.raises(BusinessException) as excinfo:
-            invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
+            invoice.invoice_status_code = eft_service.process_cfs_refund(
+                invoice, payment_account, None
+            )
             invoice.save()
-        error = Error.INVALID_CONSOLIDATED_REFUND.value if test_name == '5_consolidated_invoice_block' \
+        error = (
+            Error.INVALID_CONSOLIDATED_REFUND.value
+            if test_name == "5_consolidated_invoice_block"
             else Error.EFT_PARTIAL_REFUND.value
+        )
         assert excinfo.value.code == error[0]
         return
 
-    invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
+    invoice.invoice_status_code = eft_service.process_cfs_refund(
+        invoice, payment_account, None
+    )
     invoice.save()
 
     match test_name:
-        case '0_no_invoice_reference_cil_exists':
+        case "0_no_invoice_reference_cil_exists":
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
             assert cil_1.status_code == EFTCreditInvoiceStatus.CANCELLED.value
             eft_history = session.query(EFTHistoryModel).one()
             assert_shortname_refund_history(eft_credit, eft_history, invoice)
-        case '1_invoice_non_exist':
+        case "1_invoice_non_exist":
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.CANCELLED.value
             assert session.query(EFTHistoryModel).one_or_none() is None
-        case '2_no_eft_credit_link':
+        case "2_no_eft_credit_link":
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
             assert session.query(EFTHistoryModel).one_or_none() is None
-        case '3_pending_credit_link':
+        case "3_pending_credit_link":
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
             assert cil_1.status_code == EFTCreditInvoiceStatus.COMPLETED.value
@@ -281,7 +391,7 @@ def test_eft_invoice_refund(session, test_name):
             assert eft_credit.remaining_amount == 3
             eft_history = session.query(EFTHistoryModel).one()
             assert_shortname_refund_history(eft_credit, eft_history, invoice)
-        case '4_completed_credit_link':
+        case "4_completed_credit_link":
             assert invoice
             assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
             assert cil_1.status_code == EFTCreditInvoiceStatus.REFUNDED.value
@@ -306,7 +416,7 @@ def test_eft_invoice_refund(session, test_name):
             assert PartnerDisbursements.query.count() == 1
             partner_disbursement = PartnerDisbursements.query.first()
             assert partner_disbursement.is_reversal is True
-            assert partner_disbursement.partner_code == 'CP'
+            assert partner_disbursement.partner_code == "CP"
             assert partner_disbursement.amount == amount
         case _:
             raise NotImplementedError
@@ -322,14 +432,18 @@ def assert_shortname_refund_history(eft_credit, eft_history, invoice):
 
 def test_eft_partner_disbursement(session):
     """Small test to assert if partner disbursement enabled a row is created."""
-    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
-    invoice = factory_invoice(payment_account=payment_account,
-                              status_code=InvoiceStatus.APPROVED.value,
-                              total=5).save()
+    payment_account = factory_payment_account(
+        payment_method_code=PaymentMethod.EFT.value
+    )
+    invoice = factory_invoice(
+        payment_account=payment_account,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=5,
+    ).save()
     eft_service.create_invoice(payment_account, 10, invoice)
     assert PartnerDisbursements.query.count() == 0
 
-    corp_type = CorpTypeModel.find_by_code('CP')
+    corp_type = CorpTypeModel.find_by_code("CP")
     corp_type.has_partner_disbursements = True
     corp_type.save()
 

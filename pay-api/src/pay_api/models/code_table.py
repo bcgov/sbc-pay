@@ -20,7 +20,9 @@ class CodeTable:  # pylint: disable=too-few-public-methods
     @classmethod
     def find_by_code(cls, code):
         """Given a code, this will return code master details."""
-        code_table = cls.query.filter_by(code=code).one_or_none()  # pylint: disable=no-member
+        code_table = cls.query.filter_by(
+            code=code
+        ).one_or_none()  # pylint: disable=no-member
         return code_table
 
     @classmethod

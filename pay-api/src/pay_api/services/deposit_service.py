@@ -35,13 +35,23 @@ class DepositService(PaymentSystemService, CFSService):
         """Return PAYBC as the system code."""
         return PaymentSystem.PAYBC.value
 
-    def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
-                       **kwargs) -> CfsAccountModel:
+    def create_account(
+        self,
+        identifier: str,
+        contact_info: Dict[str, Any],
+        payment_info: Dict[str, Any],
+        **kwargs
+    ) -> CfsAccountModel:
         """Create an account for the Deposit transactions."""
         cfs_account = CfsAccountModel()
         cfs_account.status = CfsAccountStatus.PENDING.value
-        raise NotImplementedError('Deposit payment method is not implemented.')
+        raise NotImplementedError("Deposit payment method is not implemented.")
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
-                       **kwargs) -> InvoiceReference:
+    def create_invoice(
+        self,
+        payment_account: PaymentAccount,
+        line_items: List[PaymentLineItem],
+        invoice: Invoice,
+        **kwargs
+    ) -> InvoiceReference:
         """Do nothing here as the invoice references are created later."""

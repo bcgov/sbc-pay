@@ -6,6 +6,7 @@ Revises: 17ca5cd561ca
 Create Date: 2024-08-08 22:01:40.129963
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -15,20 +16,23 @@ import sqlalchemy as sa
 # For disbursement_distribution_code_id, service_fee_distribution_code_id
 # Please ignore those lines and don't include in migration.
 
-revision = '5cb9c5f5896c'
-down_revision = '17ca5cd561ca'
+revision = "5cb9c5f5896c"
+down_revision = "17ca5cd561ca"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
     op.execute("set statement_timeout=900000;")
-    with op.batch_alter_table('statements', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('payment_methods', sa.String(length=100), nullable=True))
+    with op.batch_alter_table("statements", schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column("payment_methods", sa.String(length=100), nullable=True)
+        )
 
     # Scenario where there are no statement invoices.
     # Note this takes at least 15 minutes to run both queries.
-    op.execute("""
+    op.execute(
+        """
         update
             statements
         set
@@ -41,10 +45,12 @@ def upgrade():
                 payment_accounts.id = statements.payment_account_id
         )
         where payment_methods is null and not exists (select 1 from statement_invoices where statement_invoices.statement_id = statements.id);
-    """)
+    """
+    )
 
     # Scenario where there exists statement invoices.
-    op.execute("""
+    op.execute(
+        """
         update
             statements
         set
@@ -60,8 +66,10 @@ def upgrade():
             group by statement_invoices.statement_id
         )
         where payment_methods is null;
-    """)
+    """
+    )
+
 
 def downgrade():
-    with op.batch_alter_table('statements', schema=None) as batch_op:
-        batch_op.drop_column('payment_methods')
+    with op.batch_alter_table("statements", schema=None) as batch_op:
+        batch_op.drop_column("payment_methods")

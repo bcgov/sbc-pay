@@ -26,9 +26,9 @@ def read_requirements(filename):
     :return: Python requirements
     :rtype: list
     """
-    with open(filename, 'r') as req:
+    with open(filename, "r") as req:
         requirements = req.readlines()
-    install_requires = [r.strip() for r in requirements if r.find('git+') != 0]
+    install_requires = [r.strip() for r in requirements if r.find("git+") != 0]
     return install_requires
 
 
@@ -39,21 +39,21 @@ def read(filepath):
     :return: file contents
     :rtype: str
     """
-    with open(filepath, 'r') as file_handle:
+    with open(filepath, "r") as file_handle:
         content = file_handle.read()
     return content
 
 
-REQUIREMENTS = read_requirements('requirements/prod.txt')
+REQUIREMENTS = read_requirements("requirements/prod.txt")
 
 setup(
     name="pay_api",
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
-    py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
+    packages=find_packages("src"),
+    package_dir={"": "src"},
+    py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
-    license=read('LICENSE'),
-    long_description=read('README.md'),
+    license=read("LICENSE"),
+    long_description=read("README.md"),
     zip_safe=False,
     install_requires=REQUIREMENTS,
     setup_requires=["pytest-runner"],

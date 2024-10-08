@@ -24,7 +24,7 @@ from .db import db
 class EFTRefund(Audit):
     """This class manages the file data for EFT Refunds."""
 
-    __tablename__ = 'eft_refunds'
+    __tablename__ = "eft_refunds"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -36,36 +36,44 @@ class EFTRefund(Audit):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'auth_account_id',
-            'cas_supplier_number',
-            'comment',
-            'created_by',
-            'created_name'
-            'created_on',
-            'disbursement_status_code',
-            'decline_reason',
-            'id',
-            'refund_amount',
-            'refund_email',
-            'short_name_id',
-            'status',
-            'updated_by',
-            'updated_name',
-            'updated_on'
+        "include_properties": [
+            "auth_account_id",
+            "cas_supplier_number",
+            "comment",
+            "created_by",
+            "created_name" "created_on",
+            "disbursement_status_code",
+            "decline_reason",
+            "id",
+            "refund_amount",
+            "refund_email",
+            "short_name_id",
+            "status",
+            "updated_by",
+            "updated_name",
+            "updated_on",
         ]
     }
 
     cas_supplier_number = db.Column(db.String(), nullable=False)
     comment = db.Column(db.String(), nullable=False)
     decline_reason = db.Column(db.String(), nullable=True)
-    created_by = db.Column('created_by', db.String(100), nullable=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
-    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
+    created_by = db.Column("created_by", db.String(100), nullable=True)
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
+    disbursement_status_code = db.Column(
+        db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True
+    )
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     refund_email = db.Column(db.String(100), nullable=False)
-    short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
+    short_name_id = db.Column(
+        db.Integer, ForeignKey("eft_short_names.id"), nullable=False
+    )
     status = db.Column(db.String(25), nullable=True)
 
     @classmethod

@@ -18,7 +18,9 @@ from .distribution_code import DistributionCode
 from .eft_service import EftService
 from .eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from .eft_short_name_historical import EFTShortnameHistory, EFTShortnameHistorySearch
-from .eft_short_name_summaries import EFTShortnameSummaries as EFTShortNameSummaryService
+from .eft_short_name_summaries import (
+    EFTShortnameSummaries as EFTShortNameSummaryService,
+)
 from .eft_short_names import EFTShortnames as EFTShortNamesService
 from .fee_schedule import FeeSchedule
 from .hashing import HashingService

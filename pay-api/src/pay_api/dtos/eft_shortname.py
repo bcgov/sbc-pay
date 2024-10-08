@@ -6,6 +6,7 @@
 
 In the near future, will find a library that generates our API spec based off of these DTOs.
 """
+
 from decimal import Decimal
 from typing import List
 from attrs import define
@@ -35,8 +36,10 @@ class EFTShortNameGetRequest(Serializable):
         """Convert from request args to EFTShortNameSearchDTO."""
         dto = super().from_dict(data)
         # In the future, we'll need a cleaner way to handle this.
-        dto.state = dto.state.split(',') if dto.state else None
-        dto.account_id_list = dto.account_id_list.split(',') if dto.account_id_list else None
+        dto.state = dto.state.split(",") if dto.state else None
+        dto.account_id_list = (
+            dto.account_id_list.split(",") if dto.account_id_list else None
+        )
         return dto
 
 
@@ -73,6 +76,6 @@ class EFTShortNameRefundGetRequest:
     @classmethod
     def from_dict(cls, data: dict):
         """Convert from request json to EFTShortNameRefundDTO."""
-        input_string = data.get('status', '')
-        statuses = input_string.split(',') if input_string else []
+        input_string = data.get("status", "")
+        statuses = input_string.split(",") if input_string else []
         return EFTShortNameRefundGetRequest(statuses=statuses)

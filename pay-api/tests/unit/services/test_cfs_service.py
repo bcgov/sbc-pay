@@ -31,75 +31,86 @@ cfs_service = CFSService()
 def test_validate_bank_account_valid(session):
     """Test create_account."""
     input_bank_details = {
-        'bankInstitutionNumber': '2001',
-        'bankTransitNumber': '00720',
-        'bankAccountNumber': '1234567',
+        "bankInstitutionNumber": "2001",
+        "bankTransitNumber": "00720",
+        "bankAccountNumber": "1234567",
     }
-    with patch('pay_api.services.oauth_service.requests.post') as mock_post:
+    with patch("pay_api.services.oauth_service.requests.post") as mock_post:
         # Configure the mock to return a response with an OK status code.
         mock_post.return_value.ok = True
         mock_post.return_value.status_code = 200
         valid_address = {
-            'bank_number': '0001',
-            'bank_name': 'BANK OF MONTREAL',
-            'branch_number': '00720',
-            'transit_address': 'DATA CENTRE,PRINCE ANDREW CENTRE,,DON MILLS,ON,M3C 2H4',
-            'account_number': '1234567',
-            'CAS-Returned-Messages': 'VALID'
+            "bank_number": "0001",
+            "bank_name": "BANK OF MONTREAL",
+            "branch_number": "00720",
+            "transit_address": "DATA CENTRE,PRINCE ANDREW CENTRE,,DON MILLS,ON,M3C 2H4",
+            "account_number": "1234567",
+            "CAS-Returned-Messages": "VALID",
         }
 
         mock_post.return_value.json.return_value = valid_address
 
         bank_details = cfs_service.validate_bank_account(input_bank_details)
-        assert bank_details.get('is_valid') is True
-        assert bank_details.get('message')[0] == 'VALID'
-        assert bank_details.get('status_code') == 200
+        assert bank_details.get("is_valid") is True
+        assert bank_details.get("message")[0] == "VALID"
+        assert bank_details.get("status_code") == 200
 
 
 def test_validate_bank_account_invalid(session):
     """Test create_account."""
     input_bank_details = {
-        'bankInstitutionNumber': '2001',
-        'bankTransitNumber': '00720',
-        'bankAccountNumber': '1234567',
+        "bankInstitutionNumber": "2001",
+        "bankTransitNumber": "00720",
+        "bankAccountNumber": "1234567",
     }
-    with patch('pay_api.services.oauth_service.requests.post') as mock_post:
+    with patch("pay_api.services.oauth_service.requests.post") as mock_post:
         # Configure the mock to return a response with an OK status code.
         mock_post.return_value.ok = True
         mock_post.return_value.status_code = 400
         valid_address = {
-            'bank_number': '0001',
-            'bank_name': '',
-            'branch_number': '00720',
-            'transit_address': '',
-            'account_number': '1234787%876567',
-            'CAS-Returned-Messages': '0003 - Account number has invalid characters.'
-                                     '0005 - Account number has non-numeric characters.'
-                                     '0006 - Account number length is not valid for this bank.'
+            "bank_number": "0001",
+            "bank_name": "",
+            "branch_number": "00720",
+            "transit_address": "",
+            "account_number": "1234787%876567",
+            "CAS-Returned-Messages": "0003 - Account number has invalid characters."
+            "0005 - Account number has non-numeric characters."
+            "0006 - Account number length is not valid for this bank.",
         }
 
         mock_post.return_value.json.return_value = valid_address
 
         bank_details = cfs_service.validate_bank_account(input_bank_details)
-        assert bank_details.get('is_valid') is False
-        assert bank_details.get('message')[0] == 'Account number has invalid characters.'
-        assert bank_details.get('message')[1] == 'Account number has non-numeric characters.'
-        assert bank_details.get('message')[2] == 'Account number length is not valid for this bank.'
-        assert bank_details.get('status_code') == 200
+        assert bank_details.get("is_valid") is False
+        assert (
+            bank_details.get("message")[0] == "Account number has invalid characters."
+        )
+        assert (
+            bank_details.get("message")[1]
+            == "Account number has non-numeric characters."
+        )
+        assert (
+            bank_details.get("message")[2]
+            == "Account number length is not valid for this bank."
+        )
+        assert bank_details.get("status_code") == 200
 
 
 def test_validate_bank_account_exception(session):
     """Test create_account."""
     input_bank_details = {
-        'bankInstitutionNumber': 111,
-        'bankTransitNumber': 222,
-        'bankAccountNumber': 33333333
+        "bankInstitutionNumber": 111,
+        "bankTransitNumber": 222,
+        "bankAccountNumber": 33333333,
     }
-    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
+    with patch(
+        "pay_api.services.oauth_service.requests.post",
+        side_effect=ConnectTimeout("mocked error"),
+    ):
         # Configure the mock to return a response with an OK status code.
         bank_details = cfs_service.validate_bank_account(input_bank_details)
-        assert bank_details.get('status_code') == 503
-        assert 'mocked error' in bank_details.get('message')
+        assert bank_details.get("status_code") == 503
+        assert "mocked error" in bank_details.get("message")
 
 
 def test_ensure_totals_quantized(session):
@@ -115,21 +126,19 @@ def test_ensure_totals_quantized(session):
 
     payment_line_items = [
         PaymentLineItemModel(
-            total=Decimal('0.3'),
-            service_fees=Decimal('0.3'),
-            fee_distribution_id=1
+            total=Decimal("0.3"), service_fees=Decimal("0.3"), fee_distribution_id=1
         ),
         PaymentLineItemModel(
-            total=Decimal('0.55'),
-            service_fees=Decimal('0.55'),
-            fee_distribution_id=1
+            total=Decimal("0.55"), service_fees=Decimal("0.55"), fee_distribution_id=1
         ),
         PaymentLineItemModel(
-            total=Decimal('0.55'),
-            service_fees=Decimal('0.55'),
+            total=Decimal("0.55"),
+            service_fees=Decimal("0.55"),
             fee_distribution_id=1,
-        )
+        ),
     ]
-    lines = cfs_service.build_lines(payment_line_items)  # pylint: disable=protected-access
+    lines = cfs_service.build_lines(
+        payment_line_items
+    )  # pylint: disable=protected-access
     # Same distribution code for filing fees and service fees.
-    assert float(lines[0]['unit_price']) == 2.8
+    assert float(lines[0]["unit_price"]) == 2.8

@@ -25,7 +25,7 @@ from .db import db
 class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about EJV distributions and payment."""
 
-    __tablename__ = 'ejv_files'
+    __tablename__ = "ejv_files"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -37,25 +37,34 @@ class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'ack_file_ref',
-            'created_on',
-            'completed_on',
-            'disbursement_status_code',
-            'feedback_file_ref',
-            'file_type',
-            'file_ref',
-            'message'
+        "include_properties": [
+            "id",
+            "ack_file_ref",
+            "created_on",
+            "completed_on",
+            "disbursement_status_code",
+            "feedback_file_ref",
+            "file_type",
+            "file_ref",
+            "message",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
-    completed_on = db.Column('completed_on', db.DateTime, nullable=True)
-    file_type = db.Column('file_type', db.String, nullable=True, default=EjvFileType.DISBURSEMENT.value)
-    file_ref = db.Column('file_ref', db.String, nullable=False, index=True)
-    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
-    message = db.Column('message', db.String, nullable=True, index=False)
-    feedback_file_ref = db.Column('feedback_file_ref', db.String, nullable=True)
-    ack_file_ref = db.Column('ack_file_ref', db.String, nullable=True)
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
+    completed_on = db.Column("completed_on", db.DateTime, nullable=True)
+    file_type = db.Column(
+        "file_type", db.String, nullable=True, default=EjvFileType.DISBURSEMENT.value
+    )
+    file_ref = db.Column("file_ref", db.String, nullable=False, index=True)
+    disbursement_status_code = db.Column(
+        db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True
+    )
+    message = db.Column("message", db.String, nullable=True, index=False)
+    feedback_file_ref = db.Column("feedback_file_ref", db.String, nullable=True)
+    ack_file_ref = db.Column("ack_file_ref", db.String, nullable=True)

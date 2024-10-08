@@ -24,10 +24,12 @@ from .db import db
 from .base_schema import BaseSchema
 
 
-class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
+class PaymentAccount(
+    Versioned, BaseModel
+):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment Account."""
 
-    __tablename__ = 'payment_accounts'
+    __tablename__ = "payment_accounts"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -39,23 +41,23 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'auth_account_id',
-            'bcol_account',
-            'bcol_user_id',
-            'billable',
-            'has_nsf_invoices',
-            'has_overdue_invoices',
-            'branch_name',
-            'credit',
-            'eft_enable',
-            'name',
-            'pad_activation_date',
-            'pad_tos_accepted_by',
-            'pad_tos_accepted_date',
-            'payment_method',
-            'statement_notification_enabled'
+        "include_properties": [
+            "id",
+            "auth_account_id",
+            "bcol_account",
+            "bcol_user_id",
+            "billable",
+            "has_nsf_invoices",
+            "has_overdue_invoices",
+            "branch_name",
+            "credit",
+            "eft_enable",
+            "name",
+            "pad_activation_date",
+            "pad_tos_accepted_by",
+            "pad_tos_accepted_date",
+            "payment_method",
+            "statement_notification_enabled",
         ]
     }
 
@@ -68,7 +70,9 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
     name = db.Column(db.String(250), nullable=True, index=False)
     branch_name = db.Column(db.String(250), nullable=True, index=False)
 
-    payment_method = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=True)
+    payment_method = db.Column(
+        db.String(15), ForeignKey("payment_methods.code"), nullable=True
+    )
 
     bcol_user_id = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)
@@ -78,7 +82,9 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
     has_overdue_invoices = db.Column(db.DateTime, nullable=True)
 
     # when this is enabled , send out the  notifications
-    statement_notification_enabled = db.Column('statement_notification_enabled', Boolean(), default=False)
+    statement_notification_enabled = db.Column(
+        "statement_notification_enabled", Boolean(), default=False
+    )
 
     credit = db.Column(db.Numeric(19, 2), nullable=True)
     billable = db.Column(Boolean(), default=True)
@@ -106,13 +112,13 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentAccount
-        exclude = ['pad_activation_date']
+        exclude = ["pad_activation_date"]
 
-    credit = fields.Float(data_key='credit')
-    payment_method = fields.String(data_key='payment_method')
-    auth_account_id = fields.String(data_key='account_id')
-    name = fields.String(data_key='account_name')
-    branch_name = fields.String(data_key='branch_name')
+    credit = fields.Float(data_key="credit")
+    payment_method = fields.String(data_key="payment_method")
+    auth_account_id = fields.String(data_key="account_id")
+    name = fields.String(data_key="account_name")
+    branch_name = fields.String(data_key="branch_name")
 
 
 @define
@@ -130,5 +136,9 @@ class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(account_name=row.name, billable=row.billable, account_id=row.auth_account_id,
-                   branch_name=row.branch_name)
+        return cls(
+            account_name=row.name,
+            billable=row.billable,
+            account_id=row.auth_account_id,
+            branch_name=row.branch_name,
+        )

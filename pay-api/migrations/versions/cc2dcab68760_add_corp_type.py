@@ -5,18 +5,20 @@ Revises: 59fc9d74101f
 Create Date: 2022-07-29 11:33:20.861072
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = 'cc2dcab68760'
-down_revision = '59fc9d74101f'
+revision = "cc2dcab68760"
+down_revision = "59fc9d74101f"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    op.execute('''CREATE OR REPLACE VIEW RPT_INVOICES_PLI as
+    op.execute(
+        """CREATE OR REPLACE VIEW RPT_INVOICES_PLI as
         select
             created_on at time zone 'utc' at time zone 'america/vancouver' as created_pst,
             updated_on at time zone 'utc' at time zone 'america/vancouver' as updated_pst,
@@ -40,8 +42,10 @@ def upgrade():
             pa.id = i.payment_account_id
         left join payment_line_items pli on
             pli.invoice_id = i.id;
-    ''')
-    op.execute('''CREATE OR REPLACE VIEW RPT_INVOICES as
+    """
+    )
+    op.execute(
+        """CREATE OR REPLACE VIEW RPT_INVOICES as
         select
             created_on at time zone 'utc' at time zone 'America/Vancouver' as created_pst,
             updated_on at time zone 'utc' at time zone 'america/vancouver' as updated_pst,
@@ -64,10 +68,13 @@ def upgrade():
             pa.id = i.payment_account_id
         left join invoice_references ir on
             i.id = ir.invoice_id
-    ''')
+    """
+    )
+
 
 def downgrade():
-    op.execute('''CREATE OR REPLACE VIEW RPT_INVOICES_PLI as
+    op.execute(
+        """CREATE OR REPLACE VIEW RPT_INVOICES_PLI as
         select
             created_on at time zone 'utc' at time zone 'america/vancouver' as created_pst,
             updated_on at time zone 'utc' at time zone 'america/vancouver' as updated_pst,
@@ -90,8 +97,10 @@ def downgrade():
             pa.id = i.payment_account_id
         left join payment_line_items pli on
             pli.invoice_id = i.id;
-    ''')
-    op.execute('''CREATE OR REPLACE VIEW RPT_INVOICES as
+    """
+    )
+    op.execute(
+        """CREATE OR REPLACE VIEW RPT_INVOICES as
         select
             created_on at time zone 'utc' at time zone 'America/Vancouver' as created_pst,
             updated_on at time zone 'utc' at time zone 'america/vancouver' as updated_pst,
@@ -113,5 +122,5 @@ def downgrade():
             pa.id = i.payment_account_id
         left join invoice_references ir on
             i.id = ir.invoice_id
-    ''')
-
+    """
+    )

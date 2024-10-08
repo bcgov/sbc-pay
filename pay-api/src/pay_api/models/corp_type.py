@@ -25,7 +25,7 @@ class CorpType(db.Model, CodeTable):
     Corp types are different types of corporation the payment system supports
     """
 
-    __tablename__ = 'corp_types'
+    __tablename__ = "corp_types"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -37,22 +37,22 @@ class CorpType(db.Model, CodeTable):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'batch_type',
-            'bcol_code_full_service_fee',
-            'bcol_code_no_service_fee',
-            'bcol_code_partial_service_fee',
-            'bcol_staff_fee_code',
-            'code',
-            'description',
-            'has_partner_disbursements',
-            'is_online_banking_allowed',
-            'product'
+        "include_properties": [
+            "batch_type",
+            "bcol_code_full_service_fee",
+            "bcol_code_no_service_fee",
+            "bcol_code_partial_service_fee",
+            "bcol_staff_fee_code",
+            "code",
+            "description",
+            "has_partner_disbursements",
+            "is_online_banking_allowed",
+            "product",
         ]
     }
 
-    code = db.Column('code', db.String(10), primary_key=True)
-    description = db.Column('description', db.String(200), nullable=False)
+    code = db.Column("code", db.String(10), primary_key=True)
+    description = db.Column("description", db.String(200), nullable=False)
     bcol_code_full_service_fee = db.Column(db.String(20), nullable=True)
     bcol_code_partial_service_fee = db.Column(db.String(20), nullable=True)
     bcol_code_no_service_fee = db.Column(db.String(20), nullable=True)
@@ -69,7 +69,7 @@ class CorpType(db.Model, CodeTable):
 
     def __str__(self):
         """Override to string."""
-        return f'{self.code}'
+        return f"{self.code}"
 
 
 class CorpTypeSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors

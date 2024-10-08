@@ -21,7 +21,13 @@ from flask import copy_current_request_context, current_app
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import (
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    LineItemStatus,
+    PaymentMethod,
+    PaymentStatus,
+)
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
@@ -40,7 +46,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_invoice(cls, payment_request: Tuple[Dict[str, Any]], authorization: Tuple[Dict[str, Any]]) -> Dict:
+    def create_invoice(
+        cls,
+        payment_request: Tuple[Dict[str, Any]],
+        authorization: Tuple[Dict[str, Any]],
+    ) -> Dict:
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
@@ -57,21 +67,25 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 6.1.1 If failed adjust the invoice to zero and roll back the transaction.
             6.2 If fails rollback the transaction
         """
-        business_info = payment_request.get('businessInfo')
-        filing_info = payment_request.get('filingInfo')
-        account_info = payment_request.get('accountInfo', None)
-        corp_type = business_info.get('corpType', None)
-        business_identifier = business_info.get('businessIdentifier')
+        business_info = payment_request.get("businessInfo")
+        filing_info = payment_request.get("filingInfo")
+        account_info = payment_request.get("accountInfo", None)
+        corp_type = business_info.get("corpType", None)
+        business_identifier = business_info.get("businessIdentifier")
 
         payment_account = cls._find_payment_account(authorization)
         payment_method = _get_payment_method(payment_request, payment_account)
 
-        if payment_method == PaymentMethod.EFT.value and not flags.is_on('enable-eft-payment-method', default=False):
+        if payment_method == PaymentMethod.EFT.value and not flags.is_on(
+            "enable-eft-payment-method", default=False
+        ):
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
-        current_app.logger.info(f'Creating Payment Request : '
-                                f'{payment_method}, {corp_type}, {business_identifier}, '
-                                f'{payment_account.auth_account_id}')
+        current_app.logger.info(
+            f"Creating Payment Request : "
+            f"{payment_method}, {corp_type}, {business_identifier}, "
+            f"{payment_account.auth_account_id}"
+        )
 
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
@@ -84,9 +98,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             corp_type=corp_type,
             fees=sum(fee.total for fee in fees),
             account_info=account_info,
-            payment_account=payment_account
+            payment_account=payment_account,
         )
-        current_app.logger.info(f'Created Pay System Instance : {pay_service}')
+        current_app.logger.info(f"Created Pay System Instance : {pay_service}")
 
         pay_system_invoice: Dict[str, any] = None
         invoice: Invoice = None
@@ -101,15 +115,15 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.total = sum(fee.total for fee in fees) if fees else 0
             invoice.paid = 0
             invoice.refund = 0
-            invoice.routing_slip = get_str_by_path(account_info, 'routingSlip')
-            invoice.filing_id = filing_info.get('filingIdentifier', None)
-            invoice.dat_number = get_str_by_path(account_info, 'datNumber')
-            invoice.folio_number = filing_info.get('folioNumber', None)
+            invoice.routing_slip = get_str_by_path(account_info, "routingSlip")
+            invoice.filing_id = filing_info.get("filingIdentifier", None)
+            invoice.dat_number = get_str_by_path(account_info, "datNumber")
+            invoice.folio_number = filing_info.get("folioNumber", None)
             invoice.business_identifier = business_identifier
             invoice.payment_method_code = pay_service.get_payment_method_code()
             invoice.corp_type_code = corp_type
-            details = payment_request.get('details')
-            if not details or details == 'null':
+            details = payment_request.get("details")
+            if not details or details == "null":
                 details = []
             invoice.details = details
             invoice = invoice.flush()
@@ -118,9 +132,15 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             for fee in fees:
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
 
-            current_app.logger.info(f'Handing off to payment system to create invoice for {invoice.id}')
-            invoice_reference = pay_service.create_invoice(payment_account, line_items, invoice,
-                                                           corp_type_code=invoice.corp_type_code)
+            current_app.logger.info(
+                f"Handing off to payment system to create invoice for {invoice.id}"
+            )
+            invoice_reference = pay_service.create_invoice(
+                payment_account,
+                line_items,
+                invoice,
+                corp_type_code=invoice.corp_type_code,
+            )
 
             invoice.commit()
 
@@ -131,18 +151,18 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
 
         except Exception as e:  # NOQA pylint: disable=broad-except
-            current_app.logger.error('Rolling back as error occured!')
+            current_app.logger.error("Rolling back as error occured!")
             current_app.logger.error(e)
             if invoice:
                 invoice.rollback()
             if pay_system_invoice:
                 pay_service.cancel_invoice(
                     payment_account,
-                    pay_system_invoice.get('invoice_number'),
+                    pay_system_invoice.get("invoice_number"),
                 )
             raise
 
-        current_app.logger.debug('>Finished creating payment request')
+        current_app.logger.debug(">Finished creating payment request")
 
         return invoice.asdict(include_dynamic_fields=True)
 
@@ -154,40 +174,50 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         # If there is no payment_account it must be a request with no account (NR, Staff payment etc.)
         # and invoked using a service account or a staff token
         if not payment_account:
-            payment_method = get_str_by_path(authorization,
-                                             'account/paymentInfo/methodOfPayment') or _get_default_payment()
+            payment_method = (
+                get_str_by_path(authorization, "account/paymentInfo/methodOfPayment")
+                or _get_default_payment()
+            )
             payment_account = PaymentAccount.create(
                 {
-                    'accountId': get_str_by_path(authorization, 'account/id'),
-                    'paymentInfo': {
-                        'methodOfPayment': payment_method
-                    }
+                    "accountId": get_str_by_path(authorization, "account/id"),
+                    "paymentInfo": {"methodOfPayment": payment_method},
                 }
             )
         return payment_account
 
     @classmethod
     def _get_bcol_account(cls, account_info, payment_account: PaymentAccount):
-        if account_info and account_info.get('bcolAccountNumber', None):
-            bcol_account = account_info.get('bcolAccountNumber')
+        if account_info and account_info.get("bcolAccountNumber", None):
+            bcol_account = account_info.get("bcolAccountNumber")
         else:
             bcol_account = payment_account.bcol_account
         return bcol_account
 
     @classmethod
-    def update_invoice(cls, invoice_id: int, payment_request: Tuple[Dict[str, Any]], is_apply_credit: bool = False):
+    def update_invoice(
+        cls,
+        invoice_id: int,
+        payment_request: Tuple[Dict[str, Any]],
+        is_apply_credit: bool = False,
+    ):
         """Update invoice related records."""
-        current_app.logger.debug('<update_invoice')
+        current_app.logger.debug("<update_invoice")
 
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=False)
         # If the call is to apply credit, apply credit and release records.
         if is_apply_credit:
-            credit_balance = Decimal('0')
-            payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+            credit_balance = Decimal("0")
+            payment_account: PaymentAccount = PaymentAccount.find_by_id(
+                invoice.payment_account_id
+            )
             invoice_balance = invoice.total - (invoice.paid or 0)
             if (payment_account.credit or 0) >= invoice_balance:
-                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                    invoice.payment_method_code)
+                pay_service: PaymentSystemService = (
+                    PaymentSystemFactory.create_from_payment_method(
+                        invoice.payment_method_code
+                    )
+                )
                 # Only release records, as the actual status change should happen during reconciliation.
                 pay_service.apply_credit(invoice)
                 credit_balance = payment_account.credit - invoice_balance
@@ -200,10 +230,17 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment_account.credit = credit_balance
             payment_account.save()
         else:
-            payment_method = get_str_by_path(payment_request, 'paymentInfo/methodOfPayment')
+            payment_method = get_str_by_path(
+                payment_request, "paymentInfo/methodOfPayment"
+            )
 
-            is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
-            is_not_changing_to_cc = payment_method not in (PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
+            is_not_currently_on_ob = (
+                invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
+            )
+            is_not_changing_to_cc = payment_method not in (
+                PaymentMethod.CC.value,
+                PaymentMethod.DIRECT_PAY.value,
+            )
             # can patch only if the current payment method is OB
             if is_not_currently_on_ob or is_not_changing_to_cc:
                 raise BusinessException(Error.INVALID_REQUEST)
@@ -211,23 +248,34 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             # check if it has any invoice references already created
             # if there is any invoice ref , send them to the invoiced credit card flow
 
-            invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+            invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(
+                invoice.id
+            )
             if invoice_reference:
                 invoice.payment_method_code = PaymentMethod.CC.value
             else:
-                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                    PaymentMethod.DIRECT_PAY.value)
+                pay_service: PaymentSystemService = (
+                    PaymentSystemFactory.create_from_payment_method(
+                        PaymentMethod.DIRECT_PAY.value
+                    )
+                )
                 payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-                pay_service.create_invoice(payment_account, invoice.payment_line_items, invoice,
-                                           corp_type_code=invoice.corp_type_code)
+                pay_service.create_invoice(
+                    payment_account,
+                    invoice.payment_line_items,
+                    invoice,
+                    corp_type_code=invoice.corp_type_code,
+                )
 
                 invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
             invoice.save()
-        current_app.logger.debug('>update_invoice')
+        current_app.logger.debug(">update_invoice")
         return invoice.asdict()
 
     @classmethod
-    def delete_invoice(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
+    def delete_invoice(
+        cls, invoice_id: int
+    ):  # pylint: disable=too-many-locals,too-many-statements
         """Delete invoice related records.
 
         Does the following;
@@ -239,10 +287,14 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         _update_active_transactions(invoice_id)
 
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
-        current_app.logger.debug(f'<Delete Invoice {invoice_id}, {invoice.invoice_status_code}')
+        current_app.logger.debug(
+            f"<Delete Invoice {invoice_id}, {invoice.invoice_status_code}"
+        )
 
         # Create the payment system implementation
-        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(invoice.payment_method_code)
+        pay_service: PaymentSystemService = (
+            PaymentSystemFactory.create_from_payment_method(invoice.payment_method_code)
+        )
 
         # set payment status as deleted
         payment = Payment.find_payment_for_invoice(invoice_id)
@@ -253,11 +305,16 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment.flush()
 
         # Cancel invoice
-        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(
+            invoice.id
+        )
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
         if invoice_reference:
-            pay_service.cancel_invoice(payment_account=payment_account, inv_number=invoice_reference.invoice_number)
+            pay_service.cancel_invoice(
+                payment_account=payment_account,
+                inv_number=invoice_reference.invoice_number,
+            )
         invoice.invoice_status_code = InvoiceStatus.DELETED.value
 
         for line in invoice.payment_line_items:
@@ -269,12 +326,14 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         invoice.save()
 
-        current_app.logger.debug('>delete_invoice')
+        current_app.logger.debug(">delete_invoice")
 
     @classmethod
-    def accept_delete(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
+    def accept_delete(
+        cls, invoice_id: int
+    ):  # pylint: disable=too-many-locals,too-many-statements
         """Mark payment related records to be deleted."""
-        current_app.logger.debug('<accept_delete')
+        current_app.logger.debug("<accept_delete")
         invoice: Invoice = Invoice.find_by_id(invoice_id, one_of_roles=[EDIT_ROLE])
 
         _check_if_invoice_can_be_deleted(invoice)
@@ -286,27 +345,29 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             """Call delete payment."""
             PaymentService.delete_invoice(invoice_id)
 
-        current_app.logger.debug('Starting thread to delete invoice.')
+        current_app.logger.debug("Starting thread to delete invoice.")
         thread = Thread(target=run_delete)
         thread.start()
-        current_app.logger.debug('>accept_delete')
+        current_app.logger.debug(">accept_delete")
 
 
 def _calculate_fees(corp_type, filing_info):
     """Calculate and return the fees based on the filing type codes."""
     fees = []
     service_fee_applied: bool = False
-    for filing_type_info in filing_info.get('filingTypes'):
-        current_app.logger.debug(f"Getting fees for {filing_type_info.get('filingTypeCode')} ")
+    for filing_type_info in filing_info.get("filingTypes"):
+        current_app.logger.debug(
+            f"Getting fees for {filing_type_info.get('filingTypeCode')} "
+        )
         fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
             corp_type=corp_type,
-            filing_type_code=filing_type_info.get('filingTypeCode', None),
-            valid_date=filing_info.get('date', None),
+            filing_type_code=filing_type_info.get("filingTypeCode", None),
+            valid_date=filing_info.get("date", None),
             jurisdiction=None,
-            is_priority=filing_type_info.get('priority'),
-            is_future_effective=filing_type_info.get('futureEffective'),
-            waive_fees=filing_type_info.get('waiveFees'),
-            quantity=filing_type_info.get('quantity')
+            is_priority=filing_type_info.get("priority"),
+            is_future_effective=filing_type_info.get("futureEffective"),
+            waive_fees=filing_type_info.get("waiveFees"),
+            quantity=filing_type_info.get("quantity"),
         )
         # If service fee is already applied, do not charge again.
         if service_fee_applied:
@@ -315,10 +376,10 @@ def _calculate_fees(corp_type, filing_info):
             service_fee_applied = True
 
         if fee.variable:
-            fee.fee_amount = Decimal(str(filing_type_info.get('fee', 0)))
+            fee.fee_amount = Decimal(str(filing_type_info.get("fee", 0)))
 
-        if filing_type_info.get('filingDescription'):
-            fee.description = filing_type_info.get('filingDescription')
+        if filing_type_info.get("filingDescription"):
+            fee.description = filing_type_info.get("filingDescription")
 
         fees.append(fee)
     return fees
@@ -326,24 +387,32 @@ def _calculate_fees(corp_type, filing_info):
 
 def _update_active_transactions(invoice_id: int):
     # update active transactions
-    current_app.logger.debug('<_update_active_transactions')
-    transaction: PaymentTransaction = PaymentTransaction.find_active_by_invoice_id(invoice_id)
+    current_app.logger.debug("<_update_active_transactions")
+    transaction: PaymentTransaction = PaymentTransaction.find_active_by_invoice_id(
+        invoice_id
+    )
     if transaction:
         # check existing payment status in PayBC;
         PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
 
 
 def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
-    if invoice.invoice_status_code in (InvoiceStatus.PAID.value, InvoiceStatus.DELETED.value,
-                                       InvoiceStatus.APPROVED.value):
+    if invoice.invoice_status_code in (
+        InvoiceStatus.PAID.value,
+        InvoiceStatus.DELETED.value,
+        InvoiceStatus.APPROVED.value,
+    ):
         raise BusinessException(Error.COMPLETED_PAYMENT)
-    if payment and payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
+    if payment and payment.payment_status_code in (
+        PaymentStatus.COMPLETED.value,
+        PaymentStatus.DELETED.value,
+    ):
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
 def _get_payment_method(payment_request: Dict, payment_account: PaymentAccount):
     # If no methodOfPayment is provided, use the one against the payment account table.
-    payment_method = get_str_by_path(payment_request, 'paymentInfo/methodOfPayment')
+    payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
     if not payment_method:
         payment_method = payment_account.payment_method
     if not payment_method:

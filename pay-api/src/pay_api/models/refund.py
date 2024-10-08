@@ -24,11 +24,13 @@ from .db import db, ma
 class Refund(BaseModel):
     """This class manages all of the base data about Refunds."""
 
-    __tablename__ = 'refunds'
+    __tablename__ = "refunds"
 
     __table_args__ = (
-        CheckConstraint('NOT(routing_slip_id IS NULL AND invoice_id IS NULL)', name='routing_slip_invoice'
-                                                                                    '_id_check'),
+        CheckConstraint(
+            "NOT(routing_slip_id IS NULL AND invoice_id IS NULL)",
+            name="routing_slip_invoice" "_id_check",
+        ),
     )
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
@@ -41,24 +43,26 @@ class Refund(BaseModel):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'decision_date',
-            'decision_made_by',
-            'details',
-            'gl_posted',
-            'gl_error',
-            'invoice_id',
-            'reason',
-            'requested_by',
-            'requested_date',
-            'routing_slip_id'
+        "include_properties": [
+            "id",
+            "decision_date",
+            "decision_made_by",
+            "details",
+            "gl_posted",
+            "gl_error",
+            "invoice_id",
+            "reason",
+            "requested_by",
+            "requested_date",
+            "routing_slip_id",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=True)
-    routing_slip_id = db.Column(db.Integer, ForeignKey('routing_slips.id'), nullable=True)
+    invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=True)
+    routing_slip_id = db.Column(
+        db.Integer, ForeignKey("routing_slips.id"), nullable=True
+    )
     requested_date = db.Column(db.DateTime)
     reason = db.Column(db.String(250))
     requested_by = db.Column(db.String(50))

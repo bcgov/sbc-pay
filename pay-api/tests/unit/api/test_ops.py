@@ -23,26 +23,28 @@ from pay_api.models import db
 
 def test_ops_healthz_success(client):
     """Assert that the service is healthy if it can successfully access the database."""
-    rv = client.get('/ops/healthz')
+    rv = client.get("/ops/healthz")
 
     assert rv.status_code == 200
-    assert rv.json == {'message': 'api is healthy'}
+    assert rv.json == {"message": "api is healthy"}
 
 
 def test_ops_healthz_fail(app_request, monkeypatch):
     """Assert that the service is unhealthy if a connection to the database cannot be made."""
+
     def db_error(_):
-        raise SQLAlchemyError(1, 2, code='42')
-    monkeypatch.setattr(db.session, 'execute', db_error)
+        raise SQLAlchemyError(1, 2, code="42")
+
+    monkeypatch.setattr(db.session, "execute", db_error)
     with app_request.test_client() as client:
-        rv = client.get('/ops/healthz')
+        rv = client.get("/ops/healthz")
         assert rv.status_code == 500
-        assert rv.json == {'message': 'api is down'}
+        assert rv.json == {"message": "api is down"}
 
 
 def test_ops_readyz(client):
     """Asserts that the service is ready to serve."""
-    rv = client.get('/ops/readyz')
+    rv = client.get("/ops/readyz")
 
     assert rv.status_code == 200
-    assert rv.json == {'message': 'api is ready'}
+    assert rv.json == {"message": "api is ready"}
