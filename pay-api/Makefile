@@ -44,10 +44,16 @@ install: clean
 #################################################################################
 # COMMANDS - CI                                                                 #
 #################################################################################
-ci: isort black lint flake8 test ## CI flow
+ci: isort-ci black-ci lint flake8 test ## CI flow
 
 isort: 
 	poetry run isort .
+
+isort-ci:
+	poetry run isort --check .
+
+black-ci:
+	poetry run black --check .
 
 black: ## Linting with black
 	poetry run black .
