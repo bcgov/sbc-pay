@@ -52,7 +52,6 @@ isort:
 isort-ci:
 	poetry run isort --check .
 
-
 black: ## Linting with black
 	poetry run black .
 
