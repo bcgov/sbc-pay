@@ -17,11 +17,11 @@ from __future__ import annotations
 from typing import Dict, List
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import Refund as RefundModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.utils.enums import RoutingSlipCustomStatus, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
-from pay_api.models import Refund as RefundModel
-from pay_api.models import RoutingSlip as RoutingSlipModel
 
 
 class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-attributes, too-many-public-methods

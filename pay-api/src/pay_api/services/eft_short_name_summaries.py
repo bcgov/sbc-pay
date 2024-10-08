@@ -24,12 +24,7 @@ from pay_api.models import EFTShortnameSummarySchema as EFTSummarySchema
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import db
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
-from pay_api.utils.enums import (
-    EFTFileLineType,
-    EFTProcessStatus,
-    EFTShortnameRefundStatus,
-    EFTShortnameStatus,
-)
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameRefundStatus, EFTShortnameStatus
 from pay_api.utils.util import unstructure_schema_items
 
 from .eft_short_names import EFTShortnamesSearch

@@ -13,13 +13,12 @@
 # limitations under the License.
 """Manage the Feature Flags initialization, setup and service."""
 import logging
+
 from flask import current_app
-from ldclient import (
-    get as ldclient_get,
-    set_config as ldclient_set_config,
-)  # noqa: I001
-from ldclient.config import Config  # noqa: I005
 from ldclient import Context
+from ldclient import get as ldclient_get  # noqa: I001
+from ldclient import set_config as ldclient_set_config
+from ldclient.config import Config  # noqa: I005
 from ldclient.integrations import Files
 
 from pay_api.utils import user_context

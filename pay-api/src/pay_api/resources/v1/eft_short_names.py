@@ -26,13 +26,9 @@ from pay_api.dtos.eft_shortname import (
 from pay_api.exceptions import BusinessException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.eft_refund import EFTRefund as EFTRefundService
-from pay_api.services.eft_short_name_historical import (
-    EFTShortnameHistorical as EFTShortnameHistoryService,
-)
+from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTShortnameHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorySearch
-from pay_api.services.eft_short_name_summaries import (
-    EFTShortnameSummaries as EFTShortnameSummariesService,
-)
+from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
 from pay_api.services.eft_short_names import EFTShortnamesSearch
 from pay_api.utils.auth import jwt as _jwt
@@ -40,7 +36,6 @@ from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.util import string_to_date, string_to_decimal, string_to_int
-
 
 bp = Blueprint(
     "EFT_SHORT_NAMES",

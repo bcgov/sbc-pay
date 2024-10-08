@@ -14,7 +14,9 @@
 """Model to handle all operations related to Notification Recipients."""
 
 from __future__ import annotations
+
 from typing import List
+
 from sqlalchemy import ForeignKey, String
 
 from .base_model import BaseModel

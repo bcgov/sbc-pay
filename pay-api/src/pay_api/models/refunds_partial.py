@@ -14,14 +14,15 @@
 """Model to handle all operations related to Payment Line Item partial refunds."""
 
 from decimal import Decimal
+
 from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
+from ..utils.enums import RefundsPartialType
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db
-from ..utils.enums import RefundsPartialType
 
 
 class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes

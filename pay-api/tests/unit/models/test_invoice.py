@@ -16,17 +16,14 @@
 
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
+from datetime import datetime, timezone
+
 import pytest
 from dateutil.relativedelta import relativedelta
-from datetime import datetime, timezone
 
 from pay_api.models import Invoice, InvoiceSchema
 from pay_api.utils.enums import CorpType, InvoiceStatus, PaymentMethod
-from tests.utilities.base_test import (
-    factory_invoice,
-    factory_payment,
-    factory_payment_account,
-)
+from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
 def test_invoice(session):

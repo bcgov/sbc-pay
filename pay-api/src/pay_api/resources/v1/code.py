@@ -20,7 +20,6 @@ from flask_cors import cross_origin
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.endpoints_enums import EndpointEnum
 
-
 bp = Blueprint("CODES", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/codes")
 
 

@@ -14,8 +14,8 @@
 """Model to handle all operations related to invoice refund."""
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.schema import CheckConstraint
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.schema import CheckConstraint
 
 from .base_model import BaseModel
 from .db import db, ma

@@ -22,12 +22,7 @@ from unittest.mock import patch
 
 from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.payment_account import PaymentAccount
-from pay_api.utils.enums import (
-    InvoiceReferenceStatus,
-    InvoiceStatus,
-    PaymentMethod,
-    Role,
-)
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, Role
 from pay_api.utils.util import generate_transaction_number
 from tests.utilities.base_test import (
     factory_invoice,

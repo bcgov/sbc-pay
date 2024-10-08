@@ -16,18 +16,18 @@
 
 Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
+from dataclasses import asdict
 from unittest.mock import ANY, MagicMock, patch
 
-from dataclasses import asdict
-from dotenv import load_dotenv
-from gcp_queue.gcp_queue import GcpQueue
 import humps
 import pytest
+from dotenv import load_dotenv
+from gcp_queue.gcp_queue import GcpQueue
 
 from pay_api import create_app
 from pay_api.services import gcp_queue_publisher
-from pay_api.services.payment_transaction import PaymentToken
 from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
+from pay_api.services.payment_transaction import PaymentToken
 from pay_api.utils.enums import TransactionStatus
 
 

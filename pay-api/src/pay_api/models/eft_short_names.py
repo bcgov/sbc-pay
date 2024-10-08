@@ -13,10 +13,9 @@
 # limitations under the License.
 """Model to handle EFT TDI17 short name to BCROS account mapping."""
 from datetime import datetime, timezone
+
 from _decimal import Decimal
 from attrs import define
-
-
 from sql_versioning import Versioned
 
 from .base_model import BaseModel

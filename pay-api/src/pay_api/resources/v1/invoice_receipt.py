@@ -23,7 +23,6 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.errors import Error
 
-
 bp = Blueprint(
     "INVOICE_RECEIPTS",
     __name__,

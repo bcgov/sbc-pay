@@ -17,7 +17,6 @@ from sqlalchemy import exc, text
 
 from pay_api.models import db
 
-
 bp = Blueprint("OPS", __name__, url_prefix="/ops")
 
 SQL = text("select 1")

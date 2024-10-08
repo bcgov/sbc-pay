@@ -17,13 +17,9 @@ from http import HTTPStatus
 from flask import Blueprint, Response, current_app, jsonify, request
 from flask_cors import cross_origin
 
-from pay_api.exceptions import (
-    BusinessException,
-    ServiceUnavailableException,
-    error_to_response,
-)
+from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
-from pay_api.services.fas import RoutingSlipService, CommentService
+from pay_api.services.fas import CommentService, RoutingSlipService
 from pay_api.utils.auth import jwt as _jwt  # noqa: I005
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role

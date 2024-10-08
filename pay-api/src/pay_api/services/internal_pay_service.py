@@ -17,8 +17,8 @@ There are conditions where the payment will be handled internally. For e.g, zero
 """
 from datetime import datetime, timezone
 from http import HTTPStatus
-
 from typing import List
+
 from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
@@ -29,13 +29,7 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import (
-    InvoiceStatus,
-    PaymentMethod,
-    PaymentStatus,
-    PaymentSystem,
-    RoutingSlipStatus,
-)
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.util import generate_transaction_number, get_quantized
 
 from ..exceptions import BusinessException

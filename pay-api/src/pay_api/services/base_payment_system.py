@@ -96,8 +96,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     ) -> InvoiceReference:
         """Create invoice in payment system."""
 
-    def update_invoice(
-        self,  # pylint:disable=too-many-arguments,unused-argument
+    def update_invoice(  # pylint:disable=too-many-arguments,unused-argument
+        self,
         payment_account: PaymentAccount,  # pylint: disable=unused-argument
         line_items: List[PaymentLineItem],
         invoice_id: int,  # pylint: disable=unused-argument
@@ -196,9 +196,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _release_payment(invoice: Invoice):
         """Release record."""
-        from .payment_transaction import (
-            PaymentTransaction,
-        )  # pylint:disable=import-outside-toplevel,cyclic-import
+        from .payment_transaction import PaymentTransaction  # pylint:disable=import-outside-toplevel,cyclic-import
 
         if invoice.corp_type_code in [
             CorpType.CSO.value,

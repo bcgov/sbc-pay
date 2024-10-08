@@ -15,9 +15,9 @@
 from __future__ import annotations
 
 from marshmallow import fields, post_dump
+from sql_versioning import Versioned
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import relationship
-from sql_versioning import Versioned
 
 from .audit import Audit
 from .base_model import BaseModel

@@ -21,7 +21,6 @@ import pytest
 
 import pay_api.config as config
 
-
 # testdata pattern is ({str: environment}, {expected return value})
 TEST_ENVIRONMENT_DATA = [
     ("valid", "development", config.DevConfig),

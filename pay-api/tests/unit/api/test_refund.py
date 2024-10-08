@@ -16,10 +16,9 @@
 
 Test-Suite to ensure that the /receipt endpoint is working as expected.
 """
-from decimal import Decimal
 import json
-
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel

@@ -14,17 +14,15 @@
 """Model to handle EFT short name to BCROS account mapping links."""
 from datetime import datetime, timezone
 from typing import List, Self
+
 from _decimal import Decimal
-
 from attrs import define
-
-
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
+from ..utils.enums import EFTShortnameStatus
 from .base_model import BaseModel
 from .db import db
-from ..utils.enums import EFTShortnameStatus
 
 
 class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes

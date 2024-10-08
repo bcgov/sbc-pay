@@ -22,9 +22,7 @@ from datetime import datetime, timezone
 from pay_api import services
 from pay_api.models import FeeSchedule
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.services.payment_transaction import (
-    PaymentTransaction as PaymentTransactionService,
-)
+from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
     factory_invoice,
@@ -35,7 +33,6 @@ from tests.utilities.base_test import (
     get_distribution_code_payload,
     get_paybc_transaction_request,
 )
-
 
 test_user_token = {"preferred_username": "test"}
 

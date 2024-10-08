@@ -13,6 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to Credit data."""
 from datetime import datetime, timezone
+
 from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import BaseModel

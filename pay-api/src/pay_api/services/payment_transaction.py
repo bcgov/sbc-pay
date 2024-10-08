@@ -22,9 +22,9 @@ from typing import Dict, List
 
 import humps
 from flask import current_app
-from sentry_sdk import capture_message
 from sbc_common_components.utils.dataclasses import PaymentToken
 from sbc_common_components.utils.enums import QueueMessageTypes
+from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory

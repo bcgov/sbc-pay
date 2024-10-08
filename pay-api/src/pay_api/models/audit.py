@@ -18,6 +18,7 @@ from marshmallow import fields
 from sqlalchemy.ext.declarative import declared_attr
 
 from pay_api.utils.user_context import user_context
+
 from .base_model import BaseModel
 from .db import db
 

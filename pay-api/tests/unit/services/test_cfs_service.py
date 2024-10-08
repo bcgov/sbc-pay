@@ -20,10 +20,10 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from requests import ConnectTimeout
+
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.cfs_service import CFSService
-
 
 cfs_service = CFSService()
 

@@ -19,12 +19,7 @@ Test-Suite to ensure that the Comment Model Class is working as expected.
 from faker import Faker
 
 from pay_api.models import Comment as CommentModel
-from tests.utilities.base_test import (
-    factory_comments,
-    factory_payment_account,
-    factory_routing_slip,
-)
-
+from tests.utilities.base_test import factory_comments, factory_payment_account, factory_routing_slip
 
 fake = Faker()
 

@@ -28,8 +28,8 @@ from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import PartnerDisbursements
 from pay_api.models.corp_type import CorpType as CorpTypeModel
-from pay_api.services.eft_service import EftService
 from pay_api.services.eft_refund import EFTRefund as EFTRefundService
+from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus,
     EFTHistoricalTypes,
@@ -47,7 +47,6 @@ from tests.utilities.base_test import (
     factory_invoice_reference,
     factory_payment_account,
 )
-
 
 eft_service = EftService()
 

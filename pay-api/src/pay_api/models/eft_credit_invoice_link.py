@@ -16,9 +16,9 @@ from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey, text
 
+from ..utils.enums import EFTCreditInvoiceStatus
 from .base_model import BaseModel
 from .db import db
-from ..utils.enums import EFTCreditInvoiceStatus
 
 
 class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods

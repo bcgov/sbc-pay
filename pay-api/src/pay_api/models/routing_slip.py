@@ -162,9 +162,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(payment_account_id=payment_account_id).all()
 
     @classmethod
-    def search(
+    def search(  # pylint: disable=too-many-arguments, too-many-locals
         cls,
-        search_filter: Dict,  # pylint: disable=too-many-arguments, too-many-locals
+        search_filter: Dict,
         page: int,
         limit: int,
         return_all: bool,

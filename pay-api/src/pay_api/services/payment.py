@@ -52,12 +52,11 @@ from pay_api.utils.util import (
     get_local_formatted_date_time,
 )
 
-
+from ..exceptions import BusinessException
+from ..utils.errors import Error
 from .code import Code as CodeService
 from .oauth_service import OAuthService
 from .report_service import ReportRequest, ReportService
-from ..exceptions import BusinessException
-from ..utils.errors import Error
 
 
 @dataclass
@@ -281,9 +280,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return d
 
     @staticmethod
-    def create(
+    def create(  # pylint:disable=too-many-arguments
         payment_method: str,
-        payment_system: str,  # pylint:disable=too-many-arguments
+        payment_system: str,
         payment_status=PaymentStatus.CREATED.value,
         invoice_number: str = None,
         invoice_amount: float = None,
@@ -355,9 +354,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return Payment.search_purchase_history(auth_account_id, search_filter, 0, 0, True)
 
     @classmethod
-    def search_purchase_history(
+    def search_purchase_history(  # pylint: disable=too-many-locals, too-many-arguments
         cls,
-        auth_account_id: str,  # pylint: disable=too-many-locals, too-many-arguments
+        auth_account_id: str,
         search_filter: Dict,
         page: int,
         limit: int,

@@ -1,9 +1,9 @@
 """This module provides Queue type services."""
 
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
-import uuid
 
 from flask import current_app
 from simple_cloudevent import SimpleCloudEvent

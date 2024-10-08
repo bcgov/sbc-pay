@@ -20,11 +20,7 @@ Test-Suite to ensure that the Receipt Class is working as expected.
 from datetime import datetime, timezone
 
 from pay_api.models import Receipt
-from tests.utilities.base_test import (
-    factory_invoice,
-    factory_payment,
-    factory_payment_account,
-)
+from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
 def test_receipt(session):

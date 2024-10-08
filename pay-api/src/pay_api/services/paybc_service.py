@@ -13,16 +13,16 @@
 # limitations under the License.
 """Service to manage PayBC interaction."""
 
-from decimal import Decimal
 import urllib.parse
+from decimal import Decimal
 from typing import Any, Dict, List
 
 from dateutil import parser
 from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
@@ -30,13 +30,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import (
-    AuthHeaderType,
-    CfsAccountStatus,
-    ContentType,
-    PaymentMethod,
-    PaymentSystem,
-)
+from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod, PaymentSystem
 from pay_api.utils.util import parse_url_params
 
 from .payment_line_item import PaymentLineItem
@@ -103,8 +97,8 @@ class PaybcService(PaymentSystemService, CFSService):
 
         return invoice_reference
 
-    def update_invoice(
-        self,  # pylint: disable=too-many-arguments
+    def update_invoice(  # pylint: disable=too-many-arguments
+        self,
         payment_account: PaymentAccount,
         line_items: List[PaymentLineItem],
         invoice_id: int,

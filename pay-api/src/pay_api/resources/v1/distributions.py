@@ -25,7 +25,6 @@ from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 
-
 bp = Blueprint(
     "DISTRIBUTIONS",
     __name__,

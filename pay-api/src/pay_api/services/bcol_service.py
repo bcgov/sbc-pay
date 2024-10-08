@@ -24,22 +24,13 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
 from pay_api.models.refunds_partial import RefundPartialLine
-from pay_api.utils.enums import (
-    AuthHeaderType,
-    ContentType,
-    PaymentMethod,
-    PaymentStatus,
-)
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number
 
-from .base_payment_system import (
-    PaymentSystemService,
-    skip_complete_post_invoice_for_sandbox,
-    skip_invoice_for_sandbox,
-)
+from .base_payment_system import PaymentSystemService, skip_complete_post_invoice_for_sandbox, skip_invoice_for_sandbox
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
@@ -56,9 +47,9 @@ class BcolService(PaymentSystemService, OAuthService):
 
     @user_context
     @skip_invoice_for_sandbox
-    def create_invoice(
+    def create_invoice(  # pylint: disable=too-many-locals
         self,
-        payment_account: PaymentAccount,  # pylint: disable=too-many-locals
+        payment_account: PaymentAccount,
         line_items: List[PaymentLineItem],
         invoice: Invoice,
         **kwargs,

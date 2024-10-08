@@ -23,7 +23,6 @@ from pay_api import models  # pylint: disable=unused-import
 from pay_api import create_app
 from pay_api.models import db
 
-
 APP = create_app(run_mode="migration")
 MIGRATE = Migrate(APP, db)
 

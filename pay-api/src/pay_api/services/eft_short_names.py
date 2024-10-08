@@ -22,6 +22,7 @@ from _decimal import Decimal
 from flask import current_app
 from sqlalchemy import and_, case, func, or_
 from sqlalchemy.sql.expression import exists
+
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
@@ -34,12 +35,7 @@ from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import (
-    EFTPaymentActions,
-    EFTShortnameStatus,
-    InvoiceStatus,
-    PaymentMethod,
-)
+from pay_api.utils.enums import EFTPaymentActions, EFTShortnameStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items

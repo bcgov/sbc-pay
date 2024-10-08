@@ -18,11 +18,7 @@ Test-Suite to ensure that the PAYBC layer is working as expected.
 """
 
 from pay_api.services.paybc_service import PaybcService
-from tests.utilities.base_test import (
-    factory_invoice,
-    factory_invoice_reference,
-    factory_payment_account,
-)
+from tests.utilities.base_test import factory_invoice, factory_invoice_reference, factory_payment_account
 
 paybc_service = PaybcService()
 

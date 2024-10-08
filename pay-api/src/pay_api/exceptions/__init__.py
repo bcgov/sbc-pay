@@ -68,9 +68,7 @@ class BusinessException(Exception):  # noqa
 
     def as_problem_json(self):
         """Return problem+json of error message."""
-        from pay_api.services.code import (
-            Code as CodeService,
-        )  # pylint: disable=import-outside-toplevel
+        from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
 
         problem_json = CodeService.find_code_value_by_type_and_code(Code.ERROR.value, self.code)
         if not problem_json:  # If the error is not configured in DB, return details from Error object
@@ -95,9 +93,7 @@ class ServiceUnavailableException(Exception):  # noqa
 
     def response(self, error: Error = Error.SERVICE_UNAVAILABLE):
         """Response attributes."""
-        from pay_api.services.code import (
-            Code as CodeService,
-        )  # pylint: disable=import-outside-toplevel
+        from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
 
         error_details = CodeService.find_code_value_by_type_and_code(Code.ERROR.value, error.code)
         return convert_to_response(body=error_details, status=error.status)

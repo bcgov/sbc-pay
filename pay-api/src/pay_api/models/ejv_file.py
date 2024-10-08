@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from sqlalchemy import ForeignKey
 
 from pay_api.utils.enums import EjvFileType
+
 from .base_model import BaseModel
 from .db import db
 

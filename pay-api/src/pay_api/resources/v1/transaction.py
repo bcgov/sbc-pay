@@ -24,7 +24,6 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.errors import Error
 
-
 bp = Blueprint("TRANSACTIONS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}")
 
 

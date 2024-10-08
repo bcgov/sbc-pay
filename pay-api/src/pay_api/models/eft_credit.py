@@ -13,8 +13,8 @@
 # limitations under the License.
 """Model to handle all operations related to EFT Credits data."""
 from datetime import datetime, timezone
-from typing import List, Self
 from decimal import Decimal
+from typing import List, Self
 
 from sqlalchemy import ForeignKey, func
 

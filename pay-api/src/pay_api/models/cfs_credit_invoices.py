@@ -13,6 +13,7 @@
 # limitations under the License.
 """Model that is populated from feedback files."""
 from datetime import datetime, timezone
+
 from sqlalchemy import ForeignKey, func
 
 from .base_model import BaseModel

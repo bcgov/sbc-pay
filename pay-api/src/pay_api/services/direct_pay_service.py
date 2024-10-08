@@ -13,8 +13,8 @@
 # limitations under the License.
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
-from decimal import Decimal
 import json
+from decimal import Decimal
 from typing import List, Optional
 from urllib.parse import unquote_plus, urlencode
 
@@ -45,18 +45,13 @@ from pay_api.utils.enums import (
     PaymentSystem,
     RefundsPartialType,
 )
-from pay_api.utils.util import (
-    current_local_time,
-    generate_transaction_number,
-    parse_url_params,
-)
+from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
 from ..exceptions import BusinessException
 from ..utils.errors import Error
 from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
-
 
 PAYBC_DATE_FORMAT = "%Y-%m-%d"
 PAYBC_REVENUE_SEPARATOR = "|"
@@ -192,9 +187,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
         )
         return invoice_reference
 
-    def update_invoice(
+    def update_invoice(  # pylint:disable=too-many-arguments
         self,
-        payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
+        payment_account: PaymentAccount,
         line_items: List[PaymentLineItem],
         invoice_id: int,
         paybc_inv_number: str,

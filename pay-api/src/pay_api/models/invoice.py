@@ -17,23 +17,17 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
-import pytz
-from dateutil.relativedelta import relativedelta
-from attrs import define
 
+import pytz
+from attrs import define
+from dateutil.relativedelta import relativedelta
 from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 
-from pay_api.utils.enums import (
-    InvoiceReferenceStatus,
-    InvoiceStatus,
-    LineItemStatus,
-    PaymentMethod,
-    PaymentStatus,
-)
+from pay_api.models.payment_line_item import PaymentLineItemSearchModel
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema

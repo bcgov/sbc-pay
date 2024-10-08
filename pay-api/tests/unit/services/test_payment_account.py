@@ -28,12 +28,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import (
-    CfsAccountStatus,
-    InvoiceStatus,
-    PaymentMethod,
-    StatementFrequency,
-)
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_outstanding_txns_from_date
 from tests.utilities.base_test import (

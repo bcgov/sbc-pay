@@ -20,9 +20,9 @@ from typing import Dict
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import Comment as CommentModel
 from pay_api.models import CommentSchema
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.utils.errors import Error
 
 

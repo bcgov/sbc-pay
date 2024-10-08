@@ -16,13 +16,9 @@
 
 Test-Suite to ensure that the Statement Receipients Service is working as expected.
 """
-from pay_api.services.statement_recipients import (
-    StatementRecipients as StatementRecipientsService,
-)
-from pay_api.models.statement_recipients import (
-    StatementRecipients as StatementRecipientsModel,
-)
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
+from pay_api.services.statement_recipients import StatementRecipients as StatementRecipientsService
 
 
 def test_statement_recipients_basic(session):

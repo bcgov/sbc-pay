@@ -17,13 +17,7 @@
 Test-Suite to ensure that the EFT Credit invoice link model is working as expected.
 """
 
-from pay_api.models import (
-    EFTCredit,
-    EFTCreditInvoiceLink,
-    EFTFile,
-    EFTShortnames,
-    EFTTransaction,
-)
+from pay_api.models import EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnames, EFTTransaction
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus,
     EFTFileLineType,

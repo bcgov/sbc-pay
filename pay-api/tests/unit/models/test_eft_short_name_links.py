@@ -18,9 +18,7 @@ Test-Suite to ensure that the EFT Short names model is working as expected.
 """
 from datetime import datetime, timezone
 
-from pay_api.models.eft_short_name_links import (
-    EFTShortnameLinks as EFTShortnameLinksModel,
-)
+from pay_api.models.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.utils.enums import EFTShortnameStatus
 from tests.utilities.base_test import factory_eft_shortname
 

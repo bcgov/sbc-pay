@@ -48,13 +48,7 @@ from pay_api.utils.constants import (
     DEFAULT_JURISDICTION,
     DEFAULT_POSTAL_CODE,
 )
-from pay_api.utils.enums import (
-    AuthHeaderType,
-    ContentType,
-    PaymentMethod,
-    PaymentSystem,
-    ReverseOperation,
-)
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentSystem, ReverseOperation
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
 
@@ -62,10 +56,10 @@ class CFSService(OAuthService):
     """Service to invoke CFS related operations."""
 
     @classmethod
-    def create_cfs_account(
+    def create_cfs_account(  # pylint: disable=too-many-arguments
         cls,
         identifier: str,
-        contact_info: Dict[str, Any],  # pylint: disable=too-many-arguments
+        contact_info: Dict[str, Any],
         payment_info: Dict[str, any] = None,
         receipt_method: str = None,
         site_name=None,
@@ -226,11 +220,11 @@ class CFSService(OAuthService):
         return account_response.json()
 
     @staticmethod
-    def _create_site(
+    def _create_site(  # pylint: disable=too-many-arguments
         access_token,
         account,
         contact_info,
-        receipt_method,  # pylint: disable=too-many-arguments
+        receipt_method,
         site_name=None,
         is_fas: bool = False,
     ):
@@ -276,10 +270,10 @@ class CFSService(OAuthService):
         return site_response
 
     @classmethod
-    def _save_bank_details(
+    def _save_bank_details(  # pylint: disable=too-many-arguments
         cls,
         access_token,
-        party_number: str,  # pylint: disable=too-many-arguments
+        party_number: str,
         account_number: str,
         site_number: str,
         payment_info: Dict[str, str],
@@ -383,10 +377,10 @@ class CFSService(OAuthService):
         return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
 
     @classmethod
-    def update_bank_details(
+    def update_bank_details(  # pylint: disable=too-many-arguments
         cls,
         name: str,
-        party_number: str,  # pylint: disable=too-many-arguments
+        party_number: str,
         account_number: str,
         site_number: str,
         payment_info: Dict[str, str],
@@ -659,8 +653,8 @@ class CFSService(OAuthService):
         return adjustment_response.json()
 
     @staticmethod
-    def create_cfs_receipt(
-        cfs_account: CfsAccountModel,  # pylint:disable=too-many-arguments
+    def create_cfs_receipt(  # pylint: disable=too-many-arguments
+        cfs_account: CfsAccountModel,
         rcpt_number: str,
         rcpt_date: str,
         amount: float,

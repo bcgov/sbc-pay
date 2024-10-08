@@ -13,23 +13,20 @@
 # limitations under the License.
 """Service to invoke Rest services."""
 import json
+import re
 from collections.abc import Iterable
 from typing import Dict
 
-import re
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
-from requests.exceptions import (
-    ConnectionError as ReqConnectionError,
-)  # pylint:disable=ungrouped-imports
+from requests.exceptions import ConnectionError as ReqConnectionError  # pylint:disable=ungrouped-imports
 from requests.exceptions import ConnectTimeout, HTTPError
 from urllib3.util.retry import Retry
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.json_util import DecimalEncoder
-
 
 RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404]))
 
@@ -38,10 +35,10 @@ class OAuthService:
     """Service to invoke Rest services which uses OAuth 2.0 implementation."""
 
     @staticmethod
-    def post(
+    def post(  # pylint: disable=too-many-arguments
         endpoint,
         token,
-        auth_header_type: AuthHeaderType,  # pylint: disable=too-many-arguments
+        auth_header_type: AuthHeaderType,
         content_type: ContentType,
         data,
         raise_for_error: bool = True,
@@ -120,10 +117,10 @@ class OAuthService:
                 current_app.logger.info(f"response : {response_text}")
 
     @staticmethod
-    def get(
+    def get(  # pylint:disable=too-many-arguments
         endpoint,
         token,
-        auth_header_type: AuthHeaderType,  # pylint:disable=too-many-arguments
+        auth_header_type: AuthHeaderType,
         content_type: ContentType,
         retry_on_failure: bool = False,
         return_none_if_404: bool = False,

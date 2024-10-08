@@ -24,12 +24,7 @@ from dateutil.relativedelta import relativedelta
 
 from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
-from pay_api.utils.enums import (
-    ContentType,
-    InvoiceStatus,
-    PaymentMethod,
-    StatementFrequency,
-)
+from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency
 from tests.utilities.base_test import (
     factory_eft_credit,
     factory_eft_file,

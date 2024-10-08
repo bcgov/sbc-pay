@@ -23,9 +23,7 @@ import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
-from pay_api.services.payment_transaction import (
-    PaymentTransaction as PaymentTransactionService,
-)
+from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.receipt import Receipt as ReceiptService
 from tests.utilities.base_test import (
     factory_invoice,

@@ -24,18 +24,10 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import (
-    CfsAccountStatus,
-    InvoiceStatus,
-    PaymentMethod,
-    PaymentSystem,
-)
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.user_context import user_context
 
-from .base_payment_system import (
-    skip_complete_post_invoice_for_sandbox,
-    skip_invoice_for_sandbox,
-)
+from .base_payment_system import skip_complete_post_invoice_for_sandbox, skip_invoice_for_sandbox
 from .payment_line_item import PaymentLineItem
 
 

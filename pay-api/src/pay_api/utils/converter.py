@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, Type
+
 import cattrs
 from attrs import fields, has
 from cattrs.gen import make_dict_structure_fn, make_dict_unstructure_fn, override

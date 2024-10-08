@@ -26,7 +26,6 @@ from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.util import convert_to_bool
 
-
 bp = Blueprint("FEES", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/fees")
 
 

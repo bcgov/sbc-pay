@@ -13,10 +13,9 @@
 # limitations under the License.
 """Model to handle EFT file processing."""
 from datetime import datetime, timezone
+
 from _decimal import Decimal
-
 from attrs import define
-
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import ARRAY
 

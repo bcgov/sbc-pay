@@ -31,11 +31,7 @@ from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import (
-    get_first_and_last_dates_of_month,
-    get_str_by_path,
-    get_week_start_and_end_date,
-)
+from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
 from .base_model import BaseModel
 from .base_schema import BaseSchema
@@ -253,8 +249,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     @user_context
-    def search_purchase_history(
-        cls,  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
+    def search_purchase_history(  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
+        cls,
         auth_account_id: str,
         search_filter: Dict,
         page: int,

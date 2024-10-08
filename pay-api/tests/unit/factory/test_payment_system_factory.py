@@ -38,9 +38,7 @@ from tests.utilities.base_test import get_unlinked_pad_account_payload
 
 def test_paybc_system_factory(session, public_user_mock):
     """Assert a paybc service is returned."""
-    from pay_api.factory.payment_system_factory import (
-        PaymentSystemFactory,
-    )  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     # Test for CC and CP
     instance = PaymentSystemFactory.create(payment_method="CC", corp_type="CP")
@@ -86,9 +84,7 @@ def test_paybc_system_factory(session, public_user_mock):
 
 def test_internal_staff_factory(session, staff_user_mock):
     """Test payment system creation for staff users."""
-    from pay_api.factory.payment_system_factory import (
-        PaymentSystemFactory,
-    )  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     # Test for CC and CP with staff role
     instance = PaymentSystemFactory.create(payment_method="CC")
@@ -98,9 +94,7 @@ def test_internal_staff_factory(session, staff_user_mock):
 
 def test_bcol_factory_for_public(session, public_user_mock):
     """Test payment system creation for BCOL payment instances."""
-    from pay_api.factory.payment_system_factory import (
-        PaymentSystemFactory,
-    )  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     instance = PaymentSystemFactory.create(payment_method="DRAWDOWN")
     assert isinstance(instance, BcolService)
@@ -109,9 +103,7 @@ def test_bcol_factory_for_public(session, public_user_mock):
 
 def test_bcol_factory_for_system(session, system_user_mock):
     """Test payment system creation for BCOL payment instances."""
-    from pay_api.factory.payment_system_factory import (
-        PaymentSystemFactory,
-    )  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     # Try a DRAWDOWN for system user
     instance = PaymentSystemFactory.create(payment_method="DRAWDOWN")
@@ -125,9 +117,7 @@ def test_bcol_factory_for_system(session, system_user_mock):
 def test_pad_factory_for_system_fails(session, system_user_mock):
     """Test payment system creation for PAD payment instances."""
     from pay_api.exceptions import BusinessException
-    from pay_api.factory.payment_system_factory import (
-        PaymentSystemFactory,
-    )  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
     # Try a DRAWDOWN for system user
@@ -145,9 +135,7 @@ def test_pad_factory_for_system_fails(session, system_user_mock):
 def test_invalid_pay_system(session, public_user_mock):
     """Test invalid data."""
     from pay_api.exceptions import BusinessException
-    from pay_api.factory.payment_system_factory import (
-        PaymentSystemFactory,
-    )  # noqa I001; errors out the test case
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentSystemFactory.create(payment_method=None, corp_type=None)

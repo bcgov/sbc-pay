@@ -1070,8 +1070,7 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
     [
         ("", "get_all", 3),
         (
-            f"?status={EFTShortnameRefundStatus.APPROVED.value},{
-     EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
+            f"?status={EFTShortnameRefundStatus.APPROVED.value},{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
             "status_filter_multiple",
             2,
         ),

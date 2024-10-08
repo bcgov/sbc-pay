@@ -14,6 +14,7 @@
 # pylint: disable=W0223
 """Custom Query class to extend BaseQuery class functionality."""
 from datetime import date, datetime
+
 from flask_sqlalchemy.query import Query
 from sqlalchemy import and_, func
 

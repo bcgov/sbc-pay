@@ -17,8 +17,8 @@
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
-from datetime import datetime, timezone
 import json
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
@@ -26,12 +26,10 @@ from faker import Faker
 from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
-from pay_api.models.distribution_code import (
-    DistributionCodeLink as DistributionCodeLinkModel,
-)
+from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
+from pay_api.models.distribution_code import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.models.invoice import Invoice
-from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
@@ -52,7 +50,6 @@ from tests.utilities.base_test import (
     get_unlinked_pad_account_payload,
     token_header,
 )
-
 
 fake = Faker()
 

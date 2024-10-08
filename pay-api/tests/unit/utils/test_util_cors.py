@@ -20,7 +20,6 @@ import pytest
 
 from pay_api.utils.util import cors_preflight
 
-
 TEST_CORS_METHODS_DATA = [
     ("GET"),
     ("PUT"),

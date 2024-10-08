@@ -22,14 +22,12 @@ from flask import abort, current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Comment as CommentModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import RoutingSlipSchema
-from pay_api.models import Comment as CommentModel
-from pay_api.services.fas.routing_slip_status_transition_service import (
-    RoutingSlipStatusTransitionService,
-)
+from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import (
     AuthHeaderType,

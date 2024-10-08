@@ -21,13 +21,7 @@ from flask import copy_current_request_context, current_app
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.enums import (
-    InvoiceReferenceStatus,
-    InvoiceStatus,
-    LineItemStatus,
-    PaymentMethod,
-    PaymentStatus,
-)
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 

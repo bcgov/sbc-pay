@@ -13,11 +13,12 @@
 # limitations under the License.
 """Model to handle statements data."""
 from __future__ import annotations
-from typing import List
-from dateutil.relativedelta import relativedelta
 
-from attr import define
+from typing import List
+
 import pytz
+from attr import define
+from dateutil.relativedelta import relativedelta
 from marshmallow import fields
 from sqlalchemy import ForeignKey, Integer, cast
 
@@ -83,9 +84,7 @@ class Statement(BaseModel):
     def find_all_payments_and_invoices_for_statement(cls, statement_id: str) -> List[Invoice]:
         """Find all payment and invoices specific to a statement."""
         # Import from here as the statement invoice already imports statement and causes circular import.
-        from .statement_invoices import (
-            StatementInvoices,
-        )  # pylint: disable=import-outside-toplevel
+        from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
 
         query = (
             db.session.query(Invoice)

@@ -21,9 +21,10 @@ from .account_fee import AccountFee, AccountFeeSchema
 from .cas_settlement import CasSettlement
 from .cfs_account import CfsAccount, CfsAccountSchema
 from .cfs_account_status_code import CfsAccountStatusCode, CfsAccountStatusCodeSchema
+from .cfs_credit_invoices import CfsCreditInvoices
+from .comment import Comment, CommentSchema  # This has to be at the bottom otherwise FeeSchedule errors
 from .corp_type import CorpType, CorpTypeSchema  # noqa: I001
 from .credit import Credit
-from .cfs_credit_invoices import CfsCreditInvoices
 from .custom_query import CustomQuery
 from .db import db, ma  # noqa: I001
 from .disbursement_status_code import DisbursementStatusCode
@@ -34,15 +35,8 @@ from .eft_file import EFTFile
 from .eft_process_status_code import EFTProcessStatusCode
 from .eft_refund import EFTRefund
 from .eft_short_name_links import EFTShortnameLinks, EFTShortnameLinkSchema
-from .eft_short_names import (
-    EFTShortnames,
-    EFTShortnameSchema,
-    EFTShortnameSummarySchema,
-)
-from .eft_short_names_historical import (
-    EFTShortnameHistorySchema,
-    EFTShortnamesHistorical,
-)
+from .eft_short_names import EFTShortnames, EFTShortnameSchema, EFTShortnameSummarySchema
+from .eft_short_names_historical import EFTShortnameHistorySchema, EFTShortnamesHistorical
 from .eft_transaction import EFTTransaction, EFTTransactionSchema
 from .ejv_file import EjvFile
 from .ejv_header import EjvHeader
@@ -53,24 +47,14 @@ from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .invoice import Invoice, InvoiceSchema, InvoiceSearchModel
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
-from .invoice_reference_status_code import (
-    InvoiceReferenceStatusCode,
-    InvoiceReferenceStatusCodeSchema,
-)
+from .invoice_reference_status_code import InvoiceReferenceStatusCode, InvoiceReferenceStatusCodeSchema
 from .invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
 from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
 from .non_sufficient_funds import NonSufficientFunds, NonSufficientFundsSchema
-from .notification_status_code import (
-    NotificationStatusCode,
-    NotificationStatusCodeSchema,
-)
+from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
 from .partner_disbursements import PartnerDisbursements
 from .payment import Payment, PaymentSchema
-from .payment_account import (
-    PaymentAccount,
-    PaymentAccountSchema,
-    PaymentAccountSearchModel,
-)  # noqa: I001
+from .payment_account import PaymentAccount, PaymentAccountSchema, PaymentAccountSearchModel  # noqa: I001
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .payment_method import PaymentMethod, PaymentMethodSchema
 from .payment_status_code import PaymentStatusCode, PaymentStatusCodeSchema
@@ -85,10 +69,5 @@ from .statement_invoices import StatementInvoices, StatementInvoicesSchema  # no
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
-from .comment import (
-    Comment,
-    CommentSchema,
-)  # This has to be at the bottom otherwise FeeSchedule errors
-
 
 event.listen(Engine, "before_cursor_execute", DBTracing.query_tracing)

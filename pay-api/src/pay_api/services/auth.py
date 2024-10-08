@@ -14,19 +14,13 @@
 
 """This manages all of the authorization service."""
 import base64
+
 from flask import abort, current_app, g
 
 from pay_api.services.code import Code as CodeService
 from pay_api.services.flags import flags
 from pay_api.services.oauth_service import OAuthService as RestService
-from pay_api.utils.enums import (
-    AccountType,
-    AuthHeaderType,
-    Code,
-    ContentType,
-    PaymentMethod,
-    Role,
-)
+from pay_api.utils.enums import AccountType, AuthHeaderType, Code, ContentType, PaymentMethod, Role
 from pay_api.utils.user_context import UserContext, user_context
 
 PREMIUM_ACCOUNT_TYPES = (

@@ -17,6 +17,7 @@ There are conditions where the payment will be handled for government accounts.
 """
 
 from typing import List
+
 from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
@@ -25,13 +26,9 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import (
-    InvoiceReferenceStatus,
-    InvoiceStatus,
-    PaymentMethod,
-    PaymentSystem,
-)
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.util import generate_transaction_number
+
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 

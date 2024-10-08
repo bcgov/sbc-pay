@@ -17,6 +17,7 @@
 Test-Suite to ensure that the /fees endpoint is working as expected.
 """
 import pytest
+
 from pay_api.utils.enums import Code
 
 

@@ -19,12 +19,7 @@ Test-Suite to ensure that the Roting slip Class is working as expected.
 from faker import Faker
 
 from pay_api.models import RoutingSlip
-from tests.utilities.base_test import (
-    factory_payment_account,
-    factory_routing_slip,
-    factory_routing_slip_usd,
-)
-
+from tests.utilities.base_test import factory_payment_account, factory_routing_slip, factory_routing_slip_usd
 
 fake = Faker()
 

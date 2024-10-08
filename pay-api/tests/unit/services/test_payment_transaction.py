@@ -27,9 +27,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment
 from pay_api.services.hashing import HashingService
 from pay_api.services.payment_service import Payment as PaymentService
-from pay_api.services.payment_transaction import (
-    PaymentTransaction as PaymentTransactionService,
-)
+from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import (
     CfsAccountStatus,
     InvoiceReferenceStatus,

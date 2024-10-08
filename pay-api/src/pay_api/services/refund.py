@@ -25,10 +25,10 @@ from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Refund as RefundModel
+from pay_api.models import RefundPartialLine
 from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
-from pay_api.models import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.flags import flags
 from pay_api.services.payment_account import PaymentAccount

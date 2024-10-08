@@ -13,6 +13,7 @@
 # limitations under the License.
 """Model to handle invoice references from third party systems."""
 from __future__ import annotations
+
 from datetime import datetime, timezone
 from typing import List
 

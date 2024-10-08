@@ -22,11 +22,7 @@ from sqlalchemy import case, func
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import (
-    InvoiceSearchModel,
-    NonSufficientFunds,
-    NonSufficientFundsSchema,
-)
+from pay_api.models import InvoiceSearchModel, NonSufficientFunds, NonSufficientFundsSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Statement as StatementModel

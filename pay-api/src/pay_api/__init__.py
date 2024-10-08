@@ -18,9 +18,9 @@ This module is the API for the Legal Entity system.
 
 import os
 
-from flask_migrate import Migrate, upgrade
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask
+from flask_migrate import Migrate, upgrade
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
@@ -28,15 +28,14 @@ from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 # import pay_api.config as config
 from pay_api import config
 from pay_api.config import _Config
+from pay_api.models import db, ma
 from pay_api.resources import endpoints
 from pay_api.services.flags import flags
-from pay_api.models import db, ma
 from pay_api.services.gcp_queue import queue
 from pay_api.utils.auth import jwt
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
-
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
 
@@ -85,7 +84,7 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
 
     def set_access_control_header(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = (
+        response.headers["Access-Control-Allow-Headers"] = (  # pylint: disable=R0914
             "Authorization, Content-Type, registries-trace-id, " "Account-Id"
         )
 
@@ -138,9 +137,7 @@ def build_cache(app):
         cache.clear()
         if not app.config.get("TESTING", False):
             try:
-                from pay_api.services.code import (
-                    Code as CodeService,
-                )  # pylint: disable=import-outside-toplevel
+                from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
 
                 CodeService.build_all_codes_cache()
             except Exception as e:  # NOQA pylint:disable=broad-except

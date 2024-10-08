@@ -17,8 +17,8 @@ from datetime import date
 from decimal import Decimal
 
 from flask import current_app
-
 from sbc_common_components.tracing.service_tracing import ServiceTracing
+
 from pay_api.exceptions import BusinessException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import FeeCode as FeeCodeModel

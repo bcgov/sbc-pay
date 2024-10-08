@@ -20,7 +20,6 @@ from flask import Blueprint, jsonify
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.run_version import get_run_version
 
-
 bp = Blueprint("META", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/meta")
 
 

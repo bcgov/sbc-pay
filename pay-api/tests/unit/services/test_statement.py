@@ -17,10 +17,10 @@
 Test-Suite to ensure that the Statement Service is working as expected.
 """
 from datetime import datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
 from unittest.mock import patch
 
 import pytz
+from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -30,13 +30,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import (
-    ContentType,
-    InvoiceStatus,
-    PaymentMethod,
-    StatementFrequency,
-    StatementTemplate,
-)
+from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
 from pay_api.utils.util import get_local_formatted_date
 from tests.utilities.base_test import (
     factory_eft_shortname,

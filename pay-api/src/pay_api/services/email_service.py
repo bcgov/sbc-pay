@@ -14,12 +14,13 @@
 
 """This manages all of the email notification service."""
 import os
-from typing import Dict
 from decimal import Decimal
+from typing import Dict
 
 from attr import define
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
+
 from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType

@@ -22,15 +22,10 @@ from freezegun import freeze_time
 
 from pay_api.models import PaymentAccount
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.services.statement_settings import (
-    StatementSettings as StatementSettingsService,
-)
+from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import StatementFrequency
-from pay_api.utils.util import (
-    get_first_and_last_dates_of_month,
-    get_week_start_and_end_date,
-)
+from pay_api.utils.util import get_first_and_last_dates_of_month, get_week_start_and_end_date
 from tests.utilities.base_test import (
     factory_invoice,
     factory_invoice_reference,

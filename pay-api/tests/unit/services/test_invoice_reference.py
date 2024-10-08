@@ -19,11 +19,7 @@ Test-Suite to ensure that the Invoice Reference Service is working as expected.
 
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.utils.enums import InvoiceReferenceStatus
-from tests.utilities.base_test import (
-    factory_invoice,
-    factory_payment,
-    factory_payment_account,
-)
+from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
 def test_invoice_saved_from_new(session):

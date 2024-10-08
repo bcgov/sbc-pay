@@ -18,11 +18,7 @@ from http import HTTPStatus
 from flask import Blueprint, Response, abort, current_app, jsonify, request
 from flask_cors import cross_origin
 
-from pay_api.exceptions import (
-    BusinessException,
-    ServiceUnavailableException,
-    error_to_response,
-)
+from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment
 from pay_api.services.auth import check_auth

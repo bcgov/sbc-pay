@@ -26,7 +26,6 @@ from pay_api.utils.constants import CHANGE_STATEMENT_SETTINGS, EDIT_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.errors import Error
 
-
 bp = Blueprint(
     "ACCOUNT_NOTIFICATIONS",
     __name__,

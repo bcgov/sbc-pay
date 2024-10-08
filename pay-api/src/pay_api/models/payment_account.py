@@ -16,12 +16,12 @@ from __future__ import annotations
 
 from attrs import define
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey
 from sql_versioning import Versioned
+from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import BaseModel
-from .db import db
 from .base_schema import BaseSchema
+from .db import db
 
 
 class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes

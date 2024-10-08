@@ -16,12 +16,13 @@
 
 Test-Suite to ensure that the util functions are working as expected.
 """
-from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
-from holidays.countries import Canada
 from datetime import datetime
 
-from pay_api.utils.util import get_nearest_business_day
+from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
+from holidays.countries import Canada
+
 from pay_api.schemas import utils as schema_utils
+from pay_api.utils.util import get_nearest_business_day
 
 
 def test_next_business_day(session):

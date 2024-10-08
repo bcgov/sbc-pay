@@ -44,7 +44,10 @@ install: clean
 #################################################################################
 # COMMANDS - CI                                                                 #
 #################################################################################
-ci: black lint flake8 test ## CI flow
+ci: isort black lint flake8 test ## CI flow
+
+isort: 
+	poetry run isort .
 
 black: ## Linting with black
 	poetry run black .
@@ -55,7 +58,7 @@ pylint: ## Linting with pylint
 flake8: ## Linting with flake8
 	poetry run flake8 src/$(PROJECT_NAME) tests
 
-lint: black pylint flake8 ## run all lint type scripts
+lint: isort black pylint flake8 ## run all lint type scripts
 
 test: ## Unit testing
 	poetry run pytest

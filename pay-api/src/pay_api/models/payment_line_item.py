@@ -14,6 +14,7 @@
 """Model to handle all operations related to Payment Line Item."""
 
 from decimal import Decimal
+
 from attrs import define
 from marshmallow import fields
 from sqlalchemy import ForeignKey, cast, func, select

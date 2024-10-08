@@ -18,18 +18,7 @@ from typing import List
 
 from dateutil.relativedelta import relativedelta
 from flask import current_app
-from sqlalchemy import (
-    Integer,
-    and_,
-    case,
-    cast,
-    distinct,
-    exists,
-    func,
-    literal,
-    literal_column,
-    select,
-)
+from sqlalchemy import Integer, and_, case, cast, distinct, exists, func, literal, literal_column, select
 from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 from pay_api.models import EFTCredit as EFTCreditModel

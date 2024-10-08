@@ -103,6 +103,7 @@ isort = "^5.13.2"
 lovely-pytest-docker = "^0.3.1"
 faker = "^24.2.0"
 black = "^24.10.0"
+flake8-pyproject = "^1.2.3"
 
 [tool.flake8]
 ignore = ["F401","E402", "Q000", "E203", "W503"]

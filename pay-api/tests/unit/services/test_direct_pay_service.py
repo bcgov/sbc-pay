@@ -14,13 +14,12 @@
 
 """Tests to assure the Direct Payment Service."""
 
+import urllib.parse
 from datetime import datetime, timezone
 from decimal import Decimal
 from unittest.mock import patch
-import urllib.parse
+
 import pytest
-
-
 from flask import current_app
 from requests.exceptions import HTTPError
 
@@ -28,20 +27,11 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule
 from pay_api.models.refunds_partial import RefundPartialLine
-from pay_api.services.direct_pay_service import (
-    DECIMAL_PRECISION,
-    PAYBC_DATE_FORMAT,
-    DirectPayService,
-    OrderStatus,
-)
+from pay_api.services.direct_pay_service import DECIMAL_PRECISION, PAYBC_DATE_FORMAT, DirectPayService, OrderStatus
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import (
-    InvoiceReferenceStatus,
-    InvoiceStatus,
-    RefundsPartialType,
-)
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, RefundsPartialType
 from pay_api.utils.errors import Error
 from pay_api.utils.util import current_local_time, generate_transaction_number
 from tests.utilities.base_test import (

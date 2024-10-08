@@ -14,6 +14,7 @@
 """Service to manage Payment Line Items."""
 
 from decimal import Decimal
+
 from flask import current_app
 
 from pay_api.exceptions import BusinessException

@@ -19,14 +19,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from pay_api.models.corp_type import CorpType, CorpTypeSchema
 from pay_api.models.error_code import ErrorCode, ErrorCodeSchema
 from pay_api.models.fee_code import FeeCode, FeeCodeSchema
-from pay_api.models.invoice_status_code import (
-    InvoiceStatusCode,
-    InvoiceStatusCodeSchema,
-)
-from pay_api.models.routing_slip_status_code import (
-    RoutingSlipStatusCode,
-    RoutingSlipStatusCodeSchema,
-)
+from pay_api.models.invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
+from pay_api.models.routing_slip_status_code import RoutingSlipStatusCode, RoutingSlipStatusCodeSchema
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code as CodeValue
 

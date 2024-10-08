@@ -22,7 +22,6 @@ from pay_api.services import InvoiceService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 
-
 bp = Blueprint(
     "INVOICES",
     __name__,
