@@ -13,8 +13,8 @@
 # limitations under the License.
 """Model to handle all operations related to EFT Credits data."""
 from datetime import datetime, timezone
-from typing import List, Self
 from decimal import Decimal
+from typing import List, Self
 
 from sqlalchemy import ForeignKey, func
 
@@ -25,7 +25,7 @@ from .db import db
 class EFTCredit(BaseModel):
     """This class manages all of the base data for EFT credits."""
 
-    __tablename__ = 'eft_credits'
+    __tablename__ = "eft_credits"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -37,15 +37,15 @@ class EFTCredit(BaseModel):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'amount',
-            'created_on',
-            'eft_file_id',
-            'eft_transaction_id',
-            'short_name_id',
-            'payment_account_id',
-            'remaining_amount'
+        "include_properties": [
+            "id",
+            "amount",
+            "created_on",
+            "eft_file_id",
+            "eft_transaction_id",
+            "short_name_id",
+            "payment_account_id",
+            "remaining_amount",
         ]
     }
 
@@ -53,11 +53,16 @@ class EFTCredit(BaseModel):
 
     amount = db.Column(db.Numeric(19, 2), nullable=False)
     remaining_amount = db.Column(db.Numeric(19, 2), nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
 
-    eft_file_id = db.Column(db.Integer, ForeignKey('eft_files.id'), nullable=False)
-    short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
-    eft_transaction_id = db.Column(db.Integer, ForeignKey('eft_transactions.id'), nullable=True)
+    eft_file_id = db.Column(db.Integer, ForeignKey("eft_files.id"), nullable=False)
+    short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False)
+    eft_transaction_id = db.Column(db.Integer, ForeignKey("eft_transactions.id"), nullable=True)
 
     @classmethod
     def find_by_payment_account_id(cls, payment_account_id: int):
@@ -67,19 +72,22 @@ class EFTCredit(BaseModel):
     @classmethod
     def get_eft_credit_balance(cls, short_name_id: int) -> Decimal:
         """Calculate pay account eft balance by account id."""
-        result = cls.query.with_entities(func.sum(cls.remaining_amount).label('credit_balance')) \
-            .filter(cls.short_name_id == short_name_id) \
-            .group_by(cls.short_name_id) \
+        result = (
+            cls.query.with_entities(func.sum(cls.remaining_amount).label("credit_balance"))
+            .filter(cls.short_name_id == short_name_id)
+            .group_by(cls.short_name_id)
             .one_or_none()
+        )
 
         return Decimal(result.credit_balance) if result else 0
 
     @classmethod
     def get_eft_credits(cls, short_name_id: int, include_zero_remaining=False) -> List[Self]:
         """Get EFT Credits with a remaining amount."""
-        return (cls.query
-                .filter(include_zero_remaining or EFTCredit.remaining_amount > 0)
-                .filter(EFTCredit.short_name_id == short_name_id)
-                .with_for_update()
-                .order_by(EFTCredit.created_on.asc())
-                .all())
+        return (
+            cls.query.filter(include_zero_remaining or EFTCredit.remaining_amount > 0)
+            .filter(EFTCredit.short_name_id == short_name_id)
+            .with_for_update()
+            .order_by(EFTCredit.created_on.asc())
+            .all()
+        )

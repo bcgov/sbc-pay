@@ -25,18 +25,22 @@ from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 
-bp = Blueprint('REFUNDS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/payment-requests/<int:invoice_id>')
+bp = Blueprint(
+    "REFUNDS",
+    __name__,
+    url_prefix=f"{EndpointEnum.API_V1.value}/payment-requests/<int:invoice_id>",
+)
 
 
-@bp.route('/refunds', methods=['POST', 'OPTIONS'])
-@cross_origin(origins='*', methods=['POST'])
+@bp.route("/refunds", methods=["POST", "OPTIONS"])
+@cross_origin(origins="*", methods=["POST"])
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.CREATE_CREDITS.value, Role.FAS_REFUND.value])
 def post_refund(invoice_id):
     """Create the Refund for the Invoice."""
-    current_app.logger.info(f'<post_refund : {invoice_id}')
+    current_app.logger.info(f"<post_refund : {invoice_id}")
     request_json = request.get_json(silent=True)
     try:
-        valid_format, errors = schema_utils.validate(request_json, 'refund') if request_json else (True, None)
+        valid_format, errors = schema_utils.validate(request_json, "refund") if request_json else (True, None)
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
@@ -44,5 +48,5 @@ def post_refund(invoice_id):
 
     except BusinessException as exception:
         return exception.response()
-    current_app.logger.debug(f'>post_refund : {invoice_id}')
+    current_app.logger.debug(f">post_refund : {invoice_id}")
     return jsonify(response), HTTPStatus.ACCEPTED

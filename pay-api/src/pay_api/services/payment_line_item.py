@@ -14,6 +14,7 @@
 """Service to manage Payment Line Items."""
 
 from decimal import Decimal
+
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
@@ -43,7 +44,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self._total = None
         self._quantity: int = 1
         self._line_item_status_code: str = None
-        self._waived_fees = Decimal('0')
+        self._waived_fees = Decimal("0")
         self._waived_by: str = None
         self._fee_distribution_id: int = None
         self._fee_distribution: DistributionCodeModel = None
@@ -274,8 +275,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
     @user_context
     def create(invoice_id: int, fee: FeeSchedule, **kwargs):
         """Create Payment Line Item record."""
-        current_app.logger.debug('<create')
-        user: UserContext = kwargs['user']
+        current_app.logger.debug("<create")
+        user: UserContext = kwargs["user"]
         p = PaymentLineItem()
         p.invoice_id = invoice_id
         p.total = fee.total_excluding_service_fees
@@ -310,7 +311,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
 
         # Set distribution model to avoid more queries to DB
         p.fee_distribution = distribution_code
-        current_app.logger.debug('>create')
+        current_app.logger.debug(">create")
         return p
 
     @staticmethod
@@ -321,5 +322,5 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         line = PaymentLineItem()
         line._dao = line_dao  # pylint: disable=protected-access
 
-        current_app.logger.debug('>find_by_id')
+        current_app.logger.debug(">find_by_id")
         return line

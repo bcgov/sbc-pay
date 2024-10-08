@@ -23,24 +23,21 @@ class BaseSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
 
     def __init__(self, *args, **kwargs):
         """Excludes versions. Otherwise database will query <name>_versions table."""
-        if hasattr(self.opts.model, 'versions') and (len(self.opts.fields) == 0):
-            self.opts.exclude += ('versions',)
+        if hasattr(self.opts.model, "versions") and (len(self.opts.fields) == 0):
+            self.opts.exclude += ("versions",)
         super().__init__(*args, **kwargs)
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Meta class to declare any class attributes."""
 
-        datetimeformat = '%Y-%m-%dT%H:%M:%S+00:00'
+        datetimeformat = "%Y-%m-%dT%H:%M:%S+00:00"
         load_instance = True
 
     @post_dump(pass_many=True)
     def _remove_empty(self, data, many):
         """Remove all empty values from the dumped dict."""
         if not many:
-            return {
-                key: value for key, value in data.items()
-                if value or isinstance(value, float)
-            }
+            return {key: value for key, value in data.items() if value or isinstance(value, float)}
         for item in data:
             for key in list(item):
                 value = item[key]

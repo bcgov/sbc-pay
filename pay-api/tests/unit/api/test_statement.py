@@ -26,9 +26,20 @@ from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency
 from tests.utilities.base_test import (
-    factory_eft_credit, factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_invoice,
-    factory_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings, get_claims,
-    get_payment_request, get_payment_request_with_payment_method, token_header)
+    factory_eft_credit,
+    factory_eft_file,
+    factory_eft_shortname,
+    factory_eft_shortname_link,
+    factory_invoice,
+    factory_payment_account,
+    factory_statement,
+    factory_statement_invoices,
+    factory_statement_settings,
+    get_claims,
+    get_payment_request,
+    get_payment_request_with_payment_method,
+    token_header,
+)
 
 
 def test_get_daily_statements(session, client, jwt, app):
@@ -36,26 +47,31 @@ def test_get_daily_statements(session, client, jwt, app):
     # Create a payment account and statement details, then get all statements for the account
 
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
-                     headers=headers)
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=pay_account.id,
-                                        frequency=StatementFrequency.DAILY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.DAILY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements',
-                    headers=headers)
+    rv = client.get(f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('total') == 1
-    assert rv.json.get('items')[0].get('frequency') == StatementFrequency.DAILY.value
+    assert rv.json.get("total") == 1
+    assert rv.json.get("items")[0].get("frequency") == StatementFrequency.DAILY.value
 
 
 def test_get_daily_statements_verify_order(session, client, jwt, app):
@@ -63,30 +79,37 @@ def test_get_daily_statements_verify_order(session, client, jwt, app):
     # Create a payment account and statement details, then get all statements for the account
 
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
-                     headers=headers)
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    factory_statement(payment_account_id=pay_account.id,
-                      frequency=StatementFrequency.DAILY.value,
-                      statement_settings_id=settings_model.id)
-    factory_statement(payment_account_id=pay_account.id,
-                      frequency=StatementFrequency.WEEKLY.value,
-                      statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.DAILY.value,
+        statement_settings_id=settings_model.id,
+    )
+    factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.WEEKLY.value,
+        statement_settings_id=settings_model.id,
+    )
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements',
-                    headers=headers)
+    rv = client.get(f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('total') == 2
+    assert rv.json.get("total") == 2
     # should come in the order latest first
-    assert rv.json.get('items')[0].get('frequency') == StatementFrequency.WEEKLY.value
-    assert rv.json.get('items')[1].get('frequency') == StatementFrequency.DAILY.value
+    assert rv.json.get("items")[0].get("frequency") == StatementFrequency.WEEKLY.value
+    assert rv.json.get("items")[1].get("frequency") == StatementFrequency.DAILY.value
 
 
 def test_get_weekly_statements(session, client, jwt, app):
@@ -94,26 +117,31 @@ def test_get_weekly_statements(session, client, jwt, app):
     # Create a payment account and statement details, then get all statements for the account
 
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
-                     headers=headers)
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=pay_account.id,
-                                        frequency=StatementFrequency.WEEKLY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.WEEKLY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements',
-                    headers=headers)
+    rv = client.get(f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('total') == 1
-    assert rv.json.get('items')[0].get('frequency') == StatementFrequency.WEEKLY.value
+    assert rv.json.get("total") == 1
+    assert rv.json.get("items")[0].get("frequency") == StatementFrequency.WEEKLY.value
 
 
 def test_get_weekly_statement_report_as_pdf(session, client, jwt, app):
@@ -121,26 +149,34 @@ def test_get_weekly_statement_report_as_pdf(session, client, jwt, app):
     # Create a payment account and statement details, then get all statements for the account
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {
-        'Authorization': f'Bearer {token}',
-        'content-type': 'application/json',
-        'Accept': ContentType.PDF.value
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Accept": ContentType.PDF.value,
     }
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
-                     headers=headers)
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=pay_account.id,
-                                        frequency=StatementFrequency.WEEKLY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.WEEKLY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}",
+        headers=headers,
+    )
     assert rv.status_code == 200
 
 
@@ -149,26 +185,34 @@ def test_get_monthly_statement_report_as_pdf(session, client, jwt, app):
     # Create a payment account and statement details, then get all statements for the account
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {
-        'Authorization': f'Bearer {token}',
-        'content-type': 'application/json',
-        'Accept': ContentType.PDF.value
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Accept": ContentType.PDF.value,
     }
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
-                     headers=headers)
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.MONTHLY.value)
-    statement_model = factory_statement(payment_account_id=pay_account.id,
-                                        frequency=StatementFrequency.MONTHLY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.MONTHLY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}",
+        headers=headers,
+    )
     assert rv.status_code == 200
 
 
@@ -177,26 +221,34 @@ def test_get_daily_statement_report_as_pdf(session, client, jwt, app):
     # Create a payment account and statement details, then get all statements for the account
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {
-        'Authorization': f'Bearer {token}',
-        'content-type': 'application/json',
-        'Accept': ContentType.PDF.value
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Accept": ContentType.PDF.value,
     }
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
-                     headers=headers)
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=pay_account.id,
-                                        frequency=StatementFrequency.DAILY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.DAILY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}",
+        headers=headers,
+    )
     assert rv.status_code == 200
 
 
@@ -205,48 +257,60 @@ def test_get_monthly_statement_report_as_csv(session, client, jwt, app):
     # Create a payment account and statement details, then get all statements for the account
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {
-        'Authorization': f'Bearer {token}',
-        'content-type': 'application/json',
-        'Accept': ContentType.CSV.value
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Accept": ContentType.CSV.value,
     }
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
-                     headers=headers)
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=pay_account.id,
-                                        frequency=StatementFrequency.DAILY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.DAILY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}",
+        headers=headers,
+    )
     assert rv.status_code == 200
 
 
 def test_statement_summary(session, client, jwt, app):
     """Assert the statement summary is working."""
     headers = {
-        'Authorization': f'Bearer {jwt.create_jwt(get_claims(), token_header)}',
-        'content-type': 'application/json'
+        "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
+        "content-type": "application/json",
     }
 
     # Check if this works without any invoices in OVERDUE.
-    rv = client.post('/api/v1/payment-requests',
-                     data=json.dumps(get_payment_request(business_identifier='CP0002000')),
-                     headers=headers)
-    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     payment_account_id = invoice.payment_account_id
     pay_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/summary",
+        headers=headers,
+    )
     assert rv.status_code == 200
-    assert rv.json.get('totalDue') == 0
-    assert rv.json.get('oldestDueDate') is None
+    assert rv.json.get("totalDue") == 0
+    assert rv.json.get("oldestDueDate") is None
 
     # Create multiple OVERDUE invoices and check they add up.
     total_due = 0
@@ -254,12 +318,17 @@ def test_statement_summary(session, client, jwt, app):
     invoice_ids = []
     oldest_due_date = datetime.now(tz=timezone.utc) + relativedelta(months=1)
     for _ in range(5):
-        rv = client.post('/api/v1/payment-requests',
-                         data=json.dumps(get_payment_request_with_payment_method(business_identifier='CP0002000',
-                                                                                 payment_method=PaymentMethod.EFT.value)
-                                         ),
-                         headers=headers)
-        invoice_ids.append(rv.json.get('id'))
+        rv = client.post(
+            "/api/v1/payment-requests",
+            data=json.dumps(
+                get_payment_request_with_payment_method(
+                    business_identifier="CP0002000",
+                    payment_method=PaymentMethod.EFT.value,
+                )
+            ),
+            headers=headers,
+        )
+        invoice_ids.append(rv.json.get("id"))
 
     for invoice_id in invoice_ids:
         invoice = Invoice.find_by_id(invoice_id)
@@ -267,39 +336,49 @@ def test_statement_summary(session, client, jwt, app):
         total_due += invoice.total - invoice.paid
         invoice.save()
 
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.MONTHLY.value)
-    statement_model = factory_statement(payment_account_id=pay_account.id,
-                                        frequency=StatementFrequency.MONTHLY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.MONTHLY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings_model.id,
+    )
     for invoice_id in invoice_ids:
         factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/summary",
+        headers=headers,
+    )
     assert rv.status_code == 200
-    assert rv.json.get('totalDue') == float(total_due)
-    assert rv.json.get('oldestDueDate') == (oldest_due_date.date() + relativedelta(hours=8)).isoformat()
-    assert rv.json.get('shortNameLinksCount') == 0
-    assert rv.json.get('isEftUnderPayment') is None
+    assert rv.json.get("totalDue") == float(total_due)
+    assert rv.json.get("oldestDueDate") == (oldest_due_date.date() + relativedelta(hours=8)).isoformat()
+    assert rv.json.get("shortNameLinksCount") == 0
+    assert rv.json.get("isEftUnderPayment") is None
 
 
 def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, app):
     """Assert the statement summary is working when eft invoices has no statement yet."""
     headers = {
-        'Authorization': f'Bearer {jwt.create_jwt(get_claims(), token_header)}',
-        'content-type': 'application/json'
+        "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
+        "content-type": "application/json",
     }
 
     invoice_ids = []
     unpaid_amount = 0
     for _ in range(3):
-        rv = client.post('/api/v1/payment-requests',
-                         data=json.dumps(
-                             get_payment_request_with_payment_method(business_identifier='CP0002000',
-                                                                     payment_method=PaymentMethod.EFT.value)),
-                         headers=headers)
-        invoice_id = rv.json.get('id')
+        rv = client.post(
+            "/api/v1/payment-requests",
+            data=json.dumps(
+                get_payment_request_with_payment_method(
+                    business_identifier="CP0002000",
+                    payment_method=PaymentMethod.EFT.value,
+                )
+            ),
+            headers=headers,
+        )
+        invoice_id = rv.json.get("id")
         invoice = Invoice.find_by_id(invoice_id)
         invoice.invoice_status_code = InvoiceStatus.APPROVED.value
         invoice.save()
@@ -309,121 +388,169 @@ def test_statement_summary_with_eft_invoices_no_statement(session, client, jwt, 
     payment_account_id = Invoice.find_by_id(invoice_ids[0]).payment_account_id
     pay_account = PaymentAccount.find_by_id(payment_account_id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/summary",
+        headers=headers,
+    )
 
     assert rv.status_code == 200
-    assert rv.json.get('totalDue') == 0
-    assert rv.json.get('oldestDueDate') is None
-    assert rv.json.get('totalInvoiceDue') == float(unpaid_amount)
-    assert rv.json.get('shortNameLinksCount') == 0
-    assert rv.json.get('isEftUnderPayment') is None
+    assert rv.json.get("totalDue") == 0
+    assert rv.json.get("oldestDueDate") is None
+    assert rv.json.get("totalInvoiceDue") == float(unpaid_amount)
+    assert rv.json.get("shortNameLinksCount") == 0
+    assert rv.json.get("isEftUnderPayment") is None
 
 
 def test_statement_summary_single_eft_under_payment(session, client, jwt, app):
     """Assert the statement summary EFT under payment flag is working as expected for single link."""
     headers = {
-        'Authorization': f'Bearer {jwt.create_jwt(get_claims(), token_header)}',
-        'content-type': 'application/json'
+        "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
+        "content-type": "application/json",
     }
     pay_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
-    short_name = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
+    short_name = factory_eft_shortname(short_name="TESTSHORTNAME1").save()
     factory_eft_shortname_link(
         short_name_id=short_name.id,
         auth_account_id=pay_account.auth_account_id,
-        updated_by='TEST'
+        updated_by="TEST",
     ).save()
-    invoice = factory_invoice(payment_account=pay_account,
-                              payment_method_code=PaymentMethod.EFT.value,
-                              status_code=InvoiceStatus.APPROVED.value,
-                              total=10).save()
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=10,
+    ).save()
     eft_file = factory_eft_file().save()
-    factory_eft_credit(eft_file_id=eft_file.id, short_name_id=short_name.id, amount=10, remaining_amount=10).save()
-    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
-                                                frequency=StatementFrequency.MONTHLY.value)
-    statement_model = factory_statement(payment_account_id=pay_account.id,
-                                        frequency=StatementFrequency.MONTHLY.value,
-                                        statement_settings_id=settings_model.id)
+    factory_eft_credit(
+        eft_file_id=eft_file.id,
+        short_name_id=short_name.id,
+        amount=10,
+        remaining_amount=10,
+    ).save()
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id, frequency=StatementFrequency.MONTHLY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/summary",
+        headers=headers,
+    )
     assert rv.status_code == 200
-    assert rv.json.get('shortNameLinksCount') == 1
-    assert rv.json.get('isEftUnderPayment') is False
+    assert rv.json.get("shortNameLinksCount") == 1
+    assert rv.json.get("isEftUnderPayment") is False
 
     invoice.total = 11
     invoice.save()
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/summary",
+        headers=headers,
+    )
     assert rv.status_code == 200
-    assert rv.json.get('shortNameLinksCount') == 1
-    assert rv.json.get('isEftUnderPayment') is True
+    assert rv.json.get("shortNameLinksCount") == 1
+    assert rv.json.get("isEftUnderPayment") is True
 
 
 def test_statement_summary_multi_eft_under_payment(session, client, jwt, app):
     """Assert the statement summary EFT under payment flag is working as expected for multi link."""
     headers = {
-        'Authorization': f'Bearer {jwt.create_jwt(get_claims(), token_header)}',
-        'content-type': 'application/json'
+        "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
+        "content-type": "application/json",
     }
-    short_name = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
-    pay_account1 = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id='1111').save()
-    pay_account2 = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id='2222').save()
+    short_name = factory_eft_shortname(short_name="TESTSHORTNAME1").save()
+    pay_account1 = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="1111").save()
+    pay_account2 = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="2222").save()
     eft_file = factory_eft_file().save()
-    factory_eft_shortname_link(short_name_id=short_name.id, auth_account_id=pay_account1.auth_account_id,
-                               updated_by='TEST').save()
-    factory_eft_shortname_link(short_name_id=short_name.id, auth_account_id=pay_account2.auth_account_id,
-                               updated_by='TEST').save()
-    invoice1 = factory_invoice(payment_account=pay_account1, payment_method_code=PaymentMethod.EFT.value,
-                               status_code=InvoiceStatus.APPROVED.value, total=5).save()
-    invoice2 = factory_invoice(payment_account=pay_account2, payment_method_code=PaymentMethod.EFT.value,
-                               status_code=InvoiceStatus.APPROVED.value, total=6).save()
+    factory_eft_shortname_link(
+        short_name_id=short_name.id,
+        auth_account_id=pay_account1.auth_account_id,
+        updated_by="TEST",
+    ).save()
+    factory_eft_shortname_link(
+        short_name_id=short_name.id,
+        auth_account_id=pay_account2.auth_account_id,
+        updated_by="TEST",
+    ).save()
+    invoice1 = factory_invoice(
+        payment_account=pay_account1,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=5,
+    ).save()
+    invoice2 = factory_invoice(
+        payment_account=pay_account2,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=6,
+    ).save()
     invoices_total = invoice1.total + invoice2.total
-    eft_credits = factory_eft_credit(eft_file_id=eft_file.id, short_name_id=short_name.id, amount=invoices_total,
-                                     remaining_amount=invoices_total).save()
-    settings_model = factory_statement_settings(payment_account_id=pay_account1.id,
-                                                frequency=StatementFrequency.MONTHLY.value)
-    statement_model = factory_statement(payment_account_id=pay_account1.id,
-                                        frequency=StatementFrequency.MONTHLY.value,
-                                        statement_settings_id=settings_model.id)
+    eft_credits = factory_eft_credit(
+        eft_file_id=eft_file.id,
+        short_name_id=short_name.id,
+        amount=invoices_total,
+        remaining_amount=invoices_total,
+    ).save()
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account1.id, frequency=StatementFrequency.MONTHLY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account1.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice1.id)
 
-    settings_model2 = factory_statement_settings(payment_account_id=pay_account2.id,
-                                                 frequency=StatementFrequency.MONTHLY.value)
-    statement_model2 = factory_statement(payment_account_id=pay_account2.id,
-                                         frequency=StatementFrequency.MONTHLY.value,
-                                         statement_settings_id=settings_model2.id)
+    settings_model2 = factory_statement_settings(
+        payment_account_id=pay_account2.id, frequency=StatementFrequency.MONTHLY.value
+    )
+    statement_model2 = factory_statement(
+        payment_account_id=pay_account2.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings_model2.id,
+    )
     factory_statement_invoices(statement_id=statement_model2.id, invoice_id=invoice2.id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account1.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account1.auth_account_id}/statements/summary",
+        headers=headers,
+    )
     assert rv.status_code == 200
-    assert rv.json.get('totalDue') == invoice1.total
-    assert rv.json.get('shortNameLinksCount') == 2
-    assert rv.json.get('isEftUnderPayment') is False
+    assert rv.json.get("totalDue") == invoice1.total
+    assert rv.json.get("shortNameLinksCount") == 2
+    assert rv.json.get("isEftUnderPayment") is False
 
-    rv = client.get(f'/api/v1/accounts/{pay_account2.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account2.auth_account_id}/statements/summary",
+        headers=headers,
+    )
     assert rv.status_code == 200
-    assert rv.json.get('totalDue') == invoice2.total
-    assert rv.json.get('shortNameLinksCount') == 2
-    assert rv.json.get('isEftUnderPayment') is False
+    assert rv.json.get("totalDue") == invoice2.total
+    assert rv.json.get("shortNameLinksCount") == 2
+    assert rv.json.get("isEftUnderPayment") is False
 
     eft_credits.remaining_amount = invoices_total - 1
     eft_credits.save()
 
-    rv = client.get(f'/api/v1/accounts/{pay_account1.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account1.auth_account_id}/statements/summary",
+        headers=headers,
+    )
     assert rv.status_code == 200
-    assert rv.json.get('totalDue') == invoice1.total
-    assert rv.json.get('shortNameLinksCount') == 2
-    assert rv.json.get('isEftUnderPayment') is True
+    assert rv.json.get("totalDue") == invoice1.total
+    assert rv.json.get("shortNameLinksCount") == 2
+    assert rv.json.get("isEftUnderPayment") is True
 
-    rv = client.get(f'/api/v1/accounts/{pay_account2.auth_account_id}/statements/summary',
-                    headers=headers)
+    rv = client.get(
+        f"/api/v1/accounts/{pay_account2.auth_account_id}/statements/summary",
+        headers=headers,
+    )
     assert rv.status_code == 200
-    assert rv.json.get('totalDue') == invoice2.total
-    assert rv.json.get('shortNameLinksCount') == 2
-    assert rv.json.get('isEftUnderPayment') is True
+    assert rv.json.get("totalDue") == invoice2.total
+    assert rv.json.get("shortNameLinksCount") == 2
+    assert rv.json.get("isEftUnderPayment") is True

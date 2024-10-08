@@ -27,7 +27,7 @@ from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus
 def test_eft_transaction_defaults(session):
     """Assert eft transaction defaults are stored."""
     eft_file = EFTFileModel()
-    eft_file.file_ref = 'test.txt'
+    eft_file.file_ref = "test.txt"
     eft_file.save()
 
     assert eft_file.id is not None
@@ -39,8 +39,9 @@ def test_eft_transaction_defaults(session):
     eft_transaction.status_code = EFTProcessStatus.FAILED.value
     eft_transaction.save()
 
-    eft_transaction = db.session.query(EFTTransactionModel).filter(
-        EFTTransactionModel.id == eft_transaction.id).one_or_none()
+    eft_transaction = (
+        db.session.query(EFTTransactionModel).filter(EFTTransactionModel.id == eft_transaction.id).one_or_none()
+    )
 
     assert eft_transaction.id is not None
     assert eft_transaction.created_on is not None
@@ -57,7 +58,7 @@ def test_eft_transaction_defaults(session):
 def test_eft_file_all_attributes(session):
     """Assert all eft transaction attributes are stored."""
     eft_file = EFTFileModel()
-    eft_file.file_ref = 'test.txt'
+    eft_file.file_ref = "test.txt"
     eft_file.save()
 
     assert eft_file.id is not None
@@ -65,11 +66,11 @@ def test_eft_file_all_attributes(session):
     completed_on = datetime(2023, 9, 30, 10, 0)
     deposit_date = datetime(2023, 9, 28, 10, 0)
     transaction_date = datetime(2023, 9, 29, 10, 0)
-    error_messages = ['message 1', 'message 2']
-    batch_number = '123456789'
-    jv_type = 'I'
-    jv_number = '5678910'
-    sequence_number = '001'
+    error_messages = ["message 1", "message 2"]
+    batch_number = "123456789"
+    jv_type = "I"
+    jv_number = "5678910"
+    sequence_number = "001"
 
     eft_transaction = EFTTransactionModel()
     eft_transaction.file_id = eft_file.id
@@ -106,5 +107,5 @@ def test_eft_file_all_attributes(session):
     assert eft_transaction.transaction_date == transaction_date
     assert eft_transaction.deposit_date == deposit_date
     assert eft_transaction.error_messages == error_messages
-    assert eft_transaction.error_messages[0] == 'message 1'
-    assert eft_transaction.error_messages[1] == 'message 2'
+    assert eft_transaction.error_messages[0] == "message 1"
+    assert eft_transaction.error_messages[1] == "message 2"

@@ -29,297 +29,322 @@ from tests.utilities.base_test import get_claims, get_gov_account_payload, token
 def test_fees_with_corp_type_and_filing_type(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}', headers=headers)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
+    assert schema_utils.validate(rv.json, "fees")[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_valid_start_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     # Insert a record first and then query for it
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     now = datetime.now(tz=timezone.utc)
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100),
-        now - timedelta(1))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
+        now - timedelta(1),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
-    assert not schema_utils.validate(rv.json, 'problem')[0]
+    assert schema_utils.validate(rv.json, "fees")[0]
+    assert not schema_utils.validate(rv.json, "problem")[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
     # Insert a record first and then query for it
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     now = datetime.now(tz=timezone.utc)
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100),
-        now + timedelta(1))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
+        now + timedelta(1),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers)
     assert rv.status_code == 400
-    assert schema_utils.validate(rv.json, 'problem')[0]
-    assert not schema_utils.validate(rv.json, 'fees')[0]
+    assert schema_utils.validate(rv.json, "problem")[0]
+    assert not schema_utils.validate(rv.json, "fees")[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_valid_end_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     # Insert a record first and then query for it
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     now = datetime.now(tz=timezone.utc)
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100),
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
         now - timedelta(1),
-        now)
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
+        now,
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
+    assert schema_utils.validate(rv.json, "fees")[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
     # Insert a record first and then query for it
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     now = datetime.now(tz=timezone.utc)
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100),
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
         now - timedelta(2),
-        now - timedelta(1))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
+        now - timedelta(1),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers)
     assert rv.status_code == 400
-    assert schema_utils.validate(rv.json, 'problem')[0]
+    assert schema_utils.validate(rv.json, "problem")[0]
 
 
 def test_calculate_fees_with_waive_fees(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(role='staff'), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    token = jwt.create_jwt(get_claims(role="staff"), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?waiveFees=true', headers=headers)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?waiveFees=true", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
-    assert rv.json.get('filingFees') == 0
+    assert schema_utils.validate(rv.json, "fees")[0]
+    assert rv.json.get("filingFees") == 0
 
 
 def test_calculate_fees_with_waive_fees_unauthorized(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?waiveFees=true', headers=headers)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?waiveFees=true", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
-    assert rv.json.get('filingFees') == 100
+    assert schema_utils.validate(rv.json, "fees")[0]
+    assert rv.json.get("filingFees") == 100
 
 
 def test_fees_with_quantity(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?quantity=10', headers=headers)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?quantity=10", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
+    assert schema_utils.validate(rv.json, "fees")[0]
 
 
 def test_fees_with_float_quantity(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 43.39))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?quantity=6', headers=headers)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 43.39),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?quantity=6", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
-    assert rv.json.get('total') == 260.34
+    assert schema_utils.validate(rv.json, "fees")[0]
+    assert rv.json.get("total") == 260.34
 
 
 def test_calculate_fees_for_service_fee(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
-    service_fee = factory_fee_model('SF01', 1.5)
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
+    service_fee = factory_fee_model("SF01", 1.5)
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 100),
-        service_fee=service_fee)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 100),
+        service_fee=service_fee,
+    )
 
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}', headers=headers)
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
-    assert rv.json.get('filingFees') == 100
-    assert rv.json.get('serviceFees') == 1.5
+    assert schema_utils.validate(rv.json, "fees")[0]
+    assert rv.json.get("filingFees") == 100
+    assert rv.json.get("serviceFees") == 1.5
 
 
 def test_calculate_fees_with_zero_service_fee(session, client, jwt, app):
     """Assert that service fee is zero if the filing fee is zero."""
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    corp_type = 'XX'
-    filing_type_code = 'XOTANN'
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
 
     factory_fee_schedule_model(
-        factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST'),
-        factory_fee_model('XXX', 0))
-    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}', headers=headers)
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST"),
+        factory_fee_model("XXX", 0),
+    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
-    assert rv.json.get('filingFees') == 0
-    assert rv.json.get('serviceFees') == 0
+    assert schema_utils.validate(rv.json, "fees")[0]
+    assert rv.json.get("filingFees") == 0
+    assert rv.json.get("serviceFees") == 0
 
 
 def test_fee_for_account_fee_settings(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload()),
-                     headers=headers)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    rv = client.post("/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers)
 
-    account_id = rv.json.get('accountId')
+    account_id = rv.json.get("accountId")
 
     # Create account fee details.
     token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    client.post(f'/api/v1/accounts/{account_id}/fees', data=json.dumps({'accountFees': [
-        {
-            'applyFilingFees': False,
-            'serviceFeeCode': 'TRF02',  # 1.0
-            'product': 'BUSINESS'
-        }
-    ]}), headers=headers)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    client.post(
+        f"/api/v1/accounts/{account_id}/fees",
+        data=json.dumps(
+            {
+                "accountFees": [
+                    {
+                        "applyFilingFees": False,
+                        "serviceFeeCode": "TRF02",  # 1.0
+                        "product": "BUSINESS",
+                    }
+                ]
+            }
+        ),
+        headers=headers,
+    )
 
     # Get fee for this account.
     token = jwt.create_jwt(get_claims(role=Role.EDITOR.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': account_id}
-    rv = client.get('/api/v1/fees/BEN/BCANN', headers=headers)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": account_id,
+    }
+    rv = client.get("/api/v1/fees/BEN/BCANN", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
+    assert schema_utils.validate(rv.json, "fees")[0]
     # assert filing fee is not applied and service fee is applied
-    assert rv.json.get('filingFees') == 0
-    assert rv.json.get('serviceFees') == 1.0
+    assert rv.json.get("filingFees") == 0
+    assert rv.json.get("serviceFees") == 1.0
 
     # Now change the settings to apply filing fees and assert
     token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    client.put(f'/api/v1/accounts/{account_id}/fees/BUSINESS', data=json.dumps({
-        'applyFilingFees': True,
-        'serviceFeeCode': 'TRF01',  # 1.5
-        'product': 'BUSINESS'
-    }), headers=headers)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    client.put(
+        f"/api/v1/accounts/{account_id}/fees/BUSINESS",
+        data=json.dumps(
+            {
+                "applyFilingFees": True,
+                "serviceFeeCode": "TRF01",  # 1.5
+                "product": "BUSINESS",
+            }
+        ),
+        headers=headers,
+    )
 
     # Get fee for this account.
     token = jwt.create_jwt(get_claims(role=Role.EDITOR.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': account_id}
-    rv = client.get('/api/v1/fees/BEN/BCANN', headers=headers)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": account_id,
+    }
+    rv = client.get("/api/v1/fees/BEN/BCANN", headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'fees')[0]
+    assert schema_utils.validate(rv.json, "fees")[0]
     # assert filing fee is applied and service fee is applied
-    assert rv.json.get('filingFees') > 0
-    assert rv.json.get('serviceFees') == 1.5
+    assert rv.json.get("filingFees") > 0
+    assert rv.json.get("serviceFees") == 1.5
 
 
-def factory_filing_type_model(
-        filing_type_code: str,
-        filing_description: str = 'TEST'):
+def factory_filing_type_model(filing_type_code: str, filing_description: str = "TEST"):
     """Return the filing type model."""
-    filing_type = FilingType(code=filing_type_code,
-                             description=filing_description)
+    filing_type = FilingType(code=filing_type_code, description=filing_description)
     filing_type.save()
     return filing_type
 
 
-def factory_fee_model(
-        fee_code: str,
-        amount: float):
+def factory_fee_model(fee_code: str, amount: float):
     """Return the fee code model."""
-    fee_code_master = FeeCode(code=fee_code,
-                              amount=Decimal(str(amount)))
+    fee_code_master = FeeCode(code=fee_code, amount=Decimal(str(amount)))
     fee_code_master.save()
     return fee_code_master
 
 
-def factory_corp_type_model(
-        corp_type_code: str,
-        corp_type_description: str):
+def factory_corp_type_model(corp_type_code: str, corp_type_description: str):
     """Return the corp type model."""
-    corp_type = CorpType(code=corp_type_code,
-                         description=corp_type_description)
+    corp_type = CorpType(code=corp_type_code, description=corp_type_description)
     corp_type.save()
     return corp_type
 
 
 def factory_fee_schedule_model(
-        filing_type: FilingType,
-        corp_type: CorpType,
-        fee_code: FeeCode,
-        fee_start_date: date = datetime.now(tz=timezone.utc).date(),
-        fee_end_date: date = None,
-        service_fee: FeeCode = None):
+    filing_type: FilingType,
+    corp_type: CorpType,
+    fee_code: FeeCode,
+    fee_start_date: date = datetime.now(tz=timezone.utc).date(),
+    fee_end_date: date = None,
+    service_fee: FeeCode = None,
+):
     """Return the fee schedule model."""
-    fee_schedule = FeeSchedule(filing_type_code=filing_type.code,
-                               corp_type_code=corp_type.code,
-                               fee_code=fee_code.code,
-                               fee_start_date=fee_start_date,
-                               fee_end_date=fee_end_date
-                               )
+    fee_schedule = FeeSchedule(
+        filing_type_code=filing_type.code,
+        corp_type_code=corp_type.code,
+        fee_code=fee_code.code,
+        fee_start_date=fee_start_date,
+        fee_end_date=fee_end_date,
+    )
     if service_fee:
         fee_schedule.service_fee_code = service_fee.code
     fee_schedule.save()

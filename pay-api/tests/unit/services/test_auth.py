@@ -29,66 +29,51 @@ def test_auth_role_for_service_account(session, monkeypatch):
 
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
-            'username': 'service account',
-            'realm_access': {
-                'roles': [
-                    'system',
-                    'edit'
-                ]
-            },
-            'product_code': 'BUSINESS'
+            "username": "service account",
+            "realm_access": {"roles": ["system", "edit"]},
+            "product_code": "BUSINESS",
         }
 
     def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
-        return 'test'
+        return "test"
 
-    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
-    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token", mock_auth)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token_info", token_info)
 
     # Test one of roles
-    check_auth('CP0001234', one_of_roles=[EDIT_ROLE])
+    check_auth("CP0001234", one_of_roles=[EDIT_ROLE])
 
 
 def test_auth_role_for_service_account_with_no_edit_role(session, monkeypatch):
     """Assert the auth works for service account."""
 
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
-        return {
-            'username': 'service account',
-            'realm_access': {
-                'roles': [
-                    'system'
-                ]
-            }
-        }
+        return {"username": "service account", "realm_access": {"roles": ["system"]}}
 
     def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
-        return 'test'
+        return "test"
 
-    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
-    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token", mock_auth)
+    monkeypatch.setattr("pay_api.utils.user_context._get_token_info", token_info)
 
     with pytest.raises(HTTPException) as excinfo:
         # Test one of roles
-        check_auth('CP0001234', one_of_roles=[EDIT_ROLE])
+        check_auth("CP0001234", one_of_roles=[EDIT_ROLE])
         assert excinfo.exception.code == 403
 
 
 def test_auth_for_client_user_roles(session, public_user_mock):
     """Assert that the auth is working as expected."""
     # Test one of roles
-    check_auth('CP0001234', one_of_roles=[EDIT_ROLE])
+    check_auth("CP0001234", one_of_roles=[EDIT_ROLE])
     # Test contains roles
-    check_auth('CP0001234', contains_role=EDIT_ROLE)
+    check_auth("CP0001234", contains_role=EDIT_ROLE)
 
 
-@pytest.mark.parametrize('roles, param_name', [
-    (VIEW_ROLE, 'contains_role'),
-    ([EDIT_ROLE], 'one_of_roles')
-])
+@pytest.mark.parametrize("roles, param_name", [(VIEW_ROLE, "contains_role"), ([EDIT_ROLE], "one_of_roles")])
 def test_auth_for_client_user_roles_for_error(session, public_user_mock, roles, param_name):
     """Assert that the auth is working as expected."""
     # Test for exception
     with pytest.raises(HTTPException) as excinfo:
-        check_auth('CP0000000', param_name=roles)
+        check_auth("CP0000000", param_name=roles)
         assert excinfo.exception.code == 403

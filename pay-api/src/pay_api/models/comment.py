@@ -13,11 +13,14 @@
 # limitations under the License.
 """Model to handle all operations related to Routing Slip Comment data."""
 from datetime import datetime, timezone
-from sqlalchemy.orm import relationship
+
+from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declared_attr
-from marshmallow import fields
+from sqlalchemy.orm import relationship
+
 from pay_api.utils.user_context import user_context
+
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db
@@ -30,7 +33,7 @@ class Comment(BaseModel):
     Comments holds the comment
     """
 
-    __tablename__ = 'comments'
+    __tablename__ = "comments"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -42,40 +45,45 @@ class Comment(BaseModel):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'comment',
-            'routing_slip_number',
-            'submitter_name',
-            'timestamp'
+        "include_properties": [
+            "id",
+            "comment",
+            "routing_slip_number",
+            "submitter_name",
+            "timestamp",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     comment = db.Column(db.String(4096))
-    timestamp = db.Column('timestamp', db.DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))
+    timestamp = db.Column(
+        "timestamp",
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
     # Parent relationship
-    routing_slip_number = db.Column(db.String(), ForeignKey('routing_slips.number'), index=True)
-    routing_slip = relationship(RoutingSlip, foreign_keys=[routing_slip_number], lazy='select', innerjoin=True)
+    routing_slip_number = db.Column(db.String(), ForeignKey("routing_slips.number"), index=True)
+    routing_slip = relationship(RoutingSlip, foreign_keys=[routing_slip_number], lazy="select", innerjoin=True)
 
     @declared_attr
     def submitter_name(self):  # pylint:disable=no-self-argument, # noqa: N805
         """Return created by."""
-        return db.Column('submitter_name', db.String(50), nullable=False, default=self._get_user_name)
+        return db.Column("submitter_name", db.String(50), nullable=False, default=self._get_user_name)
 
     @staticmethod
     @user_context
     def _get_user_name(**kwargs):
         """Return current user user_name."""
-        return kwargs['user'].user_name
+        return kwargs["user"].user_name
 
     @classmethod
     def find_all_comments_for_a_routingslip(cls, routing_slip_number: str):
         """Find all comments specific to a routing slip."""
-        query = db.session.query(Comment)\
-            .filter(Comment.routing_slip_number == routing_slip_number)\
-            .order_by(
-            Comment.timestamp.desc())
+        query = (
+            db.session.query(Comment)
+            .filter(Comment.routing_slip_number == routing_slip_number)
+            .order_by(Comment.timestamp.desc())
+        )
         return query.all()
 
 
@@ -86,7 +94,7 @@ class CommentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Comment
-        exclude = ['routing_slip']
+        exclude = ["routing_slip"]
 
-    routing_slip_number = fields.String(data_key='routing_slip_number')
-    submitter_name = fields.String(data_key='submitter_display_name')
+    routing_slip_number = fields.String(data_key="routing_slip_number")
+    submitter_name = fields.String(data_key="submitter_display_name")

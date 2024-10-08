@@ -20,10 +20,17 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 from pay_api.models import Payment
 
 
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='CREATED'):
+def factory_payment(
+    payment_system_code: str = "PAYBC",
+    payment_method_code="CC",
+    payment_status_code="CREATED",
+):
     """Return Factory."""
-    return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code)
+    return Payment(
+        payment_system_code=payment_system_code,
+        payment_method_code=payment_method_code,
+        payment_status_code=payment_status_code,
+    )
 
 
 def test_payment(session):
@@ -41,8 +48,12 @@ def test_payment_usd_payment(session):
 
     Start with a blank database.
     """
-    payment = Payment(payment_system_code='PAYBC', payment_method_code='CC',
-                      payment_status_code='CREATED', paid_usd_amount=100)
+    payment = Payment(
+        payment_system_code="PAYBC",
+        payment_method_code="CC",
+        payment_status_code="CREATED",
+        paid_usd_amount=100,
+    )
     payment.save()
     assert payment.id is not None
     assert payment.paid_usd_amount == 100

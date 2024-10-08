@@ -17,29 +17,28 @@ from sqlalchemy import exc, text
 
 from pay_api.models import db
 
+bp = Blueprint("OPS", __name__, url_prefix="/ops")
 
-bp = Blueprint('OPS', __name__, url_prefix='/ops')
-
-SQL = text('select 1')
+SQL = text("select 1")
 
 
-@bp.route('healthz')
+@bp.route("healthz")
 def get_ops_healthz():
     """Return a JSON object stating the health of the Service and dependencies."""
     try:
         db.session.execute(SQL)
     except exc.SQLAlchemyError:
-        return {'message': 'api is down'}, 500
+        return {"message": "api is down"}, 500
 
     # made it here, so all checks passed
-    return {'message': 'api is healthy'}, 200
+    return {"message": "api is healthy"}, 200
 
 
-@bp.route('readyz')
+@bp.route("readyz")
 def get_ops_readyz():
     """Return a JSON object that identifies if the service is setupAnd ready to work."""
     try:
         db.session.execute(SQL)
     except exc.SQLAlchemyError:
-        return {'message': 'api is down'}, 500
-    return {'message': 'api is ready'}, 200
+        return {"message": "api is down"}, 500
+    return {"message": "api is ready"}, 200

@@ -19,34 +19,37 @@ A simple decorator to add the options method to a Request Class.
 import ast
 import calendar
 from datetime import datetime, timedelta, timezone
-from typing import Dict
 from decimal import Decimal
+from typing import Dict
 from urllib.parse import parse_qsl
 
-from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
-from holidays.countries import Canada
 import pytz
 from dpath import get as dpath_get
 from flask import current_app
-
-from pay_api.services.code import Code as CodeService
+from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
+from holidays.countries import Canada
 
 from .constants import DT_SHORT_FORMAT
 from .converter import Converter
 from .enums import Code, CorpType, Product, StatementFrequency
 
 
-def cors_preflight(methods: str = 'GET'):
+def cors_preflight(methods: str = "GET"):
     """Render an option method on the class."""
 
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
-            return {'Allow': methods}, 200, \
-                   {'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': methods,
-                    'Access-Control-Allow-Headers': 'Authorization, Content-Type, registries-trace-id, Account-Id'}
+            return (
+                {"Allow": methods},
+                200,
+                {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": methods,
+                    "Access-Control-Allow-Headers": "Authorization, Content-Type, registries-trace-id, Account-Id",
+                },
+            )
 
-        setattr(f, 'options', options)
+        setattr(f, "options", options)
         return f
 
     return wrapper
@@ -54,13 +57,13 @@ def cors_preflight(methods: str = 'GET'):
 
 def is_valid_redirect_url(url: str) -> bool:
     """Validate if the url is valid based on the VALID Redirect Url."""
-    disable_redirect_validation: bool = current_app.config.get('DISABLE_VALID_REDIRECT_URLS')
+    disable_redirect_validation: bool = current_app.config.get("DISABLE_VALID_REDIRECT_URLS")
     if disable_redirect_validation:
         return True
-    valid_urls: list = current_app.config.get('VALID_REDIRECT_URLS')
+    valid_urls: list = current_app.config.get("VALID_REDIRECT_URLS")
     is_valid = False
     for valid_url in valid_urls:
-        is_valid = url.startswith(valid_url[:-1]) if valid_url.endswith('*') else valid_url == url
+        is_valid = url.startswith(valid_url[:-1]) if valid_url.endswith("*") else valid_url == url
         if is_valid:
             break
     return is_valid
@@ -68,7 +71,7 @@ def is_valid_redirect_url(url: str) -> bool:
 
 def convert_to_bool(value: str) -> bool:
     """Convert string to boolean."""
-    return value.lower() == 'true'
+    return value.lower() == "true"
 
 
 def get_str_by_path(payload: Dict, path: str) -> str:
@@ -127,7 +130,7 @@ def parse_url_params(url_params: str) -> Dict:
     """Parse URL params and return dict of parsed url params."""
     parsed_url: dict = {}
     if url_params is not None:
-        if url_params.startswith('?'):
+        if url_params.startswith("?"):
             url_params = url_params[1:]
         parsed_url = dict(parse_qsl(url_params))
 
@@ -142,26 +145,26 @@ def current_local_time(timezone_override=None) -> datetime:
 
 def get_local_time(date_val: datetime, timezone_override=None):
     """Return local time value."""
-    tz_name = timezone_override or current_app.config['LEGISLATIVE_TIMEZONE']
+    tz_name = timezone_override or current_app.config["LEGISLATIVE_TIMEZONE"]
     tz_local = pytz.timezone(tz_name)
     date_val = date_val.astimezone(tz_local)
     return date_val
 
 
-def get_local_formatted_date_time(date_val: datetime, dt_format: str = '%Y-%m-%d %H:%M:%S'):
+def get_local_formatted_date_time(date_val: datetime, dt_format: str = "%Y-%m-%d %H:%M:%S"):
     """Return formatted local time."""
     return get_local_time(date_val).strftime(dt_format)
 
 
-def get_local_formatted_date(date_val: datetime, dt_format: str = '%Y-%m-%d'):
+def get_local_formatted_date(date_val: datetime, dt_format: str = "%Y-%m-%d"):
     """Return formatted local time."""
     return get_local_time(date_val).strftime(dt_format)
 
 
 def generate_transaction_number(txn_number: str) -> str:
     """Return transaction number for invoices."""
-    prefix = current_app.config.get('CFS_INVOICE_PREFIX')
-    return f'{prefix}{txn_number:0>8}'
+    prefix = current_app.config.get("CFS_INVOICE_PREFIX")
+    return f"{prefix}{txn_number:0>8}"
 
 
 def get_fiscal_year(date_val: datetime = datetime.now(tz=timezone.utc)) -> int:
@@ -174,15 +177,15 @@ def get_fiscal_year(date_val: datetime = datetime.now(tz=timezone.utc)) -> int:
 
 def generate_receipt_number(payment_id: str) -> str:
     """Return receipt number for payments."""
-    prefix = current_app.config.get('CFS_RECEIPT_PREFIX')
-    return f'{prefix}{payment_id:0>8}'
+    prefix = current_app.config.get("CFS_RECEIPT_PREFIX")
+    return f"{prefix}{payment_id:0>8}"
 
 
 def mask(val: str, preserve_length: int = 0) -> str:
     """Mask the val.only unmask the length specified."""
     if not val:
         return val
-    replace_char = 'X'
+    replace_char = "X"
     if preserve_length is None or preserve_length == 0:  # mask fully
         return replace_char * len(val)
     return val[-preserve_length:].rjust(len(val), replace_char)
@@ -210,9 +213,14 @@ def is_holiday(val: datetime) -> bool:
     """
     # Even though not officially a BC STAT - Union recognizes Easter Monday and Boxing Day.
     # https://www2.gov.bc.ca/gov/content/careers-myhr/all-employees/leave-time-off/vacations-holidays/statutory-holidays
-    holiday = Canada(subdiv='BC', observed=True, categories=(GOVERNMENT, OPTIONAL, PUBLIC), years=val.year)
-    holiday._add_easter_monday('Easter Monday')  # pylint: disable=protected-access
-    if holiday.get(val.strftime('%Y-%m-%d')):
+    holiday = Canada(
+        subdiv="BC",
+        observed=True,
+        categories=(GOVERNMENT, OPTIONAL, PUBLIC),
+        years=val.year,
+    )
+    holiday._add_easter_monday("Easter Monday")  # pylint: disable=protected-access
+    if holiday.get(val.strftime("%Y-%m-%d")):
         return True
     if val.weekday() >= 5:
         return True
@@ -227,7 +235,7 @@ def get_next_day(val: datetime):
 
 def get_outstanding_txns_from_date() -> datetime:
     """Return the date value which can be used as start date to calculate outstanding PAD transactions."""
-    days_interval: int = current_app.config.get('OUTSTANDING_TRANSACTION_DAYS')
+    days_interval: int = current_app.config.get("OUTSTANDING_TRANSACTION_DAYS")
     from_date = datetime.now(tz=timezone.utc)
     # Find the business day before days_interval time.
     counter: int = 0
@@ -266,15 +274,15 @@ def string_to_bool(val: str):
     """Return bool from string."""
     if val is None:
         return None
-    if val.lower() not in ('true', 'false'):
-        raise ValueError(f'Invalid string value for bool: {val}')
+    if val.lower() not in ("true", "false"):
+        raise ValueError(f"Invalid string value for bool: {val}")
 
     return ast.literal_eval(val.capitalize())
 
 
 def get_quantized(amount: float) -> Decimal:
     """Return rounded decimal. (Default = ROUND_HALF_EVEN)."""
-    return Decimal(amount).quantize(Decimal('1.00'))
+    return Decimal(amount).quantize(Decimal("1.00"))
 
 
 def cents_to_decimal(amount: int):
@@ -287,13 +295,16 @@ def cents_to_decimal(amount: int):
 
 def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
+    # Will fix this promptly and move this away so it doesn't cause circular dependencies.
+    from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+
     if corp_type == CorpType.NRO.value:
-        return current_app.config.get('NAMEX_PAY_TOPIC')
-    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get('product')
+        return current_app.config.get("NAMEX_PAY_TOPIC")
+    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get("product")
     if product_code in [Product.BUSINESS.value, Product.BUSINESS_SEARCH.value]:
-        return current_app.config.get('BUSINESS_PAY_TOPIC')
+        return current_app.config.get("BUSINESS_PAY_TOPIC")
     if product_code == Product.STRR.value:
-        return current_app.config.get('STRR_PAY_TOPIC')
+        return current_app.config.get("STRR_PAY_TOPIC")
     return None
 
 

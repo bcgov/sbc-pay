@@ -29,21 +29,21 @@ from flask import Response
 from pay_api.utils.enums import Code
 from pay_api.utils.errors import Error
 
-logger = logging.getLogger('api-exceptions')
+logger = logging.getLogger("api-exceptions")
 
 
 def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
     """Convert json error to problem response."""
-    return Response(response=json.dumps(body), mimetype='application/problem+json', status=status)
+    return Response(response=json.dumps(body), mimetype="application/problem+json", status=status)
 
 
 def error_to_response(error: Error, invalid_params=None):
     """Convert Error enum to response."""
     body = {
-        'type': construct_type(error.code),
-        'title': error.message,
-        'detail': error.details,
-        'invalidParams': invalid_params
+        "type": construct_type(error.code),
+        "title": error.message,
+        "detail": error.details,
+        "invalidParams": invalid_params,
     }
     logging.debug(body)
     return convert_to_response(body, status=error.status)
@@ -64,16 +64,17 @@ class BusinessException(Exception):  # noqa
         self.code = error.code
         self.status = error.status
         # not a part of the object.Used for custom error patterns.
-        self.detail = getattr(error, 'detail', None)
+        self.detail = getattr(error, "detail", None)
 
     def as_problem_json(self):
         """Return problem+json of error message."""
         from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+
         problem_json = CodeService.find_code_value_by_type_and_code(Code.ERROR.value, self.code)
         if not problem_json:  # If the error is not configured in DB, return details from Error object
-            problem_json = {'type': self.code}
+            problem_json = {"type": self.code}
             if self.detail:
-                problem_json['detail'] = self.detail
+                problem_json["detail"] = self.detail
         return problem_json
 
     def response(self):

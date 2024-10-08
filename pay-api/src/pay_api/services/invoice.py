@@ -380,12 +380,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
 
-        current_app.logger.debug('>find_by_id')
+        current_app.logger.debug(">find_by_id")
         return invoice
 
     @staticmethod
-    def find_invoices_for_payment(payment_id: int,
-                                  reference_status=InvoiceReferenceStatus.ACTIVE.value) -> List[Invoice]:
+    def find_invoices_for_payment(
+        payment_id: int, reference_status=InvoiceReferenceStatus.ACTIVE.value
+    ) -> List[Invoice]:
         """Find invoices by payment id."""
         invoices: List[Invoice] = []
         invoice_daos: List[InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id, reference_status)
@@ -395,21 +396,21 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             invoice._dao = invoice_dao  # pylint: disable=protected-access
             invoices.append(invoice)
 
-        current_app.logger.debug('>find_by_id')
+        current_app.logger.debug(">find_by_id")
         return invoices
 
     @staticmethod
     def find_invoices(business_identifier: str) -> Dict[str, any]:
         """Find invoices by business identifier."""
-        invoices: Dict[str, any] = {'invoices': []}
+        invoices: Dict[str, any] = {"invoices": []}
         invoice_daos: List[InvoiceModel] = InvoiceModel.find_by_business_identifier(business_identifier)
 
         for invoice_dao in invoice_daos:
             invoice = Invoice()
             invoice._dao = invoice_dao  # pylint: disable=protected-access
-            invoices['invoices'].append(invoice.asdict())
+            invoices["invoices"].append(invoice.asdict())
 
-        current_app.logger.debug('>find_invoices')
+        current_app.logger.debug(">find_invoices")
         return invoices
 
     @staticmethod
@@ -417,7 +418,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Check if the payment account has overdue invoices."""
         query = InvoiceModel.query.filter(
             InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value,
-            InvoiceModel.payment_account_id == payment_account_id
+            InvoiceModel.payment_account_id == payment_account_id,
         ).with_entities(True)
         return query.first() is not None
 
@@ -432,70 +433,82 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice_dao.payment_account_id)
         cfs_account = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
         org_response = OAuthService.get(
-            current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{payment_account.auth_account_id}',
-            kwargs['user'].bearer_token, AuthHeaderType.BEARER,
-            ContentType.JSON).json()
+            current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{payment_account.auth_account_id}",
+            kwargs["user"].bearer_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+        ).json()
         org_contact_response = OAuthService.get(
-            current_app.config.get(
-                'AUTH_API_ENDPOINT') + f'orgs/{payment_account.auth_account_id}/contacts',
-            kwargs['user'].bearer_token, AuthHeaderType.BEARER,
-            ContentType.JSON).json()
+            current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{payment_account.auth_account_id}/contacts",
+            kwargs["user"].bearer_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+        ).json()
 
-        org_contact = org_contact_response.get('contacts')[0] if org_contact_response.get('contacts', None) else {}
+        org_contact = org_contact_response.get("contacts")[0] if org_contact_response.get("contacts", None) else {}
 
-        invoice_number: str = invoice_dao.references[0].invoice_number if invoice_dao.references \
+        invoice_number: str = (
+            invoice_dao.references[0].invoice_number
+            if invoice_dao.references
             else generate_transaction_number(invoice_dao.id)
+        )
 
         filing_types: List[Dict[str, str]] = []
         for line_item in invoice_dao.payment_line_items:
-            business_identifier = invoice_dao.business_identifier \
-                if not invoice_dao.business_identifier.startswith('T') \
-                else ''
-            filing_types.append({
-                'folioNumber': invoice_dao.folio_number,
-                'description': line_item.description,
-                'businessIdentifier': business_identifier,
-                'createdOn': get_local_formatted_date(invoice_dao.created_on),
-                'filingTypeCode': line_item.fee_schedule.filing_type_code,
-                'fee': line_item.total,
-                'gst': line_item.gst,
-                'serviceFees': line_item.service_fees,
-                'total': line_item.total + line_item.service_fees
-            })
+            business_identifier = (
+                invoice_dao.business_identifier if not invoice_dao.business_identifier.startswith("T") else ""
+            )
+            filing_types.append(
+                {
+                    "folioNumber": invoice_dao.folio_number,
+                    "description": line_item.description,
+                    "businessIdentifier": business_identifier,
+                    "createdOn": get_local_formatted_date(invoice_dao.created_on),
+                    "filingTypeCode": line_item.fee_schedule.filing_type_code,
+                    "fee": line_item.total,
+                    "gst": line_item.gst,
+                    "serviceFees": line_item.service_fees,
+                    "total": line_item.total + line_item.service_fees,
+                }
+            )
 
         template_vars: Dict[str, any] = {
-            'invoiceNumber': invoice_number,
-            'createdOn': get_local_formatted_date(invoice_dao.created_on),
-            'accountNumber': cfs_account.cfs_account if cfs_account else None,
-            'total': invoice_dao.total,
-            'gst': 0,
-            'serviceFees': invoice_dao.service_fees,
-            'fees': invoice_dao.total - invoice_dao.service_fees,
-            'filingTypes': filing_types,
-            'accountContact': {
-                'name': org_response.get('name'),
-                'city': org_contact.get('city', None),
-                'country': org_contact.get('country', None),
-                'postalCode': org_contact.get('postalCode', None),
-                'region': org_contact.get('region', None),
-                'street': org_contact.get('street', None),
-                'streetAdditional': org_contact.get('streetAdditional', None)
-            }
+            "invoiceNumber": invoice_number,
+            "createdOn": get_local_formatted_date(invoice_dao.created_on),
+            "accountNumber": cfs_account.cfs_account if cfs_account else None,
+            "total": invoice_dao.total,
+            "gst": 0,
+            "serviceFees": invoice_dao.service_fees,
+            "fees": invoice_dao.total - invoice_dao.service_fees,
+            "filingTypes": filing_types,
+            "accountContact": {
+                "name": org_response.get("name"),
+                "city": org_contact.get("city", None),
+                "country": org_contact.get("country", None),
+                "postalCode": org_contact.get("postalCode", None),
+                "region": org_contact.get("region", None),
+                "street": org_contact.get("street", None),
+                "streetAdditional": org_contact.get("streetAdditional", None),
+            },
         }
 
         invoice_pdf_dict = {
-            'templateName': 'invoice',
-            'reportName': invoice_number,
-            'templateVars': template_vars,
-            'populatePageNumber': True
+            "templateName": "invoice",
+            "reportName": invoice_number,
+            "templateVars": template_vars,
+            "populatePageNumber": True,
         }
-        current_app.logger.info('Invoice PDF Dict %s', invoice_pdf_dict)
-        pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
-                                         kwargs['user'].bearer_token, AuthHeaderType.BEARER,
-                                         ContentType.JSON, invoice_pdf_dict)
-        current_app.logger.debug('<OAuthService responded to receipt.py')
+        current_app.logger.info("Invoice PDF Dict %s", invoice_pdf_dict)
+        pdf_response = OAuthService.post(
+            current_app.config.get("REPORT_API_BASE_URL"),
+            kwargs["user"].bearer_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            invoice_pdf_dict,
+        )
+        current_app.logger.debug("<OAuthService responded to receipt.py")
 
-        return pdf_response, invoice_pdf_dict.get('reportName')
+        return pdf_response, invoice_pdf_dict.get("reportName")
 
     @staticmethod
     def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES):
@@ -511,25 +524,27 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             action_required_types = (
                 PaymentMethod.DIRECT_PAY.value,
                 PaymentMethod.CC.value,
-                PaymentMethod.ONLINE_BANKING.value
+                PaymentMethod.ONLINE_BANKING.value,
             )
-            if invoice.get('status_code') == InvoiceStatus.CREATED.value and \
-                    invoice.get('payment_method') in action_required_types:
+            if (
+                invoice.get("status_code") == InvoiceStatus.CREATED.value
+                and invoice.get("payment_method") in action_required_types
+            ):
                 redirect_for_payment = True
 
-            invoice['is_payment_action_required'] = redirect_for_payment
+            invoice["is_payment_action_required"] = redirect_for_payment
 
             # Include is online banking allowed
-            if invoice.get('payment_method') == PaymentMethod.ONLINE_BANKING.value:
+            if invoice.get("payment_method") == PaymentMethod.ONLINE_BANKING.value:
                 online_banking_allowed = CodeService.find_code_value_by_type_and_code(
-                    Code.CORP_TYPE.value, invoice.get('corp_type_code')
-                ).get('is_online_banking_allowed', True)
+                    Code.CORP_TYPE.value, invoice.get("corp_type_code")
+                ).get("is_online_banking_allowed", True)
 
                 if online_banking_allowed:  # Check if it's a future effective filing
-                    for line_item in invoice.get('line_items'):
-                        if line_item.get('future_effective_fees', 0) != 0:
+                    for line_item in invoice.get("line_items"):
+                        if line_item.get("future_effective_fees", 0) != 0:
                             online_banking_allowed = False
 
-                invoice['is_online_banking_allowed'] = online_banking_allowed
+                invoice["is_online_banking_allowed"] = online_banking_allowed
 
         return invoice

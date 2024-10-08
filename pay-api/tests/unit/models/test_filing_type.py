@@ -22,8 +22,7 @@ from pay_api.models import FilingType
 
 def factory_filing_type(code: str, description: str):
     """Return a valid FilingType object."""
-    return FilingType(code=code,
-                      description=description)
+    return FilingType(code=code, description=description)
 
 
 def test_filing_type(session):
@@ -31,7 +30,7 @@ def test_filing_type(session):
 
     Start with a blank database.
     """
-    filing_type = factory_filing_type('OTADDX', 'Annual Report')
+    filing_type = factory_filing_type("OTADDX", "Annual Report")
     filing_type.save()
 
     assert filing_type.code is not None
@@ -39,19 +38,19 @@ def test_filing_type(session):
 
 def test_filing_type_find_by_code(session):
     """Assert that the filing type can be found by code."""
-    filing_type = factory_filing_type('OTADDX', 'Annual Report')
+    filing_type = factory_filing_type("OTADDX", "Annual Report")
     session.add(filing_type)
     session.commit()
 
-    b = FilingType.find_by_code('OTADDX')
+    b = FilingType.find_by_code("OTADDX")
     assert b is not None
 
 
 def test_filing_type_find_by_invalid_fee_code(session):
     """Assert that the filing type can not be found, with invalid code."""
-    filing_type = factory_filing_type('OTADDX', 'Annual Report')
+    filing_type = factory_filing_type("OTADDX", "Annual Report")
     session.add(filing_type)
     session.commit()
 
-    b = FilingType.find_by_code('OTANNX')
+    b = FilingType.find_by_code("OTANNX")
     assert b is None

@@ -21,7 +21,6 @@ from faker import Faker
 from pay_api.models import RoutingSlip
 from tests.utilities.base_test import factory_payment_account, factory_routing_slip, factory_routing_slip_usd
 
-
 fake = Faker()
 
 
@@ -56,18 +55,18 @@ def test_routing_slip_find_search(session):
         factory_routing_slip(number=fake.name(), payment_account_id=payment_account.id).save()
 
     routing_slip = RoutingSlip()
-    search_dict = {'routingSlipNumber': rs.number}
+    search_dict = {"routingSlipNumber": rs.number}
     res, count = routing_slip.search(search_dict, page=1, limit=1, return_all=True)
     assert count == 1
-    assert len(res) == 1, 'searched with routing slip.so only one record'
+    assert len(res) == 1, "searched with routing slip.so only one record"
 
     res, count = routing_slip.search({}, page=1, limit=1, return_all=True)
     assert count == 21
-    assert len(res) == 21, 'retun all true ;so shud return all records'
+    assert len(res) == 21, "retun all true ;so shud return all records"
 
     res, count = routing_slip.search({}, page=1, limit=1, return_all=False)
     assert count == 1
-    assert len(res) == 1, 'return all false'
+    assert len(res) == 1, "return all false"
 
 
 def test_routing_slip_usd_creation(session):

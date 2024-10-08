@@ -7,19 +7,21 @@ Revises: fb3ba97b603a
 Create Date: 2024-03-18 09:53:33.369110
 
 """
+
 from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision = '52ed2340a43c'
-down_revision = 'fb3ba97b603a'
+revision = "52ed2340a43c"
+down_revision = "fb3ba97b603a"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
     # Currently these are only set to version = 1
-    op.execute("""
+    op.execute(
+        """
                update account_fees set version =
                     (select coalesce(
                         (select count(transaction_id) as version
@@ -29,9 +31,11 @@ def upgrade():
                         group by
                             id
                     ), 1));
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
                update cfs_accounts set version =
                 (select coalesce(
                (select count(transaction_id) as version
@@ -39,9 +43,11 @@ def upgrade():
                     where cfs_accounts.id = cfs_accounts_version.id
                     group by id
                ), 1));
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
                update distribution_codes set version =
                (select coalesce(
                (select count(transaction_id) as version
@@ -49,9 +55,11 @@ def upgrade():
                     where distribution_codes.distribution_code_id = distribution_codes_version.distribution_code_id
                     group by distribution_code_id
                ),1));
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
                update eft_short_names set version =
                (select coalesce(
                (select count(transaction_id) as version
@@ -59,9 +67,11 @@ def upgrade():
                     where eft_short_names.id = eft_short_names_version.id
                     group by id
                ),1));
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
                update payment_accounts set version =
                 (select coalesce(
                 (select count(transaction_id) as version
@@ -69,9 +79,11 @@ def upgrade():
                         where payment_accounts.id = payment_accounts_version.id 
                         group by id
                 ),1));
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
                update refunds_partial set version =
                 (select coalesce(
                 (select count(transaction_id) as version
@@ -79,9 +91,11 @@ def upgrade():
                     where refunds_partial.id = refunds_partial_version.id
                     group by id
                ),1));
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
         with subquery as (
             select 
                 afv.id,
@@ -123,9 +137,11 @@ def upgrade():
             max_versions mv on mv.id = sq.id
         where
                sq.version != mv.max_version;
-               """)
-    
-    op.execute("""
+               """
+    )
+
+    op.execute(
+        """
         with subquery as (
             select
                 cav.id,
@@ -161,9 +177,11 @@ def upgrade():
             max_versions mv on mv.id = sq.id
         where
             sq.version != mv.max_version;
-            """)
+            """
+    )
 
-    op.execute("""
+    op.execute(
+        """
         with subquery as (
             select
                 dcv.distribution_code_id,
@@ -213,9 +231,11 @@ def upgrade():
         left join 
             max_versions mv on mv.distribution_code_id = sq.distribution_code_id
         where sq.version != mv.max_version;
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
         with subquery as (
             select
                 esnv.id,
@@ -247,9 +267,11 @@ def upgrade():
         left join 
             max_versions mv on mv.id = sq.id
         where sq.version != mv.max_version;
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
         with subquery as (
             select
                 pav.id,
@@ -295,9 +317,11 @@ def upgrade():
                max_versions mv on mv.id = sq.id
             where
                sq.version != mv.max_version;
-               """)
+               """
+    )
 
-    op.execute("""
+    op.execute(
+        """
         with subquery as (
             select
                 rpv.id,
@@ -341,19 +365,20 @@ def upgrade():
             max_versions mv on mv.id = sq.id
         where
             sq.version != mv.max_version;
-               """)
-    
+               """
+    )
+
 
 def downgrade():
-    op.execute('update refunds_partial set version = 1;')
-    op.execute('update payment_accounts set version = 1;')
-    op.execute('update eft_short_names set version = 1;')
-    op.execute('update distribution_codes set version = 1;')
-    op.execute('update cfs_accounts set version = 1;')
-    op.execute('update account_fees set version = 1;')
-    op.execute('delete from refunds_partial_history;')
-    op.execute('delete from payment_accounts_history;')
-    op.execute('delete from eft_short_names_history;')
-    op.execute('delete from distribution_codes_history;')
-    op.execute('delete from cfs_accounts_history;')
-    op.execute('delete from account_fees_history;')
+    op.execute("update refunds_partial set version = 1;")
+    op.execute("update payment_accounts set version = 1;")
+    op.execute("update eft_short_names set version = 1;")
+    op.execute("update distribution_codes set version = 1;")
+    op.execute("update cfs_accounts set version = 1;")
+    op.execute("update account_fees set version = 1;")
+    op.execute("delete from refunds_partial_history;")
+    op.execute("delete from payment_accounts_history;")
+    op.execute("delete from eft_short_names_history;")
+    op.execute("delete from distribution_codes_history;")
+    op.execute("delete from cfs_accounts_history;")
+    op.execute("delete from account_fees_history;")

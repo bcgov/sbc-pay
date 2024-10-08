@@ -24,7 +24,7 @@ from .db import db
 class NonSufficientFunds(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Non-Sufficient Funds."""
 
-    __tablename__ = 'non_sufficient_funds'
+    __tablename__ = "non_sufficient_funds"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -36,20 +36,20 @@ class NonSufficientFunds(BaseModel):  # pylint: disable=too-many-instance-attrib
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'cfs_account',
-            'description',
-            'invoice_id',
-            'invoice_number'
+        "include_properties": [
+            "id",
+            "cfs_account",
+            "description",
+            "invoice_id",
+            "invoice_number",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    cfs_account = db.Column(db.String(50), nullable=True, comment='CFS Account number')
+    cfs_account = db.Column(db.String(50), nullable=True, comment="CFS Account number")
     description = db.Column(db.String(50), nullable=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
-    invoice_number = db.Column(db.String(50), nullable=False, index=True, comment='CFS Invoice number')
+    invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=False)
+    invoice_number = db.Column(db.String(50), nullable=False, index=True, comment="CFS Invoice number")
 
     @classmethod
     def find_by_invoice_id(cls, invoice_id: int):
@@ -73,5 +73,10 @@ class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id, cfs_account=row.cfs_account, description=row.description,
-                   invoice_id=row.invoice_id, invoice_number=row.invoice_number)
+        return cls(
+            id=row.id,
+            cfs_account=row.cfs_account,
+            description=row.description,
+            invoice_id=row.invoice_id,
+            invoice_number=row.invoice_number,
+        )

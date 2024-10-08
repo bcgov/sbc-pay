@@ -25,31 +25,25 @@ from pay_api.services.base_payment_system import PaymentSystemService
 def test_base_payment_system(session):
     """Assert that the sub-classes are created."""
     paybc_impl = type(
-        'PaymentSystemService',
+        "PaymentSystemService",
         (PaymentSystemService, object),
         {
-            'create_account': lambda self: print('Inside create_account'),
-            'update_account': lambda self: print('Inside update_account'),
-            'create_invoice': lambda self: print('Inside create_invoice'),
-            'update_invoice': lambda self: print('Inside update_invoice'),
-            'cancel_invoice': lambda self: print('Inside cancel_invoice'),
-            'get_receipt': lambda self: print('Inside get_receipt'),
-            'get_payment_system_code': lambda self: print('Inside get_payment_system_code'),
-            'get_payment_method_code': lambda self: print('Inside get_payment_method_code'),
-            'get_default_invoice_status': lambda self: print('Inside get_default_invoice_status'),
-            'get_default_payment_status': lambda self: print('Inside get_default_payment_status'),
-            'complete_post_invoice': lambda self: print('Inside complete_post_invoice'),
-        }
+            "create_account": lambda self: print("Inside create_account"),
+            "update_account": lambda self: print("Inside update_account"),
+            "create_invoice": lambda self: print("Inside create_invoice"),
+            "update_invoice": lambda self: print("Inside update_invoice"),
+            "cancel_invoice": lambda self: print("Inside cancel_invoice"),
+            "get_receipt": lambda self: print("Inside get_receipt"),
+            "get_payment_system_code": lambda self: print("Inside get_payment_system_code"),
+            "get_payment_method_code": lambda self: print("Inside get_payment_method_code"),
+            "get_default_invoice_status": lambda self: print("Inside get_default_invoice_status"),
+            "get_default_payment_status": lambda self: print("Inside get_default_payment_status"),
+            "complete_post_invoice": lambda self: print("Inside complete_post_invoice"),
+        },
     )()
     paybc_impl.create_account()
 
     with pytest.raises(Exception) as excinfo:
-        paybc_impl = type(
-            'PaymentSystemService',
-            (PaymentSystemService, object),
-            {
-
-            }
-        )()
+        paybc_impl = type("PaymentSystemService", (PaymentSystemService, object), {})()
         paybc_impl.create_account()
         assert excinfo is not None

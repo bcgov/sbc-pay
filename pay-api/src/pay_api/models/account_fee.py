@@ -15,9 +15,9 @@
 from __future__ import annotations
 
 from marshmallow import fields, post_dump
+from sql_versioning import Versioned
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import relationship
-from sql_versioning import Versioned
 
 from .audit import Audit
 from .base_model import BaseModel
@@ -31,7 +31,7 @@ from .payment_account import PaymentAccount
 class AccountFee(Audit, Versioned, BaseModel):
     """This class manages all of the base data about Account Fees."""
 
-    __tablename__ = 'account_fees'
+    __tablename__ = "account_fees"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -43,29 +43,29 @@ class AccountFee(Audit, Versioned, BaseModel):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'account_id',
-            'apply_filing_fees',
-            'created_by',
-            'created_name',
-            'created_on',
-            'product',
-            'service_fee_code',
-            'updated_by',
-            'updated_name',
-            'updated_on'
+        "include_properties": [
+            "id",
+            "account_id",
+            "apply_filing_fees",
+            "created_by",
+            "created_name",
+            "created_on",
+            "product",
+            "service_fee_code",
+            "updated_by",
+            "updated_name",
+            "updated_on",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
-    apply_filing_fees = db.Column('apply_filing_fees', Boolean(), default=True)
-    service_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
+    account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
+    apply_filing_fees = db.Column("apply_filing_fees", Boolean(), default=True)
+    service_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     product = db.Column(db.String(20), nullable=True)
 
-    service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy='joined', innerjoin=False)
+    service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy="joined", innerjoin=False)
 
     @classmethod
     def find_by_account_id(cls, account_id: str):
@@ -82,11 +82,14 @@ class AccountFee(Audit, Versioned, BaseModel):
         """Return by auth account id and corp type code."""
         account_fee: AccountFee = None
         if account_id and corp_type_code:
-            account_fee = db.session.query(AccountFee) \
-                .join(CorpType, CorpType.product == AccountFee.product) \
-                .outerjoin(PaymentAccount, PaymentAccount.id == AccountFee.account_id) \
-                .filter(CorpType.code == corp_type_code) \
-                .filter(PaymentAccount.auth_account_id == account_id).one_or_none()
+            account_fee = (
+                db.session.query(AccountFee)
+                .join(CorpType, CorpType.product == AccountFee.product)
+                .outerjoin(PaymentAccount, PaymentAccount.id == AccountFee.account_id)
+                .filter(CorpType.code == corp_type_code)
+                .filter(PaymentAccount.auth_account_id == account_id)
+                .one_or_none()
+            )
         return account_fee
 
 
@@ -97,10 +100,10 @@ class AccountFeeSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = AccountFee
-        exclude = ['service_fee']
+        exclude = ["service_fee"]
 
     @post_dump(pass_many=True)
     def _remove_empty(self, data, many):
         return data
 
-    service_fee_code = fields.String(data_key='service_fee_code')
+    service_fee_code = fields.String(data_key="service_fee_code")

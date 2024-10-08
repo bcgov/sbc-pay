@@ -24,20 +24,23 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.errors import Error
 
+bp = Blueprint(
+    "BANK_ACCOUNTS",
+    __name__,
+    url_prefix=f"{EndpointEnum.API_V1.value}/bank-accounts/verifications",
+)
 
-bp = Blueprint('BANK_ACCOUNTS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/bank-accounts/verifications')
 
-
-@bp.route('', methods=['POST', 'OPTIONS'])
-@cross_origin(origins='*', methods=['POST'])
+@bp.route("", methods=["POST", "OPTIONS"])
+@cross_origin(origins="*", methods=["POST"])
 @_jwt.requires_auth
 def post_bank_account_validate():
     """Validate the bank account details against CFS."""
-    current_app.logger.info('<BankAccounts.post')
+    current_app.logger.info("<BankAccounts.post")
     request_json = request.get_json()
     current_app.logger.debug(request_json)
     # Validate the input request
-    valid_format, errors = schema_utils.validate(request_json, 'payment_info')
+    valid_format, errors = schema_utils.validate(request_json, "payment_info")
 
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
@@ -49,5 +52,5 @@ def post_bank_account_validate():
     except ServiceUnavailableException as exception:
         current_app.logger.error(exception)
         return exception.response()
-    current_app.logger.debug('>Account.post')
+    current_app.logger.debug(">Account.post")
     return jsonify(response), status

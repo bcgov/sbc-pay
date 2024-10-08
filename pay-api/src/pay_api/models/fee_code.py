@@ -25,7 +25,7 @@ class FeeCode(db.Model, CodeTable):
     Fee Codes holds the fee amount
     """
 
-    __tablename__ = 'fee_codes'
+    __tablename__ = "fee_codes"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -36,15 +36,10 @@ class FeeCode(db.Model, CodeTable):
     #
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
-    __mapper_args__ = {
-        'include_properties': [
-            'amount',
-            'code'
-        ]
-    }
+    __mapper_args__ = {"include_properties": ["amount", "code"]}
 
     code = db.Column(db.String(10), primary_key=True)
-    amount = db.Column('amount', db.Numeric(19, 2), nullable=False)
+    amount = db.Column("amount", db.Numeric(19, 2), nullable=False)
 
     def save(self):
         """Save fee code."""
@@ -53,7 +48,7 @@ class FeeCode(db.Model, CodeTable):
 
     def __str__(self):
         """Override to string."""
-        return f'{self.amount} ({self.code})'
+        return f"{self.amount} ({self.code})"
 
 
 class FeeCodeSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
@@ -64,4 +59,5 @@ class FeeCodeSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancest
 
         model = FeeCode
         load_instance = True
-    amount = fields.Float(data_key='amount')
+
+    amount = fields.Float(data_key="amount")

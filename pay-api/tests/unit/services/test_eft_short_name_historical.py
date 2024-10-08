@@ -24,7 +24,11 @@ from pay_api.models.eft_short_names_historical import EFTShortnamesHistorical as
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTShortnameHistoryService
 from pay_api.utils.enums import EFTHistoricalTypes, InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
-    factory_eft_refund, factory_eft_shortname, factory_invoice, factory_payment_account)
+    factory_eft_refund,
+    factory_eft_shortname,
+    factory_invoice,
+    factory_payment_account,
+)
 
 
 def setup_test_data():
@@ -34,7 +38,7 @@ def setup_test_data():
 
     assert payment_account.id is not None
 
-    eft_short_name = factory_eft_shortname('TESTSHORTNAME')
+    eft_short_name = factory_eft_shortname("TESTSHORTNAME")
     eft_short_name.save()
 
     return payment_account, eft_short_name
@@ -45,11 +49,7 @@ def test_create_funds_received(session):
     transaction_date = datetime(2024, 7, 31, 0, 0, 0)
     with freeze_time(transaction_date):
         _, short_name = setup_test_data()
-        history = EFTShortnameHistory(
-            short_name_id=short_name.id,
-            amount=151.50,
-            credit_balance=300
-        )
+        history = EFTShortnameHistory(short_name_id=short_name.id, amount=151.50, credit_balance=300)
         historical_record = EFTShortnameHistoryService.create_funds_received(history)
         historical_record.save()
         assert historical_record.id is not None
@@ -79,14 +79,14 @@ def test_create_statement_paid(session, staff_user_mock):
             credit_balance=300,
             payment_account_id=payment_account.id,
             related_group_link_id=1,
-            statement_number=1234567
+            statement_number=1234567,
         )
         historical_record = EFTShortnameHistoryService.create_statement_paid(history)
         historical_record.save()
         assert historical_record.id is not None
         assert historical_record.amount == 151.50
         assert historical_record.created_on is not None
-        assert historical_record.created_by == 'STAFF USER'
+        assert historical_record.created_by == "STAFF USER"
         assert historical_record.credit_balance == 300
         assert not historical_record.hidden
         assert not historical_record.is_processing
@@ -112,14 +112,14 @@ def test_create_statement_reverse(session, staff_user_mock):
             payment_account_id=payment_account.id,
             related_group_link_id=1,
             statement_number=1234567,
-            is_processing=True
+            is_processing=True,
         )
         historical_record = EFTShortnameHistoryService.create_statement_reverse(history)
         historical_record.save()
         assert historical_record.id is not None
         assert historical_record.amount == 151.50
         assert historical_record.created_on is not None
-        assert historical_record.created_by == 'STAFF USER'
+        assert historical_record.created_by == "STAFF USER"
         assert historical_record.credit_balance == 300
         assert not historical_record.hidden
         assert historical_record.is_processing
@@ -138,9 +138,12 @@ def test_create_invoice_refund(session, staff_user_mock):
     transaction_date = datetime(2024, 7, 31, 0, 0, 0)
     with freeze_time(transaction_date):
         payment_account, short_name = setup_test_data()
-        invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
-                                  status_code=InvoiceStatus.APPROVED.value,
-                                  total=50).save()
+        invoice = factory_invoice(
+            payment_account,
+            payment_method_code=PaymentMethod.EFT.value,
+            status_code=InvoiceStatus.APPROVED.value,
+            total=50,
+        ).save()
         history = EFTShortnameHistory(
             amount=151.50,
             credit_balance=300,
@@ -148,14 +151,14 @@ def test_create_invoice_refund(session, staff_user_mock):
             short_name_id=short_name.id,
             invoice_id=invoice.id,
             statement_number=1234567,
-            related_group_link_id=1
+            related_group_link_id=1,
         )
         historical_record = EFTShortnameHistoryService.create_invoice_refund(history)
         historical_record.save()
         assert historical_record.id is not None
         assert historical_record.amount == 151.50
         assert historical_record.created_on is not None
-        assert historical_record.created_by == 'STAFF USER'
+        assert historical_record.created_by == "STAFF USER"
         assert historical_record.credit_balance == 300
         assert not historical_record.hidden
         assert not historical_record.is_processing
@@ -180,14 +183,14 @@ def test_create_short_name_refund(session, staff_user_mock):
             credit_balance=300,
             short_name_id=short_name.id,
             eft_refund_id=eft_refund.id,
-            statement_number=1234567
+            statement_number=1234567,
         )
         historical_record = EFTShortnameHistoryService.create_shortname_refund(history)
         historical_record.save()
         assert historical_record.id is not None
         assert historical_record.amount == 151.50
         assert historical_record.created_on is not None
-        assert historical_record.created_by == 'STAFF USER'
+        assert historical_record.created_by == "STAFF USER"
         assert historical_record.credit_balance == 300
         assert not historical_record.hidden
         assert not historical_record.is_processing

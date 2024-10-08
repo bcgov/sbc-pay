@@ -13,6 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to Credit data."""
 from datetime import datetime, timezone
+
 from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import BaseModel
@@ -22,7 +23,7 @@ from .db import db, ma
 class Credit(BaseModel):
     """This class manages all of the base data about Credit."""
 
-    __tablename__ = 'credits'
+    __tablename__ = "credits"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -34,15 +35,15 @@ class Credit(BaseModel):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'account_id',
-            'amount',
-            'cfs_identifier',
-            'created_on',
-            'details',
-            'is_credit_memo',
-            'remaining_amount'
+        "include_properties": [
+            "id",
+            "account_id",
+            "amount",
+            "cfs_identifier",
+            "created_on",
+            "details",
+            "is_credit_memo",
+            "remaining_amount",
         ]
     }
 
@@ -53,9 +54,14 @@ class Credit(BaseModel):
     amount = db.Column(db.Float, nullable=False)
     remaining_amount = db.Column(db.Float, nullable=False)
     details = db.Column(db.String(200), nullable=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=True, default=lambda: datetime.now(tz=timezone.utc))
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=True,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
 
-    account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+    account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
 
     @classmethod
     def find_by_cfs_identifier(cls, cfs_identifier: str, credit_memo: bool = False):

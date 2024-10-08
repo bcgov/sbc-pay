@@ -30,24 +30,24 @@ def test_eft_short_names_historical(session):
 
     assert payment_account.id is not None
 
-    eft_short_name = factory_eft_shortname('TESTSHORTNAME')
+    eft_short_name = factory_eft_shortname("TESTSHORTNAME")
     eft_short_name.save()
 
     now_date = datetime.now(tz=timezone.utc).date()
     default_historical = EFTShortnamesHistorical(
         amount=151.50,
-        created_by='USER1',
+        created_by="USER1",
         credit_balance=1234.50,
         short_name_id=eft_short_name.id,
         transaction_date=now_date,
-        transaction_type=EFTHistoricalTypes.FUNDS_RECEIVED.value
+        transaction_type=EFTHistoricalTypes.FUNDS_RECEIVED.value,
     ).save()
 
     default_historical = EFTShortnamesHistorical.find_by_id(default_historical.id)
     assert default_historical.id is not None
     assert default_historical.amount == 151.50
     assert default_historical.created_on.date() == now_date
-    assert default_historical.created_by == 'USER1'
+    assert default_historical.created_by == "USER1"
     assert default_historical.credit_balance == 1234.50
     assert not default_historical.hidden
     assert not default_historical.is_processing
@@ -60,7 +60,7 @@ def test_eft_short_names_historical(session):
 
     short_name_historical = EFTShortnamesHistorical(
         amount=123.50,
-        created_by='USER1',
+        created_by="USER1",
         credit_balance=456.50,
         hidden=True,
         is_processing=True,
@@ -69,7 +69,7 @@ def test_eft_short_names_historical(session):
         short_name_id=eft_short_name.id,
         statement_number=1234567,
         transaction_date=now_date,
-        transaction_type=EFTHistoricalTypes.STATEMENT_PAID.value
+        transaction_type=EFTHistoricalTypes.STATEMENT_PAID.value,
     ).save()
 
     short_name_historical = EFTShortnamesHistorical.find_by_id(short_name_historical.id)
@@ -77,7 +77,7 @@ def test_eft_short_names_historical(session):
     assert short_name_historical.id is not None
     assert short_name_historical.amount == 123.50
     assert short_name_historical.created_on.date() == now_date
-    assert short_name_historical.created_by == 'USER1'
+    assert short_name_historical.created_by == "USER1"
     assert short_name_historical.credit_balance == 456.50
     assert short_name_historical.hidden
     assert short_name_historical.is_processing
