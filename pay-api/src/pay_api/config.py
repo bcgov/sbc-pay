@@ -24,31 +24,30 @@ import sys
 
 from dotenv import find_dotenv, load_dotenv
 
-
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
 
 CONFIGURATION = {
-    'development': 'pay_api.config.DevConfig',
-    'testing': 'pay_api.config.TestConfig',
-    'production': 'pay_api.config.ProdConfig',
-    'default': 'pay_api.config.ProdConfig',
-    'migration': 'pay_api.config.MigrationConfig',
+    "development": "pay_api.config.DevConfig",
+    "testing": "pay_api.config.TestConfig",
+    "production": "pay_api.config.ProdConfig",
+    "default": "pay_api.config.ProdConfig",
+    "migration": "pay_api.config.MigrationConfig",
 }
 
 
-def get_named_config(config_name: str = 'production'):
+def get_named_config(config_name: str = "production"):
     """Return the configuration object based on the name.
 
     :raise: KeyError: if an unknown configuration is requested
     """
-    if config_name in ['production', 'staging', 'default']:
+    if config_name in ["production", "staging", "default"]:
         config = ProdConfig()
-    elif config_name == 'testing':
+    elif config_name == "testing":
         config = TestConfig()
-    elif config_name == 'development':
+    elif config_name == "development":
         config = DevConfig()
-    elif config_name == 'migration':
+    elif config_name == "migration":
         config = MigrationConfig()
     else:
         raise KeyError(f'Unknown configuration "{config_name}"')
@@ -57,8 +56,8 @@ def get_named_config(config_name: str = 'production'):
 
 def _get_config(config_key: str, **kwargs):
     """Get the config from environment, and throw error if there are no default values and if the value is None."""
-    if 'default' in kwargs:
-        value = os.getenv(config_key, kwargs.get('default'))
+    if "default" in kwargs:
+        value = os.getenv(config_key, kwargs.get("default"))
     else:
         value = os.getenv(config_key)
     return value
@@ -68,153 +67,134 @@ class _Config:  # pylint: disable=too-few-public-methods
     """Base class configuration that should set reasonable defaults for all the other configurations."""
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
-    CLOUD_PLATFORM = os.getenv('CLOUD_PLATFORM', 'OCP')
+    CLOUD_PLATFORM = os.getenv("CLOUD_PLATFORM", "OCP")
 
-    SECRET_KEY = 'a secret'
+    SECRET_KEY = "a secret"
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    ALEMBIC_INI = 'migrations/alembic.ini'
+    ALEMBIC_INI = "migrations/alembic.ini"
 
-    PAY_LD_SDK_KEY = _get_config('PAY_LD_SDK_KEY')
-
-    # POSTGRESQL
-    DB_USER = _get_config('DATABASE_USERNAME')
-    DB_PASSWORD = _get_config('DATABASE_PASSWORD')
-    DB_NAME = _get_config('DATABASE_NAME')
-    DB_HOST = _get_config('DATABASE_HOST')
-    DB_PORT = _get_config('DATABASE_PORT', default='5432')
-    SQLALCHEMY_ECHO = _get_config('SQLALCHEMY_ECHO', default='False').lower() == 'true'
+    PAY_LD_SDK_KEY = _get_config("PAY_LD_SDK_KEY")
 
     # POSTGRESQL
-    if DB_UNIX_SOCKET := os.getenv('DATABASE_UNIX_SOCKET', None):
+    DB_USER = _get_config("DATABASE_USERNAME")
+    DB_PASSWORD = _get_config("DATABASE_PASSWORD")
+    DB_NAME = _get_config("DATABASE_NAME")
+    DB_HOST = _get_config("DATABASE_HOST")
+    DB_PORT = _get_config("DATABASE_PORT", default="5432")
+    SQLALCHEMY_ECHO = _get_config("SQLALCHEMY_ECHO", default="False").lower() == "true"
+
+    # POSTGRESQL
+    if DB_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
         SQLALCHEMY_DATABASE_URI = (
-            f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432'
+            f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432"
         )
     else:
-        SQLALCHEMY_DATABASE_URI = f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
     # JWT_OIDC Settings
-    JWT_OIDC_WELL_KNOWN_CONFIG = _get_config('JWT_OIDC_WELL_KNOWN_CONFIG')
-    JWT_OIDC_ALGORITHMS = _get_config('JWT_OIDC_ALGORITHMS')
-    JWT_OIDC_ISSUER = _get_config('JWT_OIDC_ISSUER')
-    JWT_OIDC_AUDIENCE = _get_config('JWT_OIDC_AUDIENCE')
-    JWT_OIDC_CLIENT_SECRET = _get_config('JWT_OIDC_CLIENT_SECRET')
-    JWT_OIDC_CACHING_ENABLED = _get_config('JWT_OIDC_CACHING_ENABLED', default=False)
-    JWT_OIDC_JWKS_CACHE_TIMEOUT = int(
-        _get_config('JWT_OIDC_JWKS_CACHE_TIMEOUT', default=300)
-    )
+    JWT_OIDC_WELL_KNOWN_CONFIG = _get_config("JWT_OIDC_WELL_KNOWN_CONFIG")
+    JWT_OIDC_ALGORITHMS = _get_config("JWT_OIDC_ALGORITHMS")
+    JWT_OIDC_ISSUER = _get_config("JWT_OIDC_ISSUER")
+    JWT_OIDC_AUDIENCE = _get_config("JWT_OIDC_AUDIENCE")
+    JWT_OIDC_CLIENT_SECRET = _get_config("JWT_OIDC_CLIENT_SECRET")
+    JWT_OIDC_CACHING_ENABLED = _get_config("JWT_OIDC_CACHING_ENABLED", default=False)
+    JWT_OIDC_JWKS_CACHE_TIMEOUT = int(_get_config("JWT_OIDC_JWKS_CACHE_TIMEOUT", default=300))
 
     # CFS API Settings
-    CFS_BASE_URL = _get_config('CFS_BASE_URL')
-    CFS_CLIENT_ID = _get_config('CFS_CLIENT_ID')
-    CFS_CLIENT_SECRET = _get_config('CFS_CLIENT_SECRET')
-    PAYBC_PORTAL_URL = _get_config('PAYBC_PORTAL_URL')
-    CONNECT_TIMEOUT = int(_get_config('CONNECT_TIMEOUT', default=10))
-    GENERATE_RANDOM_INVOICE_NUMBER = _get_config(
-        'CFS_GENERATE_RANDOM_INVOICE_NUMBER', default='False'
-    )
-    CFS_ACCOUNT_DESCRIPTION = _get_config('CFS_ACCOUNT_DESCRIPTION', default='BCR')
-    CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
-    CFS_RECEIPT_PREFIX = os.getenv('CFS_RECEIPT_PREFIX', 'RCPT')
-    CFS_PARTY_PREFIX = os.getenv('CFS_PARTY_PREFIX', 'BCR-')
+    CFS_BASE_URL = _get_config("CFS_BASE_URL")
+    CFS_CLIENT_ID = _get_config("CFS_CLIENT_ID")
+    CFS_CLIENT_SECRET = _get_config("CFS_CLIENT_SECRET")
+    PAYBC_PORTAL_URL = _get_config("PAYBC_PORTAL_URL")
+    CONNECT_TIMEOUT = int(_get_config("CONNECT_TIMEOUT", default=10))
+    GENERATE_RANDOM_INVOICE_NUMBER = _get_config("CFS_GENERATE_RANDOM_INVOICE_NUMBER", default="False")
+    CFS_ACCOUNT_DESCRIPTION = _get_config("CFS_ACCOUNT_DESCRIPTION", default="BCR")
+    CFS_INVOICE_PREFIX = os.getenv("CFS_INVOICE_PREFIX", "REG")
+    CFS_RECEIPT_PREFIX = os.getenv("CFS_RECEIPT_PREFIX", "RCPT")
+    CFS_PARTY_PREFIX = os.getenv("CFS_PARTY_PREFIX", "BCR-")
 
     # EFT Config
-    EFT_INVOICE_PREFIX = os.getenv('EFT_INVOICE_PREFIX', 'REG')
+    EFT_INVOICE_PREFIX = os.getenv("EFT_INVOICE_PREFIX", "REG")
 
     # PAYBC Direct Pay Settings
-    PAYBC_DIRECT_PAY_REF_NUMBER = _get_config('PAYBC_DIRECT_PAY_REF_NUMBER')
-    PAYBC_DIRECT_PAY_API_KEY = _get_config('PAYBC_DIRECT_PAY_API_KEY')
-    PAYBC_DIRECT_PAY_PORTAL_URL = _get_config('PAYBC_DIRECT_PAY_PORTAL_URL')
-    PAYBC_DIRECT_PAY_BASE_URL = _get_config('PAYBC_DIRECT_PAY_BASE_URL')
-    PAYBC_DIRECT_PAY_CLIENT_ID = _get_config('PAYBC_DIRECT_PAY_CLIENT_ID')
-    PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
-    PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config(
-        'PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL'
-    )
+    PAYBC_DIRECT_PAY_REF_NUMBER = _get_config("PAYBC_DIRECT_PAY_REF_NUMBER")
+    PAYBC_DIRECT_PAY_API_KEY = _get_config("PAYBC_DIRECT_PAY_API_KEY")
+    PAYBC_DIRECT_PAY_PORTAL_URL = _get_config("PAYBC_DIRECT_PAY_PORTAL_URL")
+    PAYBC_DIRECT_PAY_BASE_URL = _get_config("PAYBC_DIRECT_PAY_BASE_URL")
+    PAYBC_DIRECT_PAY_CLIENT_ID = _get_config("PAYBC_DIRECT_PAY_CLIENT_ID")
+    PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config("PAYBC_DIRECT_PAY_CLIENT_SECRET")
+    PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL")
 
     # PUB/SUB - PUB: auth-event-dev, account-mailer-dev, business-pay-dev, namex-pay-dev
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
-    AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', 'auth-event-dev')
-    BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', 'business-pay-dev')
-    GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
-    NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', 'namex-pay-dev')
-    STRR_PAY_TOPIC = os.getenv('STRR_PAY_TOPIC', BUSINESS_PAY_TOPIC)
+    ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
+    AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", "auth-event-dev")
+    BUSINESS_PAY_TOPIC = os.getenv("BUSINESS_PAY_TOPIC", "business-pay-dev")
+    GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
+    NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
+    STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
 
     # API Endpoints
-    AUTH_API_URL = os.getenv('AUTH_API_URL', '')
-    AUTH_API_VERSION = os.getenv('AUTH_API_VERSION', '')
-    BCOL_API_URL = os.getenv('BCOL_API_URL', '')
-    BCOL_API_VERSION = os.getenv('BCOL_API_VERSION', '')
-    REPORT_API_URL = os.getenv('REPORT_API_URL', '')
-    REPORT_API_VERSION = os.getenv('REPORT_API_VERSION', '')
+    AUTH_API_URL = os.getenv("AUTH_API_URL", "")
+    AUTH_API_VERSION = os.getenv("AUTH_API_VERSION", "")
+    BCOL_API_URL = os.getenv("BCOL_API_URL", "")
+    BCOL_API_VERSION = os.getenv("BCOL_API_VERSION", "")
+    REPORT_API_URL = os.getenv("REPORT_API_URL", "")
+    REPORT_API_VERSION = os.getenv("REPORT_API_VERSION", "")
 
-    AUTH_API_ENDPOINT = f'{AUTH_API_URL + AUTH_API_VERSION}/'
-    REPORT_API_BASE_URL = f'{REPORT_API_URL + REPORT_API_VERSION}/reports'
-    BCOL_API_ENDPOINT = f'{BCOL_API_URL + BCOL_API_VERSION}/'
+    AUTH_API_ENDPOINT = f"{AUTH_API_URL + AUTH_API_VERSION}/"
+    REPORT_API_BASE_URL = f"{REPORT_API_URL + REPORT_API_VERSION}/reports"
+    BCOL_API_ENDPOINT = f"{BCOL_API_URL + BCOL_API_VERSION}/"
 
-    AUTH_WEB_URL = os.getenv('AUTH_WEB_URL', '')
-    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL', '')
-    NOTIFY_API_VERSION = os.getenv('NOTIFY_API_VERSION', '')
-    NOTIFY_API_ENDPOINT = f'{NOTIFY_API_URL + NOTIFY_API_VERSION}/'
+    AUTH_WEB_URL = os.getenv("AUTH_WEB_URL", "")
+    NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "")
+    NOTIFY_API_VERSION = os.getenv("NOTIFY_API_VERSION", "")
+    NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"
 
     # Sentry Config
-    SENTRY_ENABLE = _get_config('SENTRY_ENABLE', default=False)
-    SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
+    SENTRY_ENABLE = _get_config("SENTRY_ENABLE", default=False)
+    SENTRY_DSN = _get_config("SENTRY_DSN", default=None)
 
     # Disable valid redirect URLs - for DEV only
-    DISABLE_VALID_REDIRECT_URLS = (
-        _get_config('DISABLE_VALID_REDIRECT_URLS', default='False').lower() == 'true'
-    )
+    DISABLE_VALID_REDIRECT_URLS = _get_config("DISABLE_VALID_REDIRECT_URLS", default="False").lower() == "true"
 
     # Valid Payment redirect URLs
     VALID_REDIRECT_URLS = [
-        (val.strip() if val != '' else None)
-        for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')
+        (val.strip() if val != "" else None) for val in _get_config("VALID_REDIRECT_URLS", default="").split(",")
     ]
 
     # Service account details
-    KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config('SBC_AUTH_ADMIN_CLIENT_ID')
-    KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config('SBC_AUTH_ADMIN_CLIENT_SECRET')
+    KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config("SBC_AUTH_ADMIN_CLIENT_ID")
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config("SBC_AUTH_ADMIN_CLIENT_SECRET")
 
     # Default number of transactions to be returned for transaction reporting
-    TRANSACTION_REPORT_DEFAULT_TOTAL = int(
-        _get_config('TRANSACTION_REPORT_DEFAULT_TOTAL', default=50)
-    )
+    TRANSACTION_REPORT_DEFAULT_TOTAL = int(_get_config("TRANSACTION_REPORT_DEFAULT_TOTAL", default=50))
 
     # Default number of routing slips to be returned for routing slip search
-    ROUTING_SLIP_DEFAULT_TOTAL = int(
-        _get_config('ROUTING_SLIP_DEFAULT_TOTAL', default=50)
-    )
+    ROUTING_SLIP_DEFAULT_TOTAL = int(_get_config("ROUTING_SLIP_DEFAULT_TOTAL", default=50))
 
-    PAD_CONFIRMATION_PERIOD_IN_DAYS = int(
-        _get_config('PAD_CONFIRMATION_PERIOD_IN_DAYS', default=3)
-    )
+    PAD_CONFIRMATION_PERIOD_IN_DAYS = int(_get_config("PAD_CONFIRMATION_PERIOD_IN_DAYS", default=3))
 
     # legislative timezone for future effective dating
-    LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
+    LEGISLATIVE_TIMEZONE = os.getenv("LEGISLATIVE_TIMEZONE", "America/Vancouver")
 
     # BCOL user name for Service account payments
     BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS = os.getenv(
-        'BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS', 'BCROS SERVICE ACCOUNT'
+        "BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS", "BCROS SERVICE ACCOUNT"
     )
 
     # The number of characters which can be exposed to admins for a bank account number
-    MASK_LEN = int(_get_config('MASK_LEN', default=3))
+    MASK_LEN = int(_get_config("MASK_LEN", default=3))
 
     # Config value to disable activity logs
-    DISABLE_ACTIVITY_LOGS = (
-        os.getenv('DISABLE_ACTIVITY_LOGS', 'False').lower() == 'true'
-    )
+    DISABLE_ACTIVITY_LOGS = os.getenv("DISABLE_ACTIVITY_LOGS", "False").lower() == "true"
 
     # Secret key for encrypting bank account
-    ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
+    ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY")
 
-    OUTSTANDING_TRANSACTION_DAYS = int(os.getenv('OUTSTANDING_TRANSACTION_DAYS', '10'))
+    OUTSTANDING_TRANSACTION_DAYS = int(os.getenv("OUTSTANDING_TRANSACTION_DAYS", "10"))
 
-    ALLOW_LEGACY_ROUTING_SLIPS = (
-        os.getenv('ALLOW_LEGACY_ROUTING_SLIPS', 'True').lower() == 'true'
-    )
+    ALLOW_LEGACY_ROUTING_SLIPS = os.getenv("ALLOW_LEGACY_ROUTING_SLIPS", "True").lower() == "true"
 
     TESTING = False
     DEBUG = True
@@ -233,61 +213,61 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DEBUG = True
     TESTING = True
 
-    USE_TEST_KEYCLOAK_DOCKER = _get_config('USE_TEST_KEYCLOAK_DOCKER', default=None)
-    USE_DOCKER_MOCK = _get_config('USE_DOCKER_MOCK', default=None)
+    USE_TEST_KEYCLOAK_DOCKER = _get_config("USE_TEST_KEYCLOAK_DOCKER", default=None)
+    USE_DOCKER_MOCK = _get_config("USE_DOCKER_MOCK", default=None)
 
     # POSTGRESQL
-    DB_USER = _get_config('DATABASE_TEST_USERNAME', default='postgres')
-    DB_PASSWORD = _get_config('DATABASE_TEST_PASSWORD', default='postgres')
-    DB_NAME = _get_config('DATABASE_TEST_NAME', default='paytestdb')
-    DB_HOST = _get_config('DATABASE_TEST_HOST', default='localhost')
-    DB_PORT = _get_config('DATABASE_TEST_PORT', default='5432')
+    DB_USER = _get_config("DATABASE_TEST_USERNAME", default="postgres")
+    DB_PASSWORD = _get_config("DATABASE_TEST_PASSWORD", default="postgres")
+    DB_NAME = _get_config("DATABASE_TEST_NAME", default="paytestdb")
+    DB_HOST = _get_config("DATABASE_TEST_HOST", default="localhost")
+    DB_PORT = _get_config("DATABASE_TEST_PORT", default="5432")
     SQLALCHEMY_DATABASE_URI = _get_config(
-        'DATABASE_TEST_URL',
-        default=f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}',
+        "DATABASE_TEST_URL",
+        default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}",
     )
 
     JWT_OIDC_TEST_MODE = True
     # JWT_OIDC_ISSUER = _get_config('JWT_OIDC_TEST_ISSUER')
-    JWT_OIDC_TEST_AUDIENCE = _get_config('JWT_OIDC_TEST_AUDIENCE')
-    JWT_OIDC_TEST_CLIENT_SECRET = _get_config('JWT_OIDC_TEST_CLIENT_SECRET')
-    JWT_OIDC_TEST_ISSUER = _get_config('JWT_OIDC_TEST_ISSUER')
-    JWT_OIDC_WELL_KNOWN_CONFIG = _get_config('JWT_OIDC_WELL_KNOWN_CONFIG')
-    JWT_OIDC_TEST_ALGORITHMS = _get_config('JWT_OIDC_TEST_ALGORITHMS')
-    JWT_OIDC_TEST_JWKS_URI = _get_config('JWT_OIDC_TEST_JWKS_URI', default=None)
+    JWT_OIDC_TEST_AUDIENCE = _get_config("JWT_OIDC_TEST_AUDIENCE")
+    JWT_OIDC_TEST_CLIENT_SECRET = _get_config("JWT_OIDC_TEST_CLIENT_SECRET")
+    JWT_OIDC_TEST_ISSUER = _get_config("JWT_OIDC_TEST_ISSUER")
+    JWT_OIDC_WELL_KNOWN_CONFIG = _get_config("JWT_OIDC_WELL_KNOWN_CONFIG")
+    JWT_OIDC_TEST_ALGORITHMS = _get_config("JWT_OIDC_TEST_ALGORITHMS")
+    JWT_OIDC_TEST_JWKS_URI = _get_config("JWT_OIDC_TEST_JWKS_URI", default=None)
 
     JWT_OIDC_TEST_KEYS = {
-        'keys': [
+        "keys": [
             {
-                'kid': 'sbc-auth-web',
-                'kty': 'RSA',
-                'alg': 'RS256',
-                'use': 'sig',
-                'n': 'AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-'
-                'TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR',
-                'e': 'AQAB',
+                "kid": "sbc-auth-web",
+                "kty": "RSA",
+                "alg": "RS256",
+                "use": "sig",
+                "n": "AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-"
+                "TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR",
+                "e": "AQAB",
             }
         ]
     }
 
     JWT_OIDC_TEST_PRIVATE_KEY_JWKS = {
-        'keys': [
+        "keys": [
             {
-                'kid': 'sbc-auth-web',
-                'kty': 'RSA',
-                'alg': 'RS256',
-                'use': 'sig',
-                'n': 'AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-'
-                'TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR',
-                'e': 'AQAB',
-                'd': 'C0G3QGI6OQ6tvbCNYGCqq043YI_8MiBl7C5dqbGZmx1ewdJBhMNJPStuckhskURaDwk4-'
-                '8VBW9SlvcfSJJrnZhgFMjOYSSsBtPGBIMIdM5eSKbenCCjO8Tg0BUh_'
-                'xa3CHST1W4RQ5rFXadZ9AeNtaGcWj2acmXNO3DVETXAX3x0',
-                'p': 'APXcusFMQNHjh6KVD_hOUIw87lvK13WkDEeeuqAydai9Ig9JKEAAfV94W6Aftka7tGgE7ulg1vo3eJoLWJ1zvKM',
-                'q': 'AOjX3OnPJnk0ZFUQBwhduCweRi37I6DAdLTnhDvcPTrrNWuKPg9uGwHjzFCJgKd8KBaDQ0X1rZTZLTqi3peT43s',
-                'dp': 'AN9kBoA5o6_Rl9zeqdsIdWFmv4DB5lEqlEnC7HlAP-3oo3jWFO9KQqArQL1V8w2D4aCd0uJULiC9pCP7aTHvBhc',
-                'dq': 'ANtbSY6njfpPploQsF9sU26U0s7MsuLljM1E8uml8bVJE1mNsiu9MgpUvg39jEu9BtM2tDD7Y51AAIEmIQex1nM',
-                'qi': 'XLE5O360x-MhsdFXx8Vwz4304-MJg-oGSJXCK_ZWYOB_FGXFRTfebxCsSYi0YwJo-oNu96bvZCuMplzRI1liZw',
+                "kid": "sbc-auth-web",
+                "kty": "RSA",
+                "alg": "RS256",
+                "use": "sig",
+                "n": "AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-"
+                "TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR",
+                "e": "AQAB",
+                "d": "C0G3QGI6OQ6tvbCNYGCqq043YI_8MiBl7C5dqbGZmx1ewdJBhMNJPStuckhskURaDwk4-"
+                "8VBW9SlvcfSJJrnZhgFMjOYSSsBtPGBIMIdM5eSKbenCCjO8Tg0BUh_"
+                "xa3CHST1W4RQ5rFXadZ9AeNtaGcWj2acmXNO3DVETXAX3x0",
+                "p": "APXcusFMQNHjh6KVD_hOUIw87lvK13WkDEeeuqAydai9Ig9JKEAAfV94W6Aftka7tGgE7ulg1vo3eJoLWJ1zvKM",
+                "q": "AOjX3OnPJnk0ZFUQBwhduCweRi37I6DAdLTnhDvcPTrrNWuKPg9uGwHjzFCJgKd8KBaDQ0X1rZTZLTqi3peT43s",
+                "dp": "AN9kBoA5o6_Rl9zeqdsIdWFmv4DB5lEqlEnC7HlAP-3oo3jWFO9KQqArQL1V8w2D4aCd0uJULiC9pCP7aTHvBhc",
+                "dq": "ANtbSY6njfpPploQsF9sU26U0s7MsuLljM1E8uml8bVJE1mNsiu9MgpUvg39jEu9BtM2tDD7Y51AAIEmIQex1nM",
+                "qi": "XLE5O360x-MhsdFXx8Vwz4304-MJg-oGSJXCK_ZWYOB_FGXFRTfebxCsSYi0YwJo-oNu96bvZCuMplzRI1liZw",
             }
         ]
     }
@@ -308,44 +288,44 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
 4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
 -----END RSA PRIVATE KEY-----"""
 
-    CFS_BASE_URL = 'http://localhost:8080/paybc-api'
-    CFS_CLIENT_ID = 'TEST'
-    CFS_CLIENT_SECRET = 'TEST'
-    PAYBC_PORTAL_URL = 'https://paydev.gov.bc.ca/public/directpay'
+    CFS_BASE_URL = "http://localhost:8080/paybc-api"
+    CFS_CLIENT_ID = "TEST"
+    CFS_CLIENT_SECRET = "TEST"
+    PAYBC_PORTAL_URL = "https://paydev.gov.bc.ca/public/directpay"
 
-    SERVER_NAME = 'auth-web.dev.com'
+    SERVER_NAME = "auth-web.dev.com"
 
-    REPORT_API_BASE_URL = 'http://localhost:8080/reports-api/api/v1/reports'
+    REPORT_API_BASE_URL = "http://localhost:8080/reports-api/api/v1/reports"
 
-    AUTH_API_ENDPOINT = 'http://localhost:8080/auth-api/'
+    AUTH_API_ENDPOINT = "http://localhost:8080/auth-api/"
 
-    BCOL_API_ENDPOINT = 'http://localhost:8080/bcol-api/'
+    BCOL_API_ENDPOINT = "http://localhost:8080/bcol-api/"
 
-    VALID_REDIRECT_URLS = ['http://localhost:8080/*']
+    VALID_REDIRECT_URLS = ["http://localhost:8080/*"]
 
     TRANSACTION_REPORT_DEFAULT_TOTAL = 10
 
-    PAYBC_DIRECT_PAY_API_KEY = 'TESTKEYSECRET'
-    PAYBC_DIRECT_PAY_REF_NUMBER = 'REF1234'
-    PAYBC_DIRECT_PAY_PORTAL_URL = 'https://paydev.gov.bc.ca/public/directsale'
-    PAYBC_DIRECT_PAY_BASE_URL = 'http://localhost:8080/paybc-api'
+    PAYBC_DIRECT_PAY_API_KEY = "TESTKEYSECRET"
+    PAYBC_DIRECT_PAY_REF_NUMBER = "REF1234"
+    PAYBC_DIRECT_PAY_PORTAL_URL = "https://paydev.gov.bc.ca/public/directsale"
+    PAYBC_DIRECT_PAY_BASE_URL = "http://localhost:8080/paybc-api"
     PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = PAYBC_DIRECT_PAY_BASE_URL
-    PAYBC_DIRECT_PAY_CLIENT_ID = 'TEST'
-    PAYBC_DIRECT_PAY_CLIENT_SECRET = 'TEST'
+    PAYBC_DIRECT_PAY_CLIENT_ID = "TEST"
+    PAYBC_DIRECT_PAY_CLIENT_SECRET = "TEST"
 
     PAD_CONFIRMATION_PERIOD_IN_DAYS = 3
     # Secret key for encrypting bank account
-    ACCOUNT_SECRET_KEY = 'mysecretkeyforbank'
+    ACCOUNT_SECRET_KEY = "mysecretkeyforbank"
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
 
-    SECRET_KEY = _get_config('SECRET_KEY', default=None)
+    SECRET_KEY = _get_config("SECRET_KEY", default=None)
 
     if not SECRET_KEY:
         SECRET_KEY = os.urandom(24)
-        print('WARNING: SECRET_KEY being set as a one-shot', file=sys.stderr)
+        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)
 
     TESTING = False
     DEBUG = False
@@ -358,12 +338,10 @@ class MigrationConfig:  # pylint: disable=too-few-public-methods
     DEBUG = True
 
     # POSTGRESQL
-    DB_USER = _get_config('DATABASE_USERNAME')
-    DB_PASSWORD = _get_config('DATABASE_PASSWORD')
-    DB_NAME = _get_config('DATABASE_NAME')
-    DB_HOST = _get_config('DATABASE_HOST')
-    DB_PORT = _get_config('DATABASE_PORT', default='5432')
-    SQLALCHEMY_DATABASE_URI = (
-        f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
-    )
+    DB_USER = _get_config("DATABASE_USERNAME")
+    DB_PASSWORD = _get_config("DATABASE_PASSWORD")
+    DB_NAME = _get_config("DATABASE_NAME")
+    DB_HOST = _get_config("DATABASE_HOST")
+    DB_PORT = _get_config("DATABASE_PORT", default="5432")
+    SQLALCHEMY_DATABASE_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False

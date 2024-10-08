@@ -24,7 +24,7 @@ from .payment_account import PaymentAccount
 class StatementSettings(BaseModel):
     """This class manages the statements settings related data."""
 
-    __tablename__ = 'statement_settings'
+    __tablename__ = "statement_settings"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -36,19 +36,19 @@ class StatementSettings(BaseModel):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'frequency',
-            'from_date',
-            'payment_account_id',
-            'to_date'
+        "include_properties": [
+            "id",
+            "frequency",
+            "from_date",
+            "payment_account_id",
+            "to_date",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
     from_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
 
@@ -58,8 +58,9 @@ class StatementSettings(BaseModel):
         query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
         # need this to strip of the time information from the date
         todays_datetime = valid_date.date()
-        query = query.filter(StatementSettings.from_date <= todays_datetime). \
-            filter((StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= todays_datetime))
+        query = query.filter(StatementSettings.from_date <= todays_datetime).filter(
+            (StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= todays_datetime)
+        )
 
         return query.one_or_none()
 

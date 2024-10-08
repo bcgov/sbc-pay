@@ -15,9 +15,11 @@
 from dataclasses import dataclass
 
 from flask import current_app
+
 from pay_api.utils.user_context import user_context
-from .oauth_service import OAuthService
+
 from ..utils.enums import AuthHeaderType, ContentType
+from .oauth_service import OAuthService
 
 
 @dataclass
@@ -38,10 +40,10 @@ class ReportService:
     def get_request_payload(request: ReportRequest) -> dict:
         """Return report request payload dictionary."""
         return {
-            'reportName': request.report_name,
-            'templateName': request.template_name,
-            'templateVars': request.template_vars,
-            'populatePageNumber': request.populate_page_number
+            "reportName": request.report_name,
+            "templateName": request.template_name,
+            "templateVars": request.template_vars,
+            "populatePageNumber": request.populate_page_number,
         }
 
     @classmethod
@@ -50,9 +52,11 @@ class ReportService:
         """Return report response from report-api."""
         report_payload = cls.get_request_payload(request)
 
-        return OAuthService.post(endpoint=current_app.config.get('REPORT_API_BASE_URL'),
-                                 token=kwargs['user'].bearer_token,
-                                 auth_header_type=AuthHeaderType.BEARER,
-                                 content_type=ContentType.JSON,
-                                 additional_headers={'Accept': request.content_type},
-                                 data=report_payload)
+        return OAuthService.post(
+            endpoint=current_app.config.get("REPORT_API_BASE_URL"),
+            token=kwargs["user"].bearer_token,
+            auth_header_type=AuthHeaderType.BEARER,
+            content_type=ContentType.JSON,
+            additional_headers={"Accept": request.content_type},
+            data=report_payload,
+        )

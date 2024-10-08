@@ -13,11 +13,12 @@
 # limitations under the License.
 """Model to handle statements data."""
 from __future__ import annotations
-from typing import List
-from dateutil.relativedelta import relativedelta
 
-from attr import define
+from typing import List
+
 import pytz
+from attr import define
+from dateutil.relativedelta import relativedelta
 from marshmallow import fields
 from sqlalchemy import ForeignKey, Integer, cast
 
@@ -32,7 +33,7 @@ from .invoice import Invoice
 class Statement(BaseModel):
     """This class manages the statements related data."""
 
-    __tablename__ = 'statements'
+    __tablename__ = "statements"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -44,41 +45,40 @@ class Statement(BaseModel):
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'created_on',
-            'frequency',
-            'from_date',
-            'is_interim_statement',
-            'notification_date',
-            'notification_status_code',
-            'overdue_notification_date',
-            'payment_account_id',
-            'payment_methods',
-            'statement_settings_id',
-            'to_date'
+        "include_properties": [
+            "id",
+            "created_on",
+            "frequency",
+            "from_date",
+            "is_interim_statement",
+            "notification_date",
+            "notification_status_code",
+            "overdue_notification_date",
+            "payment_account_id",
+            "payment_methods",
+            "statement_settings_id",
+            "to_date",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
-    statement_settings_id = db.Column(db.Integer, ForeignKey('statement_settings.id'), nullable=True, index=True)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+    statement_settings_id = db.Column(db.Integer, ForeignKey("statement_settings.id"), nullable=True, index=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
     from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
-    is_interim_statement = db.Column('is_interim_statement', db.Boolean(), nullable=False, default=False)
+    is_interim_statement = db.Column("is_interim_statement", db.Boolean(), nullable=False, default=False)
     overdue_notification_date = db.Column(db.Date, default=None, nullable=True)
     created_on = db.Column(db.Date, default=None, nullable=False)
-    notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
+    notification_status_code = db.Column(db.String(20), ForeignKey("notification_status_codes.code"), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
     payment_methods = db.Column(db.String(100), nullable=True)
 
     @classmethod
     def find_all_statements_by_notification_status(cls, statuses):
         """Return all statements for a status.Used in cron jobs."""
-        return cls.query \
-            .filter(Statement.notification_status_code.in_(statuses)).all()
+        return cls.query.filter(Statement.notification_status_code.in_(statuses)).all()
 
     @classmethod
     def find_all_payments_and_invoices_for_statement(cls, statement_id: str) -> List[Invoice]:
@@ -86,10 +86,12 @@ class Statement(BaseModel):
         # Import from here as the statement invoice already imports statement and causes circular import.
         from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
 
-        query = db.session.query(Invoice) \
-            .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
-            .filter(StatementInvoices.statement_id == cast(statement_id, Integer)) \
+        query = (
+            db.session.query(Invoice)
+            .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id)
+            .filter(StatementInvoices.statement_id == cast(statement_id, Integer))
             .order_by(Invoice.id.asc())
+        )
 
         return query.all()
 
@@ -106,12 +108,12 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     from_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     is_overdue = fields.Boolean()
-    payment_methods = fields.Method(serialize='payment_methods_to_list')
+    payment_methods = fields.Method(serialize="payment_methods_to_list")
     amount_owing = fields.Float(load_default=0)
 
     def payment_methods_to_list(self, target):
         """Convert comma separated string to list."""
-        return target.payment_methods.split(',') if target.payment_methods else []
+        return target.payment_methods.split(",") if target.payment_methods else []
 
 
 @define
@@ -132,9 +134,14 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
         https://www.attrs.org/en/stable/init.html
 
         """
-        return cls(id=row.id, frequency=row.frequency, from_date=(row.from_date + relativedelta(hours=8)).isoformat(),
-                   is_interim_statement=row.is_interim_statement, payment_methods=row.payment_methods,
-                   to_date=(row.to_date + relativedelta(hours=8)).isoformat())
+        return cls(
+            id=row.id,
+            frequency=row.frequency,
+            from_date=(row.from_date + relativedelta(hours=8)).isoformat(),
+            is_interim_statement=row.is_interim_statement,
+            payment_methods=row.payment_methods,
+            to_date=(row.to_date + relativedelta(hours=8)).isoformat(),
+        )
 
     @classmethod
     def dao_to_dict(cls, statement_daos: List[Statement]) -> dict[StatementDTO]:

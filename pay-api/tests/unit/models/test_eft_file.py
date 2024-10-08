@@ -25,7 +25,7 @@ from pay_api.utils.enums import EFTProcessStatus
 def test_eft_file_defaults(session):
     """Assert eft file defaults are stored."""
     eft_file = EFTFileModel()
-    eft_file.file_ref = 'test.txt'
+    eft_file.file_ref = "test.txt"
     eft_file.save()
 
     assert eft_file.id is not None
@@ -52,7 +52,7 @@ def test_eft_file_all_attributes(session):
     eft_file.deposit_to_date = deposit_to_date
     eft_file.number_of_details = number_of_details
     eft_file.total_deposit_cents = total_deposit_cents
-    eft_file.file_ref = 'test.txt'
+    eft_file.file_ref = "test.txt"
     eft_file.status_code = EFTProcessStatus.COMPLETED.value
     eft_file.save()
 
@@ -68,4 +68,4 @@ def test_eft_file_all_attributes(session):
     assert eft_file.deposit_to_date == deposit_to_date
     assert eft_file.number_of_details == number_of_details
     assert eft_file.total_deposit_cents == total_deposit_cents
-    assert eft_file.file_ref == 'test.txt'
+    assert eft_file.file_ref == "test.txt"

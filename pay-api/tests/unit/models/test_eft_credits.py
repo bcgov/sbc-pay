@@ -30,11 +30,11 @@ def test_eft_credits(session):
 
     assert payment_account.id is not None
 
-    eft_short_name = factory_eft_shortname('TESTSHORTNAME')
+    eft_short_name = factory_eft_shortname("TESTSHORTNAME")
     eft_short_name.save()
 
     eft_file = EFTFile()
-    eft_file.file_ref = 'test.txt'
+    eft_file.file_ref = "test.txt"
     eft_file.save()
 
     eft_transaction = EFTTransaction()

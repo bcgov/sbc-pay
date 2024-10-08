@@ -17,10 +17,10 @@
 Test-Suite to ensure that the Statement Service is working as expected.
 """
 from datetime import datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
 from unittest.mock import patch
 
 import pytz
+from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -33,10 +33,21 @@ from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
 from pay_api.utils.util import get_local_formatted_date
 from tests.utilities.base_test import (
-    factory_eft_shortname, factory_eft_shortname_link, factory_invoice, factory_invoice_reference, factory_payment,
-    factory_payment_account, factory_payment_line_item, factory_premium_payment_account, factory_statement,
-    factory_statement_invoices, factory_statement_settings, get_auth_premium_user, get_eft_enable_account_payload,
-    get_premium_account_payload)
+    factory_eft_shortname,
+    factory_eft_shortname_link,
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment,
+    factory_payment_account,
+    factory_payment_line_item,
+    factory_premium_payment_account,
+    factory_statement,
+    factory_statement_invoices,
+    factory_statement_settings,
+    get_auth_premium_user,
+    get_eft_enable_account_payload,
+    get_premium_account_payload,
+)
 
 
 def test_statement_find_by_account(session):
@@ -50,18 +61,21 @@ def test_statement_find_by_account(session):
     i.save()
     factory_invoice_reference(i.id).save()
 
-    settings_model = factory_statement_settings(payment_account_id=bcol_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=bcol_account.id,
-                                        frequency=StatementFrequency.DAILY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=bcol_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=bcol_account.id,
+        frequency=StatementFrequency.DAILY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
     payment_account = PaymentAccountModel.find_by_id(bcol_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
-    assert statements.get('total') == 1
-    assert statements.get('items')[0].get('is_overdue') is True
+    assert statements.get("total") == 1
+    assert statements.get("items")[0].get("is_overdue") is True
 
 
 def test_get_statement_report(session):
@@ -76,20 +90,25 @@ def test_get_statement_report(session):
     factory_invoice_reference(i.id).save()
     factory_payment_line_item(invoice_id=i.id, fee_schedule_id=1).save()
 
-    settings_model = factory_statement_settings(payment_account_id=bcol_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=bcol_account.id,
-                                        frequency=StatementFrequency.DAILY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=bcol_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=bcol_account.id,
+        frequency=StatementFrequency.DAILY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
     payment_account = PaymentAccountModel.find_by_id(bcol_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
-    report_response, report_name = StatementService.get_statement_report(statement_id=statement_model.id,
-                                                                         content_type='application/pdf',
-                                                                         auth=get_auth_premium_user())
+    report_response, report_name = StatementService.get_statement_report(
+        statement_id=statement_model.id,
+        content_type="application/pdf",
+        auth=get_auth_premium_user(),
+    )
     assert report_response is not None
 
 
@@ -105,19 +124,24 @@ def test_get_statement_report_for_empty_invoices(session):
     factory_invoice_reference(i.id).save()
     factory_payment_line_item(invoice_id=i.id, fee_schedule_id=1).save()
 
-    settings_model = factory_statement_settings(payment_account_id=bcol_account.id,
-                                                frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=bcol_account.id,
-                                        frequency=StatementFrequency.DAILY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=bcol_account.id, frequency=StatementFrequency.DAILY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=bcol_account.id,
+        frequency=StatementFrequency.DAILY.value,
+        statement_settings_id=settings_model.id,
+    )
 
     payment_account = PaymentAccountModel.find_by_id(bcol_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
-    report_response, report_name = StatementService.get_statement_report(statement_id=statement_model.id,
-                                                                         content_type='application/pdf',
-                                                                         auth=get_auth_premium_user())
+    report_response, report_name = StatementService.get_statement_report(
+        statement_id=statement_model.id,
+        content_type="application/pdf",
+        auth=get_auth_premium_user(),
+    )
     assert report_response is not None
 
 
@@ -133,20 +157,25 @@ def test_get_weekly_statement_report(session):
     factory_invoice_reference(i.id).save()
     factory_payment_line_item(invoice_id=i.id, fee_schedule_id=1).save()
 
-    settings_model = factory_statement_settings(payment_account_id=bcol_account.id,
-                                                frequency=StatementFrequency.WEEKLY.value)
-    statement_model = factory_statement(payment_account_id=bcol_account.id,
-                                        frequency=StatementFrequency.WEEKLY.value,
-                                        statement_settings_id=settings_model.id)
+    settings_model = factory_statement_settings(
+        payment_account_id=bcol_account.id, frequency=StatementFrequency.WEEKLY.value
+    )
+    statement_model = factory_statement(
+        payment_account_id=bcol_account.id,
+        frequency=StatementFrequency.WEEKLY.value,
+        statement_settings_id=settings_model.id,
+    )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
     payment_account = PaymentAccountModel.find_by_id(bcol_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
-    report_response, report_name = StatementService.get_statement_report(statement_id=statement_model.id,
-                                                                         content_type='application/pdf',
-                                                                         auth=get_auth_premium_user())
+    report_response, report_name = StatementService.get_statement_report(
+        statement_id=statement_model.id,
+        content_type="application/pdf",
+        auth=get_auth_premium_user(),
+    )
     assert report_response is not None
 
 
@@ -155,14 +184,16 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
     account_create_date = datetime(2023, 10, 1, 12, 0)
     with freeze_time(account_create_date):
         account: PaymentAccountService = PaymentAccountService.create(
-            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value)
+        )
 
         assert account is not None
         assert account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Assert that the default weekly statement settings are created
-    statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
+    statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
+        str(account.auth_account_id), datetime.now(tz=timezone.utc)
+    )
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.WEEKLY.value
@@ -171,20 +202,28 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
 
     # Setup previous payment method interim statement data
     invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
-    weekly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
-                                     payment_method_code=PaymentMethod.DRAWDOWN.value,
-                                     status_code=InvoiceStatus.CREATED.value,
-                                     total=50).save()
+    weekly_invoice = factory_invoice(
+        payment_account=account,
+        created_on=invoice_create_date,
+        payment_method_code=PaymentMethod.DRAWDOWN.value,
+        status_code=InvoiceStatus.CREATED.value,
+        total=50,
+    ).save()
 
     assert weekly_invoice is not None
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):
-        account = PaymentAccountService.update(account.auth_account_id,
-                                               get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
-                                                                              account_id=account.auth_account_id))
+        account = PaymentAccountService.update(
+            account.auth_account_id,
+            get_eft_enable_account_payload(
+                payment_method=PaymentMethod.EFT.value,
+                account_id=account.auth_account_id,
+            ),
+        )
 
-        new_statement_settings: StatementSettingsModel = StatementSettingsModel \
-            .find_latest_settings(account.auth_account_id)
+        new_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+            account.auth_account_id
+        )
 
         assert new_statement_settings is not None
         assert new_statement_settings.id != statement_settings.id
@@ -210,14 +249,16 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
     account_create_date = datetime(2023, 10, 1, 12, 0)
     with freeze_time(account_create_date):
         account: PaymentAccountService = PaymentAccountService.create(
-            get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value))
+            get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value)
+        )
 
         assert account is not None
         assert account.payment_method == PaymentMethod.EFT.value
 
     # Assert that the default MONTHLY statement settings are created
-    statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
+    statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
+        str(account.auth_account_id), datetime.now(tz=timezone.utc)
+    )
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value
@@ -226,21 +267,29 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
 
     # Setup previous payment method interim statement data
     invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
-    monthly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
-                                      payment_method_code=PaymentMethod.EFT.value,
-                                      status_code=InvoiceStatus.PAID.value,
-                                      total=50,
-                                      paid=50).save()
+    monthly_invoice = factory_invoice(
+        payment_account=account,
+        created_on=invoice_create_date,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.PAID.value,
+        total=50,
+        paid=50,
+    ).save()
 
     assert monthly_invoice is not None
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):
-        account = PaymentAccountService.update(account.auth_account_id,
-                                               get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value,
-                                                                           account_id=account.auth_account_id))
+        account = PaymentAccountService.update(
+            account.auth_account_id,
+            get_premium_account_payload(
+                payment_method=PaymentMethod.DRAWDOWN.value,
+                account_id=account.auth_account_id,
+            ),
+        )
 
-        new_statement_settings: StatementSettingsModel = StatementSettingsModel \
-            .find_latest_settings(account.auth_account_id)
+        new_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+            account.auth_account_id
+        )
 
         assert new_statement_settings is not None
         assert new_statement_settings.id != statement_settings.id
@@ -266,14 +315,16 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
     account_create_date = datetime(2023, 10, 1, 12, 0)
     with freeze_time(account_create_date):
         account: PaymentAccountService = PaymentAccountService.create(
-            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value)
+        )
 
         assert account is not None
         assert account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Update current active settings to monthly
-    statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
+    statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
+        str(account.auth_account_id), datetime.now(tz=timezone.utc)
+    )
 
     statement_settings.frequency = StatementFrequency.MONTHLY.value
     statement_settings.save()
@@ -285,21 +336,29 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
 
     # Setup previous payment method interim statement data
     invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
-    monthly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
-                                      payment_method_code=PaymentMethod.DRAWDOWN.value,
-                                      status_code=InvoiceStatus.CREATED.value,
-                                      total=50).save()
+    monthly_invoice = factory_invoice(
+        payment_account=account,
+        created_on=invoice_create_date,
+        payment_method_code=PaymentMethod.DRAWDOWN.value,
+        status_code=InvoiceStatus.CREATED.value,
+        total=50,
+    ).save()
 
     assert monthly_invoice is not None
 
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):
-        account = PaymentAccountService.update(account.auth_account_id,
-                                               get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
-                                                                              account_id=account.auth_account_id))
+        account = PaymentAccountService.update(
+            account.auth_account_id,
+            get_eft_enable_account_payload(
+                payment_method=PaymentMethod.EFT.value,
+                account_id=account.auth_account_id,
+            ),
+        )
 
-        new_statement_settings: StatementSettingsModel = StatementSettingsModel \
-            .find_latest_settings(account.auth_account_id)
+        new_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+            account.auth_account_id
+        )
 
         assert new_statement_settings is not None
         assert new_statement_settings.id != statement_settings.id
@@ -325,14 +384,16 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     account_create_date = datetime(2024, 5, 30, 12, 0)
     with freeze_time(account_create_date):
         account: PaymentAccountService = PaymentAccountService.create(
-            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value)
+        )
 
         assert account is not None
         assert account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Confirm initial default settings when account is created
-    initial_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_active_settings(str(account.auth_account_id), datetime.now(tz=timezone.utc))
+    initial_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
+        str(account.auth_account_id), datetime.now(tz=timezone.utc)
+    )
 
     assert initial_settings is not None
     assert initial_settings.frequency == StatementFrequency.WEEKLY.value
@@ -341,9 +402,13 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
 
     update_date = localize_date(datetime(2024, 6, 13, 12, 0))
     with freeze_time(update_date):
-        account = PaymentAccountService.update(account.auth_account_id,
-                                               get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
-                                                                              account_id=account.auth_account_id))
+        account = PaymentAccountService.update(
+            account.auth_account_id,
+            get_eft_enable_account_payload(
+                payment_method=PaymentMethod.EFT.value,
+                account_id=account.auth_account_id,
+            ),
+        )
     # Assert initial settings are properly end dated
     assert initial_settings is not None
     assert initial_settings.frequency == StatementFrequency.WEEKLY.value
@@ -351,8 +416,9 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     assert initial_settings.to_date == update_date.date()
 
     # Assert new EFT Monthly settings are created
-    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_latest_settings(account.auth_account_id)
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+        account.auth_account_id
+    )
 
     assert latest_statement_settings is not None
     assert latest_statement_settings.id != initial_settings.id
@@ -363,11 +429,14 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     # Same day payment method change back to DRAWDOWN
     update_date = localize_date(datetime(2024, 6, 13, 12, 5))
     with freeze_time(update_date):
-        account = PaymentAccountService.update(account.auth_account_id,
-                                               get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+        account = PaymentAccountService.update(
+            account.auth_account_id,
+            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value),
+        )
 
-    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_latest_settings(account.auth_account_id)
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+        account.auth_account_id
+    )
 
     assert latest_statement_settings is not None
     assert latest_statement_settings.id != initial_settings.id
@@ -378,12 +447,17 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     # Same day payment method change back to EFT
     update_date = localize_date(datetime(2024, 6, 13, 12, 6))
     with freeze_time(update_date):
-        account = PaymentAccountService.update(account.auth_account_id,
-                                               get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
-                                                                              account_id=account.auth_account_id))
+        account = PaymentAccountService.update(
+            account.auth_account_id,
+            get_eft_enable_account_payload(
+                payment_method=PaymentMethod.EFT.value,
+                account_id=account.auth_account_id,
+            ),
+        )
 
-    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_latest_settings(account.auth_account_id)
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+        account.auth_account_id
+    )
 
     assert latest_statement_settings is not None
     assert latest_statement_settings.id != initial_settings.id
@@ -391,9 +465,11 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
     assert latest_statement_settings.to_date is None
 
-    all_settings = (db.session.query(StatementSettingsModel)
-                    .filter(StatementSettingsModel.payment_account_id == account.id)
-                    .order_by(StatementSettingsModel.id)).all()
+    all_settings = (
+        db.session.query(StatementSettingsModel)
+        .filter(StatementSettingsModel.payment_account_id == account.id)
+        .order_by(StatementSettingsModel.id)
+    ).all()
 
     assert all_settings is not None
     assert len(all_settings) == 2
@@ -403,11 +479,14 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     # Change payment method to DRAWDOWN 1 day later - should create a new statement settings record
     update_date = localize_date(datetime(2024, 6, 14, 12, 6))
     with freeze_time(update_date):
-        account = PaymentAccountService.update(account.auth_account_id,
-                                               get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+        account = PaymentAccountService.update(
+            account.auth_account_id,
+            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value),
+        )
 
-    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
-        .find_latest_settings(account.auth_account_id)
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+        account.auth_account_id
+    )
 
     assert latest_statement_settings is not None
     assert latest_statement_settings.id != initial_settings.id
@@ -415,9 +494,11 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
     assert latest_statement_settings.to_date is None
 
-    all_settings = (db.session.query(StatementSettingsModel)
-                    .filter(StatementSettingsModel.payment_account_id == account.id)
-                    .order_by(StatementSettingsModel.id)).all()
+    all_settings = (
+        db.session.query(StatementSettingsModel)
+        .filter(StatementSettingsModel.payment_account_id == account.id)
+        .order_by(StatementSettingsModel.id)
+    ).all()
 
     assert all_settings is not None
     assert len(all_settings) == 3
@@ -430,7 +511,7 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
 
 def get_statement_date_string(datetime_value: datetime) -> str:
     """Get formatted date string for report input."""
-    date_format = '%Y-%m-%d'
+    date_format = "%Y-%m-%d"
     return datetime_value.strftime(date_format)
 
 
@@ -439,84 +520,95 @@ def test_get_eft_statement_for_empty_invoices(session):
     statement_from_date = datetime.now(timezone.utc) + relativedelta(months=1, day=1)
     statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
-    settings_model = factory_statement_settings(payment_account_id=payment_account.id,
-                                                frequency=StatementFrequency.MONTHLY.value,
-                                                from_date=statement_from_date)
-    statement_model = factory_statement(payment_account_id=payment_account.id,
-                                        frequency=StatementFrequency.MONTHLY.value,
-                                        statement_settings_id=settings_model.id,
-                                        from_date=statement_from_date,
-                                        to_date=statement_to_date)
+    settings_model = factory_statement_settings(
+        payment_account_id=payment_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        from_date=statement_from_date,
+    )
+    statement_model = factory_statement(
+        payment_account_id=payment_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings_model.id,
+        from_date=statement_from_date,
+        to_date=statement_to_date,
+    )
 
     payment_account = PaymentAccountModel.find_by_id(payment_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
-    expected_report_name = f'bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-' \
-                           f'to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf'
-    with patch.object(ReportService, 'get_report_response', return_value=None) as mock_report:
-        report_response, report_name = StatementService.get_statement_report(statement_id=statement_model.id,
-                                                                             content_type=ContentType.PDF.value,
-                                                                             auth=get_auth_premium_user())
+    expected_report_name = (
+        f"bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-"
+        f"to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf"
+    )
+    with patch.object(ReportService, "get_report_response", return_value=None) as mock_report:
+        report_response, report_name = StatementService.get_statement_report(
+            statement_id=statement_model.id,
+            content_type=ContentType.PDF.value,
+            auth=get_auth_premium_user(),
+        )
         assert report_name == expected_report_name
 
         date_string_now = get_statement_date_string(datetime.now(tz=timezone.utc))
         expected_template_vars = {
-            'account': {
-                'accountType': 'PREMIUM',
-                'contact': {
-                    'city': 'Westbank',
-                    'country': 'CA',
-                    'created': '2020-05-14T17:33:04.315908+00:00',
-                    'createdBy': 'BCREGTEST Bena THIRTEEN',
-                    'modified': '2020-08-07T23:55:56.576008+00:00',
-                    'modifiedBy': 'BCREGTEST Bena THIRTEEN',
-                    'postalCode': 'V4T 2A5',
-                    'region': 'BC',
-                    'street': '66-2098 Boucherie Rd',
-                    'streetAdditional': 'First',
+            "account": {
+                "accountType": "PREMIUM",
+                "contact": {
+                    "city": "Westbank",
+                    "country": "CA",
+                    "created": "2020-05-14T17:33:04.315908+00:00",
+                    "createdBy": "BCREGTEST Bena THIRTEEN",
+                    "modified": "2020-08-07T23:55:56.576008+00:00",
+                    "modifiedBy": "BCREGTEST Bena THIRTEEN",
+                    "postalCode": "V4T 2A5",
+                    "region": "BC",
+                    "street": "66-2098 Boucherie Rd",
+                    "streetAdditional": "First",
                 },
-                'id': '1234',
-                'name': 'Mock Account',
-                'paymentPreference': {
-                    'bcOnlineAccountId': '1234567890',
-                    'bcOnlineUserId': 'PB25020',
-                    'methodOfPayment': 'DRAWDOWN',
+                "id": "1234",
+                "name": "Mock Account",
+                "paymentPreference": {
+                    "bcOnlineAccountId": "1234567890",
+                    "bcOnlineUserId": "PB25020",
+                    "methodOfPayment": "DRAWDOWN",
                 },
             },
-            'invoices': [],
-            'statement': {
-                'amount_owing': 0,
-                'created_on': date_string_now,
-                'frequency': 'MONTHLY',
-                'from_date': get_statement_date_string(statement_from_date),
-                'to_date': get_statement_date_string(statement_to_date),
-                'id': statement_model.id,
-                'is_interim_statement': False,
-                'is_overdue': False,
-                'notification_date': None,
-                'overdue_notification_date': None,
-                'payment_methods': ['EFT']
+            "invoices": [],
+            "statement": {
+                "amount_owing": 0,
+                "created_on": date_string_now,
+                "frequency": "MONTHLY",
+                "from_date": get_statement_date_string(statement_from_date),
+                "to_date": get_statement_date_string(statement_to_date),
+                "id": statement_model.id,
+                "is_interim_statement": False,
+                "is_overdue": False,
+                "notification_date": None,
+                "overdue_notification_date": None,
+                "payment_methods": ["EFT"],
             },
-            'statementSummary': {
-                'dueDate':
-                    StatementService.calculate_due_date(statement_to_date.date()),  # pylint: disable=protected-access
-                'lastStatementTotal': 0,
-                'lastStatementPaidAmount': 0,
-                'latestStatementPaymentDate': None
+            "statementSummary": {
+                "dueDate": StatementService.calculate_due_date(
+                    statement_to_date.date()
+                ),  # pylint: disable=protected-access
+                "lastStatementTotal": 0,
+                "lastStatementPaidAmount": 0,
+                "latestStatementPaymentDate": None,
             },
-            'total': {
-                'due': 0,
-                'fees': 0,
-                'paid': 0,
-                'serviceFees': 0,
-                'statutoryFees': 0,
-            }
+            "total": {
+                "due": 0,
+                "fees": 0,
+                "paid": 0,
+                "serviceFees": 0,
+                "statutoryFees": 0,
+            },
         }
-        expected_report_inputs = ReportRequest(report_name=report_name,
-                                               template_name=StatementTemplate.STATEMENT_REPORT.value,
-                                               template_vars=expected_template_vars,
-                                               populate_page_number=True,
-                                               content_type=ContentType.PDF.value)
+        expected_report_inputs = ReportRequest(
+            report_name=report_name,
+            template_name=StatementTemplate.STATEMENT_REPORT.value,
+            template_vars=expected_template_vars,
+            populate_page_number=True,
+            content_type=ContentType.PDF.value,
+        )
         mock_report.assert_called_with(expected_report_inputs)
 
 
@@ -525,27 +617,39 @@ def test_get_eft_statement_with_invoices(session):
     statement_from_date = datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1)
     statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
-    settings_model = factory_statement_settings(payment_account_id=payment_account.id,
-                                                frequency=StatementFrequency.MONTHLY.value,
-                                                from_date=statement_from_date)
-    statement_model = factory_statement(payment_account_id=payment_account.id,
-                                        frequency=StatementFrequency.MONTHLY.value,
-                                        statement_settings_id=settings_model.id,
-                                        from_date=statement_from_date,
-                                        to_date=statement_to_date)
+    settings_model = factory_statement_settings(
+        payment_account_id=payment_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        from_date=statement_from_date,
+    )
+    statement_model = factory_statement(
+        payment_account_id=payment_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings_model.id,
+        from_date=statement_from_date,
+        to_date=statement_to_date,
+    )
 
     payment_account = PaymentAccountModel.find_by_id(payment_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
-    invoice_1 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
-                                status_code=InvoiceStatus.APPROVED.value,
-                                total=200, paid=0).save()
+    invoice_1 = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=200,
+        paid=0,
+    ).save()
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
 
-    invoice_2 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
-                                status_code=InvoiceStatus.APPROVED.value,
-                                total=50, paid=0).save()
+    invoice_2 = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=50,
+        paid=0,
+    ).save()
     factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
 
     factory_invoice_reference(invoice_1.id).save()
@@ -553,156 +657,163 @@ def test_get_eft_statement_with_invoices(session):
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_1.id)
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_2.id)
 
-    expected_report_name = f'bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-' \
-                           f'to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf'
-    with patch.object(ReportService, 'get_report_response', return_value=None) as mock_report:
-        report_response, report_name = StatementService.get_statement_report(statement_id=statement_model.id,
-                                                                             content_type=ContentType.PDF.value,
-                                                                             auth=get_auth_premium_user())
+    expected_report_name = (
+        f"bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-"
+        f"to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf"
+    )
+    with patch.object(ReportService, "get_report_response", return_value=None) as mock_report:
+        report_response, report_name = StatementService.get_statement_report(
+            statement_id=statement_model.id,
+            content_type=ContentType.PDF.value,
+            auth=get_auth_premium_user(),
+        )
 
         assert report_name == expected_report_name
 
         date_string_now = get_statement_date_string(datetime.now(tz=timezone.utc))
         expected_template_vars = {
-            'account': {
-                'accountType': 'PREMIUM',
-                'contact': {
-                    'city': 'Westbank',
-                    'country': 'CA',
-                    'created': '2020-05-14T17:33:04.315908+00:00',
-                    'createdBy': 'BCREGTEST Bena THIRTEEN',
-                    'modified': '2020-08-07T23:55:56.576008+00:00',
-                    'modifiedBy': 'BCREGTEST Bena THIRTEEN',
-                    'postalCode': 'V4T 2A5',
-                    'region': 'BC',
-                    'street': '66-2098 Boucherie Rd',
-                    'streetAdditional': 'First',
+            "account": {
+                "accountType": "PREMIUM",
+                "contact": {
+                    "city": "Westbank",
+                    "country": "CA",
+                    "created": "2020-05-14T17:33:04.315908+00:00",
+                    "createdBy": "BCREGTEST Bena THIRTEEN",
+                    "modified": "2020-08-07T23:55:56.576008+00:00",
+                    "modifiedBy": "BCREGTEST Bena THIRTEEN",
+                    "postalCode": "V4T 2A5",
+                    "region": "BC",
+                    "street": "66-2098 Boucherie Rd",
+                    "streetAdditional": "First",
                 },
-                'id': payment_account.auth_account_id,
-                'name': 'Mock Account',
-                'paymentPreference': {
-                    'bcOnlineAccountId': '1234567890',
-                    'bcOnlineUserId': 'PB25020',
-                    'methodOfPayment': 'DRAWDOWN',
+                "id": payment_account.auth_account_id,
+                "name": "Mock Account",
+                "paymentPreference": {
+                    "bcOnlineAccountId": "1234567890",
+                    "bcOnlineUserId": "PB25020",
+                    "methodOfPayment": "DRAWDOWN",
                 },
             },
-            'invoices': [
+            "invoices": [
                 {
-                    'bcol_account': 'TEST',
-                    'business_identifier': 'CP0001234',
-                    'corp_type_code': 'CP',
-                    'created_by': 'test',
-                    'created_name': 'test name',
-                    'created_on': get_local_formatted_date(invoice_1.created_on),
-                    'details': [
+                    "bcol_account": "TEST",
+                    "business_identifier": "CP0001234",
+                    "corp_type_code": "CP",
+                    "created_by": "test",
+                    "created_name": "test name",
+                    "created_on": get_local_formatted_date(invoice_1.created_on),
+                    "details": [
                         {
-                            'label': 'label',
-                            'value': 'value',
+                            "label": "label",
+                            "value": "value",
                         },
                     ],
-                    'folio_number': '1234567890',
-                    'id': invoice_1.id,
-                    'invoice_number': '10021',
-                    'line_items': [
+                    "folio_number": "1234567890",
+                    "id": invoice_1.id,
+                    "invoice_number": "10021",
+                    "line_items": [
                         {
-                            'description': None,
-                            'filing_type_code': 'OTANN',
-                            'gst': 0.0,
-                            'pst': 0.0,
-                            'service_fees': 0.0,
-                            'total': 10.0,
+                            "description": None,
+                            "filing_type_code": "OTANN",
+                            "gst": 0.0,
+                            "pst": 0.0,
+                            "service_fees": 0.0,
+                            "total": 10.0,
                         },
                     ],
-                    'paid': 0.0,
-                    'payment_account': {
-                        'account_id': '1234',
-                        'billable': True,
+                    "paid": 0.0,
+                    "payment_account": {
+                        "account_id": "1234",
+                        "billable": True,
                     },
-                    'payment_method': 'EFT',
-                    'product': 'BUSINESS',
-                    'refund': 0.0,
-                    'service_fees': 0.0,
-                    'status_code': 'Invoice Approved',
-                    'total': 200.0,
+                    "payment_method": "EFT",
+                    "product": "BUSINESS",
+                    "refund": 0.0,
+                    "service_fees": 0.0,
+                    "status_code": "Invoice Approved",
+                    "total": 200.0,
                 },
                 {
-                    'bcol_account': 'TEST',
-                    'business_identifier': 'CP0001234',
-                    'corp_type_code': 'CP',
-                    'created_by': 'test',
-                    'created_name': 'test name',
-                    'created_on': get_local_formatted_date(invoice_2.created_on),
-                    'details': [
+                    "bcol_account": "TEST",
+                    "business_identifier": "CP0001234",
+                    "corp_type_code": "CP",
+                    "created_by": "test",
+                    "created_name": "test name",
+                    "created_on": get_local_formatted_date(invoice_2.created_on),
+                    "details": [
                         {
-                            'label': 'label',
-                            'value': 'value',
+                            "label": "label",
+                            "value": "value",
                         },
                     ],
-                    'folio_number': '1234567890',
-                    'id': invoice_2.id,
-                    'invoice_number': '10021',
-                    'line_items': [
+                    "folio_number": "1234567890",
+                    "id": invoice_2.id,
+                    "invoice_number": "10021",
+                    "line_items": [
                         {
-                            'description': None,
-                            'filing_type_code': 'OTANN',
-                            'gst': 0.0,
-                            'pst': 0.0,
-                            'service_fees': 0.0,
-                            'total': 10.0,
+                            "description": None,
+                            "filing_type_code": "OTANN",
+                            "gst": 0.0,
+                            "pst": 0.0,
+                            "service_fees": 0.0,
+                            "total": 10.0,
                         },
                     ],
-                    'paid': 0.0,
-                    'payment_account': {
-                        'account_id': '1234',
-                        'billable': True,
+                    "paid": 0.0,
+                    "payment_account": {
+                        "account_id": "1234",
+                        "billable": True,
                     },
-                    'payment_method': 'EFT',
-                    'product': 'BUSINESS',
-                    'refund': 0.0,
-                    'service_fees': 0.0,
-                    'status_code': 'Invoice Approved',
-                    'total': 50.0,
+                    "payment_method": "EFT",
+                    "product": "BUSINESS",
+                    "refund": 0.0,
+                    "service_fees": 0.0,
+                    "status_code": "Invoice Approved",
+                    "total": 50.0,
                 },
             ],
-            'statement': {
-                'amount_owing': 250.0,
-                'created_on': date_string_now,
-                'frequency': 'MONTHLY',
-                'from_date': get_statement_date_string(statement_from_date),
-                'to_date': get_statement_date_string(statement_to_date),
-                'id': statement_model.id,
-                'is_interim_statement': False,
-                'is_overdue': False,
-                'notification_date': None,
-                'overdue_notification_date': None,
-                'payment_methods': ['EFT']
+            "statement": {
+                "amount_owing": 250.0,
+                "created_on": date_string_now,
+                "frequency": "MONTHLY",
+                "from_date": get_statement_date_string(statement_from_date),
+                "to_date": get_statement_date_string(statement_to_date),
+                "id": statement_model.id,
+                "is_interim_statement": False,
+                "is_overdue": False,
+                "notification_date": None,
+                "overdue_notification_date": None,
+                "payment_methods": ["EFT"],
             },
-            'statementSummary': {
-                'dueDate':
-                    StatementService.calculate_due_date(statement_to_date.date()),  # pylint: disable=protected-access
-                'lastStatementTotal': 0,
-                'lastStatementPaidAmount': 0,
-                'latestStatementPaymentDate': None,
+            "statementSummary": {
+                "dueDate": StatementService.calculate_due_date(
+                    statement_to_date.date()
+                ),  # pylint: disable=protected-access
+                "lastStatementTotal": 0,
+                "lastStatementPaidAmount": 0,
+                "latestStatementPaymentDate": None,
             },
-            'total': {
-                'due': 250.0,
-                'fees': 250.0,
-                'paid': 0.0,
-                'serviceFees': 0.0,
-                'statutoryFees': 250.0,
-            }
+            "total": {
+                "due": 250.0,
+                "fees": 250.0,
+                "paid": 0.0,
+                "serviceFees": 0.0,
+                "statutoryFees": 250.0,
+            },
         }
-        expected_report_inputs = ReportRequest(report_name=report_name,
-                                               template_name=StatementTemplate.STATEMENT_REPORT.value,
-                                               template_vars=expected_template_vars,
-                                               populate_page_number=True,
-                                               content_type=ContentType.PDF.value)
+        expected_report_inputs = ReportRequest(
+            report_name=report_name,
+            template_name=StatementTemplate.STATEMENT_REPORT.value,
+            template_vars=expected_template_vars,
+            populate_page_number=True,
+            content_type=ContentType.PDF.value,
+        )
         mock_report.assert_called_with(expected_report_inputs)
 
 
 def localize_date(date: datetime):
     """Localize date object by adding timezone information."""
-    pst = pytz.timezone('America/Vancouver')
+    pst = pytz.timezone("America/Vancouver")
     return pst.localize(date)
 
 
@@ -710,23 +821,17 @@ def test_get_eft_statement_summary_links_count(session):
     """Assert that the get statement summary short name links count is correct."""
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     summary = StatementService.get_summary(payment_account.auth_account_id)
-    assert summary['short_name_links_count'] == 0
+    assert summary["short_name_links_count"] == 0
 
-    eft_short_name = factory_eft_shortname('TESTSHORTNAME')
+    eft_short_name = factory_eft_shortname("TESTSHORTNAME")
     eft_short_name.save()
 
-    factory_eft_shortname_link(
-        short_name_id=eft_short_name.id,
-        auth_account_id=payment_account.auth_account_id
-    ).save()
+    factory_eft_shortname_link(short_name_id=eft_short_name.id, auth_account_id=payment_account.auth_account_id).save()
 
     summary = StatementService.get_summary(payment_account.auth_account_id)
-    assert summary['short_name_links_count'] == 1
+    assert summary["short_name_links_count"] == 1
 
-    factory_eft_shortname_link(
-        short_name_id=eft_short_name.id,
-        auth_account_id='2222'
-    ).save()
+    factory_eft_shortname_link(short_name_id=eft_short_name.id, auth_account_id="2222").save()
 
     summary = StatementService.get_summary(payment_account.auth_account_id)
-    assert summary['short_name_links_count'] == 2
+    assert summary["short_name_links_count"] == 2

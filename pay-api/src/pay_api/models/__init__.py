@@ -21,9 +21,9 @@ from .account_fee import AccountFee, AccountFeeSchema
 from .cas_settlement import CasSettlement
 from .cfs_account import CfsAccount, CfsAccountSchema
 from .cfs_account_status_code import CfsAccountStatusCode, CfsAccountStatusCodeSchema
+from .cfs_credit_invoices import CfsCreditInvoices
 from .corp_type import CorpType, CorpTypeSchema  # noqa: I001
 from .credit import Credit
-from .cfs_credit_invoices import CfsCreditInvoices
 from .custom_query import CustomQuery
 from .db import db, ma  # noqa: I001
 from .disbursement_status_code import DisbursementStatusCode
@@ -68,7 +68,7 @@ from .statement_invoices import StatementInvoices, StatementInvoicesSchema  # no
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
-from .comment import Comment, CommentSchema  # This has to be at the bottom otherwise FeeSchedule errors
 
+from .comment import Comment, CommentSchema  # isort: skip - This has to be at the bottom otherwise FeeSchedule errors
 
-event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)
+event.listen(Engine, "before_cursor_execute", DBTracing.query_tracing)

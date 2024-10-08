@@ -30,7 +30,7 @@ from .db import db
 class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the partner disbursements that should be executed."""
 
-    __tablename__ = 'partner_disbursements'
+    __tablename__ = "partner_disbursements"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -42,28 +42,33 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'amount',
-            'created_on',
-            'feedback_on',
-            'is_reversal',
-            'partner_code',
-            'processed_on',
-            'status_code',
-            'target_id',
-            'target_type'
+        "include_properties": [
+            "id",
+            "amount",
+            "created_on",
+            "feedback_on",
+            "is_reversal",
+            "partner_code",
+            "processed_on",
+            "status_code",
+            "target_id",
+            "target_type",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     amount = db.Column(db.Numeric, nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
-    feedback_on = db.Column('feedback_on', db.DateTime, nullable=True)
-    partner_code = db.Column('partner_code', db.String(50), nullable=False)
-    processed_on = db.Column('processed_on', db.DateTime, nullable=True)
-    is_reversal = db.Column('is_reversal', db.Boolean(), nullable=False, default=False)
-    status_code = db.Column('status_code', db.String(25), nullable=False)
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
+    feedback_on = db.Column("feedback_on", db.DateTime, nullable=True)
+    partner_code = db.Column("partner_code", db.String(50), nullable=False)
+    processed_on = db.Column("processed_on", db.DateTime, nullable=True)
+    is_reversal = db.Column("is_reversal", db.Boolean(), nullable=False, default=False)
+    status_code = db.Column("status_code", db.String(25), nullable=False)
     target_id = db.Column(db.Integer, nullable=True)
     target_type = db.Column(db.String(50), nullable=True)
 

@@ -5,11 +5,12 @@ Revises: c67213f860ea
 Create Date: 2021-06-14 12:56:26.635806
 
 """
+
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'e67a61c01cbb'
-down_revision = 'c67213f860ea'
+revision = "e67a61c01cbb"
+down_revision = "c67213f860ea"
 branch_labels = None
 depends_on = None
 
@@ -21,10 +22,13 @@ def upgrade():
     op.execute(
         "insert into corp_types(code, description, bcol_fee_code, bcol_staff_fee_code, is_online_banking_allowed, product) "
         "values "
-        "('CC', 'Community Contribution Company', 'BBCOMVC1', 'CBCOMVC1', true, 'BUSINESS')")
+        "('CC', 'Community Contribution Company', 'BBCOMVC1', 'CBCOMVC1', true, 'BUSINESS')"
+    )
 
     # update all the fee_schedules.
-    op.execute("update fee_schedules set corp_type_code='CC' where corp_type_code='CCC'; ")
+    op.execute(
+        "update fee_schedules set corp_type_code='CC' where corp_type_code='CCC'; "
+    )
     op.execute("delete from corp_types where code='CCC'")
     # ### end Alembic commands ###
 
@@ -34,9 +38,12 @@ def downgrade():
     op.execute(
         "insert into corp_types(code, description, bcol_fee_code, bcol_staff_fee_code, is_online_banking_allowed, product) "
         "values "
-        "('CCC', 'Community Contribution Company', 'BBCOMVC1', 'CBCOMVC1', true, 'BUSINESS')")
+        "('CCC', 'Community Contribution Company', 'BBCOMVC1', 'CBCOMVC1', true, 'BUSINESS')"
+    )
 
     # update all the fee_schedules.
-    op.execute("update fee_schedules set corp_type_code='CCC' where corp_type_code='CC'; ")
+    op.execute(
+        "update fee_schedules set corp_type_code='CCC' where corp_type_code='CC'; "
+    )
     op.execute("delete from corp_types where code='CC'")
     # ### end Alembic commands ###

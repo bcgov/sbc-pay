@@ -23,7 +23,7 @@ class FilingType(db.Model, CodeTable):
     Filing type indicates the filing operation on the entity
     """
 
-    __tablename__ = 'filing_types'
+    __tablename__ = "filing_types"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -34,15 +34,10 @@ class FilingType(db.Model, CodeTable):
     #
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
-    __mapper_args__ = {
-        'include_properties': [
-            'code',
-            'description'
-        ]
-    }
+    __mapper_args__ = {"include_properties": ["code", "description"]}
 
     code = db.Column(db.String(10), primary_key=True)
-    description = db.Column('description', db.String(200), nullable=False)
+    description = db.Column("description", db.String(200), nullable=False)
 
     def save(self):
         """Save filing type."""
@@ -51,7 +46,7 @@ class FilingType(db.Model, CodeTable):
 
     def __str__(self):
         """Override to string."""
-        return f'{self.code}'
+        return f"{self.code}"
 
 
 class FilingTypeSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors

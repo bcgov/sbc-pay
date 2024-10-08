@@ -23,25 +23,22 @@ from pay_api.utils.enums import AuthHeaderType, ContentType
 
 def test_send_email(app, monkeypatch):
     """Test send email."""
-    app.config['NOTIFY_API_ENDPOINT'] = 'http://test_notify_api_endpoint/'
+    app.config["NOTIFY_API_ENDPOINT"] = "http://test_notify_api_endpoint/"
 
-    monkeypatch.setattr('pay_api.services.email_service.get_service_account_token', lambda: 'test')
+    monkeypatch.setattr("pay_api.services.email_service.get_service_account_token", lambda: "test")
 
     with app.app_context():
-        with patch('pay_api.services.email_service.OAuthService.post') as mock_post:
-            mock_post.return_value.text = json.dumps({'notifyStatus': 'SUCCESS'})
-            result = send_email(['recipient@example.com'], 'Subject', 'Body')
+        with patch("pay_api.services.email_service.OAuthService.post") as mock_post:
+            mock_post.return_value.text = json.dumps({"notifyStatus": "SUCCESS"})
+            result = send_email(["recipient@example.com"], "Subject", "Body")
             mock_post.assert_called_with(
-                'http://test_notify_api_endpoint/notify/',
-                token='test',
+                "http://test_notify_api_endpoint/notify/",
+                token="test",
                 auth_header_type=AuthHeaderType.BEARER,
                 content_type=ContentType.JSON,
                 data={
-                    'recipients': 'recipient@example.com',
-                    'content': {
-                        'subject': 'Subject',
-                        'body': 'Body'
-                    }
-                }
+                    "recipients": "recipient@example.com",
+                    "content": {"subject": "Subject", "body": "Body"},
+                },
             )
         assert result is True

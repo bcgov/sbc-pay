@@ -38,7 +38,7 @@ def test_receipt(session):
     receipt.receipt_amount = 100
     receipt.receipt_date = datetime.now(tz=timezone.utc)
     receipt.invoice_id = invoice.id
-    receipt.receipt_number = '123451'
+    receipt.receipt_number = "123451"
     receipt = receipt.save()
     assert receipt.id is not None
 
@@ -58,11 +58,11 @@ def test_receipt_find_by_id(session):
     receipt.receipt_amount = 100
     receipt.receipt_date = datetime.now(tz=timezone.utc)
     receipt.invoice_id = invoice.id
-    receipt.receipt_number = '123451'
+    receipt.receipt_number = "123451"
     receipt = receipt.save()
     receipt = receipt.find_by_id(receipt.id)
     assert receipt is not None
-    receipt = receipt.find_by_invoice_id_and_receipt_number(invoice.id, '123451')
+    receipt = receipt.find_by_invoice_id_and_receipt_number(invoice.id, "123451")
     assert receipt is not None
     receipt = receipt.find_by_invoice_id_and_receipt_number(invoice.id, None)
     assert receipt is not None

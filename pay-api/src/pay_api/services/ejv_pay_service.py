@@ -17,6 +17,7 @@ There are conditions where the payment will be handled for government accounts.
 """
 
 from typing import List
+
 from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
@@ -27,6 +28,7 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.util import generate_transaction_number
+
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -46,15 +48,21 @@ class EjvPayService(PaymentSystemService, OAuthService):
         """Return CREATED as the default invoice status."""
         return InvoiceStatus.APPROVED.value
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
-                       **kwargs) -> InvoiceReference:
+    def create_invoice(
+        self,
+        payment_account: PaymentAccount,
+        line_items: List[PaymentLineItem],
+        invoice: Invoice,
+        **kwargs,
+    ) -> InvoiceReference:
         """Return a static invoice number."""
         self.ensure_no_payment_blockers(payment_account)
         invoice_reference: InvoiceReference = None
         # If the account is not billable, then create records,
         if not payment_account.billable:
-            current_app.logger.debug(f'Non billable invoice {invoice.id}, '
-                                     f'Auth Account : {payment_account.auth_account_id}')
+            current_app.logger.debug(
+                f"Non billable invoice {invoice.id}, " f"Auth Account : {payment_account.auth_account_id}"
+            )
             invoice_reference = InvoiceReference.create(invoice.id, generate_transaction_number(invoice.id), None)
         # else Do nothing here as the invoice references are created later.
         return invoice_reference
@@ -68,9 +76,12 @@ class EjvPayService(PaymentSystemService, OAuthService):
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
 
-    def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount,
-                           refund_partial: List[RefundPartialLine]) -> str:  # pylint:disable=unused-argument
+    def process_cfs_refund(
+        self,
+        invoice: InvoiceModel,
+        payment_account: PaymentAccount,
+        refund_partial: List[RefundPartialLine],
+    ) -> str:  # pylint:disable=unused-argument
         """Do nothing to process refund; as the refund is handled by CRON job.
 
         Return the status after checking invoice status.
@@ -80,7 +91,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
             2. If invoice status is PAID
             2.1 Return REFUND_REQUESTED
         """
-        current_app.logger.info(f'Received JV refund for invoice {invoice.id}, {invoice.invoice_status_code}')
+        current_app.logger.info(f"Received JV refund for invoice {invoice.id}, {invoice.invoice_status_code}")
         if not payment_account.billable:
             return InvoiceStatus.REFUNDED.value
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value:

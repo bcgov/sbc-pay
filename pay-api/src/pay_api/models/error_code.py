@@ -24,7 +24,7 @@ class ErrorCode(db.Model, CodeTable):
     Error Codes holds the error details produced by the API.
     """
 
-    __tablename__ = 'error_codes'
+    __tablename__ = "error_codes"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -35,13 +35,7 @@ class ErrorCode(db.Model, CodeTable):
     #
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
-    __mapper_args__ = {
-        'include_properties': [
-            'code',
-            'detail',
-            'title'
-        ]
-    }
+    __mapper_args__ = {"include_properties": ["code", "detail", "title"]}
 
     code = db.Column(db.String(50), primary_key=True)
     title = db.Column(db.String(100))
@@ -57,4 +51,4 @@ class ErrorCodeSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
         model = ErrorCode
         load_instance = True
 
-    code = fields.String(data_key='type')
+    code = fields.String(data_key="type")

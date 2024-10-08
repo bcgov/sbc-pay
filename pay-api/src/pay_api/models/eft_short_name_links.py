@@ -14,23 +14,21 @@
 """Model to handle EFT short name to BCROS account mapping links."""
 from datetime import datetime, timezone
 from typing import List, Self
+
 from _decimal import Decimal
-
 from attrs import define
-
-
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
+from ..utils.enums import EFTShortnameStatus
 from .base_model import BaseModel
 from .db import db
-from ..utils.enums import EFTShortnameStatus
 
 
 class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the EFT short name links to auth account mapping."""
 
-    __tablename__ = 'eft_short_name_links'
+    __tablename__ = "eft_short_name_links"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -42,29 +40,36 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'auth_account_id',
-            'created_on',
-            'eft_short_name_id',
-            'status_code',
-            'updated_by',
-            'updated_by_name',
-            'updated_on'
+        "include_properties": [
+            "id",
+            "auth_account_id",
+            "created_on",
+            "eft_short_name_id",
+            "status_code",
+            "updated_by",
+            "updated_by_name",
+            "updated_on",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    eft_short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False, index=True)
-    auth_account_id = db.Column('auth_account_id', db.String(50), nullable=False, index=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
-    status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
-    updated_by = db.Column('updated_by', db.String(100), nullable=True)
-    updated_by_name = db.Column('updated_by_name', db.String(100), nullable=True)
-    updated_on = db.Column('updated_on', db.DateTime, nullable=True)
+    eft_short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False, index=True)
+    auth_account_id = db.Column("auth_account_id", db.String(50), nullable=False, index=True)
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+    )
+    status_code = db.Column("status_code", db.String(25), nullable=False, index=True)
+    updated_by = db.Column("updated_by", db.String(100), nullable=True)
+    updated_by_name = db.Column("updated_by_name", db.String(100), nullable=True)
+    updated_on = db.Column("updated_on", db.DateTime, nullable=True)
 
-    active_statuses = [EFTShortnameStatus.LINKED.value,
-                       EFTShortnameStatus.PENDING.value]
+    active_statuses = [
+        EFTShortnameStatus.LINKED.value,
+        EFTShortnameStatus.PENDING.value,
+    ]
 
     @classmethod
     def find_by_short_name_id(cls, short_name_id: int) -> Self:
@@ -74,16 +79,14 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
     @classmethod
     def find_active_link(cls, short_name_id: int, auth_account_id: str) -> Self:
         """Find active link by short name and account."""
-        return cls.find_link_by_status(short_name_id, auth_account_id,
-                                       cls.active_statuses)
+        return cls.find_link_by_status(short_name_id, auth_account_id, cls.active_statuses)
 
     @classmethod
     def find_active_link_by_auth_id(cls, auth_account_id: str) -> Self:
         """Find active link by auth account id."""
-        return (cls.query
-                .filter_by(auth_account_id=auth_account_id)
-                .filter(cls.status_code.in_(cls.active_statuses))
-                ).one_or_none()
+        return (
+            cls.query.filter_by(auth_account_id=auth_account_id).filter(cls.status_code.in_(cls.active_statuses))
+        ).one_or_none()
 
     @classmethod
     def find_inactive_link(cls, short_name_id: int, auth_account_id: str) -> Self:
@@ -93,11 +96,11 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
     @classmethod
     def find_link_by_status(cls, short_name_id: int, auth_account_id: str, statuses: List[str]) -> Self:
         """Find short name account link by status."""
-        return (cls.query
-                .filter_by(eft_short_name_id=short_name_id)
-                .filter_by(auth_account_id=auth_account_id)
-                .filter(cls.status_code.in_(statuses))
-                ).one_or_none()
+        return (
+            cls.query.filter_by(eft_short_name_id=short_name_id)
+            .filter_by(auth_account_id=auth_account_id)
+            .filter(cls.status_code.in_(statuses))
+        ).one_or_none()
 
     @classmethod
     def get_short_name_links_count(cls, auth_account_id) -> int:
@@ -106,9 +109,11 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
         if active_link is None:
             return 0
 
-        return (cls.query
-                .filter_by(eft_short_name_id=active_link.eft_short_name_id)
-                .filter(cls.status_code.in_(cls.active_statuses))).count()
+        return (
+            cls.query.filter_by(eft_short_name_id=active_link.eft_short_name_id).filter(
+                cls.status_code.in_(cls.active_statuses)
+            )
+        ).count()
 
 
 @define
@@ -134,16 +139,17 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id,
-                   short_name_id=row.eft_short_name_id,
-                   status_code=row.status_code,
-                   account_id=row.auth_account_id,
-                   account_name=getattr(row, 'account_name', None),
-                   account_branch=getattr(row, 'account_branch', None),
-                   statement_id=getattr(row, 'latest_statement_id', None),
-                   amount_owing=getattr(row, 'total_owing', None),
-                   updated_by=row.updated_by,
-                   updated_by_name=row.updated_by_name,
-                   updated_on=row.updated_on,
-                   has_pending_payment=bool(getattr(row, 'invoice_count', 0))
-                   )
+        return cls(
+            id=row.id,
+            short_name_id=row.eft_short_name_id,
+            status_code=row.status_code,
+            account_id=row.auth_account_id,
+            account_name=getattr(row, "account_name", None),
+            account_branch=getattr(row, "account_branch", None),
+            statement_id=getattr(row, "latest_statement_id", None),
+            amount_owing=getattr(row, "total_owing", None),
+            updated_by=row.updated_by,
+            updated_by_name=row.updated_by_name,
+            updated_on=row.updated_on,
+            has_pending_payment=bool(getattr(row, "invoice_count", 0)),
+        )

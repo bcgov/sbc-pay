@@ -17,8 +17,8 @@ from datetime import date
 from decimal import Decimal
 
 from flask import current_app
-
 from sbc_common_components.tracing.service_tracing import ServiceTracing
+
 from pay_api.exceptions import BusinessException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import FeeCode as FeeCodeModel
@@ -42,13 +42,13 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._fee_code: str = None
         self._fee_start_date: date = None
         self._fee_end_date: date = None
-        self._fee_amount = Decimal('0')
+        self._fee_amount = Decimal("0")
         self._filing_type: str = None
-        self._priority_fee = Decimal('0')
-        self._future_effective_fee = Decimal('0')
-        self._waived_fee_amount = Decimal('0')
+        self._priority_fee = Decimal("0")
+        self._future_effective_fee = Decimal("0")
+        self._waived_fee_amount = Decimal("0")
         self._quantity: int = 1
-        self._service_fees = Decimal('0')
+        self._service_fees = Decimal("0")
         self._service_fee_code: str = None
         self._variable: bool = False
 
@@ -146,8 +146,9 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def total(self):
         """Return the total fees calculated."""
-        return self._fee_amount + self.pst + self.gst + self.priority_fee + \
-            self.future_effective_fee + self.service_fees
+        return (
+            self._fee_amount + self.pst + self.gst + self.priority_fee + self.future_effective_fee + self.service_fees
+        )
 
     @property
     def total_excluding_service_fees(self):
@@ -255,18 +256,15 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def asdict(self):
         """Return the User as a python dict."""
         d = {
-            'filing_type': self._filing_type,
-            'filing_type_code': self.filing_type_code,
-            'filing_fees': float(self.fee_amount),
-            'priority_fees': float(self.priority_fee),
-            'future_effective_fees': float(self.future_effective_fee),
-            'tax': {
-                'gst': float(self.gst),
-                'pst': float(self.pst)
-            },
-            'total': float(self.total),
-            'service_fees': float(self._service_fees),
-            'processing_fees': 0
+            "filing_type": self._filing_type,
+            "filing_type_code": self.filing_type_code,
+            "filing_fees": float(self.fee_amount),
+            "priority_fees": float(self.priority_fee),
+            "future_effective_fees": float(self.future_effective_fee),
+            "tax": {"gst": float(self.gst), "pst": float(self.pst)},
+            "total": float(self.total),
+            "service_fees": float(self._service_fees),
+            "processing_fees": 0,
         }
         return d
 
@@ -277,16 +275,13 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @classmethod
     @user_context
     def find_by_corp_type_and_filing_type(  # pylint: disable=too-many-arguments
-            cls,
-            corp_type: str,
-            filing_type_code: str,
-            valid_date: date,
-            **kwargs
+        cls, corp_type: str, filing_type_code: str, valid_date: date, **kwargs
     ):
         """Calculate fees for the filing by using the arguments."""
-        current_app.logger.debug(f'<get_fees_by_corp_type_and_filing_type : {corp_type}, {filing_type_code}, '
-                                 f'{valid_date}')
-        user: UserContext = kwargs['user']
+        current_app.logger.debug(
+            f"<get_fees_by_corp_type_and_filing_type : {corp_type}, {filing_type_code}, " f"{valid_date}"
+        )
+        user: UserContext = kwargs["user"]
 
         if not corp_type and not filing_type_code:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
@@ -298,7 +293,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         fee_schedule = FeeSchedule()
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
-        fee_schedule.quantity = kwargs.get('quantity')
+        fee_schedule.quantity = kwargs.get("quantity")
 
         # Find fee overrides for account.
         account_fee = AccountFeeModel.find_by_auth_account_id_and_corp_type(user.account_id, corp_type)
@@ -311,50 +306,50 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         # Set transaction fees
         fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao, account_fee)
 
-        if kwargs.get('is_priority') and fee_schedule_dao.priority_fee and apply_filing_fees:
+        if kwargs.get("is_priority") and fee_schedule_dao.priority_fee and apply_filing_fees:
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount
-        if kwargs.get('is_future_effective') and fee_schedule_dao.future_effective_fee and apply_filing_fees:
+        if kwargs.get("is_future_effective") and fee_schedule_dao.future_effective_fee and apply_filing_fees:
             fee_schedule.future_effective_fee = fee_schedule_dao.future_effective_fee.amount
 
-        if kwargs.get('waive_fees'):
+        if kwargs.get("waive_fees"):
             fee_schedule.fee_amount = 0
             fee_schedule.priority_fee = 0
             fee_schedule.future_effective_fee = 0
             fee_schedule.service_fees = 0
 
-        current_app.logger.debug('>get_fees_by_corp_type_and_filing_type')
+        current_app.logger.debug(">get_fees_by_corp_type_and_filing_type")
         return fee_schedule
 
     @staticmethod
-    def find_all(
-            corp_type: str = None,
-            filing_type_code: str = None,
-            description: str = None
-    ):
+    def find_all(corp_type: str = None, filing_type_code: str = None, description: str = None):
         """Find all fee schedule by applying any filter."""
-        current_app.logger.debug('<find_all')
-        data = {
-            'items': []
-        }
-        fee_schdules = FeeScheduleModel.find_all(corp_type_code=corp_type, filing_type_code=filing_type_code,
-                                                 description=description)
+        current_app.logger.debug("<find_all")
+        data = {"items": []}
+        fee_schdules = FeeScheduleModel.find_all(
+            corp_type_code=corp_type,
+            filing_type_code=filing_type_code,
+            description=description,
+        )
         schdule_schema = FeeScheduleSchema()
-        data['items'] = schdule_schema.dump(fee_schdules, many=True)
-        current_app.logger.debug('>find_all')
+        data["items"] = schdule_schema.dump(fee_schdules, many=True)
+        current_app.logger.debug(">find_all")
         return data
 
     @staticmethod
     @user_context
     def calculate_service_fees(fee_schedule_model: FeeScheduleModel, account_fee: AccountFeeModel, **kwargs):
         """Calculate service_fees fees."""
-        current_app.logger.debug('<calculate_service_fees')
-        user: UserContext = kwargs['user']
+        current_app.logger.debug("<calculate_service_fees")
+        user: UserContext = kwargs["user"]
 
         service_fees: float = 0
 
-        if not user.is_staff() and \
-                not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles) \
-                and fee_schedule_model.fee.amount > 0 and fee_schedule_model.service_fee:
+        if (
+            not user.is_staff()
+            and not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles)
+            and fee_schedule_model.fee.amount > 0
+            and fee_schedule_model.service_fee
+        ):
             service_fee = (account_fee.service_fee if account_fee else None) or fee_schedule_model.service_fee
             if service_fee:
                 service_fees = FeeCodeModel.find_by_code(service_fee.code).amount

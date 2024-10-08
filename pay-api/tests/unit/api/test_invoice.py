@@ -25,10 +25,13 @@ from tests.utilities.base_test import get_claims, get_payment_request, token_hea
 def test_get_invoice(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
-                     headers=headers)
-    inv_id = rv.json.get('id')
-    rv = client.get(f'/api/v1/payment-requests/{inv_id}/invoices', headers=headers)
-    assert rv.json.get('items')[0].get('id') == inv_id
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+    inv_id = rv.json.get("id")
+    rv = client.get(f"/api/v1/payment-requests/{inv_id}/invoices", headers=headers)
+    assert rv.json.get("items")[0].get("id") == inv_id

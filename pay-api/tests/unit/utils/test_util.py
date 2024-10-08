@@ -16,12 +16,13 @@
 
 Test-Suite to ensure that the util functions are working as expected.
 """
-from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
-from holidays.countries import Canada
 from datetime import datetime
 
-from pay_api.utils.util import get_nearest_business_day
+from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
+from holidays.countries import Canada
+
 from pay_api.schemas import utils as schema_utils
+from pay_api.utils.util import get_nearest_business_day
 
 
 def test_next_business_day(session):
@@ -100,8 +101,13 @@ def test_next_business_day(session):
 
 def test_print_holidays():
     """Print holidays, can be used to take a quick peak at the holidays."""
-    holidays = Canada(subdiv='BC', observed=True, categories=(GOVERNMENT, OPTIONAL, PUBLIC), years=2023)
-    holidays._add_easter_monday('Easter Monday')  # pylint: disable=protected-access
+    holidays = Canada(
+        subdiv="BC",
+        observed=True,
+        categories=(GOVERNMENT, OPTIONAL, PUBLIC),
+        years=2023,
+    )
+    holidays._add_easter_monday("Easter Monday")  # pylint: disable=protected-access
     for date, name in sorted(holidays.items()):
         print(date, name)
     assert True
@@ -109,5 +115,5 @@ def test_print_holidays():
 
 def test_validate_schema():
     """Assert get_schema works."""
-    schema_utils.get_schema('transaction_request.json')
+    schema_utils.get_schema("transaction_request.json")
     assert True

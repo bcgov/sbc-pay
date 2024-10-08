@@ -17,16 +17,16 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
-import pytz
-from dateutil.relativedelta import relativedelta
-from attrs import define
 
+import pytz
+from attrs import define
+from dateutil.relativedelta import relativedelta
 from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 
+from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 from .audit import Audit, AuditSchema
@@ -40,12 +40,11 @@ from .receipt import ReceiptSchema
 
 def determine_overdue_date(context):
     """Determine the overdue date with the correct time offset."""
-    created_on = context.get_current_parameters()['created_on']
-    target_date = created_on.date() + relativedelta(months=2,
-                                                    day=15)
+    created_on = context.get_current_parameters()["created_on"]
+    target_date = created_on.date() + relativedelta(months=2, day=15)
     target_datetime = datetime.combine(target_date, datetime.min.time())
     # Correct for daylight savings.
-    hours = target_datetime.astimezone(pytz.timezone('America/Vancouver')).utcoffset().total_seconds() / 60 / 60
+    hours = target_datetime.astimezone(pytz.timezone("America/Vancouver")).utcoffset().total_seconds() / 60 / 60
     target_date = target_datetime.replace(tzinfo=timezone.utc) + relativedelta(hours=-hours)
     return target_date.replace(tzinfo=None)
 
@@ -53,7 +52,7 @@ def determine_overdue_date(context):
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Invoice."""
 
-    __tablename__ = 'invoices'
+    __tablename__ = "invoices"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -65,51 +64,61 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'bcol_account',
-            'business_identifier',
-            'corp_type_code',
-            'created_by',
-            'created_name',
-            'created_on',
-            'cfs_account_id',
-            'dat_number',
-            'details',
-            'disbursement_reversal_date',
-            'disbursement_status_code',
-            'disbursement_date',
-            'filing_id',
-            'folio_number',
-            'invoice_status_code',
-            'payment_account_id',
-            'payment_date',
-            'payment_method_code',
-            'paid',
-            'overdue_date',
-            'refund',
-            'refund_date',
-            'routing_slip',
-            'service_fees',
-            'total',
-            'updated_by',
-            'updated_name',
-            'updated_on'
+        "include_properties": [
+            "id",
+            "bcol_account",
+            "business_identifier",
+            "corp_type_code",
+            "created_by",
+            "created_name",
+            "created_on",
+            "cfs_account_id",
+            "dat_number",
+            "details",
+            "disbursement_reversal_date",
+            "disbursement_status_code",
+            "disbursement_date",
+            "filing_id",
+            "folio_number",
+            "invoice_status_code",
+            "payment_account_id",
+            "payment_date",
+            "payment_method_code",
+            "paid",
+            "overdue_date",
+            "refund",
+            "refund_date",
+            "routing_slip",
+            "service_fees",
+            "total",
+            "updated_by",
+            "updated_name",
+            "updated_on",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_codes.code'), nullable=False, index=True)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
-    cfs_account_id = db.Column(db.Integer, ForeignKey('cfs_accounts.id'), nullable=True)
-    payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False, index=True)
-    corp_type_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=True)
-    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
+    invoice_status_code = db.Column(
+        db.String(20),
+        ForeignKey("invoice_status_codes.code"),
+        nullable=False,
+        index=True,
+    )
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
+    cfs_account_id = db.Column(db.Integer, ForeignKey("cfs_accounts.id"), nullable=True)
+    payment_method_code = db.Column(db.String(15), ForeignKey("payment_methods.code"), nullable=False, index=True)
+    corp_type_code = db.Column(db.String(10), ForeignKey("corp_types.code"), nullable=True)
+    disbursement_status_code = db.Column(db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True)
     disbursement_date = db.Column(db.DateTime, nullable=True)
     disbursement_reversal_date = db.Column(db.DateTime, nullable=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc),
-                           index=True)
+    created_on = db.Column(
+        "created_on",
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
+        index=True,
+    )
 
     business_identifier = db.Column(db.String(20), nullable=True)
     total = db.Column(db.Numeric(19, 2), nullable=False)
@@ -126,22 +135,28 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     service_fees = db.Column(db.Numeric(19, 2), nullable=True)
     details = db.Column(JSONB)
 
-    payment_line_items = relationship('PaymentLineItem', lazy='joined')
-    receipts = relationship('Receipt', lazy='joined')
-    payment_account = relationship('PaymentAccount', lazy='joined')
-    references = relationship('InvoiceReference', lazy='joined')
-    corp_type = relationship('CorpType', foreign_keys=[corp_type_code], lazy='select', innerjoin=True)
+    payment_line_items = relationship("PaymentLineItem", lazy="joined")
+    receipts = relationship("Receipt", lazy="joined")
+    payment_account = relationship("PaymentAccount", lazy="joined")
+    references = relationship("InvoiceReference", lazy="joined")
+    corp_type = relationship("CorpType", foreign_keys=[corp_type_code], lazy="select", innerjoin=True)
 
     __table_args__ = (
-        db.Index('idx_invoice_invoice_status_code_payment_account_idx', payment_account_id, invoice_status_code),
+        db.Index(
+            "idx_invoice_invoice_status_code_payment_account_idx",
+            payment_account_id,
+            invoice_status_code,
+        ),
     )
 
     @classmethod
     def update_invoices_for_revenue_updates(cls, fee_distribution_id: int):
         """Find and update all invoices using the distribution id."""
-        query = db.session.query(Invoice) \
-            .join(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id) \
+        query = (
+            db.session.query(Invoice)
+            .join(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             .filter(PaymentLineItem.fee_distribution_id == fee_distribution_id)
+        )
 
         invoices: List[Invoice] = query.all()
         for invoice in invoices:
@@ -160,26 +175,30 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def find_invoices_by_status_for_account(cls, pay_account_id: int, invoice_statuses: List[str]) -> List[Invoice]:
         """Return invoices by status for an account."""
-        query = cls.query.filter_by(payment_account_id=pay_account_id) \
-            .filter(Invoice.invoice_status_code.in_(invoice_statuses)) \
+        query = (
+            cls.query.filter_by(payment_account_id=pay_account_id)
+            .filter(Invoice.invoice_status_code.in_(invoice_statuses))
             .order_by(Invoice.id)
+        )
 
         return query.all()
 
     @classmethod
-    def find_invoices_for_payment(cls,
-                                  payment_id: int,
-                                  reference_status=InvoiceReferenceStatus.ACTIVE.value) -> List[Invoice]:
+    def find_invoices_for_payment(
+        cls, payment_id: int, reference_status=InvoiceReferenceStatus.ACTIVE.value
+    ) -> List[Invoice]:
         """Find all invoice records created for the payment."""
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .invoice_reference import InvoiceReference
         from .payment import Payment
 
-        query = db.session.query(Invoice) \
-            .join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id) \
-            .join(Payment, InvoiceReference.invoice_number == Payment.invoice_number) \
-            .filter(InvoiceReference.status_code == reference_status) \
+        query = (
+            db.session.query(Invoice)
+            .join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+            .join(Payment, InvoiceReference.invoice_number == Payment.invoice_number)
+            .filter(InvoiceReference.status_code == reference_status)
             .filter(Payment.id == payment_id)
+        )
 
         return query.all()
 
@@ -191,19 +210,17 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def find_outstanding_invoices_for_account(cls, pay_account_id: int, from_date: datetime):
         """Return invoices which are in APPROVED status, OR recent (N days) PAD PAID invoices."""
-        query = cls.query.filter_by(payment_account_id=pay_account_id). \
-            filter(
-            (Invoice.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.PARTIAL.value])) |
-            (
-                    (Invoice.payment_method_code == PaymentMethod.PAD.value) &
-                    (Invoice.invoice_status_code == InvoiceStatus.PAID.value) &
-                    (Invoice.created_on >= from_date)
-            ) |
-            (
-                (Invoice.payment_method_code == PaymentMethod.EFT.value) &
-                (Invoice.payment_method_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.OVERDUE.value])
-                 ) &
-                (Invoice.created_on >= from_date)
+        query = cls.query.filter_by(payment_account_id=pay_account_id).filter(
+            (Invoice.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.PARTIAL.value]))
+            | (
+                (Invoice.payment_method_code == PaymentMethod.PAD.value)
+                & (Invoice.invoice_status_code == InvoiceStatus.PAID.value)
+                & (Invoice.created_on >= from_date)
+            )
+            | (
+                (Invoice.payment_method_code == PaymentMethod.EFT.value)
+                & (Invoice.payment_method_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.OVERDUE.value]))
+                & (Invoice.created_on >= from_date)
             )
         )
 
@@ -217,10 +234,13 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         Removed CC payments cause CC use the get receipt route, not the PAYBC invoice status route
         """
         earliest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
-        return db.session.query(Invoice) \
-            .filter(Invoice.invoice_status_code == InvoiceStatus.CREATED.value) \
-            .filter(Invoice.payment_method_code.in_([PaymentMethod.DIRECT_PAY.value])) \
-            .filter(Invoice.created_on >= earliest_transaction_time).all()
+        return (
+            db.session.query(Invoice)
+            .filter(Invoice.invoice_status_code == InvoiceStatus.CREATED.value)
+            .filter(Invoice.payment_method_code.in_([PaymentMethod.DIRECT_PAY.value]))
+            .filter(Invoice.created_on >= earliest_transaction_time)
+            .all()
+        )
 
 
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
@@ -230,48 +250,52 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
-        exclude = ['corp_type']
+        exclude = ["corp_type"]
 
-    invoice_status_code = fields.String(data_key='status_code')
-    corp_type_code = fields.String(data_key='corp_type_code')
-    payment_method_code = fields.String(data_key='payment_method')
+    invoice_status_code = fields.String(data_key="status_code")
+    corp_type_code = fields.String(data_key="corp_type_code")
+    payment_method_code = fields.String(data_key="payment_method")
 
     # pylint: disable=no-member
-    payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key='line_items')
-    receipts = ma.Nested(ReceiptSchema, many=True, data_key='receipts')
-    references = ma.Nested(InvoiceReferenceSchema, many=True, data_key='references')
-    payment_account = ma.Nested(PaymentAccountSchema(only=('auth_account_id', 'name', 'billable', 'branch_name')),
-                                many=False)
+    payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key="line_items")
+    receipts = ma.Nested(ReceiptSchema, many=True, data_key="receipts")
+    references = ma.Nested(InvoiceReferenceSchema, many=True, data_key="references")
+    payment_account = ma.Nested(
+        PaymentAccountSchema(only=("auth_account_id", "name", "billable", "branch_name")),
+        many=False,
+    )
 
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('INVOICE.get_invoice', values={'invoice_id': '<id>'}),
-        'collection': ma.URLFor('INVOICE.get_invoices', values={'invoice_id': '<id>'})
-    })
+    _links = ma.Hyperlinks(
+        {
+            "self": ma.URLFor("INVOICE.get_invoice", values={"invoice_id": "<id>"}),
+            "collection": ma.URLFor("INVOICE.get_invoices", values={"invoice_id": "<id>"}),
+        }
+    )
 
-    total = fields.Float(data_key='total')
-    paid = fields.Float(data_key='paid')
-    refund = fields.Float(data_key='refund')
-    service_fees = fields.Float(data_key='service_fees')
+    total = fields.Float(data_key="total")
+    paid = fields.Float(data_key="paid")
+    refund = fields.Float(data_key="refund")
+    service_fees = fields.Float(data_key="service_fees")
 
     @post_dump
     def _clean_up(self, data, many):  # pylint: disable=unused-argument
         """Clean up attributes."""
         # Invoice is always deleted in this scenario:
-        if data.get('line_items'):
-            for line in list(data.get('line_items')):
-                if line.get('status_code') == LineItemStatus.CANCELLED.value:
-                    data.get('line_items').remove(line)
+        if data.get("line_items"):
+            for line in list(data.get("line_items")):
+                if line.get("status_code") == LineItemStatus.CANCELLED.value:
+                    data.get("line_items").remove(line)
 
-        if 'line_items' in data and not data.get('line_items'):
-            data.pop('line_items')
+        if "line_items" in data and not data.get("line_items"):
+            data.pop("line_items")
 
         # do not include temporary business identifier
-        if data.get('business_identifier', None) and data.get('business_identifier').startswith('T'):
-            data.pop('business_identifier')
+        if data.get("business_identifier", None) and data.get("business_identifier").startswith("T"):
+            data.pop("business_identifier")
 
         # Adding this here to make non-breaking changes for other teams EG: CSO
-        if data.get('status_code') == InvoiceStatus.PAID.value:
-            data['status_code'] = PaymentStatus.COMPLETED.value
+        if data.get("status_code") == InvoiceStatus.PAID.value:
+            data["status_code"] = PaymentStatus.COMPLETED.value
 
         return data
 
@@ -317,25 +341,41 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
         """
         # Similar to _clean_up in InvoiceSchema.
         # In the future may need to add a mapping from EFT Status: APPROVED -> COMPLETED
-        status_code = PaymentStatus.COMPLETED.value if row.invoice_status_code == InvoiceStatus.PAID.value \
+        status_code = (
+            PaymentStatus.COMPLETED.value
+            if row.invoice_status_code == InvoiceStatus.PAID.value
             else row.invoice_status_code
-        business_identifier = None if row.business_identifier and row.business_identifier.startswith('T') \
-            else row.business_identifier
+        )
+        business_identifier = (
+            None if row.business_identifier and row.business_identifier.startswith("T") else row.business_identifier
+        )
 
         line_items = [PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items]
         invoice_number = row.references[0].invoice_number if len(row.references) > 0 else None
 
-        return cls(id=row.id, bcol_account=row.bcol_account, business_identifier=business_identifier,
-                   corp_type_code=row.corp_type.code,
-                   created_by=row.created_by, created_on=row.created_on, paid=row.paid, refund=row.refund,
-                   service_fees=row.service_fees, total=row.total, status_code=status_code,
-                   filing_id=row.filing_id, folio_number=row.folio_number, payment_method=row.payment_method_code,
-                   created_name=row.created_name, details=row.details,
-                   payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
-                   line_items=line_items,
-                   product=row.corp_type.product,
-                   payment_date=row.payment_date,
-                   refund_date=row.refund_date,
-                   disbursement_date=row.disbursement_date,
-                   disbursement_reversal_date=row.disbursement_reversal_date,
-                   invoice_number=invoice_number)
+        return cls(
+            id=row.id,
+            bcol_account=row.bcol_account,
+            business_identifier=business_identifier,
+            corp_type_code=row.corp_type.code,
+            created_by=row.created_by,
+            created_on=row.created_on,
+            paid=row.paid,
+            refund=row.refund,
+            service_fees=row.service_fees,
+            total=row.total,
+            status_code=status_code,
+            filing_id=row.filing_id,
+            folio_number=row.folio_number,
+            payment_method=row.payment_method_code,
+            created_name=row.created_name,
+            details=row.details,
+            payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
+            line_items=line_items,
+            product=row.corp_type.product,
+            payment_date=row.payment_date,
+            refund_date=row.refund_date,
+            disbursement_date=row.disbursement_date,
+            disbursement_reversal_date=row.disbursement_reversal_date,
+            invoice_number=invoice_number,
+        )

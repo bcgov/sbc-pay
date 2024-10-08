@@ -68,16 +68,16 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
     @user_context
     def create(**kwargs):
         """Create a subclass of PaymentSystemService based on input params."""
-        current_app.logger.debug('<create')
-        user: UserContext = kwargs['user']
-        total_fees: int = kwargs.get('fees', None)
-        payment_account: PaymentAccount = kwargs.get('payment_account', None)
-        payment_method = kwargs.get('payment_method', PaymentMethod.DIRECT_PAY.value)
-        account_info = kwargs.get('account_info', None)
-        has_bcol_account_number = account_info is not None and account_info.get('bcolAccountNumber') is not None
+        current_app.logger.debug("<create")
+        user: UserContext = kwargs["user"]
+        total_fees: int = kwargs.get("fees", None)
+        payment_account: PaymentAccount = kwargs.get("payment_account", None)
+        payment_method = kwargs.get("payment_method", PaymentMethod.DIRECT_PAY.value)
+        account_info = kwargs.get("account_info", None)
+        has_bcol_account_number = account_info is not None and account_info.get("bcolAccountNumber") is not None
 
         _instance: PaymentSystemService = None
-        current_app.logger.debug(f'payment_method: {payment_method}')
+        current_app.logger.debug(f"payment_method: {payment_method}")
 
         if not payment_method:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
@@ -106,10 +106,12 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
     @staticmethod
     def _validate_and_throw_error(instance: PaymentSystemService, payment_account: PaymentAccount):
         if isinstance(instance, PadService):
-            is_in_pad_confirmation_period = payment_account.pad_activation_date.replace(tzinfo=timezone.utc) > \
-                datetime.now(tz=timezone.utc)
-            is_cfs_account_in_pending_status = payment_account.cfs_account_status == \
-                CfsAccountStatus.PENDING_PAD_ACTIVATION.value
+            is_in_pad_confirmation_period = payment_account.pad_activation_date.replace(
+                tzinfo=timezone.utc
+            ) > datetime.now(tz=timezone.utc)
+            is_cfs_account_in_pending_status = (
+                payment_account.cfs_account_status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value
+            )
 
             if is_in_pad_confirmation_period or is_cfs_account_in_pending_status:
                 raise BusinessException(Error.ACCOUNT_IN_PAD_CONFIRMATION_PERIOD)

@@ -15,6 +15,7 @@
 from typing import Optional
 
 from flask import Flask
+
 from .v1 import v1_endpoint
 
 

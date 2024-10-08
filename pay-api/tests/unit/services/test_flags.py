@@ -27,7 +27,7 @@ def setup():
     """Initialize app with test env for testing."""
     global app
     app = Flask(__name__)
-    app.env = 'testing'
+    app.env = "testing"
 
 
 def test_flags_constructor_no_app(setup):
@@ -41,67 +41,70 @@ def test_flags_constructor_with_app(setup):
     with app.app_context():
         flags = Flags(app)
     assert flags
-    assert app.extensions['featureflags']
+    assert app.extensions["featureflags"]
 
 
 def test_init_app_dev_with_key(setup):
     """Ensure that extension can be initialized with a key in dev."""
-    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config["PAY_LD_SDK_KEY"] = "https://no.flag/avail"
 
     with app.app_context():
         flags = Flags()
         flags.init_app(app)
     assert flags
-    assert app.extensions['featureflags']
-    assert app.extensions['featureflags'].get_sdk_key() == 'https://no.flag/avail'
+    assert app.extensions["featureflags"]
+    assert app.extensions["featureflags"].get_sdk_key() == "https://no.flag/avail"
 
 
 def test_init_app_dev_no_key(setup):
     """Ensure that extension can be initialized with no key in dev."""
-    app.config['PAY_LD_SDK_KEY'] = None
+    app.config["PAY_LD_SDK_KEY"] = None
 
     with app.app_context():
         flags = Flags()
         flags.init_app(app)
     assert flags
-    assert app.extensions['featureflags']
+    assert app.extensions["featureflags"]
 
 
 def test_init_app_prod_with_key(setup):
     """Ensure that extension can be initialized with a key in prod."""
-    app.env = 'production'
-    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.env = "production"
+    app.config["PAY_LD_SDK_KEY"] = "https://no.flag/avail"
 
     with app.app_context():
         flags = Flags()
         flags.init_app(app)
     assert flags
-    assert app.extensions['featureflags']
-    assert app.extensions['featureflags'].get_sdk_key() == 'https://no.flag/avail'
+    assert app.extensions["featureflags"]
+    assert app.extensions["featureflags"].get_sdk_key() == "https://no.flag/avail"
 
 
 def test_init_app_prod_no_key(setup):
     """Ensure that extension can be initialized with no key in prod."""
-    app.env = 'production'
-    app.config['PAY_LD_SDK_KEY'] = None
+    app.env = "production"
+    app.config["PAY_LD_SDK_KEY"] = None
 
     with app.app_context():
         flags = Flags()
         flags.init_app(app)
         with pytest.raises(KeyError):
-            client = app.extensions['featureflags']
+            client = app.extensions["featureflags"]
             assert not client
     assert flags
 
 
-@pytest.mark.parametrize('test_name,flag_name,expected', [
-    ('boolean flag', 'bool-flag', True),
-    ('string flag', 'string-flag', 'a string value'),
-    ('integer flag', 'integer-flag', 10),
-])
+@pytest.mark.parametrize(
+    "test_name,flag_name,expected",
+    [
+        ("boolean flag", "bool-flag", True),
+        ("string flag", "string-flag", "a string value"),
+        ("integer flag", "integer-flag", 10),
+    ],
+)
 def test_flags_read_from_json(setup, test_name, flag_name, expected):
     """Ensure that is_on is TRUE when reading flags from local JSON file."""
-    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config["PAY_LD_SDK_KEY"] = "https://no.flag/avail"
 
     with app.app_context():
         flags = Flags()
@@ -112,24 +115,27 @@ def test_flags_read_from_json(setup, test_name, flag_name, expected):
 
 def test_flags_read_from_json_missing_flag(setup):
     """Ensure that is_on is FALSE when reading a flag that doesn't exist from local JSON file."""
-    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config["PAY_LD_SDK_KEY"] = "https://no.flag/avail"
 
     with app.app_context():
         flags = Flags()
         flags.init_app(app)
-        flag_on = flags.is_on('missing flag')
+        flag_on = flags.is_on("missing flag")
 
     assert not flag_on
 
 
-@pytest.mark.parametrize('test_name,flag_name,expected', [
-    ('boolean flag', 'bool-flag', True),
-    ('string flag', 'string-flag', 'a string value'),
-    ('integer flag', 'integer-flag', 10),
-])
+@pytest.mark.parametrize(
+    "test_name,flag_name,expected",
+    [
+        ("boolean flag", "bool-flag", True),
+        ("string flag", "string-flag", "a string value"),
+        ("integer flag", "integer-flag", 10),
+    ],
+)
 def test_flags_read_flag_values_from_json(setup, test_name, flag_name, expected):
     """Ensure that values read from JSON == expected values when no user is passed."""
-    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config["PAY_LD_SDK_KEY"] = "https://no.flag/avail"
 
     with app.app_context():
         flags = Flags()
@@ -139,21 +145,24 @@ def test_flags_read_flag_values_from_json(setup, test_name, flag_name, expected)
     assert val == expected
 
 
-@pytest.mark.parametrize('test_name,flag_name,expected', [
-    ('boolean flag', 'bool-flag', True),
-    ('string flag', 'string-flag', 'a string value'),
-    ('integer flag', 'integer-flag', 10),
-])
+@pytest.mark.parametrize(
+    "test_name,flag_name,expected",
+    [
+        ("boolean flag", "bool-flag", True),
+        ("string flag", "string-flag", "a string value"),
+        ("integer flag", "integer-flag", 10),
+    ],
+)
 def test_flags_read_flag_values_unique_user(setup, test_name, flag_name, expected):
     """Ensure that values read from JSON == expected values when passed with a user."""
-    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config["PAY_LD_SDK_KEY"] = "https://no.flag/avail"
 
     user = UserContext()
 
     # not great to do but fine for tests
-    user._user_name = 'username'
-    user._sub = 'sub'
-    user._first_name = 'firstname'
+    user._user_name = "username"
+    user._sub = "sub"
+    user._first_name = "firstname"
 
     with app.app_context():
         flags = Flags()

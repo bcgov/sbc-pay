@@ -16,6 +16,7 @@ from typing import Optional
 
 from flask import Flask
 
+from ..ops import bp as ops_bp
 from .account import bp as account_bp
 from .account_statements import bp as account_statements_bp
 from .account_statements_notifications import bp as account_notifications_bp
@@ -32,7 +33,6 @@ from .invoice_receipt import bp as invoice_receipt_bp
 from .invoices import bp as invoices_bp
 from .meta import bp as meta_bp
 from .non_sufficient_funds import bp as non_sufficient_funds_bp
-from ..ops import bp as ops_bp
 from .payment import bp as payment_bp
 from .refund import bp as refund_bp
 from .transaction import bp as transaction_bp
@@ -48,7 +48,7 @@ class V1Endpoint:  # pylint: disable=too-few-public-methods,
     def init_app(self, app):
         """Register and initialize the Endpoint setup."""
         if not app:
-            raise Exception('Cannot initialize without a Flask App.')  # pylint: disable=broad-exception-raised
+            raise Exception("Cannot initialize without a Flask App.")  # pylint: disable=broad-exception-raised
 
         self.app = app
         self.app.register_blueprint(account_bp)

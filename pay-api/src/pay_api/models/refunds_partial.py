@@ -14,20 +14,21 @@
 """Model to handle all operations related to Payment Line Item partial refunds."""
 
 from decimal import Decimal
+
 from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
+from ..utils.enums import RefundsPartialType
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db
-from ..utils.enums import RefundsPartialType
 
 
 class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the data for payment line item partial refunds."""
 
-    __tablename__ = 'refunds_partial'
+    __tablename__ = "refunds_partial"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -39,22 +40,22 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'created_by',
-            'created_on',
-            'created_name',
-            'payment_line_item_id',
-            'refund_amount',
-            'refund_type',
-            'updated_by',
-            'updated_on',
-            'updated_name'
+        "include_properties": [
+            "id",
+            "created_by",
+            "created_on",
+            "created_name",
+            "payment_line_item_id",
+            "refund_amount",
+            "refund_type",
+            "updated_by",
+            "updated_on",
+            "updated_name",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    payment_line_item_id = db.Column(db.Integer, ForeignKey('payment_line_items.id'), nullable=False, index=True)
+    payment_line_item_id = db.Column(db.Integer, ForeignKey("payment_line_items.id"), nullable=False, index=True)
     refund_amount = db.Column(db.Numeric(19, 2), nullable=False)
     refund_type = db.Column(db.String(50), nullable=True)
 
@@ -73,6 +74,8 @@ class RefundPartialLine:
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(payment_line_item_id=row.payment_line_item_id,
-                   refund_amount=row.refund_amount,
-                   refund_type=row.refund_type)
+        return cls(
+            payment_line_item_id=row.payment_line_item_id,
+            refund_amount=row.refund_amount,
+            refund_type=row.refund_type,
+        )

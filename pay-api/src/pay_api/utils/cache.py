@@ -14,6 +14,5 @@
 """Bring in the common cache."""
 from flask_caching import Cache
 
-
 # lower case name as used by convention in most Flask apps
-cache = Cache(config={'CACHE_TYPE': 'simple'})  # pylint: disable=invalid-name
+cache = Cache(config={"CACHE_TYPE": "simple"})  # pylint: disable=invalid-name

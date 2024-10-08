@@ -5,6 +5,7 @@ Revises: 4a6ddf932b62
 Create Date: 2019-10-29 10:44:55.220375
 
 """
+
 from datetime import datetime, timezone
 
 import sqlalchemy as sa

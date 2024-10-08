@@ -24,37 +24,38 @@ from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 
 def factory_corp_type(corp_type_code: str, corp_description: str):
     """Return a valid Corp Type object."""
-    return CorpType(code=corp_type_code,
-                    description=corp_description)
+    return CorpType(code=corp_type_code, description=corp_description)
 
 
 def factory_feecode(fee_code: str, amount: int):
     """Return a valid FeeCode object."""
-    return FeeCode(code=fee_code,
-                   amount=amount)
+    return FeeCode(code=fee_code, amount=amount)
 
 
 def factory_filing_type(code: str, description: str):
     """Return a valid FilingType object."""
-    return FilingType(code=code,
-                      description=description)
+    return FilingType(code=code, description=description)
 
 
-def factory_fee_schedule(filing_type_code: str,
-                         corp_type_code: str,
-                         fee_code: str,
-                         fee_start_date: date,
-                         fee_end_date: date,
-                         priority_fee_code: str = None,
-                         future_effective_fee_code: str = None):
+def factory_fee_schedule(
+    filing_type_code: str,
+    corp_type_code: str,
+    fee_code: str,
+    fee_start_date: date,
+    fee_end_date: date,
+    priority_fee_code: str = None,
+    future_effective_fee_code: str = None,
+):
     """Return a valid FeeSchedule object."""
-    return FeeSchedule(filing_type_code=filing_type_code,
-                       corp_type_code=corp_type_code,
-                       fee_code=fee_code,
-                       fee_start_date=fee_start_date,
-                       fee_end_date=fee_end_date,
-                       priority_fee_code=priority_fee_code,
-                       future_effective_fee_code=future_effective_fee_code)
+    return FeeSchedule(
+        filing_type_code=filing_type_code,
+        corp_type_code=corp_type_code,
+        fee_code=fee_code,
+        fee_start_date=fee_start_date,
+        fee_end_date=fee_end_date,
+        priority_fee_code=priority_fee_code,
+        future_effective_fee_code=future_effective_fee_code,
+    )
 
 
 def test_fee_schedule(session):
@@ -62,10 +63,10 @@ def test_fee_schedule(session):
 
     Start with a blank database.
     """
-    fee_code = factory_feecode('EN000X', 100)
-    corp_type = factory_corp_type('XX', 'Cooperative')
-    filing_type = factory_filing_type('OTANNX', 'Annual Report')
-    fee_schedule = factory_fee_schedule('OTANNX', 'XX', 'EN000X', datetime.now(tz=timezone.utc), None)
+    fee_code = factory_feecode("EN000X", 100)
+    corp_type = factory_corp_type("XX", "Cooperative")
+    filing_type = factory_filing_type("OTANNX", "Annual Report")
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
@@ -80,17 +81,17 @@ def test_fee_schedule_find_by_corp_type_and_filing_type(session):
 
     Start with a blank database.
     """
-    fee_code = factory_feecode('EN000X', 100)
-    corp_type = factory_corp_type('XX', 'Cooperative')
-    filing_type = factory_filing_type('OTANNX', 'Annual Report')
-    fee_schedule = factory_fee_schedule('OTANNX', 'XX', 'EN000X', datetime.now(tz=timezone.utc), None)
+    fee_code = factory_feecode("EN000X", 100)
+    corp_type = factory_corp_type("XX", "Cooperative")
+    filing_type = factory_filing_type("OTANNX", "Annual Report")
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
     session.add(fee_schedule)
     session.commit()
 
-    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type('XX', 'OTANNX')
+    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type("XX", "OTANNX")
 
     assert fee_schedule.fee.amount == 100
 
@@ -100,17 +101,17 @@ def test_fee_schedule_find_by_corp_type_and_filing_type_invalid(session):
 
     Start with a blank database.
     """
-    fee_code = factory_feecode('EN000X', 100)
-    corp_type = factory_corp_type('XX', 'Cooperative')
-    filing_type = factory_filing_type('OTANNX', 'Annual Report')
-    fee_schedule = factory_fee_schedule('OTANNX', 'XX', 'EN000X', datetime.now(tz=timezone.utc), None)
+    fee_code = factory_feecode("EN000X", 100)
+    corp_type = factory_corp_type("XX", "Cooperative")
+    filing_type = factory_filing_type("OTANNX", "Annual Report")
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
     session.add(fee_schedule)
     session.commit()
 
-    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type('XX', 'OTADDX')
+    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type("XX", "OTADDX")
 
     assert fee_schedule is None
 
@@ -120,17 +121,17 @@ def test_fee_schedule_find_by_corp_type_and_filing_type_valid_date(session):
 
     Start with a blank database.
     """
-    fee_code = factory_feecode('EN000X', 100)
-    corp_type = factory_corp_type('XX', 'Cooperative')
-    filing_type = factory_filing_type('OTANNX', 'Annual Report')
-    fee_schedule = factory_fee_schedule('OTANNX', 'XX', 'EN000X', datetime.now(tz=timezone.utc), None)
+    fee_code = factory_feecode("EN000X", 100)
+    corp_type = factory_corp_type("XX", "Cooperative")
+    filing_type = factory_filing_type("OTANNX", "Annual Report")
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
     session.add(fee_schedule)
     session.commit()
 
-    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type('XX', 'OTANNX', datetime.now(tz=timezone.utc))
+    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type("XX", "OTANNX", datetime.now(tz=timezone.utc))
 
     assert fee_schedule.fee.amount == 100
 
@@ -141,18 +142,19 @@ def test_fee_schedule_find_by_corp_type_and_filing_type_invalid_date(session):
     Start with a blank database.
     """
     now = datetime.now(tz=timezone.utc)
-    fee_code = factory_feecode('EN000X', 100)
-    corp_type = factory_corp_type('XX', 'Cooperative')
-    filing_type = factory_filing_type('OTANNX', 'Annual Report')
-    fee_schedule = factory_fee_schedule('OTANNX', 'XX', 'EN000X', now, None)
+    fee_code = factory_feecode("EN000X", 100)
+    corp_type = factory_corp_type("XX", "Cooperative")
+    filing_type = factory_filing_type("OTANNX", "Annual Report")
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", now, None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
     session.add(fee_schedule)
     session.commit()
 
-    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type('XX', 'OTANNX',
-                                                                  datetime.now(tz=timezone.utc) - timedelta(1))
+    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type(
+        "XX", "OTANNX", datetime.now(tz=timezone.utc) - timedelta(1)
+    )
 
     assert fee_schedule is None
 
@@ -163,10 +165,10 @@ def test_fee_schedule_find_by_none_corp_type_and_filing_type(session):
     Start with a blank database.
     """
     now = datetime.now(tz=timezone.utc)
-    fee_code = factory_feecode('EN000X', 100)
-    corp_type = factory_corp_type('XX', 'Cooperative')
-    filing_type = factory_filing_type('OTANNX', 'Annual Report')
-    fee_schedule = factory_fee_schedule('OTANNX', 'XX', 'EN000X', now, None)
+    fee_code = factory_feecode("EN000X", 100)
+    corp_type = factory_corp_type("XX", "Cooperative")
+    filing_type = factory_filing_type("OTANNX", "Annual Report")
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", now, None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)

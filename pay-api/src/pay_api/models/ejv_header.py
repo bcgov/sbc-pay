@@ -22,7 +22,7 @@ from .db import db
 class EjvHeader(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about EJV Header."""
 
-    __tablename__ = 'ejv_headers'
+    __tablename__ = "ejv_headers"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -34,19 +34,19 @@ class EjvHeader(BaseModel):  # pylint: disable=too-many-instance-attributes
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
-        'include_properties': [
-            'id',
-            'disbursement_status_code',
-            'ejv_file_id',
-            'partner_code',
-            'payment_account_id',
-            'message'
+        "include_properties": [
+            "id",
+            "disbursement_status_code",
+            "ejv_file_id",
+            "partner_code",
+            "payment_account_id",
+            "message",
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
-    ejv_file_id = db.Column(db.Integer, ForeignKey('ejv_files.id'), nullable=False)
-    partner_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=True)  # For partners
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)  # For gov accounts
-    message = db.Column('message', db.String, nullable=True, index=False)
+    disbursement_status_code = db.Column(db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True)
+    ejv_file_id = db.Column(db.Integer, ForeignKey("ejv_files.id"), nullable=False)
+    partner_code = db.Column(db.String(10), ForeignKey("corp_types.code"), nullable=True)  # For partners
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True)  # For gov accounts
+    message = db.Column("message", db.String, nullable=True, index=False)

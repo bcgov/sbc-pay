@@ -18,12 +18,13 @@ Test-Suite to ensure that the PAD Banking layer is working as expected.
 """
 
 from datetime import datetime, timezone
+
 import pytest
+
 from pay_api.exceptions import BusinessException
 from pay_api.services.pad_service import PadService
 from pay_api.utils.enums import PaymentMethod
 from tests.utilities.base_test import factory_payment_account
-
 
 pad_service = PadService()
 
@@ -31,25 +32,25 @@ pad_service = PadService()
 def test_create_account(session):
     """Test create_account."""
     payment_info = {
-        'bankInstitutionNumber': 111,
-        'bankTransitNumber': 222,
-        'bankAccountNumber': 33333333
+        "bankInstitutionNumber": 111,
+        "bankTransitNumber": 222,
+        "bankAccountNumber": 33333333,
     }
-    account = pad_service.create_account(identifier='100', contact_info={}, payment_info=payment_info)
+    account = pad_service.create_account(identifier="100", contact_info={}, payment_info=payment_info)
     assert account
-    assert account.bank_number == payment_info.get('bankInstitutionNumber')
+    assert account.bank_number == payment_info.get("bankInstitutionNumber")
 
 
 def test_get_payment_system_code(session):
     """Test get_payment_system_code."""
     code = pad_service.get_payment_system_code()
-    assert code == 'PAYBC'
+    assert code == "PAYBC"
 
 
 def test_get_payment_method_code(session):
     """Test get_payment_method_code."""
     code = pad_service.get_payment_method_code()
-    assert code == 'PAD'
+    assert code == "PAD"
 
 
 def test_has_no_payment_blockers(session):
