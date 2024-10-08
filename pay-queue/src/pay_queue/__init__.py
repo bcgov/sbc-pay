@@ -34,22 +34,21 @@ from pay_queue.version import __version__
 
 from .resources import register_endpoints
 
+setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.conf"))  # important to do this first
 
-setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
-
-def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')) -> Flask:
+def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")) -> Flask:
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.env = run_mode
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     # Configure Sentry
-    if dsn := app.config.get('SENTRY_DSN', None):
+    if dsn := app.config.get("SENTRY_DSN", None):
         sentry_sdk.init(
             dsn=dsn,
             integrations=[FlaskIntegration()],
-            release=f'pay-queue@{get_run_version()}',
+            release=f"pay-queue@{get_run_version()}",
             send_default_pii=False,
         )
 
@@ -68,10 +67,11 @@ def build_cache(app):
     cache.init_app(app)
     with app.app_context():
         cache.clear()
-        if not app.config.get('TESTING', False):
+        if not app.config.get("TESTING", False):
             try:
                 from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+
                 CodeService.build_all_codes_cache()
             except Exception as e:  # NOQA pylint:disable=broad-except
-                app.logger.error('Error on caching ')
+                app.logger.error("Error on caching ")
                 app.logger.error(e)

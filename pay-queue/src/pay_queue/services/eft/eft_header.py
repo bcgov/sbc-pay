@@ -44,8 +44,10 @@ class EFTHeader(EFTBase):
         self.validate_record_type(EFTConstants.HEADER_RECORD_TYPE.value)
 
         # Confirm valid file creation datetime
-        self.creation_datetime = self.parse_datetime(self.extract_value(16, 24) + self.extract_value(41, 45),
-                                                     EFTError.INVALID_CREATION_DATETIME)
+        self.creation_datetime = self.parse_datetime(
+            self.extract_value(16, 24) + self.extract_value(41, 45),
+            EFTError.INVALID_CREATION_DATETIME,
+        )
 
         # Confirm valid deposit dates
         self.starting_deposit_date = self.parse_date(self.extract_value(69, 77), EFTError.INVALID_DEPOSIT_START_DATE)

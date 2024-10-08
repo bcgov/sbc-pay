@@ -33,8 +33,14 @@ from sbc_common_components.utils.enums import QueueMessageTypes
 from pay_queue.enums import RecordType, SourceTransaction, Status, TargetTransaction
 
 from .factory import (
-    factory_create_online_banking_account, factory_create_pad_account, factory_invoice, factory_invoice_reference,
-    factory_payment, factory_payment_line_item, factory_receipt)
+    factory_create_online_banking_account,
+    factory_create_pad_account,
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment,
+    factory_payment_line_item,
+    factory_receipt,
+)
 from .utils import add_file_event_to_queue_and_process, create_and_upload_settlement_file
 
 
@@ -44,14 +50,18 @@ def test_online_banking_reconciliations(session, app, client):
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                        cfs_account=cfs_account_number)
-    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
-    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
-    invoice_number = '1234567890'
+    cfs_account_number = "1234"
+    pay_account = factory_create_online_banking_account(
+        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+    )
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
+    invoice_number = "1234567890"
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
@@ -59,18 +69,30 @@ def test_online_banking_reconciliations(session, app, client):
     total = invoice.total
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     # Settlement row
-    date = datetime.now().strftime('%d-%b-%y')
-    receipt_number = '1234567890'
-    row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date,
-           total, cfs_account_number,
-           TargetTransaction.INV.value, invoice_number,
-           total, 0, Status.PAID.value]
+    date = datetime.now().strftime("%d-%b-%y")
+    receipt_number = "1234567890"
+    row = [
+        RecordType.BOLP.value,
+        SourceTransaction.ONLINE_BANKING.value,
+        receipt_number,
+        100001,
+        date,
+        total,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -90,14 +112,18 @@ def test_online_banking_reconciliations_over_payment(session, app, client):
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                        cfs_account=cfs_account_number)
-    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
-    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
-    invoice_number = '1234567890'
+    cfs_account_number = "1234"
+    pay_account = factory_create_online_banking_account(
+        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+    )
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
+    invoice_number = "1234567890"
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
@@ -105,20 +131,45 @@ def test_online_banking_reconciliations_over_payment(session, app, client):
     total = invoice.total
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     # Settlement row
-    date = datetime.now().strftime('%d-%b-%y')
-    receipt_number = '1234567890'
+    date = datetime.now().strftime("%d-%b-%y")
+    receipt_number = "1234567890"
     over_payment_amount = 100
-    inv_row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date, total,
-               cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
-    credit_row = [RecordType.ONAC.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date,
-                  over_payment_amount, cfs_account_number, TargetTransaction.INV.value, invoice_number,
-                  over_payment_amount, 0, Status.ON_ACC.value]
+    inv_row = [
+        RecordType.BOLP.value,
+        SourceTransaction.ONLINE_BANKING.value,
+        receipt_number,
+        100001,
+        date,
+        total,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
+    credit_row = [
+        RecordType.ONAC.value,
+        SourceTransaction.ONLINE_BANKING.value,
+        receipt_number,
+        100001,
+        date,
+        over_payment_amount,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        over_payment_amount,
+        0,
+        Status.ON_ACC.value,
+    ]
     create_and_upload_settlement_file(file_name, [inv_row, credit_row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -138,14 +189,18 @@ def test_online_banking_reconciliations_with_credit(session, app, client):
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                        cfs_account=cfs_account_number)
-    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
-    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
-    invoice_number = '1234567890'
+    cfs_account_number = "1234"
+    pay_account = factory_create_online_banking_account(
+        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+    )
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
+    invoice_number = "1234567890"
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
@@ -153,20 +208,45 @@ def test_online_banking_reconciliations_with_credit(session, app, client):
     total = invoice.total
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     # Settlement row
-    date = datetime.now().strftime('%d-%b-%y')
-    receipt_number = '1234567890'
+    date = datetime.now().strftime("%d-%b-%y")
+    receipt_number = "1234567890"
     credit_amount = 10
-    inv_row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date,
-               total - credit_amount, cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0,
-               Status.PAID.value]
-    credit_row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, '555566677', 100001, date, credit_amount,
-                  cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
+    inv_row = [
+        RecordType.BOLP.value,
+        SourceTransaction.ONLINE_BANKING.value,
+        receipt_number,
+        100001,
+        date,
+        total - credit_amount,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
+    credit_row = [
+        RecordType.ONAC.value,
+        SourceTransaction.EFT_WIRE.value,
+        "555566677",
+        100001,
+        date,
+        credit_amount,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
     create_and_upload_settlement_file(file_name, [inv_row, credit_row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -186,14 +266,18 @@ def test_online_banking_reconciliations_overflows_credit(session, app, client):
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                        cfs_account=cfs_account_number)
-    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
-    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
-    invoice_number = '1234567890'
+    cfs_account_number = "1234"
+    pay_account = factory_create_online_banking_account(
+        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+    )
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
+    invoice_number = "1234567890"
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
@@ -201,25 +285,61 @@ def test_online_banking_reconciliations_overflows_credit(session, app, client):
     total = invoice.total
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     # Settlement row
-    date = datetime.now().strftime('%d-%b-%y')
-    receipt_number = '1234567890'
+    date = datetime.now().strftime("%d-%b-%y")
+    receipt_number = "1234567890"
     credit_amount = 10
     onac_amount = 100
-    credit_row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, '555566677', 100001, date, credit_amount,
-                  cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
-    inv_row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date,
-               total - credit_amount, cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0,
-               Status.PAID.value]
-    onac_row = [RecordType.ONAC.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date,
-                onac_amount, cfs_account_number, TargetTransaction.RECEIPT.value, receipt_number, total, 0,
-                Status.ON_ACC.value]
+    credit_row = [
+        RecordType.ONAC.value,
+        SourceTransaction.EFT_WIRE.value,
+        "555566677",
+        100001,
+        date,
+        credit_amount,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
+    inv_row = [
+        RecordType.BOLP.value,
+        SourceTransaction.ONLINE_BANKING.value,
+        receipt_number,
+        100001,
+        date,
+        total - credit_amount,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
+    onac_row = [
+        RecordType.ONAC.value,
+        SourceTransaction.ONLINE_BANKING.value,
+        receipt_number,
+        100001,
+        date,
+        onac_amount,
+        cfs_account_number,
+        TargetTransaction.RECEIPT.value,
+        receipt_number,
+        total,
+        0,
+        Status.ON_ACC.value,
+    ]
 
     create_and_upload_settlement_file(file_name, [inv_row, credit_row, onac_row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -239,14 +359,18 @@ def test_online_banking_under_payment(session, app, client):
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                        cfs_account=cfs_account_number)
-    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
-    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
-    invoice_number = '1234567890'
+    cfs_account_number = "1234"
+    pay_account = factory_create_online_banking_account(
+        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+    )
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
+    invoice_number = "1234567890"
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
@@ -254,20 +378,32 @@ def test_online_banking_under_payment(session, app, client):
     total = invoice.total
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     paid_amount = 10
     # Settlement row
-    date = datetime.now().strftime('%d-%b-%y')
-    receipt_number = '1234567890'
+    date = datetime.now().strftime("%d-%b-%y")
+    receipt_number = "1234567890"
 
-    row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date, paid_amount,
-           cfs_account_number,
-           TargetTransaction.INV.value, invoice_number,
-           total, total - paid_amount, Status.PARTIAL.value]
+    row = [
+        RecordType.BOLP.value,
+        SourceTransaction.ONLINE_BANKING.value,
+        receipt_number,
+        100001,
+        date,
+        paid_amount,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        total - paid_amount,
+        Status.PARTIAL.value,
+    ]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -288,20 +424,25 @@ def test_pad_reconciliations(session, app, client):
     # 2. Create invoices and related records
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                             account_number=cfs_account_number)
-    invoice1 = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                               payment_method_code=PaymentMethod.PAD.value)
-    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice1 = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0, service_fees=10.0, total=90.0)
 
-    invoice2 = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
-                               payment_method_code=PaymentMethod.PAD.value)
-    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
-                              service_fees=10.0, total=190.0)
+    invoice2 = factory_invoice(
+        payment_account=pay_account,
+        total=200,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0, service_fees=10.0, total=190.0)
 
-    invoice_number = '1234567890'
+    invoice_number = "1234567890"
 
     factory_invoice_reference(invoice_id=invoice1.id, invoice_number=invoice_number)
     factory_invoice_reference(invoice_id=invoice2.id, invoice_number=invoice_number)
@@ -315,18 +456,30 @@ def test_pad_reconciliations(session, app, client):
     total = invoice1.total + invoice2.total
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     # Settlement row
-    receipt_number = '1234567890'
-    date = datetime.now().strftime('%d-%b-%y')
-    row = [RecordType.PAD.value, SourceTransaction.PAD.value, receipt_number, 100001, date, total,
-           cfs_account_number,
-           'INV', invoice_number,
-           total, 0, Status.PAID.value]
+    receipt_number = "1234567890"
+    date = datetime.now().strftime("%d-%b-%y")
+    row = [
+        RecordType.PAD.value,
+        SourceTransaction.PAD.value,
+        receipt_number,
+        100001,
+        date,
+        total,
+        cfs_account_number,
+        "INV",
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -355,20 +508,25 @@ def test_pad_reconciliations_with_credit_memo(session, app, client):
     # 3. Create CFS Invoice records
     # 4. Mimic some credits on the account
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                             account_number=cfs_account_number)
-    invoice1 = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                               payment_method_code=PaymentMethod.PAD.value)
-    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice1 = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0, service_fees=10.0, total=90.0)
 
-    invoice2 = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
-                               payment_method_code=PaymentMethod.PAD.value)
-    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
-                              service_fees=10.0, total=190.0)
+    invoice2 = factory_invoice(
+        payment_account=pay_account,
+        total=200,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0, service_fees=10.0, total=190.0)
 
-    invoice_number = '1234567890'
+    invoice_number = "1234567890"
 
     factory_invoice_reference(invoice_id=invoice1.id, invoice_number=invoice_number)
     factory_invoice_reference(invoice_id=invoice2.id, invoice_number=invoice_number)
@@ -382,21 +540,47 @@ def test_pad_reconciliations_with_credit_memo(session, app, client):
     total = invoice1.total + invoice2.total
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     # Settlement row
-    receipt_number = '1234567890'
-    credit_memo_number = 'CM123'
-    date = datetime.now().strftime('%d-%b-%y')
+    receipt_number = "1234567890"
+    credit_memo_number = "CM123"
+    date = datetime.now().strftime("%d-%b-%y")
     credit_amount = 25
 
-    credit_row = [RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, credit_memo_number, 100002, date,
-                  credit_amount, cfs_account_number, 'INV', invoice_number, total, 0, Status.PAID.value]
-    pad_row = [RecordType.PAD.value, SourceTransaction.PAD.value, receipt_number, 100001, date, total - credit_amount,
-               cfs_account_number, 'INV', invoice_number, total, 0, Status.PAID.value]
+    credit_row = [
+        RecordType.CMAP.value,
+        SourceTransaction.CREDIT_MEMO.value,
+        credit_memo_number,
+        100002,
+        date,
+        credit_amount,
+        cfs_account_number,
+        "INV",
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
+    pad_row = [
+        RecordType.PAD.value,
+        SourceTransaction.PAD.value,
+        receipt_number,
+        100001,
+        date,
+        total - credit_amount,
+        cfs_account_number,
+        "INV",
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
     create_and_upload_settlement_file(file_name, [credit_row, pad_row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -424,20 +608,25 @@ def test_pad_nsf_reconciliations(session, app, client):
     # 2. Create invoices and related records
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                             account_number=cfs_account_number)
-    invoice1 = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                               payment_method_code=PaymentMethod.PAD.value)
-    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice1 = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0, service_fees=10.0, total=90.0)
 
-    invoice2 = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
-                               payment_method_code=PaymentMethod.PAD.value)
-    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
-                              service_fees=10.0, total=190.0)
+    invoice2 = factory_invoice(
+        payment_account=pay_account,
+        total=200,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0, service_fees=10.0, total=190.0)
 
-    invoice_number = '1234567890'
+    invoice_number = "1234567890"
 
     factory_invoice_reference(invoice_id=invoice1.id, invoice_number=invoice_number)
     factory_invoice_reference(invoice_id=invoice2.id, invoice_number=invoice_number)
@@ -453,17 +642,30 @@ def test_pad_nsf_reconciliations(session, app, client):
     total = invoice1.total + invoice2.total
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     # Settlement row
-    receipt_number = '1234567890'
-    date = datetime.now().strftime('%d-%b-%y')
-    row = [RecordType.PAD.value, SourceTransaction.PAD.value, receipt_number, 100001, date, 0, cfs_account_number,
-           'INV', invoice_number,
-           total, total, Status.NOT_PAID.value]
+    receipt_number = "1234567890"
+    date = datetime.now().strftime("%d-%b-%y")
+    row = [
+        RecordType.PAD.value,
+        SourceTransaction.PAD.value,
+        receipt_number,
+        100001,
+        date,
+        0,
+        cfs_account_number,
+        "INV",
+        invoice_number,
+        total,
+        total,
+        Status.NOT_PAID.value,
+    ]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in SETTLEMENT_SCHEDULED status and Payment should be FAILED
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -478,8 +680,9 @@ def test_pad_nsf_reconciliations(session, app, client):
     assert payment.payment_method_code == PaymentMethod.PAD.value
     assert payment.invoice_number == invoice_number
 
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account_id,
-                                                                                    PaymentMethod.PAD.value)
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
+        pay_account_id, PaymentMethod.PAD.value
+    )
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
     assert pay_account.has_nsf_invoices
 
@@ -490,28 +693,39 @@ def test_pad_reversal_reconciliations(session, app, client):
     # 2. Create invoices and related records for a completed payment
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
-                                             account_number=cfs_account_number)
-    invoice1 = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                               payment_method_code=PaymentMethod.PAD.value,
-                               status_code=InvoiceStatus.PAID.value)
-    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice1 = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0, service_fees=10.0, total=90.0)
 
-    invoice2 = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
-                               payment_method_code=PaymentMethod.PAD.value,
-                               status_code=InvoiceStatus.PAID.value)
-    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
-                              service_fees=10.0, total=190.0)
+    invoice2 = factory_invoice(
+        payment_account=pay_account,
+        total=200,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0, service_fees=10.0, total=190.0)
 
-    invoice_number = '1234567890'
-    receipt_number = '9999999999'
+    invoice_number = "1234567890"
+    receipt_number = "9999999999"
 
-    factory_invoice_reference(invoice_id=invoice1.id, invoice_number=invoice_number,
-                              status_code=InvoiceReferenceStatus.COMPLETED.value)
-    factory_invoice_reference(invoice_id=invoice2.id, invoice_number=invoice_number,
-                              status_code=InvoiceReferenceStatus.COMPLETED.value)
+    factory_invoice_reference(
+        invoice_id=invoice1.id,
+        invoice_number=invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+    factory_invoice_reference(
+        invoice_id=invoice2.id,
+        invoice_number=invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
 
     receipt_id1 = factory_receipt(invoice_id=invoice1.id, receipt_number=receipt_number).save().id
     receipt_id2 = factory_receipt(invoice_id=invoice2.id, receipt_number=receipt_number).save().id
@@ -522,23 +736,41 @@ def test_pad_reversal_reconciliations(session, app, client):
 
     total = invoice1.total + invoice2.total
 
-    payment = factory_payment(pay_account=pay_account, paid_amount=total, invoice_amount=total,
-                              invoice_number=invoice_number,
-                              receipt_number=receipt_number, status=PaymentStatus.COMPLETED.value)
+    payment = factory_payment(
+        pay_account=pay_account,
+        paid_amount=total,
+        invoice_amount=total,
+        invoice_number=invoice_number,
+        receipt_number=receipt_number,
+        status=PaymentStatus.COMPLETED.value,
+    )
     pay_id = payment.id
 
     # Now publish message saying payment has been reversed.
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
     # Settlement row
-    date = datetime.now().strftime('%d-%b-%y')
-    row = [RecordType.PADR.value, SourceTransaction.PAD.value, receipt_number, 100001, date, 0, cfs_account_number,
-           'INV', invoice_number,
-           total, total, Status.NOT_PAID.value]
+    date = datetime.now().strftime("%d-%b-%y")
+    row = [
+        RecordType.PADR.value,
+        SourceTransaction.PAD.value,
+        receipt_number,
+        100001,
+        date,
+        0,
+        cfs_account_number,
+        "INV",
+        invoice_number,
+        total,
+        total,
+        Status.NOT_PAID.value,
+    ]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in SETTLEMENT_SCHEDULED status and Payment should be FAILED
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -569,43 +801,63 @@ async def test_eft_wire_reconciliations(session, app, client):
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
     # 4. Create a CFS settlement file, and verify the records
-    cfs_account_number = '1234'
-    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                        cfs_account=cfs_account_number)
+    cfs_account_number = "1234"
+    pay_account = factory_create_online_banking_account(
+        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+    )
 
-    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
-    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
-    invoice_number = '1234567890'
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
+    invoice_number = "1234567890"
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
     invoice_id = invoice.id
     total = invoice.total
 
-    receipt = 'RCPT0012345'
+    receipt = "RCPT0012345"
     paid_amount = 100
-    PaymentModel(payment_method_code=PaymentMethod.EFT.value,
-                 payment_status_code=PaymentStatus.CREATED.value,
-                 payment_system_code='PAYBC',
-                 payment_account_id=pay_account.id,
-                 payment_date=datetime.now(),
-                 paid_amount=paid_amount,
-                 receipt_number=receipt).save()
+    PaymentModel(
+        payment_method_code=PaymentMethod.EFT.value,
+        payment_status_code=PaymentStatus.CREATED.value,
+        payment_system_code="PAYBC",
+        payment_account_id=pay_account.id,
+        payment_date=datetime.now(),
+        paid_amount=paid_amount,
+        receipt_number=receipt,
+    ).save()
 
     # Create a settlement file and publish.
-    file_name: str = 'cas_settlement_file.csv'
+    file_name: str = "cas_settlement_file.csv"
 
     # Settlement row
-    date = datetime.now().strftime('%d-%b-%y')
+    date = datetime.now().strftime("%d-%b-%y")
 
-    row = [RecordType.EFTP.value, SourceTransaction.EFT_WIRE.value, receipt, 100001, date, total,
-           cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
+    row = [
+        RecordType.EFTP.value,
+        SourceTransaction.EFT_WIRE.value,
+        receipt,
+        100001,
+        date,
+        total,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -625,73 +877,113 @@ def test_credits(session, app, client, monkeypatch):
     # 4. Publish credit in settlement file.
     # 5. Mock CFS Response for the receipt and credit memo.
     # 6. Confirm the credit matches the records.
-    cfs_account_number = '1234'
-    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                        cfs_account=cfs_account_number)
+    cfs_account_number = "1234"
+    pay_account = factory_create_online_banking_account(
+        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+    )
     pay_account_id = pay_account.id
-    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
-    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
-    invoice_number = '1234567890'
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
+    invoice_number = "1234567890"
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
 
-    receipt_number = 'RCPT0012345'
+    receipt_number = "RCPT0012345"
     onac_amount = 100
     cm_identifier = 1000
     cm_amount = 100
     cm_used_amount = 50
-    PaymentModel(payment_method_code=PaymentMethod.EFT.value,
-                 payment_status_code=PaymentStatus.CREATED.value,
-                 payment_system_code='PAYBC',
-                 payment_account_id=pay_account.id,
-                 payment_date=datetime.now(),
-                 paid_amount=onac_amount,
-                 receipt_number=receipt_number).save()
+    PaymentModel(
+        payment_method_code=PaymentMethod.EFT.value,
+        payment_status_code=PaymentStatus.CREATED.value,
+        payment_system_code="PAYBC",
+        payment_account_id=pay_account.id,
+        payment_date=datetime.now(),
+        paid_amount=onac_amount,
+        receipt_number=receipt_number,
+    ).save()
 
-    credit = CreditModel(cfs_identifier=cm_identifier,
-                         is_credit_memo=True,
-                         amount=cm_amount,
-                         remaining_amount=cm_amount,
-                         account_id=pay_account_id).save()
+    credit = CreditModel(
+        cfs_identifier=cm_identifier,
+        is_credit_memo=True,
+        amount=cm_amount,
+        remaining_amount=cm_amount,
+        account_id=pay_account_id,
+    ).save()
     credit_id = credit.id
 
-    def mock_receipt(cfs_account: CfsAccountModel,
-                     receipt_number: str):  # pylint: disable=unused-argument; mocks of library methods
-        return {
-            'receipt_amount': onac_amount
-        }
+    def mock_receipt(
+        cfs_account: CfsAccountModel, receipt_number: str
+    ):  # pylint: disable=unused-argument; mocks of library methods
+        return {"receipt_amount": onac_amount}
 
-    def mock_cms(cfs_account: CfsAccountModel,
-                 cms_number: str):  # pylint: disable=unused-argument; mocks of library methods
-        return {
-            'amount_due': cm_amount - cm_used_amount
-        }
+    def mock_cms(
+        cfs_account: CfsAccountModel, cms_number: str
+    ):  # pylint: disable=unused-argument; mocks of library methods
+        return {"amount_due": cm_amount - cm_used_amount}
 
-    monkeypatch.setattr('pay_api.services.cfs_service.CFSService.get_receipt', mock_receipt)
-    monkeypatch.setattr('pay_api.services.cfs_service.CFSService.get_cms', mock_cms)
+    monkeypatch.setattr("pay_api.services.cfs_service.CFSService.get_receipt", mock_receipt)
+    monkeypatch.setattr("pay_api.services.cfs_service.CFSService.get_cms", mock_cms)
 
-    file_name = 'cas_settlement_file.csv'
+    file_name = "cas_settlement_file.csv"
     date = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
-    date_str = date.strftime('%d-%b-%y')
+    date_str = date.strftime("%d-%b-%y")
 
-    row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, receipt_number, 100001, date_str, onac_amount,
-           cfs_account_number, TargetTransaction.RECEIPT.value, receipt_number, onac_amount, 0, Status.ON_ACC.value]
+    row = [
+        RecordType.ONAC.value,
+        SourceTransaction.EFT_WIRE.value,
+        receipt_number,
+        100001,
+        date_str,
+        onac_amount,
+        cfs_account_number,
+        TargetTransaction.RECEIPT.value,
+        receipt_number,
+        onac_amount,
+        0,
+        Status.ON_ACC.value,
+    ]
 
     credit_invoices_row = [
-        RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, cm_identifier, 100003, date_str, 2.5,
-        cfs_account_number, TargetTransaction.INV.value, invoice_number, 100, 0, Status.PAID.value
+        RecordType.CMAP.value,
+        SourceTransaction.CREDIT_MEMO.value,
+        cm_identifier,
+        100003,
+        date_str,
+        2.5,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        100,
+        0,
+        Status.PAID.value,
     ]
 
     credit_invoices_row2 = [
-        RecordType.CMAP.value, SourceTransaction.CREDIT_MEMO.value, cm_identifier, 100004, date_str, 5.5,
-        cfs_account_number, TargetTransaction.INV.value, invoice_number, 100, 0, Status.PAID.value
+        RecordType.CMAP.value,
+        SourceTransaction.CREDIT_MEMO.value,
+        cm_identifier,
+        100004,
+        date_str,
+        5.5,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        100,
+        0,
+        Status.PAID.value,
     ]
 
     create_and_upload_settlement_file(file_name, [row, credit_invoices_row, credit_invoices_row2])
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     # Look up credit file and make sure the credits are recorded.
     pay_account = PaymentAccountModel.find_by_id(pay_account_id)
@@ -720,38 +1012,56 @@ def test_credits(session, app, client, monkeypatch):
 
 def test_unconsolidated_invoices_errors(session, app, client, mocker):
     """Test error scenarios for unconsolidated invoices in the reconciliation worker."""
-    cfs_account_number = '1234'
-    pay_account = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
-                                                        cfs_account=cfs_account_number)
+    cfs_account_number = "1234"
+    pay_account = factory_create_online_banking_account(
+        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+    )
 
-    invoice = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
-                              payment_method_code=PaymentMethod.ONLINE_BANKING.value)
-    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
-                              service_fees=10.0, total=90.0)
-    invoice_number = '1234567890'
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
+    invoice_number = "1234567890"
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
     invoice_id = invoice.id
     total = invoice.total
 
-    error_messages = [{'error': 'Test error message', 'row': 'row 2'}]
-    mocker.patch('pay_queue.services.payment_reconciliations._process_file_content',
-                 return_value=(True, error_messages))
-    mock_send_error_email = mocker.patch('pay_queue.services.payment_reconciliations.send_error_email')
+    error_messages = [{"error": "Test error message", "row": "row 2"}]
+    mocker.patch(
+        "pay_queue.services.payment_reconciliations._process_file_content",
+        return_value=(True, error_messages),
+    )
+    mock_send_error_email = mocker.patch("pay_queue.services.payment_reconciliations.send_error_email")
 
-    file_name: str = 'BCR_PAYMENT_APPL_20240619.csv'
+    file_name: str = "BCR_PAYMENT_APPL_20240619.csv"
     date = datetime.now(tz=timezone.utc).isoformat()
-    receipt_number = '1234567890'
-    row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date,
-           total, cfs_account_number,
-           TargetTransaction.INV.value, invoice_number,
-           total, 0, Status.PAID.value]
+    receipt_number = "1234567890"
+    row = [
+        RecordType.BOLP.value,
+        SourceTransaction.ONLINE_BANKING.value,
+        receipt_number,
+        100001,
+        date,
+        total,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
     create_and_upload_settlement_file(file_name, [row])
 
-    add_file_event_to_queue_and_process(client,
-                                        file_name=file_name,
-                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
 
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
@@ -759,8 +1069,8 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     mock_send_error_email.assert_called_once()
     call_args = mock_send_error_email.call_args
     email_params = call_args[0][0]
-    assert email_params.subject == 'Payment Reconciliation Failure'
+    assert email_params.subject == "Payment Reconciliation Failure"
     assert email_params.file_name == file_name
-    assert email_params.minio_location == 'payment-sftp'
+    assert email_params.minio_location == "payment-sftp"
     assert email_params.error_messages == error_messages
     assert email_params.table_name == CasSettlementModel.__tablename__

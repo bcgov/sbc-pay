@@ -27,11 +27,10 @@ from pay_queue.services.cgi_reconciliations import reconcile_distributions
 from pay_queue.services.eft.eft_reconciliation import reconcile_eft_payments
 from pay_queue.services.payment_reconciliations import reconcile_payments
 
+bp = Blueprint("worker", __name__)
 
-bp = Blueprint('worker', __name__)
 
-
-@bp.route('/', methods=('POST',))
+@bp.route("/", methods=("POST",))
 @ensure_authorized_queue_user
 def worker():
     """Worker to handle incoming queue pushes."""
@@ -40,7 +39,7 @@ def worker():
         return {}, HTTPStatus.OK
 
     try:
-        current_app.logger.info('Event Message Received: %s ', json.dumps(dataclasses.asdict(ce)))
+        current_app.logger.info("Event Message Received: %s ", json.dumps(dataclasses.asdict(ce)))
         if ce.type == QueueMessageTypes.CAS_MESSAGE_TYPE.value:
             reconcile_payments(ce)
         elif ce.type == QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value:
@@ -49,13 +48,16 @@ def worker():
             reconcile_distributions(ce.data, is_feedback=True)
         elif ce.type == QueueMessageTypes.EFT_FILE_UPLOADED.value:
             reconcile_eft_payments(ce)
-        elif ce.type in [QueueMessageTypes.INCORPORATION.value, QueueMessageTypes.REGISTRATION.value]:
+        elif ce.type in [
+            QueueMessageTypes.INCORPORATION.value,
+            QueueMessageTypes.REGISTRATION.value,
+        ]:
             update_temporary_identifier(ce.data)
         else:
-            current_app.logger.warning('Invalid queue message type: %s', ce.type)
+            current_app.logger.warning("Invalid queue message type: %s", ce.type)
 
         return {}, HTTPStatus.OK
-    except Exception: # NOQA # pylint: disable=broad-except
+    except Exception:  # NOQA # pylint: disable=broad-except
         # Catch Exception so that any error is still caught and the message is removed from the queue
-        current_app.logger.error('Error processing event:', exc_info=True)
+        current_app.logger.error("Error processing event:", exc_info=True)
         return {}, HTTPStatus.OK

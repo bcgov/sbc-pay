@@ -24,23 +24,24 @@ from .utils import helper_add_identifier_event_to_queue
 def test_update_payment(session, app, client):
     """Assert that the update internal payment records works."""
     # vars
-    old_identifier = 'T000000000'
-    new_identifier = 'BC12345678'
+    old_identifier = "T000000000"
+    new_identifier = "BC12345678"
 
     # Create an Internal Payment
     payment_account = factory_payment_account(payment_system_code=PaymentSystem.BCOL.value).save()
 
-    invoice: Invoice = factory_invoice(payment_account=payment_account,
-                                       business_identifier=old_identifier,
-                                       payment_method_code=PaymentMethod.INTERNAL.value).save()
+    invoice: Invoice = factory_invoice(
+        payment_account=payment_account,
+        business_identifier=old_identifier,
+        payment_method_code=PaymentMethod.INTERNAL.value,
+    ).save()
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number)
 
     invoice_id = invoice.id
 
-    helper_add_identifier_event_to_queue(client, old_identifier=old_identifier,
-                                         new_identifier=new_identifier)
+    helper_add_identifier_event_to_queue(client, old_identifier=old_identifier, new_identifier=new_identifier)
 
     # Get the internal account and invoice and assert that the identifier is new identifier
     invoice = Invoice.find_by_id(invoice_id)

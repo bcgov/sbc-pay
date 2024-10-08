@@ -23,98 +23,97 @@ import os
 
 from dotenv import find_dotenv, load_dotenv
 
-
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
 
 CONFIGURATION = {
-    'development': 'pay_queue.config.DevConfig',
-    'testing': 'pay_queue.config.TestConfig',
-    'production': 'pay_queue.config.ProdConfig',
-    'default': 'pay_queue.config.ProdConfig'
+    "development": "pay_queue.config.DevConfig",
+    "testing": "pay_queue.config.TestConfig",
+    "production": "pay_queue.config.ProdConfig",
+    "default": "pay_queue.config.ProdConfig",
 }
 
 
-def get_named_config(config_name: str = 'production'):
+def get_named_config(config_name: str = "production"):
     """Return the configuration object based on the name.
 
     :raise: KeyError: if an unknown configuration is requested
     """
-    if config_name in ['production', 'staging', 'default']:
+    if config_name in ["production", "staging", "default"]:
         app_config = ProdConfig()
-    elif config_name == 'testing':
+    elif config_name == "testing":
         app_config = TestConfig()
-    elif config_name == 'development':
+    elif config_name == "development":
         app_config = DevConfig()
     else:
-        raise KeyError(f'Unknown configuration: {config_name}')
+        raise KeyError(f"Unknown configuration: {config_name}")
     return app_config
 
 
-class _Config():  # pylint: disable=too-few-public-methods,protected-access
+class _Config:  # pylint: disable=too-few-public-methods,protected-access
     """Base class configuration that should set reasonable defaults.
 
     Used as the base for all the other configurations.
     """
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
-    PAY_LD_SDK_KEY = os.getenv('PAY_LD_SDK_KEY', None)
-    LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
+    PAY_LD_SDK_KEY = os.getenv("PAY_LD_SDK_KEY", None)
+    LEGISLATIVE_TIMEZONE = os.getenv("LEGISLATIVE_TIMEZONE", "America/Vancouver")
 
-    SENTRY_ENABLE = os.getenv('SENTRY_ENABLE', 'False')
-    SENTRY_DSN = os.getenv('SENTRY_DSN', None)
+    SENTRY_ENABLE = os.getenv("SENTRY_ENABLE", "False")
+    SENTRY_DSN = os.getenv("SENTRY_DSN", None)
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # POSTGRESQL
-    DB_USER = os.getenv('DATABASE_USERNAME', '')
-    DB_PASSWORD = os.getenv('DATABASE_PASSWORD', '')
-    DB_NAME = os.getenv('DATABASE_NAME', '')
-    DB_HOST = os.getenv('DATABASE_HOST', '')
-    DB_PORT = os.getenv('DATABASE_PORT', '5432')
-    if DB_UNIX_SOCKET := os.getenv('DATABASE_UNIX_SOCKET', None):
+    DB_USER = os.getenv("DATABASE_USERNAME", "")
+    DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
+    DB_NAME = os.getenv("DATABASE_NAME", "")
+    DB_HOST = os.getenv("DATABASE_HOST", "")
+    DB_PORT = os.getenv("DATABASE_PORT", "5432")
+    if DB_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
         SQLALCHEMY_DATABASE_URI = (
-            f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432'
+            f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432"
         )
     else:
-        SQLALCHEMY_DATABASE_URI = f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
 
     # Minio configuration values
-    MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
-    MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
-    MINIO_ACCESS_SECRET = os.getenv('MINIO_ACCESS_SECRET')
-    MINIO_SECURE = os.getenv('MINIO_SECURE', 'True').lower() == 'true'
+    MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
+    MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+    MINIO_ACCESS_SECRET = os.getenv("MINIO_ACCESS_SECRET")
+    MINIO_SECURE = os.getenv("MINIO_SECURE", "True").lower() == "true"
 
     # CFS API Settings
-    CFS_BASE_URL = os.getenv('CFS_BASE_URL')
-    CFS_CLIENT_ID = os.getenv('CFS_CLIENT_ID')
-    CFS_CLIENT_SECRET = os.getenv('CFS_CLIENT_SECRET')
-    CONNECT_TIMEOUT = int(os.getenv('CONNECT_TIMEOUT', '10'))
+    CFS_BASE_URL = os.getenv("CFS_BASE_URL")
+    CFS_CLIENT_ID = os.getenv("CFS_CLIENT_ID")
+    CFS_CLIENT_SECRET = os.getenv("CFS_CLIENT_SECRET")
+    CONNECT_TIMEOUT = int(os.getenv("CONNECT_TIMEOUT", "10"))
 
     # EFT Config
-    EFT_TDI17_LOCATION_ID = os.getenv('EFT_TDI17_LOCATION_ID')
+    EFT_TDI17_LOCATION_ID = os.getenv("EFT_TDI17_LOCATION_ID")
 
     # Secret key for encrypting bank account
-    ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
+    ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY")
 
-    KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv('SBC_AUTH_ADMIN_CLIENT_ID')
-    KEYCLOAK_SERVICE_ACCOUNT_SECRET = os.getenv('SBC_AUTH_ADMIN_CLIENT_SECRET')
-    JWT_OIDC_ISSUER = os.getenv('JWT_OIDC_ISSUER')
-    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL', '')
-    NOTIFY_API_VERSION = os.getenv('NOTIFY_API_VERSION', '')
-    NOTIFY_API_ENDPOINT = f'{NOTIFY_API_URL + NOTIFY_API_VERSION}/'
-    IT_OPS_EMAIL = os.getenv('IT_OPS_EMAIL', 'SBC_ITOperationsSupport@gov.bc.ca')
+    KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv("SBC_AUTH_ADMIN_CLIENT_ID")
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = os.getenv("SBC_AUTH_ADMIN_CLIENT_SECRET")
+    JWT_OIDC_ISSUER = os.getenv("JWT_OIDC_ISSUER")
+    NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "")
+    NOTIFY_API_VERSION = os.getenv("NOTIFY_API_VERSION", "")
+    NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"
+    IT_OPS_EMAIL = os.getenv("IT_OPS_EMAIL", "SBC_ITOperationsSupport@gov.bc.ca")
 
-    DISABLE_EJV_ERROR_EMAIL = os.getenv('DISABLE_EJV_ERROR_EMAIL', 'true').lower() == 'true'
-    DISABLE_CSV_ERROR_EMAIL = os.getenv('DISABLE_CSV_ERROR_EMAIL', 'true').lower() == 'true'
+    DISABLE_EJV_ERROR_EMAIL = os.getenv("DISABLE_EJV_ERROR_EMAIL", "true").lower() == "true"
+    DISABLE_CSV_ERROR_EMAIL = os.getenv("DISABLE_CSV_ERROR_EMAIL", "true").lower() == "true"
 
     # PUB/SUB - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev, business-events
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
-    AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', 'auth-event-dev')
-    GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
+    ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
+    AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", "auth-event-dev")
+    GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
     # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
-    PAY_AUDIENCE_SUB = os.getenv('PAY_AUDIENCE_SUB', None)
-    VERIFY_PUBSUB_EMAILS = f'{os.getenv("AUTHPAY_SERVICE_ACCOUNT")},{os.getenv("BUSINESS_SERVICE_ACCOUNT")}'.split(',')
+    PAY_AUDIENCE_SUB = os.getenv("PAY_AUDIENCE_SUB", None)
+    VERIFY_PUBSUB_EMAILS = f'{os.getenv("AUTHPAY_SERVICE_ACCOUNT")},{os.getenv("BUSINESS_SERVICE_ACCOUNT")}'.split(",")
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
@@ -133,38 +132,45 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DEBUG = True
     TESTING = True
     # POSTGRESQL
-    DB_USER = os.getenv('DATABASE_TEST_USERNAME', '')
-    DB_PASSWORD = os.getenv('DATABASE_TEST_PASSWORD', '')
-    DB_NAME = os.getenv('DATABASE_TEST_NAME', '')
-    DB_HOST = os.getenv('DATABASE_TEST_HOST', '')
-    DB_PORT = os.getenv('DATABASE_TEST_PORT', '5432')
+    DB_USER = os.getenv("DATABASE_TEST_USERNAME", "")
+    DB_PASSWORD = os.getenv("DATABASE_TEST_PASSWORD", "")
+    DB_NAME = os.getenv("DATABASE_TEST_NAME", "")
+    DB_HOST = os.getenv("DATABASE_TEST_HOST", "")
+    DB_PORT = os.getenv("DATABASE_TEST_PORT", "5432")
     SQLALCHEMY_DATABASE_URI = os.getenv(
-        'DATABASE_TEST_URL',
-        default=f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
+        "DATABASE_TEST_URL",
+        default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}",
     )
 
-    USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
+    USE_DOCKER_MOCK = os.getenv("USE_DOCKER_MOCK", None)
 
     # Minio variables
-    MINIO_ENDPOINT = 'localhost:9000'
-    MINIO_ACCESS_KEY = 'minio'
-    MINIO_ACCESS_SECRET = 'minio123'
-    MINIO_BUCKET_NAME = 'payment-sftp'
+    MINIO_ENDPOINT = "localhost:9000"
+    MINIO_ACCESS_KEY = "minio"
+    MINIO_ACCESS_SECRET = "minio123"
+    MINIO_BUCKET_NAME = "payment-sftp"
     MINIO_SECURE = False
 
-    CFS_BASE_URL = 'http://localhost:8080/paybc-api'
-    CFS_CLIENT_ID = 'TEST'
-    CFS_CLIENT_SECRET = 'TEST'
+    CFS_BASE_URL = "http://localhost:8080/paybc-api"
+    CFS_CLIENT_ID = "TEST"
+    CFS_CLIENT_SECRET = "TEST"
 
     # Secret key for encrypting bank account
-    ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', 'test')
+    ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY", "test")
 
     # Secrets for integration tests
-    TEST_GCP_PROJECT_NAME = 'pay-queue-dev'
+    TEST_GCP_PROJECT_NAME = "pay-queue-dev"
     # Needs to have ftp-poller-dev in it.
-    TEST_GCP_TOPICS = ['account-mailer-dev', 'ftp-poller-dev', 'business-identifier-update-pay-dev']
+    TEST_GCP_TOPICS = [
+        "account-mailer-dev",
+        "ftp-poller-dev",
+        "business-identifier-update-pay-dev",
+    ]
     TEST_PUSH_ENDPOINT_PORT = 5020
-    TEST_PUSH_ENDPOINT = os.getenv('TEST_PUSH_ENDPOINT', f'http://host.docker.internal:{str(TEST_PUSH_ENDPOINT_PORT)}/')
+    TEST_PUSH_ENDPOINT = os.getenv(
+        "TEST_PUSH_ENDPOINT",
+        f"http://host.docker.internal:{str(TEST_PUSH_ENDPOINT_PORT)}/",
+    )
     GCP_AUTH_KEY = None
     DISABLE_EJV_ERROR_EMAIL = False
     DISABLE_CSV_ERROR_EMAIL = False

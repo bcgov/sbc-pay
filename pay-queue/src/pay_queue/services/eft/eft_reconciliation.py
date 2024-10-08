@@ -39,25 +39,24 @@ class EFTReconciliation:  # pylint: disable=too-few-public-methods
         """:param ce: The cloud event object containing relevant data."""
         self.ce = ce
         self.msg = ce.data
-        self.file_name: str = self.msg.get('fileName')
-        self.minio_location: str = self.msg.get('location')
+        self.file_name: str = self.msg.get("fileName")
+        self.minio_location: str = self.msg.get("location")
         self.error_messages: List[Dict[str, any]] = []
 
-    def eft_error_handling(self, row, error_msg: str,
-                           capture_error: bool = True, table_name: str = None):
+    def eft_error_handling(self, row, error_msg: str, capture_error: bool = True, table_name: str = None):
         """Handle EFT errors by logging, capturing messages, and optionally sending an email."""
         if capture_error:
             current_app.logger.error(error_msg, exc_info=True)
-            capture_message(error_msg, level='error')
-        self.error_messages.append({'error': error_msg, 'row': row})
+            capture_message(error_msg, level="error")
+        self.error_messages.append({"error": error_msg, "row": row})
         if table_name is not None:
             email_service_params = EmailParams(
-                subject='EFT TDI17 Reconciliation Failure',
+                subject="EFT TDI17 Reconciliation Failure",
                 file_name=self.file_name,
                 minio_location=self.minio_location,
                 error_messages=self.error_messages,
                 ce=self.ce,
-                table_name=table_name
+                table_name=table_name,
             )
             send_error_email(email_service_params)
 
@@ -79,25 +78,28 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     context = EFTReconciliation(ce)
 
     # Used to filter transactions by location id to isolate EFT specific transactions from the TDI17
-    eft_location_id = current_app.config.get('EFT_TDI17_LOCATION_ID')
+    eft_location_id = current_app.config.get("EFT_TDI17_LOCATION_ID")
     if eft_location_id is None:
-        context.eft_error_handling('N/A', 'Missing EFT_TDI17_LOCATION_ID configuration')
+        context.eft_error_handling("N/A", "Missing EFT_TDI17_LOCATION_ID configuration")
         return
 
     # Fetch EFT File
     file = get_object(context.minio_location, context.file_name)
-    file_content = file.data.decode('utf-8-sig')
+    file_content = file.data.decode("utf-8-sig")
 
     # Split into lines
     lines = file_content.splitlines()
 
     # Check if there is an existing EFT File record
-    eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
-        EFTFileModel.file_ref == context.file_name).one_or_none()
+    eft_file_model: EFTFileModel = (
+        db.session.query(EFTFileModel).filter(EFTFileModel.file_ref == context.file_name).one_or_none()
+    )
 
-    if eft_file_model and eft_file_model.status_code in \
-            [EFTProcessStatus.IN_PROGRESS.value, EFTProcessStatus.COMPLETED.value]:
-        current_app.logger.info('File: %s already %s.', context.file_name, str(eft_file_model.status_code))
+    if eft_file_model and eft_file_model.status_code in [
+        EFTProcessStatus.IN_PROGRESS.value,
+        EFTProcessStatus.COMPLETED.value,
+    ]:
+        current_app.logger.info("File: %s already %s.", context.file_name, str(eft_file_model.status_code))
         return
 
     # There is no existing EFT File record - instantiate one
@@ -115,11 +117,10 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
 
     # If header and/or trailer has errors do not proceed
     if not (eft_header_valid and eft_trailer_valid):
-        error_msg = f'Failed to process file {context.file_name} with an invalid header or trailer.'
+        error_msg = f"Failed to process file {context.file_name} with an invalid header or trailer."
         eft_file_model.status_code = EFTProcessStatus.FAILED.value
         eft_file_model.save()
-        context.eft_error_handling('N/A', error_msg,
-                                   table_name=eft_file_model.__tablename__)
+        context.eft_error_handling("N/A", error_msg, table_name=eft_file_model.__tablename__)
         return
 
     has_eft_transaction_errors = False
@@ -131,19 +132,26 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     for eft_transaction in eft_transactions:
         if eft_transaction.has_errors():  # Flag any instance of an error - will indicate file is partially processed
             has_eft_transaction_errors = True
-            context.eft_error_handling(eft_transaction.index, eft_transaction.errors[0].message, capture_error=False)
+            context.eft_error_handling(
+                eft_transaction.index,
+                eft_transaction.errors[0].message,
+                capture_error=False,
+            )
             _save_eft_transaction(eft_record=eft_transaction, eft_file_model=eft_file_model, is_error=True)
         else:
             # Save TDI17 transaction record
-            _save_eft_transaction(eft_record=eft_transaction, eft_file_model=eft_file_model, is_error=False)
+            _save_eft_transaction(
+                eft_record=eft_transaction,
+                eft_file_model=eft_file_model,
+                is_error=False,
+            )
 
     # EFT Transactions have parsing errors - stop and FAIL transactions
     # We want a full file to be parseable as we want to get a full accurate balance before applying them to invoices
     if has_eft_transaction_errors:
-        error_msg = f'Failed to process file {context.file_name} has transaction parsing errors.'
+        error_msg = f"Failed to process file {context.file_name} has transaction parsing errors."
         _update_transactions_to_fail(eft_file_model)
-        context.eft_error_handling('N/A', error_msg,
-                                   table_name=eft_file_model.__tablename__)
+        context.eft_error_handling("N/A", error_msg, table_name=eft_file_model.__tablename__)
         return
 
     # Generate dictionary with shortnames and total deposits
@@ -156,9 +164,8 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     if has_eft_transaction_errors or has_eft_credits_error:
         db.session.rollback()
         _update_transactions_to_fail(eft_file_model)
-        error_msg = f'Failed to process file {context.file_name} due to transaction errors.'
-        context.eft_error_handling('N/A', error_msg,
-                                   table_name=eft_file_model.__tablename__)
+        error_msg = f"Failed to process file {context.file_name} due to transaction errors."
+        context.eft_error_handling("N/A", error_msg, table_name=eft_file_model.__tablename__)
         return
 
     _finalize_process_state(eft_file_model)
@@ -186,31 +193,32 @@ def _parse_tdi17_lines(eft_lines: List[str]):
 def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
     """Apply payments to short name links."""
     for shortname in shortname_balance.keys():
-        short_name_type = shortname_balance[shortname]['short_name_type']
+        short_name_type = shortname_balance[shortname]["short_name_type"]
         eft_short_name = _get_shortname(shortname, short_name_type)
         eft_credit_balance = EFTCreditModel.get_eft_credit_balance(eft_short_name.id)
-        shortname_links = EFTShortnamesService.get_shortname_links(eft_short_name.id).get('items', [])
+        shortname_links = EFTShortnamesService.get_shortname_links(eft_short_name.id).get("items", [])
         for shortname_link in shortname_links:
             # We are expecting pending payments to have been cleared since this runs after the
             # eft task job. Something may have gone wrong, we will skip this link.
-            if shortname_link.get('has_pending_payment'):
-                error_msg = f'Unexpected pending payment on link: {shortname_link.id}'
-                context.eft_error_handling('N/A', error_msg,
-                                           table_name=eft_short_name.__tablename__)
+            if shortname_link.get("has_pending_payment"):
+                error_msg = f"Unexpected pending payment on link: {shortname_link.id}"
+                context.eft_error_handling("N/A", error_msg, table_name=eft_short_name.__tablename__)
                 continue
 
-            amount_owing = shortname_link.get('amount_owing')
-            auth_account_id = shortname_link.get('account_id')
+            amount_owing = shortname_link.get("amount_owing")
+            auth_account_id = shortname_link.get("account_id")
             if 0 < amount_owing <= eft_credit_balance:
                 try:
-                    payload = {'action': EFTPaymentActions.APPLY_CREDITS.value,
-                               'accountId': auth_account_id}
+                    payload = {
+                        "action": EFTPaymentActions.APPLY_CREDITS.value,
+                        "accountId": auth_account_id,
+                    }
                     EFTShortnamesService.process_payment_action(eft_short_name.id, payload)
                 except Exception as exception:  # NOQA # pylint: disable=broad-except
                     # EFT Short name service handles commit and rollback when the action fails, we just need to make
                     # sure we log the error here
-                    error_msg = 'error in _apply_eft_pending_payments.'
-                    context.eft_error_handling('N/A', error_msg, ex=exception)
+                    error_msg = "error in _apply_eft_pending_payments."
+                    context.eft_error_handling("N/A", error_msg, ex=exception)
 
 
 def _finalize_process_state(eft_file_model: EFTFileModel):
@@ -226,7 +234,7 @@ def _finalize_process_state(eft_file_model: EFTFileModel):
 def _process_eft_header(eft_header: EFTHeader, eft_file_model: EFTFileModel) -> bool:
     """Process the EFT Header."""
     if eft_header is None:
-        current_app.logger.error('Failed to process file %s with an invalid header.', eft_file_model.file_ref)
+        current_app.logger.error("Failed to process file %s with an invalid header.", eft_file_model.file_ref)
         return False
 
     # Populate header and trailer data on EFT File record - values will return None if parsing failed
@@ -243,7 +251,10 @@ def _process_eft_header(eft_header: EFTHeader, eft_file_model: EFTFileModel) -> 
 def _process_eft_trailer(eft_trailer: EFTTrailer, eft_file_model: EFTFileModel) -> bool:
     """Process the EFT Trailer."""
     if eft_trailer is None:
-        current_app.logger.error('Failed to process file %s with an invalid trailer.', eft_file_model.file_ref)
+        current_app.logger.error(
+            "Failed to process file %s with an invalid trailer.",
+            eft_file_model.file_ref,
+        )
         return False
 
     # Populate header and trailer data on EFT File record - values will return None if parsing failed
@@ -262,23 +273,25 @@ def _process_eft_credits(shortname_balance, eft_file_id):
     has_credit_errors = False
     for shortname in shortname_balance.keys():
         try:
-            short_name_type = shortname_balance[shortname]['short_name_type']
+            short_name_type = shortname_balance[shortname]["short_name_type"]
             eft_short_name = _get_shortname(shortname, short_name_type)
-            eft_transactions = shortname_balance[shortname]['transactions']
+            eft_transactions = shortname_balance[shortname]["transactions"]
 
             for eft_transaction in eft_transactions:
                 # Check if there is an existing eft credit for this file and transaction
-                eft_credit_model = db.session.query(EFTCreditModel) \
-                    .filter(EFTCreditModel.eft_file_id == eft_file_id) \
-                    .filter(EFTCreditModel.short_name_id == eft_short_name.id) \
-                    .filter(EFTCreditModel.eft_transaction_id == eft_transaction['id']) \
+                eft_credit_model = (
+                    db.session.query(EFTCreditModel)
+                    .filter(EFTCreditModel.eft_file_id == eft_file_id)
+                    .filter(EFTCreditModel.short_name_id == eft_short_name.id)
+                    .filter(EFTCreditModel.eft_transaction_id == eft_transaction["id"])
                     .one_or_none()
+                )
 
                 if eft_credit_model is None:
                     eft_credit_model = EFTCreditModel()
 
                 # Skip if there is no deposit amount
-                deposit_amount = eft_transaction['deposit_amount']
+                deposit_amount = eft_transaction["deposit_amount"]
                 if not deposit_amount > 0:
                     continue
 
@@ -286,39 +299,45 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                 eft_credit_model.short_name_id = eft_short_name.id
                 eft_credit_model.amount = deposit_amount
                 eft_credit_model.remaining_amount = deposit_amount
-                eft_credit_model.eft_transaction_id = eft_transaction['id']
+                eft_credit_model.eft_transaction_id = eft_transaction["id"]
                 eft_credit_model.flush()
 
                 credit_balance = EFTCreditModel.get_eft_credit_balance(eft_credit_model.short_name_id)
-                EFTHistoryService.create_funds_received(EFTHistory(short_name_id=eft_credit_model.short_name_id,
-                                                                   amount=deposit_amount,
-                                                                   credit_balance=credit_balance)).flush()
+                EFTHistoryService.create_funds_received(
+                    EFTHistory(
+                        short_name_id=eft_credit_model.short_name_id,
+                        amount=deposit_amount,
+                        credit_balance=credit_balance,
+                    )
+                ).flush()
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_credit_errors = True
             current_app.logger.error(e, exc_info=True)
-            capture_message('EFT Failed to set EFT balance.', level='error')
+            capture_message("EFT Failed to set EFT balance.", level="error")
     return has_credit_errors
 
 
 def _set_eft_header_on_file(eft_header: EFTHeader, eft_file_model: EFTFileModel):
     """Set EFT Header information on EFTFile model."""
-    eft_file_model.file_creation_date = getattr(eft_header, 'creation_datetime', None)
-    eft_file_model.deposit_from_date = getattr(eft_header, 'starting_deposit_date', None)
-    eft_file_model.deposit_to_date = getattr(eft_header, 'ending_deposit_date', None)
+    eft_file_model.file_creation_date = getattr(eft_header, "creation_datetime", None)
+    eft_file_model.deposit_from_date = getattr(eft_header, "starting_deposit_date", None)
+    eft_file_model.deposit_to_date = getattr(eft_header, "ending_deposit_date", None)
 
 
 def _set_eft_trailer_on_file(eft_trailer: EFTTrailer, eft_file_model: EFTFileModel):
     """Set EFT Trailer information on EFTFile model."""
-    eft_file_model.number_of_details = getattr(eft_trailer, 'number_of_details', None)
-    eft_file_model.total_deposit_cents = getattr(eft_trailer, 'total_deposit_amount', None)
+    eft_file_model.number_of_details = getattr(eft_trailer, "number_of_details", None)
+    eft_file_model.total_deposit_cents = getattr(eft_trailer, "total_deposit_amount", None)
 
 
-def _set_eft_base_error(line_type: str, index: int,
-                        eft_file_id: int, error_messages: [str]) -> EFTTransactionModel:
+def _set_eft_base_error(line_type: str, index: int, eft_file_id: int, error_messages: [str]) -> EFTTransactionModel:
     """Instantiate EFT Transaction model error record."""
-    eft_transaction_model = db.session.query(EFTTransactionModel) \
-        .filter(EFTTransactionModel.file_id == eft_file_id) \
-        .filter(EFTTransactionModel.line_type == line_type).one_or_none()
+    eft_transaction_model = (
+        db.session.query(EFTTransactionModel)
+        .filter(EFTTransactionModel.file_id == eft_file_id)
+        .filter(EFTTransactionModel.line_type == line_type)
+        .one_or_none()
+    )
 
     if eft_transaction_model is None:
         eft_transaction_model = EFTTransactionModel()
@@ -334,19 +353,23 @@ def _set_eft_base_error(line_type: str, index: int,
 
 def _save_eft_header_error(eft_header: EFTHeader, eft_file_model: EFTFileModel):
     """Save or update EFT Header error record."""
-    eft_transaction_model = _set_eft_base_error(line_type=EFTFileLineType.HEADER.value,
-                                                index=eft_header.index,
-                                                eft_file_id=eft_file_model.id,
-                                                error_messages=eft_header.get_error_messages())
+    eft_transaction_model = _set_eft_base_error(
+        line_type=EFTFileLineType.HEADER.value,
+        index=eft_header.index,
+        eft_file_id=eft_file_model.id,
+        error_messages=eft_header.get_error_messages(),
+    )
     eft_transaction_model.save()
 
 
 def _save_eft_trailer_error(eft_trailer: EFTTrailer, eft_file_model: EFTFileModel):
     """Save or update EFT Trailer error record."""
-    eft_transaction_model = _set_eft_base_error(line_type=EFTFileLineType.TRAILER.value,
-                                                index=eft_trailer.index,
-                                                eft_file_id=eft_file_model.id,
-                                                error_messages=eft_trailer.get_error_messages())
+    eft_transaction_model = _set_eft_base_error(
+        line_type=EFTFileLineType.TRAILER.value,
+        index=eft_trailer.index,
+        eft_file_id=eft_file_model.id,
+        error_messages=eft_trailer.get_error_messages(),
+    )
     eft_transaction_model.save()
 
 
@@ -355,17 +378,21 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
     line_type = EFTFileLineType.TRANSACTION.value
     status_code = EFTProcessStatus.FAILED.value if is_error else EFTProcessStatus.IN_PROGRESS.value
 
-    eft_transaction_model = db.session.query(EFTTransactionModel) \
-        .filter(EFTTransactionModel.file_id == eft_file_model.id) \
-        .filter(EFTTransactionModel.line_number == eft_record.index) \
-        .filter(EFTTransactionModel.line_type == line_type).one_or_none()
+    eft_transaction_model = (
+        db.session.query(EFTTransactionModel)
+        .filter(EFTTransactionModel.file_id == eft_file_model.id)
+        .filter(EFTTransactionModel.line_number == eft_record.index)
+        .filter(EFTTransactionModel.line_type == line_type)
+        .one_or_none()
+    )
 
     if eft_transaction_model is None:
         eft_transaction_model = EFTTransactionModel()
 
     if eft_record.transaction_description and eft_record.short_name_type:
-        eft_short_name: EFTShortnameModel = _get_shortname(eft_record.transaction_description,
-                                                           eft_record.short_name_type)
+        eft_short_name: EFTShortnameModel = _get_shortname(
+            eft_record.transaction_description, eft_record.short_name_type
+        )
         eft_transaction_model.short_name_id = eft_short_name.id
 
     eft_transaction_model.line_type = line_type
@@ -373,13 +400,13 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
     eft_transaction_model.file_id = eft_file_model.id
     eft_transaction_model.status_code = status_code
     eft_transaction_model.error_messages = eft_record.get_error_messages()
-    eft_transaction_model.batch_number = getattr(eft_record, 'batch_number', None)
-    eft_transaction_model.sequence_number = getattr(eft_record, 'transaction_sequence', None)
-    eft_transaction_model.jv_type = getattr(eft_record, 'jv_type', None)
-    eft_transaction_model.jv_number = getattr(eft_record, 'jv_number', None)
-    deposit_amount_cad = getattr(eft_record, 'deposit_amount_cad', None)
-    eft_transaction_model.deposit_date = getattr(eft_record, 'deposit_datetime')
-    eft_transaction_model.transaction_date = getattr(eft_record, 'transaction_date')
+    eft_transaction_model.batch_number = getattr(eft_record, "batch_number", None)
+    eft_transaction_model.sequence_number = getattr(eft_record, "transaction_sequence", None)
+    eft_transaction_model.jv_type = getattr(eft_record, "jv_type", None)
+    eft_transaction_model.jv_number = getattr(eft_record, "jv_number", None)
+    deposit_amount_cad = getattr(eft_record, "deposit_amount_cad", None)
+    eft_transaction_model.deposit_date = getattr(eft_record, "deposit_datetime")
+    eft_transaction_model.transaction_date = getattr(eft_record, "transaction_date")
     eft_transaction_model.deposit_amount_cents = deposit_amount_cad
     eft_transaction_model.save()
 
@@ -388,10 +415,17 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
 
 def _update_transactions_to_fail(eft_file_model: EFTFileModel) -> int:
     """Set EFT transactions to fail status."""
-    result = db.session.query(EFTTransactionModel) \
-        .filter(EFTTransactionModel.file_id == eft_file_model.id,
-                EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value) \
-        .update({EFTTransactionModel.status_code: EFTProcessStatus.FAILED.value}, synchronize_session='fetch')
+    result = (
+        db.session.query(EFTTransactionModel)
+        .filter(
+            EFTTransactionModel.file_id == eft_file_model.id,
+            EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value,
+        )
+        .update(
+            {EFTTransactionModel.status_code: EFTProcessStatus.FAILED.value},
+            synchronize_session="fetch",
+        )
+    )
 
     eft_file_model.status_code = EFTProcessStatus.FAILED.value
     eft_file_model.save()
@@ -401,10 +435,15 @@ def _update_transactions_to_fail(eft_file_model: EFTFileModel) -> int:
 
 def _update_transactions_to_complete(eft_file_model: EFTFileModel) -> int:
     """Set EFT transactions to complete status if they are currently in progress."""
-    result = db.session.query(EFTTransactionModel) \
-        .filter(EFTTransactionModel.file_id == eft_file_model.id) \
-        .filter(EFTTransactionModel.status_code == EFTProcessStatus.IN_PROGRESS.value) \
-        .update({EFTTransactionModel.status_code: EFTProcessStatus.COMPLETED.value}, synchronize_session='fetch')
+    result = (
+        db.session.query(EFTTransactionModel)
+        .filter(EFTTransactionModel.file_id == eft_file_model.id)
+        .filter(EFTTransactionModel.status_code == EFTProcessStatus.IN_PROGRESS.value)
+        .update(
+            {EFTTransactionModel.status_code: EFTProcessStatus.COMPLETED.value},
+            synchronize_session="fetch",
+        )
+    )
     db.session.commit()
 
     return result
@@ -412,10 +451,12 @@ def _update_transactions_to_complete(eft_file_model: EFTFileModel) -> int:
 
 def _get_shortname(short_name: str, short_name_type: str) -> EFTShortnameModel:
     """Save short name if it doesn't exist."""
-    eft_short_name = db.session.query(EFTShortnameModel) \
-        .filter(EFTShortnameModel.short_name == short_name) \
-        .filter(EFTShortnameModel.type == short_name_type) \
+    eft_short_name = (
+        db.session.query(EFTShortnameModel)
+        .filter(EFTShortnameModel.short_name == short_name)
+        .filter(EFTShortnameModel.type == short_name_type)
         .one_or_none()
+    )
 
     if eft_short_name is None:
         eft_short_name = EFTShortnameModel()
@@ -438,12 +479,12 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
         short_name = eft_transaction.transaction_description
         shortname_type = eft_transaction.short_name_type
         deposit_amount = eft_transaction.deposit_amount_cad / 100
-        transaction = {'id': eft_transaction.id, 'deposit_amount': deposit_amount}
+        transaction = {"id": eft_transaction.id, "deposit_amount": deposit_amount}
 
-        shortname_balance.setdefault(short_name, {'balance': 0})
-        shortname_balance[short_name]['short_name_type'] = shortname_type
-        shortname_balance[short_name]['balance'] += deposit_amount
-        shortname_balance[short_name].setdefault('transactions', []).append(transaction)
+        shortname_balance.setdefault(short_name, {"balance": 0})
+        shortname_balance[short_name]["short_name_type"] = shortname_type
+        shortname_balance[short_name]["balance"] += deposit_amount
+        shortname_balance[short_name].setdefault("transactions", []).append(transaction)
 
     return shortname_balance
 
@@ -451,10 +492,14 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
 def _filter_eft_transactions(eft_transactions: List[EFTRecord], eft_location_id: str) -> List[EFTRecord]:
     """Filter down EFT Transactions."""
     eft_transactions = [
-        transaction for transaction in eft_transactions
-        if (transaction.has_errors() or (transaction.short_name_type in [
-            EFTShortnameType.EFT.value,
-            EFTShortnameType.WIRE.value
-        ] and transaction.location_id == eft_location_id))
+        transaction
+        for transaction in eft_transactions
+        if (
+            transaction.has_errors()
+            or (
+                transaction.short_name_type in [EFTShortnameType.EFT.value, EFTShortnameType.WIRE.value]
+                and transaction.location_id == eft_location_id
+            )
+        )
     ]
     return eft_transactions

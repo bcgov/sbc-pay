@@ -19,16 +19,16 @@ class EFTConstants(Enum):
     """EFT constants."""
 
     # Currency
-    CURRENCY_CAD = 'CAD'
+    CURRENCY_CAD = "CAD"
 
     # Record Type
-    HEADER_RECORD_TYPE = '1'
-    TRANSACTION_RECORD_TYPE = '2'
-    TRAILER_RECORD_TYPE = '7'
+    HEADER_RECORD_TYPE = "1"
+    TRANSACTION_RECORD_TYPE = "2"
+    TRAILER_RECORD_TYPE = "7"
 
     # Formats
-    DATE_TIME_FORMAT = '%Y%m%d%H%M'
-    DATE_FORMAT = '%Y%m%d'
+    DATE_TIME_FORMAT = "%Y%m%d%H%M"
+    DATE_FORMAT = "%Y%m%d"
 
     # Lengths
     EXPECTED_LINE_LENGTH = 140

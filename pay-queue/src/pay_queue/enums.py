@@ -18,60 +18,60 @@ from enum import Enum
 class SourceTransaction(Enum):
     """Source Transaction types."""
 
-    PAD = 'BCR-PAD Daily'
-    ONLINE_BANKING = 'BCR Online Banking Payments'
-    CREDIT_MEMO = 'CM'
-    ADJUSTMENT = 'BCR-ADJ'
-    EFT_WIRE = 'BC REG EFT Wire Cheque'
+    PAD = "BCR-PAD Daily"
+    ONLINE_BANKING = "BCR Online Banking Payments"
+    CREDIT_MEMO = "CM"
+    ADJUSTMENT = "BCR-ADJ"
+    EFT_WIRE = "BC REG EFT Wire Cheque"
 
 
 class RecordType(Enum):
     """Record types."""
 
-    PAD = 'PADP'
-    PAYR = 'PAYR'
-    BOLP = 'BOLP'
-    CMAP = 'CMAP'
-    ADJS = 'ADJS'
-    ONAC = 'ONAC'
-    ONAP = 'ONAP'
-    EFTP = 'EFTP'
-    PADR = 'PADR'
-    DRWP = 'DRWP'
+    PAD = "PADP"
+    PAYR = "PAYR"
+    BOLP = "BOLP"
+    CMAP = "CMAP"
+    ADJS = "ADJS"
+    ONAC = "ONAC"
+    ONAP = "ONAP"
+    EFTP = "EFTP"
+    PADR = "PADR"
+    DRWP = "DRWP"
 
 
 class Column(Enum):
     """Column Types."""
 
-    RECORD_TYPE = 'Record type'
-    SOURCE_TXN = 'Source transaction type'
-    SOURCE_TXN_NO = 'Source Transaction Number'
-    APP_ID = 'Application Id'
-    APP_DATE = 'Application Date'
-    APP_AMOUNT = 'Application amount'
-    CUSTOMER_ACC = 'Customer Account'
-    TARGET_TXN = 'Target transaction type'
-    TARGET_TXN_NO = 'Target transaction Number'
-    TARGET_TXN_ORIGINAL = 'Target Transaction Original amount'
-    TARGET_TXN_OUTSTANDING = 'Target Transaction Outstanding Amount'
-    TARGET_TXN_STATUS = 'Target transaction status'
-    REVERSAL_REASON_CODE = 'Reversal Reason code'
-    REVERSAL_REASON_DESC = 'Reversal reason desc'
+    RECORD_TYPE = "Record type"
+    SOURCE_TXN = "Source transaction type"
+    SOURCE_TXN_NO = "Source Transaction Number"
+    APP_ID = "Application Id"
+    APP_DATE = "Application Date"
+    APP_AMOUNT = "Application amount"
+    CUSTOMER_ACC = "Customer Account"
+    TARGET_TXN = "Target transaction type"
+    TARGET_TXN_NO = "Target transaction Number"
+    TARGET_TXN_ORIGINAL = "Target Transaction Original amount"
+    TARGET_TXN_OUTSTANDING = "Target Transaction Outstanding Amount"
+    TARGET_TXN_STATUS = "Target transaction status"
+    REVERSAL_REASON_CODE = "Reversal Reason code"
+    REVERSAL_REASON_DESC = "Reversal reason desc"
 
 
 class Status(Enum):
     """Target Transaction Status."""
 
-    PAID = 'Fully PAID'
-    NOT_PAID = 'Not PAID'
-    ON_ACC = 'On Account'
-    PARTIAL = 'Partially PAID'
+    PAID = "Fully PAID"
+    NOT_PAID = "Not PAID"
+    ON_ACC = "On Account"
+    PARTIAL = "Partially PAID"
 
 
 class TargetTransaction(Enum):
     """Target Transaction."""
 
-    INV = 'INV'
-    DEBIT_MEMO = 'DM'
-    CREDIT_MEMO = 'CM'
-    RECEIPT = 'RECEIPT'
+    INV = "INV"
+    DEBIT_MEMO = "DM"
+    CREDIT_MEMO = "CM"
+    RECEIPT = "RECEIPT"

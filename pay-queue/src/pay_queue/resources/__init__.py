@@ -24,7 +24,7 @@ def register_endpoints(app: Flask):
     app.url_map.strict_slashes = False
 
     app.register_blueprint(
-        url_prefix='/',
+        url_prefix="/",
         blueprint=worker_endpoint,
     )
     app.register_blueprint(ops_bp)

@@ -28,11 +28,13 @@ from tests.utilities.factory_utils import factory_eft_header, factory_eft_record
 
 def test_eft_parse_header():
     """Test EFT header parser."""
-    content = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value,
-                                 file_creation_date='20230814',
-                                 file_creation_time='1601',
-                                 deposit_start_date='20230810',
-                                 deposit_end_date='20230810')
+    content = factory_eft_header(
+        record_type=EFTConstants.HEADER_RECORD_TYPE.value,
+        file_creation_date="20230814",
+        file_creation_time="1601",
+        deposit_start_date="20230810",
+        deposit_end_date="20230810",
+    )
 
     header: EFTHeader = EFTHeader(content, 0)
 
@@ -41,7 +43,7 @@ def test_eft_parse_header():
     deposit_date_end = datetime(2023, 8, 10)
 
     assert header.index == 0
-    assert header.record_type == '1'
+    assert header.record_type == "1"
     assert header.creation_datetime == creation_datetime
     assert header.starting_deposit_date == deposit_date_start
     assert header.ending_deposit_date == deposit_date_end
@@ -49,7 +51,7 @@ def test_eft_parse_header():
 
 def test_eft_parse_header_invalid_length():
     """Test EFT header parser invalid length."""
-    content = ' '
+    content = " "
     header: EFTHeader = EFTHeader(content, 0)
 
     assert header.errors
@@ -61,11 +63,13 @@ def test_eft_parse_header_invalid_length():
 
 def test_eft_parse_header_invalid_record_type():
     """Test EFT header parser invalid record type."""
-    content = factory_eft_header(record_type='X',
-                                 file_creation_date='20230814',
-                                 file_creation_time='1601',
-                                 deposit_start_date='20230810',
-                                 deposit_end_date='20230810')
+    content = factory_eft_header(
+        record_type="X",
+        file_creation_date="20230814",
+        file_creation_time="1601",
+        deposit_start_date="20230810",
+        deposit_end_date="20230810",
+    )
 
     header: EFTHeader = EFTHeader(content, 0)
 
@@ -78,11 +82,13 @@ def test_eft_parse_header_invalid_record_type():
 
 def test_eft_parse_header_invalid_dates():
     """Test EFT header parser invalid dates."""
-    content = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value,
-                                 file_creation_date='2023081_',
-                                 file_creation_time='160 ',
-                                 deposit_start_date='20230850',
-                                 deposit_end_date='202308AB')
+    content = factory_eft_header(
+        record_type=EFTConstants.HEADER_RECORD_TYPE.value,
+        file_creation_date="2023081_",
+        file_creation_time="160 ",
+        deposit_start_date="20230850",
+        deposit_end_date="202308AB",
+    )
 
     header: EFTHeader = EFTHeader(content, 0)
 
@@ -101,20 +107,22 @@ def test_eft_parse_header_invalid_dates():
 
 def test_eft_parse_trailer():
     """Test EFT trailer parser."""
-    content = factory_eft_trailer(record_type=EFTConstants.TRAILER_RECORD_TYPE.value,
-                                  number_of_details='5',
-                                  total_deposit_amount='3733750')
+    content = factory_eft_trailer(
+        record_type=EFTConstants.TRAILER_RECORD_TYPE.value,
+        number_of_details="5",
+        total_deposit_amount="3733750",
+    )
     trailer: EFTTrailer = EFTTrailer(content, 1)
 
     assert trailer.index == 1
-    assert trailer.record_type == '7'
+    assert trailer.record_type == "7"
     assert trailer.number_of_details == 5
     assert trailer.total_deposit_amount == 3733750
 
 
 def test_eft_parse_trailer_invalid_length():
     """Test EFT trailer parser invalid number types."""
-    content = ' '
+    content = " "
     trailer: EFTTrailer = EFTTrailer(content, 1)
 
     assert trailer.errors
@@ -126,9 +134,7 @@ def test_eft_parse_trailer_invalid_length():
 
 def test_eft_parse_trailer_invalid_record_type():
     """Test EFT trailer parser invalid record_type."""
-    content = factory_eft_trailer(record_type='X',
-                                  number_of_details='5',
-                                  total_deposit_amount='3733750')
+    content = factory_eft_trailer(record_type="X", number_of_details="5", total_deposit_amount="3733750")
     trailer: EFTTrailer = EFTTrailer(content, 1)
 
     assert trailer.errors
@@ -140,9 +146,11 @@ def test_eft_parse_trailer_invalid_record_type():
 
 def test_eft_parse_trailer_invalid_numbers():
     """Test EFT trailer parser invalid number values."""
-    content = factory_eft_trailer(record_type=EFTConstants.TRAILER_RECORD_TYPE.value,
-                                  number_of_details='B',
-                                  total_deposit_amount='3733A50')
+    content = factory_eft_trailer(
+        record_type=EFTConstants.TRAILER_RECORD_TYPE.value,
+        number_of_details="B",
+        total_deposit_amount="3733A50",
+    )
     trailer: EFTTrailer = EFTTrailer(content, 1)
 
     assert trailer.errors
@@ -157,209 +165,214 @@ def test_eft_parse_trailer_invalid_numbers():
 
 def test_eft_parse_record():
     """Test EFT record parser."""
-    content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='20230810',
-                                 deposit_time='0000',
-                                 location_id='85004',
-                                 transaction_sequence='001',
-                                 transaction_description='DEPOSIT          26',
-                                 deposit_amount='13500',
-                                 currency='',
-                                 exchange_adj_amount='0',
-                                 deposit_amount_cad='13500',
-                                 destination_bank_number='0003',
-                                 batch_number='002400986',
-                                 jv_type='I',
-                                 jv_number='002425669',
-                                 transaction_date=''
-                                 )
+    content = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="001",
+        transaction_description="DEPOSIT          26",
+        deposit_amount="13500",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="13500",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
     record: EFTRecord = EFTRecord(content, 1)
 
     deposit_datetime = datetime(2023, 8, 10, 0, 0)
     transaction_date = None
     assert record.index == 1
-    assert record.record_type == '2'
-    assert record.ministry_code == 'AT'
-    assert record.program_code == '0146'
+    assert record.record_type == "2"
+    assert record.ministry_code == "AT"
+    assert record.program_code == "0146"
     assert record.deposit_datetime == deposit_datetime
-    assert record.location_id == '85004'
-    assert record.transaction_sequence == '001'
-    assert record.transaction_description == 'DEPOSIT          26'
+    assert record.location_id == "85004"
+    assert record.transaction_sequence == "001"
+    assert record.transaction_description == "DEPOSIT          26"
     assert record.deposit_amount == 13500
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
     assert record.deposit_amount_cad == 13500
-    assert record.dest_bank_number == '0003'
-    assert record.batch_number == '002400986'
-    assert record.jv_type == 'I'
-    assert record.jv_number == '002425669'
+    assert record.dest_bank_number == "0003"
+    assert record.batch_number == "002400986"
+    assert record.jv_type == "I"
+    assert record.jv_number == "002425669"
     assert record.transaction_date == transaction_date
     assert record.short_name_type is None
 
-    content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='20230810',
-                                 deposit_time='0000',
-                                 location_id='85004',
-                                 transaction_sequence='002',
-                                 transaction_description='FUNDS TRANSFER CR TT INTERBLOCK C',
-                                 deposit_amount='525000',
-                                 currency='',
-                                 exchange_adj_amount='0',
-                                 deposit_amount_cad='525000',
-                                 destination_bank_number='0003',
-                                 batch_number='002400986',
-                                 jv_type='I',
-                                 jv_number='002425669',
-                                 transaction_date=''
-                                 )
+    content = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="002",
+        transaction_description="FUNDS TRANSFER CR TT INTERBLOCK C",
+        deposit_amount="525000",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="525000",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
 
     record: EFTRecord = EFTRecord(content, 2)
     assert record.index == 2
-    assert record.record_type == '2'
-    assert record.ministry_code == 'AT'
-    assert record.program_code == '0146'
+    assert record.record_type == "2"
+    assert record.ministry_code == "AT"
+    assert record.program_code == "0146"
     assert record.deposit_datetime == deposit_datetime
-    assert record.location_id == '85004'
-    assert record.transaction_sequence == '002'
-    assert record.transaction_description == 'INTERBLOCK C'
+    assert record.location_id == "85004"
+    assert record.transaction_sequence == "002"
+    assert record.transaction_description == "INTERBLOCK C"
     assert record.deposit_amount == 525000
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
     assert record.deposit_amount_cad == 525000
-    assert record.dest_bank_number == '0003'
-    assert record.batch_number == '002400986'
-    assert record.jv_type == 'I'
-    assert record.jv_number == '002425669'
+    assert record.dest_bank_number == "0003"
+    assert record.batch_number == "002400986"
+    assert record.jv_type == "I"
+    assert record.jv_number == "002425669"
     assert record.transaction_date == transaction_date
     assert record.short_name_type == EFTShortnameType.WIRE.value
 
-    content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='20230810',
-                                 deposit_time='0000',
-                                 location_id='85004',
-                                 transaction_sequence='003',
-                                 transaction_description='MISC PAYMENT ABC1234567',
-                                 deposit_amount='951250',
-                                 currency='',
-                                 exchange_adj_amount='0',
-                                 deposit_amount_cad='951250',
-                                 destination_bank_number='0003',
-                                 batch_number='002400986',
-                                 jv_type='I',
-                                 jv_number='002425669',
-                                 transaction_date=''
-                                 )
+    content = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="003",
+        transaction_description="MISC PAYMENT ABC1234567",
+        deposit_amount="951250",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="951250",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
 
     record: EFTRecord = EFTRecord(content, 3)
     assert record.index == 3
-    assert record.record_type == '2'
-    assert record.ministry_code == 'AT'
-    assert record.program_code == '0146'
+    assert record.record_type == "2"
+    assert record.ministry_code == "AT"
+    assert record.program_code == "0146"
     assert record.deposit_datetime == deposit_datetime
-    assert record.location_id == '85004'
-    assert record.transaction_sequence == '003'
-    assert record.transaction_description == 'ABC1234567'
+    assert record.location_id == "85004"
+    assert record.transaction_sequence == "003"
+    assert record.transaction_description == "ABC1234567"
     assert record.deposit_amount == 951250
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
     assert record.deposit_amount_cad == 951250
-    assert record.dest_bank_number == '0003'
-    assert record.batch_number == '002400986'
-    assert record.jv_type == 'I'
-    assert record.jv_number == '002425669'
+    assert record.dest_bank_number == "0003"
+    assert record.batch_number == "002400986"
+    assert record.jv_type == "I"
+    assert record.jv_number == "002425669"
     assert record.transaction_date == transaction_date
     assert record.short_name_type == EFTShortnameType.EFT.value
 
-    content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='20230810',
-                                 deposit_time='0000',
-                                 location_id='85004',
-                                 transaction_sequence='004',
-                                 transaction_description='MISC PAYMENT BCONLINE INTERBLOCK C',
-                                 deposit_amount='2125000',
-                                 currency='',
-                                 exchange_adj_amount='0',
-                                 deposit_amount_cad='2125000',
-                                 destination_bank_number='0003',
-                                 batch_number='002400986',
-                                 jv_type='I',
-                                 jv_number='002425669',
-                                 transaction_date=''
-                                 )
+    content = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="004",
+        transaction_description="MISC PAYMENT BCONLINE INTERBLOCK C",
+        deposit_amount="2125000",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="2125000",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
 
     record: EFTRecord = EFTRecord(content, 4)
     assert record.index == 4
-    assert record.record_type == '2'
-    assert record.ministry_code == 'AT'
-    assert record.program_code == '0146'
+    assert record.record_type == "2"
+    assert record.ministry_code == "AT"
+    assert record.program_code == "0146"
     assert record.deposit_datetime == deposit_datetime
-    assert record.location_id == '85004'
-    assert record.transaction_sequence == '004'
-    assert record.transaction_description == 'MISC PAYMENT BCONLINE INTERBLOCK C'
+    assert record.location_id == "85004"
+    assert record.transaction_sequence == "004"
+    assert record.transaction_description == "MISC PAYMENT BCONLINE INTERBLOCK C"
     assert record.deposit_amount == 2125000
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
     assert record.deposit_amount_cad == 2125000
-    assert record.dest_bank_number == '0003'
-    assert record.batch_number == '002400986'
-    assert record.jv_type == 'I'
-    assert record.jv_number == '002425669'
+    assert record.dest_bank_number == "0003"
+    assert record.batch_number == "002400986"
+    assert record.jv_type == "I"
+    assert record.jv_number == "002425669"
     assert record.transaction_date == transaction_date
     assert record.short_name_type is None
 
-    content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='20230810',
-                                 deposit_time='1600',
-                                 location_id='85020',
-                                 transaction_sequence='001',
-                                 transaction_description='',
-                                 deposit_amount='119000',
-                                 currency='',
-                                 exchange_adj_amount='0',
-                                 deposit_amount_cad='119000',
-                                 destination_bank_number='0010',
-                                 batch_number='002400989',
-                                 jv_type='I',
-                                 jv_number='002425836',
-                                 transaction_date='20230810'
-                                 )
+    content = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="1600",
+        location_id="85020",
+        transaction_sequence="001",
+        transaction_description="",
+        deposit_amount="119000",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="119000",
+        destination_bank_number="0010",
+        batch_number="002400989",
+        jv_type="I",
+        jv_number="002425836",
+        transaction_date="20230810",
+    )
 
     record: EFTRecord = EFTRecord(content, 5)
     deposit_datetime = datetime(2023, 8, 10, 16, 0)
     transaction_date = datetime(2023, 8, 10)
 
     assert record.index == 5
-    assert record.record_type == '2'
-    assert record.ministry_code == 'AT'
-    assert record.program_code == '0146'
+    assert record.record_type == "2"
+    assert record.ministry_code == "AT"
+    assert record.program_code == "0146"
     assert record.deposit_datetime == deposit_datetime
-    assert record.location_id == '85020'
-    assert record.transaction_sequence == '001'
-    assert record.transaction_description == ''
+    assert record.location_id == "85020"
+    assert record.transaction_sequence == "001"
+    assert record.transaction_description == ""
     assert record.deposit_amount == 119000
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
     assert record.deposit_amount_cad == 119000
-    assert record.dest_bank_number == '0010'
-    assert record.batch_number == '002400989'
-    assert record.jv_type == 'I'
-    assert record.jv_number == '002425836'
+    assert record.dest_bank_number == "0010"
+    assert record.batch_number == "002400989"
+    assert record.jv_type == "I"
+    assert record.jv_number == "002425836"
     assert record.transaction_date == transaction_date
 
 
 def test_eft_parse_record_invalid_length():
     """Test EFT record parser invalid length."""
-    content = ' '
+    content = " "
     record: EFTRecord = EFTRecord(content, 0)
 
     assert record.errors
@@ -371,24 +384,25 @@ def test_eft_parse_record_invalid_length():
 
 def test_eft_parse_record_invalid_record_type():
     """Test EFT record parser invalid record_type."""
-    content = factory_eft_record(record_type='X',
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='20230810',
-                                 deposit_time='0000',
-                                 location_id='85004',
-                                 transaction_sequence='001',
-                                 transaction_description='DEPOSIT          26',
-                                 deposit_amount='13500',
-                                 currency='',
-                                 exchange_adj_amount='0',
-                                 deposit_amount_cad='13500',
-                                 destination_bank_number='0003',
-                                 batch_number='002400986',
-                                 jv_type='I',
-                                 jv_number='002425669',
-                                 transaction_date=''
-                                 )
+    content = factory_eft_record(
+        record_type="X",
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="001",
+        transaction_description="DEPOSIT          26",
+        deposit_amount="13500",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="13500",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
     record: EFTRecord = EFTRecord(content, 0)
 
     assert record.errors
@@ -400,24 +414,25 @@ def test_eft_parse_record_invalid_record_type():
 
 def test_eft_parse_record_invalid_dates():
     """Test EFT record parser for invalid dates."""
-    content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='2023081 ',
-                                 deposit_time='A000',
-                                 location_id='85004',
-                                 transaction_sequence='001',
-                                 transaction_description='DEPOSIT          26',
-                                 deposit_amount='13500',
-                                 currency='',
-                                 exchange_adj_amount='0',
-                                 deposit_amount_cad='13500',
-                                 destination_bank_number='0003',
-                                 batch_number='002400986',
-                                 jv_type='I',
-                                 jv_number='002425669',
-                                 transaction_date='20233001'
-                                 )
+    content = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="2023081 ",
+        deposit_time="A000",
+        location_id="85004",
+        transaction_sequence="001",
+        transaction_description="DEPOSIT          26",
+        deposit_amount="13500",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="13500",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="20233001",
+    )
     record: EFTRecord = EFTRecord(content, 1)
 
     assert record.errors
@@ -430,44 +445,45 @@ def test_eft_parse_record_invalid_dates():
     assert record.errors[1].index == 1
 
     assert record.index == 1
-    assert record.record_type == '2'
-    assert record.ministry_code == 'AT'
-    assert record.program_code == '0146'
+    assert record.record_type == "2"
+    assert record.ministry_code == "AT"
+    assert record.program_code == "0146"
     assert record.deposit_datetime is None
-    assert record.location_id == '85004'
-    assert record.transaction_sequence == '001'
-    assert record.transaction_description == 'DEPOSIT          26'
+    assert record.location_id == "85004"
+    assert record.transaction_sequence == "001"
+    assert record.transaction_description == "DEPOSIT          26"
     assert record.deposit_amount == 13500
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
     assert record.deposit_amount_cad == 13500
-    assert record.dest_bank_number == '0003'
-    assert record.batch_number == '002400986'
-    assert record.jv_type == 'I'
-    assert record.jv_number == '002425669'
+    assert record.dest_bank_number == "0003"
+    assert record.batch_number == "002400986"
+    assert record.jv_type == "I"
+    assert record.jv_number == "002425669"
     assert record.transaction_date is None
 
 
 def test_eft_parse_record_invalid_numbers():
     """Test EFT record parser for invalid numbers."""
-    content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='20230810',
-                                 deposit_time='0000',
-                                 location_id='85004',
-                                 transaction_sequence='001',
-                                 transaction_description='1234',
-                                 deposit_amount='1350A',
-                                 currency='',
-                                 exchange_adj_amount='ABC',
-                                 deposit_amount_cad='1350A',
-                                 destination_bank_number='0003',
-                                 batch_number='002400986',
-                                 jv_type='I',
-                                 jv_number='002425669',
-                                 transaction_date=''
-                                 )
+    content = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="001",
+        transaction_description="1234",
+        deposit_amount="1350A",
+        currency="",
+        exchange_adj_amount="ABC",
+        deposit_amount_cad="1350A",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
     record: EFTRecord = EFTRecord(content, 0)
 
     # We are expecting the transaction description as this is where we get the BCROS Account number
@@ -486,24 +502,25 @@ def test_eft_parse_record_invalid_numbers():
 
 def test_eft_parse_record_transaction_description_required():
     """Test EFT record parser transaction description required."""
-    content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
-                                 ministry_code='AT',
-                                 program_code='0146',
-                                 deposit_date='20230810',
-                                 deposit_time='0000',
-                                 location_id='85004',
-                                 transaction_sequence='001',
-                                 transaction_description='',
-                                 deposit_amount='13500',
-                                 currency='',
-                                 exchange_adj_amount='0',
-                                 deposit_amount_cad='13500',
-                                 destination_bank_number='0003',
-                                 batch_number='002400986',
-                                 jv_type='I',
-                                 jv_number='002425669',
-                                 transaction_date=''
-                                 )
+    content = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="001",
+        transaction_description="",
+        deposit_amount="13500",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="13500",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
     record: EFTRecord = EFTRecord(content, 0)
 
     # We are expecting the transaction description as this is where we get the BCROS Account number
@@ -516,7 +533,7 @@ def test_eft_parse_record_transaction_description_required():
 
 def test_eft_parse_file():
     """Test EFT parsing a file."""
-    with open('tests/unit/test_data/tdi17_sample.txt', 'r') as f:
+    with open("tests/unit/test_data/tdi17_sample.txt", "r") as f:
         contents = f.read()
         lines = contents.splitlines()
         header_index = 0
@@ -534,107 +551,107 @@ def test_eft_parse_file():
         assert len(eft_records) == 5
 
         assert eft_header.index == 0
-        assert eft_header.record_type == '1'
+        assert eft_header.record_type == "1"
         assert eft_header.creation_datetime == datetime(2023, 8, 14, 16, 1)
         assert eft_header.starting_deposit_date == datetime(2023, 8, 10)
         assert eft_header.ending_deposit_date == datetime(2023, 8, 10)
 
         assert eft_trailer.index == 6
-        assert eft_trailer.record_type == '7'
+        assert eft_trailer.record_type == "7"
         assert eft_trailer.number_of_details == 5
         assert eft_trailer.total_deposit_amount == 3733750
 
         assert eft_records[0].index == 1
-        assert eft_records[0].record_type == '2'
-        assert eft_records[0].ministry_code == 'AT'
-        assert eft_records[0].program_code == '0146'
+        assert eft_records[0].record_type == "2"
+        assert eft_records[0].ministry_code == "AT"
+        assert eft_records[0].program_code == "0146"
         assert eft_records[0].deposit_datetime == datetime(2023, 8, 10, 0, 0)
-        assert eft_records[0].location_id == '85004'
-        assert eft_records[0].transaction_sequence == '001'
-        assert eft_records[0].transaction_description == 'DEPOSIT          26'
+        assert eft_records[0].location_id == "85004"
+        assert eft_records[0].transaction_sequence == "001"
+        assert eft_records[0].transaction_description == "DEPOSIT          26"
         assert eft_records[0].deposit_amount == 13500
         assert eft_records[0].currency == EFTConstants.CURRENCY_CAD.value
         assert eft_records[0].exchange_adj_amount == 0
         assert eft_records[0].deposit_amount_cad == 13500
-        assert eft_records[0].dest_bank_number == '0003'
-        assert eft_records[0].batch_number == '002400986'
-        assert eft_records[0].jv_type == 'I'
-        assert eft_records[0].jv_number == '002425669'
+        assert eft_records[0].dest_bank_number == "0003"
+        assert eft_records[0].batch_number == "002400986"
+        assert eft_records[0].jv_type == "I"
+        assert eft_records[0].jv_number == "002425669"
         assert eft_records[0].transaction_date is None
         assert eft_records[0].short_name_type is None
 
         assert eft_records[1].index == 2
-        assert eft_records[1].record_type == '2'
-        assert eft_records[1].ministry_code == 'AT'
-        assert eft_records[1].program_code == '0146'
+        assert eft_records[1].record_type == "2"
+        assert eft_records[1].ministry_code == "AT"
+        assert eft_records[1].program_code == "0146"
         assert eft_records[1].deposit_datetime == datetime(2023, 8, 10, 0, 0)
-        assert eft_records[1].location_id == '85004'
-        assert eft_records[1].transaction_sequence == '002'
-        assert eft_records[1].transaction_description == 'HSIMPSON'
+        assert eft_records[1].location_id == "85004"
+        assert eft_records[1].transaction_sequence == "002"
+        assert eft_records[1].transaction_description == "HSIMPSON"
         assert eft_records[1].deposit_amount == 525000
         assert eft_records[1].currency == EFTConstants.CURRENCY_CAD.value
         assert eft_records[1].exchange_adj_amount == 0
         assert eft_records[1].deposit_amount_cad == 525000
-        assert eft_records[1].dest_bank_number == '0003'
-        assert eft_records[1].batch_number == '002400986'
-        assert eft_records[1].jv_type == 'I'
-        assert eft_records[1].jv_number == '002425669'
+        assert eft_records[1].dest_bank_number == "0003"
+        assert eft_records[1].batch_number == "002400986"
+        assert eft_records[1].jv_type == "I"
+        assert eft_records[1].jv_number == "002425669"
         assert eft_records[1].transaction_date is None
         assert eft_records[1].short_name_type == EFTShortnameType.WIRE.value
 
         assert eft_records[2].index == 3
-        assert eft_records[2].record_type == '2'
-        assert eft_records[2].ministry_code == 'AT'
-        assert eft_records[2].program_code == '0146'
+        assert eft_records[2].record_type == "2"
+        assert eft_records[2].ministry_code == "AT"
+        assert eft_records[2].program_code == "0146"
         assert eft_records[2].deposit_datetime == datetime(2023, 8, 10, 0, 0)
-        assert eft_records[2].location_id == '85004'
-        assert eft_records[2].transaction_sequence == '003'
-        assert eft_records[2].transaction_description == 'ABC1234567'
+        assert eft_records[2].location_id == "85004"
+        assert eft_records[2].transaction_sequence == "003"
+        assert eft_records[2].transaction_description == "ABC1234567"
         assert eft_records[2].deposit_amount == 951250
         assert eft_records[2].currency == EFTConstants.CURRENCY_CAD.value
         assert eft_records[2].exchange_adj_amount == 0
         assert eft_records[2].deposit_amount_cad == 951250
-        assert eft_records[2].dest_bank_number == '0003'
-        assert eft_records[2].batch_number == '002400986'
-        assert eft_records[2].jv_type == 'I'
-        assert eft_records[2].jv_number == '002425669'
+        assert eft_records[2].dest_bank_number == "0003"
+        assert eft_records[2].batch_number == "002400986"
+        assert eft_records[2].jv_type == "I"
+        assert eft_records[2].jv_number == "002425669"
         assert eft_records[2].transaction_date is None
         assert eft_records[2].short_name_type == EFTShortnameType.EFT.value
 
         assert eft_records[3].index == 4
-        assert eft_records[3].record_type == '2'
-        assert eft_records[3].ministry_code == 'AT'
-        assert eft_records[3].program_code == '0146'
+        assert eft_records[3].record_type == "2"
+        assert eft_records[3].ministry_code == "AT"
+        assert eft_records[3].program_code == "0146"
         assert eft_records[3].deposit_datetime == datetime(2023, 8, 10, 0, 0)
-        assert eft_records[3].location_id == '85004'
-        assert eft_records[3].transaction_sequence == '004'
-        assert eft_records[3].transaction_description == 'INTERBLOCK C'
+        assert eft_records[3].location_id == "85004"
+        assert eft_records[3].transaction_sequence == "004"
+        assert eft_records[3].transaction_description == "INTERBLOCK C"
         assert eft_records[3].deposit_amount == 2125000
         assert eft_records[3].currency == EFTConstants.CURRENCY_CAD.value
         assert eft_records[3].exchange_adj_amount == 0
         assert eft_records[3].deposit_amount_cad == 2125000
-        assert eft_records[3].dest_bank_number == '0003'
-        assert eft_records[3].batch_number == '002400986'
-        assert eft_records[3].jv_type == 'I'
-        assert eft_records[3].jv_number == '002425669'
+        assert eft_records[3].dest_bank_number == "0003"
+        assert eft_records[3].batch_number == "002400986"
+        assert eft_records[3].jv_type == "I"
+        assert eft_records[3].jv_number == "002425669"
         assert eft_records[3].transaction_date is None
         assert eft_records[3].short_name_type == EFTShortnameType.WIRE.value
 
         assert eft_records[4].index == 5
-        assert eft_records[4].record_type == '2'
-        assert eft_records[4].ministry_code == 'AT'
-        assert eft_records[4].program_code == '0146'
+        assert eft_records[4].record_type == "2"
+        assert eft_records[4].ministry_code == "AT"
+        assert eft_records[4].program_code == "0146"
         assert eft_records[4].deposit_datetime == datetime(2023, 8, 10, 16, 0)
-        assert eft_records[4].location_id == '85020'
-        assert eft_records[4].transaction_sequence == '001'
-        assert eft_records[4].transaction_description == ''
+        assert eft_records[4].location_id == "85020"
+        assert eft_records[4].transaction_sequence == "001"
+        assert eft_records[4].transaction_description == ""
         assert eft_records[4].deposit_amount == 119000
         assert eft_records[4].currency == EFTConstants.CURRENCY_CAD.value
         assert eft_records[4].exchange_adj_amount == 0
         assert eft_records[4].deposit_amount_cad == 119000
-        assert eft_records[4].dest_bank_number == '0010'
-        assert eft_records[4].batch_number == '002400989'
-        assert eft_records[4].jv_type == 'I'
-        assert eft_records[4].jv_number == '002425836'
+        assert eft_records[4].dest_bank_number == "0010"
+        assert eft_records[4].batch_number == "002400989"
+        assert eft_records[4].jv_type == "I"
+        assert eft_records[4].jv_number == "002425836"
         assert eft_records[4].transaction_date is None
         assert eft_records[4].short_name_type is None

@@ -19,12 +19,12 @@ from pay_api.models.invoice import Invoice
 
 def update_temporary_identifier(event_message):
     """Update a temporary identifier to a permanent identifier."""
-    if 'tempidentifier' not in event_message or event_message.get('tempidentifier', None) is None:
+    if "tempidentifier" not in event_message or event_message.get("tempidentifier", None) is None:
         return
 
-    old_identifier = event_message.get('tempidentifier')
-    new_identifier = event_message.get('identifier')
-    current_app.logger.debug('Received message to update %s to %s', old_identifier, new_identifier)
+    old_identifier = event_message.get("tempidentifier")
+    new_identifier = event_message.get("identifier")
+    current_app.logger.debug("Received message to update %s to %s", old_identifier, new_identifier)
 
     invoices = Invoice.find_by_business_identifier(old_identifier)
     for inv in invoices:
