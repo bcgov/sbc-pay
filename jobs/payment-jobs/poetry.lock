@@ -2103,9 +2103,9 @@ werkzeug = "3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/ochiu/sbc-pay.git"
-reference = "ld-override-email-fix"
-resolved_reference = "f9ab33c8d6a1336bc40daa2eddf2d7961a46bcee"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "main"
+resolved_reference = "726b002cf90082cfbb795c3e7329da9ed8ef1a03"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3256,4 +3256,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "c2501e19a1d6786aafc63cf2f5c713817708b2aeea42dde1638af23532b31428"
+content-hash = "bb90125c5851f39bc01b06c79c8c5573c0a8b165fe43bb52be8a5f2d6522d345"
