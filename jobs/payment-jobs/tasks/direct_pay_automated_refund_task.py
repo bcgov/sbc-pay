@@ -23,7 +23,13 @@ from pay_api.models.invoice import Invoice
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import (
-    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus)
+    AuthHeaderType,
+    ContentType,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    PaymentStatus,
+)
 from sentry_sdk import capture_message
 
 from tasks.common.dataclasses import OrderStatus
@@ -63,19 +69,24 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                 Log the error down, contact PAYBC if this happens.
                 Set refund.gl_error = <error message>
         """
-        include_invoice_statuses = [InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.REFUNDED.value]
-        invoices: List[InvoiceModel] = InvoiceModel.query \
-            .outerjoin(RefundModel, RefundModel.invoice_id == Invoice.id)\
-            .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value) \
-            .filter(InvoiceModel.invoice_status_code.in_(include_invoice_statuses)) \
-            .filter(RefundModel.gl_posted.is_(None) & RefundModel.gl_error.is_(None)) \
-            .order_by(InvoiceModel.created_on.asc()).all()
+        include_invoice_statuses = [
+            InvoiceStatus.REFUND_REQUESTED.value,
+            InvoiceStatus.REFUNDED.value,
+        ]
+        invoices: List[InvoiceModel] = (
+            InvoiceModel.query.outerjoin(RefundModel, RefundModel.invoice_id == Invoice.id)
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
+            .filter(InvoiceModel.invoice_status_code.in_(include_invoice_statuses))
+            .filter(RefundModel.gl_posted.is_(None) & RefundModel.gl_error.is_(None))
+            .order_by(InvoiceModel.created_on.asc())
+            .all()
+        )
 
-        current_app.logger.info(f'Found {len(invoices)} invoices to process for refunds.')
+        current_app.logger.info(f"Found {len(invoices)} invoices to process for refunds.")
         for invoice in invoices:
             try:
                 # Cron is setup to run between 6 to 8 UTC. Feedback is updated after 11pm.
-                current_app.logger.debug(f'Processing invoice: {invoice.id} - created on: {invoice.created_on}')
+                current_app.logger.debug(f"Processing invoice: {invoice.id} - created on: {invoice.created_on}")
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
                 if cls._is_glstatus_rejected_or_declined(status):
                     cls._refund_error(status, invoice)
@@ -84,34 +95,45 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                 elif cls._is_status_complete(status):
                     cls._refund_complete(invoice)
                 else:
-                    current_app.logger.info('No action taken for invoice.')
+                    current_app.logger.info("No action taken for invoice.")
             except Exception as e:  # NOQA # pylint: disable=broad-except disable=invalid-name
-                capture_message(f'Error on processing credit card refund - invoice: {invoice.id}'
-                                f'status={invoice.invoice_status_code} ERROR : {str(e)}', level='error')
+                capture_message(
+                    f"Error on processing credit card refund - invoice: {invoice.id}"
+                    f"status={invoice.invoice_status_code} ERROR : {str(e)}",
+                    level="error",
+                )
                 current_app.logger.error(e, exc_info=True)
 
     @classmethod
     def _query_order_status(cls, invoice: Invoice):
         """Request order status for CFS."""
-        access_token: str = DirectPayService().get_token().json().get('access_token')
-        paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
-        paybc_svc_base_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
+        access_token: str = DirectPayService().get_token().json().get("access_token")
+        paybc_ref_number: str = current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER")
+        paybc_svc_base_url = current_app.config.get("PAYBC_DIRECT_PAY_BASE_URL")
         completed_reference = list(
-            filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
-                   invoice.references))[0]
-        payment_url: str = \
-            f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{completed_reference.invoice_number}'
+            filter(
+                lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
+                invoice.references,
+            )
+        )[0]
+        payment_url: str = f"{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{completed_reference.invoice_number}"
         payment_response = OAuthService.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
         return payment_response
 
     @classmethod
     def _refund_error(cls, status: OrderStatus, invoice: Invoice):
         """Log error for rejected GL status."""
-        current_app.logger.error(f'Refund error - Invoice: {invoice.id} - detected RJCT/DECLINED on refund,'
-                                 "contact PAYBC if it's RJCT.")
-        errors = ' '.join([refund_data.refundglerrormessage.strip() for revenue_line in status.revenue
-                           for refund_data in revenue_line.refund_data])[:250]
-        current_app.logger.error(f'Refund error - Invoice: {invoice.id} - glerrormessage: {errors}')
+        current_app.logger.error(
+            f"Refund error - Invoice: {invoice.id} - detected RJCT/DECLINED on refund," "contact PAYBC if it's RJCT."
+        )
+        errors = " ".join(
+            [
+                refund_data.refundglerrormessage.strip()
+                for revenue_line in status.revenue
+                for refund_data in revenue_line.refund_data
+            ]
+        )[:250]
+        current_app.logger.error(f"Refund error - Invoice: {invoice.id} - glerrormessage: {errors}")
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_error = errors
         refund.save()
@@ -128,8 +150,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Refund was successfully posted to a GL. Set gl_posted to now (filtered out)."""
         # Set these to refunded, incase we skipped the PAID state and went to CMPLT
         cls._set_invoice_and_payment_to_refunded(invoice)
-        current_app.logger.info(
-            'Refund complete - GL was posted - setting refund.gl_posted to now.')
+        current_app.logger.info("Refund complete - GL was posted - setting refund.gl_posted to now.")
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_posted = datetime.now(tz=timezone.utc)
         refund.save()
@@ -137,8 +158,11 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @staticmethod
     def _is_glstatus_rejected_or_declined(status: OrderStatus) -> bool:
         """Check for bad refundglstatus."""
-        return any(refund_data.refundglstatus in [PaymentDetailsGlStatus.RJCT, PaymentDetailsGlStatus.DECLINED]
-                   for line in status.revenue for refund_data in line.refund_data)
+        return any(
+            refund_data.refundglstatus in [PaymentDetailsGlStatus.RJCT, PaymentDetailsGlStatus.DECLINED]
+            for line in status.revenue
+            for refund_data in line.refund_data
+        )
 
     @staticmethod
     def _is_status_paid_and_invoice_refund_requested(status: OrderStatus, invoice: Invoice) -> bool:
@@ -165,7 +189,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @staticmethod
     def _set_invoice_and_payment_to_refunded(invoice: Invoice):
         """Set invoice and payment to REFUNDED."""
-        current_app.logger.info('Invoice & Payment set to REFUNDED, add refund_date.')
+        current_app.logger.info("Invoice & Payment set to REFUNDED, add refund_date.")
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.save()

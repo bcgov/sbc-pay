@@ -20,11 +20,10 @@ from flask_restx import Namespace, Resource
 
 from bcol_api.utils.run_version import get_run_version
 
+API = Namespace("Meta", description="Metadata")
 
-API = Namespace('Meta', description='Metadata')
 
-
-@API.route('/info')
+@API.route("/info")
 class Info(Resource):
     """Meta information about the overall service."""
 
@@ -32,4 +31,4 @@ class Info(Resource):
     def get():
         """Return a JSON object with meta information about the Service."""
         version = get_run_version()
-        return jsonify(API=f'bcol_api/{version}')
+        return jsonify(API=f"bcol_api/{version}")

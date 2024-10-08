@@ -21,14 +21,14 @@ from .secured_view import SecuredView
 class FeeCodeConfig(SecuredView):
     """Fee code config."""
 
-    column_list = form_columns = column_searchable_list = ('code', 'amount')
+    column_list = form_columns = column_searchable_list = ("code", "amount")
 
     # Keep everything sorted, although realistically also we need to sort the values within a row before it is saved.
-    column_default_sort = 'code'
+    column_default_sort = "code"
 
     def on_form_prefill(self, form, id):  # pylint:disable=redefined-builtin
         """Prefill overrides."""
-        form.code.render_kw = {'readonly': True}
+        form.code.render_kw = {"readonly": True}
 
 
 # If this view is going to be displayed for only special roles, do like below

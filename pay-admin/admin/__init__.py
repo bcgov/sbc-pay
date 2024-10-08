@@ -31,42 +31,41 @@ from admin.views import CodeConfig, CorpTypeView, DistributionCodeView, FeeCodeV
 
 from .keycloak import Keycloak
 
+setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
 
-setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
 
-
-def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
+def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
 
-    app.logger.info('init db.')
+    app.logger.info("init db.")
     db.init_app(app)
     ma.init_app(app)
 
-    app.logger.info('init flask admin.')
+    app.logger.info("init flask admin.")
     init_flask_admin(app)
 
-    app.logger.info('init cache.')
+    app.logger.info("init cache.")
     Cache(app)
 
-    app.logger.info('init session.')
+    app.logger.info("init session.")
     Session(app)
 
-    app.logger.info('init keycloak.')
+    app.logger.info("init keycloak.")
     Keycloak(app)
 
-    @app.route('/')
+    @app.route("/")
     def index():
-        return redirect('/admin/feecode/')
+        return redirect("/admin/feecode/")
 
-    app.logger.info('create_app is complete.')
+    app.logger.info("create_app is complete.")
     return app
 
 
 def init_flask_admin(app):
     """Initialize flask admin and it's views."""
-    flask_admin = Admin(app, name='Fee Admin', template_mode='bootstrap4', index_view=IndexView())
+    flask_admin = Admin(app, name="Fee Admin", template_mode="bootstrap4", index_view=IndexView())
     flask_admin.add_view(FeeCodeView)
     flask_admin.add_view(CorpTypeView)
     flask_admin.add_view(CodeConfig(FilingType, db.session))

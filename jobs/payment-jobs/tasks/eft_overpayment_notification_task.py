@@ -41,25 +41,35 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def _get_short_names_with_credits_remaining(cls):
         """Create base query for returning short names with any remaining credits by filter date."""
-        query = (db.session.query(EFTShortnameModel)
-                 .distinct(EFTShortnameModel.id)
-                 .join(EFTCreditModel, EFTCreditModel.short_name_id == EFTShortnameModel.id)
-                 .filter(EFTCreditModel.remaining_amount > 0)
-                 .order_by(EFTShortnameModel.id, EFTCreditModel.created_on.asc())
-                 )
+        query = (
+            db.session.query(EFTShortnameModel)
+            .distinct(EFTShortnameModel.id)
+            .join(EFTCreditModel, EFTCreditModel.short_name_id == EFTShortnameModel.id)
+            .filter(EFTCreditModel.remaining_amount > 0)
+            .order_by(EFTShortnameModel.id, EFTCreditModel.created_on.asc())
+        )
         return query
 
     @classmethod
     def _get_today_overpaid_linked_short_names(cls):
         """Get linked short names that have received a payment today and overpaid."""
         filter_date = cls.date_override if cls.date_override is not None else datetime.now(tz=timezone.utc).date()
-        query = (cls._get_short_names_with_credits_remaining()
-                 .join(EFTShortnameLinkModel,
-                       and_(EFTShortnameLinkModel.eft_short_name_id == EFTShortnameModel.id,
-                            EFTShortnameLinkModel.status_code.in_([EFTShortnameStatus.LINKED.value,
-                                                                   EFTShortnameStatus.PENDING.value]))
-                       )
-                 .filter(func.date(EFTCreditModel.created_on) == filter_date))
+        query = (
+            cls._get_short_names_with_credits_remaining()
+            .join(
+                EFTShortnameLinkModel,
+                and_(
+                    EFTShortnameLinkModel.eft_short_name_id == EFTShortnameModel.id,
+                    EFTShortnameLinkModel.status_code.in_(
+                        [
+                            EFTShortnameStatus.LINKED.value,
+                            EFTShortnameStatus.PENDING.value,
+                        ]
+                    ),
+                ),
+            )
+            .filter(func.date(EFTCreditModel.created_on) == filter_date)
+        )
         return query.all()
 
     @classmethod
@@ -67,15 +77,23 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
         """Get short names that have been unlinked for a duration in days."""
         execution_date = cls.date_override if cls.date_override is not None else datetime.now(tz=timezone.utc).date()
         duration_date = execution_date - timedelta(days=days_duration)
-        query = (cls._get_short_names_with_credits_remaining()
-                 .outerjoin(EFTShortnameLinkModel,
-                            and_(EFTShortnameLinkModel.eft_short_name_id == EFTShortnameModel.id,
-                                 EFTShortnameLinkModel.status_code.in_([EFTShortnameStatus.LINKED.value,
-                                                                        EFTShortnameStatus.PENDING.value]))
-                            )
-                 .filter(EFTShortnameLinkModel.id.is_(None))
-                 .filter(func.date(EFTShortnameModel.created_on) == duration_date)
-                 )
+        query = (
+            cls._get_short_names_with_credits_remaining()
+            .outerjoin(
+                EFTShortnameLinkModel,
+                and_(
+                    EFTShortnameLinkModel.eft_short_name_id == EFTShortnameModel.id,
+                    EFTShortnameLinkModel.status_code.in_(
+                        [
+                            EFTShortnameStatus.LINKED.value,
+                            EFTShortnameStatus.PENDING.value,
+                        ]
+                    ),
+                ),
+            )
+            .filter(EFTShortnameLinkModel.id.is_(None))
+            .filter(func.date(EFTShortnameModel.created_on) == duration_date)
+        )
 
         return query.all()
 
@@ -90,8 +108,8 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
         try:
             cls.short_names = {}
             if date_override:
-                cls.date_override = datetime.strptime(date_override, '%Y-%m-%d') if date_override else None
-                current_app.logger.info(f'Using date override : {date_override}')
+                cls.date_override = datetime.strptime(date_override, "%Y-%m-%d") if date_override else None
+                current_app.logger.info(f"Using date override : {date_override}")
 
             # Get short names that have EFT credit rows created based on current / override date indicating payment
             # was received and credits remaining indicate overpayment
@@ -102,14 +120,14 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
 
             cls._update_short_name_dict(linked_short_names)
             cls._update_short_name_dict(unlinked_short_names)
-            current_app.logger.info(f'Sending over payment notifications for {len(cls.short_names)} short names.')
+            current_app.logger.info(f"Sending over payment notifications for {len(cls.short_names)} short names.")
             cls._send_notifications()
         except Exception as e:  # NOQA # pylint: disable=broad-except
             capture_message(
-                'Error on processing over payment notifications'
-                f'ERROR : {str(e)}', level='error')
-            current_app.logger.error(
-                'Error on processing over payment notifications', exc_info=True)
+                "Error on processing over payment notifications" f"ERROR : {str(e)}",
+                level="error",
+            )
+            current_app.logger.error("Error on processing over payment notifications", exc_info=True)
 
     @classmethod
     def _send_notifications(cls):
@@ -121,10 +139,12 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
         for short_name_id, name in cls.short_names.items():
             credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
             template_params = {
-                'shortNameId': short_name_id,
-                'shortName': name,
-                'unsettledAmount': f'{credit_balance:,.2f}'
+                "shortNameId": short_name_id,
+                "shortName": name,
+                "unsettledAmount": f"{credit_balance:,.2f}",
             }
-            send_email(recipients=qualified_receiver_recipients,
-                       subject=f'Pending Unsettled Amount for Short Name {name}',
-                       body=_render_eft_overpayment_template(template_params))
+            send_email(
+                recipients=qualified_receiver_recipients,
+                subject=f"Pending Unsettled Amount for Short Name {name}",
+                body=_render_eft_overpayment_template(template_params),
+            )

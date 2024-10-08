@@ -12,8 +12,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from flask import redirect, request, session, url_for
+
 import flask_oidc
+from flask import redirect, request, session, url_for
 
 
 class Keycloak:
@@ -38,15 +39,15 @@ class Keycloak:
         """Determine whether or not the user is logged in."""
         return self._oidc.user_loggedin
 
-    def has_access(self, role='admin_view') -> bool:
+    def has_access(self, role="admin_view") -> bool:
         """Determine whether or not the user is authorized to use the application. True if the user have role."""
         if not self._oidc.get_access_token():
             return False
 
-        if not session['oidc_auth_profile']['roles']:
+        if not session["oidc_auth_profile"]["roles"]:
             return False
 
-        roles_ = session['oidc_auth_profile']['roles']
+        roles_ = session["oidc_auth_profile"]["roles"]
         access = role in roles_
 
         return access
@@ -57,8 +58,8 @@ class Keycloak:
 
         :rtype: object
         """
-        return redirect(url_for('oidc_auth.login', next=request.url))
+        return redirect(url_for("oidc_auth.login", next=request.url))
 
     def get_username(self) -> str:
         """Get the username for the currently logged in user."""
-        return self._oidc.user_getfield('preferred_username')
+        return self._oidc.user_getfield("preferred_username")

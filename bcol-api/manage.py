@@ -24,13 +24,12 @@ from bcol_api import models  # pylint: disable=unused-import
 from bcol_api import create_app
 from bcol_api.models import db
 
-
 APP = create_app()
 MIGRATE = Migrate(APP, db)
 MANAGER = Manager(APP)
 
-MANAGER.add_command('db', MigrateCommand)
+MANAGER.add_command("db", MigrateCommand)
 
-if __name__ == '__main__':
-    logging.log(logging.INFO, 'Running the Manager')
+if __name__ == "__main__":
+    logging.log(logging.INFO, "Running the Manager")
     MANAGER.run()

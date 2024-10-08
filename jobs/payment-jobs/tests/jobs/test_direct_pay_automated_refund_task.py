@@ -14,6 +14,7 @@
 
 """Tests for direct pay automated refund task."""
 import datetime
+
 from freezegun import freeze_time
 from pay_api.models import Refund as RefundModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentStatus
@@ -21,8 +22,12 @@ from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentSt
 from tasks.direct_pay_automated_refund_task import DirectPayAutomatedRefundTask
 
 from .factory import (
-    factory_create_direct_pay_account, factory_invoice, factory_invoice_reference, factory_payment,
-    factory_refund_invoice)
+    factory_create_direct_pay_account,
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment,
+    factory_refund_invoice,
+)
 
 
 def test_automated_refund_task(session):
@@ -34,25 +39,20 @@ def test_automated_refund_task(session):
 def test_successful_paid_refund(session, monkeypatch):
     """Bambora paid, but not GL complete."""
     payment_account = factory_create_direct_pay_account()
-    invoice = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value)
+    invoice = factory_invoice(
+        payment_account=payment_account,
+        status_code=InvoiceStatus.REFUND_REQUESTED.value,
+    )
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
-    payment = factory_payment('PAYBC', invoice_number=invoice.id)
+    payment = factory_payment("PAYBC", invoice_number=invoice.id)
     refund = factory_refund_invoice(invoice.id)
 
-    def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
-        return {
-            'revenue': [
-                {
-                    'refund_data': [
-                        {
-                            'refundglstatus': 'PAID',
-                            'refundglerrormessage': ''
-                        }
-                    ]
-                }
-            ]
-        }
-    target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
+    def payment_status(
+        cls,
+    ):  # pylint: disable=unused-argument; mocks of library methods
+        return {"revenue": [{"refund_data": [{"refundglstatus": "PAID", "refundglerrormessage": ""}]}]}
+
+    target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
     DirectPayAutomatedRefundTask().process_cc_refunds()
@@ -66,27 +66,20 @@ def test_successful_completed_refund(session, monkeypatch):
     """Test successful refund (GL complete)."""
     invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.REFUNDED.value)
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
-    payment = factory_payment('PAYBC', invoice_number=invoice.id)
+    payment = factory_payment("PAYBC", invoice_number=invoice.id)
     refund = factory_refund_invoice(invoice.id)
 
-    def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
-        return {
-            'revenue': [
-                {
-                    'refund_data': [
-                        {
-                            'refundglstatus': 'CMPLT',
-                            'refundglerrormessage': ''
-                        }
-                    ]
-                }
-            ]
-        }
-    target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
+    def payment_status(
+        cls,
+    ):  # pylint: disable=unused-argument; mocks of library methods
+        return {"revenue": [{"refund_data": [{"refundglstatus": "CMPLT", "refundglerrormessage": ""}]}]}
+
+    target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(),
-                                               datetime.time(6, 00))):
+    with freeze_time(
+        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
+    ):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
@@ -101,42 +94,36 @@ def test_bad_cfs_refund(session, monkeypatch):
     refund = factory_refund_invoice(invoice.id)
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
 
-    def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
+    def payment_status(
+        cls,
+    ):  # pylint: disable=unused-argument; mocks of library methods
         return {
-            'revenue': [
+            "revenue": [
                 {
-                    'linenumber': '1',
-                    'revenueaccount': '112.32041.35301.1278.3200000.000000.0000',
-                    'revenueamount': '130',
-                    'glstatus': 'PAID',
-                    'glerrormessage': None,
-                    'refund_data': [
-                        {
-                            'refundglstatus': 'RJCT',
-                            'refundglerrormessage': 'BAD'
-                        }
-                    ]
+                    "linenumber": "1",
+                    "revenueaccount": "112.32041.35301.1278.3200000.000000.0000",
+                    "revenueamount": "130",
+                    "glstatus": "PAID",
+                    "glerrormessage": None,
+                    "refund_data": [{"refundglstatus": "RJCT", "refundglerrormessage": "BAD"}],
                 },
                 {
-                    'linenumber': '2',
-                    'revenueaccount': '112.32041.35301.1278.3200000.000000.0000',
-                    'revenueamount': '1.5',
-                    'glstatus': 'PAID',
-                    'glerrormessage': None,
-                    'refund_data': [
-                        {
-                            'refundglstatus': 'RJCT',
-                            'refundglerrormessage': 'BAD'
-                        }
-                    ]
-                }
+                    "linenumber": "2",
+                    "revenueaccount": "112.32041.35301.1278.3200000.000000.0000",
+                    "revenueamount": "1.5",
+                    "glstatus": "PAID",
+                    "glerrormessage": None,
+                    "refund_data": [{"refundglstatus": "RJCT", "refundglerrormessage": "BAD"}],
+                },
             ]
         }
-    target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
+
+    target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(),
-                                               datetime.time(6, 00))):
+    with freeze_time(
+        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
+    ):
         DirectPayAutomatedRefundTask().process_cc_refunds()
-        assert refund.gl_error == 'BAD BAD'
+        assert refund.gl_error == "BAD BAD"
         assert refund.gl_posted is None

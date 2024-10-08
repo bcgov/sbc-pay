@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task for linking electronic funds transfers."""
-from datetime import datetime, timezone
-from typing import List
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from decimal import Decimal
-from flask import current_app
+from typing import List
 
+from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
@@ -30,8 +30,16 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.eft_service import EftService
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-    PaymentStatus, PaymentSystem, ReverseOperation)
+    CfsAccountStatus,
+    DisbursementStatus,
+    EFTCreditInvoiceStatus,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    PaymentStatus,
+    PaymentSystem,
+    ReverseOperation,
+)
 from sentry_sdk import capture_message
 from sqlalchemy import func, or_
 from sqlalchemy.orm import lazyload, registry
@@ -46,29 +54,47 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     overdue_account_ids = {}
 
     @classmethod
-    def get_eft_credit_invoice_links_by_status(cls, status: str) \
-            -> List[tuple[InvoiceModel, EFTCreditInvoiceLinkModel, CfsAccountModel]]:
+    def get_eft_credit_invoice_links_by_status(
+        cls, status: str
+    ) -> List[tuple[InvoiceModel, EFTCreditInvoiceLinkModel, CfsAccountModel]]:
         """Get electronic funds transfer by state."""
-        latest_cfs_account = db.session.query(func.max(CfsAccountModel.id).label('max_id_per_payment_account')) \
-            .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value) \
-            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value) \
-            .group_by(CfsAccountModel.account_id).subquery('latest_cfs_account')
+        latest_cfs_account = (
+            db.session.query(func.max(CfsAccountModel.id).label("max_id_per_payment_account"))
+            .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value)
+            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value)
+            .group_by(CfsAccountModel.account_id)
+            .subquery("latest_cfs_account")
+        )
 
-        cil_rollup = db.session.query(func.min(EFTCreditInvoiceLinkModel.id).label('id'),
-                                      EFTCreditInvoiceLinkModel.invoice_id,
-                                      EFTCreditInvoiceLinkModel.status_code,
-                                      EFTCreditInvoiceLinkModel.receipt_number,
-                                      func.array_agg(EFTCreditInvoiceLinkModel.id)  # pylint: disable=not-callable
-                                      .label('link_ids'),
-                                      func.sum(EFTCreditInvoiceLinkModel.amount).label('rollup_amount')) \
-            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id) \
-            .filter(EFTCreditInvoiceLinkModel.status_code == status) \
-            .filter(InvoiceReferenceModel.status_code.in_([InvoiceReferenceStatus.ACTIVE.value,
-                                                           InvoiceReferenceStatus.COMPLETED.value])) \
-            .group_by(EFTCreditInvoiceLinkModel.invoice_id,
-                      EFTCreditInvoiceLinkModel.status_code,
-                      EFTCreditInvoiceLinkModel.receipt_number) \
+        cil_rollup = (
+            db.session.query(
+                func.min(EFTCreditInvoiceLinkModel.id).label("id"),
+                EFTCreditInvoiceLinkModel.invoice_id,
+                EFTCreditInvoiceLinkModel.status_code,
+                EFTCreditInvoiceLinkModel.receipt_number,
+                func.array_agg(EFTCreditInvoiceLinkModel.id).label("link_ids"),  # pylint: disable=not-callable
+                func.sum(EFTCreditInvoiceLinkModel.amount).label("rollup_amount"),
+            )
+            .join(
+                InvoiceReferenceModel,
+                InvoiceReferenceModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id,
+            )
+            .filter(EFTCreditInvoiceLinkModel.status_code == status)
+            .filter(
+                InvoiceReferenceModel.status_code.in_(
+                    [
+                        InvoiceReferenceStatus.ACTIVE.value,
+                        InvoiceReferenceStatus.COMPLETED.value,
+                    ]
+                )
+            )
+            .group_by(
+                EFTCreditInvoiceLinkModel.invoice_id,
+                EFTCreditInvoiceLinkModel.status_code,
+                EFTCreditInvoiceLinkModel.receipt_number,
+            )
             .subquery()
+        )
 
         # This needs to be local unfortunately so it doesn't get remapped.
         @dataclass
@@ -81,33 +107,54 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             link_ids: List[int]
             rollup_amount: Decimal
 
-        registry().map_imperatively(EFTCILRollup, cil_rollup, primary_key=[cil_rollup.c.invoice_id,
-                                                                           cil_rollup.c.status_code,
-                                                                           cil_rollup.c.receipt_number])
+        registry().map_imperatively(
+            EFTCILRollup,
+            cil_rollup,
+            primary_key=[
+                cil_rollup.c.invoice_id,
+                cil_rollup.c.status_code,
+                cil_rollup.c.receipt_number,
+            ],
+        )
 
-        query = db.session.query(InvoiceModel, CfsAccountModel, EFTCILRollup) \
-            .join(cil_rollup, InvoiceModel.id == cil_rollup.c.invoice_id) \
-            .join(CfsAccountModel, CfsAccountModel.account_id == InvoiceModel.payment_account_id) \
-            .join(latest_cfs_account, CfsAccountModel.id == latest_cfs_account.c.max_id_per_payment_account) \
-            .options(lazyload('*')) \
-            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
+        query = (
+            db.session.query(InvoiceModel, CfsAccountModel, EFTCILRollup)
+            .join(cil_rollup, InvoiceModel.id == cil_rollup.c.invoice_id)
+            .join(
+                CfsAccountModel,
+                CfsAccountModel.account_id == InvoiceModel.payment_account_id,
+            )
+            .join(
+                latest_cfs_account,
+                CfsAccountModel.id == latest_cfs_account.c.max_id_per_payment_account,
+            )
+            .options(lazyload("*"))
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
             .filter(InvoiceModel.total == cil_rollup.c.rollup_amount)
+        )
 
         match status:
             case EFTCreditInvoiceStatus.CANCELLED.value:
                 # Handles 3. EFT Credit Link - PENDING, CANCEL that link reverse invoice. See eft_service refund.
-                query = query.filter(
-                    InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
+                query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
             case EFTCreditInvoiceStatus.PENDING.value:
                 query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
-                query = query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value,
-                                                                           InvoiceStatus.OVERDUE.value]))
+                query = query.filter(
+                    InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.OVERDUE.value])
+                )
             case EFTCreditInvoiceStatus.PENDING_REFUND.value:
                 # Handles 4. EFT Credit Link - COMPLETED from refund flow. See eft_service refund.
-                query = query.filter(or_(InvoiceModel.disbursement_status_code.is_(
-                    None), InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value))
-                query = query.filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.PAID.value,
-                                                                          InvoiceStatus.REFUND_REQUESTED.value]))
+                query = query.filter(
+                    or_(
+                        InvoiceModel.disbursement_status_code.is_(None),
+                        InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value,
+                    )
+                )
+                query = query.filter(
+                    InvoiceModel.invoice_status_code.in_(
+                        [InvoiceStatus.PAID.value, InvoiceStatus.REFUND_REQUESTED.value]
+                    )
+                )
             case _:
                 pass
         return query.order_by(InvoiceModel.payment_account_id, cil_rollup.c.invoice_id).all()
@@ -119,23 +166,29 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         cls.history_group_ids = set()
         for invoice, cfs_account, cil_rollup in credit_invoice_links:
             try:
-                current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {cil_rollup.id} -'
-                                        f' Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}')
+                current_app.logger.info(
+                    f"PayAccount: {invoice.payment_account_id} Id: {cil_rollup.id} -"
+                    f" Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}"
+                )
                 if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
                     cls.overdue_account_ids[invoice.payment_account_id] = cfs_account.payment_account
-                receipt_number = f'EFTCIL{cil_rollup.id}'
+                receipt_number = f"EFTCIL{cil_rollup.id}"
                 cls._create_receipt_and_invoice(cfs_account, cil_rollup, invoice, receipt_number)
                 cls._update_cil_and_shortname_history(cil_rollup, receipt_number=receipt_number)
                 db.session.commit()
                 EftService().complete_post_invoice(invoice, None)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
-                    f'Error on linking EFT invoice links in CFS '
-                    f'Account id={invoice.payment_account_id} '
-                    f'EFT Credit invoice Link : {cil_rollup.id}'
-                    f'ERROR : {str(e)}', level='error')
-                current_app.logger.error(f'Error Account id={invoice.payment_account_id} - '
-                                         f'EFT Credit invoice Link : {cil_rollup.id}', exc_info=True)
+                    f"Error on linking EFT invoice links in CFS "
+                    f"Account id={invoice.payment_account_id} "
+                    f"EFT Credit invoice Link : {cil_rollup.id}"
+                    f"ERROR : {str(e)}",
+                    level="error",
+                )
+                current_app.logger.error(
+                    f"Error Account id={invoice.payment_account_id} - " f"EFT Credit invoice Link : {cil_rollup.id}",
+                    exc_info=True,
+                )
                 db.session.rollback()
                 continue
         cls.unlock_overdue_accounts()
@@ -143,25 +196,32 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def reverse_electronic_funds_transfers_cfs(cls):
         """Reverse electronic funds transfers receipts in CFS and reset invoices."""
-        cils = cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.PENDING_REFUND.value) + \
-            cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.CANCELLED.value)
+        cils = cls.get_eft_credit_invoice_links_by_status(
+            EFTCreditInvoiceStatus.PENDING_REFUND.value
+        ) + cls.get_eft_credit_invoice_links_by_status(EFTCreditInvoiceStatus.CANCELLED.value)
         cls.history_group_ids = set()
         for invoice, cfs_account, cil_rollup in cils:
             try:
-                current_app.logger.info(f'PayAccount: {invoice.payment_account_id} Id: {cil_rollup.id} -'
-                                        f' Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}')
+                current_app.logger.info(
+                    f"PayAccount: {invoice.payment_account_id} Id: {cil_rollup.id} -"
+                    f" Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}"
+                )
                 receipt_number = cil_rollup.receipt_number
                 cls._rollback_receipt_and_invoice(cfs_account, invoice, receipt_number, cil_rollup.status_code)
                 cls._update_cil_and_shortname_history(cil_rollup)
                 db.session.commit()
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
-                    f'Error on reversing EFT invoice links in CFS '
-                    f'Account id={invoice.payment_account_id} '
-                    f'EFT Credit invoice Link : {cil_rollup.id}'
-                    f'ERROR : {str(e)}', level='error')
-                current_app.logger.error(f'Error Account id={invoice.payment_account_id} - '
-                                         f'EFT Credit invoice Link : {cil_rollup.id}', exc_info=True)
+                    f"Error on reversing EFT invoice links in CFS "
+                    f"Account id={invoice.payment_account_id} "
+                    f"EFT Credit invoice Link : {cil_rollup.id}"
+                    f"ERROR : {str(e)}",
+                    level="error",
+                )
+                current_app.logger.error(
+                    f"Error Account id={invoice.payment_account_id} - " f"EFT Credit invoice Link : {cil_rollup.id}",
+                    exc_info=True,
+                )
                 db.session.rollback()
                 continue
         cls.handle_unlinked_refund_requested_invoices()
@@ -170,38 +230,47 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     def handle_unlinked_refund_requested_invoices(cls):
         """Handle unlinked refund requested invoices."""
         # Handles 2. No EFT Credit Link - Job needs to reverse invoice in CFS from refund flow. See eft_service refund.
-        invoices = db.session.query(InvoiceModel).outerjoin(EFTCreditInvoiceLinkModel) \
-            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value) \
-            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
-            .filter(EFTCreditInvoiceLinkModel.id.is_(None)) \
+        invoices = (
+            db.session.query(InvoiceModel)
+            .outerjoin(EFTCreditInvoiceLinkModel)
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
+            .filter(EFTCreditInvoiceLinkModel.id.is_(None))
             .all()
+        )
 
         for invoice in invoices:
-            cfs_account = CfsAccountModel.find_effective_by_payment_method(invoice.payment_account_id,
-                                                                           PaymentMethod.EFT.value)
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(
+                invoice.payment_account_id, PaymentMethod.EFT.value
+            )
             if not cfs_account:
-                current_app.logger.error(f'No EFT CFS Account found for pay account id={invoice.payment_account_id}')
+                current_app.logger.error(f"No EFT CFS Account found for pay account id={invoice.payment_account_id}")
                 continue
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
-                invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+                invoice.id, InvoiceReferenceStatus.ACTIVE.value
+            )
             try:
                 cls._handle_invoice_refund(invoice, invoice_reference)
                 db.session.commit()
-            except Exception as e:   # NOQA # pylint: disable=broad-except
+            except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
-                    f'Error on reversing unlinked REFUND_REQUESTED EFT invoice in CFS '
-                    f'Account id={invoice.payment_account_id} '
-                    f'Invoice id : {invoice.id}'
-                    f'ERROR : {str(e)}', level='error')
-                current_app.logger.error(f'Error Account id={invoice.payment_account_id} - '
-                                         f'Invoice id : {invoice.id}', exc_info=True)
+                    f"Error on reversing unlinked REFUND_REQUESTED EFT invoice in CFS "
+                    f"Account id={invoice.payment_account_id} "
+                    f"Invoice id : {invoice.id}"
+                    f"ERROR : {str(e)}",
+                    level="error",
+                )
+                current_app.logger.error(
+                    f"Error Account id={invoice.payment_account_id} - " f"Invoice id : {invoice.id}",
+                    exc_info=True,
+                )
                 db.session.rollback()
                 continue
 
     @classmethod
     def unlock_overdue_accounts(cls):
         """Check and unlock overdue EFT accounts."""
-        for (payment_account_id, payment_account) in cls.overdue_account_ids.items():
+        for payment_account_id, payment_account in cls.overdue_account_ids.items():
             if InvoiceService.has_overdue_invoices(payment_account_id):
                 continue
             payment_account.has_overdue_invoices = None
@@ -211,8 +280,11 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _get_eft_history_by_group_id(cls, related_group_id: int) -> EFTShortnameHistoryModel:
         """Get EFT short name historical record by related group id."""
-        return (db.session.query(EFTShortnameHistoryModel)
-                .filter(EFTShortnameHistoryModel.related_group_link_id == related_group_id)).one_or_none()
+        return (
+            db.session.query(EFTShortnameHistoryModel).filter(
+                EFTShortnameHistoryModel.related_group_link_id == related_group_id
+            )
+        ).one_or_none()
 
     @classmethod
     def _finalize_shortname_history(cls, group_set: set, invoice_link: EFTCreditInvoiceLinkModel):
@@ -229,49 +301,68 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _update_cil_and_shortname_history(cls, cil_rollup, receipt_number=None):
         """Update electronic invoice links."""
-        cils = db.session.query(EFTCreditInvoiceLinkModel).filter(
-            EFTCreditInvoiceLinkModel.id.in_(cil_rollup.link_ids)).all()
+        cils = (
+            db.session.query(EFTCreditInvoiceLinkModel)
+            .filter(EFTCreditInvoiceLinkModel.id.in_(cil_rollup.link_ids))
+            .all()
+        )
         for cil in cils:
             if cil.status_code != EFTCreditInvoiceStatus.CANCELLED.value:
-                cil.status_code = EFTCreditInvoiceStatus.COMPLETED.value if receipt_number \
-                    else EFTCreditInvoiceStatus.REFUNDED.value
+                cil.status_code = (
+                    EFTCreditInvoiceStatus.COMPLETED.value if receipt_number else EFTCreditInvoiceStatus.REFUNDED.value
+                )
                 cil.receipt_number = receipt_number or cil.receipt_number
                 cil.flush()
             cls._finalize_shortname_history(cls.history_group_ids, cil)
 
     @classmethod
-    def _create_receipt_and_invoice(cls,
-                                    cfs_account: CfsAccountModel,
-                                    cil_rollup,
-                                    invoice: InvoiceModel,
-                                    receipt_number: str):
+    def _create_receipt_and_invoice(
+        cls,
+        cfs_account: CfsAccountModel,
+        cil_rollup,
+        invoice: InvoiceModel,
+        receipt_number: str,
+    ):
         """Create receipt in CFS and marks invoice as paid, with payment and receipt rows."""
-        if not (invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
-            cil_rollup.invoice_id, InvoiceReferenceStatus.ACTIVE.value
-        )):
-            raise LookupError(f'Active Invoice reference not '
-                              f'found for invoice id: {invoice.id}')
+        if not (
+            invoice_reference := InvoiceReferenceModel.find_by_invoice_id_and_status(
+                cil_rollup.invoice_id, InvoiceReferenceStatus.ACTIVE.value
+            )
+        ):
+            raise LookupError(f"Active Invoice reference not " f"found for invoice id: {invoice.id}")
         if invoice_reference.is_consolidated:
             original_invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
-                cil_rollup.invoice_id, InvoiceReferenceStatus.CANCELLED.value, exclude_consolidated=True
+                cil_rollup.invoice_id,
+                InvoiceReferenceStatus.CANCELLED.value,
+                exclude_consolidated=True,
             )
             if not original_invoice_reference:
-                raise LookupError(f'Non consolidated cancelled invoice reference not '
-                                  f'found for invoice id: {invoice.id}')
-            invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
-                                                      inv_number=original_invoice_reference.invoice_number)
-            cfs_total = Decimal(invoice_response.get('total', '0'))
+                raise LookupError(
+                    f"Non consolidated cancelled invoice reference not " f"found for invoice id: {invoice.id}"
+                )
+            invoice_response = CFSService.get_invoice(
+                cfs_account=cfs_account,
+                inv_number=original_invoice_reference.invoice_number,
+            )
+            cfs_total = Decimal(invoice_response.get("total", "0"))
             invoice_total_matches = cfs_total == invoice.total
             if not invoice_total_matches:
-                raise ValueError(f'SBC-PAY Invoice total {invoice.total} does not match CFS total {cfs_total}')
+                raise ValueError(f"SBC-PAY Invoice total {invoice.total} does not match CFS total {cfs_total}")
             # Guard against double reversing an invoice because an invoice reference can have many invoice ids
-            if InvoiceReferenceModel.query.filter(
-                    InvoiceReferenceModel.invoice_number == invoice_reference.invoice_number) \
-                    .filter(InvoiceReferenceModel.is_consolidated.is_(True)) \
-                    .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.CANCELLED.value).count() == 0:
+            if (
+                InvoiceReferenceModel.query.filter(
+                    InvoiceReferenceModel.invoice_number == invoice_reference.invoice_number
+                )
+                .filter(InvoiceReferenceModel.is_consolidated.is_(True))
+                .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.CANCELLED.value)
+                .count()
+                == 0
+            ):
                 # Note we do the opposite of this in payment_account.
-                current_app.logger.info(f'Consolidated invoice found, reversing consolidated '
-                                        f'invoice {invoice_reference.invoice_number}.')
+                current_app.logger.info(
+                    f"Consolidated invoice found, reversing consolidated "
+                    f"invoice {invoice_reference.invoice_number}."
+                )
                 CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
@@ -284,48 +375,56 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         CFSService.create_cfs_receipt(
             cfs_account=cfs_account,
             rcpt_number=receipt_number,
-            rcpt_date=datetime.now(tz=timezone.utc).strftime('%Y-%m-%d'),
+            rcpt_date=datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
             amount=cil_rollup.rollup_amount,
             payment_method=PaymentMethod.EFT.value,
-            access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
+            access_token=CFSService.get_token(PaymentSystem.FAS).json().get("access_token"),
+        )
         CFSService.apply_receipt(cfs_account, receipt_number, invoice_reference.invoice_number)
-        ReceiptModel(receipt_number=receipt_number,
-                     receipt_amount=cil_rollup.rollup_amount,
-                     invoice_id=invoice_reference.invoice_id,
-                     receipt_date=datetime.now(tz=timezone.utc)).flush()
-        PaymentModel(payment_method_code=PaymentMethod.EFT.value,
-                     payment_status_code=PaymentStatus.COMPLETED.value,
-                     payment_system_code=PaymentSystem.PAYBC.value,
-                     invoice_number=invoice.id,
-                     invoice_amount=invoice.total,
-                     payment_account_id=cfs_account.account_id,
-                     payment_date=datetime.now(tz=timezone.utc),
-                     paid_amount=cil_rollup.rollup_amount,
-                     receipt_number=receipt_number).flush()
+        ReceiptModel(
+            receipt_number=receipt_number,
+            receipt_amount=cil_rollup.rollup_amount,
+            invoice_id=invoice_reference.invoice_id,
+            receipt_date=datetime.now(tz=timezone.utc),
+        ).flush()
+        PaymentModel(
+            payment_method_code=PaymentMethod.EFT.value,
+            payment_status_code=PaymentStatus.COMPLETED.value,
+            payment_system_code=PaymentSystem.PAYBC.value,
+            invoice_number=invoice.id,
+            invoice_amount=invoice.total,
+            payment_account_id=cfs_account.account_id,
+            payment_date=datetime.now(tz=timezone.utc),
+            paid_amount=cil_rollup.rollup_amount,
+            receipt_number=receipt_number,
+        ).flush()
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.paid = cil_rollup.rollup_amount
         invoice.payment_date = datetime.now(tz=timezone.utc)
         invoice.flush()
 
     @classmethod
-    def _rollback_receipt_and_invoice(cls, cfs_account: CfsAccountModel,
-                                      invoice: InvoiceModel,
-                                      receipt_number: str,
-                                      cil_status_code: str):
+    def _rollback_receipt_and_invoice(
+        cls,
+        cfs_account: CfsAccountModel,
+        invoice: InvoiceModel,
+        receipt_number: str,
+        cil_status_code: str,
+    ):
         """Rollback receipt in CFS and reset invoice status."""
         invoice_reference_requirement = {
             EFTCreditInvoiceStatus.PENDING_REFUND.value: InvoiceReferenceStatus.COMPLETED.value,
-            EFTCreditInvoiceStatus.CANCELLED.value: InvoiceReferenceStatus.ACTIVE.value
+            EFTCreditInvoiceStatus.CANCELLED.value: InvoiceReferenceStatus.ACTIVE.value,
         }
         invoice_reference_status = invoice_reference_requirement.get(cil_status_code)
-        invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
-            invoice.id, invoice_reference_status
-        )
+        invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, invoice_reference_status)
         if invoice_reference and invoice_reference.is_consolidated:
-            raise ValueError(f'Cannot reverse a consolidated invoice {invoice_reference.invoice_number}')
+            raise ValueError(f"Cannot reverse a consolidated invoice {invoice_reference.invoice_number}")
         if cil_status_code != EFTCreditInvoiceStatus.CANCELLED.value and not invoice_reference:
-            raise LookupError(f'{invoice_reference_status} invoice reference '
-                              f'not found for invoice id: {invoice.id} - {invoice.invoice_status_code}')
+            raise LookupError(
+                f"{invoice_reference_status} invoice reference "
+                f"not found for invoice id: {invoice.id} - {invoice.invoice_status_code}"
+            )
         is_invoice_refund = invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
         is_reversal = not is_invoice_refund
         if receipt_number:
@@ -346,13 +445,11 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 db.session.delete(receipt)
 
     @classmethod
-    def _handle_invoice_refund(cls,
-                               invoice: InvoiceModel,
-                               invoice_reference: InvoiceReferenceModel):
+    def _handle_invoice_refund(cls, invoice: InvoiceModel, invoice_reference: InvoiceReferenceModel):
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
             if invoice_reference.is_consolidated:
-                raise ValueError(f'Cannot reverse a consolidated invoice: {invoice_reference.invoice_number}')
+                raise ValueError(f"Cannot reverse a consolidated invoice: {invoice_reference.invoice_number}")
             CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()

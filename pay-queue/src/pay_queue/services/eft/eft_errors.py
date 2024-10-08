@@ -19,16 +19,16 @@ from enum import Enum
 class EFTError(Enum):
     """EFT Error Enum."""
 
-    INVALID_LINE_LENGTH = 'Invalid EFT file line length.'
-    INVALID_RECORD_TYPE = 'Invalid Record Type.'
-    INVALID_CREATION_DATETIME = 'Invalid header creation date time.'
-    INVALID_DEPOSIT_START_DATE = 'Invalid header deposit start date.'
-    INVALID_DEPOSIT_END_DATE = 'Invalid header deposit end date.'
-    INVALID_NUMBER_OF_DETAILS = 'Invalid trailer number of details value.'
-    INVALID_TOTAL_DEPOSIT_AMOUNT = 'Invalid trailer total deposit amount.'
-    INVALID_DEPOSIT_AMOUNT = 'Invalid transaction deposit amount.'
-    INVALID_EXCHANGE_ADJ_AMOUNT = 'Invalid transaction exchange adjustment amount.'
-    INVALID_DEPOSIT_AMOUNT_CAD = 'Invalid transaction deposit amount CAD.'
-    INVALID_TRANSACTION_DATE = 'Invalid transaction date.'
-    INVALID_DEPOSIT_DATETIME = 'Invalid transaction deposit date time'
-    ACCOUNT_SHORTNAME_REQUIRED = 'Account shortname is missing from the transaction description.'
+    INVALID_LINE_LENGTH = "Invalid EFT file line length."
+    INVALID_RECORD_TYPE = "Invalid Record Type."
+    INVALID_CREATION_DATETIME = "Invalid header creation date time."
+    INVALID_DEPOSIT_START_DATE = "Invalid header deposit start date."
+    INVALID_DEPOSIT_END_DATE = "Invalid header deposit end date."
+    INVALID_NUMBER_OF_DETAILS = "Invalid trailer number of details value."
+    INVALID_TOTAL_DEPOSIT_AMOUNT = "Invalid trailer total deposit amount."
+    INVALID_DEPOSIT_AMOUNT = "Invalid transaction deposit amount."
+    INVALID_EXCHANGE_ADJ_AMOUNT = "Invalid transaction exchange adjustment amount."
+    INVALID_DEPOSIT_AMOUNT_CAD = "Invalid transaction deposit amount CAD."
+    INVALID_TRANSACTION_DATE = "Invalid transaction date."
+    INVALID_DEPOSIT_DATETIME = "Invalid transaction deposit date time"
+    ACCOUNT_SHORTNAME_REQUIRED = "Account shortname is missing from the transaction description."

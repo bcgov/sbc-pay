@@ -30,11 +30,18 @@ from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, EJVLinkTyp
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 from .factory import (
-    factory_create_pad_account, factory_distribution, factory_distribution_link, factory_invoice,
-    factory_invoice_reference, factory_payment, factory_payment_line_item, factory_receipt)
+    factory_create_pad_account,
+    factory_distribution,
+    factory_distribution_link,
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment,
+    factory_payment_line_item,
+    factory_receipt,
+)
 
 
-@pytest.mark.parametrize('client_code, batch_type', [('112', 'GA'), ('113', 'GI'), ('ABC', 'GI')])
+@pytest.mark.parametrize("client_code, batch_type", [("112", "GA"), ("113", "GI"), ("ABC", "GI")])
 def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type):
     """Test disbursement for partners.
 
@@ -43,58 +50,72 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     2) Create paid invoices for these partners.
     3) Run the job and assert results.
     """
-    monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
-    corp_type: CorpTypeModel = CorpTypeModel.find_by_code('VS')
+    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    corp_type: CorpTypeModel = CorpTypeModel.find_by_code("VS")
     corp_type.has_partner_disbursements = True
     corp_type.save()
 
-    pad_account = factory_create_pad_account(auth_account_id='1234',
-                                             bank_number='001',
-                                             bank_branch='004',
-                                             bank_account='1234567890',
-                                             status=CfsAccountStatus.ACTIVE.value,
-                                             payment_method=PaymentMethod.PAD.value)
+    pad_account = factory_create_pad_account(
+        auth_account_id="1234",
+        bank_number="001",
+        bank_branch="004",
+        bank_account="1234567890",
+        status=CfsAccountStatus.ACTIVE.value,
+        payment_method=PaymentMethod.PAD.value,
+    )
 
     # GI - Create 3 distribution code records. 1 for VS stat fee, 1 for service fee and 1 for disbursement.
-    disbursement_distribution: DistributionCode = factory_distribution(name='VS Disbursement', client=client_code)
+    disbursement_distribution: DistributionCode = factory_distribution(name="VS Disbursement", client=client_code)
 
-    service_fee_distribution: DistributionCode = factory_distribution(name='VS Service Fee', client='112')
+    service_fee_distribution: DistributionCode = factory_distribution(name="VS Service Fee", client="112")
     fee_distribution: DistributionCode = factory_distribution(
-        name='VS Fee distribution', client='112', service_fee_dist_id=service_fee_distribution.distribution_code_id,
-        disbursement_dist_id=disbursement_distribution.distribution_code_id
+        name="VS Fee distribution",
+        client="112",
+        service_fee_dist_id=service_fee_distribution.distribution_code_id,
+        disbursement_dist_id=disbursement_distribution.distribution_code_id,
     )
-    fee_schedule: FeeSchedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type.code, 'WILLNOTICE')
+    fee_schedule: FeeSchedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type.code, "WILLNOTICE")
 
     factory_distribution_link(fee_distribution.distribution_code_id, fee_schedule.fee_schedule_id)
-    invoice = factory_invoice(payment_account=pad_account, corp_type_code=corp_type.code, total=11.5,
-                              status_code='PAID')
+    invoice = factory_invoice(
+        payment_account=pad_account,
+        corp_type_code=corp_type.code,
+        total=11.5,
+        status_code="PAID",
+    )
 
-    factory_payment_line_item(invoice_id=invoice.id,
-                              fee_schedule_id=fee_schedule.fee_schedule_id,
-                              filing_fees=10,
-                              total=10,
-                              service_fees=1.5,
-                              fee_dist_id=fee_distribution.distribution_code_id)
+    factory_payment_line_item(
+        invoice_id=invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        filing_fees=10,
+        total=10,
+        service_fees=1.5,
+        fee_dist_id=fee_distribution.distribution_code_id,
+    )
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
-    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
+    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
     factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
 
-    eft_invoice = factory_invoice(payment_account=pad_account,
-                                  corp_type_code=corp_type.code,
-                                  total=11.5,
-                                  payment_method_code=PaymentMethod.EFT.value,
-                                  status_code='PAID')
+    eft_invoice = factory_invoice(
+        payment_account=pad_account,
+        corp_type_code=corp_type.code,
+        total=11.5,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code="PAID",
+    )
 
-    factory_payment_line_item(invoice_id=eft_invoice.id,
-                              fee_schedule_id=fee_schedule.fee_schedule_id,
-                              filing_fees=10,
-                              total=10,
-                              service_fees=1.5,
-                              fee_dist_id=fee_distribution.distribution_code_id)
+    factory_payment_line_item(
+        invoice_id=eft_invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        filing_fees=10,
+        total=10,
+        service_fees=1.5,
+        fee_dist_id=fee_distribution.distribution_code_id,
+    )
 
     inv_ref = factory_invoice_reference(invoice_id=eft_invoice.id)
-    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
+    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
     factory_receipt(invoice_id=eft_invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
     partner_disbursement = PartnerDisbursementsModel(
         amount=10,
@@ -102,7 +123,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
         partner_code=eft_invoice.corp_type_code,
         status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
         target_id=eft_invoice.id,
-        target_type=EJVLinkType.INVOICE.value
+        target_type=EJVLinkType.INVOICE.value,
     ).save()
 
     EjvPartnerDistributionTask.create_ejv_file()
@@ -111,8 +132,9 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice = Invoice.find_by_id(invoice.id)
     assert invoice.disbursement_status_code is None
 
-    day_after_time_delay = datetime.now(tz=timezone.utc) + \
-        timedelta(days=(current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS') + 1))
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+        days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
+    )
     with freeze_time(day_after_time_delay):
         EjvPartnerDistributionTask.create_ejv_file()
         # Lookup invoice and assert disbursement status
@@ -128,7 +150,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 
         ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
         assert ejv_file
-        assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value, f'{batch_type}'
+        assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value, f"{batch_type}"
 
         assert partner_disbursement.status_code == DisbursementStatus.UPLOADED.value
         assert partner_disbursement.processed_on

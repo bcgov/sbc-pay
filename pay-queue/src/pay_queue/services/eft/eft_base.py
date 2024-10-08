@@ -100,8 +100,8 @@ class EFTBase:
         """Try to parse decimal value from a string, return None if it fails and add an error."""
         try:
             # ends with blank or minus sign, handle the minus sign situation
-            if value.endswith('-'):
-                value = '-' + value[:-1]
+            if value.endswith("-"):
+                value = "-" + value[:-1]
 
             result = decimal.Decimal(str(value))
         except (ValueError, TypeError, decimal.InvalidOperation):

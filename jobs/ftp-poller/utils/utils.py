@@ -25,15 +25,13 @@ from sbc_common_components.utils.enums import QueueMessageTypes
 from utils.minio import put_object
 
 
-def publish_to_queue(payment_file_list: List[str], message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
-                     location: str = ''):
+def publish_to_queue(
+    payment_file_list: List[str], message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value, location: str = ""
+):
     """Publish message to the Queue, saying file has been uploaded. Using the event spec."""
-    queue_data = {
-        'fileSource': 'MINIO',
-        'location': location or current_app.config['MINIO_BUCKET_NAME']
-    }
+    queue_data = {"fileSource": "MINIO", "location": location or current_app.config["MINIO_BUCKET_NAME"]}
     for file_name in payment_file_list:
-        queue_data['fileName'] = file_name
+        queue_data["fileName"] = file_name
 
         try:
             gcp_queue_publisher.publish_to_queue(
@@ -41,14 +39,12 @@ def publish_to_queue(payment_file_list: List[str], message_type=QueueMessageType
                     source=QueueSources.FTP_POLLER.value,
                     message_type=message_type,
                     payload=queue_data,
-                    topic=current_app.config.get('FTP_POLLER_TOPIC'),
-                    ordering_key=str(time())
+                    topic=current_app.config.get("FTP_POLLER_TOPIC"),
+                    ordering_key=str(time()),
                 )
             )
         except Exception as e:  # NOQA # pylint: disable=broad-except
-            current_app.logger.warning(
-                f'Notification to Queue failed for the file {file_name}',
-                e)
+            current_app.logger.warning(f"Notification to Queue failed for the file {file_name}", e)
             raise
 
 
@@ -59,7 +55,12 @@ def upload_to_minio(file, file_full_name, sftp_client, bucket_name):
         f.prefetch()
         value_as_bytes = f.read()
         try:
-            put_object(value_as_bytes, file.filename, bucket_name, file.st_size, )
+            put_object(
+                value_as_bytes,
+                file.filename,
+                bucket_name,
+                file.st_size,
+            )
         except Exception:  # NOQA # pylint: disable=broad-except
-            current_app.logger.error(f'upload to minio failed for the file: {file_full_name}')
+            current_app.logger.error(f"upload to minio failed for the file: {file_full_name}")
             raise

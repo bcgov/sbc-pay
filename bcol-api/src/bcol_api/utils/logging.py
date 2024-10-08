@@ -21,6 +21,6 @@ def setup_logging(conf):
     """Create the services logger."""
     if conf and path.isfile(conf):
         logging.config.fileConfig(conf)
-        print(f'Configure logging, from conf:{conf}', file=sys.stdout)
+        print(f"Configure logging, from conf:{conf}", file=sys.stdout)
     else:
-        print(f'Unable to configure logging, attempted conf:{conf}', file=sys.stderr)
+        print(f"Unable to configure logging, attempted conf:{conf}", file=sys.stderr)

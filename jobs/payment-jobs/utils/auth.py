@@ -20,15 +20,26 @@ from pay_api.utils.enums import AuthHeaderType, ContentType
 
 
 def get_token():
-    issuer_url = current_app.config.get('JWT_OIDC_ISSUER')
+    issuer_url = current_app.config.get("JWT_OIDC_ISSUER")
 
-    token_url = issuer_url + '/protocol/openid-connect/token'  # https://sso-dev.pathfinder.gov.bc.ca/auth/realms/fcf0kpqr/protocol/openid-connect/token
+    token_url = (
+        issuer_url + "/protocol/openid-connect/token"
+    )  # https://sso-dev.pathfinder.gov.bc.ca/auth/realms/fcf0kpqr/protocol/openid-connect/token
     basic_auth_encoded = base64.b64encode(
-        bytes(current_app.config.get('KEYCLOAK_SERVICE_ACCOUNT_ID') + ':' + current_app.config.get(
-            'KEYCLOAK_SERVICE_ACCOUNT_SECRET'),
-              'utf-8')).decode('utf-8')
-    data = 'grant_type=client_credentials'
-    token_response = OAuthService.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC,
-                                       ContentType.FORM_URL_ENCODED, data)
-    token = token_response.json().get('access_token')
+        bytes(
+            current_app.config.get("KEYCLOAK_SERVICE_ACCOUNT_ID")
+            + ":"
+            + current_app.config.get("KEYCLOAK_SERVICE_ACCOUNT_SECRET"),
+            "utf-8",
+        )
+    ).decode("utf-8")
+    data = "grant_type=client_credentials"
+    token_response = OAuthService.post(
+        token_url,
+        basic_auth_encoded,
+        AuthHeaderType.BASIC,
+        ContentType.FORM_URL_ENCODED,
+        data,
+    )
+    token = token_response.json().get("access_token")
     return token

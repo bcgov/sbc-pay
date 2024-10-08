@@ -43,6 +43,7 @@ class EFTRefund(Audit):
             "created_by",
             "created_name",
             "created_on",
+            "disbursement_date",
             "disbursement_status_code",
             "decline_reason",
             "id",

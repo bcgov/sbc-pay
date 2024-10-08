@@ -29,39 +29,38 @@ from .bcol_profile import API as BCOL_PROFILE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
 
-
-__all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
+__all__ = ("API_BLUEPRINT", "OPS_BLUEPRINT")
 
 # This will add the Authorize button to the swagger docs
-AUTHORIZATIONS = {'apikey': {'type': 'apiKey', 'in': 'header', 'name': 'Authorization'}}
+AUTHORIZATIONS = {"apikey": {"type": "apiKey", "in": "header", "name": "Authorization"}}
 
-OPS_BLUEPRINT = Blueprint('API_OPS', __name__, url_prefix='/ops')
+OPS_BLUEPRINT = Blueprint("API_OPS", __name__, url_prefix="/ops")
 
 API_OPS = Api(
     OPS_BLUEPRINT,
-    title='Service OPS API',
-    version='1.0',
-    description='Microservice for BC Online SOAP Services',
-    security=['apikey'],
+    title="Service OPS API",
+    version="1.0",
+    description="Microservice for BC Online SOAP Services",
+    security=["apikey"],
     authorizations=AUTHORIZATIONS,
 )
 
-API_OPS.add_namespace(OPS_API, path='/')
+API_OPS.add_namespace(OPS_API, path="/")
 
-API_BLUEPRINT = Blueprint('API', __name__, url_prefix='/api/v1')
+API_BLUEPRINT = Blueprint("API", __name__, url_prefix="/api/v1")
 
 API = Api(
     API_BLUEPRINT,
-    title='BCOL API',
-    version='1.0',
-    description='Microservice for BC Online SOAP Services',
-    security=['apikey'],
+    title="BCOL API",
+    version="1.0",
+    description="Microservice for BC Online SOAP Services",
+    security=["apikey"],
     authorizations=AUTHORIZATIONS,
 )
 
 HANDLER = ExceptionHandler(API)
 
-API.add_namespace(META_API, path='/meta')
+API.add_namespace(META_API, path="/meta")
 
-API.add_namespace(BCOL_PROFILE_API, path='/profiles')
-API.add_namespace(BCOL_PAYMENTS_API, path='/payments')
+API.add_namespace(BCOL_PROFILE_API, path="/profiles")
+API.add_namespace(BCOL_PAYMENTS_API, path="/payments")

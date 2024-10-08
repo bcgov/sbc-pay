@@ -49,39 +49,62 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
 
         """
         unpaid_status = (
-            InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value)
-        notification_date = datetime.now(tz=timezone.utc) - timedelta(days=current_app.config.get('NOTIFY_AFTER_DAYS'))
+            InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+            InvoiceStatus.PARTIAL.value,
+            InvoiceStatus.CREATED.value,
+        )
+        notification_date = datetime.now(tz=timezone.utc) - timedelta(days=current_app.config.get("NOTIFY_AFTER_DAYS"))
         # Get distinct accounts with pending invoices for that exact day
-        notification_pending_accounts = db.session.query(InvoiceModel.payment_account_id).distinct().filter(and_(
-            InvoiceModel.invoice_status_code.in_(unpaid_status),
-            InvoiceModel.payment_method_code == PaymentMethod.ONLINE_BANKING.value,
-            # cast is used to get the exact match stripping the timestamp from date
-            cast(InvoiceModel.created_on, Date) == notification_date.date()
-        )).all()
-        current_app.logger.debug(f'Found {len(notification_pending_accounts)} invoices to notify admins.')
+        notification_pending_accounts = (
+            db.session.query(InvoiceModel.payment_account_id)
+            .distinct()
+            .filter(
+                and_(
+                    InvoiceModel.invoice_status_code.in_(unpaid_status),
+                    InvoiceModel.payment_method_code == PaymentMethod.ONLINE_BANKING.value,
+                    # cast is used to get the exact match stripping the timestamp from date
+                    cast(InvoiceModel.created_on, Date) == notification_date.date(),
+                )
+            )
+            .all()
+        )
+        current_app.logger.debug(f"Found {len(notification_pending_accounts)} invoices to notify admins.")
         for payment_account in notification_pending_accounts:
             try:
                 payment_account_id = payment_account[0]
-                total = db.session.query(func.sum(InvoiceModel.total).label('total')).filter(and_(
-                    InvoiceModel.invoice_status_code.in_(unpaid_status),
-                    InvoiceModel.payment_account_id == payment_account_id,
-                    InvoiceModel.payment_method_code == PaymentMethod.ONLINE_BANKING.value
-                )).group_by(InvoiceModel.payment_account_id).all()
-                pay_account: PaymentAccountModel = \
-                    PaymentAccountModel.find_by_id(payment_account_id)
+                total = (
+                    db.session.query(func.sum(InvoiceModel.total).label("total"))
+                    .filter(
+                        and_(
+                            InvoiceModel.invoice_status_code.in_(unpaid_status),
+                            InvoiceModel.payment_account_id == payment_account_id,
+                            InvoiceModel.payment_method_code == PaymentMethod.ONLINE_BANKING.value,
+                        )
+                    )
+                    .group_by(InvoiceModel.payment_account_id)
+                    .all()
+                )
+                pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(payment_account_id)
 
-                cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account_id,
-                                                                               PaymentMethod.ONLINE_BANKING.value)
+                cfs_account = CfsAccountModel.find_effective_by_payment_method(
+                    payment_account_id, PaymentMethod.ONLINE_BANKING.value
+                )
 
                 # emit account mailer event
-                addition_params_to_mailer = {'transactionAmount': float(total[0][0]),
-                                             'cfsAccountId': cfs_account.cfs_account,
-                                             'authAccountId': pay_account.auth_account_id,
-                                             }
-                mailer.publish_mailer_events(QueueMessageTypes.PAYMENT_PENDING.value,
-                                             pay_account,
-                                             addition_params_to_mailer)
+                addition_params_to_mailer = {
+                    "transactionAmount": float(total[0][0]),
+                    "cfsAccountId": cfs_account.cfs_account,
+                    "authAccountId": pay_account.auth_account_id,
+                }
+                mailer.publish_mailer_events(
+                    QueueMessageTypes.PAYMENT_PENDING.value,
+                    pay_account,
+                    addition_params_to_mailer,
+                )
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(f'Error on notifying mailer  OB Pending invoice: account id={pay_account.id}, '
-                                f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
+                capture_message(
+                    f"Error on notifying mailer  OB Pending invoice: account id={pay_account.id}, "
+                    f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}",
+                    level="error",
+                )
                 current_app.logger.error(e)

@@ -35,16 +35,25 @@ from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    DisbursementStatus, EFTShortnameRefundStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
-    PaymentMethod, PaymentStatus, PaymentSystem, QueueSources, RoutingSlipStatus)
+    DisbursementStatus,
+    EFTShortnameRefundStatus,
+    EjvFileType,
+    EJVLinkType,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    PaymentStatus,
+    PaymentSystem,
+    QueueSources,
+    RoutingSlipStatus,
+)
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 from pay_queue import config
 from pay_queue.minio import get_object
 
-
-APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
+APP_CONFIG = config.get_named_config(os.getenv("DEPLOYMENT_ENV", "production"))
 
 
 def reconcile_distributions(msg: Dict[str, any], is_feedback: bool = False):
@@ -61,27 +70,27 @@ def reconcile_distributions(msg: Dict[str, any], is_feedback: bool = False):
 
 def _update_acknowledgement(msg: Dict[str, any]):
     """Log the ack file, we don't know which batch it's for."""
-    current_app.logger.info('Ack file received: %s', msg.get('fileName'))
+    current_app.logger.info("Ack file received: %s", msg.get("fileName"))
 
 
 def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
 
-    file_name: str = msg.get('fileName')
-    minio_location: str = msg.get('location')
+    file_name: str = msg.get("fileName")
+    minio_location: str = msg.get("location")
     file = get_object(minio_location, file_name)
-    content = file.data.decode('utf-8-sig')
+    content = file.data.decode("utf-8-sig")
     group_batches: List[str] = _group_batches(content)
 
-    if _is_processed_or_processing(group_batches['EJV'], file_name):
+    if _is_processed_or_processing(group_batches["EJV"], file_name):
         return
 
-    has_errors = _process_ejv_feedback(group_batches['EJV'])
-    has_errors = _process_ap_feedback(group_batches['AP']) or has_errors
+    has_errors = _process_ejv_feedback(group_batches["EJV"])
+    has_errors = _process_ap_feedback(group_batches["AP"]) or has_errors
 
     if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
         _publish_mailer_events(file_name, minio_location)
-    current_app.logger.info('Feedback file processing completed.')
+    current_app.logger.info("Feedback file processing completed.")
 
 
 def _is_processed_or_processing(group_batches, file_name) -> bool:
@@ -89,14 +98,16 @@ def _is_processed_or_processing(group_batches, file_name) -> bool:
     for group_batch in group_batches:
         ejv_file: Optional[EjvFileModel] = None
         for line in group_batch.splitlines():
-            is_batch_group: bool = line[2:4] == 'BG'
+            is_batch_group: bool = line[2:4] == "BG"
             if is_batch_group:
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
                 if ejv_file.feedback_file_ref:
                     current_app.logger.info(
-                        'EJV file id %s with feedback file %s is already processing or has been processed. Skipping.',
-                        batch_number, file_name)
+                        "EJV file id %s with feedback file %s is already processing or has been processed. Skipping.",
+                        batch_number,
+                        file_name,
+                    )
                     return True
                 ejv_file.feedback_file_ref = file_name
                 ejv_file.save()
@@ -111,10 +122,10 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
         receipt_number: Optional[str] = None
         for line in group_batch.splitlines():
             # For all these indexes refer the sharepoint docs refer : https://github.com/bcgov/entity/issues/6226
-            is_batch_group = line[2:4] == 'BG'
-            is_batch_header = line[2:4] == 'BH'
-            is_jv_header = line[2:4] == 'JH'
-            is_jv_detail = line[2:4] == 'JD'
+            is_batch_group = line[2:4] == "BG"
+            is_batch_header = line[2:4] == "BH"
+            is_jv_header = line[2:4] == "JH"
+            is_jv_detail = line[2:4] == "JD"
             if is_batch_group:
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
@@ -169,11 +180,11 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number) -> 
     details = _build_jv_details(line, receipt_number)
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
-    current_app.logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
+    current_app.logger.info("Is Credit or Debit %s - %s", line[104:105], ejv_file.file_type)
     credit_or_debit_line = details.line[104:105]
-    if credit_or_debit_line == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
+    if credit_or_debit_line == "C" and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
         has_errors = _handle_jv_disbursement_feedback(details, has_errors)
-    elif credit_or_debit_line == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
+    elif credit_or_debit_line == "D" and ejv_file.file_type == EjvFileType.PAYMENT.value:
         has_errors = _handle_jv_payment_feedback(details, has_errors)
     return has_errors
 
@@ -188,20 +199,23 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
         flowthrough=line[205:315].strip(),
         invoice_return_code=line[315:319],
         invoice_return_message=line[319:469],
-        receipt_number=receipt_number
+        receipt_number=receipt_number,
     )
-    if '-' in details.flowthrough:
-        invoice_id = int(details.flowthrough.split('-')[0])
-        partner_disbursement_id = int(details.flowthrough.split('-')[1])
+    if "-" in details.flowthrough:
+        invoice_id = int(details.flowthrough.split("-")[0])
+        partner_disbursement_id = int(details.flowthrough.split("-")[1])
         details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
     else:
         invoice_id = int(details.flowthrough)
-    current_app.logger.info('Invoice id - %s', invoice_id)
+    current_app.logger.info("Invoice id - %s", invoice_id)
     details.invoice = InvoiceModel.find_by_id(invoice_id)
-    details.invoice_link = db.session.query(EjvLinkModel).filter(
-        EjvLinkModel.ejv_header_id == details.ejv_header_model_id).filter(
-        EjvLinkModel.link_id == invoice_id).filter(
-        EjvLinkModel.link_type == EJVLinkType.INVOICE.value).one_or_none()
+    details.invoice_link = (
+        db.session.query(EjvLinkModel)
+        .filter(EjvLinkModel.ejv_header_id == details.ejv_header_model_id)
+        .filter(EjvLinkModel.link_id == invoice_id)
+        .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value)
+        .one_or_none()
+    )
     return details
 
 
@@ -209,7 +223,7 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
     disbursement_status = _get_disbursement_status(details.invoice_return_code)
     details.invoice_link.disbursement_status_code = disbursement_status
     details.invoice_link.message = details.invoice_return_message.strip()
-    current_app.logger.info('disbursement_status %s', disbursement_status)
+    current_app.logger.info("disbursement_status %s", disbursement_status)
     if disbursement_status == DisbursementStatus.ERRORED.value:
         has_errors = True
         if details.partner_disbursement:
@@ -219,13 +233,13 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
         line_items: List[PaymentLineItemModel] = details.invoice.payment_line_items
         for line_item in line_items:
             # Line debit distribution
-            debit_distribution: DistributionCodeModel = DistributionCodeModel \
-                .find_by_id(line_item.fee_distribution_id)
-            credit_distribution: DistributionCodeModel = DistributionCodeModel \
-                .find_by_id(debit_distribution.disbursement_distribution_code_id)
+            debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+            credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                debit_distribution.disbursement_distribution_code_id
+            )
             credit_distribution.stop_ejv = True
     else:
-        effective_date = datetime.strptime(details.line[22:30], '%Y%m%d')
+        effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
         _update_invoice_disbursement_status(details.invoice, effective_date, details.partner_disbursement)
     return has_errors
 
@@ -234,25 +248,30 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) ->
     # This is for gov account payment JV.
     details.invoice_link.disbursement_status_code = _get_disbursement_status(details.invoice_return_code)
     details.invoice_link.message = details.invoice_return_message.strip()
-    current_app.logger.info('Invoice ID %s', details.invoice.id)
+    current_app.logger.info("Invoice ID %s", details.invoice.id)
     inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        details.invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-    current_app.logger.info('invoice_link.disbursement_status_code %s', details.invoice_link.disbursement_status_code)
+        details.invoice.id, InvoiceReferenceStatus.ACTIVE.value
+    )
+    current_app.logger.info(
+        "invoice_link.disbursement_status_code %s",
+        details.invoice_link.disbursement_status_code,
+    )
     if details.invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
         has_errors = True
         # Cancel the invoice reference.
         if inv_ref:
             inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
         # Find the distribution code and set the stop_ejv flag to TRUE
-        dist_code = DistributionCodeModel.find_by_active_for_account(
-            details.invoice.payment_account_id)
+        dist_code = DistributionCodeModel.find_by_active_for_account(details.invoice.payment_account_id)
         dist_code.stop_ejv = True
     elif details.invoice_link.disbursement_status_code == DisbursementStatus.COMPLETED.value:
         # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
-        effective_date = datetime.strptime(details.line[22:30], '%Y%m%d')
+        effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
         # No need for credited here as these are just for EJV payments, which are never credited.
         is_reversal = details.invoice.invoice_status_code in (
-            InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+            InvoiceStatus.REFUNDED.value,
+            InvoiceStatus.REFUND_REQUESTED.value,
+        )
         _set_invoice_jv_reversal(details.invoice, effective_date, is_reversal)
 
         # Mark the invoice reference as COMPLETED, create a receipt
@@ -260,14 +279,18 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) ->
             inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
         # Find receipt and add total to it, as single invoice can be multiple rows in the file
         if not is_reversal:
-            receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=details.invoice.id,
-                                                                         receipt_number=details.receipt_number)
+            receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(
+                invoice_id=details.invoice.id, receipt_number=details.receipt_number
+            )
             if receipt:
                 receipt.receipt_amount += float(details.line[89:104])
             else:
-                ReceiptModel(invoice_id=details.invoice.id, receipt_number=details.receipt_number,
-                             receipt_date=datetime.now(tz=timezone.utc),
-                             receipt_amount=float(details.line[89:104])).flush()
+                ReceiptModel(
+                    invoice_id=details.invoice.id,
+                    receipt_number=details.receipt_number,
+                    receipt_date=datetime.now(tz=timezone.utc),
+                    receipt_amount=float(details.line[89:104]),
+                ).flush()
     return has_errors
 
 
@@ -285,9 +308,9 @@ def _set_invoice_jv_reversal(invoice: InvoiceModel, effective_date: datetime, is
 def _fix_invoice_line(line):
     """Work around for CAS, they said fix the feedback files."""
     # Check for zeros within 300->315 range. Bump them over with spaces.
-    if (zero_position := line[300:315].find('0')) > -1:
+    if (zero_position := line[300:315].find("0")) > -1:
         spaces_to_insert = 15 - zero_position
-        return line[:300 + zero_position] + (' ' * spaces_to_insert) + line[300 + zero_position:]
+        return line[: 300 + zero_position] + (" " * spaces_to_insert) + line[300 + zero_position :]
     return line
 
 
@@ -300,13 +323,18 @@ def _update_partner_disbursement(partner_disbursement, status_code, effective_da
     partner_disbursement.feedback_on = effective_date
 
 
-def _update_invoice_disbursement_status(invoice: InvoiceModel,
-                                        effective_date: datetime,
-                                        partner_disbursement: PartnerDisbursementsModel):
+def _update_invoice_disbursement_status(
+    invoice: InvoiceModel,
+    effective_date: datetime,
+    partner_disbursement: PartnerDisbursementsModel,
+):
     """Update status to reversed if its a refund, else to completed."""
     # Look up partner disbursements table and update the status.
-    if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value,
-                                       InvoiceStatus.CREDITED.value):
+    if invoice.invoice_status_code in (
+        InvoiceStatus.REFUNDED.value,
+        InvoiceStatus.REFUND_REQUESTED.value,
+        InvoiceStatus.CREDITED.value,
+    ):
         _update_partner_disbursement(partner_disbursement, DisbursementStatus.REVERSED.value, effective_date)
         invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
         invoice.disbursement_reversal_date = effective_date
@@ -326,55 +354,57 @@ def _create_payment_record(amount, ejv_header, receipt_number):
         receipt_number=receipt_number,
         invoice_amount=amount,
         paid_amount=amount,
-        payment_date=datetime.now()).flush()
+        payment_date=datetime.now(),
+    ).flush()
 
 
 def _group_batches(content: str) -> Dict[str, List]:
     """Group batches based on the group and trailer."""
     # A batch starts from BG to BT.
-    group_batches: Dict[str, List] = {'EJV': [], 'AP': []}
-    batch_content: str = ''
+    group_batches: Dict[str, List] = {"EJV": [], "AP": []}
+    batch_content: str = ""
 
     is_ejv = True
     for line in content.splitlines():
-        if line[:4] in ('GABG', 'GIBG', 'APBG'):  # batch starts from GIBG or GABG for JV
-            is_ejv = line[:4] in ('GABG', 'GIBG')
+        if line[:4] in (
+            "GABG",
+            "GIBG",
+            "APBG",
+        ):  # batch starts from GIBG or GABG for JV
+            is_ejv = line[:4] in ("GABG", "GIBG")
             batch_content = line
         else:
             batch_content = batch_content + os.linesep + line
-            if line[2:4] == 'BT':  # batch ends with BT
+            if line[2:4] == "BT":  # batch ends with BT
                 if is_ejv:
-                    group_batches['EJV'].append(batch_content)
+                    group_batches["EJV"].append(batch_content)
                 else:
-                    group_batches['AP'].append(batch_content)
+                    group_batches["AP"].append(batch_content)
     return group_batches
 
 
 def _get_disbursement_status(return_code: str) -> str:
     """Return disbursement status from return code."""
-    if return_code == '0000':
+    if return_code == "0000":
         return DisbursementStatus.COMPLETED.value
     return DisbursementStatus.ERRORED.value
 
 
 def _publish_mailer_events(file_name: str, minio_location: str):
     """Publish payment message to the mailer queue."""
-    payload = {
-        'fileName': file_name,
-        'minioLocation': minio_location
-    }
+    payload = {"fileName": file_name, "minioLocation": minio_location}
     try:
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(
                 source=QueueSources.PAY_QUEUE.value,
                 message_type=QueueMessageTypes.EJV_FAILED.value,
                 payload=payload,
-                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+                topic=current_app.config.get("ACCOUNT_MAILER_TOPIC"),
             )
         )
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
-        capture_message('EJV Failed message error', level='error')
+        capture_message("EJV Failed message error", level="error")
 
 
 def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
@@ -384,9 +414,9 @@ def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-loca
         ejv_file: Optional[EjvFileModel] = None
         for line in group_batch.splitlines():
             # For all these indexes refer the sharepoint docs refer : https://github.com/bcgov/entity/issues/6226
-            is_batch_group: bool = line[2:4] == 'BG'
-            is_batch_header: bool = line[2:4] == 'BH'
-            is_ap_header: bool = line[2:4] == 'IH'
+            is_batch_group: bool = line[2:4] == "BG"
+            is_batch_header: bool = line[2:4] == "BH"
+            is_ap_header: bool = line[2:4] == "IH"
             if is_batch_group:
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
@@ -424,8 +454,10 @@ def _process_ap_header_routing_slips(line) -> bool:
     if _get_disbursement_status(ap_header_return_code) == DisbursementStatus.ERRORED.value:
         has_errors = True
         routing_slip.status = RoutingSlipStatus.REFUND_REJECTED.value
-        capture_message(f'Refund failed for {routing_slip_number}, reason : {ap_header_error_message}',
-                        level='error')
+        capture_message(
+            f"Refund failed for {routing_slip_number}, reason : {ap_header_error_message}",
+            level="error",
+        )
     else:
         routing_slip.status = RoutingSlipStatus.REFUND_COMPLETED.value
         refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
@@ -444,7 +476,10 @@ def _process_ap_header_eft(line) -> bool:
         has_errors = True
         eft_refund.status = EFTShortnameRefundStatus.ERRORED.value
         eft_refund.disbursement_status_code = DisbursementStatus.ERRORED.value
-        capture_message(f'EFT Refund failed for {eft_refund_id}, reason : {ap_header_error_message}', level='error')
+        capture_message(
+            f"EFT Refund failed for {eft_refund_id}, reason : {ap_header_error_message}",
+            level="error",
+        )
     else:
         eft_refund.status = EFTShortnameRefundStatus.COMPLETED.value
         eft_refund.disbursement_status_code = DisbursementStatus.COMPLETED.value
@@ -460,19 +495,24 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
     ap_header_return_code = line[414:418]
     ap_header_error_message = line[418:568]
     disbursement_status = _get_disbursement_status(ap_header_return_code)
-    invoice_link = db.session.query(EjvLinkModel)\
-        .join(EjvHeaderModel).join(EjvFileModel)\
-        .filter(EjvFileModel.id == ejv_file.id)\
-        .filter(EjvLinkModel.link_id == invoice_id)\
-        .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value) \
+    invoice_link = (
+        db.session.query(EjvLinkModel)
+        .join(EjvHeaderModel)
+        .join(EjvFileModel)
+        .filter(EjvFileModel.id == ejv_file.id)
+        .filter(EjvLinkModel.link_id == invoice_id)
+        .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value)
         .one_or_none()
+    )
     invoice_link.disbursement_status_code = disbursement_status
     invoice_link.message = ap_header_error_message.strip()
     if disbursement_status == DisbursementStatus.ERRORED.value:
         invoice.disbursement_status_code = disbursement_status
         has_errors = True
-        capture_message(f'AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}',
-                        level='error')
+        capture_message(
+            f"AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}",
+            level="error",
+        )
     else:
         # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.
         _update_invoice_disbursement_status(invoice, effective_date=datetime.now(), partner_disbursement=None)

@@ -34,60 +34,70 @@ def test_payments_for_gov_accounts(session, monkeypatch):
     4) Create some transactions for these accounts
     5) Run the job and assert results.
     """
-    monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
+    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
 
-    corp_type = 'BEN'
-    filing_type = 'BCINC'
+    corp_type = "BEN"
+    filing_type = "BCINC"
 
     # Find fee schedule which have service fees.
     fee_schedule: FeeSchedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type, filing_type)
     # Create a service fee distribution code
-    service_fee_dist_code = factory_distribution(name='service fee', client='112', reps_centre='99999',
-                                                 service_line='99999',
-                                                 stob='9999', project_code='9999999')
+    service_fee_dist_code = factory_distribution(
+        name="service fee",
+        client="112",
+        reps_centre="99999",
+        service_line="99999",
+        stob="9999",
+        project_code="9999999",
+    )
     service_fee_dist_code.save()
 
     dist_code: DistributionCode = DistributionCode.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
     # Update fee dist code to match the requirement.
-    dist_code.client = '112'
-    dist_code.responsibility_centre = '22222'
-    dist_code.service_line = '33333'
-    dist_code.stob = '4444'
-    dist_code.project_code = '5555555'
+    dist_code.client = "112"
+    dist_code.responsibility_centre = "22222"
+    dist_code.service_line = "33333"
+    dist_code.stob = "4444"
+    dist_code.project_code = "5555555"
     dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
     dist_code.save()
 
     # GA
-    jv_account_1 = factory_create_ejv_account(auth_account_id='1')
-    jv_account_2 = factory_create_ejv_account(auth_account_id='2')
+    jv_account_1 = factory_create_ejv_account(auth_account_id="1")
+    jv_account_2 = factory_create_ejv_account(auth_account_id="2")
 
     # GI
-    jv_account_3 = factory_create_ejv_account(auth_account_id='3', client='111')
-    jv_account_4 = factory_create_ejv_account(auth_account_id='4', client='111')
+    jv_account_3 = factory_create_ejv_account(auth_account_id="3", client="111")
+    jv_account_4 = factory_create_ejv_account(auth_account_id="4", client="111")
 
     jv_accounts = [jv_account_1, jv_account_2, jv_account_3, jv_account_4]
     inv_ids = []
     for jv_acc in jv_accounts:
-        inv = factory_invoice(payment_account=jv_acc, corp_type_code=corp_type, total=101.5,
-                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
-        factory_payment_line_item(invoice_id=inv.id,
-                                  fee_schedule_id=fee_schedule.fee_schedule_id,
-                                  filing_fees=100,
-                                  total=100,
-                                  service_fees=1.5,
-                                  fee_dist_id=dist_code.distribution_code_id)
+        inv = factory_invoice(
+            payment_account=jv_acc,
+            corp_type_code=corp_type,
+            total=101.5,
+            status_code=InvoiceStatus.APPROVED.value,
+            payment_method_code=None,
+        )
+        factory_payment_line_item(
+            invoice_id=inv.id,
+            fee_schedule_id=fee_schedule.fee_schedule_id,
+            filing_fees=100,
+            total=100,
+            service_fees=1.5,
+            fee_dist_id=dist_code.distribution_code_id,
+        )
         inv_ids.append(inv.id)
 
     EjvPaymentTask.create_ejv_file()
 
     # Lookup invoice and assert invoice status
     for inv_id in inv_ids:
-        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id,
-                                                                     InvoiceReferenceStatus.ACTIVE.value)
+        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.ACTIVE.value)
         assert invoice_ref
 
-        ejv_inv_link: EjvLink = db.session.query(EjvLink)\
-            .filter(EjvLink.link_id == inv_id).first()
+        ejv_inv_link: EjvLink = db.session.query(EjvLink).filter(EjvLink.link_id == inv_id).first()
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
@@ -108,8 +118,7 @@ def test_payments_for_gov_accounts(session, monkeypatch):
     # Mark invoice as REFUND_REQUESTED and run a JV job again.
     for inv_id in inv_ids:
         # Set invoice ref status as COMPLETED, as that would be the status when the payment is reconciled.
-        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id,
-                                                                     InvoiceReferenceStatus.ACTIVE.value)
+        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.ACTIVE.value)
         invoice_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
 
         # Set invoice status for Refund requested.
@@ -122,12 +131,15 @@ def test_payments_for_gov_accounts(session, monkeypatch):
 
     # Lookup invoice and assert invoice status
     for inv_id in inv_ids:
-        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id,
-                                                                     InvoiceReferenceStatus.ACTIVE.value)
+        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.ACTIVE.value)
         assert invoice_ref
 
-        ejv_inv_link = db.session.query(EjvLink).filter(EjvLink.link_id == inv_id)\
-            .filter(EjvLink.disbursement_status_code == DisbursementStatus.UPLOADED.value).first()
+        ejv_inv_link = (
+            db.session.query(EjvLink)
+            .filter(EjvLink.link_id == inv_id)
+            .filter(EjvLink.disbursement_status_code == DisbursementStatus.UPLOADED.value)
+            .first()
+        )
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()

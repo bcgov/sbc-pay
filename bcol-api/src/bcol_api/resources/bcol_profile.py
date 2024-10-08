@@ -25,46 +25,53 @@ from bcol_api.utils.auth import jwt as _jwt
 from bcol_api.utils.errors import Error
 from bcol_api.utils.util import cors_preflight
 
+API = Namespace("bcol profile", description="Payment System - BCOL Profiles")
 
-API = Namespace('bcol profile', description='Payment System - BCOL Profiles')
 
-
-@cors_preflight(['POST', 'OPTIONS'])
-@API.route('', methods=['POST', 'OPTIONS'])
+@cors_preflight(["POST", "OPTIONS"])
+@API.route("", methods=["POST", "OPTIONS"])
 class BcolProfiles(Resource):
     """Endpoint query bcol profile using user id and password."""
 
     @staticmethod
     @_jwt.requires_auth
-    @cors.crossdomain(origin='*')
+    @cors.crossdomain(origin="*")
     def post():
         """Return the account details."""
         try:
             req_json = request.get_json()
             # Validate the input request
-            valid_format = schema_utils.validate(req_json, 'accounts_request')
+            valid_format = schema_utils.validate(req_json, "accounts_request")
             if not valid_format[0]:
-                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(valid_format[1]))
+                return error_to_response(
+                    Error.INVALID_REQUEST,
+                    invalid_params=schema_utils.serialize(valid_format[1]),
+                )
 
-            response, status = BcolProfileService().query_profile(req_json.get('userId'),
-                                                                  req_json.get('password')), HTTPStatus.OK
+            response, status = (
+                BcolProfileService().query_profile(req_json.get("userId"), req_json.get("password")),
+                HTTPStatus.OK,
+            )
         except BusinessException as exception:
             return exception.response()
         return response, status
 
 
-@cors_preflight(['GET', 'OPTIONS'])
-@API.route('/<string:bcol_user_id>', methods=['GET', 'OPTIONS'])
+@cors_preflight(["GET", "OPTIONS"])
+@API.route("/<string:bcol_user_id>", methods=["GET", "OPTIONS"])
 class BcolProfile(Resource):
     """Endpoint resource to get bcol profile by user id."""
 
     @staticmethod
-    @_jwt.has_one_of_roles(['system'])
-    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles(["system"])
+    @cors.crossdomain(origin="*")
     def get(bcol_user_id: str):
         """Return the bcol profile."""
         try:
-            response, status = BcolProfileService().get_profile(bcol_user_id), HTTPStatus.OK
+            response, status = (
+                BcolProfileService().get_profile(bcol_user_id),
+                HTTPStatus.OK,
+            )
         except BusinessException as exception:
             return exception.response()
         return response, status

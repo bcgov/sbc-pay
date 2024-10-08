@@ -11,7 +11,7 @@ class FakeOidc:
 
     def user_getfield(self, key):
         """Get user."""
-        return 'Joe'
+        return "Joe"
 
     def user_role(self):
         """Get user role."""
@@ -23,8 +23,8 @@ class FakeOidc:
 
     def get_access_token(self):
         """Get access token."""
-        return 'any'
+        return "any"
 
     def _get_token_info(self, token):
         """Get token info."""
-        return {'roles': ['admin_view']}
+        return {"roles": ["admin_view"]}

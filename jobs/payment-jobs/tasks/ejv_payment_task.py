@@ -26,7 +26,13 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
+    DisbursementStatus,
+    EjvFileType,
+    EJVLinkType,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+)
 from pay_api.utils.util import generate_transaction_number
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -47,20 +53,20 @@ class EjvPaymentTask(CgiEjv):
         5. Upload to sftp for processing. First upload JV file and then a TRG file.
         6. Update the statuses and create records to for the batch.
         """
-        cls._create_ejv_file_for_gov_account(batch_type='GI')
-        cls._create_ejv_file_for_gov_account(batch_type='GA')
+        cls._create_ejv_file_for_gov_account(batch_type="GI")
+        cls._create_ejv_file_for_gov_account(batch_type="GA")
 
     @classmethod
     def _create_ejv_file_for_gov_account(cls, batch_type: str):  # pylint:disable=too-many-locals, too-many-statements
         """Create EJV file for the partner and upload."""
-        ejv_content: str = ''
+        ejv_content: str = ""
         batch_total: float = 0
         control_total: int = 0
 
         ejv_file_model: EjvFileModel = EjvFileModel(
             file_type=EjvFileType.PAYMENT.value,
             file_ref=cls.get_file_name(),
-            disbursement_status_code=DisbursementStatus.UPLOADED.value
+            disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).flush()
         batch_number = cls.get_batch_number(ejv_file_model.id)
 
@@ -68,21 +74,21 @@ class EjvPaymentTask(CgiEjv):
 
         batch_header: str = cls.get_batch_header(batch_number, batch_type)
 
-        current_app.logger.info('Processing accounts.')
+        current_app.logger.info("Processing accounts.")
         for account_id in account_ids:
-            account_jv: str = ''
+            account_jv: str = ""
             # Find all invoices for the gov account to pay.
             invoices = cls._get_invoices_for_payment(account_id)
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
             if not invoices or not pay_account.billable:
                 continue
 
-            disbursement_desc = f'{pay_account.name[:100]:<100}'
+            disbursement_desc = f"{pay_account.name[:100]:<100}"
             effective_date: str = cls.get_effective_date()
             ejv_header_model: EjvFileModel = EjvHeaderModel(
                 payment_account_id=account_id,
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                ejv_file_id=ejv_file_model.id
+                ejv_file_id=ejv_file_model.id,
             ).flush()
             journal_name: str = cls.get_journal_name(ejv_header_model.id)
             debit_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(
@@ -92,7 +98,7 @@ class EjvPaymentTask(CgiEjv):
 
             line_number: int = 0
             total: float = 0
-            current_app.logger.info(f'Processing invoices for account_id: {account_id}.')
+            current_app.logger.info(f"Processing invoices for account_id: {account_id}.")
             for inv in invoices:
                 # If it's a JV reversal credit and debit is reversed.
                 is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
@@ -100,91 +106,132 @@ class EjvPaymentTask(CgiEjv):
                 # If it's reversal, If there is no COMPLETED invoice reference, then no need to reverse it.
                 # Else mark it as CANCELLED, as new invoice reference will be created
                 if is_jv_reversal:
-                    if (inv_ref := InvoiceReferenceModel.find_by_invoice_id_and_status(
-                        inv.id, InvoiceReferenceStatus.COMPLETED.value
-                    )) is None:
+                    if (
+                        inv_ref := InvoiceReferenceModel.find_by_invoice_id_and_status(
+                            inv.id, InvoiceReferenceStatus.COMPLETED.value
+                        )
+                    ) is None:
                         continue
                     inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
 
                 line_items = inv.payment_line_items
-                invoice_number = f'#{inv.id}'
-                description = disbursement_desc[:-len(invoice_number)] + invoice_number
-                description = f'{description[:100]:<100}'
+                invoice_number = f"#{inv.id}"
+                description = disbursement_desc[: -len(invoice_number)] + invoice_number
+                description = f"{description[:100]:<100}"
 
                 for line in line_items:
                     # Line can have 2 distribution, 1 for the total and another one for service fees.
                     line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                        line.fee_distribution_id)
+                        line.fee_distribution_id
+                    )
                     if line.total > 0:
                         total += line.total
                         line_distribution = cls.get_distribution_string(line_distribution_code)
-                        flow_through = f'{line.invoice_id:<110}'
+                        flow_through = f"{line.invoice_id:<110}"
                         # Credit to BCREG GL for a transaction (non-reversal)
                         line_number += 1
                         control_total += 1
                         # If it's normal payment then the Line distribution goes as Credit,
                         # else it goes as Debit as we need to debit the fund from BC registry GL.
-                        account_jv = account_jv + cls.get_jv_line(batch_type, line_distribution, description,
-                                                                  effective_date, flow_through, journal_name,
-                                                                  line.total,
-                                                                  line_number, 'C' if not is_jv_reversal else 'D')
+                        account_jv = account_jv + cls.get_jv_line(
+                            batch_type,
+                            line_distribution,
+                            description,
+                            effective_date,
+                            flow_through,
+                            journal_name,
+                            line.total,
+                            line_number,
+                            "C" if not is_jv_reversal else "D",
+                        )
 
                         # Debit from GOV ACCOUNT GL for a transaction (non-reversal)
                         line_number += 1
                         control_total += 1
                         # If it's normal payment then the Gov account GL goes as Debit,
                         # else it goes as Credit as we need to credit the fund back to ministry.
-                        account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, description,
-                                                                  effective_date, flow_through, journal_name,
-                                                                  line.total,
-                                                                  line_number, 'D' if not is_jv_reversal else 'C')
+                        account_jv = account_jv + cls.get_jv_line(
+                            batch_type,
+                            debit_distribution,
+                            description,
+                            effective_date,
+                            flow_through,
+                            journal_name,
+                            line.total,
+                            line_number,
+                            "D" if not is_jv_reversal else "C",
+                        )
                     if line.service_fees > 0:
                         service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                            line_distribution_code.service_fee_distribution_code_id)
+                            line_distribution_code.service_fee_distribution_code_id
+                        )
                         total += line.service_fees
                         service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
-                        flow_through = f'{line.invoice_id:<110}'
+                        flow_through = f"{line.invoice_id:<110}"
                         # Credit to BCREG GL for a transaction (non-reversal)
                         line_number += 1
                         control_total += 1
-                        account_jv = account_jv + cls.get_jv_line(batch_type, service_fee_distribution,
-                                                                  description,
-                                                                  effective_date, flow_through, journal_name,
-                                                                  line.service_fees,
-                                                                  line_number, 'C' if not is_jv_reversal else 'D')
+                        account_jv = account_jv + cls.get_jv_line(
+                            batch_type,
+                            service_fee_distribution,
+                            description,
+                            effective_date,
+                            flow_through,
+                            journal_name,
+                            line.service_fees,
+                            line_number,
+                            "C" if not is_jv_reversal else "D",
+                        )
 
                         # Debit from GOV ACCOUNT GL for a transaction (non-reversal)
                         line_number += 1
                         control_total += 1
-                        account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, description,
-                                                                  effective_date, flow_through, journal_name,
-                                                                  line.service_fees,
-                                                                  line_number, 'D' if not is_jv_reversal else 'C')
+                        account_jv = account_jv + cls.get_jv_line(
+                            batch_type,
+                            debit_distribution,
+                            description,
+                            effective_date,
+                            flow_through,
+                            journal_name,
+                            line.service_fees,
+                            line_number,
+                            "D" if not is_jv_reversal else "C",
+                        )
             batch_total += total
 
             if total > 0:
                 # A JV header for each account.
                 control_total += 1
-                account_jv = cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
-                                               journal_name, total) + account_jv
+                account_jv = (
+                    cls.get_jv_header(
+                        batch_type,
+                        cls.get_journal_batch_name(batch_number),
+                        journal_name,
+                        total,
+                    )
+                    + account_jv
+                )
                 ejv_content = ejv_content + account_jv
 
-            current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
+            current_app.logger.info("Creating ejv invoice link records and setting invoice status.")
             sequence = 1
             for inv in invoices:
-                current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
-                ejv_invoice_link = EjvLinkModel(link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
-                                                ejv_header_id=ejv_header_model.id,
-                                                disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                sequence=sequence)
+                current_app.logger.debug(f"Creating EJV Invoice Link for invoice id: {inv.id}")
+                ejv_invoice_link = EjvLinkModel(
+                    link_id=inv.id,
+                    link_type=EJVLinkType.INVOICE.value,
+                    ejv_header_id=ejv_header_model.id,
+                    disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                    sequence=sequence,
+                )
                 db.session.add(ejv_invoice_link)
                 sequence += 1
-                current_app.logger.debug(f'Creating Invoice Reference for invoice id: {inv.id}')
+                current_app.logger.debug(f"Creating Invoice Reference for invoice id: {inv.id}")
                 inv_ref = InvoiceReferenceModel(
                     invoice_id=inv.id,
                     invoice_number=generate_transaction_number(inv.id),
                     reference_number=None,
-                    status_code=InvoiceReferenceStatus.ACTIVE.value
+                    status_code=InvoiceReferenceStatus.ACTIVE.value,
                 )
                 db.session.add(inv_ref)
             db.session.flush()  # Instead of flushing every entity, flush all at once.
@@ -194,9 +241,9 @@ class EjvPaymentTask(CgiEjv):
             return
 
         batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
-        ejv_content = f'{batch_header}{ejv_content}{batch_trailer}'
+        ejv_content = f"{batch_header}{ejv_content}{batch_trailer}"
         file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ejv_content)
-        current_app.logger.info('Uploading to sftp.')
+        current_app.logger.info("Uploading to sftp.")
         cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
         db.session.commit()
 
@@ -210,26 +257,34 @@ class EjvPaymentTask(CgiEjv):
         # DEBIT : Distribution code against account.
         # Rule for GA. Credit is 112 and debit is 112. For BCREG client code is 112
         # Rule for GI. Credit is 112 and debit is not 112. For BCREG client code is 112
-        bc_reg_client_code = current_app.config.get('CGI_BCREG_CLIENT_CODE')
-        account_ids = db.session.query(DistributionCodeModel.account_id) \
-            .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)) \
-            .filter(DistributionCodeModel.account_id.isnot(None)) \
-            .filter_boolean(batch_type == 'GA', DistributionCodeModel.client == bc_reg_client_code) \
-            .filter_boolean(batch_type != 'GA', DistributionCodeModel.client != bc_reg_client_code) \
+        bc_reg_client_code = current_app.config.get("CGI_BCREG_CLIENT_CODE")
+        account_ids = (
+            db.session.query(DistributionCodeModel.account_id)
+            .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None))
+            .filter(DistributionCodeModel.account_id.isnot(None))
+            .filter_boolean(batch_type == "GA", DistributionCodeModel.client == bc_reg_client_code)
+            .filter_boolean(batch_type != "GA", DistributionCodeModel.client != bc_reg_client_code)
             .all()
+        )
         return [account_id_tuple[0] for account_id_tuple in account_ids]
 
     @classmethod
     def _get_invoices_for_payment(cls, account_id: int) -> List[InvoiceModel]:
         """Return invoices for payments."""
-        valid_statuses = (InvoiceStatus.APPROVED.value, InvoiceStatus.REFUND_REQUESTED.value)
-        invoice_ref_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
-            filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
+        valid_statuses = (
+            InvoiceStatus.APPROVED.value,
+            InvoiceStatus.REFUND_REQUESTED.value,
+        )
+        invoice_ref_subquery = db.session.query(InvoiceReferenceModel.invoice_id).filter(
+            InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,))
+        )
 
-        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
-            .filter(InvoiceModel.invoice_status_code.in_(valid_statuses)) \
-            .filter(InvoiceModel.payment_method_code == PaymentMethod.EJV.value) \
-            .filter(InvoiceModel.payment_account_id == account_id) \
-            .filter(InvoiceModel.id.notin_(invoice_ref_subquery)) \
+        invoices: List[InvoiceModel] = (
+            db.session.query(InvoiceModel)
+            .filter(InvoiceModel.invoice_status_code.in_(valid_statuses))
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EJV.value)
+            .filter(InvoiceModel.payment_account_id == account_id)
+            .filter(InvoiceModel.id.notin_(invoice_ref_subquery))
             .all()
+        )
         return invoices

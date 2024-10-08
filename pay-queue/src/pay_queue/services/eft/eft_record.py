@@ -26,9 +26,9 @@ from pay_queue.services.eft.eft_parse_error import EFTParseError
 class EFTRecord(EFTBase):
     """Defines the structure of the transaction record of a received EFT file."""
 
-    PAD_DESCRIPTION_PATTERN = 'MISC PAYMENT BCONLINE'
-    EFT_DESCRIPTION_PATTERN = 'MISC PAYMENT'
-    WIRE_DESCRIPTION_PATTERN = 'FUNDS TRANSFER CR TT'
+    PAD_DESCRIPTION_PATTERN = "MISC PAYMENT BCONLINE"
+    EFT_DESCRIPTION_PATTERN = "MISC PAYMENT"
+    WIRE_DESCRIPTION_PATTERN = "FUNDS TRANSFER CR TT"
 
     ministry_code: str
     program_code: str
@@ -75,10 +75,11 @@ class EFTRecord(EFTBase):
         self.program_code = self.extract_value(3, 7)
 
         deposit_time = self.extract_value(20, 24)
-        deposit_time = '0000' if len(deposit_time) == 0 else deposit_time  # default to 0000 if time not provided
+        deposit_time = "0000" if len(deposit_time) == 0 else deposit_time  # default to 0000 if time not provided
 
-        self.deposit_datetime = self.parse_datetime(self.extract_value(7, 15) + deposit_time,
-                                                    EFTError.INVALID_DEPOSIT_DATETIME)
+        self.deposit_datetime = self.parse_datetime(
+            self.extract_value(7, 15) + deposit_time, EFTError.INVALID_DEPOSIT_DATETIME
+        )
         self.location_id = self.extract_value(15, 20)
         self.transaction_sequence = self.extract_value(24, 27)
 
@@ -99,8 +100,9 @@ class EFTRecord(EFTBase):
 
         # transaction date is optional - parse if there is a value
         transaction_date = self.extract_value(131, 139)
-        self.transaction_date = None if len(transaction_date) == 0 \
-            else self.parse_date(transaction_date, EFTError.INVALID_TRANSACTION_DATE)
+        self.transaction_date = (
+            None if len(transaction_date) == 0 else self.parse_date(transaction_date, EFTError.INVALID_TRANSACTION_DATE)
+        )
 
     def parse_transaction_description(self):
         """Determine if the transaction is an EFT/Wire and parse it."""
@@ -109,11 +111,12 @@ class EFTRecord(EFTBase):
 
         if self.transaction_description.startswith(self.WIRE_DESCRIPTION_PATTERN):
             self.short_name_type = EFTShortnameType.WIRE.value
-            self.transaction_description = self.transaction_description[len(self.WIRE_DESCRIPTION_PATTERN):].strip()
+            self.transaction_description = self.transaction_description[len(self.WIRE_DESCRIPTION_PATTERN) :].strip()
             return
 
         # Check if this a PAD or EFT Transaction
-        if self.transaction_description.startswith(self.EFT_DESCRIPTION_PATTERN) \
-                and not self.transaction_description.startswith(self.PAD_DESCRIPTION_PATTERN):
+        if self.transaction_description.startswith(
+            self.EFT_DESCRIPTION_PATTERN
+        ) and not self.transaction_description.startswith(self.PAD_DESCRIPTION_PATTERN):
             self.short_name_type = EFTShortnameType.EFT.value
-            self.transaction_description = self.transaction_description[len(self.EFT_DESCRIPTION_PATTERN):].strip()
+            self.transaction_description = self.transaction_description[len(self.EFT_DESCRIPTION_PATTERN) :].strip()

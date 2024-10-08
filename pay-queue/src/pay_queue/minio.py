@@ -20,12 +20,16 @@ from urllib3 import HTTPResponse
 
 def get_object(bucket_name: str, file_name: str) -> HTTPResponse:
     """Return a pre-signed URL for new doc upload."""
-    current_app.logger.debug(f'Creating pre-signed URL for {file_name}')
-    minio_endpoint = current_app.config['MINIO_ENDPOINT']
-    minio_key = current_app.config['MINIO_ACCESS_KEY']
-    minio_secret = current_app.config['MINIO_ACCESS_SECRET']
+    current_app.logger.debug(f"Creating pre-signed URL for {file_name}")
+    minio_endpoint = current_app.config["MINIO_ENDPOINT"]
+    minio_key = current_app.config["MINIO_ACCESS_KEY"]
+    minio_secret = current_app.config["MINIO_ACCESS_SECRET"]
 
-    minio_client: Minio = Minio(minio_endpoint, access_key=minio_key, secret_key=minio_secret,
-                                secure=current_app.config['MINIO_SECURE'])
+    minio_client: Minio = Minio(
+        minio_endpoint,
+        access_key=minio_key,
+        secret_key=minio_secret,
+        secure=current_app.config["MINIO_SECURE"],
+    )
 
     return minio_client.get_object(bucket_name, file_name)

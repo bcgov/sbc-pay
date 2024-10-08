@@ -21,15 +21,15 @@ Test-Suite to ensure that the /ops endpoint is working as expected.
 
 def test_ops_healthz_success(client):
     """Assert that the service is healthy if it can successfully access the database."""
-    rv = client.get('/ops/healthz')
+    rv = client.get("/ops/healthz")
 
     assert rv.status_code == 200
-    assert rv.json == {'message': 'api is healthy'}
+    assert rv.json == {"message": "api is healthy"}
 
 
 def test_ops_readyz(client):
     """Asserts that the service is ready to serve."""
-    rv = client.get('/ops/readyz')
+    rv = client.get("/ops/readyz")
 
     assert rv.status_code == 200
-    assert rv.json == {'message': 'api is ready'}
+    assert rv.json == {"message": "api is ready"}

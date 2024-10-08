@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
-from decimal import Decimal
-
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import List, Optional
+
 from dataclass_wizard import JSONWizard
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementModel
 from pay_api.models import PaymentLineItem as LineItemModel
 from pay_api.utils.enums import InvoiceStatus
+
 from tasks.common.enums import PaymentDetailsGlStatus
 
 
@@ -80,12 +81,24 @@ class APLine:
     distribution: Optional[str] = None
 
     @classmethod
-    def from_invoice_and_line_item(cls, invoice: InvoiceModel, line_item: LineItemModel, line_number: int,
-                                   distribution: str):
+    def from_invoice_and_line_item(
+        cls,
+        invoice: InvoiceModel,
+        line_item: LineItemModel,
+        line_number: int,
+        distribution: str,
+    ):
         """Build dataclass object from invoice."""
         # Note the invoice_date should be the payment_date in the future.
-        return cls(total=line_item.total, invoice_number=invoice.id,
-                   line_number=line_number,
-                   is_reversal=invoice.invoice_status_code in
-                   [InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.CREDITED.value],
-                   distribution=distribution)
+        return cls(
+            total=line_item.total,
+            invoice_number=invoice.id,
+            line_number=line_number,
+            is_reversal=invoice.invoice_status_code
+            in [
+                InvoiceStatus.REFUNDED.value,
+                InvoiceStatus.REFUND_REQUESTED.value,
+                InvoiceStatus.CREDITED.value,
+            ],
+            distribution=distribution,
+        )
