@@ -43,6 +43,7 @@ class EFTRefund(Audit):
             'created_by',
             'created_name'
             'created_on',
+            'disbursement_date',
             'disbursement_status_code',
             'decline_reason',
             'id',
@@ -61,6 +62,8 @@ class EFTRefund(Audit):
     decline_reason = db.Column(db.String(), nullable=True)
     created_by = db.Column('created_by', db.String(100), nullable=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    disbursement_date = db.Column('disbursement_date', db.DateTime, nullable=False,
+                                  default=lambda: datetime.now(tz=timezone.utc))
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
