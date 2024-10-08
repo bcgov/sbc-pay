@@ -437,15 +437,19 @@ def _process_ap_header_routing_slips(line) -> bool:
 def _process_ap_header_eft(line) -> bool:
     has_errors = False
     eft_refund_id = line[19:69].strip()
-    eft_refund: EFTRefundModel = EFTRefundModel.find_by_id(eft_refund_id)
-    ap_header_return_code = line[414:418]
-    ap_header_error_message = line[418:568]
+    eft_refund = EFTRefundModel.find_by_id(eft_refund_id)
+    ap_header_return_code = line[414:418].strip()
+    ap_header_error_message = line[418:568].strip()
     if _get_disbursement_status(ap_header_return_code) == DisbursementStatus.ERRORED.value:
         has_errors = True
         eft_refund.status = EFTShortnameRefundStatus.REJECTED.value
+        eft_refund.disbursement_status_code = DisbursementStatus.ERRORED.value
+        eft_refund.save()
         capture_message(f'EFT Refund failed for {eft_refund_id}, reason : {ap_header_error_message}', level='error')
     else:
         eft_refund.status = EFTShortnameRefundStatus.COMPLETED.value
+        eft_refund.disbursement_status_code = DisbursementStatus.COMPLETED.value
+        eft_refund.disbursement_date = datetime.now()
         eft_refund.save()
     return has_errors
 

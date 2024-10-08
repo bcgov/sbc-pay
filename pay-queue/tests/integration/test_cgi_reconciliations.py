@@ -1189,6 +1189,8 @@ def test_successful_eft_refund_reconciliations(session, app, client):
     for eft_refund_id in eft_refund_ids:
         eft_refund = EFTRefundModel.find_by_id(eft_refund_id)
         assert eft_refund.status == EFTShortnameRefundStatus.COMPLETED.value
+        assert eft_refund.disbursement_status_code == DisbursementStatus.COMPLETED.value
+        assert eft_refund.disbursement_date
 
 
 def test_failed_eft_refund_reconciliations(session, app, client):
@@ -1295,9 +1297,13 @@ def test_failed_eft_refund_reconciliations(session, app, client):
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     eft_refund = EFTRefundModel.find_by_id(eft_refund_ids[0])
     assert eft_refund.status == EFTShortnameRefundStatus.COMPLETED.value
+    assert eft_refund.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    assert eft_refund.disbursement_date
 
     eft_refund2 = EFTRefundModel.find_by_id(eft_refund_ids[1])
     assert eft_refund2.status == EFTShortnameRefundStatus.REJECTED.value
+    assert eft_refund2.disbursement_status_code == DisbursementStatus.ERRORED.value
+    assert eft_refund2.disbursement_date is None
 
 
 def test_successful_ap_disbursement(session, app, client):
