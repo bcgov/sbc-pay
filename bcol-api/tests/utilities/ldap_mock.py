@@ -27,19 +27,15 @@ class MockLDAP(object):
     def set_option(self, option, invalue):
         """Set option value."""
 
-    def initialize(
-            self, uri, trace_level=0, trace_file=sys.stdout, trace_stack_limit=None
-    ):
+    def initialize(self, uri, trace_level=0, trace_file=sys.stdout, trace_stack_limit=None):
         """Initialize ldap."""
 
-    def simple_bind_s(self, who='', cred=''):
+    def simple_bind_s(self, who="", cred=""):
         """Bind."""
 
     def unbind_s(self):
         """Unbind."""
 
-    def search_s(
-            self, base, scope, filterstr='(objectClass=*)', attrlist=None, attrsonly=0
-    ):
+    def search_s(self, base, scope, filterstr="(objectClass=*)", attrlist=None, attrsonly=0):
         """Search."""
-        return 'TEST_USER'
+        return "TEST_USER"

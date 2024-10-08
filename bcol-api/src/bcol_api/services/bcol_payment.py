@@ -29,51 +29,51 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
     def create_payment(self, pay_request: Dict, is_apply_charge: bool):
         """Create payment record in BCOL."""
         current_app.logger.debug(f'<create_payment {pay_request.get("invoiceNumber")}')
-        padded_amount = self._pad_zeros(pay_request.get('amount', '0'))
+        padded_amount = self._pad_zeros(pay_request.get("amount", "0"))
         # Call the query profile service to fetch profile
         data = {
-            'Version': current_app.config.get('BCOL_DEBIT_ACCOUNT_VERSION'),
-            'Feecode': pay_request.get('feeCode'),
-            'Userid': pay_request.get('userId'),
-            'Key': pay_request.get('invoiceNumber'),
-            'Account': pay_request.get('accountNumber', ''),
-            'RateType': pay_request.get('rateType', ''),
-            'Folio': pay_request.get('folioNumber', None),
-            'FormNumber': pay_request.get('formNumber', ''),  # Also DAT Number
-            'Quantity': pay_request.get('quantity', ''),
-            'Rate': padded_amount,
-            'Amount': padded_amount,
-            'Remarks': pay_request.get('remarks', 'BCOL Payment from BCROS'),
-            'RedundantFlag': pay_request.get('reduntantFlag', ' '),
-            'linkcode': current_app.config.get('BCOL_LINK_CODE')
+            "Version": current_app.config.get("BCOL_DEBIT_ACCOUNT_VERSION"),
+            "Feecode": pay_request.get("feeCode"),
+            "Userid": pay_request.get("userId"),
+            "Key": pay_request.get("invoiceNumber"),
+            "Account": pay_request.get("accountNumber", ""),
+            "RateType": pay_request.get("rateType", ""),
+            "Folio": pay_request.get("folioNumber", None),
+            "FormNumber": pay_request.get("formNumber", ""),  # Also DAT Number
+            "Quantity": pay_request.get("quantity", ""),
+            "Rate": padded_amount,
+            "Amount": padded_amount,
+            "Remarks": pay_request.get("remarks", "BCOL Payment from BCROS"),
+            "RedundantFlag": pay_request.get("reduntantFlag", " "),
+            "linkcode": current_app.config.get("BCOL_LINK_CODE"),
         }
 
         try:
-            current_app.logger.debug(f'Is staff payment ? = {is_apply_charge} ')
+            current_app.logger.debug(f"Is staff payment ? = {is_apply_charge} ")
 
             response = self.apply_charge(data) if is_apply_charge else self.debit_account(data)
             current_app.logger.debug(response)
 
-            if self.__get(response, 'ReturnCode') != '0000':
+            if self.__get(response, "ReturnCode") != "0000":
                 raise BusinessException(Error.PAYMENT_ERROR)
 
-            ts_fee = self.__get(response, 'TSFee')
-            invoice_service_fees = pay_request.get('serviceFees', '0')
+            ts_fee = self.__get(response, "TSFee")
+            invoice_service_fees = pay_request.get("serviceFees", "0")
             self._check_service_fees_match(ts_fee, invoice_service_fees)
 
-            transaction = response['TranID']
+            transaction = response["TranID"]
             pay_response = {
-                'statutoryFee': self.__get(response, 'StatFee'),
-                'totalAmount': self.__get(response, 'Totamt'),
-                'tsFee': ts_fee,
-                'gst': self.__get(response, 'Totgst'),
-                'pst': self.__get(response, 'Totpst'),
-                'accountNumber': self.__get(transaction, 'Account'),
-                'userId': self.__get(transaction, 'UserID'),
-                'date': self.__get(transaction, 'AppliedDate') + ':' + self.__get(transaction, 'AppliedTime'),
-                'feeCode': self.__get(transaction, 'FeeCode'),
-                'key': self.__get(transaction, 'Key'),
-                'sequenceNo': self.__get(transaction, 'SequenceNo'),
+                "statutoryFee": self.__get(response, "StatFee"),
+                "totalAmount": self.__get(response, "Totamt"),
+                "tsFee": ts_fee,
+                "gst": self.__get(response, "Totgst"),
+                "pst": self.__get(response, "Totpst"),
+                "accountNumber": self.__get(transaction, "Account"),
+                "userId": self.__get(transaction, "UserID"),
+                "date": self.__get(transaction, "AppliedDate") + ":" + self.__get(transaction, "AppliedTime"),
+                "feeCode": self.__get(transaction, "FeeCode"),
+                "key": self.__get(transaction, "Key"),
+                "sequenceNo": self.__get(transaction, "SequenceNo"),
             }
 
         except zeep.exceptions.Fault as fault:
@@ -83,15 +83,17 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             else:
                 parsed_fault_detail = BcolSoap().get_payment_client().wsdl.types.deserialize(fault.detail[0])
             current_app.logger.error(parsed_fault_detail)
-            raise PaymentException(message=self.__get(parsed_fault_detail, 'message'),
-                                   code=self.__get(parsed_fault_detail, 'returnCode')) from fault
+            raise PaymentException(
+                message=self.__get(parsed_fault_detail, "message"),
+                code=self.__get(parsed_fault_detail, "returnCode"),
+            ) from fault
         except BusinessException as e:
             raise e
         except Exception as e:  # NOQA
             current_app.logger.error(e)
             raise BusinessException(Error.PAYMENT_ERROR) from e
 
-        current_app.logger.debug('>create_payment')
+        current_app.logger.debug(">create_payment")
         return pay_response
 
     def __get(self, value: object, key: object) -> str:  # pragma: no cover
@@ -110,7 +112,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
         client = BcolSoap().get_applied_chg_client()
         return zeep.helpers.serialize_object(client.service.appliedCharge(req=data))
 
-    def _pad_zeros(self, amount: str = '0'):
+    def _pad_zeros(self, amount: str = "0"):
         """Pad the amount with Zeroes to make sure the string is 10 chars."""
         if not amount:
             return None
@@ -121,5 +123,6 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
         """Check to see if BCOL return matches passed in service fees."""
         ts_fee = -float(ts_fee) / 100 if ts_fee else 0
         if ts_fee != float(invoice_service_fees):
-            current_app.logger.error(f"TSFee {ts_fee} from BCOL doesn\'t match"
-                                     f' SBC-PAY invoice service fees: {invoice_service_fees}')
+            current_app.logger.error(
+                f"TSFee {ts_fee} from BCOL doesn't match" f" SBC-PAY invoice service fees: {invoice_service_fees}"
+            )

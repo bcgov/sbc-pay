@@ -30,17 +30,20 @@ from bcol_api.utils.errors import Error
 
 def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
     """Convert json error to problem response."""
-    return Response(response=json.dumps(body), mimetype='application/problem+json', status=status)
+    return Response(response=json.dumps(body), mimetype="application/problem+json", status=status)
 
 
 def error_to_response(error: Error, invalid_params=None):
     """Convert Error enum to response."""
-    return convert_to_response(body={
-        'type': error.name,
-        'title': error.title,
-        'detail': error.details,
-        'invalidParams': invalid_params
-    }, status=error.status)
+    return convert_to_response(
+        body={
+            "type": error.name,
+            "title": error.title,
+            "detail": error.details,
+            "invalidParams": invalid_params,
+        },
+        status=error.status,
+    )
 
 
 class BusinessException(Exception):  # noqa
@@ -56,11 +59,7 @@ class BusinessException(Exception):  # noqa
 
     def as_problem_json(self):
         """Return problem+json of error message."""
-        return {
-            'type': self.code,
-            'title': self.message,
-            'detail': self.details
-        }
+        return {"type": self.code, "title": self.message, "detail": self.details}
 
     def response(self):
         """Response attributes."""
@@ -80,11 +79,7 @@ class PaymentException(Exception):  # noqa
 
     def as_problem_json(self):
         """Return problem+json of error message."""
-        return {
-            'type': self.code,
-            'title': self.message,
-            'detail': self.details
-        }
+        return {"type": self.code, "title": self.message, "detail": self.details}
 
     def response(self):
         """Response attributes."""

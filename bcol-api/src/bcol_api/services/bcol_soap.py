@@ -50,14 +50,8 @@ class BcolSoap(metaclass=Singleton):  # pylint: disable=too-few-public-methods
 
     def __init__(self):
         """Private constructor."""
-        self.__profile_client = zeep.Client(
-            current_app.config.get('BCOL_QUERY_PROFILE_WSDL_URL')
-        )
+        self.__profile_client = zeep.Client(current_app.config.get("BCOL_QUERY_PROFILE_WSDL_URL"))
 
-        self.__payment_client = zeep.Client(
-            current_app.config.get('BCOL_PAYMENTS_WSDL_URL')
-        )
+        self.__payment_client = zeep.Client(current_app.config.get("BCOL_PAYMENTS_WSDL_URL"))
 
-        self.__applied_chg_client = zeep.Client(
-            current_app.config.get('BCOL_APPLIED_CHARGE_WSDL_URL')
-        )
+        self.__applied_chg_client = zeep.Client(current_app.config.get("BCOL_APPLIED_CHARGE_WSDL_URL"))

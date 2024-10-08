@@ -19,29 +19,29 @@ from typing import Dict
 class Role(Enum):
     """Role enum."""
 
-    STAFF = 'staff'
-    EDIT = 'edit'
-    ACCOUNT_HOLDER = 'account_holder'
-    SYSTEM = 'system'
+    STAFF = "staff"
+    EDIT = "edit"
+    ACCOUNT_HOLDER = "account_holder"
+    SYSTEM = "system"
 
 
 def auth_code_mapping() -> Dict:
     """Return Auth code mapping from BCOL."""
     return {
-        'G': 'GDSA',
-        'M': 'Master',
-        'O': 'Office',
-        'P': 'Prime',
-        'C': 'Contact',
-        '': 'Ordinary',
+        "G": "GDSA",
+        "M": "Master",
+        "O": "Office",
+        "P": "Prime",
+        "C": "Contact",
+        "": "Ordinary",
     }
 
 
 def account_type_mapping() -> Dict:
     """Return Account type mapping from BCOL."""
-    return {'B': 'Billable', 'N': 'Non-Billable', 'I': 'Internal'}
+    return {"B": "Billable", "N": "Non-Billable", "I": "Internal"}
 
 
 def tax_status_mapping() -> Dict:
     """Return Tax status mapping from BCOL."""
-    return {'E': 'Exempt', 'Z': 'Zero-rate', '': 'Must-Pay'}
+    return {"E": "Exempt", "Z": "Zero-rate", "": "Must-Pay"}

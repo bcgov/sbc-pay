@@ -31,22 +31,18 @@ from bcol_api.utils.auth import jwt
 from bcol_api.utils.logging import setup_logging
 from bcol_api.utils.run_version import get_run_version
 
+setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))  # important to do this first
 
-setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))  # important to do this first
 
-
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
+def create_app(run_mode=os.getenv("FLASK_ENV", "production")):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     # Configure Sentry
-    if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
-        if app.config.get('SENTRY_DSN', None):
-            sentry_sdk.init(
-                dsn=app.config.get('SENTRY_DSN'),
-                integrations=[FlaskIntegration()]
-            )
+    if str(app.config.get("SENTRY_ENABLE")).lower() == "true":
+        if app.config.get("SENTRY_DSN", None):
+            sentry_sdk.init(dsn=app.config.get("SENTRY_DSN"), integrations=[FlaskIntegration()])
 
     app.register_blueprint(API_BLUEPRINT)
     app.register_blueprint(OPS_BLUEPRINT)
@@ -59,7 +55,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     @app.after_request
     def add_version(response):  # pylint: disable=unused-variable
         version = get_run_version()
-        response.headers['API'] = f'bcol_api/{version}'
+        response.headers["API"] = f"bcol_api/{version}"
         return response
 
     register_shellcontext(app)
@@ -69,18 +65,20 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
 def setup_jwt_manager(app, jwt_manager):
     """Use flask app to configure the JWTManager to work for a particular Realm."""
-    def get_roles(a_dict):
-        return a_dict['realm_access']['roles']  # pragma: no cover
 
-    app.config['JWT_ROLE_CALLBACK'] = get_roles
+    def get_roles(a_dict):
+        return a_dict["realm_access"]["roles"]  # pragma: no cover
+
+    app.config["JWT_ROLE_CALLBACK"] = get_roles
 
     jwt_manager.init_app(app)
 
 
 def register_shellcontext(app):
     """Register shell context objects."""
+
     def shell_context():
         """Shell context objects."""
-        return {'app': app, 'jwt': jwt}  # pragma: no cover
+        return {"app": app, "jwt": jwt}  # pragma: no cover
 
     app.shell_context_processor(shell_context)

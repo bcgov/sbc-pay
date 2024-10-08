@@ -19,16 +19,28 @@ from http import HTTPStatus
 class Error(Enum):
     """Error Codes."""
 
-    INVALID_CREDENTIALS = 'Invalid Credentials', 'Invalid User ID or Password', HTTPStatus.BAD_REQUEST
-    NOT_A_PRIME_USER = 'Not a prime user.', \
-                       'You must enter the PRIME CONTACT User ID and password for your BC Online account.', \
-                       HTTPStatus.BAD_REQUEST
-    SYSTEM_ERROR = 'BC Online is currently not available.', \
-                   'BC Online is currently not available. Please try again later.', \
-                   HTTPStatus.BAD_REQUEST
-    PAYMENT_ERROR = 'Cannot create payment', 'Error occurred during payment', HTTPStatus.BAD_REQUEST
+    INVALID_CREDENTIALS = (
+        "Invalid Credentials",
+        "Invalid User ID or Password",
+        HTTPStatus.BAD_REQUEST,
+    )
+    NOT_A_PRIME_USER = (
+        "Not a prime user.",
+        "You must enter the PRIME CONTACT User ID and password for your BC Online account.",
+        HTTPStatus.BAD_REQUEST,
+    )
+    SYSTEM_ERROR = (
+        "BC Online is currently not available.",
+        "BC Online is currently not available. Please try again later.",
+        HTTPStatus.BAD_REQUEST,
+    )
+    PAYMENT_ERROR = (
+        "Cannot create payment",
+        "Error occurred during payment",
+        HTTPStatus.BAD_REQUEST,
+    )
 
-    INVALID_REQUEST = 'Invalid Request', 'Invalid Request', HTTPStatus.BAD_REQUEST
+    INVALID_REQUEST = "Invalid Request", "Invalid Request", HTTPStatus.BAD_REQUEST
 
     def __new__(cls, title, details, status):
         """Attributes for the enum."""

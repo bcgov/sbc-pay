@@ -18,6 +18,7 @@ Test-Suite to ensure that the BCOL Service layer is working as expected.
 """
 
 import unittest
+
 from bcol_api.services.bcol_payment import BcolPayment
 
 
@@ -25,16 +26,16 @@ def test_payment(app, payment_mock):
     """Test payment service."""
     test_case = unittest.TestCase()
     with app.app_context():
-        with test_case.assertLogs(level='ERROR') as log:
+        with test_case.assertLogs(level="ERROR") as log:
             payment_response = BcolPayment().create_payment({}, False)
-            assert payment_response.get('userId') == 'PB25020'
+            assert payment_response.get("userId") == "PB25020"
             # Non matching fee case.
-            BcolPayment().create_payment({'serviceFees': 50.00}, False)
+            BcolPayment().create_payment({"serviceFees": 50.00}, False)
             has_non_match_error = False
             for message in log.output:
-                if "from BCOL doesn\'t match" in message:
+                if "from BCOL doesn't match" in message:
                     has_non_match_error = True
             assert has_non_match_error
         # Success case.
-        with test_case.assertNoLogs(level='ERROR'):
-            BcolPayment().create_payment({'serviceFees': 1.50}, False)
+        with test_case.assertNoLogs(level="ERROR"):
+            BcolPayment().create_payment({"serviceFees": 1.50}, False)

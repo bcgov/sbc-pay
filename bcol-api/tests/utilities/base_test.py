@@ -16,34 +16,27 @@
 
 def get_token_header():
     """Get the token header json."""
-    return {
-        'alg': 'RS256',
-        'typ': 'JWT',
-        'kid': 'sbc-auth-cron-job'
-    }
+    return {"alg": "RS256", "typ": "JWT", "kid": "sbc-auth-cron-job"}
 
 
-def get_claims(app_request=None, role: str = 'account_holder', username: str = 'CP0001234',
-               login_source: str = 'PASSCODE'):
+def get_claims(
+    app_request=None,
+    role: str = "account_holder",
+    username: str = "CP0001234",
+    login_source: str = "PASSCODE",
+):
     """Return the claim with the role param."""
     claim = {
-        'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
-        'exp': 31531718745,
-        'iat': 1531718745,
-        'iss': app_request.config[
-            'JWT_OIDC_ISSUER'] if app_request else 'http://localhost:8081/auth/realms/demo',
-        'aud': 'sbc-auth-web',
-        'sub': '15099883-3c3f-4b4c-a124-a1824d6cba84',
-        'typ': 'Bearer',
-        'realm_access':
-        {
-            'roles':
-                [
-                    '{}'.format(role)
-                ]
-        },
-        'preferred_username': username,
-        'username': username,
-        'loginSource': login_source
+        "jti": "a50fafa4-c4d6-4a9b-9e51-1e5e0d102878",
+        "exp": 31531718745,
+        "iat": 1531718745,
+        "iss": (app_request.config["JWT_OIDC_ISSUER"] if app_request else "http://localhost:8081/auth/realms/demo"),
+        "aud": "sbc-auth-web",
+        "sub": "15099883-3c3f-4b4c-a124-a1824d6cba84",
+        "typ": "Bearer",
+        "realm_access": {"roles": ["{}".format(role)]},
+        "preferred_username": username,
+        "username": username,
+        "loginSource": login_source,
     }
     return claim

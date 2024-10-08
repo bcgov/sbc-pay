@@ -14,11 +14,10 @@
 """Endpoints to check and manage the health of the service."""
 from flask_restx import Namespace, Resource
 
+API = Namespace("OPS", description="Service - OPS checks")
 
-API = Namespace('OPS', description='Service - OPS checks')
 
-
-@API.route('healthz')
+@API.route("healthz")
 class Healthz(Resource):
     """Determines if the service and required dependencies are still working.
 
@@ -29,14 +28,14 @@ class Healthz(Resource):
     def get():
         """Return a JSON object stating the health of the Service and dependencies."""
         # made it here, so all checks passed
-        return {'message': 'api is healthy'}, 200
+        return {"message": "api is healthy"}, 200
 
 
-@API.route('readyz')
+@API.route("readyz")
 class Readyz(Resource):
     """Determines if the service is ready to respond."""
 
     @staticmethod
     def get():
         """Return a JSON object that identifies if the service is setupAnd ready to work."""
-        return {'message': 'api is ready'}, 200
+        return {"message": "api is ready"}, 200
