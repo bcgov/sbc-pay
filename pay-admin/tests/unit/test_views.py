@@ -25,13 +25,16 @@ from admin.views.fee_code import FeeCode, FeeCodeConfig
 from admin.views.fee_schedule import FeeSchedule, FeeScheduleConfig
 
 
-@pytest.mark.parametrize('model, config', [
-    (FeeCode, FeeCodeConfig),
-    (CorpType, CorpTypeConfig),
-    (FilingType, CodeConfig),
-    (DistributionCode, DistributionCodeConfig),
-    (FeeSchedule, FeeScheduleConfig)
-])
+@pytest.mark.parametrize(
+    "model, config",
+    [
+        (FeeCode, FeeCodeConfig),
+        (CorpType, CorpTypeConfig),
+        (FilingType, CodeConfig),
+        (DistributionCode, DistributionCodeConfig),
+        (FeeSchedule, FeeScheduleConfig),
+    ],
+)
 def test_view_configs(db, model, config):
     """Test view configs."""
     view = config(model, db.session)

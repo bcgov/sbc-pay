@@ -12,6 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 from flask_admin.contrib import sqla
 
 from admin import keycloak
@@ -40,14 +41,34 @@ class SecuredView(sqla.ModelView):
         """Return if user can edit."""
         return self._has_role(self.edit_role)
 
-    def __init__(self, model, session,  # pylint: disable=too-many-arguments
-                 name=None, category=None, endpoint=None, url=None, static_folder=None,
-                 menu_class_name=None, menu_icon_type=None, menu_icon_value=None,
-                 view_role: str = 'admin_view', edit_role: str = 'admin_edit'):
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        model,
+        session,
+        name=None,
+        category=None,
+        endpoint=None,
+        url=None,
+        static_folder=None,
+        menu_class_name=None,
+        menu_icon_type=None,
+        menu_icon_value=None,
+        view_role: str = "admin_view",
+        edit_role: str = "admin_edit",
+    ):
         """Initialize."""
-        super().__init__(model, session,
-                         name, category, endpoint, url, static_folder,
-                         menu_class_name, menu_icon_type, menu_icon_value)
+        super().__init__(
+            model,
+            session,
+            name,
+            category,
+            endpoint,
+            url,
+            static_folder,
+            menu_class_name,
+            menu_icon_type,
+            menu_icon_value,
+        )
         self.connected = False
         self.view_role = view_role
         self.edit_role = edit_role
@@ -70,4 +91,4 @@ class SecuredView(sqla.ModelView):
             kc = keycloak.Keycloak(None)
             return kc.get_redirect_url()
 
-        return 'not authorized'
+        return "not authorized"
