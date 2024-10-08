@@ -29,7 +29,6 @@ from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 
-from ..services.code import Code as CodeService
 from .constants import DT_SHORT_FORMAT
 from .converter import Converter
 from .enums import Code, CorpType, Product, StatementFrequency
@@ -296,6 +295,9 @@ def cents_to_decimal(amount: int):
 
 def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
+    # Will fix this promptly and move this away so it doesn't cause circular dependencies.
+    from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+
     if corp_type == CorpType.NRO.value:
         return current_app.config.get("NAMEX_PAY_TOPIC")
     product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get("product")
