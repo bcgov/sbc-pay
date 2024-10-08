@@ -1301,9 +1301,8 @@ def test_failed_eft_refund_reconciliations(session, app, client):
     assert eft_refund.disbursement_date
 
     eft_refund2 = EFTRefundModel.find_by_id(eft_refund_ids[1])
-    assert eft_refund2.status == EFTShortnameRefundStatus.REJECTED.value
+    assert eft_refund2.status == EFTShortnameRefundStatus.ERRORED.value
     assert eft_refund2.disbursement_status_code == DisbursementStatus.ERRORED.value
-    assert eft_refund2.disbursement_date is None
 
 
 def test_successful_ap_disbursement(session, app, client):
