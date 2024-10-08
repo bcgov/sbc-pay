@@ -20,11 +20,11 @@ Test-Suite to ensure that the service is working as expected.
 from datetime import datetime, timezone
 
 from pay_api.models import (
-    CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, Refund, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    CfsAccount, DistributionCode, EFTRefund, EFTShortnames, Invoice, InvoiceReference, Payment, PaymentAccount,
+    PaymentLineItem, PaymentTransaction, Receipt, Refund, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, RoutingSlipStatus, TransactionStatus)
+    CfsAccountStatus, DisbursementStatus, EFTShortnameRefundStatus, EFTShortnameType, InvoiceReferenceStatus,
+    InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus, TransactionStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -153,6 +153,38 @@ def factory_payment_transaction(payment_id: int):
         payment_id=payment_id,
         status_code=TransactionStatus.CREATED.value,
         transaction_start_time=datetime.now()).save()
+
+
+def factory_create_eft_shortname(short_name: str, short_name_type: str = EFTShortnameType.EFT.value):
+    """Return Factory."""
+    short_name = EFTShortnames(
+        short_name=short_name,
+        type=short_name_type
+    ).save()
+    return short_name
+
+
+def factory_create_eft_refund(
+    cas_supplier_number: str = '1234',
+    comment: str = 'Test Comment',
+    refund_amount: float = 100.0,
+    refund_email: str = 'test@email.com',
+    short_name_id: int = 1,
+    status: str = EFTShortnameRefundStatus.APPROVED.value,
+    disbursement_status_code: str = DisbursementStatus.ACKNOWLEDGED.value
+):
+    """Return Factory."""
+    eft_refund = EFTRefund(
+        cas_supplier_number=cas_supplier_number,
+        comment=comment,
+        disbursement_status_code=disbursement_status_code,
+        refund_amount=refund_amount,
+        refund_email=refund_email,
+        short_name_id=short_name_id,
+        status=status,
+        created_on=datetime.now(tz=timezone.utc)
+    ).save()
+    return eft_refund
 
 
 def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.ACTIVE.value,

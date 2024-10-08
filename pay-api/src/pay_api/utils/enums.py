@@ -374,6 +374,8 @@ class EFTShortnameRefundStatus(Enum):
     APPROVED = 'APPROVED'
     PENDING_APPROVAL = 'PENDING_APPROVAL'
     DECLINED = 'DECLINED'
+    COMPLETED = 'COMPLETED'
+    REJECTED = 'REJECTED'
 
 
 class EFTPaymentActions(Enum):
