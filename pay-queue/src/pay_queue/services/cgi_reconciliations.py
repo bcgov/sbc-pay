@@ -435,13 +435,11 @@ def _process_ap_header_routing_slips(line) -> bool:
 
 
 def _process_ap_header_eft(line) -> bool:
-    print(123123123)
     has_errors = False
     eft_refund_id = line[19:69].strip()
     eft_refund: EFTRefundModel = EFTRefundModel.find_by_id(eft_refund_id)
     ap_header_return_code = line[414:418]
     ap_header_error_message = line[418:568]
-    print(111111, _get_disbursement_status(ap_header_return_code))
     if _get_disbursement_status(ap_header_return_code) == DisbursementStatus.ERRORED.value:
         has_errors = True
         eft_refund.status = EFTShortnameRefundStatus.REJECTED.value
