@@ -19,6 +19,8 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 from datetime import datetime, timezone
 
 from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import EFTRefund as EFTRefundModel
+from pay_api.models import EFTShortnames as EftShortNameModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvLink as EjvLinkModel
@@ -33,16 +35,17 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
-    PaymentMethod, PaymentStatus, RoutingSlipStatus)
+    CfsAccountStatus, DisbursementStatus, EFTShortnameRefundStatus, EFTShortnameType, EjvFileType, EJVLinkType,
+    InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, RoutingSlipStatus)
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sqlalchemy import text
 
 from tests.integration.utils import add_file_event_to_queue_and_process
 
 from .factory import (
-    factory_create_ejv_account, factory_create_pad_account, factory_distribution, factory_invoice,
-    factory_invoice_reference, factory_payment_line_item, factory_refund, factory_routing_slip_account)
+    factory_create_eft_refund, factory_create_eft_shortname, factory_create_ejv_account, factory_create_pad_account,
+    factory_distribution, factory_invoice, factory_invoice_reference, factory_payment_line_item, factory_refund,
+    factory_routing_slip_account)
 from .utils import upload_to_minio
 
 
@@ -1079,6 +1082,227 @@ def test_failed_refund_reconciliations(session, app, client):
 
     routing_slip_2 = RoutingSlipModel.find_by_number(rs_numbers[1])
     assert routing_slip_2.status == RoutingSlipStatus.REFUND_REJECTED.value
+
+
+def test_successful_eft_refund_reconciliations(session, app, client):
+    """Test Reconciliations worker."""
+    # 1. Create EFT refund.
+    # 2. Create a AP reconciliation file.
+    # 3. Assert the status.
+    eft_short_name_names = ('TEST00001', 'TEST00002')
+    eft_refund_ids = []
+    for eft_short_name_name in eft_short_name_names:
+        factory_create_eft_shortname(short_name=eft_short_name_name)
+        eft_short_name = EftShortNameModel.find_by_short_name(eft_short_name_name, EFTShortnameType.EFT.value)
+        eft_refund = factory_create_eft_refund(
+            disbursement_status_code=DisbursementStatus.ACKNOWLEDGED.value,
+            refund_amount=100,
+            refund_email='test@test.com',
+            short_name_id=eft_short_name.id,
+            status=EFTShortnameRefundStatus.APPROVED.value,
+            comment=eft_short_name.short_name)
+        eft_refund_ids.append(str(eft_refund.id).zfill(9))
+
+    # Now create AP records.
+    # Create EJV File model
+    file_ref = f'INBOX.{datetime.now()}'
+    ejv_file = EjvFileModel(file_ref=file_ref, file_type=EjvFileType.EFT_REFUND.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+
+    ejv_file_id = ejv_file.id
+
+    # Upload an acknowledgement file
+    ack_file_name = f'ACK.{file_ref}'
+
+    with open(ack_file_name, 'a+') as jv_file:
+        jv_file.write('')
+        jv_file.close()
+
+    # Upload the ACK file to minio and publish message.
+    upload_to_minio(str.encode(''), ack_file_name)
+
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+
+    # Create and upload a feedback file and check the status.
+    feedback_content = f'APBG...........00000000{ejv_file_id}....\n' \
+                       f'APBH...0000................................................................................' \
+                       f'......................................................................CGI\n' \
+                       f'APIH...000000000...{eft_refund_ids[0]}                                         ............' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.REFUND_EFT................................................................................' \
+                       f'............................................................0000...........................' \
+                       f'...........................................................................................' \
+                       f'................................CGI\n' \
+                       f'APIL...............{eft_refund_ids[0]}                                         ............' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................................................................' \
+                       f'0000.......................................................................................' \
+                       f'...............................................................CGI\n' \
+                       f'APIC...............{eft_short_name_names[0]}                                         ......' \
+                       f'......................................0000.................................................' \
+                       f'...........................................................................................' \
+                       f'..........CGI\n' \
+                       f'APIH...000000000...{eft_refund_ids[1]}                                         ............' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.REFUND_EFT................................................................................' \
+                       f'............................................................0000...........................' \
+                       f'...........................................................................................' \
+                       f'................................CGI\n' \
+                       f'APIL...............{eft_refund_ids[1]}                                         ............' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................................................................' \
+                       f'0000.......................................................................................' \
+                       f'...............................................................CGI\n' \
+                       f'APIC...............{eft_short_name_names[1]}                                         ......' \
+                       f'......................................0000.................................................' \
+                       f'...........................................................................................' \
+                       f'..........CGI\n' \
+                       f'APBT...........00000000{ejv_file_id}..............................0000.....................' \
+                       f'...........................................................................................' \
+                       f'......................................CGI\n' \
+
+    feedback_file_name = f'FEEDBACK.{file_ref}'
+
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+
+    # Now upload the ACK file to minio and publish message.
+    with open(feedback_file_name, 'rb') as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
+
+    # Query EJV File and assert the status is changed
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    for eft_refund_id in eft_refund_ids:
+        eft_refund = EFTRefundModel.find_by_id(eft_refund_id)
+        assert eft_refund.status == EFTShortnameRefundStatus.COMPLETED.value
+        assert eft_refund.disbursement_status_code == DisbursementStatus.COMPLETED.value
+        assert eft_refund.disbursement_date
+
+
+def test_failed_eft_refund_reconciliations(session, app, client):
+    """Test Reconciliations worker."""
+    # 1. Create EFT refund.
+    # 2. Create a AP reconciliation file.
+    # 3. Assert the status.
+    eft_short_name_names = ('TEST00001', 'TEST00002')
+    eft_refund_ids = []
+    for eft_short_name_name in eft_short_name_names:
+        factory_create_eft_shortname(short_name=eft_short_name_name)
+        eft_short_name = EftShortNameModel.find_by_short_name(eft_short_name_name, EFTShortnameType.EFT.value)
+        eft_refund = factory_create_eft_refund(
+            disbursement_status_code=DisbursementStatus.ACKNOWLEDGED.value,
+            refund_amount=100,
+            refund_email='test@test.com',
+            short_name_id=eft_short_name.id,
+            status=EFTShortnameRefundStatus.APPROVED.value,
+            comment=eft_short_name.short_name)
+        eft_refund_ids.append(str(eft_refund.id).zfill(9))
+
+    # Now create AP records.
+    # Create EJV File model
+    file_ref = f'INBOX.{datetime.now()}'
+    ejv_file = EjvFileModel(file_ref=file_ref, file_type=EjvFileType.EFT_REFUND.value,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+
+    ejv_file_id = ejv_file.id
+
+    # Upload an acknowledgement file
+    ack_file_name = f'ACK.{file_ref}'
+
+    with open(ack_file_name, 'a+') as jv_file:
+        jv_file.write('')
+        jv_file.close()
+
+    # Now upload the ACK file to minio and publish message.
+    upload_to_minio(str.encode(''), ack_file_name)
+
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+
+    # Create and upload a feedback file and check the status.
+    feedback_content = f'APBG...........00000000{ejv_file_id}....\n' \
+                       f'APBH...0000................................................................................' \
+                       f'......................................................................CGI\n' \
+                       f'APIH...000000000...{eft_refund_ids[0]}                                         ............' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.REFUND_EFT................................................................................' \
+                       f'............................................................0000...........................' \
+                       f'...........................................................................................' \
+                       f'................................CGI\n' \
+                       f'APIL...............{eft_refund_ids[0]}                                         ............' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................................................................' \
+                       f'0000.......................................................................................' \
+                       f'...............................................................CGI\n' \
+                       f'APIC...............{eft_short_name_names[0]}                                         ......' \
+                       f'......................................0000.................................................' \
+                       f'...........................................................................................' \
+                       f'..........CGI\n' \
+                       f'APIH...000000000...{eft_refund_ids[1]}                                         ............' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.REFUND_EFT................................................................................' \
+                       f'............................................................0001...........................' \
+                       f'...........................................................................................' \
+                       f'................................CGI\n' \
+                       f'APIL...............{eft_refund_ids[1]}                                         ............' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................................................................' \
+                       f'0001.......................................................................................' \
+                       f'...............................................................CGI\n' \
+                       f'APIC...............{eft_short_name_names[1]}                                         ......' \
+                       f'......................................0001.................................................' \
+                       f'...........................................................................................' \
+                       f'..........CGI\n' \
+                       f'APBT...........00000000{ejv_file_id}..............................0000.....................' \
+                       f'...........................................................................................' \
+                       f'......................................CGI\n' \
+
+    feedback_file_name = f'FEEDBACK.{file_ref}'
+
+    with open(feedback_file_name, 'a+', encoding='utf-8') as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+
+    # Now upload the ACK file to minio and publish message.
+    with open(feedback_file_name, 'rb') as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
+
+    # Query EJV File and assert the status is changed
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    eft_refund = EFTRefundModel.find_by_id(eft_refund_ids[0])
+    assert eft_refund.status == EFTShortnameRefundStatus.COMPLETED.value
+    assert eft_refund.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    assert eft_refund.disbursement_date
+
+    eft_refund2 = EFTRefundModel.find_by_id(eft_refund_ids[1])
+    assert eft_refund2.status == EFTShortnameRefundStatus.ERRORED.value
+    assert eft_refund2.disbursement_status_code == DisbursementStatus.ERRORED.value
 
 
 def test_successful_ap_disbursement(session, app, client):

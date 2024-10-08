@@ -19,6 +19,7 @@ from typing import Dict, List, Optional
 
 from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvLink as EjvLinkModel
@@ -34,8 +35,8 @@ from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, QueueSources, RoutingSlipStatus)
+    DisbursementStatus, EFTShortnameRefundStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
+    PaymentMethod, PaymentStatus, PaymentSystem, QueueSources, RoutingSlipStatus)
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
@@ -407,6 +408,8 @@ def _process_ap_header(line, ejv_file: EjvFileModel) -> bool:
     has_errors = False
     if ejv_file.file_type == EjvFileType.REFUND.value:
         has_errors = _process_ap_header_routing_slips(line)
+    elif ejv_file.file_type == EjvFileType.EFT_REFUND.value:
+        has_errors = _process_ap_header_eft(line)
     else:
         has_errors = _process_ap_header_non_gov_disbursement(line, ejv_file)
     return has_errors
@@ -428,6 +431,25 @@ def _process_ap_header_routing_slips(line) -> bool:
         refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
         refund.gl_posted = datetime.now()
         refund.save()
+    return has_errors
+
+
+def _process_ap_header_eft(line) -> bool:
+    has_errors = False
+    eft_refund_id = line[19:69].strip()
+    eft_refund = EFTRefundModel.find_by_id(eft_refund_id)
+    ap_header_return_code = line[414:418].strip()
+    ap_header_error_message = line[418:568].strip()
+    if _get_disbursement_status(ap_header_return_code) == DisbursementStatus.ERRORED.value:
+        has_errors = True
+        eft_refund.status = EFTShortnameRefundStatus.ERRORED.value
+        eft_refund.disbursement_status_code = DisbursementStatus.ERRORED.value
+        capture_message(f'EFT Refund failed for {eft_refund_id}, reason : {ap_header_error_message}', level='error')
+    else:
+        eft_refund.status = EFTShortnameRefundStatus.COMPLETED.value
+        eft_refund.disbursement_status_code = DisbursementStatus.COMPLETED.value
+        eft_refund.disbursement_date = datetime.now(tz=timezone.utc)
+    eft_refund.save()
     return has_errors
 
 
