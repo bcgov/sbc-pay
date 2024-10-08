@@ -448,7 +448,7 @@ def _process_ap_header_eft(line) -> bool:
     else:
         eft_refund.status = EFTShortnameRefundStatus.COMPLETED.value
         eft_refund.disbursement_status_code = DisbursementStatus.COMPLETED.value
-        eft_refund.disbursement_date = datetime.now()
+        eft_refund.disbursement_date = datetime.now(tz=timezone.utc)
     eft_refund.save()
     return has_errors
 
