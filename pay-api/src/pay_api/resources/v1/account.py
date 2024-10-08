@@ -55,15 +55,12 @@ def post_account():
     valid_format, errors = schema_utils.validate(request_json, "account_info")
 
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
         response = PaymentAccountService.create(request_json, is_sandbox)
         status = (
             HTTPStatus.ACCEPTED
-            if response.cfs_account_id
-            and response.cfs_account_status == CfsAccountStatus.PENDING.value
+            if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value
             else HTTPStatus.CREATED
         )
     except BusinessException as exception:
@@ -139,9 +136,7 @@ def put_account(account_number: str):
     valid_format, errors = schema_utils.validate(request_json, "account_info")
 
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
         response = PaymentAccountService.update(account_number, request_json)
     except ServiceUnavailableException as exception:
@@ -151,8 +146,7 @@ def put_account(account_number: str):
 
     status = (
         HTTPStatus.ACCEPTED
-        if response.cfs_account_id
-        and response.cfs_account_status == CfsAccountStatus.PENDING.value
+        if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value
         else HTTPStatus.OK
     )
 
@@ -209,9 +203,7 @@ def post_account_fees(account_number: str):
     valid_format, errors = schema_utils.validate(request_json, "account_fees")
 
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
         response, status = (
             PaymentAccountService.save_account_fees(account_number, request_json),
@@ -247,14 +239,10 @@ def put_account_fee_product(account_number: str, product: str):
     valid_format, errors = schema_utils.validate(request_json, "account_fee")
 
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
         response, status = (
-            PaymentAccountService.save_account_fee(
-                account_number, product, request_json
-            ),
+            PaymentAccountService.save_account_fee(account_number, product, request_json),
             HTTPStatus.OK,
         )
     except BusinessException as exception:
@@ -277,26 +265,16 @@ def post_search_purchase_history(account_number: str):
     request_json = request.get_json()
     current_app.logger.debug(request_json)
     # Validate the input request
-    valid_format, errors = schema_utils.validate(
-        request_json, "purchase_history_request"
-    )
+    valid_format, errors = schema_utils.validate(request_json, "purchase_history_request")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     # if viewAll -> searches transactions across all accounts -- needs special role
     view_all = request.args.get("viewAll", None) == "true"
 
     # Check if user is authorized to perform this action
-    required_roles = (
-        [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value]
-        if view_all
-        else [Role.EDITOR.value]
-    )
-    check_auth(
-        business_identifier=None, account_id=account_number, all_of_roles=required_roles
-    )
+    required_roles = [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if view_all else [Role.EDITOR.value]
+    check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles)
 
     account_to_search = None if view_all else account_number
     page: int = int(request.args.get("page", "1"))
@@ -319,17 +297,11 @@ def post_account_purchase_report(account_number: str):
     request_json = request.get_json()
     current_app.logger.debug(request_json)
     # Validate the input request
-    valid_format, errors = schema_utils.validate(
-        request_json, "purchase_history_request"
-    )
+    valid_format, errors = schema_utils.validate(request_json, "purchase_history_request")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    report_name = (
-        f"bcregistry-transactions-{datetime.now(tz=timezone.utc).strftime('%m-%d-%Y')}"
-    )
+    report_name = f"bcregistry-transactions-{datetime.now(tz=timezone.utc).strftime('%m-%d-%Y')}"
 
     if response_content_type == ContentType.PDF.value:
         report_name = f"{report_name}.pdf"
@@ -337,13 +309,9 @@ def post_account_purchase_report(account_number: str):
         report_name = f"{report_name}.csv"
 
     # Check if user is authorized to perform this action
-    check_auth(
-        business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE
-    )
+    check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE)
     try:
-        report = Payment.create_payment_report(
-            account_number, request_json, response_content_type, report_name
-        )
+        report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
         response = Response(report, 201)
         response.headers.set("Content-Disposition", "attachment", filename=report_name)
         response.headers.set("Content-Type", response_content_type)

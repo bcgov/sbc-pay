@@ -61,13 +61,9 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(
-        db.Integer, ForeignKey("invoices.id"), nullable=False, index=True
-    )
+    invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=False, index=True)
     filing_fees = db.Column(db.Numeric(19, 2), nullable=False)
-    fee_schedule_id = db.Column(
-        db.Integer, ForeignKey("fee_schedules.fee_schedule_id"), nullable=False
-    )
+    fee_schedule_id = db.Column(db.Integer, ForeignKey("fee_schedules.fee_schedule_id"), nullable=False)
     quantity = db.Column(db.Integer, nullable=True)
     priority_fees = db.Column(db.Numeric(19, 2), nullable=True)
     future_effective_fees = db.Column(db.Numeric(19, 2), nullable=True)
@@ -75,20 +71,14 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     gst = db.Column(db.Numeric(19, 2), nullable=True)
     pst = db.Column(db.Numeric(19, 2), nullable=True)
     total = db.Column(db.Numeric(19, 2), nullable=False)
-    line_item_status_code = db.Column(
-        db.String(20), ForeignKey("line_item_status_codes.code"), nullable=False
-    )
+    line_item_status_code = db.Column(db.String(20), ForeignKey("line_item_status_codes.code"), nullable=False)
     waived_fees = db.Column(db.Numeric(19, 2), nullable=True)
     waived_by = db.Column(db.String(50), nullable=True, default=None)
     service_fees = db.Column(db.Numeric(19, 2), nullable=True)
 
-    fee_distribution_id = db.Column(
-        db.Integer, ForeignKey("distribution_codes.distribution_code_id"), nullable=True
-    )
+    fee_distribution_id = db.Column(db.Integer, ForeignKey("distribution_codes.distribution_code_id"), nullable=True)
 
-    fee_schedule = relationship(
-        FeeSchedule, foreign_keys=[fee_schedule_id], lazy="joined", innerjoin=True
-    )
+    fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy="joined", innerjoin=True)
 
     @classmethod
     def find_by_invoice_ids(cls, invoice_ids: list):
@@ -102,9 +92,7 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
         )
 
 
-class PaymentLineItemSchema(
-    ma.SQLAlchemyAutoSchema
-):  # pylint: disable=too-many-ancestors
+class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment line item."""
 
     class Meta:  # pylint: disable=too-few-public-methods

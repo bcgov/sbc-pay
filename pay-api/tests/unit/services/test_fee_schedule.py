@@ -44,9 +44,7 @@ def test_fee_schedule_saved_from_new(session):
     fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.save()
 
-    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
-        CORP_TYPE_CODE, FILING_TYPE_CODE, None
-    )
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
 
     assert fee_schedule is not None
 
@@ -61,9 +59,7 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
     fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
     fee_schedule.save()
 
-    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
-        CORP_TYPE_CODE, FILING_TYPE_CODE, None
-    )
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
 
     assert fee_schedule.fee_schedule_id is not None
     assert fee_schedule.fee_start_date == datetime.now(tz=timezone.utc).date()

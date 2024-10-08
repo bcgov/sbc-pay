@@ -48,17 +48,13 @@ class Receipt(BaseModel):
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(
-        db.Integer, ForeignKey("invoices.id"), nullable=False, index=True
-    )
+    invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=False, index=True)
     receipt_number = db.Column(db.String(50), nullable=False)
     receipt_date = db.Column(db.DateTime)
     receipt_amount = db.Column(db.Float)
 
     @classmethod
-    def find_by_invoice_id_and_receipt_number(
-        cls, invoice_id: int, receipt_number: str = None
-    ):
+    def find_by_invoice_id_and_receipt_number(cls, invoice_id: int, receipt_number: str = None):
         """Return a Receipt by invoice id and receipt_number."""
         query = cls.query.filter_by(invoice_id=invoice_id)
         if receipt_number:

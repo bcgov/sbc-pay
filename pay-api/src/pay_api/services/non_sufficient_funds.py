@@ -79,9 +79,7 @@ class NonSufficientFundsService:
         non_sufficient_funds_service.dao.cfs_account = cfs_account
         non_sufficient_funds_dao = non_sufficient_funds_service.dao.save()
 
-        non_sufficient_funds_service = NonSufficientFundsService.populate(
-            non_sufficient_funds_dao
-        )
+        non_sufficient_funds_service = NonSufficientFundsService.populate(non_sufficient_funds_dao)
         current_app.logger.debug(">save_non_sufficient_funds")
         return NonSufficientFundsService.asdict(non_sufficient_funds_service)
 
@@ -89,9 +87,7 @@ class NonSufficientFundsService:
     def exists_for_invoice_number(invoice_number: str) -> bool:
         """Return boolean if a row exists for the invoice number."""
         return (
-            db.session.query(NonSufficientFunds)
-            .filter(NonSufficientFunds.invoice_number == invoice_number)
-            .count()
+            db.session.query(NonSufficientFunds).filter(NonSufficientFunds.invoice_number == invoice_number).count()
         ) > 0
 
     @staticmethod
@@ -105,8 +101,7 @@ class NonSufficientFundsService:
             )
             .join(
                 NonSufficientFunds,
-                NonSufficientFunds.invoice_number
-                == InvoiceReferenceModel.invoice_number,
+                NonSufficientFunds.invoice_number == InvoiceReferenceModel.invoice_number,
             )
             .join(
                 PaymentAccountModel,
@@ -127,8 +122,7 @@ class NonSufficientFundsService:
                 func.max(
                     case(
                         (
-                            PaymentLineItemModel.description
-                            == ReverseOperation.NSF.value,
+                            PaymentLineItemModel.description == ReverseOperation.NSF.value,
                             PaymentLineItemModel.total,
                         ),
                         else_=0,
@@ -141,16 +135,13 @@ class NonSufficientFundsService:
             )
             .join(
                 NonSufficientFunds,
-                NonSufficientFunds.invoice_number
-                == InvoiceReferenceModel.invoice_number,
+                NonSufficientFunds.invoice_number == InvoiceReferenceModel.invoice_number,
             )
             .join(
                 PaymentAccountModel,
                 PaymentAccountModel.id == InvoiceModel.payment_account_id,
             )
-            .join(
-                PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id
-            )
+            .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
             .filter(
                 PaymentAccountModel.auth_account_id == account_id,
                 InvoiceModel.invoice_status_code != InvoiceStatus.PAID.value,
@@ -160,30 +151,19 @@ class NonSufficientFundsService:
         )
 
         totals_query = db.session.query(
-            func.sum(invoice_totals_subquery.c.amount_remaining).label(
-                "total_amount_remaining"
-            ),
+            func.sum(invoice_totals_subquery.c.amount_remaining).label("total_amount_remaining"),
             func.sum(invoice_totals_subquery.c.nsf_amount).label("nsf_amount"),
-            func.sum(
-                invoice_totals_subquery.c.amount_remaining
-                - invoice_totals_subquery.c.nsf_amount
-            ).label("total_amount"),
+            func.sum(invoice_totals_subquery.c.amount_remaining - invoice_totals_subquery.c.nsf_amount).label(
+                "total_amount"
+            ),
         )
 
         statement_ids_query = (
             db.session.query(StatementInvoicesModel.statement_id)
-            .filter(
-                StatementInvoicesModel.invoice_id.in_(
-                    query.with_entities(InvoiceModel.id)
-                )
-            )
+            .filter(StatementInvoicesModel.invoice_id.in_(query.with_entities(InvoiceModel.id)))
             .distinct(StatementInvoicesModel.statement_id)
         )
-        statements = (
-            db.session.query(StatementModel)
-            .filter(StatementModel.id.in_(statement_ids_query))
-            .all()
-        )
+        statements = db.session.query(StatementModel).filter(StatementModel.id.in_(statement_ids_query)).all()
 
         aggregate_totals = totals_query.one()
         results = query.all()
@@ -195,13 +175,9 @@ class NonSufficientFundsService:
     def find_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices."""
         results, total, aggregate_totals, statements = (
-            NonSufficientFundsService.query_all_non_sufficient_funds_invoices(
-                account_id=account_id
-            )
+            NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id)
         )
-        invoice_search_model = [
-            InvoiceSearchModel.from_row(invoice_dao) for invoice_dao, _ in results
-        ]
+        invoice_search_model = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao, _ in results]
         invoices = Converter().unstructure(invoice_search_model)
         invoices = [Converter().remove_nones(invoice_dict) for invoice_dict in invoices]
         statements = StatementDTO.dao_to_dict(statements)
@@ -210,9 +186,7 @@ class NonSufficientFundsService:
             "invoices": invoices,
             "statements": statements,
             "total_amount": float(aggregate_totals.total_amount or 0),
-            "total_amount_remaining": float(
-                aggregate_totals.total_amount_remaining or 0
-            ),
+            "total_amount_remaining": float(aggregate_totals.total_amount_remaining or 0),
             "nsf_amount": float(aggregate_totals.nsf_amount or 0),
         }
 
@@ -223,17 +197,11 @@ class NonSufficientFundsService:
     def create_non_sufficient_funds_statement_pdf(account_id: str, **kwargs):
         """Create Non-Sufficient Funds statement pdf."""
         current_app.logger.debug("<generate_non_sufficient_funds_statement_pdf")
-        invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
-            account_id=account_id
-        )
+        invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
         payment_account = PaymentAccountModel.find_by_auth_account_id(account_id)
-        cfs_account = CfsAccountModel.find_latest_by_payment_method(
-            payment_account.id, PaymentMethod.PAD.value
-        )
-        invoice_reference: InvoiceReferenceModel = (
-            InvoiceReferenceModel.find_by_invoice_id_and_status(
-                invoice["invoices"][0]["id"], InvoiceReferenceStatus.ACTIVE.value
-            )
+        cfs_account = CfsAccountModel.find_latest_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
+        invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+            invoice["invoices"][0]["id"], InvoiceReferenceStatus.ACTIVE.value
         )
         account_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}"
         account = OAuthService.get(
@@ -244,9 +212,7 @@ class NonSufficientFundsService:
         ).json()
         template_vars = {
             "suspendedOn": (
-                datetime.strptime(
-                    account["suspendedOn"], "%Y-%m-%dT%H:%M:%S%z"
-                ).strftime("%B %-d, %Y")
+                datetime.strptime(account["suspendedOn"], "%Y-%m-%dT%H:%M:%S%z").strftime("%B %-d, %Y")
                 if "suspendedOn" in account
                 else None
             ),
@@ -274,8 +240,6 @@ class NonSufficientFundsService:
             ContentType.JSON,
             invoice_pdf_dict,
         )
-        current_app.logger.debug(
-            "<OAuthService responded to generate_non_sufficient_funds_statement_pdf"
-        )
+        current_app.logger.debug("<OAuthService responded to generate_non_sufficient_funds_statement_pdf")
 
         return pdf_response, invoice_pdf_dict.get("reportName")

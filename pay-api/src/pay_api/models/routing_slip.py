@@ -75,9 +75,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     number = db.Column(db.String(), unique=True)
-    payment_account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
     status = db.Column(
         db.String(),
         ForeignKey("routing_slip_status_codes.code"),
@@ -87,13 +85,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
     routing_slip_date = db.Column(db.Date, nullable=False)
-    parent_number = db.Column(
-        db.String(), ForeignKey("routing_slips.number"), nullable=True
-    )
+    parent_number = db.Column(db.String(), ForeignKey("routing_slips.number"), nullable=True)
     refund_amount = db.Column(db.Numeric(), nullable=True, default=0)
-    total_usd = db.Column(
-        db.Numeric(), nullable=True
-    )  # Capture total usd payments if one of payments has USD payment
+    total_usd = db.Column(db.Numeric(), nullable=True)  # Capture total usd payments if one of payments has USD payment
     # It's not possible to update a receipt's amount or number in CAS (PUT/PATCH).
     # Allows to create a new receipt in CAS for the same routing slip number.
     # Earlier versions should be adjusted to zero before increasing the cas_version_suffix.
@@ -163,9 +157,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(payment_account_id=payment_account_id).one_or_none()
 
     @classmethod
-    def find_all_by_payment_account_id(
-        cls, payment_account_id: str
-    ) -> List[RoutingSlip]:
+    def find_all_by_payment_account_id(cls, payment_account_id: str) -> List[RoutingSlip]:
         """Return a routing slip by payment account number."""
         return cls.query.filter_by(payment_account_id=payment_account_id).all()
 
@@ -226,17 +218,12 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             query = query.filter(RoutingSlip.total == total_amount)
 
         if remaining_amount := search_filter.get("remainingAmount", None):
-            query = query.filter(
-                RoutingSlip.remaining_amount
-                == cast(remaining_amount.replace("$", ""), Numeric)
-            )
+            query = query.filter(RoutingSlip.remaining_amount == cast(remaining_amount.replace("$", ""), Numeric))
 
         query = cls._add_date_filter(query, search_filter)
 
         if initiator := search_filter.get("initiator", None):
-            query = query.filter(
-                RoutingSlip.created_name.ilike("%" + initiator + "%")
-            )  # pylint: disable=no-member
+            query = query.filter(RoutingSlip.created_name.ilike("%" + initiator + "%"))  # pylint: disable=no-member
 
         if business_identifier := search_filter.get("businessIdentifier", None):
             query = query.filter(Invoice.business_identifier == business_identifier)
@@ -281,24 +268,17 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             tz_name = current_app.config["LEGISLATIVE_TIMEZONE"]
             tz_local = pytz.timezone(tz_name)
 
-            created_from = created_from.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ).astimezone(tz_local)
-            created_to = created_to.replace(
-                hour=23, minute=59, second=59, microsecond=999999
-            ).astimezone(tz_local)
+            created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
+            created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
 
             # If the dateFilter/target is provided then filter on that column, else filter on routing_slip_date
             target_date = getattr(
                 RoutingSlip,
-                get_str_by_path(search_filter, "dateFilter/target")
-                or "routing_slip_date",
+                get_str_by_path(search_filter, "dateFilter/target") or "routing_slip_date",
             )
 
             query = query.filter(
-                func.timezone(tz_name, func.timezone("UTC", target_date)).between(
-                    created_from, created_to
-                )
+                func.timezone(tz_name, func.timezone("UTC", target_date)).between(created_from, created_to)
             )
         return query
 
@@ -349,9 +329,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return query
 
 
-class RoutingSlipSchema(
-    AuditSchema, BaseSchema
-):  # pylint: disable=too-many-ancestors, too-few-public-methods
+class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors, too-few-public-methods
     """Main schema used to serialize the Routing Slip."""
 
     class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
@@ -365,13 +343,9 @@ class RoutingSlipSchema(
     refund_amount = fields.Float(data_key="refund_amount")
     # pylint: disable=no-member
     payments = ma.Nested(PaymentSchema, many=True, data_key="payments")
-    payment_account = ma.Nested(
-        PaymentAccountSchema, many=False, data_key="payment_account"
-    )
+    payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key="payment_account")
     refunds = ma.Nested(RefundSchema, many=True, data_key="refunds")
-    invoices = ma.Nested(
-        InvoiceSchema, many=True, data_key="invoices", exclude=["_links"]
-    )
+    invoices = ma.Nested(InvoiceSchema, many=True, data_key="invoices", exclude=["_links"])
     status = fields.String(data_key="status")
     parent_number = fields.String(data_key="parent_number")
     total_usd = fields.Float(data_key="total_usd")

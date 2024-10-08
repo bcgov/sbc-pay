@@ -86,24 +86,12 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    payment_system_code = db.Column(
-        db.String(10), ForeignKey("payment_systems.code"), nullable=False
-    )
-    payment_account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
-    payment_method_code = db.Column(
-        db.String(15), ForeignKey("payment_methods.code"), nullable=False
-    )
-    payment_status_code = db.Column(
-        db.String(20), ForeignKey("payment_status_codes.code"), nullable=True
-    )
-    invoice_number = db.Column(
-        db.String(50), nullable=True, index=True, comment="CFS Invoice number"
-    )
-    receipt_number = db.Column(
-        db.String(50), nullable=True, index=True, comment="CFS Receipt number"
-    )
+    payment_system_code = db.Column(db.String(10), ForeignKey("payment_systems.code"), nullable=False)
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
+    payment_method_code = db.Column(db.String(15), ForeignKey("payment_methods.code"), nullable=False)
+    payment_status_code = db.Column(db.String(20), ForeignKey("payment_status_codes.code"), nullable=True)
+    invoice_number = db.Column(db.String(50), nullable=True, index=True, comment="CFS Invoice number")
+    receipt_number = db.Column(db.String(50), nullable=True, index=True, comment="CFS Receipt number")
     cheque_receipt_number = db.Column(
         db.String(50),
         nullable=True,
@@ -115,9 +103,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         default=False,
         comment="Is the payment created as part of FAS by FAS User",
     )
-    paid_amount = db.Column(
-        db.Numeric(), nullable=True, comment="Amount PAID as part of payment"
-    )
+    paid_amount = db.Column(db.Numeric(), nullable=True, comment="Amount PAID as part of payment")
     payment_date = db.Column(db.DateTime, nullable=True, comment="Date of payment")
     created_by = db.Column(
         db.String(50),
@@ -127,14 +113,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     cons_inv_number = db.Column(db.String(50), nullable=True, index=True)
     invoice_amount = db.Column(db.Numeric(), nullable=True)
-    paid_usd_amount = db.Column(
-        db.Numeric(), nullable=True, comment="Amount PAID as part of payment in USD"
-    )
+    paid_usd_amount = db.Column(db.Numeric(), nullable=True, comment="Amount PAID as part of payment in USD")
     # Capture payment made in USD
 
-    payment_system = relationship(
-        PaymentSystem, foreign_keys=[payment_system_code], lazy="select", innerjoin=True
-    )
+    payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy="select", innerjoin=True)
     payment_status = relationship(
         PaymentStatusCode,
         foreign_keys=[payment_status_code],
@@ -154,9 +136,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.one_or_none()
 
     @classmethod
-    def find_payment_by_invoice_number_and_status(
-        cls, inv_number: str, payment_status: str
-    ):
+    def find_payment_by_invoice_number_and_status(cls, inv_number: str, payment_status: str):
         """Return a Payment by invoice_number and status."""
         query = (
             db.session.query(Payment)
@@ -168,11 +148,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def find_payment_by_receipt_number(cls, receipt_number: str):
         """Return a Payment by receipt_number."""
-        return (
-            db.session.query(Payment)
-            .filter(Payment.receipt_number == receipt_number)
-            .one_or_none()
-        )
+        return db.session.query(Payment).filter(Payment.receipt_number == receipt_number).one_or_none()
 
     @classmethod
     def find_payment_for_invoice(cls, invoice_id: int):
@@ -208,9 +184,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         )
 
     @classmethod
-    def search_account_payments(
-        cls, auth_account_id: str, payment_status: str, page: int, limit: int
-    ):
+    def search_account_payments(cls, auth_account_id: str, payment_status: str, page: int, limit: int):
         """Search payment records created for the account."""
         query = (
             db.session.query(Payment, Invoice)
@@ -237,8 +211,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 # Exclude any payments which failed first and paid later.
                 query = query.filter(
                     or_(
-                        InvoiceReference.status_code
-                        == InvoiceReferenceStatus.ACTIVE.value,
+                        InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value,
                         Payment.cons_inv_number.in_(consolidated_inv_subquery.select()),
                     )
                 )
@@ -354,22 +327,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if not return_all:
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
-            sub_query = cls.generate_subquery(
-                auth_account_id, search_filter, limit, page
-            )
-            result = (
-                query.order_by(Invoice.id.desc())
-                .filter(Invoice.id.in_(sub_query.subquery().select()))
-                .all()
-            )
+            sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
+            result = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query.subquery().select())).all()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
         elif max_no_records > 0:
             # If maximum number of records is provided, set the page with that number
-            sub_query = cls.generate_subquery(
-                auth_account_id, search_filter, max_no_records, page=None
-            )
+            sub_query = cls.generate_subquery(auth_account_id, search_filter, max_no_records, page=None)
             result, count = (
                 query.filter(Invoice.id.in_(sub_query.subquery().select())).all(),
                 sub_query.count(),
@@ -384,9 +349,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_invoices_and_payment_accounts_for_statements(cls, search_filter: Dict):
         """Slimmed down version for statements."""
-        auth_account_ids = select(
-            func.unnest(cast(search_filter.get("authAccountIds", []), ARRAY(TEXT)))
-        )
+        auth_account_ids = select(func.unnest(cast(search_filter.get("authAccountIds", []), ARRAY(TEXT))))
         query = (
             db.session.query(Invoice)
             .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
@@ -421,19 +384,13 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     def get_count(cls, auth_account_id: str, search_filter: Dict):
         """Slimmed downed version for count (less joins)."""
         # We need to exclude the outer joins for performance here, they get re-added in filter.
-        query = db.session.query(Invoice).outerjoin(
-            PaymentAccount, Invoice.payment_account_id == PaymentAccount.id
-        )
+        query = db.session.query(Invoice).outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
-        count = (
-            query.group_by(Invoice.id).with_entities(func.count()).count()
-        )  # pylint:disable=not-callable
+        count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
 
     @classmethod
-    def filter(
-        cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False
-    ):
+    def filter(cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False):
         """For filtering queries."""
         if auth_account_id:
             query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
@@ -443,40 +400,24 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(Invoice.invoice_status_code == status_code)
         if search_filter.get("status", None):
             # depreciating (replacing with statusCode)
-            query = query.filter(
-                Invoice.invoice_status_code == search_filter.get("status")
-            )
+            query = query.filter(Invoice.invoice_status_code == search_filter.get("status"))
         if search_filter.get("folioNumber", None):
-            query = query.filter(
-                Invoice.folio_number == search_filter.get("folioNumber")
-            )
+            query = query.filter(Invoice.folio_number == search_filter.get("folioNumber"))
         if business_identifier := search_filter.get("businessIdentifier", None):
-            query = query.filter(
-                Invoice.business_identifier.ilike(f"%{business_identifier}%")
-            )
-        if created_by := search_filter.get(
-            "createdBy", None
-        ):  # pylint: disable=no-member
+            query = query.filter(Invoice.business_identifier.ilike(f"%{business_identifier}%"))
+        if created_by := search_filter.get("createdBy", None):  # pylint: disable=no-member
             # depreciating (replacing with createdName)
-            query = query.filter(
-                Invoice.created_name.ilike(f"%{created_by}%")
-            )  # pylint: disable=no-member
+            query = query.filter(Invoice.created_name.ilike(f"%{created_by}%"))  # pylint: disable=no-member
         if created_name := search_filter.get("createdName", None):
-            query = query.filter(
-                Invoice.created_name.ilike(f"%{created_name}%")
-            )  # pylint: disable=no-member
+            query = query.filter(Invoice.created_name.ilike(f"%{created_name}%"))  # pylint: disable=no-member
         if invoice_id := search_filter.get("id", None):
             query = query.filter(cast(Invoice.id, String).like(f"%{invoice_id}%"))
 
         if invoice_number := search_filter.get("invoiceNumber", None):
             # could have multiple invoice reference rows, but is handled in sub_query below (group by)
             if add_outer_joins:
-                query = query.outerjoin(
-                    InvoiceReference, InvoiceReference.invoice_id == Invoice.id
-                )
-            query = query.filter(
-                InvoiceReference.invoice_number.ilike(f"%{invoice_number}%")
-            )
+                query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+            query = query.filter(InvoiceReference.invoice_number.ilike(f"%{invoice_number}%"))
 
         query = cls.filter_corp_type(query, search_filter)
         query = cls.filter_payment(query, search_filter)
@@ -488,13 +429,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     def filter_corp_type(cls, query, search_filter: dict):
         """Filter for corp type."""
         if product := search_filter.get("userProductCode", None):
-            query = query.join(
-                CorpType, CorpType.code == Invoice.corp_type_code
-            ).filter(CorpType.product == product)
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code).filter(CorpType.product == product)
         if product := search_filter.get("product", None):
-            query = query.join(
-                CorpType, CorpType.code == Invoice.corp_type_code
-            ).filter(CorpType.product == product)
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code).filter(CorpType.product == product)
         return query
 
     @classmethod
@@ -517,41 +454,27 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         created_from: datetime = None
         created_to: datetime = None
         if get_str_by_path(search_filter, "dateFilter/startDate"):
-            created_from = datetime.strptime(
-                get_str_by_path(search_filter, "dateFilter/startDate"), DT_SHORT_FORMAT
-            )
+            created_from = datetime.strptime(get_str_by_path(search_filter, "dateFilter/startDate"), DT_SHORT_FORMAT)
         if get_str_by_path(search_filter, "dateFilter/endDate"):
-            created_to = datetime.strptime(
-                get_str_by_path(search_filter, "dateFilter/endDate"), DT_SHORT_FORMAT
-            )
+            created_to = datetime.strptime(get_str_by_path(search_filter, "dateFilter/endDate"), DT_SHORT_FORMAT)
         if get_str_by_path(search_filter, "weekFilter/index"):
             created_from, created_to = get_week_start_and_end_date(
                 index=int(get_str_by_path(search_filter, "weekFilter/index"))
             )
-        if get_str_by_path(search_filter, "monthFilter/month") and get_str_by_path(
-            search_filter, "monthFilter/year"
-        ):
+        if get_str_by_path(search_filter, "monthFilter/month") and get_str_by_path(search_filter, "monthFilter/year"):
             month = int(get_str_by_path(search_filter, "monthFilter/month"))
             year = int(get_str_by_path(search_filter, "monthFilter/year"))
-            created_from, created_to = get_first_and_last_dates_of_month(
-                month=month, year=year
-            )
+            created_from, created_to = get_first_and_last_dates_of_month(month=month, year=year)
 
         if created_from and created_to:
             # Truncate time for from date and add max time for to date
             tz_name = current_app.config["LEGISLATIVE_TIMEZONE"]
             tz_local = pytz.timezone(tz_name)
 
-            created_from = created_from.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ).astimezone(tz_local)
-            created_to = created_to.replace(
-                hour=23, minute=59, second=59, microsecond=999999
-            ).astimezone(tz_local)
+            created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
+            created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
             query = query.filter(
-                func.timezone(
-                    tz_name, func.timezone("UTC", Invoice.created_on)
-                ).between(created_from, created_to)
+                func.timezone(tz_name, func.timezone("UTC", Invoice.created_on)).between(created_from, created_to)
             )
         return query
 
@@ -560,18 +483,12 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Filter by details."""
         if line_item := search_filter.get("lineItems", None):
             if is_count:
-                query = query.outerjoin(
-                    PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id
-                )
+                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.filter(PaymentLineItem.description.ilike(f"%{line_item}%"))
         if details := search_filter.get("details", None):
             if is_count:
-                query = query.outerjoin(
-                    PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id
-                )
-            query = query.join(
-                func.jsonb_array_elements(Invoice.details), literal(True)
-            )
+                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
             query = query.filter(
                 or_(
                     text("value ->> 'value' ilike :details"),
@@ -580,12 +497,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             ).params(details=f"%{details}%")
         if line_item_or_details := search_filter.get("lineItemsAndDetails", None):
             if is_count:
-                query = query.outerjoin(
-                    PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id
-                )
-            query = query.join(
-                func.jsonb_array_elements(Invoice.details), literal(True)
-            )
+                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
             query = query.filter(
                 or_(
                     PaymentLineItem.description.ilike(f"%{line_item_or_details}%"),
@@ -599,9 +512,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def generate_subquery(cls, auth_account_id, search_filter, limit, page):
         """Generate subquery for invoices, used for pagination."""
-        sub_query = db.session.query(Invoice).outerjoin(
-            PaymentAccount, Invoice.payment_account_id == PaymentAccount.id
-        )
+        sub_query = db.session.query(Invoice).outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         sub_query = (
             cls.filter(sub_query, auth_account_id, search_filter, add_outer_joins=True)
             .with_entities(Invoice.id)

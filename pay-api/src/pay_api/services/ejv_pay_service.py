@@ -64,23 +64,15 @@ class EjvPayService(PaymentSystemService, OAuthService):
         # If the account is not billable, then create records,
         if not payment_account.billable:
             current_app.logger.debug(
-                f"Non billable invoice {invoice.id}, "
-                f"Auth Account : {payment_account.auth_account_id}"
+                f"Non billable invoice {invoice.id}, " f"Auth Account : {payment_account.auth_account_id}"
             )
-            invoice_reference = InvoiceReference.create(
-                invoice.id, generate_transaction_number(invoice.id), None
-            )
+            invoice_reference = InvoiceReference.create(invoice.id, generate_transaction_number(invoice.id), None)
         # else Do nothing here as the invoice references are created later.
         return invoice_reference
 
-    def complete_post_invoice(
-        self, invoice: Invoice, invoice_reference: InvoiceReference
-    ) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
-        if (
-            invoice_reference
-            and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
-        ):
+        if invoice_reference and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value:
             # Create a payment record
             self.complete_payment(invoice, invoice_reference)
 
@@ -102,9 +94,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
             2. If invoice status is PAID
             2.1 Return REFUND_REQUESTED
         """
-        current_app.logger.info(
-            f"Received JV refund for invoice {invoice.id}, {invoice.invoice_status_code}"
-        )
+        current_app.logger.info(f"Received JV refund for invoice {invoice.id}, {invoice.invoice_status_code}")
         if not payment_account.billable:
             return InvoiceStatus.REFUNDED.value
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value:

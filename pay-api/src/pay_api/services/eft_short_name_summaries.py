@@ -44,9 +44,7 @@ class EFTShortnameSummaries:
         current_app.logger.debug("<search")
         search_count = cls.get_search_count()
         search_query = cls.get_search_query(search_criteria)
-        pagination = search_query.paginate(
-            per_page=search_criteria.limit, page=search_criteria.page
-        )
+        pagination = search_query.paginate(per_page=search_criteria.limit, page=search_criteria.page)
 
         summary_list = unstructure_schema_items(EFTSummarySchema, pagination.items)
 
@@ -107,11 +105,7 @@ class EFTShortnameSummaries:
         """Query for EFT shortname refund."""
         return (
             db.session.query(EFTRefundModel.short_name_id, EFTRefundModel.status)
-            .filter(
-                EFTRefundModel.status.in_(
-                    [EFTShortnameRefundStatus.PENDING_APPROVAL.value]
-                )
-            )
+            .filter(EFTRefundModel.status.in_([EFTShortnameRefundStatus.PENDING_APPROVAL.value]))
             .distinct(EFTRefundModel.short_name_id)
         )
 
@@ -120,9 +114,7 @@ class EFTShortnameSummaries:
         """Query for EFT remaining credit amount."""
         return db.session.query(
             EFTCreditModel.short_name_id,
-            (func.coalesce(func.sum(EFTCreditModel.remaining_amount), 0)).label(
-                "total"
-            ),
+            (func.coalesce(func.sum(EFTCreditModel.remaining_amount), 0)).label("total"),
         ).group_by(EFTCreditModel.short_name_id)
 
     @staticmethod
@@ -131,9 +123,7 @@ class EFTShortnameSummaries:
         current_app.logger.debug("<get_search_count")
 
         count_query = (
-            db.session.query(EFTShortnameModel.id)
-            .group_by(EFTShortnameModel.id)
-            .with_entities(EFTShortnameModel.id)
+            db.session.query(EFTShortnameModel.id).group_by(EFTShortnameModel.id).with_entities(EFTShortnameModel.id)
         )
 
         current_app.logger.debug(">get_search_count")
@@ -152,15 +142,9 @@ class EFTShortnameSummaries:
                 EFTShortnameModel.id,
                 EFTShortnameModel.short_name,
                 EFTShortnameModel.type,
-                func.coalesce(linked_account_subquery.c.count, 0).label(
-                    "linked_accounts_count"
-                ),
-                func.coalesce(credit_remaining_subquery.c.total, 0).label(
-                    "credits_remaining"
-                ),
-                last_payment_subquery.c.deposit_date.label(
-                    "last_payment_received_date"
-                ),
+                func.coalesce(linked_account_subquery.c.count, 0).label("linked_accounts_count"),
+                func.coalesce(credit_remaining_subquery.c.total, 0).label("credits_remaining"),
+                last_payment_subquery.c.deposit_date.label("last_payment_received_date"),
                 refund_shortname_subquery.c.status.label("refund_status"),
             )
             .outerjoin(
@@ -184,20 +168,14 @@ class EFTShortnameSummaries:
         )
 
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
-        query = query.filter_conditionally(
-            search_criteria.short_name_type, EFTShortnameModel.type
-        )
-        query = query.filter_conditionally(
-            search_criteria.short_name, EFTShortnameModel.short_name, is_like=True
-        )
+        query = query.filter_conditionally(search_criteria.short_name_type, EFTShortnameModel.type)
+        query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
         query = query.filter_conditional_date_range(
             start_date=search_criteria.deposit_start_date,
             end_date=search_criteria.deposit_end_date,
             model_attribute=last_payment_subquery.c.deposit_date,
         )
-        query = query.filter_conditionally(
-            search_criteria.credit_remaining, credit_remaining_subquery.c.total
-        )
+        query = query.filter_conditionally(search_criteria.credit_remaining, credit_remaining_subquery.c.total)
 
         if search_criteria.linked_accounts_count == 0:
             query = query.filter(
@@ -207,9 +185,7 @@ class EFTShortnameSummaries:
                 )
             )
         else:
-            query = query.filter_conditionally(
-                search_criteria.linked_accounts_count, linked_account_subquery.c.count
-            )
+            query = query.filter_conditionally(search_criteria.linked_accounts_count, linked_account_subquery.c.count)
 
         query = query.order_by(last_payment_subquery.c.deposit_date.asc())
         return query

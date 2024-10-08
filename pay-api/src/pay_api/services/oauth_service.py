@@ -31,9 +31,7 @@ from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.json_util import DecimalEncoder
 
 
-RETRY_ADAPTER = HTTPAdapter(
-    max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404])
-)
+RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404]))
 
 
 class OAuthService:
@@ -117,9 +115,7 @@ class OAuthService:
             ):
                 # Remove authentication from response
                 response_text = response.text if response is not None else ""
-                response_text = re.sub(
-                    r'"access_token"\s*:\s*"[^"]*",?\s*', "", response_text
-                )
+                response_text = re.sub(r'"access_token"\s*:\s*"[^"]*",?\s*', "", response_text)
                 response_text = re.sub(r",\s*}", "}", response_text)
                 current_app.logger.info(f"response : {response_text}")
 

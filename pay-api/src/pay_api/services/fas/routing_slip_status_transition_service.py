@@ -63,14 +63,10 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
 
     @classmethod
     @user_context
-    def get_possible_transitions(
-        cls, rs_model: RoutingSlipModel, **kwargs
-    ) -> List[RoutingSlipStatus]:
+    def get_possible_transitions(cls, rs_model: RoutingSlipModel, **kwargs) -> List[RoutingSlipStatus]:
         """Return all the status transition available."""
-        transition_list: List[RoutingSlipStatus] = (
-            RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(
-                rs_model.status, []
-            )
+        transition_list: List[RoutingSlipStatus] = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(
+            rs_model.status, []
         )
 
         if RoutingSlipStatus.REFUND_AUTHORIZED.value in transition_list:
@@ -87,13 +83,9 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
         return transition_list
 
     @classmethod
-    def validate_possible_transitions(
-        cls, rs_model: RoutingSlipModel, future_status: RoutingSlipStatus
-    ):
+    def validate_possible_transitions(cls, rs_model: RoutingSlipModel, future_status: RoutingSlipStatus):
         """Validate if its a legit status transition."""
-        allowed_statuses = RoutingSlipStatusTransitionService.get_possible_transitions(
-            rs_model
-        )
+        allowed_statuses = RoutingSlipStatusTransitionService.get_possible_transitions(rs_model)
         if future_status not in allowed_statuses:
             raise BusinessException(Error.FAS_INVALID_RS_STATUS_CHANGE)
 

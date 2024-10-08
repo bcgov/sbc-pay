@@ -64,27 +64,18 @@ class InternalPayService(PaymentSystemService, OAuthService):
         is_zero_dollar_invoice = get_quantized(invoice.total) == 0
         invoice_reference: InvoiceReference = None
         if routing_slip_number := invoice.routing_slip:
-            current_app.logger.info(
-                f"Routing slip number {routing_slip_number}, for invoice {invoice.id}"
-            )
+            current_app.logger.info(f"Routing slip number {routing_slip_number}, for invoice {invoice.id}")
             routing_slip = RoutingSlipModel.find_by_number(routing_slip_number)
             InternalPayService._validate_routing_slip(routing_slip, invoice)
         if not is_zero_dollar_invoice and routing_slip is not None:
             # creating invoice in cfs is done in job
-            current_app.logger.info(
-                f"FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}"
-            )
+            current_app.logger.info(f"FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}")
             routing_slip.remaining_amount -= get_quantized(invoice.total)
-            if (
-                routing_slip.status == RoutingSlipStatus.ACTIVE.value
-                and routing_slip.remaining_amount < 0.01
-            ):
+            if routing_slip.status == RoutingSlipStatus.ACTIVE.value and routing_slip.remaining_amount < 0.01:
                 routing_slip.status = RoutingSlipStatus.COMPLETE.value
             routing_slip.flush()
         else:
-            invoice_reference = InvoiceReference.create(
-                invoice.id, generate_transaction_number(invoice.id), None
-            )
+            invoice_reference = InvoiceReference.create(invoice.id, generate_transaction_number(invoice.id), None)
             invoice.invoice_status_code = InvoiceStatus.CREATED.value
             invoice.save()
 
@@ -109,9 +100,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return CC as the method code."""
         return PaymentMethod.INTERNAL.value
 
-    def complete_post_invoice(
-        self, invoice: Invoice, invoice_reference: InvoiceReference
-    ) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         if invoice.invoice_status_code != InvoiceStatus.APPROVED.value:
             self.complete_payment(invoice, invoice_reference)
@@ -142,9 +131,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
             RoutingSlipStatus.COMPLETE.value,
         ]:
             raise BusinessException(Error.ROUTING_SLIP_REFUND)
-        current_app.logger.info(
-            f"Processing refund for {invoice.id}, on routing slip {routing_slip.number}"
-        )
+        current_app.logger.info(f"Processing refund for {invoice.id}, on routing slip {routing_slip.number}")
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
         if payment:
             payment.payment_status_code = PaymentStatus.REFUNDED.value
@@ -168,10 +155,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
             return
 
         # check rs is nsf
-        if (
-            routing_slip.status == RoutingSlipStatus.NSF.value
-            and routing_slip.remaining_amount <= 0
-        ):
+        if routing_slip.status == RoutingSlipStatus.NSF.value and routing_slip.remaining_amount <= 0:
             raise BusinessException(Error.RS_INSUFFICIENT_FUNDS)
 
         # check rs is active
@@ -185,9 +169,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
         if routing_slip.parent:
             detail = f"This Routing slip is linked, enter the parent Routing slip: {routing_slip.parent.number}"
-            raise BusinessException(
-                InternalPayService._create_error_object("LINKED_ROUTING_SLIP", detail)
-            )
+            raise BusinessException(InternalPayService._create_error_object("LINKED_ROUTING_SLIP", detail))
         if routing_slip.remaining_amount < get_quantized(invoice.total):
             detail = (
                 f"There is not enough balance in this Routing slip. "
@@ -195,9 +177,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
             )
 
             raise BusinessException(
-                InternalPayService._create_error_object(
-                    "INSUFFICIENT_BALANCE_IN_ROUTING_SLIP", detail
-                )
+                InternalPayService._create_error_object("INSUFFICIENT_BALANCE_IN_ROUTING_SLIP", detail)
             )
 
     @staticmethod

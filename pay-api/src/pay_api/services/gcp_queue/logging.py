@@ -53,9 +53,7 @@ def structured_log(request: LocalProxy, severity: str = "NOTICE", message: str =
 
         if trace_header and project:
             trace = trace_header.split("/")
-            global_log_fields["logging.googleapis.com/trace"] = (
-                f"projects/{project}/traces/{trace[0]}"
-            )
+            global_log_fields["logging.googleapis.com/trace"] = f"projects/{project}/traces/{trace[0]}"
 
     # Complete a structured log entry.
     entry = {

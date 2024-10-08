@@ -32,15 +32,11 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         """Return a User Context object."""
         token_info: Dict = _get_token_info()
-        self._user_name: str = token_info.get("username", None) or token_info.get(
-            "preferred_username", None
-        )
+        self._user_name: str = token_info.get("username", None) or token_info.get("preferred_username", None)
         self._first_name: str = token_info.get("firstname", None)
         self._bearer_token: str = _get_token()
         self._roles: list = (
-            token_info.get("realm_access", None).get("roles", None)
-            if "realm_access" in token_info
-            else None
+            token_info.get("realm_access", None).get("roles", None) if "realm_access" in token_info else None
         )
         self._sub: str = token_info.get("sub", None)
         self._login_source: str = token_info.get("loginSource", None)
@@ -60,9 +56,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         user_name = self.user_name
         if user_name:
             login_source = self._login_source.upper()
-            user_name = user_name.replace(f"@{login_source}", "").replace(
-                f"{login_source}\\", ""
-            )
+            user_name = user_name.replace(f"@{login_source}", "").replace(f"{login_source}\\", "")
         return user_name
 
     @property
@@ -114,11 +108,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
 
     def can_view_bank_account_number(self) -> bool:
         """Return True if the user is staff user."""
-        return (
-            any(x in ["admin", "view_bank_account_number"] for x in self.permission)
-            if self.permission
-            else False
-        )
+        return any(x in ["admin", "view_bank_account_number"] for x in self.permission) if self.permission else False
 
     def is_system(self) -> bool:
         """Return True if the user is system user."""
@@ -155,23 +145,13 @@ def _get_permission() -> Dict:
 
 
 def _get_token() -> str:
-    token: str = (
-        request.headers["Authorization"]
-        if request and "Authorization" in request.headers
-        else None
-    )
+    token: str = request.headers["Authorization"] if request and "Authorization" in request.headers else None
     return token.replace("Bearer ", "") if token else None
 
 
 def get_auth_account_id() -> str:
     """Return account id from the header."""
-    account_id = (_get_token_info().get("Account-Id", None)) or (
-        str(g.account_id) if g and "account_id" in g else None
-    )
+    account_id = (_get_token_info().get("Account-Id", None)) or (str(g.account_id) if g and "account_id" in g else None)
     if not account_id:
-        account_id = (
-            request.headers["Account-Id"]
-            if request and "Account-Id" in request.headers
-            else None
-        )
+        account_id = request.headers["Account-Id"] if request and "Account-Id" in request.headers else None
     return account_id

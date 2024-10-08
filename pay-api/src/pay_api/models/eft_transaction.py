@@ -70,9 +70,7 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
         default=lambda: datetime.now(tz=timezone.utc),
     )
     error_messages = db.Column(ARRAY(String, dimensions=1), nullable=True)
-    file_id = db.Column(
-        db.Integer, ForeignKey("eft_files.id"), nullable=False, index=True
-    )
+    file_id = db.Column(db.Integer, ForeignKey("eft_files.id"), nullable=False, index=True)
     last_updated_on = db.Column(
         "last_updated_on",
         db.DateTime,
@@ -84,15 +82,9 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
     jv_type = db.Column("jv_type", db.String(1), nullable=True)
     jv_number = db.Column("jv_number", db.String(10), nullable=True)
     sequence_number = db.Column("sequence_number", db.String(3), nullable=True)
-    short_name_id = db.Column(
-        db.Integer, ForeignKey("eft_short_names.id"), nullable=True
-    )
-    status_code = db.Column(
-        db.String, ForeignKey("eft_process_status_codes.code"), nullable=False
-    )
-    deposit_amount_cents = db.Column(
-        "deposit_amount_cents", db.BigInteger, nullable=True
-    )
+    short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=True)
+    status_code = db.Column(db.String, ForeignKey("eft_process_status_codes.code"), nullable=False)
+    deposit_amount_cents = db.Column("deposit_amount_cents", db.BigInteger, nullable=True)
     deposit_date = db.Column("deposit_date", db.DateTime, nullable=True)
     transaction_date = db.Column("transaction_date", db.DateTime, nullable=True)
 

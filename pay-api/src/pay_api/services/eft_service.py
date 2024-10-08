@@ -85,9 +85,7 @@ class EftService(DepositService):
     ) -> CfsAccountModel:
         """Create an account for the EFT transactions."""
         # Create CFS Account model instance, set the status as PENDING
-        current_app.logger.info(
-            f"Creating EFT account details in PENDING status for {identifier}"
-        )
+        current_app.logger.info(f"Creating EFT account details in PENDING status for {identifier}")
         cfs_account = CfsAccountModel()
         cfs_account.status = CfsAccountStatus.PENDING.value
         cfs_account.payment_method = PaymentMethod.EFT.value
@@ -103,10 +101,7 @@ class EftService(DepositService):
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
         if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-            if (
-                corp_type.has_partner_disbursements
-                and invoice.total - invoice.service_fees > 0
-            ):
+            if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:
                 PartnerDisbursementsModel(
                     amount=invoice.total - invoice.service_fees,
                     is_reversal=False,
@@ -116,9 +111,7 @@ class EftService(DepositService):
                     target_type=EJVLinkType.INVOICE.value,
                 ).flush()
 
-    def complete_post_invoice(
-        self, invoice: Invoice, invoice_reference: InvoiceReference
-    ) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
@@ -159,9 +152,7 @@ class EftService(DepositService):
         # 1. Possible to have no CILs and no invoice_reference, nothing to reverse.
         if (
             invoice.invoice_status_code == InvoiceStatus.APPROVED.value
-            and InvoiceReferenceModel.find_by_invoice_id_and_status(
-                invoice.id, InvoiceReferenceStatus.ACTIVE.value
-            )
+            and InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             is None
             and not cils
         ):
@@ -181,11 +172,7 @@ class EftService(DepositService):
         invoice: InvoiceModel, invoice_number: str, reference_number: str
     ) -> InvoiceReferenceModel:
         """Create an invoice reference record."""
-        if not (
-            invoice_reference := InvoiceReferenceModel.find_any_active_reference_by_invoice_number(
-                invoice_number
-            )
-        ):
+        if not (invoice_reference := InvoiceReferenceModel.find_any_active_reference_by_invoice_number(invoice_number)):
             invoice_reference = InvoiceReferenceModel()
 
         invoice_reference.invoice_id = invoice.id
@@ -210,30 +197,20 @@ class EftService(DepositService):
     def apply_payment_action(short_name_id: int, auth_account_id: str):
         """Apply EFT payments to outstanding payments."""
         current_app.logger.debug("<apply_payment_action")
-        if (
-            auth_account_id is None
-            or PaymentAccountModel.find_by_auth_account_id(auth_account_id) is None
-        ):
+        if auth_account_id is None or PaymentAccountModel.find_by_auth_account_id(auth_account_id) is None:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_ACCOUNT_ID_REQUIRED)
 
         EftService.process_owing_statements(short_name_id, auth_account_id)
         current_app.logger.debug(">apply_payment_action")
 
     @staticmethod
-    def cancel_payment_action(
-        short_name_id: int, auth_account_id: str, invoice_id: int = None
-    ):
+    def cancel_payment_action(short_name_id: int, auth_account_id: str, invoice_id: int = None):
         """Cancel EFT pending payments."""
         current_app.logger.debug("<cancel_payment_action")
         if any(
             [
                 auth_account_id is None,
-                (
-                    payment_account := PaymentAccountModel.find_by_auth_account_id(
-                        auth_account_id
-                    )
-                )
-                is None,
+                (payment_account := PaymentAccountModel.find_by_auth_account_id(auth_account_id)) is None,
             ]
         ):
             raise BusinessException(Error.EFT_PAYMENT_ACTION_ACCOUNT_ID_REQUIRED)
@@ -246,9 +223,7 @@ class EftService(DepositService):
         )
         link_group_ids = set()
         for credit_link in credit_links:
-            eft_credit = EFTRefundService.return_eft_credit(
-                credit_link, EFTCreditInvoiceStatus.CANCELLED.value
-            )
+            eft_credit = EFTRefundService.return_eft_credit(credit_link, EFTCreditInvoiceStatus.CANCELLED.value)
             if credit_link.link_group_id:
                 link_group_ids.add(credit_link.link_group_id)
             db.session.add(eft_credit)
@@ -270,12 +245,8 @@ class EftService(DepositService):
         if statement_id is None:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_STATEMENT_ID_REQUIRED)
 
-        credit_invoice_links = EftService.get_statement_credit_invoice_links(
-            short_name_id, statement_id
-        )
-        EftService._validate_reversal_credit_invoice_links(
-            statement_id, credit_invoice_links
-        )
+        credit_invoice_links = EftService.get_statement_credit_invoice_links(short_name_id, statement_id)
+        EftService._validate_reversal_credit_invoice_links(statement_id, credit_invoice_links)
 
         alt_flow_invoice_statuses = [
             InvoiceStatus.REFUND_REQUESTED.value,
@@ -297,9 +268,7 @@ class EftService(DepositService):
                     f"EFT Invoice Payment could not be reversed for invoice "
                     f"- {invoice.id} in status {invoice.invoice_status_code}."
                 )
-                raise BusinessException(
-                    Error.EFT_PAYMENT_INVOICE_REVERSE_UNEXPECTED_STATUS
-                )
+                raise BusinessException(Error.EFT_PAYMENT_INVOICE_REVERSE_UNEXPECTED_STATUS)
 
             eft_credit = EFTRefundService.return_eft_credit(current_link)
             eft_credit.flush()
@@ -359,11 +328,7 @@ class EftService(DepositService):
                 EFTCreditInvoiceLinkModel.invoice_id == InvoiceModel.id,
             )
             .filter(InvoiceModel.payment_account_id == PaymentAccountModel.id)
-            .filter(
-                EFTCreditInvoiceLinkModel.status_code.in_(
-                    [EFTCreditInvoiceStatus.PENDING.value]
-                )
-            )
+            .filter(EFTCreditInvoiceLinkModel.status_code.in_([EFTCreditInvoiceStatus.PENDING.value]))
             .correlate(PaymentAccountModel)
             .scalar_subquery()
         )
@@ -387,20 +352,14 @@ class EftService(DepositService):
             .filter(EFTCreditModel.short_name_id == short_name_id)
             .filter(EFTCreditInvoiceLinkModel.status_code.in_(statuses))
         )
-        credit_links_query = credit_links_query.filter_conditionally(
-            invoice_id, InvoiceModel.id
-        )
+        credit_links_query = credit_links_query.filter_conditionally(invoice_id, InvoiceModel.id)
         return credit_links_query.all()
 
     @staticmethod
     @user_context
-    def _send_reversed_payment_notification(
-        statement: StatementModel, reversed_amount, **kwargs
-    ):
+    def _send_reversed_payment_notification(statement: StatementModel, reversed_amount, **kwargs):
         payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
-        summary_dict: dict = StatementService.get_summary(
-            payment_account.auth_account_id
-        )
+        summary_dict: dict = StatementService.get_summary(payment_account.auth_account_id)
 
         due_date = StatementService.calculate_due_date(statement.to_date)
         outstanding_balance = summary_dict["total_due"] + reversed_amount
@@ -415,17 +374,11 @@ class EftService(DepositService):
         }
 
         org_admins_response = get_account_admin_users(payment_account.auth_account_id)
-        admins = (
-            org_admins_response.get("members")
-            if org_admins_response.get("members", None)
-            else []
-        )
+        admins = org_admins_response.get("members") if org_admins_response.get("members", None) else []
         recipients = [
             admin["user"]["contacts"][0]["email"]
             for admin in admins
-            if "user" in admin
-            and "contacts" in admin["user"]
-            and admin["user"]["contacts"]
+            if "user" in admin and "contacts" in admin["user"] and admin["user"]["contacts"]
         ]
 
         send_email(
@@ -448,11 +401,7 @@ class EftService(DepositService):
 
         # We are reversing all invoices associated to a statement, if any links are in transition state or already
         # refunded we should not allow a statement reversal
-        unprocessable_links = [
-            link
-            for link in credit_invoice_links
-            if link.status_code in invalid_link_statuses
-        ]
+        unprocessable_links = [link for link in credit_invoice_links if link.status_code in invalid_link_statuses]
         if unprocessable_links:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_CREDIT_LINK_STATUS_INVALID)
         # Validate when statement paid date can't be older than 60 days
@@ -470,18 +419,12 @@ class EftService(DepositService):
         if min_payment_date is None:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_UNPAID_STATEMENT)
 
-        date_difference = datetime.now(tz=timezone.utc) - min_payment_date.replace(
-            tzinfo=timezone.utc
-        )
+        date_difference = datetime.now(tz=timezone.utc) - min_payment_date.replace(tzinfo=timezone.utc)
         if date_difference.days > 60:
-            raise BusinessException(
-                Error.EFT_PAYMENT_ACTION_REVERSAL_EXCEEDS_SIXTY_DAYS
-            )
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_REVERSAL_EXCEEDS_SIXTY_DAYS)
 
     @staticmethod
-    def get_statement_credit_invoice_links(
-        shortname_id, statement_id
-    ) -> List[EFTCreditInvoiceLinkModel]:
+    def get_statement_credit_invoice_links(shortname_id, statement_id) -> List[EFTCreditInvoiceLinkModel]:
         """Get most recent EFT Credit invoice links associated to a statement and short name."""
         query = (
             db.session.query(EFTCreditInvoiceLinkModel)
@@ -492,15 +435,11 @@ class EftService(DepositService):
             )
             .join(
                 StatementInvoicesModel,
-                StatementInvoicesModel.invoice_id
-                == EFTCreditInvoiceLinkModel.invoice_id,
+                StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id,
             )
             .filter(StatementInvoicesModel.statement_id == statement_id)
             .filter(EFTCreditModel.short_name_id == shortname_id)
-            .filter(
-                EFTCreditInvoiceLinkModel.status_code
-                != EFTCreditInvoiceStatus.CANCELLED.value
-            )
+            .filter(EFTCreditInvoiceLinkModel.status_code != EFTCreditInvoiceStatus.CANCELLED.value)
             .order_by(
                 EFTCreditInvoiceLinkModel.invoice_id.desc(),
                 EFTCreditInvoiceLinkModel.created_on.desc(),
@@ -510,17 +449,13 @@ class EftService(DepositService):
         return query.all()
 
     @staticmethod
-    def apply_eft_credit(
-        invoice_id: int, short_name_id: int, link_group_id: int, auto_save: bool = False
-    ):
+    def apply_eft_credit(invoice_id: int, short_name_id: int, link_group_id: int, auto_save: bool = False):
         """Apply EFT credit and update remaining credit records."""
         invoice = InvoiceModel.find_by_id(invoice_id)
         payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
 
         # Clear any existing pending credit links on this invoice
-        EftService.cancel_payment_action(
-            short_name_id, payment_account.auth_account_id, invoice_id
-        )
+        EftService.cancel_payment_action(short_name_id, payment_account.auth_account_id, invoice_id)
 
         eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
         invoice_balance = invoice.total - (invoice.paid or 0)
@@ -553,14 +488,10 @@ class EftService(DepositService):
             eft_credit.save_or_add(auto_save)
 
     @staticmethod
-    def process_owing_statements(
-        short_name_id: int, auth_account_id: str, is_new_link: bool = False
-    ):
+    def process_owing_statements(short_name_id: int, auth_account_id: str, is_new_link: bool = False):
         """Process outstanding statement invoices for an EFT Short name."""
         current_app.logger.debug("<process_owing_statements")
-        shortname_link = EFTShortnameLinksModel.find_active_link(
-            short_name_id, auth_account_id
-        )
+        shortname_link = EFTShortnameLinksModel.find_active_link(short_name_id, auth_account_id)
 
         if shortname_link is None:
             raise BusinessException(Error.EFT_SHORT_NAME_NOT_LINKED)
@@ -581,9 +512,7 @@ class EftService(DepositService):
         if statements:
             for statement in statements:
                 link_group_id = EFTCreditInvoiceLinkModel.get_next_group_link_seq()
-                invoices = EftService._get_statement_invoices_owing(
-                    auth_account_id, statement.id
-                )
+                invoices = EftService._get_statement_invoices_owing(auth_account_id, statement.id)
                 for invoice in invoices:
                     if invoice.payment_method_code == PaymentMethod.EFT.value:
                         link_groups[invoice.id] = link_group_id
@@ -609,9 +538,7 @@ class EftService(DepositService):
         current_app.logger.debug(">process_owing_statements")
 
     @staticmethod
-    def _get_statement_invoices_owing(
-        auth_account_id: str, statement_id: int = None
-    ) -> List[InvoiceModel]:
+    def _get_statement_invoices_owing(auth_account_id: str, statement_id: int = None) -> List[InvoiceModel]:
         """Return statement invoices that have not been fully paid."""
         unpaid_status = (
             InvoiceStatus.PARTIAL.value,
@@ -635,9 +562,7 @@ class EftService(DepositService):
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value)
         )
 
-        query = query.filter_conditionally(
-            statement_id, StatementInvoicesModel.statement_id
-        )
+        query = query.filter_conditionally(statement_id, StatementInvoicesModel.statement_id)
         query = query.order_by(InvoiceModel.created_on.asc())
 
         return query.all()

@@ -88,11 +88,11 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     # POSTGRESQL
     if DB_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
-        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432"
-    else:
         SQLALCHEMY_DATABASE_URI = (
-            f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+            f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432"
         )
+    else:
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
     # JWT_OIDC Settings
     JWT_OIDC_WELL_KNOWN_CONFIG = _get_config("JWT_OIDC_WELL_KNOWN_CONFIG")
@@ -101,9 +101,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     JWT_OIDC_AUDIENCE = _get_config("JWT_OIDC_AUDIENCE")
     JWT_OIDC_CLIENT_SECRET = _get_config("JWT_OIDC_CLIENT_SECRET")
     JWT_OIDC_CACHING_ENABLED = _get_config("JWT_OIDC_CACHING_ENABLED", default=False)
-    JWT_OIDC_JWKS_CACHE_TIMEOUT = int(
-        _get_config("JWT_OIDC_JWKS_CACHE_TIMEOUT", default=300)
-    )
+    JWT_OIDC_JWKS_CACHE_TIMEOUT = int(_get_config("JWT_OIDC_JWKS_CACHE_TIMEOUT", default=300))
 
     # CFS API Settings
     CFS_BASE_URL = _get_config("CFS_BASE_URL")
@@ -111,9 +109,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     CFS_CLIENT_SECRET = _get_config("CFS_CLIENT_SECRET")
     PAYBC_PORTAL_URL = _get_config("PAYBC_PORTAL_URL")
     CONNECT_TIMEOUT = int(_get_config("CONNECT_TIMEOUT", default=10))
-    GENERATE_RANDOM_INVOICE_NUMBER = _get_config(
-        "CFS_GENERATE_RANDOM_INVOICE_NUMBER", default="False"
-    )
+    GENERATE_RANDOM_INVOICE_NUMBER = _get_config("CFS_GENERATE_RANDOM_INVOICE_NUMBER", default="False")
     CFS_ACCOUNT_DESCRIPTION = _get_config("CFS_ACCOUNT_DESCRIPTION", default="BCR")
     CFS_INVOICE_PREFIX = os.getenv("CFS_INVOICE_PREFIX", "REG")
     CFS_RECEIPT_PREFIX = os.getenv("CFS_RECEIPT_PREFIX", "RCPT")
@@ -129,9 +125,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_BASE_URL = _get_config("PAYBC_DIRECT_PAY_BASE_URL")
     PAYBC_DIRECT_PAY_CLIENT_ID = _get_config("PAYBC_DIRECT_PAY_CLIENT_ID")
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config("PAYBC_DIRECT_PAY_CLIENT_SECRET")
-    PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config(
-        "PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL"
-    )
+    PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL")
 
     # PUB/SUB - PUB: auth-event-dev, account-mailer-dev, business-pay-dev, namex-pay-dev
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
@@ -163,14 +157,11 @@ class _Config:  # pylint: disable=too-few-public-methods
     SENTRY_DSN = _get_config("SENTRY_DSN", default=None)
 
     # Disable valid redirect URLs - for DEV only
-    DISABLE_VALID_REDIRECT_URLS = (
-        _get_config("DISABLE_VALID_REDIRECT_URLS", default="False").lower() == "true"
-    )
+    DISABLE_VALID_REDIRECT_URLS = _get_config("DISABLE_VALID_REDIRECT_URLS", default="False").lower() == "true"
 
     # Valid Payment redirect URLs
     VALID_REDIRECT_URLS = [
-        (val.strip() if val != "" else None)
-        for val in _get_config("VALID_REDIRECT_URLS", default="").split(",")
+        (val.strip() if val != "" else None) for val in _get_config("VALID_REDIRECT_URLS", default="").split(",")
     ]
 
     # Service account details
@@ -178,18 +169,12 @@ class _Config:  # pylint: disable=too-few-public-methods
     KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config("SBC_AUTH_ADMIN_CLIENT_SECRET")
 
     # Default number of transactions to be returned for transaction reporting
-    TRANSACTION_REPORT_DEFAULT_TOTAL = int(
-        _get_config("TRANSACTION_REPORT_DEFAULT_TOTAL", default=50)
-    )
+    TRANSACTION_REPORT_DEFAULT_TOTAL = int(_get_config("TRANSACTION_REPORT_DEFAULT_TOTAL", default=50))
 
     # Default number of routing slips to be returned for routing slip search
-    ROUTING_SLIP_DEFAULT_TOTAL = int(
-        _get_config("ROUTING_SLIP_DEFAULT_TOTAL", default=50)
-    )
+    ROUTING_SLIP_DEFAULT_TOTAL = int(_get_config("ROUTING_SLIP_DEFAULT_TOTAL", default=50))
 
-    PAD_CONFIRMATION_PERIOD_IN_DAYS = int(
-        _get_config("PAD_CONFIRMATION_PERIOD_IN_DAYS", default=3)
-    )
+    PAD_CONFIRMATION_PERIOD_IN_DAYS = int(_get_config("PAD_CONFIRMATION_PERIOD_IN_DAYS", default=3))
 
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv("LEGISLATIVE_TIMEZONE", "America/Vancouver")
@@ -203,18 +188,14 @@ class _Config:  # pylint: disable=too-few-public-methods
     MASK_LEN = int(_get_config("MASK_LEN", default=3))
 
     # Config value to disable activity logs
-    DISABLE_ACTIVITY_LOGS = (
-        os.getenv("DISABLE_ACTIVITY_LOGS", "False").lower() == "true"
-    )
+    DISABLE_ACTIVITY_LOGS = os.getenv("DISABLE_ACTIVITY_LOGS", "False").lower() == "true"
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY")
 
     OUTSTANDING_TRANSACTION_DAYS = int(os.getenv("OUTSTANDING_TRANSACTION_DAYS", "10"))
 
-    ALLOW_LEGACY_ROUTING_SLIPS = (
-        os.getenv("ALLOW_LEGACY_ROUTING_SLIPS", "True").lower() == "true"
-    )
+    ALLOW_LEGACY_ROUTING_SLIPS = os.getenv("ALLOW_LEGACY_ROUTING_SLIPS", "True").lower() == "true"
 
     TESTING = False
     DEBUG = True
@@ -363,7 +344,5 @@ class MigrationConfig:  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config("DATABASE_NAME")
     DB_HOST = _get_config("DATABASE_HOST")
     DB_PORT = _get_config("DATABASE_PORT", default="5432")
-    SQLALCHEMY_DATABASE_URI = (
-        f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
-    )
+    SQLALCHEMY_DATABASE_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False

@@ -33,9 +33,7 @@ from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
-bp = Blueprint(
-    "INVOICE", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/payment-requests"
-)
+bp = Blueprint("INVOICE", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/payment-requests")
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
@@ -67,14 +65,10 @@ def post_invoice():
     valid_format, errors = schema_utils.validate(request_json, "payment_request")
 
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     # Check if user is authorized to perform this action
-    business_identifier = get_str_by_path(
-        request_json, "businessInfo/businessIdentifier"
-    )
+    business_identifier = get_str_by_path(request_json, "businessInfo/businessIdentifier")
     corp_type_code = get_str_by_path(request_json, "businessInfo/corpType")
 
     authorization = check_auth(
@@ -142,9 +136,7 @@ def patch_invoice(invoice_id: int = None):
     is_apply_credit = request.args.get("applyCredit", "false").lower() == "true"
 
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     try:
         response, status = (
@@ -167,9 +159,7 @@ def post_invoice_report(invoice_id: int = None):
     try:
         pdf, file_name = InvoiceService.create_invoice_pdf(invoice_id)
         response = Response(pdf, 201)
-        response.headers.set(
-            "Content-Disposition", "attachment", filename=f"{file_name}.pdf"
-        )
+        response.headers.set("Content-Disposition", "attachment", filename=f"{file_name}.pdf")
         response.headers.set("Content-Type", "application/pdf")
         response.headers.set("Access-Control-Expose-Headers", "Content-Disposition")
         return response

@@ -106,9 +106,7 @@ class OrderStatus:
 class DirectPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url_for_invoice(
-        self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str
-    ):
+    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         today = current_local_time().strftime(PAYBC_DATE_FORMAT)
         url_params_dict = {
@@ -127,13 +125,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
         url_params = urlencode(url_params_dict)
         # unquote is used below so that unescaped url string can be hashed
         url_params_dict["hashValue"] = HashingService.encode(unquote_plus(url_params))
-        encoded_query_params = urlencode(
-            url_params_dict
-        )  # encode it again to inlcude the hash
+        encoded_query_params = urlencode(url_params_dict)  # encode it again to inlcude the hash
         paybc_url = current_app.config.get("PAYBC_DIRECT_PAY_PORTAL_URL")
-        current_app.logger.debug(
-            f"PayBC URL for {invoice.id} -> {paybc_url}?{encoded_query_params}"
-        )
+        current_app.logger.debug(f"PayBC URL for {invoice.id} -> {paybc_url}?{encoded_query_params}")
         return f"{paybc_url}?{encoded_query_params}"
 
     @staticmethod
@@ -150,15 +144,10 @@ class DirectPayService(PaymentSystemService, OAuthService):
             )
 
             index = index + 1
-            revenue_string = DirectPayService._get_gl_coding(
-                distribution_code, payment_line_item.total
-            )
+            revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
 
             revenue_item.append(f"{index}:{revenue_string}")
-            if (
-                payment_line_item.service_fees is not None
-                and payment_line_item.service_fees > 0
-            ):
+            if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
                 index = index + 1
                 service_fee: DistributionCodeModel = DistributionCodeModel.find_by_id(
                     distribution_code.service_fee_distribution_code_id
@@ -171,9 +160,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return PAYBC_REVENUE_SEPARATOR.join(revenue_item)
 
     @staticmethod
-    def _get_gl_coding(
-        distribution_code: DistributionCodeModel, total, exclude_total=False
-    ):
+    def _get_gl_coding(distribution_code: DistributionCodeModel, total, exclude_total=False):
         base = (
             f"{distribution_code.client}.{distribution_code.responsibility_centre}."
             f"{distribution_code.service_line}.{distribution_code.stob}.{distribution_code.project_code}"
@@ -218,9 +205,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         invoice = {"invoice_number": f"{invoice_id}"}
         return invoice
 
-    def get_pay_system_reason_code(
-        self, pay_response_url: str
-    ) -> str:  # pylint:disable=unused-argument
+    def get_pay_system_reason_code(self, pay_response_url: str) -> str:  # pylint:disable=unused-argument
         """Return the Pay system reason code."""
         if pay_response_url is not None and "trnApproved" in pay_response_url:
             parsed_args = parse_url_params(pay_response_url)
@@ -229,9 +214,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             if trn_approved != "1":
                 # map the error code
                 message_text = unquote_plus(parsed_args.get("messageText")).upper()
-                pay_system_reason_code = PAYBC_TRANSACTION_ERROR_MESSAGE_DICT.get(
-                    message_text, "GENERIC_ERROR"
-                )
+                pay_system_reason_code = PAYBC_TRANSACTION_ERROR_MESSAGE_DICT.get(message_text, "GENERIC_ERROR")
                 return pay_system_reason_code
         return None
 
@@ -243,8 +226,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         current_app.logger.debug(
-            "<process_cfs_refund creating automated refund for invoice: "
-            f"{invoice.id}, {invoice.invoice_status_code}"
+            "<process_cfs_refund creating automated refund for invoice: " f"{invoice.id}, {invoice.invoice_status_code}"
         )
         # No APPROVED invoices allowed for refund. Invoices typically land on PAID right away.
         if invoice.invoice_status_code not in (
@@ -253,10 +235,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         ):
             raise BusinessException(Error.INVALID_REQUEST)
 
-        refund_url = (
-            current_app.config.get("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL")
-            + "/paybc-service/api/refund"
-        )
+        refund_url = current_app.config.get("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL") + "/paybc-service/api/refund"
         access_token: str = self._get_refund_token().json().get("access_token")
         data = self.build_automated_refund_payload(invoice, refund_partial)
 
@@ -299,9 +278,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     ):
         """Get the receipt details by calling PayBC web service."""
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
-        current_app.logger.debug(
-            f"Getting receipt details {invoice_reference.invoice_id}. {pay_response_url}"
-        )
+        current_app.logger.debug(f"Getting receipt details {invoice_reference.invoice_id}. {pay_response_url}")
         if pay_response_url:
             parsed_args = parse_url_params(pay_response_url)
 
@@ -311,12 +288,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
             # Check if trnApproved is 1=Success, 0=Declined
             trn_approved: str = parsed_args.get("trnApproved")
-            if trn_approved == "1" and not HashingService.is_valid_checksum(
-                pay_response_url_without_hash, hash_value
-            ):
-                current_app.logger.warning(
-                    f"Transaction is approved, but hash is not matching : {pay_response_url}"
-                )
+            if trn_approved == "1" and not HashingService.is_valid_checksum(pay_response_url_without_hash, hash_value):
+                current_app.logger.warning(f"Transaction is approved, but hash is not matching : {pay_response_url}")
                 return None
             # Get the transaction number from args
             paybc_transaction_number = parsed_args.get("pbcTxnNumber")
@@ -380,10 +353,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def _get_refund_token(cls):
         """Generate seperate oauth token from PayBC which is used for automated refunds."""
         current_app.logger.debug("<Getting token")
-        token_url = (
-            current_app.config.get("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL")
-            + "/paybc-service/oauth/token/"
-        )
+        token_url = current_app.config.get("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL") + "/paybc-service/oauth/token/"
         basic_auth_encoded = base64.b64encode(
             bytes(
                 current_app.config.get("PAYBC_DIRECT_PAY_CLIENT_ID")
@@ -406,19 +376,14 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def _validate_refund_amount(refund_amount, max_amount):
         if refund_amount > max_amount:
             current_app.logger.error(
-                f"Refund amount {str(refund_amount)} "
-                f"exceeds maximum allowed amount {str(max_amount)}."
+                f"Refund amount {str(refund_amount)} " f"exceeds maximum allowed amount {str(max_amount)}."
             )
             raise BusinessException(Error.INVALID_REQUEST)
 
     @staticmethod
-    def _build_refund_revenue(
-        paybc_invoice: OrderStatus, refund_lines: List[RefundLineRequest]
-    ):
+    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: List[RefundLineRequest]):
         """Build PAYBC refund revenue lines for the refund."""
-        if (paybc_invoice.postedrefundamount or 0) > 0 or (
-            paybc_invoice.refundedamount or 0
-        ) > 0:
+        if (paybc_invoice.postedrefundamount or 0) > 0 or (paybc_invoice.refundedamount or 0) > 0:
             current_app.logger.error("Refund already detected.")
             raise BusinessException(Error.INVALID_REQUEST)
 
@@ -434,22 +399,14 @@ class DirectPayService(PaymentSystemService, OAuthService):
                     r
                     for r in paybc_invoice.revenue
                     if r.revenueaccount == line.revenue_account
-                    and (
-                        line.is_service_fee
-                        and r.linenumber != "1"
-                        or line.is_service_fee is False
-                    )
+                    and (line.is_service_fee and r.linenumber != "1" or line.is_service_fee is False)
                 ),
                 None,
             )
             if revenue_match is None:
-                current_app.logger.error(
-                    "Matching distribution code to revenue account not found."
-                )
+                current_app.logger.error("Matching distribution code to revenue account not found.")
                 raise BusinessException(Error.INVALID_REQUEST)
-            DirectPayService._validate_refund_amount(
-                line.refund_amount, revenue_match.revenueamount
-            )
+            DirectPayService._validate_refund_amount(line.refund_amount, revenue_match.revenueamount)
             lines.append(
                 {
                     "lineNumber": revenue_match.linenumber,
@@ -467,28 +424,18 @@ class DirectPayService(PaymentSystemService, OAuthService):
             pli = PaymentLineItemModel.find_by_id(refund_line.payment_line_item_id)
             if not pli or refund_line.refund_amount < 0:
                 raise BusinessException(Error.INVALID_REQUEST)
-            is_service_fee = (
-                refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value
-            )
+            is_service_fee = refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value
             fee_distribution = DistributionCodeModel.find_by_id(pli.fee_distribution_id)
             if is_service_fee:
-                DirectPayService._validate_refund_amount(
-                    refund_line.refund_amount, pli.service_fees
-                )
+                DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.service_fees)
                 service_fee_dist_id = fee_distribution.service_fee_distribution_code_id
                 fee_distribution = DistributionCodeModel.find_by_id(service_fee_dist_id)
             else:
-                DirectPayService._validate_refund_amount(
-                    refund_line.refund_amount, pli.total
-                )
+                DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.total)
             revenue_account = DirectPayService._get_gl_coding(
                 fee_distribution, refund_line.refund_amount, exclude_total=True
             )
-            refund_lines.append(
-                RefundLineRequest(
-                    revenue_account, refund_line.refund_amount, is_service_fee
-                )
-            )
+            refund_lines.append(RefundLineRequest(revenue_account, refund_line.refund_amount, is_service_fee))
             total += refund_line.refund_amount
         return refund_lines, total
 
@@ -508,22 +455,14 @@ class DirectPayService(PaymentSystemService, OAuthService):
                 invoice.references,
             )
         )[0]
-        payment_url: str = (
-            f"{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{inv_reference.invoice_number}"
-        )
-        payment_response = cls.get(
-            payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON
-        ).json()
+        payment_url: str = f"{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{inv_reference.invoice_number}"
+        payment_response = cls.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
         return Converter().structure(payment_response, OrderStatus)
 
     @classmethod
-    def build_automated_refund_payload(
-        cls, invoice: InvoiceModel, refund_partial: List[RefundPartialLine]
-    ):
+    def build_automated_refund_payload(cls, invoice: InvoiceModel, refund_partial: List[RefundPartialLine]):
         """Build payload to create a refund in PAYBC."""
-        receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(
-            invoice_id=invoice.id
-        )
+        receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value
         )
@@ -536,15 +475,11 @@ class DirectPayService(PaymentSystemService, OAuthService):
         if not refund_partial:
             return refund_payload
 
-        refund_lines, total_refund = DirectPayService._build_refund_revenue_lines(
-            refund_partial
-        )
+        refund_lines, total_refund = DirectPayService._build_refund_revenue_lines(refund_partial)
         paybc_invoice = DirectPayService.query_order_status(invoice)
         refund_payload.update(
             {
-                "refundRevenue": DirectPayService._build_refund_revenue(
-                    paybc_invoice, refund_lines
-                ),
+                "refundRevenue": DirectPayService._build_refund_revenue(paybc_invoice, refund_lines),
                 "txnAmount": total_refund,
             }
         )

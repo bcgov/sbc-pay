@@ -53,9 +53,7 @@ def test_create_funds_received(session):
     transaction_date = datetime(2024, 7, 31, 0, 0, 0)
     with freeze_time(transaction_date):
         _, short_name = setup_test_data()
-        history = EFTShortnameHistory(
-            short_name_id=short_name.id, amount=151.50, credit_balance=300
-        )
+        history = EFTShortnameHistory(short_name_id=short_name.id, amount=151.50, credit_balance=300)
         historical_record = EFTShortnameHistoryService.create_funds_received(history)
         historical_record.save()
         assert historical_record.id is not None
@@ -70,14 +68,8 @@ def test_create_funds_received(session):
         assert historical_record.eft_refund_id is None
         assert historical_record.invoice_id is None
         assert historical_record.statement_number is None
-        assert (
-            historical_record.transaction_date.replace(microsecond=0)
-            == transaction_date
-        )
-        assert (
-            historical_record.transaction_type
-            == EFTHistoricalTypes.FUNDS_RECEIVED.value
-        )
+        assert historical_record.transaction_date.replace(microsecond=0) == transaction_date
+        assert historical_record.transaction_type == EFTHistoricalTypes.FUNDS_RECEIVED.value
 
 
 def test_create_statement_paid(session, staff_user_mock):
@@ -109,10 +101,7 @@ def test_create_statement_paid(session, staff_user_mock):
         assert historical_record.invoice_id is None
         assert historical_record.statement_number == 1234567
         assert historical_record.transaction_date == transaction_date
-        assert (
-            historical_record.transaction_type
-            == EFTHistoricalTypes.STATEMENT_PAID.value
-        )
+        assert historical_record.transaction_type == EFTHistoricalTypes.STATEMENT_PAID.value
 
 
 def test_create_statement_reverse(session, staff_user_mock):
@@ -145,10 +134,7 @@ def test_create_statement_reverse(session, staff_user_mock):
         assert historical_record.invoice_id is None
         assert historical_record.statement_number == 1234567
         assert historical_record.transaction_date == transaction_date
-        assert (
-            historical_record.transaction_type
-            == EFTHistoricalTypes.STATEMENT_REVERSE.value
-        )
+        assert historical_record.transaction_type == EFTHistoricalTypes.STATEMENT_REVERSE.value
 
 
 def test_create_invoice_refund(session, staff_user_mock):
@@ -187,10 +173,7 @@ def test_create_invoice_refund(session, staff_user_mock):
         assert historical_record.invoice_id == invoice.id
         assert historical_record.statement_number == 1234567
         assert historical_record.transaction_date == transaction_date
-        assert (
-            historical_record.transaction_type
-            == EFTHistoricalTypes.INVOICE_REFUND.value
-        )
+        assert historical_record.transaction_type == EFTHistoricalTypes.INVOICE_REFUND.value
 
 
 def test_create_short_name_refund(session, staff_user_mock):
@@ -222,7 +205,4 @@ def test_create_short_name_refund(session, staff_user_mock):
         assert historical_record.eft_refund_id == eft_refund.id
         assert historical_record.invoice_id is None
         assert historical_record.transaction_date == transaction_date
-        assert (
-            historical_record.transaction_type
-            == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
-        )
+        assert historical_record.transaction_type == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value

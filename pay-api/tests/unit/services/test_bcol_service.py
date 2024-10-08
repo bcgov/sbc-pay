@@ -35,9 +35,7 @@ bcol_service = BcolService()
 
 def test_create_account(session):
     """Test create_account."""
-    account = bcol_service.create_account(
-        identifier=None, contact_info=None, payment_info=None
-    )
+    account = bcol_service.create_account(identifier=None, contact_info=None, payment_info=None)
     assert not account
 
 
@@ -59,9 +57,7 @@ def test_get_payment_system_code(session):
 )
 def test_create_invoice(session, test_name, service_fees):
     """Test create_invoice."""
-    pay_account = factory_payment_account(
-        payment_system_code="BCOL", account_number="BCOL_ACC_1", bcol_user_id="test"
-    )
+    pay_account = factory_payment_account(payment_system_code="BCOL", account_number="BCOL_ACC_1", bcol_user_id="test")
     pay_account.save()
     payment = factory_payment()
     payment.save()
@@ -97,9 +93,7 @@ def test_cancel_invoice(session):
 
 def test_get_receipt(session):
     """Test cancel_invoice."""
-    pay_account = factory_payment_account(
-        payment_system_code="BCOL", account_number="BCOL_ACC_1", bcol_user_id="test"
-    )
+    pay_account = factory_payment_account(payment_system_code="BCOL", account_number="BCOL_ACC_1", bcol_user_id="test")
     pay_account.save()
     payment = factory_payment()
     payment.save()

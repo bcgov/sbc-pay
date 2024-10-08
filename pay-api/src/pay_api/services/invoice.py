@@ -374,9 +374,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_by_id(
-        identifier: int, skip_auth_check: bool = False, one_of_roles=ALL_ALLOWED_ROLES
-    ):
+    def find_by_id(identifier: int, skip_auth_check: bool = False, one_of_roles=ALL_ALLOWED_ROLES):
         """Find invoice by id."""
         invoice_dao = InvoiceModel.find_by_id(identifier)
 
@@ -398,9 +396,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     ) -> List[Invoice]:
         """Find invoices by payment id."""
         invoices: List[Invoice] = []
-        invoice_daos: List[InvoiceModel] = InvoiceModel.find_invoices_for_payment(
-            payment_id, reference_status
-        )
+        invoice_daos: List[InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id, reference_status)
 
         for invoice_dao in invoice_daos:
             invoice = Invoice()
@@ -414,9 +410,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def find_invoices(business_identifier: str) -> Dict[str, any]:
         """Find invoices by business identifier."""
         invoices: Dict[str, any] = {"invoices": []}
-        invoice_daos: List[InvoiceModel] = InvoiceModel.find_by_business_identifier(
-            business_identifier
-        )
+        invoice_daos: List[InvoiceModel] = InvoiceModel.find_by_business_identifier(business_identifier)
 
         for invoice_dao in invoice_daos:
             invoice = Invoice()
@@ -443,30 +437,22 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         if not invoice_dao:
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
-            invoice_dao.payment_account_id
-        )
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice_dao.payment_account_id)
         cfs_account = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
         org_response = OAuthService.get(
-            current_app.config.get("AUTH_API_ENDPOINT")
-            + f"orgs/{payment_account.auth_account_id}",
+            current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{payment_account.auth_account_id}",
             kwargs["user"].bearer_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
         ).json()
         org_contact_response = OAuthService.get(
-            current_app.config.get("AUTH_API_ENDPOINT")
-            + f"orgs/{payment_account.auth_account_id}/contacts",
+            current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{payment_account.auth_account_id}/contacts",
             kwargs["user"].bearer_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
         ).json()
 
-        org_contact = (
-            org_contact_response.get("contacts")[0]
-            if org_contact_response.get("contacts", None)
-            else {}
-        )
+        org_contact = org_contact_response.get("contacts")[0] if org_contact_response.get("contacts", None) else {}
 
         invoice_number: str = (
             invoice_dao.references[0].invoice_number
@@ -477,9 +463,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         filing_types: List[Dict[str, str]] = []
         for line_item in invoice_dao.payment_line_items:
             business_identifier = (
-                invoice_dao.business_identifier
-                if not invoice_dao.business_identifier.startswith("T")
-                else ""
+                invoice_dao.business_identifier if not invoice_dao.business_identifier.startswith("T") else ""
             )
             filing_types.append(
                 {
@@ -539,9 +523,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         check_auth(dao.business_identifier, one_of_roles=one_of_roles)
 
     @staticmethod
-    def _add_dynamic_fields(
-        invoice: Dict[str, any], calculate_dynamic_fields: bool = False
-    ) -> Dict[str, any]:
+    def _add_dynamic_fields(invoice: Dict[str, any], calculate_dynamic_fields: bool = False) -> Dict[str, any]:
         """Add calculated fields to the schema json."""
         if calculate_dynamic_fields:
             # Include redirect_for_payment flag

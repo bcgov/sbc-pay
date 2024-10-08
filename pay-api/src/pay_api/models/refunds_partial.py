@@ -24,9 +24,7 @@ from .db import db
 from ..utils.enums import RefundsPartialType
 
 
-class RefundsPartial(
-    Audit, Versioned, BaseModel
-):  # pylint: disable=too-many-instance-attributes
+class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the data for payment line item partial refunds."""
 
     __tablename__ = "refunds_partial"
@@ -56,9 +54,7 @@ class RefundsPartial(
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    payment_line_item_id = db.Column(
-        db.Integer, ForeignKey("payment_line_items.id"), nullable=False, index=True
-    )
+    payment_line_item_id = db.Column(db.Integer, ForeignKey("payment_line_items.id"), nullable=False, index=True)
     refund_amount = db.Column(db.Numeric(19, 2), nullable=False)
     refund_type = db.Column(db.String(50), nullable=True)
 

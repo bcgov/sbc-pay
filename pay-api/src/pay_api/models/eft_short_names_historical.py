@@ -60,25 +60,15 @@ class EFTShortnamesHistorical(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     amount = db.Column(db.Numeric(19, 2), nullable=False)
     created_by = db.Column(db.String, nullable=True)
-    created_on = db.Column(
-        db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc)
-    )
+    created_on = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     credit_balance = db.Column(db.Numeric(19, 2), nullable=False)
-    eft_refund_id = db.Column(
-        db.Integer, ForeignKey("eft_refunds.id"), nullable=True, index=True
-    )
+    eft_refund_id = db.Column(db.Integer, ForeignKey("eft_refunds.id"), nullable=True, index=True)
     hidden = db.Column(db.Boolean(), nullable=False, default=False, index=True)
-    invoice_id = db.Column(
-        db.Integer, ForeignKey("invoices.id"), nullable=True, index=True
-    )
+    invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=True, index=True)
     is_processing = db.Column(db.Boolean(), nullable=False, default=False)
-    payment_account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
     related_group_link_id = db.Column(db.Integer, nullable=True, index=True)
-    short_name_id = db.Column(
-        db.Integer, ForeignKey("eft_short_names.id"), nullable=False
-    )
+    short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False)
     statement_number = db.Column(db.Integer, nullable=True)
     transaction_date = db.Column(db.DateTime, nullable=False, index=True)
     transaction_type = db.Column(db.String, nullable=False)
@@ -91,11 +81,7 @@ class EFTShortnamesHistorical(BaseModel):
     @classmethod
     def find_by_eft_refund_id(cls, eft_refund_id: int) -> Self:
         """Find historical records by EFT refund id."""
-        return (
-            cls.query.filter_by(eft_refund_id=eft_refund_id)
-            .order_by(EFTShortnamesHistorical.id.desc())
-            .all()
-        )
+        return cls.query.filter_by(eft_refund_id=eft_refund_id).order_by(EFTShortnamesHistorical.id.desc()).all()
 
 
 @define

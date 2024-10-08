@@ -43,16 +43,12 @@ class Audit(BaseModel):  # pylint: disable=too-few-public-methods
     @declared_attr
     def created_by(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Return created by."""
-        return db.Column(
-            "created_by", db.String(50), nullable=False, default=cls._get_user_name
-        )
+        return db.Column("created_by", db.String(50), nullable=False, default=cls._get_user_name)
 
     @declared_attr
     def created_name(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Return created name."""
-        return db.Column(
-            "created_name", db.String(100), nullable=True, default=cls._get_name
-        )
+        return db.Column("created_name", db.String(100), nullable=True, default=cls._get_name)
 
     @declared_attr
     def updated_by(cls):  # pylint:disable=no-self-argument, # noqa: N805

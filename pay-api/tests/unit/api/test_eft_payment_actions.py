@@ -57,9 +57,7 @@ from tests.utilities.base_test import (
 
 def setup_account_shortname_data() -> Tuple[PaymentAccountModel, EFTShortnamesModel]:
     """Set up test data for payment account and short name."""
-    account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234"
-    ).save()
+    account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234").save()
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME").save()
     factory_eft_shortname_link(
         short_name_id=short_name.id,
@@ -70,9 +68,7 @@ def setup_account_shortname_data() -> Tuple[PaymentAccountModel, EFTShortnamesMo
     return account, short_name
 
 
-def setup_statement_data(
-    account: PaymentAccountModel, invoice_totals: List[Decimal]
-) -> StatementModel:
+def setup_statement_data(account: PaymentAccountModel, invoice_totals: List[Decimal]) -> StatementModel:
     """Set up test data for statement."""
     statement_settings = factory_statement_settings(
         payment_account_id=account.id, frequency=StatementFrequency.MONTHLY.value
@@ -100,9 +96,7 @@ def setup_statement_data(
     return statement
 
 
-def setup_eft_credits(
-    short_name: EFTShortnamesModel, credit_amounts: List[Decimal] = [100]
-) -> List[EFTCreditModel]:
+def setup_eft_credits(short_name: EFTShortnamesModel, credit_amounts: List[Decimal] = [100]) -> List[EFTCreditModel]:
     """Set up EFT Credit data."""
     eft_file = factory_eft_file("test.txt")
     eft_credits = []
@@ -175,10 +169,7 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
     assert credit_invoice_links
     assert len(credit_invoice_links) == 4
     link_group_id = credit_invoice_links[0].link_group_id
-    assert all(
-        link.link_group_id == link_group_id and link.link_group_id is not None
-        for link in credit_invoice_links
-    )
+    assert all(link.link_group_id == link_group_id and link.link_group_id is not None for link in credit_invoice_links)
 
     # Assert we can't pay twice, based on pending invoice links
     # Add new credit to confirm it is not used
@@ -194,10 +185,7 @@ def test_eft_apply_credits_action(db, session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 204
-    assert (
-        sum([eft_credit.remaining_amount for eft_credit in eft_credits + eft_credits_2])
-        == 300
-    )
+    assert sum([eft_credit.remaining_amount for eft_credit in eft_credits + eft_credits_2]) == 300
     # assert eft_credits_2[0].remaining_amount == 300
     assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 300
 
@@ -280,9 +268,7 @@ def test_eft_cancel_payment_action(session, client, jwt, app):
 
     # Confirm credits have been restored
     assert rv.status_code == 204
-    assert all(
-        eft_credit.remaining_amount == eft_credit.amount for eft_credit in eft_credits
-    )
+    assert all(eft_credit.remaining_amount == eft_credit.amount for eft_credit in eft_credits)
     assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 200
 
 
@@ -308,9 +294,7 @@ def test_eft_payment_action_not_found(db, session, client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post(
-        "/api/v1/eft-shortnames/22222/payment", data=json.dumps({}), headers=headers
-    )
+    rv = client.post("/api/v1/eft-shortnames/22222/payment", data=json.dumps({}), headers=headers)
     assert rv.status_code == 404
 
 
@@ -347,9 +331,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
 
     rv = client.post(
         f"/api/v1/eft-shortnames/{short_name.id}/payment",
-        data=json.dumps(
-            {"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}
-        ),
+        data=json.dumps({"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}),
         headers=headers,
     )
     assert rv.status_code == 400
@@ -365,9 +347,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
 
     rv = client.post(
         f"/api/v1/eft-shortnames/{short_name.id}/payment",
-        data=json.dumps(
-            {"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}
-        ),
+        data=json.dumps({"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}),
         headers=headers,
     )
     assert rv.status_code == 400
@@ -380,9 +360,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
 
     rv = client.post(
         f"/api/v1/eft-shortnames/{short_name.id}/payment",
-        data=json.dumps(
-            {"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}
-        ),
+        data=json.dumps({"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}),
         headers=headers,
     )
     assert rv.status_code == 400
@@ -398,9 +376,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     invoices[0].save()
     rv = client.post(
         f"/api/v1/eft-shortnames/{short_name.id}/payment",
-        data=json.dumps(
-            {"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}
-        ),
+        data=json.dumps({"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}),
         headers=headers,
     )
     assert rv.status_code == 400
@@ -421,9 +397,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     with patch("pay_api.services.eft_service.send_email") as mock_email:
         rv = client.post(
             f"/api/v1/eft-shortnames/{short_name.id}/payment",
-            data=json.dumps(
-                {"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}
-            ),
+            data=json.dumps({"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}),
             headers=headers,
         )
         assert rv.status_code == 204
@@ -444,15 +418,10 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     assert credit_invoice_links[0].link_group_id is not None
     assert credit_invoice_links[0].amount == 100
 
-    assert (
-        credit_invoice_links[1].status_code
-        == EFTCreditInvoiceStatus.PENDING_REFUND.value
-    )
+    assert credit_invoice_links[1].status_code == EFTCreditInvoiceStatus.PENDING_REFUND.value
     assert credit_invoice_links[1].link_group_id is not None
     assert credit_invoice_links[1].amount == credit_invoice_links[0].amount
-    assert (
-        credit_invoice_links[1].receipt_number == credit_invoice_links[0].receipt_number
-    )
+    assert credit_invoice_links[1].receipt_number == credit_invoice_links[0].receipt_number
     assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 100
 
     partner_disbursement = PartnerDisbursements.query.first()

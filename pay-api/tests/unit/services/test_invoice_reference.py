@@ -35,9 +35,7 @@ def test_invoice_saved_from_new(session):
     i = factory_invoice(payment_account=payment_account)
     i.save()
 
-    invoice_reference = InvoiceReference.create(
-        i.id, "TEST_INV_NUMBER", "TEST_REF_NUMBER"
-    )
+    invoice_reference = InvoiceReference.create(i.id, "TEST_INV_NUMBER", "TEST_REF_NUMBER")
 
     assert invoice_reference is not None
     assert invoice_reference.id is not None
@@ -79,9 +77,7 @@ def test_find_completed_reference_by_invoice_id(session):
     i = factory_invoice(payment_account=payment_account)
     i.save()
 
-    invoice_reference = InvoiceReference.create(
-        i.id, "TEST_INV_NUMBER", "TEST_REF_NUMBER"
-    )
+    invoice_reference = InvoiceReference.create(i.id, "TEST_INV_NUMBER", "TEST_REF_NUMBER")
     invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
     invoice_reference.save()
 

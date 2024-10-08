@@ -82,9 +82,7 @@ def test_eft_credit_invoice_link(session):
     eft_credit_invoice_link.link_group_id = link_group_id
     eft_credit_invoice_link.save()
 
-    eft_credit_invoice_link = EFTCreditInvoiceLink.find_by_id(
-        eft_credit_invoice_link.id
-    )
+    eft_credit_invoice_link = EFTCreditInvoiceLink.find_by_id(eft_credit_invoice_link.id)
     assert eft_credit_invoice_link.id is not None
     assert eft_credit_invoice_link.eft_credit_id == eft_credit.id
     assert eft_credit_invoice_link.invoice_id == invoice.id

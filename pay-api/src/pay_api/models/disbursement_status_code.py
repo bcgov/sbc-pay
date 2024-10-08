@@ -37,9 +37,7 @@ class DisbursementStatusCode(db.Model, CodeTable):
     description = db.Column("description", db.String(200), nullable=False)
 
 
-class DisbursementStatusCodeSchema(
-    ma.SQLAlchemyAutoSchema
-):  # pylint: disable=too-many-ancestors
+class DisbursementStatusCodeSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Status Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods

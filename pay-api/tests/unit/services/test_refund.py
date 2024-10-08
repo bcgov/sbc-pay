@@ -117,22 +117,16 @@ def test_create_refund_for_paid_invoice(
     payment_account = factory_payment_account(payment_method_code=payment_method)
     payment_account.save()
 
-    i = factory_invoice(
-        payment_account=payment_account, payment_method_code=payment_method
-    )
+    i = factory_invoice(payment_account=payment_account, payment_method_code=payment_method)
     i.save()
     if has_reference:
         inv_ref = factory_invoice_reference(i.id)
         inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
         inv_ref.save()
 
-        payment = factory_payment(
-            invoice_number=inv_ref.invoice_number, payment_status_code=pay_status
-        ).save()
+        payment = factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code=pay_status).save()
 
-        factory_payment_transaction(
-            payment_id=payment.id, status_code=TransactionStatus.COMPLETED.value
-        ).save()
+        factory_payment_transaction(payment_id=payment.id, status_code=TransactionStatus.COMPLETED.value).save()
 
     i.invoice_status_code = invoice_status
     i.save()
@@ -165,9 +159,7 @@ def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
 
     payment = factory_payment(invoice_number=inv_ref.invoice_number).save()
 
-    factory_payment_transaction(
-        payment_id=payment.id, status_code=TransactionStatus.COMPLETED.value
-    ).save()
+    factory_payment_transaction(payment_id=payment.id, status_code=TransactionStatus.COMPLETED.value).save()
 
     i.invoice_status_code = InvoiceStatus.PAID.value
     i.payment_date = datetime.now(tz=timezone.utc)

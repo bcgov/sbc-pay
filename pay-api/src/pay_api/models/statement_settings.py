@@ -48,25 +48,18 @@ class StatementSettings(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
-    payment_account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
-    from_date = db.Column(
-        db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False
-    )
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
+    from_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
 
     @classmethod
     def find_active_settings(cls, auth_account_id: str, valid_date: datetime):
         """Return active statement setting for the account."""
-        query = cls.query.join(PaymentAccount).filter(
-            PaymentAccount.auth_account_id == auth_account_id
-        )
+        query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
         # need this to strip of the time information from the date
         todays_datetime = valid_date.date()
         query = query.filter(StatementSettings.from_date <= todays_datetime).filter(
-            (StatementSettings.to_date.is_(None))
-            | (StatementSettings.to_date >= todays_datetime)
+            (StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= todays_datetime)
         )
 
         return query.one_or_none()
@@ -74,16 +67,12 @@ class StatementSettings(BaseModel):
     @classmethod
     def find_latest_settings(cls, auth_account_id: str):
         """Return latest active statement setting for the account."""
-        query = cls.query.join(PaymentAccount).filter(
-            PaymentAccount.auth_account_id == auth_account_id
-        )
+        query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
         query = query.filter((StatementSettings.to_date.is_(None)))
         return query.one_or_none()
 
 
-class StatementSettingsSchema(
-    ma.SQLAlchemyAutoSchema
-):  # pylint: disable=too-many-ancestors
+class StatementSettingsSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Statements settings."""
 
     class Meta:  # pylint: disable=too-few-public-methods

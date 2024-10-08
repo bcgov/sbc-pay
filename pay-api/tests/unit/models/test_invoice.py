@@ -44,10 +44,7 @@ def test_invoice(session):
 
     # assert overdue default is set
     assert invoice.overdue_date is not None
-    assert (
-        invoice.overdue_date.date()
-        == (datetime.now(tz=timezone.utc) + relativedelta(months=2, day=15)).date()
-    )
+    assert invoice.overdue_date.date() == (datetime.now(tz=timezone.utc) + relativedelta(months=2, day=15)).date()
 
 
 def test_invoice_find_by_id(session):
@@ -76,9 +73,7 @@ def test_payments_marked_for_delete(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(
-        status_code=InvoiceStatus.DELETE_ACCEPTED.value, payment_account=payment_account
-    )
+    invoice = factory_invoice(status_code=InvoiceStatus.DELETE_ACCEPTED.value, payment_account=payment_account)
     # invoice.invoice_status_code == InvoiceStatus.DELETE_ACCEPTED.value
     invoice.save()
     invoices = Invoice.find_invoices_marked_for_delete()
@@ -116,9 +111,7 @@ def test_overdue_date(session, test_name, created_on, overdue_date):
     """Test overdue date to make sure it's right TZ."""
     # PDT -> PST on Nov 3, 2024 at 2:00 am
     # PST -> PDT on March 10, 2024 at 2:00 am
-    invoice = factory_invoice(
-        created_on=created_on, payment_account=factory_payment_account()
-    )
+    invoice = factory_invoice(created_on=created_on, payment_account=factory_payment_account())
     invoice.save()
     assert invoice.overdue_date == overdue_date
 

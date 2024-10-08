@@ -197,9 +197,7 @@ def get_payment_request_for_cso(csbfile_quantity: int = 2):
         "filingInfo": {
             "filingIdentifier": "34522",
             "folioNumber": "22",
-            "filingTypes": [
-                {"filingTypeCode": "CSBVFEE", "quantity": csbfile_quantity}
-            ],
+            "filingTypes": [{"filingTypeCode": "CSBVFEE", "quantity": csbfile_quantity}],
         },
         "businessInfo": {
             "businessIdentifier": "business_indentifier",
@@ -210,9 +208,7 @@ def get_payment_request_for_cso(csbfile_quantity: int = 2):
     }
 
 
-def get_payment_request_with_folio_number(
-    business_identifier: str = "CP0001234", folio_number: str = "1234567890"
-):
+def get_payment_request_with_folio_number(business_identifier: str = "CP0001234", folio_number: str = "1234567890"):
     """Return a payment request object."""
     return {
         "businessInfo": {
@@ -238,9 +234,7 @@ def get_payment_request_with_folio_number(
     }
 
 
-def get_payment_request_with_payment_method(
-    business_identifier: str = "CP0001234", payment_method: str = "CC"
-):
+def get_payment_request_with_payment_method(business_identifier: str = "CP0001234", payment_method: str = "CC"):
     """Return a payment request object."""
     return {
         "paymentInfo": {"methodOfPayment": payment_method},
@@ -301,9 +295,7 @@ def get_zero_dollar_payment_request(business_identifier: str = "CP0001234"):
                 "country": "CA",
             },
         },
-        "filingInfo": {
-            "filingTypes": [{"filingTypeCode": "OTFDR"}, {"filingTypeCode": "OTFDR"}]
-        },
+        "filingInfo": {"filingTypes": [{"filingTypeCode": "OTFDR"}, {"filingTypeCode": "OTFDR"}]},
     }
 
 
@@ -388,9 +380,7 @@ def factory_payment_account(
     return account
 
 
-def factory_premium_payment_account(
-    bcol_user_id="PB25020", bcol_account_id="1234567890", auth_account_id="1234"
-):
+def factory_premium_payment_account(bcol_user_id="PB25020", bcol_account_id="1234567890", auth_account_id="1234"):
     """Return Factory."""
     account = PaymentAccount(
         auth_account_id=auth_account_id,
@@ -541,9 +531,7 @@ def factory_payment_line_item(
         total=total,
         service_fees=service_fees,
         line_item_status_code=status,
-        fee_distribution_id=DistributionCode.find_by_active_for_fee_schedule(
-            fee_schedule_id
-        ).distribution_code_id,
+        fee_distribution_id=DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id,
         description=description,
     )
 
@@ -643,9 +631,7 @@ def activate_pad_account(auth_account_id: str):
     payment_account = PaymentAccount.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
     payment_account.save()
-    cfs_account = CfsAccount.find_effective_by_payment_method(
-        payment_account.id, PaymentMethod.PAD.value
-    )
+    cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     cfs_account.status = "ACTIVE"
     cfs_account.save()
 
@@ -847,9 +833,7 @@ def get_gov_account_payload_with_no_revenue_account(
 
 def get_routing_slip_request(
     number: str = "206380875",
-    cheque_receipt_numbers: List[Tuple] = [
-        ("1234567890", PaymentMethod.CHEQUE.value, 100)
-    ],
+    cheque_receipt_numbers: List[Tuple] = [("1234567890", PaymentMethod.CHEQUE.value, 100)],
 ):
     """Return a routing slip request dictionary."""
     routing_slip_payload: Dict[str, any] = {
@@ -890,9 +874,7 @@ def factory_eft_file(file_ref: str = "test_ref.txt"):
     return EFTFile(file_ref=file_ref).save()
 
 
-def factory_eft_shortname(
-    short_name: str, short_name_type: str = EFTShortnameType.EFT.value
-):
+def factory_eft_shortname(short_name: str, short_name_type: str = EFTShortnameType.EFT.value):
     """Return an EFT short name model."""
     return EFTShortnames(short_name=short_name, type=short_name_type).save()
 
@@ -914,9 +896,7 @@ def factory_eft_shortname_link(
     ).save()
 
 
-def factory_eft_credit(
-    eft_file_id, short_name_id, amount=10.00, remaining_amount=10.00
-):
+def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amount=10.00):
     """Return an EFT Credit."""
     return EFTCredit(
         created_on=datetime.now(tz=timezone.utc),
@@ -960,9 +940,7 @@ def factory_eft_refund(
     ).save()
 
 
-def factory_eft_credit_invoice_link(
-    eft_credit_id, invoice_id, status_code, amount=1, link_group_id=None
-):
+def factory_eft_credit_invoice_link(eft_credit_id, invoice_id, status_code, amount=1, link_group_id=None):
     """Return an EFT Credit invoice link."""
     return EFTCreditInvoiceLink(
         eft_credit_id=eft_credit_id,
@@ -973,13 +951,9 @@ def factory_eft_credit_invoice_link(
     )
 
 
-def factory_non_sufficient_funds(
-    invoice_id: int, invoice_number: str, description: str = None
-):
+def factory_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str = None):
     """Return a Non-Sufficient Funds Model."""
-    return NonSufficientFunds(
-        invoice_id=invoice_id, invoice_number=invoice_number, description=description
-    )
+    return NonSufficientFunds(invoice_id=invoice_id, invoice_number=invoice_number, description=description)
 
 
 def factory_distribution_code(
@@ -1009,6 +983,4 @@ def factory_distribution_code(
 
 def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
     """Return Factory."""
-    return DistributionCodeLink(
-        fee_schedule_id=fee_schedule_id, distribution_code_id=distribution_code_id
-    )
+    return DistributionCodeLink(fee_schedule_id=fee_schedule_id, distribution_code_id=distribution_code_id)

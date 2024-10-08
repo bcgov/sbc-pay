@@ -72,9 +72,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
     )
     invoice.save()
 
-    annual_report_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
-        "CP", "OTANN"
-    )
+    annual_report_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
     annual_report_payment_line_item = factory_payment_line_item(
         invoice_id=invoice.id,
         fee_schedule_id=annual_report_fee_schedule.fee_schedule_id,
@@ -84,9 +82,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
     )
     annual_report_payment_line_item.save()
 
-    non_sufficient_funds_fee_schedule = (
-        FeeScheduleModel.find_by_filing_type_and_corp_type("BCR", "NSF")
-    )
+    non_sufficient_funds_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCR", "NSF")
     distribution_code = factory_distribution_code("NSF")
     distribution_code.save()
     distribution_link = factory_distribution_link(
@@ -103,9 +99,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
     )
     non_sufficient_funds_payment_line_item.save()
 
-    invoice_reference = factory_invoice_reference(
-        invoice_id=invoice.id, invoice_number=payment.invoice_number
-    )
+    invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number=payment.invoice_number)
     invoice_reference.save()
     non_sufficient_funds = factory_non_sufficient_funds(
         invoice_id=invoice.id, invoice_number=payment.invoice_number, description="NSF"
@@ -122,10 +116,8 @@ def test_find_all_non_sufficient_funds_invoices(session):
     ).save()
     factory_statement_invoices(statement_id=statement.id, invoice_id=invoice.id).save()
 
-    find_non_sufficient_funds = (
-        NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
-            account_id=payment_account.auth_account_id
-        )
+    find_non_sufficient_funds = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
+        account_id=payment_account.auth_account_id
     )
 
     assert find_non_sufficient_funds is not None

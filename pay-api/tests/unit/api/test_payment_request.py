@@ -61,9 +61,7 @@ def test_payment_request_creation(session, client, jwt, app):
     details = [{"label": "TEST", "value": "TEST"}]
     req_data["details"] = details
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(req_data), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(req_data), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get("_links") is not None
     assert schema_utils.validate(rv.json, "invoice")[0]
@@ -101,25 +99,17 @@ def test_payment_creation_using_direct_pay(session, client, jwt, app):
             403,
         ),  # Business SA creating CSO invoice
         (
-            get_payment_request_with_service_fees(
-                corp_type="CSO", filing_type="CSCRMTFC"
-            ),
+            get_payment_request_with_service_fees(corp_type="CSO", filing_type="CSCRMTFC"),
             "CSO",
             201,
         ),  # CSO SA and CSA inv
     ],
 )
-def test_payment_creation_with_service_account(
-    session, client, jwt, app, payload, product_code_claim, expected_status
-):
+def test_payment_creation_with_service_account(session, client, jwt, app, payload, product_code_claim, expected_status):
     """Assert that the endpoint returns 201."""
     # Point CSO fee schedule to a valid distribution code.
-    fee_schedule_id = FeeScheduleModel.find_by_filing_type_and_corp_type(
-        "CSO", "CSCRMTFC"
-    ).fee_schedule_id
-    DistributionCodeLinkModel(
-        fee_schedule_id=fee_schedule_id, distribution_code_id=1
-    ).save()
+    fee_schedule_id = FeeScheduleModel.find_by_filing_type_and_corp_type("CSO", "CSCRMTFC").fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
 
     token = jwt.create_jwt(
         get_claims(
@@ -130,17 +120,13 @@ def test_payment_creation_with_service_account(
     )
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == expected_status
 
 
 def test_payment_creation_for_unauthorized_user(session, client, jwt, app):
     """Assert that the endpoint returns 403."""
-    token = jwt.create_jwt(
-        get_claims(username="TEST", login_source="PASSCODE"), token_header
-    )
+    token = jwt.create_jwt(get_claims(username="TEST", login_source="PASSCODE"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     rv = client.post(
@@ -214,9 +200,7 @@ def test_payment_invalid_request(session, client, jwt, app, payload):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 400
     assert schema_utils.validate(rv.json, "problem")[0]
 
@@ -290,9 +274,7 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
     assert len(rv.json["invoices"]) == 1
     assert rv.json["invoices"][0]["businessIdentifier"] == business_identifier
     assert rv.json["invoices"][0]["id"] == invoice_id
-    assert rv.json["invoices"][0]["paymentAccount"]["accountId"] == str(
-        account_payload["accountId"]
-    )
+    assert rv.json["invoices"][0]["paymentAccount"]["accountId"] == str(account_payload["accountId"])
 
 
 def test_zero_dollar_payment_creation(session, client, jwt, app):
@@ -313,18 +295,14 @@ def test_zero_dollar_payment_creation(session, client, jwt, app):
     assert schema_utils.validate(rv.json, "invoice")[0]
 
 
-def test_zero_dollar_payment_creation_for_unaffiliated_entity(
-    session, client, jwt, app
-):
+def test_zero_dollar_payment_creation_for_unaffiliated_entity(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(role="staff"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_zero_dollar_payment_request(business_identifier="CP0001237")
-        ),
+        data=json.dumps(get_zero_dollar_payment_request(business_identifier="CP0001237")),
         headers=headers,
     )
 
@@ -418,9 +396,7 @@ def test_zero_dollar_payment_creation_with_existing_routing_slip(session, client
     token = jwt.create_jwt(claims, token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     payload = get_routing_slip_request()
-    rv = client.post(
-        "/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     rs_number = rv.json.get("number")
 
@@ -439,18 +415,11 @@ def test_zero_dollar_payment_creation_with_existing_routing_slip(session, client
 
     items = rv.json.get("items")
 
-    assert (
-        items[0].get("remainingAmount")
-        == payload.get("payments")[0].get("paidAmount") - total
-    )
+    assert items[0].get("remainingAmount") == payload.get("payments")[0].get("paidAmount") - total
 
 
-@pytest.mark.parametrize(
-    "payment_requests", [get_payment_request(), get_payment_request_without_bn()]
-)
-def test_payment_creation_with_existing_routing_slip(
-    session, client, jwt, payment_requests
-):
+@pytest.mark.parametrize("payment_requests", [get_payment_request(), get_payment_request_without_bn()])
+def test_payment_creation_with_existing_routing_slip(session, client, jwt, payment_requests):
     """Assert that the endpoint returns 201."""
     claims = get_claims(
         roles=[
@@ -463,9 +432,7 @@ def test_payment_creation_with_existing_routing_slip(
     token = jwt.create_jwt(claims, token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     payload = get_routing_slip_request()
-    rv = client.post(
-        "/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     rs_number = rv.json.get("number")
 
@@ -485,15 +452,10 @@ def test_payment_creation_with_existing_routing_slip(
 
     items = rv.json.get("items")
 
-    assert (
-        items[0].get("remainingAmount")
-        == payload.get("payments")[0].get("paidAmount") - total
-    )
+    assert items[0].get("remainingAmount") == payload.get("payments")[0].get("paidAmount") - total
 
 
-def test_payment_creation_with_existing_invalid_routing_slip_invalid(
-    session, client, jwt
-):
+def test_payment_creation_with_existing_invalid_routing_slip_invalid(session, client, jwt):
     """Assert that the endpoint returns 201."""
     claims = get_claims(
         roles=[
@@ -509,13 +471,9 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(
     # create an RS with less balance
     cheque_amount = 1
     payload = get_routing_slip_request(
-        cheque_receipt_numbers=[
-            ("111456789", PaymentMethod.CHEQUE.value, cheque_amount)
-        ]
+        cheque_receipt_numbers=[("111456789", PaymentMethod.CHEQUE.value, cheque_amount)]
     )
-    rv = client.post(
-        "/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers)
     rs_number = rv.json.get("number")
 
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -550,9 +508,7 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(
         "childRoutingSlipNumber": rs_number,
         "parentRoutingSlipNumber": f"{parent1.get('number')}",
     }
-    client.post(
-        "/api/v1/fas/routing-slips/links", data=json.dumps(link_data), headers=headers
-    )
+    client.post("/api/v1/fas/routing-slips/links", data=json.dumps(link_data), headers=headers)
     rv = client.post("/api/v1/payment-requests", data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
     assert "LINKED_ROUTING_SLIP" in rv.json.get("type")
@@ -568,9 +524,7 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(
     rv = client.post("/api/v1/payment-requests", data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
     assert rv.json.get("type") == "RS_DOESNT_EXIST"
-    current_app.config["ALLOW_LEGACY_ROUTING_SLIPS"] = (
-        True  # reset it back not to affect other tests
-    )
+    current_app.config["ALLOW_LEGACY_ROUTING_SLIPS"] = True  # reset it back not to affect other tests
 
 
 def test_bcol_payment_creation(session, client, jwt, app):
@@ -599,9 +553,7 @@ def test_bcol_payment_creation(session, client, jwt, app):
         },
     }
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get("_links") is not None
 
@@ -629,9 +581,7 @@ def test_zero_dollar_payment_creation_with_waive_fees(session, client, jwt, app)
     assert schema_utils.validate(rv.json, "invoice")[0]
 
 
-def test_zero_dollar_payment_creation_with_waive_fees_unauthorized(
-    session, client, jwt, app
-):
+def test_zero_dollar_payment_creation_with_waive_fees_unauthorized(session, client, jwt, app):
     """Assert that the endpoint returns 401."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -669,9 +619,7 @@ def test_premium_payment_creation_with_payment_method(session, client, jwt, app)
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="DRAWDOWN"
-            )
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="DRAWDOWN")
         ),
         headers=headers,
     )
@@ -689,9 +637,7 @@ def test_premium_payment_creation_with_payment_method_ob(session, client, jwt, a
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="ONLINE_BANKING"
-            )
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="ONLINE_BANKING")
         ),
         headers=headers,
     )
@@ -717,9 +663,7 @@ def test_premium_payment_creation_with_payment_method_ob_cc(session, client, jwt
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="ONLINE_BANKING"
-            )
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="ONLINE_BANKING")
         ),
         headers=headers,
     )
@@ -760,11 +704,7 @@ def test_cc_payment_with_no_contact_info(session, client, jwt, app):
 
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_no_contact_info(
-                payment_method="CC", filing_type_code="OTANN"
-            )
-        ),
+        data=json.dumps(get_payment_request_with_no_contact_info(payment_method="CC", filing_type_code="OTANN")),
         headers=headers,
     )
     assert rv.status_code == 201
@@ -784,11 +724,7 @@ def test_premium_payment_with_no_contact_info(session, client, jwt, app):
 
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_no_contact_info(
-                payment_method="DRAWDOWN", corp_type="PPR"
-            )
-        ),
+        data=json.dumps(get_payment_request_with_no_contact_info(payment_method="DRAWDOWN", corp_type="PPR")),
         headers=headers,
     )
     assert rv.status_code == 201
@@ -807,16 +743,12 @@ def test_premium_payment_with_no_contact_info(session, client, jwt, app):
         (None, get_payment_request()),
     ],
 )
-def test_payment_creation_with_folio_number(
-    session, client, jwt, app, folio_number, payload
-):
+def test_payment_creation_with_folio_number(session, client, jwt, app, folio_number, payload):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get("_links") is not None
 
@@ -855,9 +787,7 @@ def test_bcol_payment_creation_by_staff(session, client, jwt, app):
         },
     }
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get("datNumber") == dat_number
     assert rv.json.get("paymentMethod") == "DRAWDOWN"
@@ -930,9 +860,7 @@ def test_bcol_payment_creation_by_system(session, client, jwt, app):
         },
     }
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get("datNumber") == dat_number
     assert rv.json.get("paymentMethod") == "DRAWDOWN"
@@ -950,9 +878,7 @@ def test_invoice_pdf(session, client, jwt, app):
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="ONLINE_BANKING"
-            )
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="ONLINE_BANKING")
         ),
         headers=headers,
     )
@@ -986,9 +912,7 @@ def test_premium_payment_creation_with_ob_disabled(session, client, jwt, app):
     assert not rv.json.get("isOnlineBankingAllowed")
 
 
-def test_future_effective_premium_payment_creation_with_ob_disabled(
-    session, client, jwt, app
-):
+def test_future_effective_premium_payment_creation_with_ob_disabled(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {
@@ -1074,9 +998,7 @@ def test_create_pad_payment_request(session, client, jwt, app):
         filing_type_code="BCINC",
         payment_method=PaymentMethod.PAD.value,
     )
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
 
     assert rv.json.get("paymentMethod") == PaymentMethod.PAD.value
     assert not rv.json.get("isOnlineBankingAllowed")
@@ -1104,9 +1026,7 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
 
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
@@ -1121,9 +1041,7 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="ONLINE_BANKING"
-            )
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="ONLINE_BANKING")
         ),
         headers=headers,
     )
@@ -1135,9 +1053,7 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
         headers=headers,
     )
 
-    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        auth_account_id
-    )
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     assert payment_account.credit == 1
 
     # Now set the credit less than the total of invoice.
@@ -1146,9 +1062,7 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="ONLINE_BANKING"
-            )
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="ONLINE_BANKING")
         ),
         headers=headers,
     )
@@ -1160,9 +1074,7 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
         headers=headers,
     )
     # Credit won't be applied as the invoice total is 50 and the credit should remain as 0.
-    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        auth_account_id
-    )
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     assert payment_account.credit == 0
 
 
@@ -1178,12 +1090,8 @@ def test_create_ejv_payment_request(session, client, jwt, app):
     )
     auth_account_id = rv.json.get("accountId")
 
-    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        auth_account_id
-    )
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(
-        payment_account.id
-    )
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(payment_account.id)
 
     assert dist_code
     assert dist_code.account_id == payment_account.id
@@ -1232,9 +1140,7 @@ def test_payment_request_creation_for_wills(session, client, jwt, app):
     )
 
     assert rv.json.get("serviceFees") == 1.5
-    assert (
-        rv.json.get("total") == 28.5
-    )  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.5
+    assert rv.json.get("total") == 28.5  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.5
     assert sum(line["serviceFees"] for line in rv.json.get("lineItems")) == 1.5
 
 
@@ -1254,9 +1160,7 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
     auth_account_id = rv.json.get("accountId")
 
     # Create account fee details.
-    staff_token = jwt.create_jwt(
-        get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header
-    )
+    staff_token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     staff_headers = {
         "Authorization": f"Bearer {staff_token}",
         "content-type": "application/json",
@@ -1290,9 +1194,7 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
         headers=user_headers,
     )
     assert rv.json.get("serviceFees") == 1.0
-    assert (
-        rv.json.get("total") == 1.0
-    )  # Wills Noticee : 0, Alias : 0 each for 2, service fee 1.0
+    assert rv.json.get("total") == 1.0  # Wills Noticee : 0, Alias : 0 each for 2, service fee 1.0
     assert rv.json.get("lineItems")[0]["serviceFees"] == 1.0
     assert rv.json.get("lineItems")[1]["serviceFees"] == 0
 
@@ -1315,9 +1217,7 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
         headers=user_headers,
     )
     assert rv.json.get("serviceFees") == 1.0
-    assert (
-        rv.json.get("total") == 28
-    )  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.0
+    assert rv.json.get("total") == 28  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.0
     assert rv.json.get("lineItems")[0]["serviceFees"] == 1.0
     assert rv.json.get("lineItems")[1]["serviceFees"] == 0
 
@@ -1340,9 +1240,7 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
         headers=user_headers,
     )
     assert rv.json.get("serviceFees") == 1.5
-    assert (
-        rv.json.get("total") == 28.5
-    )  # Wills Notice : 17, Alias : 5 each for 2, service fee 1.0
+    assert rv.json.get("total") == 28.5  # Wills Notice : 17, Alias : 5 each for 2, service fee 1.0
     assert rv.json.get("lineItems")[0]["serviceFees"] == 1.5
     assert rv.json.get("lineItems")[1]["serviceFees"] == 0
 
@@ -1359,12 +1257,8 @@ def test_create_ejv_payment_request_non_billable_account(session, client, jwt, a
     )
     auth_account_id = rv.json.get("accountId")
 
-    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        auth_account_id
-    )
-    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(
-        payment_account.id
-    )
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(payment_account.id)
 
     assert dist_code
     assert dist_code.account_id == payment_account.id
@@ -1393,9 +1287,7 @@ def test_create_ejv_payment_request_non_billable_account(session, client, jwt, a
         (get_premium_account_payload(account_id=1234), PaymentMethod.DRAWDOWN.value),
     ],
 )
-def test_create_sandbox_payment_requests(
-    session, client, jwt, app, account_payload, pay_method
-):
+def test_create_sandbox_payment_requests(session, client, jwt, app, account_payload, pay_method):
     """Assert payment request works for PAD accounts."""
     token = jwt.create_jwt(
         get_claims(roles=[Role.SYSTEM.value, Role.CREATE_SANDBOX_ACCOUNT.value]),
@@ -1419,9 +1311,7 @@ def test_create_sandbox_payment_requests(
     }
 
     payload = get_payment_request()
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
 
     assert rv.json.get("paymentMethod") == pay_method
     assert rv.json.get("statusCode") == "COMPLETED"
@@ -1432,13 +1322,9 @@ def test_payment_request_creation_using_variable_fee(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     req_data = copy.deepcopy(get_payment_request())
-    req_data["filingInfo"]["filingTypes"][0][
-        "fee"
-    ] = 100  # This shouldn't be in effect as the fee is not variable.
+    req_data["filingInfo"]["filingTypes"][0]["fee"] = 100  # This shouldn't be in effect as the fee is not variable.
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(req_data), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(req_data), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get("total") == 50
 
@@ -1450,13 +1336,9 @@ def test_payment_request_creation_using_variable_fee(session, client, jwt, app):
     fee_schedule.variable = True
     fee_schedule.save()
 
-    req_data["filingInfo"]["filingTypes"][0][
-        "fee"
-    ] = 100  # This should be in effect now.
+    req_data["filingInfo"]["filingTypes"][0]["fee"] = 100  # This should be in effect now.
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(req_data), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(req_data), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get("total") == 130
 
@@ -1487,7 +1369,5 @@ def test_business_identifier_too_long(session, client, jwt, app):
         },
     }
 
-    rv = client.post(
-        "/api/v1/payment-requests", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 400

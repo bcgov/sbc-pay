@@ -301,9 +301,7 @@ class PatchActions(Enum):
     @classmethod
     def from_value(cls, value):
         """Return instance from value of the enum."""
-        return (
-            PatchActions(value) if value in cls._value2member_map_ else None
-        )  # pylint: disable=no-member
+        return PatchActions(value) if value in cls._value2member_map_ else None  # pylint: disable=no-member
 
 
 class RefundsPartialType(Enum):

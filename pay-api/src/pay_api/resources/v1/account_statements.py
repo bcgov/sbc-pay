@@ -63,9 +63,7 @@ def get_account_statement(account_id: str, statement_id: str):
     response_content_type = request.headers.get("Accept", ContentType.PDF.value)
 
     # Check if user is authorized to perform this action
-    auth = check_auth(
-        business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE
-    )
+    auth = check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
 
     report, report_name = StatementService.get_statement_report(
         statement_id=statement_id, content_type=response_content_type, auth=auth
@@ -86,9 +84,7 @@ def get_account_statement_summary(account_id: str):
     current_app.logger.info("<get_account_statement_summary")
     check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
     response, status = (
-        StatementService.get_summary(
-            auth_account_id=account_id, calculate_under_payment=True
-        ),
+        StatementService.get_summary(auth_account_id=account_id, calculate_under_payment=True),
         HTTPStatus.OK,
     )
     current_app.logger.info(">get_account_statement_summary")

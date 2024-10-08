@@ -66,9 +66,7 @@ def test_fee_schedule(session):
     fee_code = factory_feecode("EN000X", 100)
     corp_type = factory_corp_type("XX", "Cooperative")
     filing_type = factory_filing_type("OTANNX", "Annual Report")
-    fee_schedule = factory_fee_schedule(
-        "OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None
-    )
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
@@ -86,9 +84,7 @@ def test_fee_schedule_find_by_corp_type_and_filing_type(session):
     fee_code = factory_feecode("EN000X", 100)
     corp_type = factory_corp_type("XX", "Cooperative")
     filing_type = factory_filing_type("OTANNX", "Annual Report")
-    fee_schedule = factory_fee_schedule(
-        "OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None
-    )
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
@@ -108,9 +104,7 @@ def test_fee_schedule_find_by_corp_type_and_filing_type_invalid(session):
     fee_code = factory_feecode("EN000X", 100)
     corp_type = factory_corp_type("XX", "Cooperative")
     filing_type = factory_filing_type("OTANNX", "Annual Report")
-    fee_schedule = factory_fee_schedule(
-        "OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None
-    )
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
@@ -130,18 +124,14 @@ def test_fee_schedule_find_by_corp_type_and_filing_type_valid_date(session):
     fee_code = factory_feecode("EN000X", 100)
     corp_type = factory_corp_type("XX", "Cooperative")
     filing_type = factory_filing_type("OTANNX", "Annual Report")
-    fee_schedule = factory_fee_schedule(
-        "OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None
-    )
+    fee_schedule = factory_fee_schedule("OTANNX", "XX", "EN000X", datetime.now(tz=timezone.utc), None)
     session.add(fee_code)
     session.add(corp_type)
     session.add(filing_type)
     session.add(fee_schedule)
     session.commit()
 
-    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type(
-        "XX", "OTANNX", datetime.now(tz=timezone.utc)
-    )
+    fee_schedule = fee_schedule.find_by_filing_type_and_corp_type("XX", "OTANNX", datetime.now(tz=timezone.utc))
 
     assert fee_schedule.fee.amount == 100
 

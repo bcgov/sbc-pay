@@ -42,9 +42,7 @@ def test_fees_with_corp_type_and_filing_type(session, client, jwt, app):
     assert schema_utils.validate(rv.json, "fees")[0]
 
 
-def test_fees_with_corp_type_and_filing_type_with_valid_start_date(
-    session, client, jwt, app
-):
+def test_fees_with_corp_type_and_filing_type_with_valid_start_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     # Insert a record first and then query for it
     token = jwt.create_jwt(get_claims(), token_header)
@@ -59,17 +57,13 @@ def test_fees_with_corp_type_and_filing_type_with_valid_start_date(
         factory_fee_model("XXX", 100),
         now - timedelta(1),
     )
-    rv = client.get(
-        f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "fees")[0]
     assert not schema_utils.validate(rv.json, "problem")[0]
 
 
-def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(
-    session, client, jwt, app
-):
+def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
     # Insert a record first and then query for it
     token = jwt.create_jwt(get_claims(), token_header)
@@ -84,17 +78,13 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(
         factory_fee_model("XXX", 100),
         now + timedelta(1),
     )
-    rv = client.get(
-        f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers)
     assert rv.status_code == 400
     assert schema_utils.validate(rv.json, "problem")[0]
     assert not schema_utils.validate(rv.json, "fees")[0]
 
 
-def test_fees_with_corp_type_and_filing_type_with_valid_end_date(
-    session, client, jwt, app
-):
+def test_fees_with_corp_type_and_filing_type_with_valid_end_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     # Insert a record first and then query for it
     token = jwt.create_jwt(get_claims(), token_header)
@@ -110,16 +100,12 @@ def test_fees_with_corp_type_and_filing_type_with_valid_end_date(
         now - timedelta(1),
         now,
     )
-    rv = client.get(
-        f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "fees")[0]
 
 
-def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(
-    session, client, jwt, app
-):
+def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
     # Insert a record first and then query for it
     token = jwt.create_jwt(get_claims(), token_header)
@@ -135,9 +121,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(
         now - timedelta(2),
         now - timedelta(1),
     )
-    rv = client.get(
-        f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}", headers=headers)
     assert rv.status_code == 400
     assert schema_utils.validate(rv.json, "problem")[0]
 
@@ -154,9 +138,7 @@ def test_calculate_fees_with_waive_fees(session, client, jwt, app):
         factory_corp_type_model("XX", "TEST"),
         factory_fee_model("XXX", 100),
     )
-    rv = client.get(
-        f"/api/v1/fees/{corp_type}/{filing_type_code}?waiveFees=true", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?waiveFees=true", headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "fees")[0]
     assert rv.json.get("filingFees") == 0
@@ -174,9 +156,7 @@ def test_calculate_fees_with_waive_fees_unauthorized(session, client, jwt, app):
         factory_corp_type_model("XX", "TEST"),
         factory_fee_model("XXX", 100),
     )
-    rv = client.get(
-        f"/api/v1/fees/{corp_type}/{filing_type_code}?waiveFees=true", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?waiveFees=true", headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "fees")[0]
     assert rv.json.get("filingFees") == 100
@@ -193,9 +173,7 @@ def test_fees_with_quantity(session, client, jwt, app):
         factory_corp_type_model("XX", "TEST"),
         factory_fee_model("XXX", 100),
     )
-    rv = client.get(
-        f"/api/v1/fees/{corp_type}/{filing_type_code}?quantity=10", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?quantity=10", headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "fees")[0]
 
@@ -211,9 +189,7 @@ def test_fees_with_float_quantity(session, client, jwt, app):
         factory_corp_type_model("XX", "TEST"),
         factory_fee_model("XXX", 43.39),
     )
-    rv = client.get(
-        f"/api/v1/fees/{corp_type}/{filing_type_code}?quantity=6", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/{corp_type}/{filing_type_code}?quantity=6", headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "fees")[0]
     assert rv.json.get("total") == 260.34
@@ -265,9 +241,7 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.post(
-        "/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers
-    )
+    rv = client.post("/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers)
 
     account_id = rv.json.get("accountId")
 

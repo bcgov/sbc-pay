@@ -28,9 +28,7 @@ from .base_schema import BaseSchema
 from .db import db
 
 
-class PaymentTransaction(
-    BaseModel
-):  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """This class manages all of the base data about Payment Transaction."""
 
     __tablename__ = "payment_transactions"
@@ -59,18 +57,14 @@ class PaymentTransaction(
     }
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    status_code = db.Column(
-        db.String(20), ForeignKey("transaction_status_codes.code"), nullable=False
-    )
+    status_code = db.Column(db.String(20), ForeignKey("transaction_status_codes.code"), nullable=False)
     payment_id = db.Column(db.Integer, ForeignKey("payments.id"), nullable=False)
     client_system_url = db.Column(db.String(500), nullable=True)
     pay_system_url = db.Column(db.String(2000), nullable=True)
     pay_response_url = db.Column(db.String(2000), nullable=True)
     pay_system_reason_code = db.Column(db.String(2000), nullable=True)
 
-    transaction_start_time = db.Column(
-        db.DateTime, default=lambda: datetime.now(tz=timezone.utc), nullable=False
-    )
+    transaction_start_time = db.Column(db.DateTime, default=lambda: datetime.now(tz=timezone.utc), nullable=False)
     transaction_end_time = db.Column(db.DateTime, nullable=True)
 
     @classmethod
@@ -163,9 +157,7 @@ class PaymentTransaction(
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .payment import Payment
 
-        oldest_transaction_time = datetime.now(tz=timezone.utc) - (
-            timedelta(days=days, hours=hours, minutes=minutes)
-        )
+        oldest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
         completed_status = [
             TransactionStatus.COMPLETED.value,
             TransactionStatus.CANCELLED.value,
@@ -176,11 +168,7 @@ class PaymentTransaction(
             .join(Payment, Payment.id == PaymentTransaction.payment_id)
             .filter(PaymentTransaction.status_code.notin_(completed_status))
             .filter(PaymentTransaction.transaction_start_time < oldest_transaction_time)
-            .filter(
-                Payment.payment_method_code.in_(
-                    [PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value]
-                )
-            )
+            .filter(Payment.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value]))
             .all()
         )
 
@@ -195,9 +183,5 @@ class PaymentTransactionSchema(BaseSchema):  # pylint: disable=too-many-ancestor
 
     status_code = fields.String(data_key="status_code")
     payment_id = fields.Integer(data_key="payment_id")
-    transaction_end_time = fields.DateTime(
-        tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE), data_key="end_time"
-    )
-    transaction_start_time = fields.DateTime(
-        tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE), data_key="start_time"
-    )
+    transaction_end_time = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE), data_key="end_time")
+    transaction_start_time = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE), data_key="start_time")

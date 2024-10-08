@@ -313,9 +313,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return Payment._populate(payment_dao)
 
     @staticmethod
-    def search_account_payments(
-        auth_account_id: str, status: str, page: int, limit: int
-    ):
+    def search_account_payments(auth_account_id: str, status: str, page: int, limit: int):
         """Search account payments."""
         current_app.logger.debug("<search_account_payments")
         results, total = PaymentModel.search_account_payments(
@@ -335,9 +333,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         for result in results:
             payment = result[0]
             invoice = result[1]
-            if (
-                last_payment_iter is None or payment.id != last_payment_iter.id
-            ):  # Payment doesn't exist in array yet
+            if last_payment_iter is None or payment.id != last_payment_iter.id:  # Payment doesn't exist in array yet
                 payment_schema = PaymentSchema()
                 payment_dict = payment_schema.dump(payment)
                 payment_dict["invoices"] = []
@@ -356,9 +352,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @staticmethod
     def search_all_purchase_history(auth_account_id: str, search_filter: Dict):
         """Return all results for the purchase history."""
-        return Payment.search_purchase_history(
-            auth_account_id, search_filter, 0, 0, True
-        )
+        return Payment.search_purchase_history(auth_account_id, search_filter, 0, 0, True)
 
     @classmethod
     def search_purchase_history(
@@ -388,9 +382,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return data
 
     @classmethod
-    def create_payment_report_details(
-        cls, purchases: Tuple, data: Dict
-    ):  # pylint:disable=too-many-locals
+    def create_payment_report_details(cls, purchases: Tuple, data: Dict):  # pylint:disable=too-many-locals
         """Return payment report details by fetching the line items.
 
         purchases is tuple of payment and invoice model records.
@@ -398,20 +390,14 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         if data is None or "items" not in data:
             data = {"items": []}
 
-        invoice_search_list = [
-            InvoiceSearchModel.from_row(invoice_dao) for invoice_dao in purchases
-        ]
+        invoice_search_list = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao in purchases]
         converter = Converter()
         invoice_list = converter.unstructure(invoice_search_list)
-        data["items"] = [
-            converter.remove_nones(invoice_dict) for invoice_dict in invoice_list
-        ]
+        data["items"] = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
         return data
 
     @staticmethod
-    def create_payment_report(
-        auth_account_id: str, search_filter: Dict, content_type: str, report_name: str
-    ):
+    def create_payment_report(auth_account_id: str, search_filter: Dict, content_type: str, report_name: str):
         """Create payment report."""
         current_app.logger.debug(f"<create_payment_report {auth_account_id}")
 
@@ -445,9 +431,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             total_paid += invoice.get("paid", 0)
 
             # Format date to local
-            invoice["created_on"] = get_local_formatted_date(
-                parser.parse(invoice["created_on"])
-            )
+            invoice["created_on"] = get_local_formatted_date(parser.parse(invoice["created_on"]))
 
         return {
             "statutoryFees": total_stat_fees,
@@ -459,9 +443,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
     @staticmethod
     @user_context
-    def generate_payment_report(
-        report_inputs: PaymentReportInput, **kwargs
-    ):  # pylint: disable=too-many-locals
+    def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
         labels = [
             "Transaction",
@@ -485,15 +467,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         template_name = report_inputs.template_name
 
         # Use the status_code_description instead of status_code.
-        invoice_status_codes = CodeService.find_code_values_by_type(
-            Code.INVOICE_STATUS.value
-        )
+        invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
         for invoice in results.get("items", None):
-            filtered_codes = [
-                cd
-                for cd in invoice_status_codes["codes"]
-                if cd["code"] == invoice["status_code"]
-            ]
+            filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
             if filtered_codes:
                 invoice["status_code"] = filtered_codes[0]["description"]
 
@@ -509,10 +485,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             account_info = None
             if kwargs.get("auth", None):
                 account_id = kwargs.get("auth")["account"]["id"]
-                contact_url = (
-                    current_app.config.get("AUTH_API_ENDPOINT")
-                    + f"orgs/{account_id}/contacts"
-                )
+                contact_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}/contacts"
                 contact = OAuthService.get(
                     endpoint=contact_url,
                     token=kwargs["user"].bearer_token,
@@ -521,9 +494,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 ).json()
 
                 account_info = kwargs.get("auth").get("account")
-                account_info["contact"] = contact["contacts"][
-                    0
-                ]  # Get the first one from the list
+                account_info["contact"] = contact["contacts"][0]  # Get the first one from the list
 
             template_vars = {
                 "statementSummary": report_inputs.statement_summary,
@@ -560,19 +531,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             service_fee = float(invoice.get("service_fees", 0))
             total_fees = float(invoice.get("total", 0))
             row_value = [
-                ",".join(
-                    [
-                        line_item.get("description")
-                        for line_item in invoice.get("line_items")
-                    ]
-                ),
+                ",".join([line_item.get("description") for line_item in invoice.get("line_items")]),
                 (
-                    ",".join(
-                        [
-                            f"{detail.get('label')} {detail.get('value')}"
-                            for detail in invoice.get("details")
-                        ]
-                    )
+                    ",".join([f"{detail.get('label')} {detail.get('value')}" for detail in invoice.get("details")])
                     if invoice.get("details")
                     else None
                 ),
@@ -623,9 +584,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             if pay_outstanding_balance and len(payments) == 0:
                 # First time attempting to pay outstanding invoices and there were no previous failures
                 # if there is a failure payment we can follow the normal is_retry_payment flow
-                return Payment._consolidate_invoices_and_pay(
-                    auth_account_id, all_invoice_statuses
-                )
+                return Payment._consolidate_invoices_and_pay(auth_account_id, all_invoice_statuses)
 
             if len(payments) == 1:
                 can_consolidate_invoice = False
@@ -634,10 +593,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 # Here iterate the payments and see if there is a failed PARTIAL payment.
                 for payment in payments:
                     paid_amount = payment.paid_amount or 0
-                    if (
-                        payment.payment_status_code == PaymentStatus.FAILED.value
-                        and paid_amount > 0
-                    ):
+                    if payment.payment_status_code == PaymentStatus.FAILED.value and paid_amount > 0:
                         failed_payment = payment
                         can_consolidate_invoice = False
                         break
@@ -657,17 +613,14 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 # For consolidated payment status will be CREATED, if so don't create another payment record.
                 elif failed_payment.payment_status_code == PaymentStatus.FAILED.value:
                     invoice_total = Decimal("0")
-                    for inv in InvoiceModel.find_invoices_for_payment(
-                        payment_id=failed_payment.id
-                    ):
+                    for inv in InvoiceModel.find_invoices_for_payment(payment_id=failed_payment.id):
                         invoice_total += inv.total
 
                     payment = Payment.create(
                         payment_method=PaymentMethod.CC.value,
                         payment_system=PaymentSystem.PAYBC.value,
                         invoice_number=failed_payment.invoice_number,
-                        invoice_amount=invoice_total
-                        - (failed_payment.paid_amount or 0),
+                        invoice_amount=invoice_total - (failed_payment.paid_amount or 0),
                         payment_account_id=failed_payment.payment_account_id,
                     )
                 else:
@@ -682,9 +635,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @staticmethod
     def get_failed_payments(auth_account_id) -> List[PaymentModel]:
         """Return active failed payments."""
-        return PaymentModel.find_payments_to_consolidate(
-            auth_account_id=auth_account_id
-        )
+        return PaymentModel.find_payments_to_consolidate(auth_account_id=auth_account_id)
 
     @staticmethod
     def _populate(dao: PaymentModel):
@@ -711,20 +662,12 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         invoice_number = generate_transaction_number(inv_no_prefix)
         invoice_exists = False
         invoice_total = sum(invoice.total - invoice.paid for invoice in invoices)
-        consolidated_line_items = [
-            item for invoice in invoices for item in invoice.payment_line_items
-        ]
+        consolidated_line_items = [item for invoice in invoices for item in invoice.payment_line_items]
         try:
-            invoice_response = CFSService.get_invoice(
-                cfs_account=cfs_account, inv_number=invoice_number
-            )
+            invoice_response = CFSService.get_invoice(cfs_account=cfs_account, inv_number=invoice_number)
 
-            invoice_exists = (
-                invoice_response.get("invoice_number", None) == invoice_number
-            )
-            invoice_total_matches = (
-                Decimal(invoice_response.get("total", "0")) == invoice_total
-            )
+            invoice_exists = invoice_response.get("invoice_number", None) == invoice_number
+            invoice_total_matches = Decimal(invoice_response.get("total", "0")) == invoice_total
 
             if invoice_exists and not invoice_total_matches:
                 raise BusinessException(Error.CFS_INVOICES_MISMATCH)
@@ -747,10 +690,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             if inv_ref and inv_ref.invoice_number != invoice_number:
                 inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
                 inv_ref.flush()
-            if (
-                not inv_ref
-                or inv_ref.status_code == InvoiceReferenceStatus.CANCELLED.value
-            ):
+            if not inv_ref or inv_ref.status_code == InvoiceReferenceStatus.CANCELLED.value:
                 InvoiceReferenceModel(
                     invoice_id=invoice.id,
                     status_code=InvoiceReferenceStatus.ACTIVE.value,
@@ -770,9 +710,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return payment, invoice_number
 
     @classmethod
-    def _consolidate_invoices_and_pay(
-        cls, auth_account_id: str, all_invoice_statuses=False
-    ) -> Payment:
+    def _consolidate_invoices_and_pay(cls, auth_account_id: str, all_invoice_statuses=False) -> Payment:
         """Find outstanding invoices and create a payment.
 
         1. Reverse existing invoices in CFS with credit memos.
@@ -781,9 +719,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         4. Create new payment records for the invoice as CREATED.
         """
         pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        cfs_account = CfsAccountModel.find_effective_by_payment_method(
-            pay_account.id, pay_account.payment_method
-        )
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, pay_account.payment_method)
         invoice_statuses = [InvoiceStatus.OVERDUE.value]
         if all_invoice_statuses:
             invoice_statuses.extend(
@@ -794,9 +730,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 ]
             )
 
-        outstanding_invoices = InvoiceModel.find_invoices_by_status_for_account(
-            pay_account.id, invoice_statuses
-        )
+        outstanding_invoices = InvoiceModel.find_invoices_by_status_for_account(pay_account.id, invoice_statuses)
         consolidated_invoices: List[InvoiceModel] = []
         reversed_consolidated_invoices = set()
         for invoice in outstanding_invoices:
@@ -804,8 +738,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 invoice_number = invoice_reference.invoice_number
                 if (
                     invoice_number not in reversed_consolidated_invoices
-                    and invoice_reference.status_code
-                    == InvoiceReferenceStatus.ACTIVE.value
+                    and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
                     and invoice_reference.is_consolidated is True
                 ):
                     reversed_consolidated_invoices.add(invoice_number)
@@ -823,9 +756,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return payment
 
     @classmethod
-    def _consolidate_payments(
-        cls, auth_account_id: str, failed_payments: List[PaymentModel]
-    ) -> Payment:
+    def _consolidate_payments(cls, auth_account_id: str, failed_payments: List[PaymentModel]) -> Payment:
         # If the payment is for consolidating failed payments,
         # 1. Cancel the invoices in CFS
         # 2. Update status of invoice_reference to CANCELLED
@@ -833,12 +764,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         # 4. Create new invoice reference records.
         # 5. Create new payment records for the invoice as CREATED.
 
-        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-            auth_account_id
-        )
-        cfs_account = CfsAccountModel.find_effective_by_payment_method(
-            pay_account.id, pay_account.payment_method
-        )
+        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, pay_account.payment_method)
 
         consolidated_invoices: List[InvoiceModel] = []
         for failed_payment in failed_payments:
@@ -847,14 +774,10 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             CFSService.reverse_invoice(inv_number=failed_payment.invoice_number)
             # Find all invoices for this payment.
             # Add all line items to the array
-            for invoice in InvoiceModel.find_invoices_for_payment(
-                payment_id=failed_payment.id
-            ):
+            for invoice in InvoiceModel.find_invoices_for_payment(payment_id=failed_payment.id):
                 consolidated_invoices.append(invoice)
 
-        payment, invoice_number = cls.create_consolidated_invoices_payment(
-            consolidated_invoices, cfs_account
-        )
+        payment, invoice_number = cls.create_consolidated_invoices_payment(consolidated_invoices, cfs_account)
 
         # Update all failed payment with consolidated invoice number.
         for failed_payment in failed_payments:
@@ -869,15 +792,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
     @staticmethod
     @user_context
-    def create_payment_receipt(
-        auth_account_id: str, credit_request: Dict[str, str], **kwargs
-    ) -> Payment:
+    def create_payment_receipt(auth_account_id: str, credit_request: Dict[str, str], **kwargs) -> Payment:
         """Create a payment record for the account."""
         payment_method = credit_request.get("paymentMethod")
         pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        cfs_account = CfsAccountModel.find_effective_by_payment_method(
-            pay_account.id, payment_method
-        )
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, payment_method)
         # Create a payment record
         # Create a receipt in CFS for the  amount.
         payment = Payment.create(

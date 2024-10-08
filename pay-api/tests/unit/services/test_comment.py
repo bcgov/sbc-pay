@@ -43,9 +43,7 @@ def test_create_comment(session, monkeypatch):
 
     payment_account = factory_payment_account()
     payment_account.save()
-    rs = factory_routing_slip(
-        payment_account_id=payment_account.id, number="test_number"
-    )
+    rs = factory_routing_slip(payment_account_id=payment_account.id, number="test_number")
     rs.save()
 
     CommentService.create(comment_value="test", rs_number=rs.number)

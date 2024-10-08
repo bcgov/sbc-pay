@@ -67,9 +67,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
         headers=headers,
     )
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
@@ -95,16 +93,11 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
         mock_get.return_value.ok = True
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = base_paybc_response
-        payload = direct_pay_service.build_automated_refund_payload(
-            invoice, refund_partial
-        )
+        payload = direct_pay_service.build_automated_refund_payload(invoice, refund_partial)
         assert payload
         assert payload["txnAmount"] == refund_partial[0].refund_amount
         assert payload["refundRevenue"][0]["lineNumber"] == "1"
-        assert (
-            payload["refundRevenue"][0]["refundAmount"]
-            == refund_partial[0].refund_amount
-        )
+        assert payload["refundRevenue"][0]["refundAmount"] == refund_partial[0].refund_amount
 
         with patch("pay_api.services.payment_service.flags.is_on", return_value=True):
             rv = client.post(
@@ -116,9 +109,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
             assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["DIRECT_PAY.PAID"]
             assert RefundModel.find_by_invoice_id(inv_id) is not None
 
-            refunds_partial: List[RefundPartialModel] = (
-                RefundService.get_refund_partials_by_invoice_id(inv_id)
-            )
+            refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
             assert refunds_partial
             assert len(refunds_partial) == 1
 
@@ -172,9 +163,7 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
         }
     ]
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     with patch("pay_api.services.payment_service.flags.is_on", return_value=True):
         rv = client.post(
@@ -186,9 +175,7 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
         assert rv.json.get("type") == Error.INVALID_REQUEST.name
         assert RefundModel.find_by_invoice_id(inv_id) is None
 
-        refunds_partial: List[RefundPartialModel] = (
-            RefundService.get_refund_partials_by_invoice_id(inv_id)
-        )
+        refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
         assert not refunds_partial
         assert len(refunds_partial) == 0
 

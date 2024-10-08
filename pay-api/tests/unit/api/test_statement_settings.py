@@ -52,32 +52,24 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 200
-    assert (
-        rv.json.get("currentFrequency").get("frequency")
-        == StatementFrequency.WEEKLY.value
-    )
+    assert rv.json.get("currentFrequency").get("frequency") == StatementFrequency.WEEKLY.value
     # Assert the array of the frequncies
     for freqeuncy in rv.json.get("frequencies"):
         if freqeuncy.get("frequency") == StatementFrequency.WEEKLY.value:
             actual_weekly = dateutil.parser.parse(freqeuncy.get("startDate")).date()
-            expected_weekly = (
-                get_week_start_and_end_date()[1] + timedelta(days=1)
-            ).date()
+            expected_weekly = (get_week_start_and_end_date()[1] + timedelta(days=1)).date()
             assert actual_weekly == expected_weekly, "weekly matches"
         if freqeuncy.get("frequency") == StatementFrequency.MONTHLY.value:
             today = datetime.now(tz=timezone.utc)
             actual_monthly = dateutil.parser.parse(freqeuncy.get("startDate")).date()
             expected_monthly = (
-                get_first_and_last_dates_of_month(today.month, today.year)[1]
-                + timedelta(days=1)
+                get_first_and_last_dates_of_month(today.month, today.year)[1] + timedelta(days=1)
             ).date()
             assert actual_monthly == expected_monthly, "monthly matches"
         if freqeuncy.get("frequency") == StatementFrequency.DAILY.value:
             actual_daily = dateutil.parser.parse(freqeuncy.get("startDate")).date()
             # since current frequncy is weekly , daily changes will happen at the end of the week
-            expected_weekly = (
-                get_week_start_and_end_date()[1] + timedelta(days=1)
-            ).date()
+            expected_weekly = (get_week_start_and_end_date()[1] + timedelta(days=1)).date()
             assert actual_daily == expected_weekly, "daily matches"
 
 
@@ -101,10 +93,7 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 200
-    assert (
-        rv.json.get("currentFrequency").get("frequency")
-        == StatementFrequency.WEEKLY.value
-    )
+    assert rv.json.get("currentFrequency").get("frequency") == StatementFrequency.WEEKLY.value
 
     # Set the frequency to Daily and assert
     daily_frequency = {"frequency": "DAILY"}
@@ -115,9 +104,7 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
     )
     assert rv.json.get("frequency") == StatementFrequency.DAILY.value
     end_date = get_week_start_and_end_date()[1]
-    assert rv.json.get("fromDate") == (end_date + timedelta(days=1)).strftime(
-        DT_SHORT_FORMAT
-    )
+    assert rv.json.get("fromDate") == (end_date + timedelta(days=1)).strftime(DT_SHORT_FORMAT)
 
     # Set the frequency to Monthly and assert
     daily_frequency = {"frequency": "MONTHLY"}
@@ -126,13 +113,9 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
         data=json.dumps(daily_frequency),
         headers=headers,
     )
-    end_date = get_first_and_last_dates_of_month(
-        current_local_time().month, current_local_time().year
-    )[1]
+    end_date = get_first_and_last_dates_of_month(current_local_time().month, current_local_time().year)[1]
     assert rv.json.get("frequency") == StatementFrequency.MONTHLY.value
-    assert rv.json.get("fromDate") == (end_date + timedelta(days=1)).strftime(
-        DT_SHORT_FORMAT
-    )
+    assert rv.json.get("fromDate") == (end_date + timedelta(days=1)).strftime(DT_SHORT_FORMAT)
 
     # Get the latest frequency
     rv = client.get(
@@ -141,7 +124,4 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 200
-    assert (
-        rv.json.get("currentFrequency").get("frequency")
-        == StatementFrequency.MONTHLY.value
-    )
+    assert rv.json.get("currentFrequency").get("frequency") == StatementFrequency.MONTHLY.value

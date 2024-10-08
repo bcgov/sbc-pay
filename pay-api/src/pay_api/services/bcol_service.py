@@ -66,8 +66,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Create Invoice in PayBC."""
         self.ensure_no_payment_blockers(payment_account)
         current_app.logger.debug(
-            f"<Creating BCOL records for Invoice: {invoice.id}, "
-            f"Auth Account : {payment_account.auth_account_id}"
+            f"<Creating BCOL records for Invoice: {invoice.id}, " f"Auth Account : {payment_account.auth_account_id}"
         )
         user: UserContext = kwargs["user"]
         force_non_staff_fee_code = "force_non_staff_fee_code" in kwargs
@@ -100,9 +99,7 @@ class BcolService(PaymentSystemService, OAuthService):
             "amount": str(amount_excluding_txn_fees),
             "rate": str(amount_excluding_txn_fees),
             "remarks": remarks[:50],
-            "feeCode": self._get_fee_code(
-                invoice.service_fees, invoice.corp_type_code, use_staff_fee_code
-            ),
+            "feeCode": self._get_fee_code(invoice.service_fees, invoice.corp_type_code, use_staff_fee_code),
             "forceUseDebitAccount": force_use_debit_account,
             "serviceFees": str(invoice.service_fees),
         }
@@ -169,9 +166,7 @@ class BcolService(PaymentSystemService, OAuthService):
             invoice.total,
         )
 
-    def _get_fee_code(
-        self, service_fees: float, corp_type: str, is_staff: bool = False
-    ):
+    def _get_fee_code(self, service_fees: float, corp_type: str, is_staff: bool = False):
         """Return BCOL fee code."""
         corp_type = CorpType.find_by_code(code=corp_type)
         service_fees = float(service_fees)
@@ -183,9 +178,7 @@ class BcolService(PaymentSystemService, OAuthService):
             return corp_type.bcol_code_partial_service_fee
         if service_fees == 0:
             return corp_type.bcol_code_no_service_fee
-        current_app.logger.error(
-            f"Service fees ${service_fees}, defaulting to full_service_fee."
-        )
+        current_app.logger.error(f"Service fees ${service_fees}, defaulting to full_service_fee.")
         return corp_type.bcol_code_full_service_fee
 
     def get_payment_method_code(self):

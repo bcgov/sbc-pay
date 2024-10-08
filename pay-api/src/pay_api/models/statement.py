@@ -63,22 +63,14 @@ class Statement(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
-    statement_settings_id = db.Column(
-        db.Integer, ForeignKey("statement_settings.id"), nullable=True, index=True
-    )
-    payment_account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
+    statement_settings_id = db.Column(db.Integer, ForeignKey("statement_settings.id"), nullable=True, index=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
     from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
-    is_interim_statement = db.Column(
-        "is_interim_statement", db.Boolean(), nullable=False, default=False
-    )
+    is_interim_statement = db.Column("is_interim_statement", db.Boolean(), nullable=False, default=False)
     overdue_notification_date = db.Column(db.Date, default=None, nullable=True)
     created_on = db.Column(db.Date, default=None, nullable=False)
-    notification_status_code = db.Column(
-        db.String(20), ForeignKey("notification_status_codes.code"), nullable=True
-    )
+    notification_status_code = db.Column(db.String(20), ForeignKey("notification_status_codes.code"), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
     payment_methods = db.Column(db.String(100), nullable=True)
 
@@ -88,9 +80,7 @@ class Statement(BaseModel):
         return cls.query.filter(Statement.notification_status_code.in_(statuses)).all()
 
     @classmethod
-    def find_all_payments_and_invoices_for_statement(
-        cls, statement_id: str
-    ) -> List[Invoice]:
+    def find_all_payments_and_invoices_for_statement(cls, statement_id: str) -> List[Invoice]:
         """Find all payment and invoices specific to a statement."""
         # Import from here as the statement invoice already imports statement and causes circular import.
         from .statement_invoices import (
@@ -157,12 +147,7 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
     @classmethod
     def dao_to_dict(cls, statement_daos: List[Statement]) -> dict[StatementDTO]:
         """Convert from DAO to DTO dict."""
-        statements_dto = [
-            StatementDTO.from_row(statement) for statement in statement_daos
-        ]
+        statements_dto = [StatementDTO.from_row(statement) for statement in statement_daos]
         statements_dict = Converter().unstructure(statements_dto)
-        statements_dict = [
-            Converter().remove_nones(statement_dict)
-            for statement_dict in statements_dict
-        ]
+        statements_dict = [Converter().remove_nones(statement_dict) for statement_dict in statements_dict]
         return statements_dict

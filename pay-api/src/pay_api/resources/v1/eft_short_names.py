@@ -92,9 +92,7 @@ def get_eft_shortname_summaries():
         EFTShortnameSummariesService.search(
             EFTShortnamesSearch(
                 id=string_to_int(request_data.short_name_id),
-                deposit_start_date=string_to_date(
-                    request_data.payment_received_start_date
-                ),
+                deposit_start_date=string_to_date(request_data.payment_received_start_date),
                 deposit_end_date=string_to_date(request_data.payment_received_end_date),
                 credit_remaining=string_to_decimal(request_data.credits_remaining),
                 linked_accounts_count=string_to_int(request_data.linked_accounts_count),
@@ -137,9 +135,7 @@ def patch_eft_shortname(short_name_id: int):
     request_json = request.get_json()
     valid_format, errors = schema_utils.validate(request_json, "eft_short_name")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
         response, status = (
             EFTShortnameService.patch_shortname(short_name_id, request_json),
@@ -163,9 +159,7 @@ def get_eft_shortname_history(short_name_id: int):
     limit: int = int(request.args.get("limit", "10"))
 
     response, status = (
-        EFTShortnameHistoryService.search(
-            short_name_id, EFTShortnameHistorySearch(page=page, limit=limit)
-        ),
+        EFTShortnameHistoryService.search(short_name_id, EFTShortnameHistorySearch(page=page, limit=limit)),
         HTTPStatus.OK,
     )
     current_app.logger.debug(">get_eft_shortname_history")
@@ -233,9 +227,7 @@ def patch_eft_shortname_link(short_name_id: int, short_name_link_id: int):
             response, status = {}, HTTPStatus.NOT_FOUND
         else:
             response, status = (
-                EFTShortnameService.patch_shortname_link(
-                    short_name_link_id, request_json
-                ),
+                EFTShortnameService.patch_shortname_link(short_name_link_id, request_json),
                 HTTPStatus.OK,
             )
     except BusinessException as exception:
@@ -258,9 +250,7 @@ def post_eft_statement_payment(short_name_id: int):
         else:
             valid_format, errors = schema_utils.validate(request_json, "eft_payment")
             if not valid_format:
-                return error_to_response(
-                    Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-                )
+                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
             response, status = (
                 EFTShortnameService.process_payment_action(short_name_id, request_json),
@@ -294,9 +284,7 @@ def post_shortname_refund():
     request_json = request.get_json(silent=True)
     valid_format, errors = schema_utils.validate(request_json, "refund_shortname")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
         response = EFTRefundService.create_shortname_refund(request_json)
         status = HTTPStatus.ACCEPTED
@@ -319,9 +307,7 @@ def patch_shortname_refund(eft_refund_id: int):
     try:
         if EFTRefundService.find_refund_by_id(eft_refund_id):
             response, status = (
-                EFTRefundService.update_shortname_refund(
-                    eft_refund_id, short_name_refund
-                ),
+                EFTRefundService.update_shortname_refund(eft_refund_id, short_name_refund),
                 HTTPStatus.OK,
             )
         else:

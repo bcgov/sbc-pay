@@ -64,9 +64,7 @@ def test_account_payments(session, client, jwt, app):
     rv = client.get(f"/api/v1/accounts/{auth_account_id}/payments", headers=headers)
     assert rv.status_code == 200
     assert rv.json.get("total") == 1
-    rv = client.get(
-        f"/api/v1/accounts/{auth_account_id}/payments?status=FAILED", headers=headers
-    )
+    rv = client.get(f"/api/v1/accounts/{auth_account_id}/payments?status=FAILED", headers=headers)
     assert rv.status_code == 200
     assert rv.json.get("total") == 0
 
@@ -102,18 +100,14 @@ def test_create_account_payments(session, client, jwt, app):
 
 def test_create_eft_payment(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(
-        get_claims(roles=[Role.CREATE_CREDITS.value, Role.STAFF.value]), token_header
-    )
+    token = jwt.create_jwt(get_claims(roles=[Role.CREATE_CREDITS.value, Role.STAFF.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     payload = {
         "paidAmount": 100,
         "paymentDate": str(datetime.now(tz=timezone.utc)),
         "paymentMethod": "EFT",
     }
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    ).save()
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
     rv = client.post(
         f"/api/v1/accounts/{payment_account.auth_account_id}/payments",
         headers=headers,
@@ -128,38 +122,26 @@ def test_eft_consolidated_payments(session, client, jwt, app):
     # Called when pressing next on the consolidated payments (paying for overdue EFT as well) page in auth-web.
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    ).save()
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
     invoice_with_reference = factory_invoice(
         payment_account, paid=0, total=100, status_code=InvoiceStatus.APPROVED.value
     )
     invoice_with_reference.save()
-    factory_payment_line_item(
-        invoice_id=invoice_with_reference.id, fee_schedule_id=1
-    ).save()
-    factory_invoice_reference(
-        invoice_with_reference.id, invoice_number=invoice_with_reference
-    ).save()
+    factory_payment_line_item(invoice_id=invoice_with_reference.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_with_reference.id, invoice_number=invoice_with_reference).save()
 
     invoice_without_reference = factory_invoice(
         payment_account, paid=0, total=100, status_code=InvoiceStatus.APPROVED.value
     )
     invoice_without_reference.save()
-    factory_payment_line_item(
-        invoice_id=invoice_without_reference.id, fee_schedule_id=1
-    ).save()
+    factory_payment_line_item(invoice_id=invoice_without_reference.id, fee_schedule_id=1).save()
 
     invoice_exist_consolidation = factory_invoice(
         payment_account, paid=0, total=100, status_code=InvoiceStatus.APPROVED.value
     )
     invoice_exist_consolidation.save()
-    existing_consolidated_invoice_number = generate_transaction_number(
-        str(invoice_exist_consolidation.id) + "-C"
-    )
-    factory_payment_line_item(
-        invoice_id=invoice_exist_consolidation.id, fee_schedule_id=1
-    ).save()
+    existing_consolidated_invoice_number = generate_transaction_number(str(invoice_exist_consolidation.id) + "-C")
+    factory_payment_line_item(invoice_id=invoice_exist_consolidation.id, fee_schedule_id=1).save()
     factory_invoice_reference(
         invoice_exist_consolidation.id,
         invoice_number=existing_consolidated_invoice_number,
@@ -177,33 +159,17 @@ def test_eft_consolidated_payments(session, client, jwt, app):
         assert rv.status_code == 201
 
     assert len(invoice_with_reference.references) == 2
-    assert (
-        invoice_with_reference.references[0].status_code
-        == InvoiceReferenceStatus.CANCELLED.value
-    )
-    assert (
-        invoice_with_reference.references[1].status_code
-        == InvoiceReferenceStatus.ACTIVE.value
-    )
+    assert invoice_with_reference.references[0].status_code == InvoiceReferenceStatus.CANCELLED.value
+    assert invoice_with_reference.references[1].status_code == InvoiceReferenceStatus.ACTIVE.value
     assert invoice_with_reference.references[1].is_consolidated is True
     assert len(invoice_without_reference.references) == 1
-    assert (
-        invoice_without_reference.references[0].status_code
-        == InvoiceReferenceStatus.ACTIVE.value
-    )
+    assert invoice_without_reference.references[0].status_code == InvoiceReferenceStatus.ACTIVE.value
     assert invoice_without_reference.references[0].is_consolidated is True
     assert len(invoice_exist_consolidation.references) == 2
-    assert (
-        invoice_exist_consolidation.references[0].status_code
-        == InvoiceReferenceStatus.CANCELLED.value
-    )
+    assert invoice_exist_consolidation.references[0].status_code == InvoiceReferenceStatus.CANCELLED.value
     assert invoice_exist_consolidation.references[0].is_consolidated is True
-    assert (
-        invoice_exist_consolidation.references[1].status_code
-        == InvoiceReferenceStatus.ACTIVE.value
-    )
+    assert invoice_exist_consolidation.references[1].status_code == InvoiceReferenceStatus.ACTIVE.value
     assert invoice_exist_consolidation.references[1].is_consolidated is True
     assert PaymentModel.query.filter(
-        PaymentModel.invoice_number
-        == invoice_exist_consolidation.references[1].invoice_number
+        PaymentModel.invoice_number == invoice_exist_consolidation.references[1].invoice_number
     ).first()

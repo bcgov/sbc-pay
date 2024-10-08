@@ -33,9 +33,7 @@ class CasSettlement(BaseModel):  # pylint: disable=too-few-public-methods
     #
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
-    __mapper_args__ = {
-        "include_properties": ["id", "file_name", "processed_on", "received_on"]
-    }
+    __mapper_args__ = {"include_properties": ["id", "file_name", "processed_on", "received_on"]}
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     received_on = db.Column(

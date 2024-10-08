@@ -67,13 +67,9 @@ from tests.utilities.base_test import (
 
 def test_create_eft_short_name_link(session, client, jwt, app):
     """Assert that an EFT short name link can be created for an account with no credits or statements owing."""
-    token = jwt.create_jwt(
-        get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header
-    )
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234"
-    ).save()
+    factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234").save()
 
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME").save()
     rv = client.post(
@@ -91,19 +87,12 @@ def test_create_eft_short_name_link(session, client, jwt, app):
     assert link_dict["updatedBy"] == "IDIR/JSMITH"
 
     date_format = "%Y-%m-%dT%H:%M:%S.%f"
-    assert (
-        datetime.strptime(link_dict["updatedOn"], date_format).date()
-        == datetime.now(tz=timezone.utc).date()
-    )
+    assert datetime.strptime(link_dict["updatedOn"], date_format).date() == datetime.now(tz=timezone.utc).date()
 
 
-def test_create_eft_short_name_link_with_credit_and_owing(
-    db, session, client, jwt, app
-):
+def test_create_eft_short_name_link_with_credit_and_owing(db, session, client, jwt, app):
     """Assert that an EFT short name link can be created for an account with credit."""
-    token = jwt.create_jwt(
-        get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header
-    )
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     payment_account = factory_payment_account(
         payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234"
@@ -193,14 +182,10 @@ def test_create_eft_short_name_link_with_credit_and_owing(
 
 def test_create_eft_short_name_link_validation(session, client, jwt, app):
     """Assert that invalid request is returned for existing short name link."""
-    token = jwt.create_jwt(
-        get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header
-    )
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME").save()
-    factory_eft_shortname_link(
-        short_name_id=short_name.id, auth_account_id="1234", updated_by="IDIR/JSMITH"
-    ).save()
+    factory_eft_shortname_link(short_name_id=short_name.id, auth_account_id="1234", updated_by="IDIR/JSMITH").save()
 
     # Assert requires an auth account id for mapping
     rv = client.post(
@@ -227,13 +212,9 @@ def test_create_eft_short_name_link_validation(session, client, jwt, app):
 
 def test_eft_short_name_unlink(session, client, jwt, app):
     """Assert that an EFT short name unlinking and basic state validation."""
-    token = jwt.create_jwt(
-        get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header
-    )
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234"
-    ).save()
+    account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234").save()
 
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME").save()
     short_name_link = EFTShortnameLinksModel(
@@ -277,9 +258,7 @@ def test_eft_short_name_unlink(session, client, jwt, app):
 
 def test_get_eft_short_name_links(session, client, jwt, app):
     """Assert that short name links can be retrieved."""
-    token = jwt.create_jwt(
-        get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header
-    )
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value], username="IDIR/JSMITH"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     account = factory_payment_account(
         payment_method_code=PaymentMethod.EFT.value,
@@ -289,9 +268,7 @@ def test_get_eft_short_name_links(session, client, jwt, app):
     ).save()
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME").save()
 
-    invoice = factory_invoice(
-        account, payment_method_code=PaymentMethod.EFT.value, total=50, paid=0
-    ).save()
+    invoice = factory_invoice(account, payment_method_code=PaymentMethod.EFT.value, total=50, paid=0).save()
     statement_settings = factory_statement_settings(
         payment_account_id=account.id, frequency=StatementFrequency.MONTHLY.value
     )
@@ -358,13 +335,8 @@ def assert_short_name_summary(
     assert result_dict["shortNameType"] == short_name.type
     assert result_dict["creditsRemaining"] == expected_credits_remaining
     assert result_dict["linkedAccountsCount"] == expected_linked_accounts_count
-    assert (
-        datetime.strptime(result_dict["lastPaymentReceivedDate"], date_format)
-        == transaction.deposit_date
-    )
-    assert result_dict["refundStatus"] == (
-        shortname_refund.status if shortname_refund is not None else None
-    )
+    assert datetime.strptime(result_dict["lastPaymentReceivedDate"], date_format) == transaction.deposit_date
+    assert result_dict["refundStatus"] == (shortname_refund.status if shortname_refund is not None else None)
 
 
 def test_eft_short_name_summaries(session, client, jwt, app):
@@ -389,9 +361,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
         branch_name="123",
     ).save()
 
-    short_name_1, s1_transaction1, short_name_2, s2_transaction1, s1_refund = (
-        create_eft_summary_search_data()
-    )
+    short_name_1, s1_transaction1, short_name_2, s2_transaction1, s1_refund = create_eft_summary_search_data()
 
     # Assert short name search brings back both short names
     rv = client.get("/api/v1/eft-shortnames/summaries?shortName=SHORT", headers=headers)
@@ -405,9 +375,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 2
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
     assert_short_name_summary(
         result_dict["items"][1],
         short_name_2,
@@ -428,14 +396,10 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
     # Assert search linked accounts count
-    rv = client.get(
-        "/api/v1/eft-shortnames/summaries?linkedAccountsCount=0", headers=headers
-    )
+    rv = client.get("/api/v1/eft-shortnames/summaries?linkedAccountsCount=0", headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -446,13 +410,9 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
-    rv = client.get(
-        "/api/v1/eft-shortnames/summaries?linkedAccountsCount=1", headers=headers
-    )
+    rv = client.get("/api/v1/eft-shortnames/summaries?linkedAccountsCount=1", headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -463,14 +423,11 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1)
 
     # Assert search by payment received date
     rv = client.get(
-        "/api/v1/eft-shortnames/summaries?"
-        "paymentReceivedStartDate=2024-01-16&paymentReceivedEndDate=2024-01-16",
+        "/api/v1/eft-shortnames/summaries?" "paymentReceivedStartDate=2024-01-16&paymentReceivedEndDate=2024-01-16",
         headers=headers,
     )
     assert rv.status_code == 200
@@ -483,9 +440,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1)
 
     # Assert search by short name id
     rv = client.get(
@@ -502,14 +457,10 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1)
 
     # Assert search by remaining credits
-    rv = client.get(
-        "/api/v1/eft-shortnames/summaries?creditsRemaining=204", headers=headers
-    )
+    rv = client.get("/api/v1/eft-shortnames/summaries?creditsRemaining=204", headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -520,9 +471,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
     # Assert search query by no state will return all records
     rv = client.get("/api/v1/eft-shortnames/summaries", headers=headers)
@@ -536,12 +485,8 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 2
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund
-    )
-    assert_short_name_summary(
-        result_dict["items"][1], short_name_2, s2_transaction1, 302.5, 1
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
+    assert_short_name_summary(result_dict["items"][1], short_name_2, s2_transaction1, 302.5, 1)
 
     # Assert search pagination - page 1 works
     rv = client.get("/api/v1/eft-shortnames/summaries?page=1&limit=1", headers=headers)
@@ -555,9 +500,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 1
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
     # Assert search pagination - page 2 works
     rv = client.get("/api/v1/eft-shortnames/summaries?page=2&limit=1", headers=headers)
@@ -571,9 +514,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 1
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(
-        result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1)
 
 
 def create_eft_summary_search_data():
@@ -583,9 +524,7 @@ def create_eft_summary_search_data():
     short_name_2 = factory_eft_shortname(
         short_name="TESTSHORTNAME2", short_name_type=EFTShortnameType.WIRE.value
     ).save()
-    factory_eft_shortname_link(
-        short_name_id=short_name_2.id, auth_account_id="1234", updated_by="IDIR/JSMITH"
-    ).save()
+    factory_eft_shortname_link(short_name_id=short_name_2.id, auth_account_id="1234", updated_by="IDIR/JSMITH").save()
 
     # short_name_1 transactions to test getting first payment
     s1_transaction1: EFTTransactionModel = EFTTransactionModel(
@@ -766,9 +705,7 @@ def create_eft_search_data():
         "single-linked": {
             "short_name": short_name_linked,
             "accounts": [payment_account_1],
-            "statement_summary": [
-                {"statement_id": statement_1.id, "owing_amount": 150.50}
-            ],
+            "statement_summary": [{"statement_id": statement_1.id, "owing_amount": 150.50}],
         },
         "multi-linked": {
             "short_name": short_name_multi_linked,
@@ -831,12 +768,8 @@ def test_search_eft_short_names(session, client, jwt, app):
     data_dict = create_eft_search_data()
 
     # Assert statement id
-    target_statement_id = data_dict["single-linked"]["statement_summary"][0][
-        "statement_id"
-    ]
-    rv = client.get(
-        f"/api/v1/eft-shortnames?statementId={target_statement_id}", headers=headers
-    )
+    target_statement_id = data_dict["single-linked"]["statement_summary"][0]["statement_id"]
+    rv = client.get(f"/api/v1/eft-shortnames?statementId={target_statement_id}", headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -920,9 +853,7 @@ def test_search_eft_short_names(session, client, jwt, app):
     )
 
     # Assert search account name
-    rv = client.get(
-        "/api/v1/eft-shortnames?state=LINKED&accountName=BC", headers=headers
-    )
+    rv = client.get("/api/v1/eft-shortnames?state=LINKED&accountName=BC", headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -941,9 +872,7 @@ def test_search_eft_short_names(session, client, jwt, app):
     )
 
     # Assert search account branch
-    rv = client.get(
-        "/api/v1/eft-shortnames?state=LINKED&accountBranch=2", headers=headers
-    )
+    rv = client.get("/api/v1/eft-shortnames?state=LINKED&accountBranch=2", headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -1041,9 +970,7 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert_short_name(result_dict["items"][0], data_dict["unlinked"]["short_name"])
 
     # Assert search account id
-    rv = client.get(
-        "/api/v1/eft-shortnames?state=LINKED&accountId=1111", headers=headers
-    )
+    rv = client.get("/api/v1/eft-shortnames?state=LINKED&accountId=1111", headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -1062,9 +989,7 @@ def test_search_eft_short_names(session, client, jwt, app):
     )
 
     # Assert search account id list
-    rv = client.get(
-        "/api/v1/eft-shortnames?state=LINKED&accountIdList=1111,999", headers=headers
-    )
+    rv = client.get("/api/v1/eft-shortnames?state=LINKED&accountIdList=1111,999", headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -1083,9 +1008,7 @@ def test_search_eft_short_names(session, client, jwt, app):
     )
 
 
-def test_post_shortname_refund_success(
-    db, session, client, jwt, emails_with_keycloak_role_mock
-):
+def test_post_shortname_refund_success(db, session, client, jwt, emails_with_keycloak_role_mock):
     """Test successful creation of a shortname refund."""
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -1111,9 +1034,7 @@ def test_post_shortname_refund_success(
         "comment": "Refund for overpayment",
     }
     with patch("pay_api.services.eft_refund.send_email") as mock_email:
-        rv = client.post(
-            "/api/v1/eft-shortnames/shortname-refund", headers=headers, json=data
-        )
+        rv = client.post("/api/v1/eft-shortnames/shortname-refund", headers=headers, json=data)
         assert rv.status_code == 202
         mock_email.assert_called_once()
 
@@ -1130,10 +1051,7 @@ def test_post_shortname_refund_success(
     assert history_record.amount == 100
     assert history_record.eft_refund_id == eft_refund.id
     assert history_record.credit_balance == 0
-    assert (
-        history_record.transaction_type
-        == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
-    )
+    assert history_record.transaction_type == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
 
 
 def test_post_shortname_refund_invalid_request(client, mocker, jwt):
@@ -1141,9 +1059,7 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
     data = {"invalid_field": "invalid_value"}
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.post(
-        "/api/v1/eft-shortnames/shortname-refund", headers=headers, json=data
-    )
+    rv = client.post("/api/v1/eft-shortnames/shortname-refund", headers=headers, json=data)
 
     assert rv.status_code == 400
     assert "INVALID_REQUEST" in rv.json["type"]
@@ -1169,21 +1085,15 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
 def test_get_shortname_refund(session, client, jwt, query_string, test_name, count):
     """Test get short name refund."""
     short_name = factory_eft_shortname("TEST_SHORTNAME").save()
-    factory_eft_refund(
-        short_name_id=short_name.id, status=EFTShortnameRefundStatus.APPROVED.value
-    )
+    factory_eft_refund(short_name_id=short_name.id, status=EFTShortnameRefundStatus.APPROVED.value)
     factory_eft_refund(
         short_name_id=short_name.id,
         status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
     )
-    factory_eft_refund(
-        short_name_id=short_name.id, status=EFTShortnameRefundStatus.DECLINED.value
-    )
+    factory_eft_refund(short_name_id=short_name.id, status=EFTShortnameRefundStatus.DECLINED.value)
     token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.get(
-        f"/api/v1/eft-shortnames/shortname-refund{query_string}", headers=headers
-    )
+    rv = client.get(f"/api/v1/eft-shortnames/shortname-refund{query_string}", headers=headers)
     assert rv.status_code == 200
     assert len(rv.json) == count
 
@@ -1266,10 +1176,7 @@ def test_patch_shortname_refund(
             assert rv.status_code == 200
             assert rv.json["status"] == EFTShortnameRefundStatus.APPROVED.value
             assert rv.json["comment"] == "Test comment"
-            assert (
-                eft_history.transaction_type
-                == EFTHistoricalTypes.SN_REFUND_APPROVED.value
-            )
+            assert eft_history.transaction_type == EFTHistoricalTypes.SN_REFUND_APPROVED.value
         case "valid_rejected_refund":
             assert rv.status_code == 200
             assert rv.json["status"] == EFTShortnameRefundStatus.DECLINED.value
@@ -1277,9 +1184,7 @@ def test_patch_shortname_refund(
             history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]
             assert history
             assert history.credit_balance == 90 + 10
-            assert (
-                history.transaction_type == EFTHistoricalTypes.SN_REFUND_DECLINED.value
-            )
+            assert history.transaction_type == EFTHistoricalTypes.SN_REFUND_DECLINED.value
             eft_credit = EFTCreditModel.find_by_id(eft_credit.id)
             assert eft_credit.remaining_amount == 90 + 10
             assert rv.json["declineReason"]
@@ -1295,17 +1200,13 @@ def test_patch_shortname(session, client, jwt):
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.patch(
-        f"/api/v1/eft-shortnames/{short_name.id}", headers=headers, json=data
-    )
+    rv = client.patch(f"/api/v1/eft-shortnames/{short_name.id}", headers=headers, json=data)
 
     assert rv.status_code == 400
     assert "INVALID_REQUEST" in rv.json["type"], "Expecting invalid email format."
 
     data["email"] = "test@test.com"
-    rv = client.patch(
-        f"/api/v1/eft-shortnames/{short_name.id}", headers=headers, json=data
-    )
+    rv = client.patch(f"/api/v1/eft-shortnames/{short_name.id}", headers=headers, json=data)
 
     assert rv.status_code == 200
     result = rv.json

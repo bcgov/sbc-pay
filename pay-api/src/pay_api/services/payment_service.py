@@ -76,9 +76,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account = cls._find_payment_account(authorization)
         payment_method = _get_payment_method(payment_request, payment_account)
 
-        if payment_method == PaymentMethod.EFT.value and not flags.is_on(
-            "enable-eft-payment-method", default=False
-        ):
+        if payment_method == PaymentMethod.EFT.value and not flags.is_on("enable-eft-payment-method", default=False):
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
         current_app.logger.info(
@@ -132,9 +130,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             for fee in fees:
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
 
-            current_app.logger.info(
-                f"Handing off to payment system to create invoice for {invoice.id}"
-            )
+            current_app.logger.info(f"Handing off to payment system to create invoice for {invoice.id}")
             invoice_reference = pay_service.create_invoice(
                 payment_account,
                 line_items,
@@ -175,8 +171,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         # and invoked using a service account or a staff token
         if not payment_account:
             payment_method = (
-                get_str_by_path(authorization, "account/paymentInfo/methodOfPayment")
-                or _get_default_payment()
+                get_str_by_path(authorization, "account/paymentInfo/methodOfPayment") or _get_default_payment()
             )
             payment_account = PaymentAccount.create(
                 {
@@ -208,15 +203,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         # If the call is to apply credit, apply credit and release records.
         if is_apply_credit:
             credit_balance = Decimal("0")
-            payment_account: PaymentAccount = PaymentAccount.find_by_id(
-                invoice.payment_account_id
-            )
+            payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
             invoice_balance = invoice.total - (invoice.paid or 0)
             if (payment_account.credit or 0) >= invoice_balance:
-                pay_service: PaymentSystemService = (
-                    PaymentSystemFactory.create_from_payment_method(
-                        invoice.payment_method_code
-                    )
+                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+                    invoice.payment_method_code
                 )
                 # Only release records, as the actual status change should happen during reconciliation.
                 pay_service.apply_credit(invoice)
@@ -230,13 +221,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment_account.credit = credit_balance
             payment_account.save()
         else:
-            payment_method = get_str_by_path(
-                payment_request, "paymentInfo/methodOfPayment"
-            )
+            payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
 
-            is_not_currently_on_ob = (
-                invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
-            )
+            is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
             is_not_changing_to_cc = payment_method not in (
                 PaymentMethod.CC.value,
                 PaymentMethod.DIRECT_PAY.value,
@@ -248,16 +235,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             # check if it has any invoice references already created
             # if there is any invoice ref , send them to the invoiced credit card flow
 
-            invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(
-                invoice.id
-            )
+            invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
             if invoice_reference:
                 invoice.payment_method_code = PaymentMethod.CC.value
             else:
-                pay_service: PaymentSystemService = (
-                    PaymentSystemFactory.create_from_payment_method(
-                        PaymentMethod.DIRECT_PAY.value
-                    )
+                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+                    PaymentMethod.DIRECT_PAY.value
                 )
                 payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
                 pay_service.create_invoice(
@@ -273,9 +256,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return invoice.asdict()
 
     @classmethod
-    def delete_invoice(
-        cls, invoice_id: int
-    ):  # pylint: disable=too-many-locals,too-many-statements
+    def delete_invoice(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
         """Delete invoice related records.
 
         Does the following;
@@ -287,14 +268,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         _update_active_transactions(invoice_id)
 
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
-        current_app.logger.debug(
-            f"<Delete Invoice {invoice_id}, {invoice.invoice_status_code}"
-        )
+        current_app.logger.debug(f"<Delete Invoice {invoice_id}, {invoice.invoice_status_code}")
 
         # Create the payment system implementation
-        pay_service: PaymentSystemService = (
-            PaymentSystemFactory.create_from_payment_method(invoice.payment_method_code)
-        )
+        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(invoice.payment_method_code)
 
         # set payment status as deleted
         payment = Payment.find_payment_for_invoice(invoice_id)
@@ -305,9 +282,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment.flush()
 
         # Cancel invoice
-        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(
-            invoice.id
-        )
+        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
         if invoice_reference:
@@ -329,9 +304,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug(">delete_invoice")
 
     @classmethod
-    def accept_delete(
-        cls, invoice_id: int
-    ):  # pylint: disable=too-many-locals,too-many-statements
+    def accept_delete(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
         """Mark payment related records to be deleted."""
         current_app.logger.debug("<accept_delete")
         invoice: Invoice = Invoice.find_by_id(invoice_id, one_of_roles=[EDIT_ROLE])
@@ -356,9 +329,7 @@ def _calculate_fees(corp_type, filing_info):
     fees = []
     service_fee_applied: bool = False
     for filing_type_info in filing_info.get("filingTypes"):
-        current_app.logger.debug(
-            f"Getting fees for {filing_type_info.get('filingTypeCode')} "
-        )
+        current_app.logger.debug(f"Getting fees for {filing_type_info.get('filingTypeCode')} ")
         fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
             corp_type=corp_type,
             filing_type_code=filing_type_info.get("filingTypeCode", None),
@@ -388,9 +359,7 @@ def _calculate_fees(corp_type, filing_info):
 def _update_active_transactions(invoice_id: int):
     # update active transactions
     current_app.logger.debug("<_update_active_transactions")
-    transaction: PaymentTransaction = PaymentTransaction.find_active_by_invoice_id(
-        invoice_id
-    )
+    transaction: PaymentTransaction = PaymentTransaction.find_active_by_invoice_id(invoice_id)
     if transaction:
         # check existing payment status in PayBC;
         PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)

@@ -53,9 +53,7 @@ class DistributionCodeLink(BaseModel):
 
     distribution_link_id = db.Column(db.Integer, primary_key=True)
     fee_schedule_id = db.Column(db.Integer, ForeignKey("fee_schedules.fee_schedule_id"))
-    distribution_code_id = db.Column(
-        db.Integer, ForeignKey("distribution_codes.distribution_code_id")
-    )
+    distribution_code_id = db.Column(db.Integer, ForeignKey("distribution_codes.distribution_code_id"))
 
     @classmethod
     def find_fee_schedules_by_distribution_id(cls, distribution_code_id: int):
@@ -96,9 +94,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
     stob = db.Column(db.String(50), nullable=True)
     project_code = db.Column(db.String(50), nullable=True)
 
-    start_date = db.Column(
-        db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False
-    )
+    start_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
     end_date = db.Column(db.Date, default=None, nullable=True)
     stop_ejv = db.Column("stop_ejv", Boolean(), default=False)
 
@@ -109,9 +105,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
         db.Integer, ForeignKey("distribution_codes.distribution_code_id"), nullable=True
     )
     # account id for distribution codes for gov account. None for distribution codes for filing types
-    account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
+    account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
 
     service_fee_distribution_code = relationship(
         "DistributionCode",
@@ -140,10 +134,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
         valid_date = datetime.now(tz=timezone.utc).date()
         query = (
             cls.query.filter(DistributionCode.start_date <= valid_date)
-            .filter(
-                (DistributionCode.end_date.is_(None))
-                | (DistributionCode.end_date >= valid_date)
-            )
+            .filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
             .order_by(DistributionCode.name.asc())
         )
 
@@ -159,8 +150,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
     def find_by_service_fee_distribution_id(cls, service_fee_distribution_code_id):
         """Find by service fee distribution id."""
         return cls.query.filter(
-            DistributionCode.service_fee_distribution_code_id
-            == service_fee_distribution_code_id
+            DistributionCode.service_fee_distribution_code_id == service_fee_distribution_code_id
         ).all()
 
     @classmethod
@@ -172,10 +162,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
             .join(DistributionCodeLink)
             .filter(DistributionCodeLink.fee_schedule_id == fee_schedule_id)
             .filter(DistributionCode.start_date <= valid_date)
-            .filter(
-                (DistributionCode.end_date.is_(None))
-                | (DistributionCode.end_date >= valid_date)
-            )
+            .filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
         )
 
         distribution_code = query.one_or_none()
@@ -189,19 +176,14 @@ class DistributionCode(Audit, Versioned, BaseModel):
             db.session.query(DistributionCode)
             .filter(DistributionCode.account_id == account_id)
             .filter(DistributionCode.start_date <= valid_date)
-            .filter(
-                (DistributionCode.end_date.is_(None))
-                | (DistributionCode.end_date >= valid_date)
-            )
+            .filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
         )
 
         distribution_code = query.one_or_none()
         return distribution_code
 
 
-class DistributionCodeLinkSchema(
-    ma.SQLAlchemyAutoSchema
-):  # pylint: disable=too-many-ancestors
+class DistributionCodeLinkSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the DistributionCodeLink."""
 
     class Meta:  # pylint: disable=too-few-public-methods
@@ -212,9 +194,7 @@ class DistributionCodeLinkSchema(
         load_instance = True
 
 
-class DistributionCodeSchema(
-    AuditSchema, BaseSchema
-):  # pylint: disable=too-many-ancestors
+class DistributionCodeSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the DistributionCode."""
 
     class Meta:  # pylint: disable=too-few-public-methods
@@ -222,10 +202,6 @@ class DistributionCodeSchema(
 
         model = DistributionCode
 
-    service_fee_distribution_code_id = fields.String(
-        data_key="service_fee_distribution_code_id"
-    )
-    disbursement_distribution_code_id = fields.String(
-        data_key="disbursement_distribution_code_id"
-    )
+    service_fee_distribution_code_id = fields.String(data_key="service_fee_distribution_code_id")
+    disbursement_distribution_code_id = fields.String(data_key="disbursement_distribution_code_id")
     account_id = fields.String(data_key="account_id")

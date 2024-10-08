@@ -59,19 +59,13 @@ def cors_preflight(methods: str = "GET"):
 
 def is_valid_redirect_url(url: str) -> bool:
     """Validate if the url is valid based on the VALID Redirect Url."""
-    disable_redirect_validation: bool = current_app.config.get(
-        "DISABLE_VALID_REDIRECT_URLS"
-    )
+    disable_redirect_validation: bool = current_app.config.get("DISABLE_VALID_REDIRECT_URLS")
     if disable_redirect_validation:
         return True
     valid_urls: list = current_app.config.get("VALID_REDIRECT_URLS")
     is_valid = False
     for valid_url in valid_urls:
-        is_valid = (
-            url.startswith(valid_url[:-1])
-            if valid_url.endswith("*")
-            else valid_url == url
-        )
+        is_valid = url.startswith(valid_url[:-1]) if valid_url.endswith("*") else valid_url == url
         if is_valid:
             break
     return is_valid
@@ -94,9 +88,7 @@ def get_str_by_path(payload: Dict, path: str) -> str:
         return None
 
 
-def get_week_start_and_end_date(
-    target_date: datetime = datetime.now(tz=timezone.utc), index: int = 0
-):
+def get_week_start_and_end_date(target_date: datetime = datetime.now(tz=timezone.utc), index: int = 0):
     """Return first and last dates (sunday and saturday) for the index."""
     # index: 0 (current week), 1 (last week) and so on
     date = target_date - timedelta(days=index * 6)
@@ -161,9 +153,7 @@ def get_local_time(date_val: datetime, timezone_override=None):
     return date_val
 
 
-def get_local_formatted_date_time(
-    date_val: datetime, dt_format: str = "%Y-%m-%d %H:%M:%S"
-):
+def get_local_formatted_date_time(date_val: datetime, dt_format: str = "%Y-%m-%d %H:%M:%S"):
     """Return formatted local time."""
     return get_local_time(date_val).strftime(dt_format)
 
@@ -203,9 +193,7 @@ def mask(val: str, preserve_length: int = 0) -> str:
     return val[-preserve_length:].rjust(len(val), replace_char)
 
 
-def get_nearest_business_day(
-    date_val: datetime, include_today: bool = True
-) -> datetime:
+def get_nearest_business_day(date_val: datetime, include_today: bool = True) -> datetime:
     """Return nearest business day to the date.
 
     include_today= true ; inclusive of today.If today is business , just returns it
@@ -311,9 +299,7 @@ def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
     if corp_type == CorpType.NRO.value:
         return current_app.config.get("NAMEX_PAY_TOPIC")
-    product_code = CodeService.find_code_value_by_type_and_code(
-        Code.CORP_TYPE.value, corp_type
-    ).get("product")
+    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get("product")
     if product_code in [Product.BUSINESS.value, Product.BUSINESS_SEARCH.value]:
         return current_app.config.get("BUSINESS_PAY_TOPIC")
     if product_code == Product.STRR.value:

@@ -105,9 +105,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
     with app.app_context():
         with db.engine.connect() as conn:
             transaction = conn.begin()
-            sess = db._make_scoped_session(
-                dict(bind=conn)
-            )  # pylint: disable=protected-access
+            sess = db._make_scoped_session(dict(bind=conn))  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
             old_session = db.session
@@ -143,9 +141,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
 @pytest.fixture()
 def auth_mock(monkeypatch):
     """Mock check_auth."""
-    monkeypatch.setattr(
-        "pay_api.services.auth.check_auth", lambda *args, **kwargs: None
-    )
+    monkeypatch.setattr("pay_api.services.auth.check_auth", lambda *args, **kwargs: None)
 
 
 @pytest.fixture()
@@ -215,9 +211,7 @@ def auto(docker_services, app):
 @pytest.fixture(scope="session")
 def docker_compose_files(pytestconfig):
     """Get the docker-compose.yml absolute path."""
-    return [
-        os.path.join(str(pytestconfig.rootdir), "tests/docker", "docker-compose.yml")
-    ]
+    return [os.path.join(str(pytestconfig.rootdir), "tests/docker", "docker-compose.yml")]
 
 
 @pytest.fixture()
@@ -254,9 +248,7 @@ def premium_user_mock(monkeypatch):
 @pytest.fixture()
 def rest_call_mock(monkeypatch):
     """Mock rest_call_mock."""
-    monkeypatch.setattr(
-        "pay_api.services.oauth_service.OAuthService.post", lambda *args, **kwargs: None
-    )
+    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.post", lambda *args, **kwargs: None)
 
 
 @pytest.fixture()
@@ -291,9 +283,7 @@ def admin_users_mock(monkeypatch):
         "pay_api.services.payment_account.get_account_admin_users",
         get_account_admin_users,
     )
-    monkeypatch.setattr(
-        "pay_api.services.eft_service.get_account_admin_users", get_account_admin_users
-    )
+    monkeypatch.setattr("pay_api.services.eft_service.get_account_admin_users", get_account_admin_users)
 
 
 @pytest.fixture()

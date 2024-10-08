@@ -45,9 +45,7 @@ from .payment_line_item import PaymentLineItem
 class PaybcService(PaymentSystemService, CFSService):
     """Service to manage PayBC integration. - for NSF/balance payments, we usually use direct pay service instead."""
 
-    def get_payment_system_url_for_invoice(
-        self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str
-    ):
+    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         current_app.logger.debug("<get_payment_system_url")
         pay_system_url = self._build_payment_url(inv_ref, return_url)
@@ -72,9 +70,7 @@ class PaybcService(PaymentSystemService, CFSService):
     ) -> any:
         """Create account in PayBC."""
         cfs_account = CfsAccountModel()
-        cfs_account_details = self.create_cfs_account(
-            identifier, contact_info, receipt_method=None
-        )
+        cfs_account_details = self.create_cfs_account(identifier, contact_info, receipt_method=None)
         # Update model with response values
         cfs_account.cfs_account = cfs_account_details.get("account_number")
         cfs_account.cfs_site = cfs_account_details.get("site_number")
@@ -97,9 +93,7 @@ class PaybcService(PaymentSystemService, CFSService):
         for line_item in line_items:
             line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
 
-        invoice_response = self.create_account_invoice(
-            invoice.id, line_item_models, payment_account
-        )
+        invoice_response = self.create_account_invoice(invoice.id, line_item_models, payment_account)
 
         invoice_reference: InvoiceReference = InvoiceReference.create(
             invoice.id,
@@ -148,17 +142,12 @@ class PaybcService(PaymentSystemService, CFSService):
         access_token: str = CFSService.get_token().json().get("access_token")
         current_app.logger.debug("<Getting receipt")
         receipt_url = (
-            current_app.config.get("CFS_BASE_URL")
-            + f"/cfs/parties/{payment_account.cfs_party}/accs/"
+            current_app.config.get("CFS_BASE_URL") + f"/cfs/parties/{payment_account.cfs_party}/accs/"
             f"{payment_account.cfs_account}/sites/{payment_account.cfs_site}/rcpts/"
         )
         parsed_url = parse_url_params(pay_response_url)
-        receipt_number: str = (
-            parsed_url.get("receipt_number") if "receipt_number" in parsed_url else None
-        )
-        if (
-            not receipt_number
-        ):  # Find all receipts for the site and then match with invoice number
+        receipt_number: str = parsed_url.get("receipt_number") if "receipt_number" in parsed_url else None
+        if not receipt_number:  # Find all receipts for the site and then match with invoice number
             receipts_response = self.get(
                 receipt_url,
                 access_token,
@@ -167,14 +156,9 @@ class PaybcService(PaymentSystemService, CFSService):
                 retry_on_failure=True,
             ).json()
             for receipt in receipts_response.get("items"):
-                expanded_receipt = self._get_receipt_by_number(
-                    access_token, receipt_url, receipt.get("receipt_number")
-                )
+                expanded_receipt = self._get_receipt_by_number(access_token, receipt_url, receipt.get("receipt_number"))
                 for invoice in expanded_receipt.get("invoices"):
-                    if (
-                        invoice.get("invoice_number")
-                        == invoice_reference.invoice_number
-                    ):
+                    if invoice.get("invoice_number") == invoice_reference.invoice_number:
                         return (
                             receipt.get("receipt_number"),
                             parser.parse(expanded_receipt.get("receipt_date")),
@@ -182,9 +166,7 @@ class PaybcService(PaymentSystemService, CFSService):
                         )
 
         if receipt_number:
-            receipt_response = self._get_receipt_by_number(
-                access_token, receipt_url, receipt_number
-            )
+            receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
             receipt_date = parser.parse(receipt_response.get("receipt_date"))
 
             amount = Decimal("0")
@@ -203,9 +185,7 @@ class PaybcService(PaymentSystemService, CFSService):
     ):
         """Get receipt details by receipt number."""
         receipt_url = receipt_url + f"{receipt_number}/"
-        return self.get(
-            receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True
-        ).json()
+        return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True).json()
 
     def process_cfs_refund(
         self,
@@ -216,9 +196,7 @@ class PaybcService(PaymentSystemService, CFSService):
         """Process refund in CFS."""
         return super()._refund_and_create_credit_memo(invoice)
 
-    def get_payment_system_url_for_payment(
-        self, payment: Payment, inv_ref: InvoiceReference, return_url: str
-    ):
+    def get_payment_system_url_for_payment(self, payment: Payment, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         current_app.logger.debug(
             "<get_payment_system_url_for_payment ID: %s, Inv Number: %s",

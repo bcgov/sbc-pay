@@ -178,13 +178,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return d
 
     @classmethod
-    def search(
-        cls, search_filter: Dict, page: int, limit: int, return_all: bool = False
-    ):
+    def search(cls, search_filter: Dict, page: int, limit: int, return_all: bool = False):
         """Search for routing slip."""
-        routing_slips, total = RoutingSlipModel.search(
-            search_filter, page, limit, return_all
-        )
+        routing_slips, total = RoutingSlipModel.search(search_filter, page, limit, return_all)
         data = {
             "total": total,
             "page": page,
@@ -291,10 +287,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if routing_slip:
             routing_slip_schema = RoutingSlipSchema()
             routing_slip_dict = routing_slip_schema.dump(routing_slip)
-            routing_slip_dict["allowedStatuses"] = (
-                RoutingSlipStatusTransitionService.get_possible_transitions(
-                    routing_slip
-                )
+            routing_slip_dict["allowedStatuses"] = RoutingSlipStatusTransitionService.get_possible_transitions(
+                routing_slip
             )
         return routing_slip_dict
 
@@ -326,9 +320,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if cls.validate_and_find_by_number(rs_number):
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
-        payment_methods: List[str] = [
-            payment.get("paymentMethod") for payment in request_json.get("payments")
-        ]
+        payment_methods: List[str] = [payment.get("paymentMethod") for payment in request_json.get("payments")]
         # all the payment should have the same payment method
         if len(set(payment_methods)) != 1:
             raise BusinessException(Error.FAS_INVALID_PAYMENT_METHOD)
@@ -350,19 +342,11 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             status=CfsAccountStatus.PENDING.value,
         ).flush()
 
-        total = get_quantized(
-            sum(
-                float(payment.get("paidAmount"))
-                for payment in request_json.get("payments")
-            )
-        )
+        total = get_quantized(sum(float(payment.get("paidAmount")) for payment in request_json.get("payments")))
 
         # Calculate Total USD
         total_usd = get_quantized(
-            sum(
-                float(payment.get("paidUsdAmount", 0))
-                for payment in request_json.get("payments")
-            )
+            sum(float(payment.get("paidUsdAmount", 0)) for payment in request_json.get("payments"))
         )
 
         # Create a routing slip record.
@@ -398,16 +382,12 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     def do_link(cls, rs_number: str, parent_rs_number: str) -> Dict[str, any]:
         """Link routing slip to parent routing slip."""
         routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
-        parent_routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(
-            parent_rs_number
-        )
+        parent_routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(parent_rs_number)
         if routing_slip is None or parent_routing_slip is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
         # do validations if its linkable
-        RoutingSlip._validate_linking(
-            routing_slip=routing_slip, parent_rs_slip=parent_routing_slip
-        )
+        RoutingSlip._validate_linking(routing_slip=routing_slip, parent_rs_slip=parent_routing_slip)
 
         routing_slip.parent_number = parent_routing_slip.number
         routing_slip.status = RoutingSlipStatus.LINKED.value
@@ -422,9 +402,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
     @classmethod
     @user_context
-    def update(
-        cls, rs_number: str, action: str, request_json: Dict[str, any], **kwargs
-    ) -> Dict[str, any]:
+    def update(cls, rs_number: str, action: str, request_json: Dict[str, any], **kwargs) -> Dict[str, any]:
         """Update routing slip."""
         user: UserContext = kwargs["user"]
         if (patch_action := PatchActions.from_value(action)) is None:
@@ -435,9 +413,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         if patch_action == PatchActions.UPDATE_STATUS:
             status = request_json.get("status")
-            RoutingSlipStatusTransitionService.validate_possible_transitions(
-                routing_slip, status
-            )
+            RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip, status)
             status = RoutingSlipStatusTransitionService.get_actual_status(status)
 
             RoutingSlip._check_roles_for_status_update(status, user)
@@ -459,9 +435,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             elif status == RoutingSlipStatus.CORRECTION.value:
                 if not request_json.get("payments"):
                     raise BusinessException(Error.INVALID_REQUEST)
-                correction_total, comment = cls._calculate_correction_and_comment(
-                    rs_number, request_json
-                )
+                correction_total, comment = cls._calculate_correction_and_comment(rs_number, request_json)
                 routing_slip.total += correction_total
                 routing_slip.remaining_amount += correction_total
                 CommentModel(comment=comment, routing_slip_number=rs_number).flush()
@@ -469,11 +443,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 cfs_account = CfsAccountModel.find_effective_by_payment_method(
                     routing_slip.payment_account_id, PaymentMethod.INTERNAL.value
                 )
-                if (
-                    cfs_account
-                    and cfs_account.status == CfsAccountStatus.PENDING.value
-                    or not cfs_account
-                ):
+                if cfs_account and cfs_account.status == CfsAccountStatus.PENDING.value or not cfs_account:
                     status = (
                         RoutingSlipStatus.COMPLETE.value
                         if routing_slip.remaining_amount == 0
@@ -486,28 +456,19 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return cls.find_by_number(rs_number)
 
     @classmethod
-    def _calculate_correction_and_comment(
-        cls, rs_number: str, request_json: Dict[str, any]
-    ):
+    def _calculate_correction_and_comment(cls, rs_number: str, request_json: Dict[str, any]):
         correction_total = Decimal("0")
         comment: str = ""
         payments = PaymentModel.find_payments_for_routing_slip(rs_number)
         for payment_request in request_json.get("payments"):
-            if payment := next(
-                x for x in payments if x.id == payment_request.get("id")
-            ):
+            if payment := next(x for x in payments if x.id == payment_request.get("id")):
                 paid_amount = Decimal(str(payment_request.get("paidAmount", 0)))
                 correction_total += paid_amount - payment.paid_amount
                 if payment.payment_method_code == PaymentMethod.CASH.value:
-                    comment += (
-                        f"Cash Payment corrected amount"
-                        f" from ${payment.paid_amount} to ${paid_amount}\n"
-                    )
+                    comment += f"Cash Payment corrected amount" f" from ${payment.paid_amount} to ${paid_amount}\n"
                 else:
                     comment += f"Cheque Payment {payment.cheque_receipt_number}"
-                    if cheque_receipt_number := payment_request.get(
-                        "chequeReceiptNumber"
-                    ):
+                    if cheque_receipt_number := payment_request.get("chequeReceiptNumber"):
                         payment.cheque_receipt_number = cheque_receipt_number
                         comment += f", cheque receipt number corrected to {cheque_receipt_number}"
                     if paid_amount != payment.paid_amount:
@@ -521,13 +482,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     @staticmethod
     def _check_roles_for_status_update(status: str, user: UserContext):
         """Check roles for the status."""
-        if status == RoutingSlipStatus.VOID.value and not user.has_role(
-            Role.FAS_VOID.value
-        ):
+        if status == RoutingSlipStatus.VOID.value and not user.has_role(Role.FAS_VOID.value):
             abort(403)
-        if status == RoutingSlipStatus.CORRECTION.value and not user.has_role(
-            Role.FAS_CORRECTION.value
-        ):
+        if status == RoutingSlipStatus.CORRECTION.value and not user.has_role(Role.FAS_CORRECTION.value):
             abort(403)
         if status in (
             RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value,
@@ -536,9 +493,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             abort(403)
 
     @staticmethod
-    def _validate_linking(
-        routing_slip: RoutingSlipModel, parent_rs_slip: RoutingSlipModel
-    ) -> None:
+    def _validate_linking(routing_slip: RoutingSlipModel, parent_rs_slip: RoutingSlipModel) -> None:
         """Validate the linking.
 
         1). child already has a parent/already linked.
@@ -574,9 +529,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     @staticmethod
     def _is_linked_already(routing_slip: RoutingSlipModel):
         """Find if the rs is already linked."""
-        return (
-            routing_slip.parent or routing_slip.status == RoutingSlipStatus.LINKED.value
-        )
+        return routing_slip.parent or routing_slip.status == RoutingSlipStatus.LINKED.value
 
     @staticmethod
     def _validate_status(routing_slip: RoutingSlipModel, child_rs: RoutingSlipModel):
@@ -608,8 +561,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # -- Multiply the digit by 2
         # -- If the sum is 2 digits, add the two digits together (this will always be a 1 digit number in this case)
         replacement_digits = [
-            int(str(x)[0]) + int(str(x)[1]) if x > 9 else x
-            for x in [i * 2 for i in data_digits[1::2]]
+            int(str(x)[0]) + int(str(x)[1]) if x > 9 else x for x in [i * 2 for i in data_digits[1::2]]
         ]
         # -- Substitute the resulting digit for the original digit in the iteration
         replacement_digits.reverse()

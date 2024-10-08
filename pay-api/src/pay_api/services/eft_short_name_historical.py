@@ -74,9 +74,7 @@ class EFTShortnameHistorical:
 
     @staticmethod
     @user_context
-    def create_statement_paid(
-        history: EFTShortnameHistory, **kwargs
-    ) -> EFTShortnamesHistoricalModel:
+    def create_statement_paid(history: EFTShortnameHistory, **kwargs) -> EFTShortnamesHistoricalModel:
         """Create EFT Short name statement paid historical record."""
         return EFTShortnamesHistoricalModel(
             amount=history.amount,
@@ -94,9 +92,7 @@ class EFTShortnameHistorical:
 
     @staticmethod
     @user_context
-    def create_statement_reverse(
-        history: EFTShortnameHistory, **kwargs
-    ) -> EFTShortnamesHistoricalModel:
+    def create_statement_reverse(history: EFTShortnameHistory, **kwargs) -> EFTShortnamesHistoricalModel:
         """Create EFT Short name statement reverse historical record."""
         return EFTShortnamesHistoricalModel(
             amount=history.amount,
@@ -114,9 +110,7 @@ class EFTShortnameHistorical:
 
     @staticmethod
     @user_context
-    def create_invoice_refund(
-        history: EFTShortnameHistory, **kwargs
-    ) -> EFTShortnamesHistoricalModel:
+    def create_invoice_refund(history: EFTShortnameHistory, **kwargs) -> EFTShortnamesHistoricalModel:
         """Create EFT Short name invoice refund historical record."""
         return EFTShortnamesHistoricalModel(
             amount=history.amount,
@@ -135,9 +129,7 @@ class EFTShortnameHistorical:
 
     @staticmethod
     @user_context
-    def create_shortname_refund(
-        history: EFTShortnameHistory, **kwargs
-    ) -> EFTShortnamesHistoricalModel:
+    def create_shortname_refund(history: EFTShortnameHistory, **kwargs) -> EFTShortnamesHistoricalModel:
         """Create EFT Short name refund historical record."""
         return EFTShortnamesHistoricalModel(
             amount=history.amount,
@@ -162,9 +154,7 @@ class EFTShortnameHistorical:
         return case(
             (
                 PaymentAccountModel.name.like("%-" + PaymentAccountModel.branch_name),
-                func.replace(
-                    PaymentAccountModel.name, "-" + PaymentAccountModel.branch_name, ""
-                ),
+                func.replace(PaymentAccountModel.name, "-" + PaymentAccountModel.branch_name, ""),
             ),
             else_=PaymentAccountModel.name,
         ).label("account_name")
@@ -188,8 +178,7 @@ class EFTShortnameHistorical:
             .where(
                 latest_history_model.short_name_id == history_model.short_name_id,
                 latest_history_model.statement_number == history_model.statement_number,
-                latest_history_model.transaction_type
-                != EFTHistoricalTypes.INVOICE_REFUND.value,
+                latest_history_model.transaction_type != EFTHistoricalTypes.INVOICE_REFUND.value,
             )
             .order_by(
                 latest_history_model.statement_number,
@@ -209,8 +198,7 @@ class EFTShortnameHistorical:
             .select_from(latest_history_subquery)
             .where(
                 and_(
-                    latest_history_subquery.c.transaction_type
-                    == EFTHistoricalTypes.STATEMENT_PAID.value,
+                    latest_history_subquery.c.transaction_type == EFTHistoricalTypes.STATEMENT_PAID.value,
                     latest_history_subquery.c.is_processing.is_(False),
                 )
             )
@@ -219,10 +207,8 @@ class EFTShortnameHistorical:
         is_reversible_statement = case(
             (
                 and_(
-                    history_model.transaction_type
-                    == EFTHistoricalTypes.STATEMENT_PAID.value,
-                    history_model.transaction_date
-                    >= cls.transaction_date_now() - timedelta(days=60),
+                    history_model.transaction_type == EFTHistoricalTypes.STATEMENT_PAID.value,
+                    history_model.transaction_date >= cls.transaction_date_now() - timedelta(days=60),
                 ),
                 reversible_statement_subquery,
             ),
@@ -254,16 +240,10 @@ class EFTShortnameHistorical:
             .filter(history_model.hidden == false())
         )
 
-        query = query.order_by(
-            history_model.transaction_date.desc(), history_model.id.desc()
-        )
+        query = query.order_by(history_model.transaction_date.desc(), history_model.id.desc())
 
-        pagination = query.paginate(
-            per_page=search_criteria.limit, page=search_criteria.page
-        )
-        history_list = unstructure_schema_items(
-            EFTShortnameHistorySchema, pagination.items
-        )
+        pagination = query.paginate(per_page=search_criteria.limit, page=search_criteria.page)
+        history_list = unstructure_schema_items(EFTShortnameHistorySchema, pagination.items)
 
         return {
             "page": search_criteria.page,

@@ -34,23 +34,15 @@ bp = Blueprint(
 
 @bp.route("/refunds", methods=["POST", "OPTIONS"])
 @cross_origin(origins="*", methods=["POST"])
-@_jwt.has_one_of_roles(
-    [Role.SYSTEM.value, Role.CREATE_CREDITS.value, Role.FAS_REFUND.value]
-)
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.CREATE_CREDITS.value, Role.FAS_REFUND.value])
 def post_refund(invoice_id):
     """Create the Refund for the Invoice."""
     current_app.logger.info(f"<post_refund : {invoice_id}")
     request_json = request.get_json(silent=True)
     try:
-        valid_format, errors = (
-            schema_utils.validate(request_json, "refund")
-            if request_json
-            else (True, None)
-        )
+        valid_format, errors = schema_utils.validate(request_json, "refund") if request_json else (True, None)
         if not valid_format:
-            return error_to_response(
-                Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-            )
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         response = RefundService.create_refund(invoice_id, request_json)
 

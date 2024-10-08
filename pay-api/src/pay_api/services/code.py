@@ -79,16 +79,10 @@ class Code:
     @classmethod
     def find_code_value_by_type_and_code(cls, code_type: str, code: str):
         """Find code values by code type and code."""
-        current_app.logger.debug(
-            f"<find_code_value_by_type_and_code : {code_type} - {code}"
-        )
+        current_app.logger.debug(f"<find_code_value_by_type_and_code : {code_type} - {code}")
         code_response = {}
         if cache.get(code_type):
-            filtered_codes = [
-                cd
-                for cd in cache.get(code_type)
-                if cd.get("type") == code or cd.get("code") == code
-            ]
+            filtered_codes = [cd for cd in cache.get(code_type) if cd.get("type") == code or cd.get("code") == code]
             if filtered_codes:
                 code_response = filtered_codes[0]
         else:

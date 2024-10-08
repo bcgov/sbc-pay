@@ -35,9 +35,7 @@ bp = Blueprint("FEES", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/fees")
 @_jwt.has_one_of_roles([Role.VIEWER.value, Role.EDITOR.value, Role.STAFF.value])
 def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
     """Calculate the fee for the filing using the corp type/filing type and return fee."""
-    date = request.args.get(
-        "date", datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT)
-    )
+    date = request.args.get("date", datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT))
     is_priority = convert_to_bool(request.args.get("priority", "False"))
     is_future_effective = convert_to_bool(request.args.get("futureEffective", "False"))
     jurisdiction = request.args.get("jurisdiction", DEFAULT_JURISDICTION)

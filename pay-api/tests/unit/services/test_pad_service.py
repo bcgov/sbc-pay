@@ -35,9 +35,7 @@ def test_create_account(session):
         "bankTransitNumber": 222,
         "bankAccountNumber": 33333333,
     }
-    account = pad_service.create_account(
-        identifier="100", contact_info={}, payment_info=payment_info
-    )
+    account = pad_service.create_account(identifier="100", contact_info={}, payment_info=payment_info)
     assert account
     assert account.bank_number == payment_info.get("bankInstitutionNumber")
 
@@ -64,9 +62,7 @@ def test_has_no_payment_blockers(session):
 
 def test_has_payment_blockers(session):
     """Test for payment blockers."""
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.PAD.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
     payment_account.has_nsf_invoices = datetime.now(tz=timezone.utc)
     payment_account.save()
 

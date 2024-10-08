@@ -134,16 +134,12 @@ class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     def find_all_comments_for_a_routingslip(cls, routing_slip_number: str):
         """Find comments for a routing slip."""
         current_app.logger.debug("<Comment.get.service")
-        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(
-            routing_slip_number
-        )
+        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip_number)
 
         if routing_slip is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
-        comments_dao = CommentModel.find_all_comments_for_a_routingslip(
-            routing_slip.number
-        )
+        comments_dao = CommentModel.find_all_comments_for_a_routingslip(routing_slip.number)
         comments = CommentSchema().dump(comments_dao, many=True)
         data = {"comments": comments}
 
@@ -154,17 +150,13 @@ class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     def create(cls, comment_value: str, rs_number: str):
         """Create routing slip comment."""
         current_app.logger.debug("<Comment.create.service")
-        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(
-            number=rs_number
-        )
+        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(number=rs_number)
         if routing_slip is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
         # Create a routing slip comment record.
         comment_service = Comment()
-        comment_service._dao = CommentModel(
-            comment=comment_value, routing_slip_number=rs_number
-        )
+        comment_service._dao = CommentModel(comment=comment_value, routing_slip_number=rs_number)
         comment_service.flush()
 
         comment_service.commit()

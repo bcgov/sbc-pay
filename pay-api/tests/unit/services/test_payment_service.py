@@ -59,20 +59,14 @@ test_user_token = {"preferred_username": "test"}
 
 def test_create_payment_record(session, public_user_mock):
     """Assert that the payment records are created."""
-    payment_response = PaymentService.create_invoice(
-        get_payment_request(), get_auth_basic_user()
-    )
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_basic_user().get("account").get("id")
-    )
+    payment_response = PaymentService.create_invoice(get_payment_request(), get_auth_basic_user())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get("account").get("id"))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get("id") is not None
     # Create another payment with same request, the account should be the same
     PaymentService.create_invoice(get_payment_request(), get_auth_basic_user())
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_basic_user().get("account").get("id")
-    )
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get("account").get("id"))
 
     assert account_id == account_model.id
 
@@ -82,17 +76,13 @@ def test_create_payment_record_with_direct_pay(session, public_user_mock):
     payment_response = PaymentService.create_invoice(
         get_payment_request(), get_auth_basic_user(PaymentMethod.DIRECT_PAY.value)
     )
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_basic_user().get("account").get("id")
-    )
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get("account").get("id"))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get("id") is not None
     # Create another payment with same request, the account should be the same
     PaymentService.create_invoice(get_payment_request(), get_auth_basic_user())
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_basic_user().get("account").get("id")
-    )
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get("account").get("id"))
 
     assert account_id == account_model.id
 
@@ -100,27 +90,19 @@ def test_create_payment_record_with_direct_pay(session, public_user_mock):
 def test_create_payment_record_with_internal_pay(session, public_user_mock):
     """Assert that the payment records are created."""
     # Create invoice without routing slip.
-    payment_response = PaymentService.create_invoice(
-        get_routing_slip_payment_request(), get_auth_staff()
-    )
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_staff().get("account").get("id")
-    )
+    payment_response = PaymentService.create_invoice(get_routing_slip_payment_request(), get_auth_staff())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_staff().get("account").get("id"))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get("id") is not None
 
     rs_number = "123456789"
-    rs = factory_routing_slip(
-        number=rs_number, payment_account_id=account_id, remaining_amount=50.00
-    )
+    rs = factory_routing_slip(number=rs_number, payment_account_id=account_id, remaining_amount=50.00)
     rs.save()
 
     # Create another invoice with a routing slip.
     PaymentService.create_invoice(get_routing_slip_payment_request(), get_auth_staff())
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_staff().get("account").get("id")
-    )
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_staff().get("account").get("id"))
 
     assert account_id == account_model.id
 
@@ -137,9 +119,7 @@ def test_create_payment_record_with_internal_pay(session, public_user_mock):
 def test_create_payment_record_rollback(session, public_user_mock):
     """Assert that the payment records are created."""
     # Mock here that the invoice update fails here to test the rollback scenario
-    with patch(
-        "pay_api.services.invoice.Invoice.flush", side_effect=Exception("mocked error")
-    ):
+    with patch("pay_api.services.invoice.Invoice.flush", side_effect=Exception("mocked error")):
         with pytest.raises(Exception) as excinfo:
             PaymentService.create_invoice(get_payment_request(), get_auth_basic_user())
         assert excinfo.type == Exception
@@ -154,17 +134,13 @@ def test_create_payment_record_rollback(session, public_user_mock):
     ):
         with pytest.raises(Exception) as excinfo:
             PaymentService.create_invoice(
-                get_payment_request_with_payment_method(
-                    payment_method=PaymentMethod.DIRECT_PAY.value
-                ),
+                get_payment_request_with_payment_method(payment_method=PaymentMethod.DIRECT_PAY.value),
                 get_auth_basic_user(),
             )
         assert excinfo.type == Exception
 
 
-def test_create_payment_record_rollback_on_paybc_connection_error(
-    session, public_user_mock
-):
+def test_create_payment_record_rollback_on_paybc_connection_error(session, public_user_mock):
     """Assert that the payment records are not created."""
     # Create a payment account
     factory_payment_account()
@@ -198,23 +174,15 @@ def test_create_payment_record_rollback_on_paybc_connection_error(
 
 def test_create_zero_dollar_payment_record(session, public_user_mock):
     """Assert that the payment records are created and completed."""
-    payment_response = PaymentService.create_invoice(
-        get_zero_dollar_payment_request(), get_auth_basic_user()
-    )
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_basic_user().get("account").get("id")
-    )
+    payment_response = PaymentService.create_invoice(get_zero_dollar_payment_request(), get_auth_basic_user())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get("account").get("id"))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get("id") is not None
     assert payment_response.get("status_code") == "COMPLETED"
     # Create another payment with same request, the account should be the same
-    PaymentService.create_invoice(
-        get_zero_dollar_payment_request(), get_auth_basic_user()
-    )
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_basic_user().get("account").get("id")
-    )
+    PaymentService.create_invoice(get_zero_dollar_payment_request(), get_auth_basic_user())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get("account").get("id"))
     assert account_id == account_model.id
     assert payment_response.get("status_code") == "COMPLETED"
 
@@ -223,9 +191,7 @@ def test_create_payment_record_with_rs(session, public_user_mock):
     """Assert that the payment records are created and completed."""
     payment_account = factory_payment_account()
     payment_account.save()
-    rs = factory_routing_slip(
-        payment_account_id=payment_account.id, total=1000, remaining_amount=1000
-    )
+    rs = factory_routing_slip(payment_account_id=payment_account.id, total=1000, remaining_amount=1000)
     rs.save()
     cfs_response = {
         "invoice_number": "abcde",
@@ -233,17 +199,13 @@ def test_create_payment_record_with_rs(session, public_user_mock):
 
     request = get_payment_request()
     request["accountInfo"] = {"routingSlip": rs.number}
-    with patch.object(
-        CFSService, "create_account_invoice", return_value=cfs_response
-    ) as mock_post:
+    with patch.object(CFSService, "create_account_invoice", return_value=cfs_response) as mock_post:
         PaymentService.create_invoice(request, get_auth_basic_user())
         mock_post.assert_called()
 
     request = get_zero_dollar_payment_request()
     request["accountInfo"] = {"routingSlip": rs.number}
-    with patch.object(
-        CFSService, "create_account_invoice", return_value=cfs_response
-    ) as mock_post:
+    with patch.object(CFSService, "create_account_invoice", return_value=cfs_response) as mock_post:
         PaymentService.create_invoice(request, get_auth_basic_user())
         mock_post.assert_not_called()
 
@@ -259,14 +221,10 @@ def test_delete_payment(session, auth_mock, public_user_mock):
     invoice_reference = factory_invoice_reference(invoice.id).save()
 
     # Create a payment for this reference
-    payment = factory_payment(
-        invoice_number=invoice_reference.invoice_number, invoice_amount=10
-    ).save()
+    payment = factory_payment(invoice_number=invoice_reference.invoice_number, invoice_amount=10).save()
 
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
-    line = factory_payment_line_item(
-        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id
-    )
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
@@ -294,9 +252,7 @@ def test_delete_completed_payment(session, auth_mock):
     ).save()
 
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
-    line = factory_payment_line_item(
-        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id
-    )
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
@@ -309,9 +265,7 @@ def test_delete_completed_payment(session, auth_mock):
 def test_create_bcol_payment(session, public_user_mock):
     """Assert that the payment records are created."""
     payment_response = PaymentService.create_invoice(
-        get_payment_request_with_payment_method(
-            payment_method="DRAWDOWN", business_identifier="CP0002000"
-        ),
+        get_payment_request_with_payment_method(payment_method="DRAWDOWN", business_identifier="CP0002000"),
         get_auth_premium_user(),
     )
     assert payment_response is not None
@@ -322,12 +276,8 @@ def test_create_bcol_payment(session, public_user_mock):
 def test_create_payment_record_with_service_charge(session, public_user_mock):
     """Assert that the payment records are created."""
     # Create a payment request for corp type BC
-    payment_response = PaymentService.create_invoice(
-        get_payment_request_with_service_fees(), get_auth_basic_user()
-    )
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_basic_user().get("account").get("id")
-    )
+    payment_response = PaymentService.create_invoice(get_payment_request_with_service_fees(), get_auth_basic_user())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get("account").get("id"))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get("id") is not None
@@ -349,9 +299,7 @@ def test_create_pad_payment(session, public_user_mock):
 
 def test_create_online_banking_payment(session, public_user_mock):
     """Assert that the payment records are created."""
-    factory_payment_account(
-        payment_method_code=PaymentMethod.ONLINE_BANKING.value
-    ).save()
+    factory_payment_account(payment_method_code=PaymentMethod.ONLINE_BANKING.value).save()
 
     payment_response = PaymentService.create_invoice(
         get_payment_request_with_service_fees(business_identifier="CP0002000"),
@@ -364,9 +312,7 @@ def test_create_online_banking_payment(session, public_user_mock):
 
 def test_patch_online_banking_payment_to_direct_pay(session, public_user_mock):
     """Assert that the payment records are created."""
-    factory_payment_account(
-        payment_method_code=PaymentMethod.ONLINE_BANKING.value
-    ).save()
+    factory_payment_account(payment_method_code=PaymentMethod.ONLINE_BANKING.value).save()
 
     payment_response = PaymentService.create_invoice(
         get_payment_request_with_service_fees(business_identifier="CP0002000"),
@@ -386,9 +332,7 @@ def test_patch_online_banking_payment_to_direct_pay(session, public_user_mock):
 
 def test_patch_online_banking_payment_to_cc(session, public_user_mock):
     """Assert that the payment records are created."""
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.ONLINE_BANKING.value
-    ).save()
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.ONLINE_BANKING.value).save()
     payment_account.save()
     # payment.save()
     payment_response = PaymentService.create_invoice(
@@ -439,29 +383,19 @@ def test_internal_rs_back_active(session, public_user_mock):
     Routing slip is complete and a transaction is cancelled
     the balance is restored - Should move back to Active
     """
-    payment_response = PaymentService.create_invoice(
-        get_routing_slip_payment_request(), get_auth_staff()
-    )
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_staff().get("account").get("id")
-    )
+    payment_response = PaymentService.create_invoice(get_routing_slip_payment_request(), get_auth_staff())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_staff().get("account").get("id"))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get("id") is not None
 
     rs_number = "123456789"
-    rs = factory_routing_slip(
-        number=rs_number, payment_account_id=account_id, remaining_amount=50.00
-    )
+    rs = factory_routing_slip(number=rs_number, payment_account_id=account_id, remaining_amount=50.00)
     rs.save()
 
     # Create another invoice with a routing slip.
-    invoice = PaymentService.create_invoice(
-        get_routing_slip_payment_request(), get_auth_staff()
-    )
-    account_model = PaymentAccount.find_by_auth_account_id(
-        get_auth_staff().get("account").get("id")
-    )
+    invoice = PaymentService.create_invoice(get_routing_slip_payment_request(), get_auth_staff())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_staff().get("account").get("id"))
 
     assert account_id == account_model.id
 

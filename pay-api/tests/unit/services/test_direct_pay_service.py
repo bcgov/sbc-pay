@@ -66,32 +66,20 @@ def test_get_payment_system_url(session, public_user_mock):
     invoice.save()
     invoice_ref = factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
-    distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(
-        fee_schedule.fee_schedule_id
-    )
+    distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
     distribution_code_svc = DistributionCode()
     distribution_code_payload = get_distribution_code_payload()
     # update the existing gl code with new values
-    distribution_code_svc.save_or_update(
-        distribution_code_payload, distribution_code.distribution_code_id
-    )
-    line = factory_payment_line_item(
-        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id
-    )
+    distribution_code_svc.save_or_update(distribution_code_payload, distribution_code.distribution_code_id)
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     direct_pay_service = DirectPayService()
-    payment_response_url = direct_pay_service.get_payment_system_url_for_invoice(
-        invoice, invoice_ref, "google.com"
-    )
-    url_param_dict = dict(
-        urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query)
-    )
+    payment_response_url = direct_pay_service.get_payment_system_url_for_invoice(invoice, invoice_ref, "google.com")
+    url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
     assert url_param_dict["trnDate"] == today
     assert url_param_dict["glDate"] == today
     assert url_param_dict["description"] == "Direct_Sale"
-    assert url_param_dict["pbcRefNumber"] == current_app.config.get(
-        "PAYBC_DIRECT_PAY_REF_NUMBER"
-    )
+    assert url_param_dict["pbcRefNumber"] == current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER")
     assert url_param_dict["trnNumber"] == generate_transaction_number(invoice.id)
     assert url_param_dict["trnAmount"] == str(invoice.total)
     assert url_param_dict["paymentMethod"] == "CC"
@@ -130,20 +118,14 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     invoice.save()
     invoice_ref = factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
-    distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(
-        fee_schedule.fee_schedule_id
-    )
+    distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
 
     distribution_code_svc = DistributionCode()
     distribution_code_payload = get_distribution_code_payload()
     # Set service fee distribution
-    distribution_code_payload.update(
-        {"serviceFeeDistributionCodeId": distribution_code.distribution_code_id}
-    )
+    distribution_code_payload.update({"serviceFeeDistributionCodeId": distribution_code.distribution_code_id})
     # update the existing gl code with new values
-    distribution_code_svc.save_or_update(
-        distribution_code_payload, distribution_code.distribution_code_id
-    )
+    distribution_code_svc.save_or_update(distribution_code_payload, distribution_code.distribution_code_id)
 
     service_fee = 100
     line = factory_payment_line_item(
@@ -153,18 +135,12 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     )
     line.save()
     direct_pay_service = DirectPayService()
-    payment_response_url = direct_pay_service.get_payment_system_url_for_invoice(
-        invoice, invoice_ref, "google.com"
-    )
-    url_param_dict = dict(
-        urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query)
-    )
+    payment_response_url = direct_pay_service.get_payment_system_url_for_invoice(invoice, invoice_ref, "google.com")
+    url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
     assert url_param_dict["trnDate"] == today
     assert url_param_dict["glDate"] == today
     assert url_param_dict["description"] == "Direct_Sale"
-    assert url_param_dict["pbcRefNumber"] == current_app.config.get(
-        "PAYBC_DIRECT_PAY_REF_NUMBER"
-    )
+    assert url_param_dict["pbcRefNumber"] == current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER")
     assert url_param_dict["trnNumber"] == generate_transaction_number(invoice.id)
     assert url_param_dict["trnAmount"] == str(invoice.total)
     assert url_param_dict["paymentMethod"] == "CC"
@@ -225,15 +201,11 @@ def test_get_receipt(session, public_user_mock):
     )
     line.save()
     direct_pay_service = DirectPayService()
-    rcpt = direct_pay_service.get_receipt(
-        payment_account, f"{response_url}{invalid_hash}", invoice_ref
-    )
+    rcpt = direct_pay_service.get_receipt(payment_account, f"{response_url}{invalid_hash}", invoice_ref)
     assert rcpt is None
 
     valid_hash = f"&hashValue={HashingService.encode(response_url)}"
-    rcpt = direct_pay_service.get_receipt(
-        payment_account, f"{response_url}{valid_hash}", invoice_ref
-    )
+    rcpt = direct_pay_service.get_receipt(payment_account, f"{response_url}{valid_hash}", invoice_ref)
     assert rcpt is not None
 
     # Test receipt without response_url
@@ -248,9 +220,7 @@ def test_process_cfs_refund_success(session, monkeypatch):
     invoice.invoice_status_code = InvoiceStatus.PAID.value
     invoice.payment_date = datetime.now(tz=timezone.utc)
     invoice.save()
-    receipt = factory_receipt(
-        invoice.id, invoice.id, receipt_amount=invoice.total
-    ).save()
+    receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
     receipt.save()
     invoice_reference = factory_invoice_reference(invoice.id, invoice.id)
     invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
@@ -289,9 +259,7 @@ def test_process_cfs_refund_duplicate_refund(session, monkeypatch):
     invoice.invoice_status_code = InvoiceStatus.PAID.value
     invoice.payment_date = datetime.now(tz=timezone.utc)
     invoice.save()
-    receipt = factory_receipt(
-        invoice.id, invoice.id, receipt_amount=invoice.total
-    ).save()
+    receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
     receipt.save()
     invoice_reference = factory_invoice_reference(invoice.id, invoice.id)
     invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
@@ -364,13 +332,9 @@ def _automated_refund_preparation():
     invoice.invoice_status_code = InvoiceStatus.PAID.value
     invoice.payment_date = datetime.now(tz=timezone.utc)
     invoice.save()
-    payment_line_item = factory_payment_line_item(
-        invoice.id, fee_schedule_id=1, service_fees=1.5, total=30
-    )
+    payment_line_item = factory_payment_line_item(invoice.id, fee_schedule_id=1, service_fees=1.5, total=30)
     payment_line_item.save()
-    receipt = factory_receipt(
-        invoice.id, invoice.id, receipt_amount=invoice.total
-    ).save()
+    receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
     receipt.save()
     invoice_reference = factory_invoice_reference(invoice.id, invoice.id)
     invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
@@ -435,9 +399,7 @@ def test_build_automated_refund_payload_validation(session, test_name, refund_pa
         ("paybc_already_refunded", True),
     ],
 )
-def test_build_automated_refund_payload_paybc_validation(
-    session, test_name, has_exception
-):
+def test_build_automated_refund_payload_paybc_validation(session, test_name, has_exception):
     """Assert refund payload building works correctly with various PAYBC responses."""
     invoice, payment_line_item = _automated_refund_preparation()
     refund_partial = [
@@ -513,18 +475,11 @@ def test_build_automated_refund_payload_paybc_validation(
         mock_get.return_value.json.return_value = base_paybc_response
         if has_exception:
             with pytest.raises(BusinessException) as excinfo:
-                direct_pay_service.build_automated_refund_payload(
-                    invoice, refund_partial
-                )
+                direct_pay_service.build_automated_refund_payload(invoice, refund_partial)
                 assert excinfo.value.code == Error.INVALID_REQUEST.name
         else:
-            payload = direct_pay_service.build_automated_refund_payload(
-                invoice, refund_partial
-            )
+            payload = direct_pay_service.build_automated_refund_payload(invoice, refund_partial)
             assert payload
             assert payload["txnAmount"] == refund_partial[0].refund_amount
             assert payload["refundRevenue"][0]["lineNumber"] == "1"
-            assert (
-                payload["refundRevenue"][0]["refundAmount"]
-                == refund_partial[0].refund_amount
-            )
+            assert payload["refundRevenue"][0]["refundAmount"] == refund_partial[0].refund_amount

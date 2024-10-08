@@ -70,12 +70,8 @@ def test_auth_for_client_user_roles(session, public_user_mock):
     check_auth("CP0001234", contains_role=EDIT_ROLE)
 
 
-@pytest.mark.parametrize(
-    "roles, param_name", [(VIEW_ROLE, "contains_role"), ([EDIT_ROLE], "one_of_roles")]
-)
-def test_auth_for_client_user_roles_for_error(
-    session, public_user_mock, roles, param_name
-):
+@pytest.mark.parametrize("roles, param_name", [(VIEW_ROLE, "contains_role"), ([EDIT_ROLE], "one_of_roles")])
+def test_auth_for_client_user_roles_for_error(session, public_user_mock, roles, param_name):
     """Assert that the auth is working as expected."""
     # Test for exception
     with pytest.raises(HTTPException) as excinfo:

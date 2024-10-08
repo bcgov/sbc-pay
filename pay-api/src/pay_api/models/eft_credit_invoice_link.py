@@ -49,12 +49,8 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(
-        db.Integer, ForeignKey("invoices.id"), nullable=False, index=True
-    )
-    eft_credit_id = db.Column(
-        db.Integer, ForeignKey("eft_credits.id"), nullable=False, index=True
-    )
+    invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=False, index=True)
+    eft_credit_id = db.Column(db.Integer, ForeignKey("eft_credits.id"), nullable=False, index=True)
     amount = db.Column(db.Numeric(19, 2), nullable=True)
     status_code = db.Column("status_code", db.String(25), nullable=False, index=True)
     created_on = db.Column(
@@ -79,11 +75,7 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     def find_by_invoice_id(cls, invoice_id: int):
         """Find links by invoice id."""
         # Order is important here, we use it in the jobs.
-        return (
-            cls.query.filter_by(invoice_id=invoice_id)
-            .order_by(EFTCreditInvoiceLink.id.desc())
-            .all()
-        )
+        return cls.query.filter_by(invoice_id=invoice_id).order_by(EFTCreditInvoiceLink.id.desc()).all()
 
     @classmethod
     def get_next_group_link_seq(cls):

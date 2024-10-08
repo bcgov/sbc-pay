@@ -23,9 +23,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EFTShortnames(
-    Versioned, BaseModel
-):  # pylint: disable=too-many-instance-attributes
+class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the EFT short names."""
 
     __tablename__ = "eft_short_names"
@@ -65,11 +63,7 @@ class EFTShortnames(
     @classmethod
     def find_by_short_name(cls, short_name: str, short_name_type: str):
         """Find by eft short name."""
-        return (
-            cls.query.filter_by(short_name=short_name)
-            .filter_by(type=short_name_type)
-            .one_or_none()
-        )
+        return cls.query.filter_by(short_name=short_name).filter_by(type=short_name_type).one_or_none()
 
 
 @define

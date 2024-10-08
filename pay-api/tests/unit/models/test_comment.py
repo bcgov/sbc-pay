@@ -41,9 +41,7 @@ def test_find_comment(session):
     comments = factory_comments(routing_slip_number=rs.number)
     comments.save()
 
-    fetched_comment = CommentModel.find_all_comments_for_a_routingslip(
-        routing_slip_number=rs.number
-    )
+    fetched_comment = CommentModel.find_all_comments_for_a_routingslip(routing_slip_number=rs.number)
 
     assert fetched_comment
     assert fetched_comment[0].routing_slip_number == rs.number

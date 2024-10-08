@@ -27,9 +27,7 @@ from .db import db
 from ..utils.enums import EFTShortnameStatus
 
 
-class EFTShortnameLinks(
-    Versioned, BaseModel
-):  # pylint: disable=too-many-instance-attributes
+class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the EFT short name links to auth account mapping."""
 
     __tablename__ = "eft_short_name_links"
@@ -57,12 +55,8 @@ class EFTShortnameLinks(
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    eft_short_name_id = db.Column(
-        db.Integer, ForeignKey("eft_short_names.id"), nullable=False, index=True
-    )
-    auth_account_id = db.Column(
-        "auth_account_id", db.String(50), nullable=False, index=True
-    )
+    eft_short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False, index=True)
+    auth_account_id = db.Column("auth_account_id", db.String(50), nullable=False, index=True)
     created_on = db.Column(
         "created_on",
         db.DateTime,
@@ -87,30 +81,22 @@ class EFTShortnameLinks(
     @classmethod
     def find_active_link(cls, short_name_id: int, auth_account_id: str) -> Self:
         """Find active link by short name and account."""
-        return cls.find_link_by_status(
-            short_name_id, auth_account_id, cls.active_statuses
-        )
+        return cls.find_link_by_status(short_name_id, auth_account_id, cls.active_statuses)
 
     @classmethod
     def find_active_link_by_auth_id(cls, auth_account_id: str) -> Self:
         """Find active link by auth account id."""
         return (
-            cls.query.filter_by(auth_account_id=auth_account_id).filter(
-                cls.status_code.in_(cls.active_statuses)
-            )
+            cls.query.filter_by(auth_account_id=auth_account_id).filter(cls.status_code.in_(cls.active_statuses))
         ).one_or_none()
 
     @classmethod
     def find_inactive_link(cls, short_name_id: int, auth_account_id: str) -> Self:
         """Find active link by short name and account."""
-        return cls.find_link_by_status(
-            short_name_id, auth_account_id, [EFTShortnameStatus.INACTIVE.value]
-        )
+        return cls.find_link_by_status(short_name_id, auth_account_id, [EFTShortnameStatus.INACTIVE.value])
 
     @classmethod
-    def find_link_by_status(
-        cls, short_name_id: int, auth_account_id: str, statuses: List[str]
-    ) -> Self:
+    def find_link_by_status(cls, short_name_id: int, auth_account_id: str, statuses: List[str]) -> Self:
         """Find short name account link by status."""
         return (
             cls.query.filter_by(eft_short_name_id=short_name_id)

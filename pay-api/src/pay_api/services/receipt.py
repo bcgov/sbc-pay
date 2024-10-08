@@ -142,13 +142,9 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         return receipt
 
     @staticmethod
-    def find_by_invoice_id_and_receipt_number(
-        invoice_id: int, receipt_number: str = None
-    ):
+    def find_by_invoice_id_and_receipt_number(invoice_id: int, receipt_number: str = None):
         """Find by the combination of invoce id and receipt number."""
-        receipt_dao = ReceiptModel.find_by_invoice_id_and_receipt_number(
-            invoice_id, receipt_number
-        )
+        receipt_dao = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id, receipt_number)
 
         receipt = Receipt()
         receipt._dao = receipt_dao  # pylint: disable=protected-access
@@ -171,9 +167,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
             "reportName": filing_data.pop("fileName", "payment_receipt"),
         }
 
-        template_vars = Receipt.get_receipt_details(
-            filing_data, invoice_identifier, skip_auth_check
-        )
+        template_vars = Receipt.get_receipt_details(filing_data, invoice_identifier, skip_auth_check)
         template_vars.update(filing_data)
 
         receipt_dict["templateVars"] = template_vars
@@ -198,9 +192,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         """Return receipt details."""
         receipt_details: dict = {}
         # invoice number mandatory
-        invoice_data = Invoice.find_by_id(
-            invoice_identifier, skip_auth_check=skip_auth_check
-        )
+        invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
 
         is_pending_invoice = (
             invoice_data.payment_method_code
@@ -214,60 +206,39 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         if not is_pending_invoice and not invoice_data.receipts:
             raise BusinessException(Error.INVALID_REQUEST)
 
-        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(
-            invoice_data.id
-        )
+        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
         receipt_details["invoiceNumber"] = invoice_reference.invoice_number
-        if (
-            invoice_data.payment_method_code == PaymentSystem.INTERNAL.value
-            and invoice_data.routing_slip
-        ):
+        if invoice_data.payment_method_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
             receipt_details["routingSlipNumber"] = invoice_data.routing_slip
-        receipt_details["receiptNumber"] = (
-            None if is_pending_invoice else invoice_data.receipts[0].receipt_number
-        )
-        receipt_details["filingIdentifier"] = filing_data.get(
-            "filingIdentifier", invoice_data.filing_id
-        )
+        receipt_details["receiptNumber"] = None if is_pending_invoice else invoice_data.receipts[0].receipt_number
+        receipt_details["filingIdentifier"] = filing_data.get("filingIdentifier", invoice_data.filing_id)
         receipt_details["bcOnlineAccountNumber"] = invoice_data.bcol_account
 
-        payment_method = PaymentMethodModel.find_by_code(
-            invoice_data.payment_method_code
-        )
+        payment_method = PaymentMethodModel.find_by_code(invoice_data.payment_method_code)
 
         receipt_details["paymentMethod"] = payment_method.code
         if invoice_data.payment_method_code != PaymentSystem.INTERNAL.value:
             receipt_details["paymentMethodDescription"] = payment_method.description
         receipt_details["invoice"] = camelcase_dict(invoice_data.asdict(), {})
         # Format date to display in report.
-        receipt_details["invoice"]["createdOn"] = get_local_formatted_date(
-            invoice_data.created_on
-        )
+        receipt_details["invoice"]["createdOn"] = get_local_formatted_date(invoice_data.created_on)
         return receipt_details
 
     @staticmethod
     def get_nsf_receipt_details(payment_id):
         """Return NSF receipt details, which can contain multiple invoices, combine these in PLI."""
         receipt_details: dict = {}
-        invoices = Invoice.find_invoices_for_payment(
-            payment_id, InvoiceReferenceStatus.COMPLETED.value
-        )
+        invoices = Invoice.find_invoices_for_payment(payment_id, InvoiceReferenceStatus.COMPLETED.value)
         nsf_invoice = next(
-            (
-                invoice
-                for invoice in invoices
-                if invoice.payment_method_code == PaymentMethod.CC.value
-            ),
+            (invoice for invoice in invoices if invoice.payment_method_code == PaymentMethod.CC.value),
             None,
         )
         payment = PaymentModel.find_by_id(payment_id)
         receipt_details["invoiceNumber"] = payment.invoice_number
         receipt_details["receiptNumber"] = payment.receipt_number
         receipt_details["paymentMethodDescription"] = "Credit Card"
-        non_nsf_invoices = [
-            inv for inv in invoices if nsf_invoice is None or inv.id != nsf_invoice.id
-        ]
+        non_nsf_invoices = [inv for inv in invoices if nsf_invoice is None or inv.id != nsf_invoice.id]
         # We don't generate a CC invoice for EFT overdue payments.
         if not nsf_invoice:
             nsf_invoice = Invoice()
@@ -284,7 +255,5 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
             nsf_invoice.paid += invoice.paid
             nsf_invoice.details.extend(invoice.details or [])
         receipt_details["invoice"] = camelcase_dict(nsf_invoice.asdict(), {})
-        receipt_details["invoice"]["createdOn"] = get_local_formatted_date(
-            nsf_invoice.created_on
-        )
+        receipt_details["invoice"]["createdOn"] = get_local_formatted_date(nsf_invoice.created_on)
         return receipt_details

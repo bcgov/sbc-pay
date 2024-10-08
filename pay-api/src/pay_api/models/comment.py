@@ -59,19 +59,13 @@ class Comment(BaseModel):
         default=lambda: datetime.now(tz=timezone.utc),
     )
     # Parent relationship
-    routing_slip_number = db.Column(
-        db.String(), ForeignKey("routing_slips.number"), index=True
-    )
-    routing_slip = relationship(
-        RoutingSlip, foreign_keys=[routing_slip_number], lazy="select", innerjoin=True
-    )
+    routing_slip_number = db.Column(db.String(), ForeignKey("routing_slips.number"), index=True)
+    routing_slip = relationship(RoutingSlip, foreign_keys=[routing_slip_number], lazy="select", innerjoin=True)
 
     @declared_attr
     def submitter_name(self):  # pylint:disable=no-self-argument, # noqa: N805
         """Return created by."""
-        return db.Column(
-            "submitter_name", db.String(50), nullable=False, default=self._get_user_name
-        )
+        return db.Column("submitter_name", db.String(50), nullable=False, default=self._get_user_name)
 
     @staticmethod
     @user_context

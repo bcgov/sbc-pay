@@ -33,11 +33,7 @@ class FeeSchedule(db.Model):
     """
 
     __tablename__ = "fee_schedules"
-    __table_args__ = (
-        db.UniqueConstraint(
-            "filing_type_code", "corp_type_code", "fee_code", name="unique_fee_sched_1"
-        ),
-    )
+    __table_args__ = (db.UniqueConstraint("filing_type_code", "corp_type_code", "fee_code", name="unique_fee_sched_1"),)
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -64,12 +60,8 @@ class FeeSchedule(db.Model):
     }
 
     fee_schedule_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    filing_type_code = db.Column(
-        db.String(10), ForeignKey("filing_types.code"), nullable=False
-    )
-    corp_type_code = db.Column(
-        db.String(10), ForeignKey("corp_types.code"), nullable=False
-    )
+    filing_type_code = db.Column(db.String(10), ForeignKey("filing_types.code"), nullable=False)
+    corp_type_code = db.Column(db.String(10), ForeignKey("corp_types.code"), nullable=False)
     fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=False)
     fee_start_date = db.Column(
         "fee_start_date",
@@ -78,25 +70,13 @@ class FeeSchedule(db.Model):
         nullable=False,
     )
     fee_end_date = db.Column("fee_end_date", db.Date, default=None, nullable=True)
-    future_effective_fee_code = db.Column(
-        db.String(10), ForeignKey("fee_codes.code"), nullable=True
-    )
-    priority_fee_code = db.Column(
-        db.String(10), ForeignKey("fee_codes.code"), nullable=True
-    )
-    service_fee_code = db.Column(
-        db.String(10), ForeignKey("fee_codes.code"), nullable=True
-    )
-    variable = db.Column(
-        Boolean(), default=False, comment="Flag to indicate if the fee is variable"
-    )
+    future_effective_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
+    priority_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
+    service_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
+    variable = db.Column(Boolean(), default=False, comment="Flag to indicate if the fee is variable")
 
-    filing_type = relationship(
-        FilingType, foreign_keys=[filing_type_code], lazy="joined", innerjoin=True
-    )
-    corp_type = relationship(
-        CorpType, foreign_keys=[corp_type_code], lazy="joined", innerjoin=True
-    )
+    filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy="joined", innerjoin=True)
+    corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy="joined", innerjoin=True)
 
     fee = relationship(FeeCode, foreign_keys=[fee_code], lazy="select", innerjoin=True)
     future_effective_fee = relationship(
@@ -105,12 +85,8 @@ class FeeSchedule(db.Model):
         lazy="select",
         innerjoin=False,
     )
-    priority_fee = relationship(
-        FeeCode, foreign_keys=[priority_fee_code], lazy="select", innerjoin=False
-    )
-    service_fee = relationship(
-        FeeCode, foreign_keys=[service_fee_code], lazy="select", innerjoin=False
-    )
+    priority_fee = relationship(FeeCode, foreign_keys=[priority_fee_code], lazy="select", innerjoin=False)
+    service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy="select", innerjoin=False)
 
     @declared_attr
     def distribution_codes(cls):  # pylint:disable=no-self-argument, # noqa: N805
@@ -127,9 +103,7 @@ class FeeSchedule(db.Model):
         return f"{self.corp_type_code} - {self.filing_type_code}"
 
     @classmethod
-    def find_by_filing_type_and_corp_type(
-        cls, corp_type_code: str, filing_type_code: str, valid_date: datetime = None
-    ):
+    def find_by_filing_type_and_corp_type(cls, corp_type_code: str, filing_type_code: str, valid_date: datetime = None):
         """Given a filing_type_code and corp_type, this will return fee schedule."""
         if not valid_date:
             valid_date = datetime.now(tz=timezone.utc).date()
@@ -140,10 +114,7 @@ class FeeSchedule(db.Model):
                 cls.query.filter_by(filing_type_code=filing_type_code)
                 .filter_by(corp_type_code=corp_type_code)
                 .filter(FeeSchedule.fee_start_date <= cast(valid_date, Date))
-                .filter(
-                    (FeeSchedule.fee_end_date.is_(None))
-                    | (FeeSchedule.fee_end_date >= cast(valid_date, Date))
-                )
+                .filter((FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= cast(valid_date, Date)))
             )
 
             fee_schedule = query.one_or_none()
@@ -165,8 +136,7 @@ class FeeSchedule(db.Model):
         """Find all fee schedules matching the filters."""
         valid_date = datetime.now(tz=timezone.utc).date()
         query = cls.query.filter(FeeSchedule.fee_start_date <= valid_date).filter(
-            (FeeSchedule.fee_end_date.is_(None))
-            | (FeeSchedule.fee_end_date >= valid_date)
+            (FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= valid_date)
         )
 
         if filing_type_code:
@@ -177,9 +147,9 @@ class FeeSchedule(db.Model):
 
         if description:
             descriptions = description.replace(" ", "%")
-            query = query.join(
-                CorpType, CorpType.code == FeeSchedule.corp_type_code
-            ).join(FilingType, FilingType.code == FeeSchedule.filing_type_code)
+            query = query.join(CorpType, CorpType.code == FeeSchedule.corp_type_code).join(
+                FilingType, FilingType.code == FeeSchedule.filing_type_code
+            )
             query = query.filter(
                 or_(
                     func.lower(FilingType.description).contains(descriptions.lower()),

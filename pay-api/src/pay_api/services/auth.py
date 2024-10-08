@@ -47,9 +47,7 @@ def check_auth(
     user: UserContext = kwargs["user"]
     is_authorized: bool = False
     auth_response = None
-    product_code = CodeService.find_code_value_by_type_and_code(
-        Code.CORP_TYPE.value, corp_type_code
-    ).get("product")
+    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type_code).get("product")
     account_id = account_id or user.account_id
 
     call_auth_svc: bool = True
@@ -76,8 +74,7 @@ def check_auth(
 
         if account_id:
             auth_url = (
-                current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}"
-                f"/authorizations?expanded=true"
+                current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}" f"/authorizations?expanded=true"
             )
             additional_headers = None
             if corp_type_code:
@@ -100,18 +97,11 @@ def check_auth(
                 + f"entities/{business_identifier}/authorizations?expanded=true"
             )
             auth_response = (
-                RestService.get(
-                    auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON
-                ).json()
-                or {}
+                RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json() or {}
             )
 
             roles: list = auth_response.get("roles", [])
-            g.account_id = (
-                auth_response.get("account").get("id")
-                if auth_response.get("account", None)
-                else None
-            )
+            g.account_id = auth_response.get("account").get("id") if auth_response.get("account", None) else None
         elif user.is_staff():
             roles: list = user.roles
             auth_response = {}
@@ -124,14 +114,9 @@ def check_auth(
         if kwargs.get("contains_role", None):
             is_authorized = kwargs.get("contains_role") in roles
         if required_roles := kwargs.get("all_of_roles", None):
-            is_authorized = len(set(required_roles) & set(roles)) == len(
-                set(required_roles)
-            )
+            is_authorized = len(set(required_roles) & set(roles)) == len(set(required_roles))
         # Check if premium flag is required
-        if (
-            kwargs.get("is_premium", False)
-            and auth_response["account"]["accountType"] not in PREMIUM_ACCOUNT_TYPES
-        ):
+        if kwargs.get("is_premium", False) and auth_response["account"]["accountType"] not in PREMIUM_ACCOUNT_TYPES:
             is_authorized = False
         # For staff users, if the account is coming as empty add stub data
         # (businesses which are not affiliated won't have account)
@@ -146,9 +131,7 @@ def check_auth(
 
     # IF auth response is empty (means a service account or a business with no account by staff)
     if not auth_response:
-        if (
-            Role.SYSTEM.value in user.roles
-        ):  # Call auth only if it's business (entities)
+        if Role.SYSTEM.value in user.roles:  # Call auth only if it's business (entities)
             # Add account name as the service client name
             auth_response = {
                 "account": {
@@ -164,8 +147,7 @@ def get_account_admin_users(auth_account_id, **kwargs):
     """Retrieve account admin users."""
     # Only works for STAFF and ADMINS of the org.
     return RestService.get(
-        current_app.config.get("AUTH_API_ENDPOINT")
-        + f"orgs/{auth_account_id}/members?status=ACTIVE&roles=ADMIN",
+        current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{auth_account_id}/members?status=ACTIVE&roles=ADMIN",
         kwargs["user"].bearer_token,
         AuthHeaderType.BEARER,
         ContentType.JSON,
@@ -184,9 +166,7 @@ def get_emails_with_keycloak_role(role: str) -> str:
 def get_users_with_keycloak_role(role: str) -> dict:
     """Retrieve users with the specified keycloak role."""
     url = current_app.config.get("AUTH_API_ENDPOINT") + f"keycloak/users?role={role}"
-    return RestService.get(
-        url, get_service_account_token(), AuthHeaderType.BEARER, ContentType.JSON
-    ).json()
+    return RestService.get(url, get_service_account_token(), AuthHeaderType.BEARER, ContentType.JSON).json()
 
 
 def get_service_account_token():

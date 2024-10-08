@@ -37,9 +37,7 @@ class EFTShortNameGetRequest(Serializable):
         dto = super().from_dict(data)
         # In the future, we'll need a cleaner way to handle this.
         dto.state = dto.state.split(",") if dto.state else None
-        dto.account_id_list = (
-            dto.account_id_list.split(",") if dto.account_id_list else None
-        )
+        dto.account_id_list = dto.account_id_list.split(",") if dto.account_id_list else None
         return dto
 
 

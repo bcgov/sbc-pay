@@ -121,9 +121,7 @@ def test_account_purchase_history_with_basic_account(session, client, jwt, app):
         headers=headers,
     )
 
-    pay_account: PaymentAccount = PaymentAccountService.find_account(
-        get_auth_basic_user()
-    )
+    pay_account: PaymentAccount = PaymentAccountService.find_account(get_auth_basic_user())
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries",
@@ -163,20 +161,12 @@ def test_account_purchase_history_pagination(session, client, jwt, app):
 def test_account_purchase_history_with_service_account(session, client, jwt, app):
     """Assert that purchase history returns only invoices for that product."""
     # Point CSO fee schedule to a valid distribution code.
-    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type(
-        "CSO", "CSBVFEE"
-    ).fee_schedule_id
-    DistributionCodeLinkModel(
-        fee_schedule_id=fee_schedule_id, distribution_code_id=1
-    ).save()
+    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type("CSO", "CSBVFEE").fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
 
     # Point PPR fee schedule to a valid distribution code.
-    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type(
-        "PPR", "FSDIS"
-    ).fee_schedule_id
-    DistributionCodeLinkModel(
-        fee_schedule_id=fee_schedule_id, distribution_code_id=1
-    ).save()
+    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type("PPR", "FSDIS").fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
 
     # Create one invoice for CSO and one fpr BUSINESS.
     # Then query without any filter and make sure only CSO invoice is returned for service account with CSO product_code
@@ -192,9 +182,7 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
         rv = client.post(
             "/api/v1/payment-requests",
             data=json.dumps(
-                get_payment_request_with_service_fees(
-                    corp_type=corp_filing_type[0], filing_type=corp_filing_type[1]
-                )
+                get_payment_request_with_service_fees(corp_type=corp_filing_type[0], filing_type=corp_filing_type[1])
             ),
             headers=headers,
         )
@@ -202,9 +190,7 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
     invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    token = jwt.create_jwt(
-        get_claims(roles=[Role.SYSTEM.value], product_code="CSO"), token_header
-    )
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code="CSO"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=5",
@@ -221,17 +207,11 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
 def test_payment_request_for_cso_with_service_account(session, client, jwt, app):
     """Assert Service charge is calculated based on quantity."""
     # Point CSO fee schedule to a valid distribution code.
-    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type(
-        "CSO", "CSBVFEE"
-    ).fee_schedule_id
-    DistributionCodeLinkModel(
-        fee_schedule_id=fee_schedule_id, distribution_code_id=1
-    ).save()
+    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type("CSO", "CSBVFEE").fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
 
     quantity = 2
-    token = jwt.create_jwt(
-        get_claims(roles=[Role.SYSTEM.value], product_code="CSO"), token_header
-    )
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code="CSO"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/payment-requests",
@@ -241,10 +221,7 @@ def test_payment_request_for_cso_with_service_account(session, client, jwt, app)
     rv2 = client.get("/api/v1/fees/CSO/CSBVFEE", headers=headers)
     assert rv2.status_code == 200
     assert rv.status_code == 201
-    assert (
-        rv.json.get("lineItems")[0]["serviceFees"]
-        == rv2.json.get("serviceFees") * quantity
-    )
+    assert rv.json.get("lineItems")[0]["serviceFees"] == rv2.json.get("serviceFees") * quantity
 
 
 def test_account_purchase_history_invalid_request(session, client, jwt, app):
@@ -466,9 +443,7 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     assert rv.json.get("accountId") == auth_account_id
 
     # assert switching to PAD returns bank details
-    pad_account_details = get_linked_pad_account_payload(
-        account_id=int(auth_account_id)
-    )
+    pad_account_details = get_linked_pad_account_payload(account_id=int(auth_account_id))
 
     rv = client.put(
         f"/api/v1/accounts/{auth_account_id}",
@@ -479,14 +454,10 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     assert rv.status_code == 200
 
     assert rv.json.get("futurePaymentMethod") == PaymentMethod.PAD.value
-    assert rv.json.get("bankTransitNumber") == pad_account_details.get(
-        "bankTransitNumber"
-    )
+    assert rv.json.get("bankTransitNumber") == pad_account_details.get("bankTransitNumber")
 
     # Assert switching to bcol returns no bank details
-    rv = client.put(
-        f"/api/v1/accounts/{auth_account_id}", data=json.dumps(payload), headers=headers
-    )
+    rv = client.put(f"/api/v1/accounts/{auth_account_id}", data=json.dumps(payload), headers=headers)
 
     assert rv.json.get("futurePaymentMethod") is None
     assert rv.json.get("bankTransitNumber") is None
@@ -580,11 +551,7 @@ def test_create_online_banking_account_when_cfs_down(session, client, jwt, app):
     ):
         rv = client.post(
             "/api/v1/accounts",
-            data=json.dumps(
-                get_basic_account_payload(
-                    payment_method=PaymentMethod.ONLINE_BANKING.value
-                )
-            ),
+            data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
             headers=headers,
         )
 
@@ -597,9 +564,7 @@ def test_create_online_banking_account_when_cfs_up(session, client, jwt, app):
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
         headers=headers,
     )
 
@@ -657,17 +622,13 @@ def test_switch_eft_account_when_cfs_up(session, client, jwt, app, admin_users_m
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.PAD.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.PAD.value)),
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
     rv = client.put(
         f"/api/v1/accounts/{auth_account_id}",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.EFT.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.EFT.value)),
         headers=headers,
     )
     # 202 and 200, 202 for when there is a CFS account PENDING.
@@ -681,9 +642,7 @@ def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
@@ -694,11 +653,7 @@ def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
     ):
         rv = client.put(
             f"/api/v1/accounts/{auth_account_id}",
-            data=json.dumps(
-                get_basic_account_payload(
-                    payment_method=PaymentMethod.ONLINE_BANKING.value
-                )
-            ),
+            data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
             headers=headers,
         )
 
@@ -711,17 +666,13 @@ def test_update_online_banking_account_when_cfs_up(session, client, jwt, app):
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
     rv = client.put(
         f"/api/v1/accounts/{auth_account_id}",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
         headers=headers,
     )
 
@@ -734,9 +685,7 @@ def test_update_name(session, client, jwt, app):
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
@@ -783,9 +732,7 @@ def test_account_get_by_user(session, client, jwt, app):
 
     rv = client.get(f"/api/v1/accounts/{auth_account_id}", headers=headers)
     assert rv.json.get("cfsAccount").get("bankTransitNumber")
-    expected_bank_number = (
-        len(account.get("paymentInfo").get("bankAccountNumber")) * "X"
-    )
+    expected_bank_number = len(account.get("paymentInfo").get("bankAccountNumber")) * "X"
     assert rv.json.get("cfsAccount").get("bankAccountNumber") == expected_bank_number
     assert rv.json.get("cfsAccount").get("bankInstitutionNumber")
 
@@ -795,9 +742,7 @@ def test_create_gov_accounts(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post(
-        "/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers
-    )
+    rv = client.post("/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers)
 
     assert rv.status_code == 201
 
@@ -806,9 +751,7 @@ def test_create_and_delete_gov_accounts_with_account_fee(session, client, jwt, a
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.post(
-        "/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers
-    )
+    rv = client.post("/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers)
 
     account_id = rv.json.get("accountId")
 
@@ -854,9 +797,7 @@ def test_update_gov_accounts_with_account_fee(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.post(
-        "/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers
-    )
+    rv = client.post("/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers)
 
     account_id = rv.json.get("accountId")
 
@@ -900,9 +841,7 @@ def test_update_gov_accounts(session, client, jwt, app):
     account_id = 123
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(
-            get_gov_account_payload_with_no_revenue_account(account_id=account_id)
-        ),
+        data=json.dumps(get_gov_account_payload_with_no_revenue_account(account_id=account_id)),
         headers=headers,
     )
     assert rv.status_code == 201
@@ -910,9 +849,7 @@ def test_update_gov_accounts(session, client, jwt, app):
     project_code = "1111111"
     rv = client.put(
         f"/api/v1/accounts/{account_id}",
-        data=json.dumps(
-            get_gov_account_payload(account_id=account_id, project_code=project_code)
-        ),
+        data=json.dumps(get_gov_account_payload(account_id=account_id, project_code=project_code)),
         headers=headers,
     )
 
@@ -923,9 +860,7 @@ def test_update_gov_accounts(session, client, jwt, app):
     project_code = "2222222"
     rv = client.put(
         f"/api/v1/accounts/{account_id}",
-        data=json.dumps(
-            get_gov_account_payload(account_id=account_id, project_code=project_code)
-        ),
+        data=json.dumps(get_gov_account_payload(account_id=account_id, project_code=project_code)),
         headers=headers,
     )
 
@@ -981,9 +916,7 @@ def test_create_sandbox_accounts(
     """Assert that the payment records are created with 202."""
     token = jwt.create_jwt(get_claims(roles=roles), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.post(
-        "/api/v1/accounts?sandbox=true", data=json.dumps(pay_load), headers=headers
-    )
+    rv = client.post("/api/v1/accounts?sandbox=true", data=json.dumps(pay_load), headers=headers)
 
     assert rv.status_code == expected_response_status
     if is_cfs_account_expected:
@@ -1005,9 +938,7 @@ def test_search_eft_accounts(session, client, jwt, app, admin_users_mock):
     )
 
     # This should be excluded from results, because the mock from auth-api indicates this is non-active.
-    data = get_premium_account_payload(
-        payment_method=PaymentMethod.EFT.value, account_id=911
-    )
+    data = get_premium_account_payload(payment_method=PaymentMethod.EFT.value, account_id=911)
     rv = client.post("/api/v1/accounts", data=json.dumps(data), headers=headers)
     assert rv.status_code == 202
     assert rv.json.get("accountId") == "911"
@@ -1018,9 +949,7 @@ def test_search_eft_accounts(session, client, jwt, app, admin_users_mock):
     )
 
     payment_account_id = rv.json.get("id")
-    cfs_account = CfsAccountModel.find_effective_by_payment_method(
-        payment_account_id, PaymentMethod.EFT.value
-    )
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account_id, PaymentMethod.EFT.value)
     cfs_account.status = CfsAccountStatus.INACTIVE.value
     cfs_account.save()
 
@@ -1038,25 +967,19 @@ def test_search_eft_accounts(session, client, jwt, app, admin_users_mock):
     assert len(rv.json.get("items")) == 1
     assert rv.json.get("items")[0].get("accountId") == auth_account_id
 
-    rv = client.get(
-        f"/api/v1/accounts/search/eft?searchText={auth_account_id}", headers=headers
-    )
+    rv = client.get(f"/api/v1/accounts/search/eft?searchText={auth_account_id}", headers=headers)
     assert rv.status_code == 200
     assert len(rv.json.get("items")) == 1
     assert rv.json.get("items")[0].get("accountId") == auth_account_id
 
 
-def test_switch_eft_account_when_outstanding_balance(
-    session, client, jwt, app, admin_users_mock
-):
+def test_switch_eft_account_when_outstanding_balance(session, client, jwt, app, admin_users_mock):
     """Assert outstanding balance check when switching away from EFT."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.EFT.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.EFT.value)),
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
@@ -1073,9 +996,7 @@ def test_switch_eft_account_when_outstanding_balance(
 
     rv = client.put(
         f"/api/v1/accounts/{auth_account_id}",
-        data=json.dumps(
-            get_basic_account_payload(payment_method=PaymentMethod.PAD.value)
-        ),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.PAD.value)),
         headers=headers,
     )
 

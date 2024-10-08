@@ -41,9 +41,7 @@ def _load_json_schema(filename: str):
         return schema
 
 
-def get_schema_store(
-    validate_schema: bool = False, schema_search_path: str = None
-) -> dict:
+def get_schema_store(validate_schema: bool = False, schema_search_path: str = None) -> dict:
     """Return a schema_store as a dict.
 
     The default returns schema_store of the default schemas found in this package.
@@ -93,9 +91,7 @@ def validate(
         schema_file_path = path.join(schema_search_path, schema_id)
         resolver = RefResolver(f"file://{schema_file_path}.json", schema, schema_store)
 
-        draft_7_validator = Draft7Validator(
-            schema, format_checker=Draft7Validator.FORMAT_CHECKER, resolver=resolver
-        )
+        draft_7_validator = Draft7Validator(schema, format_checker=Draft7Validator.FORMAT_CHECKER, resolver=resolver)
         if draft_7_validator.is_valid(json_data):
             return True, None
 

@@ -48,9 +48,7 @@ def post_bank_account_validate():
     valid_format, errors = schema_utils.validate(request_json, "payment_info")
 
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
         response, status = CFSService.validate_bank_account(request_json), HTTPStatus.OK
     except BusinessException as exception:

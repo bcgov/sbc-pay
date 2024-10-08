@@ -34,9 +34,7 @@ logger = logging.getLogger("api-exceptions")
 
 def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
     """Convert json error to problem response."""
-    return Response(
-        response=json.dumps(body), mimetype="application/problem+json", status=status
-    )
+    return Response(response=json.dumps(body), mimetype="application/problem+json", status=status)
 
 
 def error_to_response(error: Error, invalid_params=None):
@@ -62,9 +60,7 @@ class BusinessException(Exception):  # noqa
 
     def __init__(self, error: Error, *args, **kwargs):
         """Return a valid BusinessException."""
-        super(BusinessException, self).__init__(
-            *args, **kwargs
-        )  # pylint:disable=super-with-arguments
+        super(BusinessException, self).__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
         self.code = error.code
         self.status = error.status
         # not a part of the object.Used for custom error patterns.
@@ -76,12 +72,8 @@ class BusinessException(Exception):  # noqa
             Code as CodeService,
         )  # pylint: disable=import-outside-toplevel
 
-        problem_json = CodeService.find_code_value_by_type_and_code(
-            Code.ERROR.value, self.code
-        )
-        if (
-            not problem_json
-        ):  # If the error is not configured in DB, return details from Error object
+        problem_json = CodeService.find_code_value_by_type_and_code(Code.ERROR.value, self.code)
+        if not problem_json:  # If the error is not configured in DB, return details from Error object
             problem_json = {"type": self.code}
             if self.detail:
                 problem_json["detail"] = self.detail
@@ -97,9 +89,7 @@ class ServiceUnavailableException(Exception):  # noqa
 
     def __init__(self, error, *args, **kwargs):
         """Return a valid BusinessException."""
-        super(ServiceUnavailableException, self).__init__(
-            *args, **kwargs
-        )  # pylint:disable=super-with-arguments
+        super(ServiceUnavailableException, self).__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
         self.error = error
         self.status = Error.SERVICE_UNAVAILABLE.name
 
@@ -109,7 +99,5 @@ class ServiceUnavailableException(Exception):  # noqa
             Code as CodeService,
         )  # pylint: disable=import-outside-toplevel
 
-        error_details = CodeService.find_code_value_by_type_and_code(
-            Code.ERROR.value, error.code
-        )
+        error_details = CodeService.find_code_value_by_type_and_code(Code.ERROR.value, error.code)
         return convert_to_response(body=error_details, status=error.status)

@@ -29,9 +29,7 @@ paybc_service = PaybcService()
 
 def test_create_account(session):
     """Test create_account."""
-    account = paybc_service.create_account(
-        identifier="100", contact_info={}, payment_info={}
-    )
+    account = paybc_service.create_account(identifier="100", contact_info={}, payment_info={})
     assert account
     assert account.cfs_account
     assert account.cfs_party
@@ -43,9 +41,7 @@ def test_get_payment_system_url_for_invoice(session):
     payment_account = factory_payment_account().save()
     invoice = factory_invoice(payment_account).save()
     invoice_reference = factory_invoice_reference(invoice.id, invoice_number="100")
-    payment_system_url = paybc_service.get_payment_system_url_for_invoice(
-        invoice, invoice_reference, "hello"
-    )
+    payment_system_url = paybc_service.get_payment_system_url_for_invoice(invoice, invoice_reference, "hello")
     assert payment_system_url
     assert "inv_number=100" in payment_system_url
     assert "redirect_uri=hello" in payment_system_url

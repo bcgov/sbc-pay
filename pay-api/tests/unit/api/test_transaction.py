@@ -74,11 +74,7 @@ def test_transaction_post_direct_pay(session, client, jwt, app):
     # Create a payment first
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_payment_method(
-                payment_method=PaymentMethod.DIRECT_PAY.value
-            )
-        ),
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.DIRECT_PAY.value)),
         headers=headers,
     )
     invoice_id = rv.json.get("id")
@@ -173,9 +169,7 @@ def test_transaction_get(session, client, jwt, app):
         headers={"content-type": "application/json"},
     )
     txn_id = rv.json.get("id")
-    rv = client.get(
-        f"/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}", headers=headers
-    )
+    rv = client.get(f"/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}", headers=headers)
     assert rv.status_code == 200
     assert rv.json.get("paymentId")
     assert rv.json.get("id") == txn_id
@@ -325,9 +319,7 @@ def test_transactions_get(session, client, jwt, app):
         headers=headers,
     )
 
-    transactions_link = "/api/v1/payment-requests/{}/transactions".format(
-        rv.json.get("id")
-    )
+    transactions_link = "/api/v1/payment-requests/{}/transactions".format(rv.json.get("id"))
     rv = client.get(f"{transactions_link}", headers=headers)
     assert rv.status_code == 200
     assert rv.json.get("items") is not None
@@ -356,9 +348,7 @@ def test_transactions_get(session, client, jwt, app):
 
 
 @skip_in_pod
-def test_transaction_patch_completed_payment_and_transaction_status(
-    session, client, jwt, app
-):
+def test_transaction_patch_completed_payment_and_transaction_status(session, client, jwt, app):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -437,11 +427,7 @@ def test_transaction_patch_direct_pay(session, client, jwt, app):
     # Create a payment first
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_payment_method(
-                payment_method=PaymentMethod.DIRECT_PAY.value
-            )
-        ),
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.DIRECT_PAY.value)),
         headers=headers,
     )
     invoice_id = rv.json.get("id")

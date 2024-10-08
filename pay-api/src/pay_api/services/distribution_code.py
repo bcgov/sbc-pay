@@ -84,21 +84,15 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
 
             self._service_fee_name: str = _service_fee.name
             self._service_fee_client: str = _service_fee.client
-            self._service_fee_responsibility_centre: str = (
-                _service_fee.responsibility_centre
-            )
+            self._service_fee_responsibility_centre: str = _service_fee.responsibility_centre
             self._service_fee_line: str = _service_fee.service_line
             self._service_fee_stob: str = _service_fee.stob
             self._service_fee_project_code: str = _service_fee.project_code
 
         self._start_date: date = self._dao.start_date
         self._end_date: date = self._dao.end_date
-        self._service_fee_distribution_code_id = (
-            self._dao.service_fee_distribution_code_id
-        )
-        self._disbursement_distribution_code_id = (
-            self._dao.disbursement_distribution_code_id
-        )
+        self._service_fee_distribution_code_id = self._dao.service_fee_distribution_code_id
+        self._disbursement_distribution_code_id = self._dao.disbursement_distribution_code_id
         self._stop_ejv: bool = self._dao.stop_ejv
         self._account_id: int = self._dao.account_id
 
@@ -368,35 +362,26 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
             dist_code_svc.end_date = parser.parse(distribution_details.get("endDate"))
 
         if distribution_details.get("startDate", None):
-            dist_code_svc.start_date = parser.parse(
-                distribution_details.get("startDate")
-            )
+            dist_code_svc.start_date = parser.parse(distribution_details.get("startDate"))
         else:
             dist_code_svc.start_date = datetime.now(tz=timezone.utc).date()
 
         _has_code_changes: bool = (
             dist_code_svc.client != distribution_details.get("client", None)
-            or dist_code_svc.responsibility_centre
-            != distribution_details.get("responsibilityCentre", None)
-            or dist_code_svc.service_line
-            != distribution_details.get("serviceLine", None)
-            or dist_code_svc.project_code
-            != distribution_details.get("projectCode", None)
+            or dist_code_svc.responsibility_centre != distribution_details.get("responsibilityCentre", None)
+            or dist_code_svc.service_line != distribution_details.get("serviceLine", None)
+            or dist_code_svc.project_code != distribution_details.get("projectCode", None)
             or dist_code_svc.service_fee_distribution_code_id
             != distribution_details.get("serviceFeeDistributionCodeId", None)
         )
 
         dist_code_svc.client = distribution_details.get("client", None)
         dist_code_svc.name = distribution_details.get("name", None)
-        dist_code_svc.responsibility_centre = distribution_details.get(
-            "responsibilityCentre", None
-        )
+        dist_code_svc.responsibility_centre = distribution_details.get("responsibilityCentre", None)
         dist_code_svc.service_line = distribution_details.get("serviceLine", None)
         dist_code_svc.stob = distribution_details.get("stob", None)
         dist_code_svc.project_code = distribution_details.get("projectCode", None)
-        dist_code_svc.service_fee_distribution_code_id = distribution_details.get(
-            "serviceFeeDistributionCodeId", None
-        )
+        dist_code_svc.service_fee_distribution_code_id = distribution_details.get("serviceFeeDistributionCodeId", None)
         dist_code_svc.disbursement_distribution_code_id = distribution_details.get(
             "disbursementDistributionCodeId", None
         )
@@ -406,12 +391,8 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
             # Update all invoices which used this distribution for updating revenue account details
             # If this is a service fee distribution, then find all distribution which uses this and update them.
             InvoiceModel.update_invoices_for_revenue_updates(dist_id)
-            for dist in DistributionCodeModel.find_by_service_fee_distribution_id(
-                dist_id
-            ):
-                InvoiceModel.update_invoices_for_revenue_updates(
-                    dist.distribution_code_id
-                )
+            for dist in DistributionCodeModel.find_by_service_fee_distribution_id(dist_id):
+                InvoiceModel.update_invoices_for_revenue_updates(dist.distribution_code_id)
 
         # Reset stop jv for every dave.
         dist_code_svc.stop_ejv = False

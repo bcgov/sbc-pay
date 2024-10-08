@@ -33,21 +33,15 @@ def test_refund_routing_slips(session, client, jwt):
     """Assert refund works for routing slips."""
     payload = get_routing_slip_request()
     token = jwt.create_jwt(
-        get_claims(
-            roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value, Role.FAS_REFUND.value]
-        ),
+        get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value, Role.FAS_REFUND.value]),
         token_header,
     )
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post(
-        "/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     assert schema_utils.validate(rv.json, "routing_slip")[0]
-    rv = client.get(
-        "/api/v1/fas/routing-slips/{}".format(rv.json.get("number")), headers=headers
-    )
+    rv = client.get("/api/v1/fas/routing-slips/{}".format(rv.json.get("number")), headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "routing_slip")[0]
     refund_details = {
@@ -73,22 +67,15 @@ def test_refund_routing_slips(session, client, jwt):
         headers=headers,
     )
     assert rv.status_code == 202
-    assert (
-        rv.json.get("message")
-        == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_REQUESTED"]
-    )
+    assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_REQUESTED"]
 
     rv = client.get("/api/v1/fas/routing-slips/{}".format(rs_number), headers=headers)
     assert rv.json.get("status") == RoutingSlipStatus.REFUND_REQUESTED.value
-    assert RoutingSlipStatus.REFUND_AUTHORIZED.value not in rv.json.get(
-        "allowedStatuses"
-    )
+    assert RoutingSlipStatus.REFUND_AUTHORIZED.value not in rv.json.get("allowedStatuses")
     refund = rv.json.get("refunds")[0]
     assert refund_details is not None
     assert refund_details.get("name") in refund.get("details").get("name")
-    assert refund_details.get("mailingAddress") == refund.get("details").get(
-        "mailingAddress"
-    )
+    assert refund_details.get("mailingAddress") == refund.get("details").get("mailingAddress")
 
     rv = client.post(
         "/api/v1/fas/routing-slips/{}/refunds".format(rs_number),
@@ -124,10 +111,7 @@ def test_refund_routing_slips(session, client, jwt):
         headers=headers,
     )
     assert rv.status_code == 202
-    assert (
-        rv.json.get("message")
-        == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_AUTHORIZED"]
-    )
+    assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_AUTHORIZED"]
 
     rv = client.get("/api/v1/fas/routing-slips/{}".format(rs_number), headers=headers)
     assert rv.status_code == 200
@@ -151,9 +135,7 @@ def test_refund_routing_slips_reject(session, client, jwt):
     )
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post(
-        "/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers)
 
     rs_number = rv.json.get("number")
     rv = client.post(
@@ -165,10 +147,7 @@ def test_refund_routing_slips_reject(session, client, jwt):
         ),
         headers=headers,
     )
-    assert (
-        rv.json.get("message")
-        == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_REQUESTED"]
-    )
+    assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_REQUESTED"]
 
     rv = client.post(
         "/api/v1/fas/routing-slips/{}/refunds".format(rs_number),
@@ -186,25 +165,17 @@ def test_refund_routing_slips_reject(session, client, jwt):
 
 def test_refund_routing_slips_zero_dollar_error(session, client, jwt):
     """Assert zero dollar refund fails."""
-    payload = get_routing_slip_request(
-        cheque_receipt_numbers=[("1234567890", PaymentMethod.CHEQUE.value, 0.00)]
-    )
+    payload = get_routing_slip_request(cheque_receipt_numbers=[("1234567890", PaymentMethod.CHEQUE.value, 0.00)])
     token = jwt.create_jwt(
-        get_claims(
-            roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value, Role.FAS_REFUND.value]
-        ),
+        get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value, Role.FAS_REFUND.value]),
         token_header,
     )
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    rv = client.post(
-        "/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     assert schema_utils.validate(rv.json, "routing_slip")[0]
-    rv = client.get(
-        "/api/v1/fas/routing-slips/{}".format(rv.json.get("number")), headers=headers
-    )
+    rv = client.get("/api/v1/fas/routing-slips/{}".format(rv.json.get("number")), headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "routing_slip")[0]
     refund_details = {

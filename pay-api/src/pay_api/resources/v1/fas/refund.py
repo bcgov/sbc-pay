@@ -41,18 +41,12 @@ def post_fas_refund(routing_slip_number):
     request_json = request.get_json(silent=True)
     try:
         valid_format, errors = (
-            schema_utils.validate(request_json, "refund_routing_slip")
-            if request_json
-            else (True, None)
+            schema_utils.validate(request_json, "refund_routing_slip") if request_json else (True, None)
         )
         if not valid_format:
-            return error_to_response(
-                Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-            )
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-        response = RefundService.create_routing_slip_refund(
-            routing_slip_number, request_json
-        )
+        response = RefundService.create_routing_slip_refund(routing_slip_number, request_json)
 
     except BusinessException as exception:
         return exception.response()

@@ -30,9 +30,7 @@ def test_preflight_fas_refund(app, client, jwt, session):
 
 def test_preflight_fas_routing_slip(app, client, jwt, session):
     """Assert preflight responses for fas routing slips are correct."""
-    rv = client.options(
-        "/api/v1/fas/routing-slips", headers={"Access-Control-Request-Method": "POST"}
-    )
+    rv = client.options("/api/v1/fas/routing-slips", headers={"Access-Control-Request-Method": "POST"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "POST")
 
@@ -50,9 +48,7 @@ def test_preflight_fas_routing_slip(app, client, jwt, session):
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "POST")
 
-    rv = client.options(
-        "/api/v1/fas/routing-slips/1", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/fas/routing-slips/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET, PATCH")
 
@@ -80,21 +76,15 @@ def test_preflight_fas_routing_slip(app, client, jwt, session):
 
 def test_preflight_account(app, client, jwt, session):
     """Assert preflight responses for accounts are correct."""
-    rv = client.options(
-        "/api/v1/accounts", headers={"Access-Control-Request-Method": "POST"}
-    )
+    rv = client.options("/api/v1/accounts", headers={"Access-Control-Request-Method": "POST"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "POST")
 
-    rv = client.options(
-        "/api/v1/accounts/1", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/accounts/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "DELETE, GET, PUT")
 
-    rv = client.options(
-        "/api/v1/accounts/1/fees", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/accounts/1/fees", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "DELETE, GET, POST")
 
@@ -169,30 +159,22 @@ def test_preflight_bank_accounts(app, client, jwt, session):
 
 def test_preflight_code(app, client, jwt, session):
     """Assert preflight responses for codes are correct."""
-    rv = client.options(
-        "/api/v1/codes/CODETYPE", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/codes/CODETYPE", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET")
 
-    rv = client.options(
-        "/api/v1/codes/CODETYPE/CODE", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/codes/CODETYPE/CODE", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET")
 
 
 def test_preflight_distributions(app, client, jwt, session):
     """Assert preflight responses for distributions are correct."""
-    rv = client.options(
-        "/api/v1/fees/distributions", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/fees/distributions", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET, POST")
 
-    rv = client.options(
-        "/api/v1/fees/distributions/1", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/fees/distributions/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET, PUT")
 
@@ -216,24 +198,18 @@ def test_preflight_fee(app, client, jwt, session):
 
 def test_preflight_fee_schedule(app, client, jwt, session):
     """Assert preflight responses for fee schedule are correct."""
-    rv = client.options(
-        "/api/v1/fees/schedules", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/fees/schedules", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET")
 
 
 def test_preflight_invoice(app, client, jwt, session):
     """Assert preflight responses for invoice are correct."""
-    rv = client.options(
-        "/api/v1/payment-requests", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/payment-requests", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET, POST")
 
-    rv = client.options(
-        "/api/v1/payment-requests/1", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/payment-requests/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "DELETE, GET, PATCH")
 
@@ -267,9 +243,7 @@ def test_preflight_invoices(app, client, jwt, session):
 
 def test_preflight_payment(app, client, jwt, session):
     """Assert preflight responses for payments are correct."""
-    rv = client.options(
-        "/api/v1/accounts/1/payments", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/accounts/1/payments", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET, POST")
 
@@ -286,15 +260,11 @@ def test_preflight_refund(app, client, jwt, session):
 
 def test_preflight_eft_shortnames(app, client, jwt, session):
     """Assert preflight responses for eft shortnames are correct."""
-    rv = client.options(
-        "/api/v1/eft-shortnames", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/eft-shortnames", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET")
 
-    rv = client.options(
-        "/api/v1/eft-shortnames/1", headers={"Access-Control-Request-Method": "GET"}
-    )
+    rv = client.options("/api/v1/eft-shortnames/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
     assert_access_control_headers(rv, "*", "GET, PATCH")
 

@@ -64,9 +64,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     def __init__(self):  # pylint:disable=useless-super-delegation
         """Initialize."""
-        super(
-            PaymentSystemService, self
-        ).__init__()  # pylint:disable=super-with-arguments
+        super(PaymentSystemService, self).__init__()  # pylint:disable=super-with-arguments
 
     def create_account(
         self,
@@ -154,9 +152,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Process Refund if any."""
         return None
 
-    def get_pay_system_reason_code(
-        self, pay_response_url: str
-    ) -> str:  # pylint:disable=unused-argument
+    def get_pay_system_reason_code(self, pay_response_url: str) -> str:  # pylint:disable=unused-argument
         """Return the Pay system reason code."""
         return None
 
@@ -188,15 +184,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Apply credit on invoice."""
         return None
 
-    def ensure_no_payment_blockers(
-        self, payment_account: PaymentAccount
-    ) -> None:  # pylint: disable=unused-argument
+    def ensure_no_payment_blockers(self, payment_account: PaymentAccount) -> None:  # pylint: disable=unused-argument
         """Ensure no payment blockers are present."""
         if payment_account.has_nsf_invoices:
             # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
-            current_app.logger.warning(
-                f"Account {payment_account.id} is frozen, rejecting invoice creation"
-            )
+            current_app.logger.warning(f"Account {payment_account.id} is frozen, rejecting invoice creation")
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
         if payment_account.has_overdue_invoices:
             raise BusinessException(Error.EFT_INVOICES_OVERDUE)
@@ -216,9 +208,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         ]:
             return
 
-        payload = PaymentTransaction.create_event_payload(
-            invoice, TransactionStatus.COMPLETED.value
-        )
+        payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
             current_app.logger.info(f"Releasing record for invoice {invoice.id}")
             gcp_queue_publisher.publish_to_queue(
@@ -232,9 +222,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             )
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
-            current_app.logger.error(
-                "Notification to Queue failed for the Payment Event %s", payload
-            )
+            current_app.logger.error("Notification to Queue failed for the Payment Event %s", payload)
             capture_message(
                 f"Notification to Queue failed for the Payment Event : {payload}.",
                 level="error",
@@ -244,14 +232,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def _refund_and_create_credit_memo(invoice: InvoiceModel):
         # Create credit memo in CFS if the invoice status is PAID.
         # Don't do anything is the status is APPROVED.
-        current_app.logger.info(
-            f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}"
-        )
+        current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
         if (
             invoice.invoice_status_code == InvoiceStatus.APPROVED.value
-            and InvoiceReferenceModel.find_by_invoice_id_and_status(
-                invoice.id, InvoiceReferenceStatus.ACTIVE.value
-            )
+            and InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             is None
         ):
             return InvoiceStatus.CANCELLED.value
@@ -263,9 +247,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         for line_item in invoice.payment_line_items:
             line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
 
-        cms_response = CFSService.create_cms(
-            line_items=line_items, cfs_account=cfs_account
-        )
+        cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
         # TODO Create a payment record for this to show up on transactions, when the ticket comes.
         # Create a credit with CM identifier as CMs are not reported in payment interface file
         # until invoice is applied.
@@ -278,9 +260,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         ).flush()
 
         # Add up the credit amount and update payment account table.
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
-            invoice.payment_account_id
-        )
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         payment_account.credit = (payment_account.credit or 0) + invoice.total
         current_app.logger.info(
             f"Updating credit amount to  {payment_account.credit} for account {payment_account.auth_account_id}"
@@ -291,19 +271,13 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _publish_refund_to_mailer(invoice: InvoiceModel):
         """Construct message and send to mailer queue."""
-        receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(
+        receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
+        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+            invoice_id=invoice.id,
+            status_code=InvoiceReferenceStatus.COMPLETED.value,
+        )
+        payment_transaction: PaymentTransactionModel = PaymentTransactionModel.find_recent_completed_by_invoice_id(
             invoice_id=invoice.id
-        )
-        invoice_ref: InvoiceReferenceModel = (
-            InvoiceReferenceModel.find_by_invoice_id_and_status(
-                invoice_id=invoice.id,
-                status_code=InvoiceReferenceStatus.COMPLETED.value,
-            )
-        )
-        payment_transaction: PaymentTransactionModel = (
-            PaymentTransactionModel.find_recent_completed_by_invoice_id(
-                invoice_id=invoice.id
-            )
         )
         transaction_date_time = (
             receipt.receipt_date
@@ -322,15 +296,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             "transactionDateTime": get_local_formatted_date_time(transaction_date_time),
             "transactionAmount": receipt.receipt_amount,
             "transactionId": invoice_ref.invoice_number,
-            "refundDate": get_local_formatted_date_time(
-                datetime.now(tz=timezone.utc), "%Y%m%d"
-            ),
+            "refundDate": get_local_formatted_date_time(datetime.now(tz=timezone.utc), "%Y%m%d"),
             "filingDescription": filing_description,
         }
         if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
-            payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
-                invoice.payment_account_id
-            )
+            payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
             filing_description += ","
             filing_description += invoice_ref.invoice_number
             payload.update(
@@ -340,9 +310,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                     "filingDescription": filing_description,
                 }
             )
-        current_app.logger.debug(
-            f"Publishing payment refund request to mailer for {invoice.id} : {payload}"
-        )
+        current_app.logger.debug(f"Publishing payment refund request to mailer for {invoice.id} : {payload}")
         gcp_queue_publisher.publish_to_queue(
             gcp_queue_publisher.QueueMessage(
                 source=QueueSources.PAY_API.value,
@@ -384,15 +352,9 @@ def skip_invoice_for_sandbox(function):
         """Complete any post invoice activities if needed."""
         user: UserContext = func_kwargs["user"]
         if user.is_sandbox():
-            current_app.logger.info(
-                "Skipping invoice creation as sandbox token is detected."
-            )
-            invoice: Invoice = func_args[
-                3
-            ]  # 3 is invoice from the create_invoice signature
-            return InvoiceReference.create(
-                invoice.id, f"SANDBOX-{invoice.id}", f"REF-{invoice.id}"
-            )
+            current_app.logger.info("Skipping invoice creation as sandbox token is detected.")
+            invoice: Invoice = func_args[3]  # 3 is invoice from the create_invoice signature
+            return InvoiceReference.create(invoice.id, f"SANDBOX-{invoice.id}", f"REF-{invoice.id}")
         return function(*func_args, **func_kwargs)
 
     return wrapper
@@ -406,13 +368,9 @@ def skip_complete_post_invoice_for_sandbox(function):
         """Complete any post invoice activities."""
         user: UserContext = func_kwargs["user"]
         if user.is_sandbox():
-            current_app.logger.info(
-                "Completing the payment as sandbox token is detected."
-            )
+            current_app.logger.info("Completing the payment as sandbox token is detected.")
             instance: PaymentSystemService = func_args[0]
-            instance.complete_payment(
-                func_args[1], func_args[2]
-            )  # invoice and invoice ref
+            instance.complete_payment(func_args[1], func_args[2])  # invoice and invoice ref
             instance._release_payment(func_args[1])  # pylint: disable=protected-access
             return None
         return function(*func_args, **func_kwargs)

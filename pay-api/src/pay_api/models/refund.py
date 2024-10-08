@@ -60,9 +60,7 @@ class Refund(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=True)
-    routing_slip_id = db.Column(
-        db.Integer, ForeignKey("routing_slips.id"), nullable=True
-    )
+    routing_slip_id = db.Column(db.Integer, ForeignKey("routing_slips.id"), nullable=True)
     requested_date = db.Column(db.DateTime)
     reason = db.Column(db.String(250))
     requested_by = db.Column(db.String(50))

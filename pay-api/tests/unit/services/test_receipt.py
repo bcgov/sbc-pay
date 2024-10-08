@@ -61,9 +61,7 @@ def test_receipt_saved_from_new(session):
     assert receipt_service.receipt_date is not None
     assert receipt_service.invoice_id is not None
 
-    receipt_service = ReceiptService.find_by_invoice_id_and_receipt_number(
-        i.id, receipt_service.receipt_number
-    )
+    receipt_service = ReceiptService.find_by_invoice_id_and_receipt_number(i.id, receipt_service.receipt_number)
 
     assert receipt_service is not None
     assert receipt_service.id is not None
@@ -91,16 +89,12 @@ def test_create_receipt_with_invoice(session, public_user_mock):
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
-    line = factory_payment_line_item(
-        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id
-    )
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     payment = factory_payment(invoice_amount=50)
     payment.save()
 
-    transaction = PaymentTransactionService.create_transaction_for_invoice(
-        invoice.id, get_paybc_transaction_request()
-    )
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     PaymentTransactionService.update_transaction(transaction.id, "")
 
     input_data = {
@@ -109,9 +103,7 @@ def test_create_receipt_with_invoice(session, public_user_mock):
         "fileName": "coopser",
     }
 
-    response = ReceiptService.create_receipt(
-        invoice.id, input_data, skip_auth_check=True
-    )
+    response = ReceiptService.create_receipt(invoice.id, input_data, skip_auth_check=True)
     assert response is not None
 
 
@@ -125,9 +117,7 @@ def test_create_receipt_with_no_receipt(session, public_user_mock):
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
-    line = factory_payment_line_item(
-        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id
-    )
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
     input_data = {

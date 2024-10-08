@@ -63,9 +63,7 @@ class PadService(PaymentSystemService, CFSService):
     ) -> CfsAccountModel:
         """Create an account for the PAD transactions."""
         # Create CFS Account model instance and store the bank details, set the status as PENDING
-        current_app.logger.info(
-            f"Creating PAD account details in PENDING status for {identifier}"
-        )
+        current_app.logger.info(f"Creating PAD account details in PENDING status for {identifier}")
         cfs_account = CfsAccountModel()
         cfs_account.bank_number = payment_info.get("bankInstitutionNumber")
         cfs_account.bank_branch_number = payment_info.get("bankTransitNumber")
@@ -74,16 +72,12 @@ class PadService(PaymentSystemService, CFSService):
         cfs_account.payment_method = PaymentMethod.PAD.value
         return cfs_account
 
-    def update_account(
-        self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]
-    ) -> CfsAccountModel:
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
         """Update account in CFS."""
         if (
             str(payment_info.get("bankInstitutionNumber")) != cfs_account.bank_number
-            or str(payment_info.get("bankTransitNumber"))
-            != cfs_account.bank_branch_number
-            or str(payment_info.get("bankAccountNumber"))
-            != cfs_account.bank_account_number
+            or str(payment_info.get("bankTransitNumber")) != cfs_account.bank_branch_number
+            or str(payment_info.get("bankAccountNumber")) != cfs_account.bank_account_number
         ):
             # This means, PAD account details have changed. So update banking details for this CFS account
             # Call cfs service to add new bank info.
@@ -105,13 +99,9 @@ class PadService(PaymentSystemService, CFSService):
 
             # Create new CFS Account
             updated_cfs_account = CfsAccountModel()
-            updated_cfs_account.bank_account_number = payment_info.get(
-                "bankAccountNumber"
-            )
+            updated_cfs_account.bank_account_number = payment_info.get("bankAccountNumber")
             updated_cfs_account.bank_number = payment_info.get("bankInstitutionNumber")
-            updated_cfs_account.bank_branch_number = payment_info.get(
-                "bankTransitNumber"
-            )
+            updated_cfs_account.bank_branch_number = payment_info.get("bankTransitNumber")
             updated_cfs_account.cfs_site = cfs_account.cfs_site
             updated_cfs_account.cfs_party = cfs_account.cfs_party
             updated_cfs_account.cfs_account = cfs_account.cfs_account
@@ -141,12 +131,8 @@ class PadService(PaymentSystemService, CFSService):
         # If the account have credit, deduct the credit amount which will be synced when reconciliation runs.
         account_credit = payment_account.credit or 0
         if account_credit > 0:
-            current_app.logger.info(
-                f"Account credit {account_credit}, found for {payment_account.auth_account_id}"
-            )
-        payment_account.credit = (
-            0 if account_credit < invoice.total else account_credit - invoice.total
-        )
+            current_app.logger.info(f"Account credit {account_credit}, found for {payment_account.auth_account_id}")
+        payment_account.credit = 0 if account_credit < invoice.total else account_credit - invoice.total
         payment_account.flush()
 
     @user_context

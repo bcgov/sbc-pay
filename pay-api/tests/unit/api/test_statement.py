@@ -73,9 +73,7 @@ def test_get_daily_statements(session, client, jwt, app):
     )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(
-        f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers
-    )
+    rv = client.get(f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers)
     assert rv.status_code == 200
     assert rv.json.get("total") == 1
     assert rv.json.get("items")[0].get("frequency") == StatementFrequency.DAILY.value
@@ -111,9 +109,7 @@ def test_get_daily_statements_verify_order(session, client, jwt, app):
         statement_settings_id=settings_model.id,
     )
 
-    rv = client.get(
-        f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers
-    )
+    rv = client.get(f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers)
     assert rv.status_code == 200
     assert rv.json.get("total") == 2
     # should come in the order latest first
@@ -147,9 +143,7 @@ def test_get_weekly_statements(session, client, jwt, app):
     )
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
 
-    rv = client.get(
-        f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers
-    )
+    rv = client.get(f"/api/v1/accounts/{pay_account.auth_account_id}/statements", headers=headers)
     assert rv.status_code == 200
     assert rv.json.get("total") == 1
     assert rv.json.get("items")[0].get("frequency") == StatementFrequency.WEEKLY.value
@@ -356,9 +350,7 @@ def test_statement_summary(session, client, jwt, app):
         statement_settings_id=settings_model.id,
     )
     for invoice_id in invoice_ids:
-        factory_statement_invoices(
-            statement_id=statement_model.id, invoice_id=invoice_id
-        )
+        factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_id)
 
     rv = client.get(
         f"/api/v1/accounts/{pay_account.auth_account_id}/statements/summary",
@@ -366,10 +358,7 @@ def test_statement_summary(session, client, jwt, app):
     )
     assert rv.status_code == 200
     assert rv.json.get("totalDue") == float(total_due)
-    assert (
-        rv.json.get("oldestDueDate")
-        == (oldest_due_date.date() + relativedelta(hours=8)).isoformat()
-    )
+    assert rv.json.get("oldestDueDate") == (oldest_due_date.date() + relativedelta(hours=8)).isoformat()
     assert rv.json.get("shortNameLinksCount") == 0
     assert rv.json.get("isEftUnderPayment") is None
 
@@ -423,9 +412,7 @@ def test_statement_summary_single_eft_under_payment(session, client, jwt, app):
         "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
         "content-type": "application/json",
     }
-    pay_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    ).save()
+    pay_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME1").save()
     factory_eft_shortname_link(
         short_name_id=short_name.id,
@@ -482,12 +469,8 @@ def test_statement_summary_multi_eft_under_payment(session, client, jwt, app):
         "content-type": "application/json",
     }
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME1").save()
-    pay_account1 = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value, auth_account_id="1111"
-    ).save()
-    pay_account2 = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value, auth_account_id="2222"
-    ).save()
+    pay_account1 = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="1111").save()
+    pay_account2 = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="2222").save()
     eft_file = factory_eft_file().save()
     factory_eft_shortname_link(
         short_name_id=short_name.id,

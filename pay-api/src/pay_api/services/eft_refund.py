@@ -69,9 +69,7 @@ class EFTRefund:
             )
         ).flush()
 
-        qualified_receiver_recipients = get_emails_with_keycloak_role(
-            Role.EFT_REFUND.value
-        )
+        qualified_receiver_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND.value)
         subject = f"Pending Refund Request for Short Name {short_name.short_name}"
         html_body = ShortNameRefundEmailContent(
             comment=comment,
@@ -112,23 +110,17 @@ class EFTRefund:
             return InvoiceStatus.REFUND_REQUESTED.value
 
         latest_link = cils[0]
-        sibling_cils = [
-            cil for cil in cils if cil.link_group_id == latest_link.link_group_id
-        ]
+        sibling_cils = [cil for cil in cils if cil.link_group_id == latest_link.link_group_id]
         latest_eft_credit = EFTCreditModel.find_by_id(latest_link.eft_credit_id)
         link_group_id = EFTCreditInvoiceLinkModel.get_next_group_link_seq()
-        existing_balance = EFTCreditModel.get_eft_credit_balance(
-            latest_eft_credit.short_name_id
-        )
+        existing_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
 
         match latest_link.status_code:
             case EFTCreditInvoiceStatus.PENDING.value:
                 # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
                 # (Invoice needs to be reversed, receipt doesn't exist.)
                 for cil in sibling_cils:
-                    EFTRefund.return_eft_credit(
-                        cil, EFTCreditInvoiceStatus.CANCELLED.value
-                    )
+                    EFTRefund.return_eft_credit(cil, EFTCreditInvoiceStatus.CANCELLED.value)
                     cil.link_group_id = link_group_id
                     cil.flush()
             case EFTCreditInvoiceStatus.COMPLETED.value:
@@ -151,10 +143,7 @@ class EFTRefund:
                     raise BusinessException(Error.EFT_PARTIAL_REFUND)
 
                 if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-                    if (
-                        corp_type.has_partner_disbursements
-                        and invoice.total - invoice.service_fees > 0
-                    ):
+                    if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:
                         PartnerDisbursementsModel(
                             amount=invoice.total - invoice.service_fees,
                             is_reversal=True,
@@ -164,13 +153,9 @@ class EFTRefund:
                             target_type=EJVLinkType.INVOICE.value,
                         ).flush()
 
-        current_balance = EFTCreditModel.get_eft_credit_balance(
-            latest_eft_credit.short_name_id
-        )
+        current_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:
-            short_name_history = EFTHistoryModel.find_by_related_group_link_id(
-                latest_link.link_group_id
-            )
+            short_name_history = EFTHistoryModel.find_by_related_group_link_id(latest_link.link_group_id)
             EFTHistoryService.create_invoice_refund(
                 EFTHistoryModel(
                     short_name_id=latest_eft_credit.short_name_id,
@@ -178,11 +163,7 @@ class EFTRefund:
                     credit_balance=current_balance,
                     payment_account_id=payment_account.id,
                     related_group_link_id=link_group_id,
-                    statement_number=(
-                        short_name_history.statement_number
-                        if short_name_history
-                        else None
-                    ),
+                    statement_number=(short_name_history.statement_number if short_name_history else None),
                     invoice_id=invoice.id,
                     is_processing=True,
                     hidden=False,
@@ -194,9 +175,7 @@ class EFTRefund:
     @staticmethod
     def reverse_eft_credits(shortname_id: int, amount: Decimal):
         """Reverse the amount to eft_credits table based on short_name_id."""
-        eft_credits = EFTCreditModel.get_eft_credits(
-            shortname_id, include_zero_remaining=True
-        )
+        eft_credits = EFTCreditModel.get_eft_credits(shortname_id, include_zero_remaining=True)
         for credit in eft_credits:
             if credit.remaining_amount == credit.amount:
                 continue
@@ -236,9 +215,7 @@ class EFTRefund:
             raise BusinessException(Error.INVALID_REFUND)
 
     @staticmethod
-    def update_shortname_refund(
-        refund_id: int, data: EFTShortNameRefundPatchRequest
-    ) -> EFTRefundModel:
+    def update_shortname_refund(refund_id: int, data: EFTShortNameRefundPatchRequest) -> EFTRefundModel:
         """Update the refund status."""
         refund = EFTRefundModel.find_by_id(refund_id)
         if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
@@ -250,18 +227,12 @@ class EFTRefund:
         short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
         match data.status:
             case EFTShortnameRefundStatus.DECLINED.value:
-                EFTRefund.reverse_eft_credits(
-                    refund.short_name_id, refund.refund_amount
-                )
+                EFTRefund.reverse_eft_credits(refund.short_name_id, refund.refund_amount)
                 history = EFTHistoryModel.find_by_eft_refund_id(refund.id)[0]
                 history.transaction_type = EFTHistoricalTypes.SN_REFUND_DECLINED.value
-                history.credit_balance = EFTCreditModel.get_eft_credit_balance(
-                    refund.short_name_id
-                )
+                history.credit_balance = EFTCreditModel.get_eft_credit_balance(refund.short_name_id)
                 history.save()
-                subject = (
-                    f"Declined Refund Request for Short Name {short_name.short_name}"
-                )
+                subject = f"Declined Refund Request for Short Name {short_name.short_name}"
                 body = ShortNameRefundEmailContent(
                     comment=refund.comment,
                     decline_reason=refund.decline_reason,
@@ -271,17 +242,13 @@ class EFTRefund:
                     status=data.status,
                     url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{refund.short_name_id}",
                 ).render_body()
-                expense_authority_recipients = get_emails_with_keycloak_role(
-                    Role.EFT_REFUND_APPROVER.value
-                )
+                expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
                 send_email(expense_authority_recipients, subject, body)
             case EFTShortnameRefundStatus.APPROVED.value:
                 history = EFTHistoryModel.find_by_eft_refund_id(refund.id)[0]
                 history.transaction_type = EFTHistoricalTypes.SN_REFUND_APPROVED.value
                 history.save()
-                subject = (
-                    f"Approved Refund Request for Short Name {short_name.short_name}"
-                )
+                subject = f"Approved Refund Request for Short Name {short_name.short_name}"
                 content = ShortNameRefundEmailContent(
                     comment=refund.comment,
                     decline_reason=refund.decline_reason,
@@ -292,9 +259,7 @@ class EFTRefund:
                     url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{refund.short_name_id}",
                 )
                 staff_body = content.render_body()
-                expense_authority_recipients = get_emails_with_keycloak_role(
-                    Role.EFT_REFUND_APPROVER.value
-                )
+                expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
                 send_email(expense_authority_recipients, subject, staff_body)
                 client_recipients = refund.refund_email
                 client_body = content.render_body(is_for_client=True)
@@ -304,9 +269,7 @@ class EFTRefund:
         return refund.to_dict()
 
     @staticmethod
-    def _create_refund_model(
-        request: dict, shortname_id: int, amount: Decimal, comment: str
-    ) -> EFTRefundModel:
+    def _create_refund_model(request: dict, shortname_id: int, amount: Decimal, comment: str) -> EFTRefundModel:
         """Create and return the EFTRefundModel instance."""
         # AP refund job should pick up this row and send back the amount in the refund via cheque.
         # For example if we had $500 on the EFT Shortname credits and we want to refund $300,
@@ -323,9 +286,7 @@ class EFTRefund:
         return refund
 
     @staticmethod
-    def return_eft_credit(
-        eft_credit_link: EFTCreditInvoiceLinkModel, update_status: str = None
-    ) -> EFTCreditModel:
+    def return_eft_credit(eft_credit_link: EFTCreditInvoiceLinkModel, update_status: str = None) -> EFTCreditModel:
         """Return EFT Credit Invoice Link amount to EFT Credit."""
         eft_credit = EFTCreditModel.find_by_id(eft_credit_link.eft_credit_id)
         eft_credit.remaining_amount += eft_credit_link.amount

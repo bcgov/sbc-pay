@@ -54,9 +54,7 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
     )
     invoice.save()
 
-    annual_report_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
-        "CP", "OTANN"
-    )
+    annual_report_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
     annual_report_payment_line_item = factory_payment_line_item(
         invoice_id=invoice.id,
         fee_schedule_id=annual_report_fee_schedule.fee_schedule_id,
@@ -66,9 +64,7 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
     )
     annual_report_payment_line_item.save()
 
-    non_sufficient_funds_fee_schedule = (
-        FeeScheduleModel.find_by_filing_type_and_corp_type("BCR", "NSF")
-    )
+    non_sufficient_funds_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCR", "NSF")
     distribution_code = factory_distribution_code("NSF")
     distribution_code.save()
     distribution_link = factory_distribution_link(
@@ -85,18 +81,14 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
     )
     non_sufficient_funds_payment_line_item.save()
 
-    invoice_reference = factory_invoice_reference(
-        invoice_id=invoice.id, invoice_number=invoice_number
-    )
+    invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice_reference.save()
     non_sufficient_funds = factory_non_sufficient_funds(
         invoice_id=invoice.id, invoice_number=payment.invoice_number, description="NSF"
     )
     non_sufficient_funds.save()
 
-    nsf = client.get(
-        f"/api/v1/accounts/{payment_account.auth_account_id}/nsf", headers=headers
-    )
+    nsf = client.get(f"/api/v1/accounts/{payment_account.auth_account_id}/nsf", headers=headers)
     assert nsf.status_code == 200
     assert len(nsf.json.get("invoices")) == 1
     assert nsf.json.get("total") == 1

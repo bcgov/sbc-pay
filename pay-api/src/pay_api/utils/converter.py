@@ -47,44 +47,24 @@ class Converter(cattrs.Converter):
 
     def _to_camel_case_unstructure(self, cls):
         return make_dict_unstructure_fn(
-            cls,
-            self,
-            **{
-                a.name: override(rename=self._to_camel_case(a.name))
-                for a in fields(cls)
-            }
+            cls, self, **{a.name: override(rename=self._to_camel_case(a.name)) for a in fields(cls)}
         )
 
     def _to_camel_case_structure(self, cls):
         return make_dict_structure_fn(
-            cls,
-            self,
-            **{
-                a.name: override(rename=self._to_camel_case(a.name))
-                for a in fields(cls)
-            }
+            cls, self, **{a.name: override(rename=self._to_camel_case(a.name)) for a in fields(cls)}
         )
 
     def _to_snake_case_unstructure(self, cls):
         return make_dict_unstructure_fn(
-            cls,
-            self,
-            **{
-                a.name: override(rename=self._to_snake_case(a.name))
-                for a in fields(cls)
-            }
+            cls, self, **{a.name: override(rename=self._to_snake_case(a.name)) for a in fields(cls)}
         )
 
     def _to_snake_case_structure(self, cls):
         # When structuring the target classes attribute is used for look up on the source, so we need to convert it
         # to camel case.
         return make_dict_structure_fn(
-            cls,
-            self,
-            **{
-                a.name: override(rename=self._to_camel_case(a.name))
-                for a in fields(cls)
-            }
+            cls, self, **{a.name: override(rename=self._to_camel_case(a.name)) for a in fields(cls)}
         )
 
     @staticmethod

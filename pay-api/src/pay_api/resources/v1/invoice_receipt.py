@@ -38,9 +38,7 @@ def get_invoice_receipt(invoice_id):
     """Return the receipt details."""
     current_app.logger.info("<get_invoice_receipt")
     try:
-        receipt_details = ReceiptService.get_receipt_details(
-            {}, invoice_id, skip_auth_check=False
-        )
+        receipt_details = ReceiptService.get_receipt_details({}, invoice_id, skip_auth_check=False)
         receipt_details.pop("paymentMethodDescription", None)
 
     except BusinessException as exception:
@@ -57,22 +55,16 @@ def post_invoice_receipt(invoice_id):
     request_json = request.get_json()
     current_app.logger.info("<post_invoice_receipt")
     try:
-        valid_format, errors = schema_utils.validate(
-            request_json, "payment_receipt_input"
-        )
+        valid_format, errors = schema_utils.validate(request_json, "payment_receipt_input")
         if not valid_format:
-            return error_to_response(
-                Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-            )
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         pdf = ReceiptService.create_receipt(invoice_id, request_json)
         current_app.logger.info("<InvoiceReceipt received pdf")
         response = Response(pdf, 201)
         file_name = request_json.get("fileName")
         file_name = "Coops-Filing" if not file_name else file_name
-        response.headers.set(
-            "Content-Disposition", "attachment", filename=f"{file_name}.pdf"
-        )
+        response.headers.set("Content-Disposition", "attachment", filename=f"{file_name}.pdf")
         response.headers.set("Content-Type", "application/pdf")
         response.headers.set("Access-Control-Expose-Headers", "Content-Disposition")
         return response

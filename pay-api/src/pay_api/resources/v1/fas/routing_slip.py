@@ -46,9 +46,7 @@ def post_routing_slip():
     # Validate payload.
     valid_format, errors = schema_utils.validate(request_json, "routing_slip")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     try:
         response, status = RoutingSlipService.create(request_json), HTTPStatus.CREATED
@@ -68,13 +66,9 @@ def post_search_routing_slips():
     request_json = request.get_json()
     current_app.logger.debug(request_json)
     # validate the request
-    valid_format, errors = schema_utils.validate(
-        request_json, "routing_slip_search_request"
-    )
+    valid_format, errors = schema_utils.validate(request_json, "routing_slip_search_request")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     # if no page param , return all results
     return_all = not request_json.get("page", None)
@@ -99,9 +93,7 @@ def post_routing_slip_report(date: str):
     pdf, file_name = RoutingSlipService.create_daily_reports(date)
 
     response = Response(pdf, 201)
-    response.headers.set(
-        "Content-Disposition", "attachment", filename=f"{file_name}.pdf"
-    )
+    response.headers.set("Content-Disposition", "attachment", filename=f"{file_name}.pdf")
     response.headers.set("Content-Type", "application/pdf")
     response.headers.set("Access-Control-Expose-Headers", "Content-Disposition")
 
@@ -174,13 +166,9 @@ def post_routing_slip_link():
     current_app.logger.info("<post_routing_slip_link")
 
     request_json = request.get_json()
-    valid_format, errors = schema_utils.validate(
-        request_json, "routing_slip_link_request"
-    )
+    valid_format, errors = schema_utils.validate(request_json, "routing_slip_link_request")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     try:
         response, status = (
@@ -204,9 +192,7 @@ def get_routing_slip_comments(routing_slip_number: str):
     """Get comments for a slip."""
     current_app.logger.info("<get_routing_slip_comments")
     try:
-        response = CommentService.find_all_comments_for_a_routingslip(
-            routing_slip_number
-        )
+        response = CommentService.find_all_comments_for_a_routingslip(routing_slip_number)
         if response:
             status = HTTPStatus.OK
         else:
@@ -232,20 +218,14 @@ def post_routing_slip_comment(routing_slip_number: str):
         if valid_format:
             comment = request_json.get("comment")
         else:
-            valid_format, errors = schema_utils.validate(
-                request_json, "comment_bcrs_schema"
-            )
+            valid_format, errors = schema_utils.validate(request_json, "comment_bcrs_schema")
             if valid_format:
                 comment = request_json.get("comment").get("comment")
             else:
-                return error_to_response(
-                    Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-                )
+                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
         if comment:
             response, status = (
-                CommentService.create(
-                    comment_value=comment, rs_number=routing_slip_number
-                ),
+                CommentService.create(comment_value=comment, rs_number=routing_slip_number),
                 HTTPStatus.CREATED,
             )
     except (BusinessException, ServiceUnavailableException) as exception:

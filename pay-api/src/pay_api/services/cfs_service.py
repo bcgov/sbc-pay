@@ -72,16 +72,12 @@ class CFSService(OAuthService):
         is_fas: bool = False,
     ) -> Dict[str, str]:
         """Create a cfs account and return the details."""
-        current_app.logger.info(
-            f"Creating CFS Customer Profile Details for : {identifier}"
-        )
+        current_app.logger.info(f"Creating CFS Customer Profile Details for : {identifier}")
         party_id = f"{current_app.config.get('CFS_PARTY_PREFIX')}{identifier}"
         access_token = CFSService.get_token().json().get("access_token")
         party = CFSService._create_party(access_token, party_id)
         account = CFSService._create_paybc_account(access_token, party, is_fas)
-        site = CFSService._create_site(
-            access_token, account, contact_info, receipt_method, site_name, is_fas
-        )
+        site = CFSService._create_site(access_token, account, contact_info, receipt_method, site_name, is_fas)
         account_details = {
             "party_number": party.get("party_number"),
             "account_number": account.get("account_number"),
@@ -109,9 +105,7 @@ class CFSService(OAuthService):
             f"{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/"
             f"sites/{cfs_account.cfs_site}/"
         )
-        site_response = OAuthService.get(
-            site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON
-        )
+        site_response = OAuthService.get(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         return site_response.json()
 
     @staticmethod
@@ -167,19 +161,10 @@ class CFSService(OAuthService):
                 validation_response = {
                     "bank_number": bank_validation_response.get("bank_number", None),
                     "bank_name": bank_validation_response.get("bank_number", None),
-                    "branch_number": bank_validation_response.get(
-                        "branch_number", None
-                    ),
-                    "transit_address": bank_validation_response.get(
-                        "transit_address", None
-                    ),
-                    "account_number": bank_validation_response.get(
-                        "account_number", None
-                    ),
-                    "is_valid": bank_validation_response.get(
-                        "CAS-Returned-Messages", None
-                    )
-                    == "VALID",
+                    "branch_number": bank_validation_response.get("branch_number", None),
+                    "transit_address": bank_validation_response.get("transit_address", None),
+                    "account_number": bank_validation_response.get("account_number", None),
+                    "is_valid": bank_validation_response.get("CAS-Returned-Messages", None) == "VALID",
                     "status_code": HTTPStatus.OK.value,
                     "message": CFSService._transform_error_message(
                         bank_validation_response.get("CAS-Returned-Messages")
@@ -196,9 +181,7 @@ class CFSService(OAuthService):
                 }
 
         except ServiceUnavailableException as exc:  # suppress all other errors
-            current_app.logger.debug(
-                "<Bank validation ServiceUnavailableException exception- {}", exc.error
-            )
+            current_app.logger.debug("<Bank validation ServiceUnavailableException exception- {}", exc.error)
             validation_response = {
                 "status_code": HTTPStatus.SERVICE_UNAVAILABLE.value,
                 "message": [str(exc.error)],
@@ -213,9 +196,7 @@ class CFSService(OAuthService):
         party_url = current_app.config.get("CFS_BASE_URL") + "/cfs/parties/"
         party: Dict[str, Any] = {"customer_name": party_name}
 
-        party_response = OAuthService.post(
-            party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party
-        )
+        party_response = OAuthService.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party)
         current_app.logger.debug(">Creating party Record")
         return party_response.json()
 
@@ -232,15 +213,10 @@ class CFSService(OAuthService):
     def _create_paybc_account(access_token, party, is_fas: bool):
         """Create account record in PayBC."""
         current_app.logger.debug("<Creating CFS account")
-        account_url = (
-            current_app.config.get("CFS_BASE_URL")
-            + f"/cfs/parties/{party.get('party_number', None)}/accs/"
-        )
+        account_url = current_app.config.get("CFS_BASE_URL") + f"/cfs/parties/{party.get('party_number', None)}/accs/"
         account: Dict[str, Any] = {
             "account_description": current_app.config.get("CFS_ACCOUNT_DESCRIPTION"),
-            "customer_profile_class": (
-                CFS_FAS_CUSTOMER_PROFILE_CLASS if is_fas else CFS_CUSTOMER_PROFILE_CLASS
-            ),
+            "customer_profile_class": (CFS_FAS_CUSTOMER_PROFILE_CLASS if is_fas else CFS_CUSTOMER_PROFILE_CLASS),
         }
 
         account_response = OAuthService.post(
@@ -263,31 +239,21 @@ class CFSService(OAuthService):
         if not contact_info:
             contact_info = {}
         site_url = (
-            current_app.config.get("CFS_BASE_URL")
-            + f"/cfs/parties/{account.get('party_number', None)}"
+            current_app.config.get("CFS_BASE_URL") + f"/cfs/parties/{account.get('party_number', None)}"
             f"/accs/{account.get('account_number', None)}/sites/"
         )
         country = get_non_null_value(contact_info.get("country"), DEFAULT_COUNTRY)
         province_tag = "province" if country == DEFAULT_COUNTRY else "state"
         site: Dict[str, Any] = {
-            "site_name": site_name
-            or "Site 1",  # Make it dynamic if we ever need multiple sites per account
+            "site_name": site_name or "Site 1",  # Make it dynamic if we ever need multiple sites per account
             "city": get_non_null_value(contact_info.get("city"), DEFAULT_CITY),
-            "address_line_1": get_non_null_value(
-                contact_info.get("addressLine1"), DEFAULT_ADDRESS_LINE_1
-            ),
-            "postal_code": get_non_null_value(
-                contact_info.get("postalCode"), DEFAULT_POSTAL_CODE
-            ).replace(" ", ""),
-            province_tag: get_non_null_value(
-                contact_info.get("province"), DEFAULT_JURISDICTION
-            ),
+            "address_line_1": get_non_null_value(contact_info.get("addressLine1"), DEFAULT_ADDRESS_LINE_1),
+            "postal_code": get_non_null_value(contact_info.get("postalCode"), DEFAULT_POSTAL_CODE).replace(" ", ""),
+            province_tag: get_non_null_value(contact_info.get("province"), DEFAULT_JURISDICTION),
             "country": country,
             "customer_site_id": "1",
             "primary_bill_to": "Y",
-            "customer_profile_class": (
-                CFS_FAS_CUSTOMER_PROFILE_CLASS if is_fas else CFS_CUSTOMER_PROFILE_CLASS
-            ),
+            "customer_profile_class": (CFS_FAS_CUSTOMER_PROFILE_CLASS if is_fas else CFS_CUSTOMER_PROFILE_CLASS),
         }
         if receipt_method:
             site["receipt_method"] = receipt_method
@@ -300,9 +266,7 @@ class CFSService(OAuthService):
             # If the site creation fails with 400, query and return site
             if e.response.status_code == 400:
                 site_response = (
-                    OAuthService.get(
-                        site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON
-                    )
+                    OAuthService.get(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
                     .json()
                     .get("items")[0]
                 )
@@ -353,9 +317,7 @@ class CFSService(OAuthService):
             "bank_account_number": payment_info.get("bankAccountNumber"),
             "bank_number": bank_number,
             "bank_branch_number": branch_number,
-            "payment_instrument_number": site_payment_response.get(
-                "payment_instrument_number"
-            ),
+            "payment_instrument_number": site_payment_response.get("payment_instrument_number"),
         }
 
         current_app.logger.debug(">Creating CFS payment details")
@@ -372,20 +334,14 @@ class CFSService(OAuthService):
             f"sites/{cfs_account.cfs_site}/invs/{inv_number}/"
         )
 
-        invoice_response = CFSService.get(
-            invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON
-        )
+        invoice_response = CFSService.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         return invoice_response.json()
 
     @classmethod
-    def reverse_rs_receipt_in_cfs(
-        cls, cfs_account, receipt_number, operation: ReverseOperation
-    ):
+    def reverse_rs_receipt_in_cfs(cls, cfs_account, receipt_number, operation: ReverseOperation):
         """Reverse Receipt."""
         current_app.logger.debug(">Reverse receipt: %s", receipt_number)
-        access_token: str = (
-            CFSService.get_token(PaymentSystem.FAS).json().get("access_token")
-        )
+        access_token: str = CFSService.get_token(PaymentSystem.FAS).json().get("access_token")
         cfs_base: str = current_app.config.get("CFS_BASE_URL")
         receipt_url = (
             f"{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}"
@@ -394,42 +350,26 @@ class CFSService(OAuthService):
         current_app.logger.debug("Receipt URL %s", receipt_url)
         payload = {
             "reversal_reason": (
-                CFS_NSF_REVERSAL_REASON
-                if operation == ReverseOperation.NSF.value
-                else CFS_PAYMENT_REVERSAL_REASON
+                CFS_NSF_REVERSAL_REASON if operation == ReverseOperation.NSF.value else CFS_PAYMENT_REVERSAL_REASON
             ),
             "reversal_comment": cls._build_reversal_comment(operation),
         }
-        return CFSService.post(
-            receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload
-        )
+        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
 
     @classmethod
-    def apply_receipt(
-        cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str
-    ) -> Dict[str, any]:
+    def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
         """Apply Invoice to Routing slip receipt from CFS."""
-        return cls._modify_rs_receipt_in_cfs(
-            cfs_account, invoice_number, receipt_number
-        )
+        return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number)
 
     @classmethod
-    def unapply_receipt(
-        cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str
-    ) -> Dict[str, any]:
+    def unapply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
         """Unapply Invoice to Routing slip receipt from CFS."""
-        return cls._modify_rs_receipt_in_cfs(
-            cfs_account, invoice_number, receipt_number, verb="unapply"
-        )
+        return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number, verb="unapply")
 
     @classmethod
-    def _modify_rs_receipt_in_cfs(
-        cls, cfs_account, invoice_number, receipt_number, verb="apply"
-    ):
+    def _modify_rs_receipt_in_cfs(cls, cfs_account, invoice_number, receipt_number, verb="apply"):
         """Apply and unapply using the verb passed."""
-        current_app.logger.debug(
-            ">%s receipt: %s invoice:%s", verb, receipt_number, invoice_number
-        )
+        current_app.logger.debug(">%s receipt: %s invoice:%s", verb, receipt_number, invoice_number)
         access_token: str = CFSService.get_token().json().get("access_token")
         cfs_base: str = current_app.config.get("CFS_BASE_URL")
         receipt_url = (
@@ -440,9 +380,7 @@ class CFSService(OAuthService):
         payload = {
             "invoice_number": invoice_number,
         }
-        return CFSService.post(
-            receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload
-        )
+        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
 
     @classmethod
     def update_bank_details(
@@ -457,9 +395,7 @@ class CFSService(OAuthService):
         current_app.logger.debug("<Update bank details ")
         access_token = CFSService.get_token().json().get("access_token")
         payment_info["bankAccountName"] = name
-        return cls._save_bank_details(
-            access_token, party_number, account_number, site_number, payment_info
-        )
+        return cls._save_bank_details(access_token, party_number, account_number, site_number, payment_info)
 
     @staticmethod
     def get_token(payment_system=PaymentSystem.PAYBC):
@@ -475,9 +411,7 @@ class CFSService(OAuthService):
                 secret = current_app.config.get("CFS_FAS_CLIENT_SECRET")
             case _:
                 raise ValueError("Invalid Payment System")
-        basic_auth_encoded = base64.b64encode(
-            bytes(client_id + ":" + secret, "utf-8")
-        ).decode("utf-8")
+        basic_auth_encoded = base64.b64encode(bytes(client_id + ":" + secret, "utf-8")).decode("utf-8")
         data = "grant_type=client_credentials"
         token_response = OAuthService.post(
             token_url,
@@ -501,8 +435,7 @@ class CFSService(OAuthService):
         curr_time = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         invoice_url = (
-            current_app.config.get("CFS_BASE_URL")
-            + f"/cfs/parties/{cfs_account.cfs_party}"
+            current_app.config.get("CFS_BASE_URL") + f"/cfs/parties/{cfs_account.cfs_party}"
             f"/accs/{cfs_account.cfs_account}/sites/{cfs_account.cfs_site}/invs/"
         )
 
@@ -538,26 +471,16 @@ class CFSService(OAuthService):
         }.get(operation)
 
     @classmethod
-    def build_lines(
-        cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False
-    ):
+    def build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
         """Build lines for the invoice."""
         # Fetch all distribution codes to reduce DB hits. Introduce caching if needed later
-        distribution_codes: List[DistributionCodeModel] = (
-            DistributionCodeModel.find_all()
-        )
-        lines_map = defaultdict(
-            dict
-        )  # To group all the lines with same GL code together.
+        distribution_codes: List[DistributionCodeModel] = DistributionCodeModel.find_all()
+        lines_map = defaultdict(dict)  # To group all the lines with same GL code together.
         index: int = 0
         for line_item in payment_line_items:
             # Find the distribution from the above list
             distribution_code = (
-                [
-                    dist
-                    for dist in distribution_codes
-                    if dist.distribution_code_id == line_item.fee_distribution_id
-                ][0]
+                [dist for dist in distribution_codes if dist.distribution_code_id == line_item.fee_distribution_id][0]
                 if line_item.fee_distribution_id
                 else None
             )
@@ -592,20 +515,16 @@ class CFSService(OAuthService):
                     }
                 else:
                     # Add up the price and distribution
-                    line["unit_price"] = line["unit_price"] + cls._get_amount(
+                    line["unit_price"] = line["unit_price"] + cls._get_amount(line_item.total, negate)
+                    line["distribution"][0]["amount"] = line["distribution"][0]["amount"] + cls._get_amount(
                         line_item.total, negate
                     )
-                    line["distribution"][0]["amount"] = line["distribution"][0][
-                        "amount"
-                    ] + cls._get_amount(line_item.total, negate)
 
                 lines_map[distribution_code.distribution_code_id] = line
 
             if line_item.service_fees > 0:
-                service_fee_distribution: DistributionCodeModel = (
-                    DistributionCodeModel.find_by_id(
-                        distribution_code.service_fee_distribution_code_id
-                    )
+                service_fee_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    distribution_code.service_fee_distribution_code_id
                 )
                 service_line = lines_map[service_fee_distribution.distribution_code_id]
 
@@ -620,9 +539,7 @@ class CFSService(OAuthService):
                         "distribution": [
                             {
                                 "dist_line_number": index,
-                                "amount": cls._get_amount(
-                                    line_item.service_fees, negate
-                                ),
+                                "amount": cls._get_amount(line_item.service_fees, negate),
                                 "account": f"{service_fee_distribution.client}."
                                 f"{service_fee_distribution.responsibility_centre}."
                                 f"{service_fee_distribution.service_line}."
@@ -634,12 +551,12 @@ class CFSService(OAuthService):
 
                 else:
                     # Add up the price and distribution
-                    service_line["unit_price"] = service_line[
-                        "unit_price"
+                    service_line["unit_price"] = service_line["unit_price"] + cls._get_amount(
+                        line_item.service_fees, negate
+                    )
+                    service_line["distribution"][0]["amount"] = service_line["distribution"][0][
+                        "amount"
                     ] + cls._get_amount(line_item.service_fees, negate)
-                    service_line["distribution"][0]["amount"] = service_line[
-                        "distribution"
-                    ][0]["amount"] + cls._get_amount(line_item.service_fees, negate)
                 lines_map[service_fee_distribution.distribution_code_id] = service_line
         return list(lines_map.values())
 
@@ -655,14 +572,10 @@ class CFSService(OAuthService):
         cfs_base: str = current_app.config.get("CFS_BASE_URL")
         invoice_url = f"{cfs_base}/cfs/parties/invs/{inv_number}/creditbalance/"
 
-        CFSService.post(
-            invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, {}
-        )
+        CFSService.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, {})
 
     @classmethod
-    def add_nsf_adjustment(
-        cls, cfs_account: CfsAccountModel, inv_number: str, amount: float
-    ):
+    def add_nsf_adjustment(cls, cfs_account: CfsAccountModel, inv_number: str, amount: float):
         """Add adjustment to the invoice."""
         current_app.logger.debug(">Creating NSF Adjustment for Invoice: %s", inv_number)
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -755,13 +668,9 @@ class CFSService(OAuthService):
         access_token: str = None,
     ) -> Dict[str, str]:
         """Create Eft Wire receipt for the account."""
-        current_app.logger.debug(
-            f"<create_cfs_receipt : {cfs_account}, {rcpt_number}, {amount}, {payment_method}"
-        )
+        current_app.logger.debug(f"<create_cfs_receipt : {cfs_account}, {rcpt_number}, {amount}, {payment_method}")
 
-        access_token: str = access_token or CFSService.get_token().json().get(
-            "access_token"
-        )
+        access_token: str = access_token or CFSService.get_token().json().get("access_token")
         cfs_base: str = current_app.config.get("CFS_BASE_URL")
         receipt_url = (
             f"{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/"
@@ -782,14 +691,10 @@ class CFSService(OAuthService):
             "comments": "",
         }
         current_app.logger.debug(">create_cfs_receipt")
-        return CFSService.post(
-            receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload
-        ).json()
+        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload).json()
 
     @classmethod
-    def get_receipt(
-        cls, cfs_account: CfsAccountModel, receipt_number: str
-    ) -> Dict[str, any]:
+    def get_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str) -> Dict[str, any]:
         """Return receipt details from CFS."""
         current_app.logger.debug(">Getting receipt: %s", receipt_number)
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -800,9 +705,7 @@ class CFSService(OAuthService):
         )
         current_app.logger.debug("Receipt URL %s", receipt_url)
 
-        receipt_response = cls.get(
-            receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON
-        )
+        receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
 
         current_app.logger.debug(">Received receipt response")
         return receipt_response.json()
@@ -819,17 +722,13 @@ class CFSService(OAuthService):
         )
         current_app.logger.debug("CMS URL %s", cms_url)
 
-        cms_response = cls.get(
-            cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON
-        )
+        cms_response = cls.get(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
 
         current_app.logger.debug(">Received CMS response")
         return cms_response.json()
 
     @classmethod
-    def create_cms(
-        cls, line_items: List[PaymentLineItemModel], cfs_account: CfsAccountModel
-    ) -> Dict[str, any]:
+    def create_cms(cls, line_items: List[PaymentLineItemModel], cfs_account: CfsAccountModel) -> Dict[str, any]:
         """Create CM record in CFS."""
         current_app.logger.debug(">Creating CMS")
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -852,28 +751,20 @@ class CFSService(OAuthService):
             "lines": cls.build_lines(line_items, negate=True),
         }
 
-        cms_response = CFSService.post(
-            cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, cms_payload
-        )
+        cms_response = CFSService.post(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, cms_payload)
 
         current_app.logger.debug(">Received CMS response")
         return cms_response.json()
 
     @classmethod
-    def adjust_receipt_to_zero(
-        cls, cfs_account: CfsAccountModel, receipt_number: str, is_refund: bool = False
-    ):
+    def adjust_receipt_to_zero(cls, cfs_account: CfsAccountModel, receipt_number: str, is_refund: bool = False):
         """Adjust Receipt in CFS to bring it down to zero.
 
         1. Query the receipt and check if balance is more than zero.
         2. Adjust the receipt with activity name corresponding to refund or write off.
         """
-        current_app.logger.debug(
-            "<adjust_receipt_to_zero: %s %s", cfs_account, receipt_number
-        )
-        access_token: str = (
-            CFSService.get_token(PaymentSystem.FAS).json().get("access_token")
-        )
+        current_app.logger.debug("<adjust_receipt_to_zero: %s %s", cfs_account, receipt_number)
+        access_token: str = CFSService.get_token(PaymentSystem.FAS).json().get("access_token")
         cfs_base: str = current_app.config.get("CFS_BASE_URL")
         receipt_url = (
             f"{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/"
@@ -882,21 +773,11 @@ class CFSService(OAuthService):
         adjustment_url = f"{receipt_url}adjustment"
         current_app.logger.debug("Receipt Adjustment URL %s", adjustment_url)
 
-        receipt_response = cls.get(
-            receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON
-        )
-        current_app.logger.info(
-            f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}"
-        )
-        if (
-            unapplied_amount := float(
-                receipt_response.json().get("unapplied_amount", 0)
-            )
-        ) > 0:
+        receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
+        if (unapplied_amount := float(receipt_response.json().get("unapplied_amount", 0))) > 0:
             adjustment = {
-                "activity_name": (
-                    "Refund Adjustment FAS" if is_refund else "Write-off Adjustment FAS"
-                ),
+                "activity_name": ("Refund Adjustment FAS" if is_refund else "Write-off Adjustment FAS"),
                 "adjustment_amount": str(unapplied_amount),
             }
 
@@ -907,12 +788,8 @@ class CFSService(OAuthService):
                 ContentType.JSON,
                 adjustment,
             )
-            receipt_response = cls.get(
-                receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON
-            )
-            current_app.logger.info(
-                f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}"
-            )
+            receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+            current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
 
         current_app.logger.debug(">adjust_receipt_to_zero")
 

@@ -74,10 +74,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         payment_account: PaymentAccount = kwargs.get("payment_account", None)
         payment_method = kwargs.get("payment_method", PaymentMethod.DIRECT_PAY.value)
         account_info = kwargs.get("account_info", None)
-        has_bcol_account_number = (
-            account_info is not None
-            and account_info.get("bcolAccountNumber") is not None
-        )
+        has_bcol_account_number = account_info is not None and account_info.get("bcolAccountNumber") is not None
 
         _instance: PaymentSystemService = None
         current_app.logger.debug(f"payment_method: {payment_method}")
@@ -97,9 +94,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             if has_bcol_account_number and Role.SYSTEM.value in user.roles:
                 _instance = BcolService()
             else:
-                _instance = PaymentSystemFactory.create_from_payment_method(
-                    payment_method
-                )
+                _instance = PaymentSystemFactory.create_from_payment_method(payment_method)
 
         if not _instance:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
@@ -109,16 +104,13 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         return _instance
 
     @staticmethod
-    def _validate_and_throw_error(
-        instance: PaymentSystemService, payment_account: PaymentAccount
-    ):
+    def _validate_and_throw_error(instance: PaymentSystemService, payment_account: PaymentAccount):
         if isinstance(instance, PadService):
             is_in_pad_confirmation_period = payment_account.pad_activation_date.replace(
                 tzinfo=timezone.utc
             ) > datetime.now(tz=timezone.utc)
             is_cfs_account_in_pending_status = (
-                payment_account.cfs_account_status
-                == CfsAccountStatus.PENDING_PAD_ACTIVATION.value
+                payment_account.cfs_account_status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value
             )
 
             if is_in_pad_confirmation_period or is_cfs_account_in_pending_status:

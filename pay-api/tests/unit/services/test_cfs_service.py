@@ -82,17 +82,9 @@ def test_validate_bank_account_invalid(session):
 
         bank_details = cfs_service.validate_bank_account(input_bank_details)
         assert bank_details.get("is_valid") is False
-        assert (
-            bank_details.get("message")[0] == "Account number has invalid characters."
-        )
-        assert (
-            bank_details.get("message")[1]
-            == "Account number has non-numeric characters."
-        )
-        assert (
-            bank_details.get("message")[2]
-            == "Account number length is not valid for this bank."
-        )
+        assert bank_details.get("message")[0] == "Account number has invalid characters."
+        assert bank_details.get("message")[1] == "Account number has non-numeric characters."
+        assert bank_details.get("message")[2] == "Account number length is not valid for this bank."
         assert bank_details.get("status_code") == 200
 
 
@@ -125,20 +117,14 @@ def test_ensure_totals_quantized(session):
     distribution_code.save()
 
     payment_line_items = [
-        PaymentLineItemModel(
-            total=Decimal("0.3"), service_fees=Decimal("0.3"), fee_distribution_id=1
-        ),
-        PaymentLineItemModel(
-            total=Decimal("0.55"), service_fees=Decimal("0.55"), fee_distribution_id=1
-        ),
+        PaymentLineItemModel(total=Decimal("0.3"), service_fees=Decimal("0.3"), fee_distribution_id=1),
+        PaymentLineItemModel(total=Decimal("0.55"), service_fees=Decimal("0.55"), fee_distribution_id=1),
         PaymentLineItemModel(
             total=Decimal("0.55"),
             service_fees=Decimal("0.55"),
             fee_distribution_id=1,
         ),
     ]
-    lines = cfs_service.build_lines(
-        payment_line_items
-    )  # pylint: disable=protected-access
+    lines = cfs_service.build_lines(payment_line_items)  # pylint: disable=protected-access
     # Same distribution code for filing fees and service fees.
     assert float(lines[0]["unit_price"]) == 2.8

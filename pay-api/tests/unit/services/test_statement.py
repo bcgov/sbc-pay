@@ -63,9 +63,7 @@ def test_statement_find_by_account(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(
-        payment_account=bcol_account, status_code=InvoiceStatus.OVERDUE.value
-    )
+    i = factory_invoice(payment_account=bcol_account, status_code=InvoiceStatus.OVERDUE.value)
     i.save()
     factory_invoice_reference(i.id).save()
 
@@ -80,9 +78,7 @@ def test_statement_find_by_account(session):
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
     payment_account = PaymentAccountModel.find_by_id(bcol_account.id)
-    statements = StatementService.find_by_account_id(
-        payment_account.auth_account_id, page=1, limit=10
-    )
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
     assert statements.get("total") == 1
     assert statements.get("items")[0].get("is_overdue") is True
@@ -111,9 +107,7 @@ def test_get_statement_report(session):
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
     payment_account = PaymentAccountModel.find_by_id(bcol_account.id)
-    statements = StatementService.find_by_account_id(
-        payment_account.auth_account_id, page=1, limit=10
-    )
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
     report_response, report_name = StatementService.get_statement_report(
@@ -146,9 +140,7 @@ def test_get_statement_report_for_empty_invoices(session):
     )
 
     payment_account = PaymentAccountModel.find_by_id(bcol_account.id)
-    statements = StatementService.find_by_account_id(
-        payment_account.auth_account_id, page=1, limit=10
-    )
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
     report_response, report_name = StatementService.get_statement_report(
@@ -182,9 +174,7 @@ def test_get_weekly_statement_report(session):
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
     payment_account = PaymentAccountModel.find_by_id(bcol_account.id)
-    statements = StatementService.find_by_account_id(
-        payment_account.auth_account_id, page=1, limit=10
-    )
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
     report_response, report_name = StatementService.get_statement_report(
@@ -207,10 +197,8 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
         assert account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Assert that the default weekly statement settings are created
-    statement_settings: StatementSettingsModel = (
-        StatementSettingsModel.find_active_settings(
-            str(account.auth_account_id), datetime.now(tz=timezone.utc)
-        )
+    statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
+        str(account.auth_account_id), datetime.now(tz=timezone.utc)
     )
 
     assert statement_settings is not None
@@ -239,8 +227,8 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
             ),
         )
 
-        new_statement_settings: StatementSettingsModel = (
-            StatementSettingsModel.find_latest_settings(account.auth_account_id)
+        new_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+            account.auth_account_id
         )
 
         assert new_statement_settings is not None
@@ -249,18 +237,14 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementService.get_account_statements(
-        auth_account_id=account.auth_account_id, page=1, limit=100
-    )
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
     assert statements[0][0].is_interim_statement
 
     # Validate weekly interim invoice is correct
-    weekly_invoices = StatementInvoiceModel.find_all_invoices_for_statement(
-        statements[0][0].id
-    )
+    weekly_invoices = StatementInvoiceModel.find_all_invoices_for_statement(statements[0][0].id)
     assert weekly_invoices is not None
     assert len(weekly_invoices) == 1
     assert weekly_invoices[0].invoice_id == weekly_invoice.id
@@ -278,10 +262,8 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
         assert account.payment_method == PaymentMethod.EFT.value
 
     # Assert that the default MONTHLY statement settings are created
-    statement_settings: StatementSettingsModel = (
-        StatementSettingsModel.find_active_settings(
-            str(account.auth_account_id), datetime.now(tz=timezone.utc)
-        )
+    statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
+        str(account.auth_account_id), datetime.now(tz=timezone.utc)
     )
 
     assert statement_settings is not None
@@ -311,8 +293,8 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
             ),
         )
 
-        new_statement_settings: StatementSettingsModel = (
-            StatementSettingsModel.find_latest_settings(account.auth_account_id)
+        new_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+            account.auth_account_id
         )
 
         assert new_statement_settings is not None
@@ -320,9 +302,7 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementService.get_account_statements(
-        auth_account_id=account.auth_account_id, page=1, limit=100
-    )
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -330,9 +310,7 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
     assert statements[0][0].payment_methods == PaymentMethod.EFT.value
 
     # Validate interim invoice is correct
-    interim_invoices = StatementInvoiceModel.find_all_invoices_for_statement(
-        statements[0][0].id
-    )
+    interim_invoices = StatementInvoiceModel.find_all_invoices_for_statement(statements[0][0].id)
     assert interim_invoices is not None
     assert len(interim_invoices) == 1
     assert interim_invoices[0].invoice_id == monthly_invoice.id
@@ -350,10 +328,8 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
         assert account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Update current active settings to monthly
-    statement_settings: StatementSettingsModel = (
-        StatementSettingsModel.find_active_settings(
-            str(account.auth_account_id), datetime.now(tz=timezone.utc)
-        )
+    statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
+        str(account.auth_account_id), datetime.now(tz=timezone.utc)
     )
 
     statement_settings.frequency = StatementFrequency.MONTHLY.value
@@ -386,8 +362,8 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
             ),
         )
 
-        new_statement_settings: StatementSettingsModel = (
-            StatementSettingsModel.find_latest_settings(account.auth_account_id)
+        new_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+            account.auth_account_id
         )
 
         assert new_statement_settings is not None
@@ -396,18 +372,14 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementService.get_account_statements(
-        auth_account_id=account.auth_account_id, page=1, limit=100
-    )
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
     assert statements[0][0].is_interim_statement
 
     # Validate monthly interim invoice is correct
-    monthly_invoices = StatementInvoiceModel.find_all_invoices_for_statement(
-        statements[0][0].id
-    )
+    monthly_invoices = StatementInvoiceModel.find_all_invoices_for_statement(statements[0][0].id)
     assert monthly_invoices is not None
     assert len(monthly_invoices) == 1
     assert monthly_invoices[0].invoice_id == monthly_invoice.id
@@ -425,10 +397,8 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
         assert account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Confirm initial default settings when account is created
-    initial_settings: StatementSettingsModel = (
-        StatementSettingsModel.find_active_settings(
-            str(account.auth_account_id), datetime.now(tz=timezone.utc)
-        )
+    initial_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
+        str(account.auth_account_id), datetime.now(tz=timezone.utc)
     )
 
     assert initial_settings is not None
@@ -452,16 +422,14 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     assert initial_settings.to_date == update_date.date()
 
     # Assert new EFT Monthly settings are created
-    latest_statement_settings: StatementSettingsModel = (
-        StatementSettingsModel.find_latest_settings(account.auth_account_id)
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+        account.auth_account_id
     )
 
     assert latest_statement_settings is not None
     assert latest_statement_settings.id != initial_settings.id
     assert latest_statement_settings.frequency == StatementFrequency.MONTHLY.value
-    assert (
-        latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
-    )
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
     assert latest_statement_settings.to_date is None
 
     # Same day payment method change back to DRAWDOWN
@@ -472,16 +440,14 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
             get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value),
         )
 
-    latest_statement_settings: StatementSettingsModel = (
-        StatementSettingsModel.find_latest_settings(account.auth_account_id)
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+        account.auth_account_id
     )
 
     assert latest_statement_settings is not None
     assert latest_statement_settings.id != initial_settings.id
     assert latest_statement_settings.frequency == StatementFrequency.WEEKLY.value
-    assert (
-        latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
-    )
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
     assert latest_statement_settings.to_date is None
 
     # Same day payment method change back to EFT
@@ -495,16 +461,14 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
             ),
         )
 
-    latest_statement_settings: StatementSettingsModel = (
-        StatementSettingsModel.find_latest_settings(account.auth_account_id)
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+        account.auth_account_id
     )
 
     assert latest_statement_settings is not None
     assert latest_statement_settings.id != initial_settings.id
     assert latest_statement_settings.frequency == StatementFrequency.MONTHLY.value
-    assert (
-        latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
-    )
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
     assert latest_statement_settings.to_date is None
 
     all_settings = (
@@ -526,16 +490,14 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
             get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value),
         )
 
-    latest_statement_settings: StatementSettingsModel = (
-        StatementSettingsModel.find_latest_settings(account.auth_account_id)
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(
+        account.auth_account_id
     )
 
     assert latest_statement_settings is not None
     assert latest_statement_settings.id != initial_settings.id
     assert latest_statement_settings.frequency == StatementFrequency.WEEKLY.value
-    assert (
-        latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
-    )
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
     assert latest_statement_settings.to_date is None
 
     all_settings = (
@@ -563,9 +525,7 @@ def test_get_eft_statement_for_empty_invoices(session):
     """Assert that the get statement report works for eft statement with no invoices."""
     statement_from_date = datetime.now(timezone.utc) + relativedelta(months=1, day=1)
     statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     settings_model = factory_statement_settings(
         payment_account_id=payment_account.id,
         frequency=StatementFrequency.MONTHLY.value,
@@ -580,17 +540,13 @@ def test_get_eft_statement_for_empty_invoices(session):
     )
 
     payment_account = PaymentAccountModel.find_by_id(payment_account.id)
-    statements = StatementService.find_by_account_id(
-        payment_account.auth_account_id, page=1, limit=10
-    )
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
     expected_report_name = (
         f"bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-"
         f"to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf"
     )
-    with patch.object(
-        ReportService, "get_report_response", return_value=None
-    ) as mock_report:
+    with patch.object(ReportService, "get_report_response", return_value=None) as mock_report:
         report_response, report_name = StatementService.get_statement_report(
             statement_id=statement_model.id,
             content_type=ContentType.PDF.value,
@@ -666,9 +622,7 @@ def test_get_eft_statement_with_invoices(session):
     """Assert that the get statement report works for eft statement with invoices."""
     statement_from_date = datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1)
     statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     settings_model = factory_statement_settings(
         payment_account_id=payment_account.id,
         frequency=StatementFrequency.MONTHLY.value,
@@ -683,9 +637,7 @@ def test_get_eft_statement_with_invoices(session):
     )
 
     payment_account = PaymentAccountModel.find_by_id(payment_account.id)
-    statements = StatementService.find_by_account_id(
-        payment_account.auth_account_id, page=1, limit=10
-    )
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
     invoice_1 = factory_invoice(
@@ -715,9 +667,7 @@ def test_get_eft_statement_with_invoices(session):
         f"bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-"
         f"to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf"
     )
-    with patch.object(
-        ReportService, "get_report_response", return_value=None
-    ) as mock_report:
+    with patch.object(ReportService, "get_report_response", return_value=None) as mock_report:
         report_response, report_name = StatementService.get_statement_report(
             statement_id=statement_model.id,
             content_type=ContentType.PDF.value,
@@ -875,25 +825,19 @@ def localize_date(date: datetime):
 
 def test_get_eft_statement_summary_links_count(session):
     """Assert that the get statement summary short name links count is correct."""
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     summary = StatementService.get_summary(payment_account.auth_account_id)
     assert summary["short_name_links_count"] == 0
 
     eft_short_name = factory_eft_shortname("TESTSHORTNAME")
     eft_short_name.save()
 
-    factory_eft_shortname_link(
-        short_name_id=eft_short_name.id, auth_account_id=payment_account.auth_account_id
-    ).save()
+    factory_eft_shortname_link(short_name_id=eft_short_name.id, auth_account_id=payment_account.auth_account_id).save()
 
     summary = StatementService.get_summary(payment_account.auth_account_id)
     assert summary["short_name_links_count"] == 1
 
-    factory_eft_shortname_link(
-        short_name_id=eft_short_name.id, auth_account_id="2222"
-    ).save()
+    factory_eft_shortname_link(short_name_id=eft_short_name.id, auth_account_id="2222").save()
 
     summary = StatementService.get_summary(payment_account.auth_account_id)
     assert summary["short_name_links_count"] == 2

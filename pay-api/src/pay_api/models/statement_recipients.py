@@ -53,25 +53,17 @@ class StatementRecipients(BaseModel):  # pylint: disable=too-many-instance-attri
     firstname = db.Column("first_name", String(200))
     lastname = db.Column("last_name", String(200))
     email = db.Column("email", String(200))
-    payment_account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
 
     @classmethod
     def find_all_recipients(cls, auth_account_id: str) -> List[StatementRecipients]:
         """Return all active recipients for an account."""
-        return (
-            cls.query.join(PaymentAccount)
-            .filter(PaymentAccount.auth_account_id == str(auth_account_id))
-            .all()
-        )
+        return cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == str(auth_account_id)).all()
 
     @classmethod
     def find_all_recipients_for_payment_id(cls, payment_account_id: str):
         """Return all active recipients for an account."""
-        return cls.query.filter(
-            StatementRecipients.payment_account_id == payment_account_id
-        ).all()
+        return cls.query.filter(StatementRecipients.payment_account_id == payment_account_id).all()
 
     @classmethod
     def delete_all_recipients(cls, payment_account_id: str):
@@ -87,9 +79,7 @@ class StatementRecipients(BaseModel):  # pylint: disable=too-many-instance-attri
         BaseModel.commit()
 
 
-class StatementRecipientsSchema(
-    ma.SQLAlchemyAutoSchema
-):  # pylint: disable=too-many-ancestors
+class StatementRecipientsSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment Account."""
 
     class Meta:  # pylint: disable=too-few-public-methods

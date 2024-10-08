@@ -48,9 +48,7 @@ def test_find_code_value_by_type_and_code(session):
     codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
     first_code = codes.get("codes")[0].get("type")
     cache.clear()
-    code = CodeService.find_code_value_by_type_and_code(
-        Code.INVOICE_STATUS.value, first_code
-    )
+    code = CodeService.find_code_value_by_type_and_code(Code.INVOICE_STATUS.value, first_code)
     assert code is not None
     assert code.get("type") == first_code
 

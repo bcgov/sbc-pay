@@ -75,9 +75,7 @@ class Flags:
                 self.init_app(current_app)
                 client = current_app.extensions["featureflags"]
             except KeyError:
-                logging.warning(
-                    "Couldn't retrieve launch darkly client from extensions."
-                )
+                logging.warning("Couldn't retrieve launch darkly client from extensions.")
                 client = None
 
         return client
@@ -88,16 +86,9 @@ class Flags:
 
     @staticmethod
     def _user_as_key(user: user_context):
-        return (
-            Context.builder(user.sub)
-            .set("userName", user.user_name)
-            .set("firstName", user.first_name)
-            .build()
-        )
+        return Context.builder(user.sub).set("userName", user.user_name).set("firstName", user.first_name).build()
 
-    def is_on(
-        self, flag: str, default: bool = False, user: user_context = None
-    ) -> bool:
+    def is_on(self, flag: str, default: bool = False, user: user_context = None) -> bool:
         """Assert that the flag is set for this user."""
         client = self._get_client()
 

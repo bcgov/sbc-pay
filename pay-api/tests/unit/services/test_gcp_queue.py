@@ -58,9 +58,7 @@ def test_publish_to_queue_success(app, mock_credentials, mock_publisher_client):
             )
 
             publish_to_queue(queue_message)
-            mock_publisher.assert_called_once_with(
-                "projects/project-id/topics/topic", ANY
-            )
+            mock_publisher.assert_called_once_with("projects/project-id/topics/topic", ANY)
 
 
 def test_publish_to_queue_no_topic(app, mock_credentials, mock_publisher_client):
@@ -84,9 +82,7 @@ def test_gcp_pubsub_connectivity(monkeypatch):
     monkeypatch.undo()
     load_dotenv(".env")
     app_prod = create_app("production")
-    payload = humps.camelize(
-        asdict(PaymentToken(55, TransactionStatus.COMPLETED.value, 55, "NRO"))
-    )
+    payload = humps.camelize(asdict(PaymentToken(55, TransactionStatus.COMPLETED.value, 55, "NRO")))
     with app_prod.app_context():
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(

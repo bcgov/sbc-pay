@@ -65,15 +65,11 @@ class EFTRefund(Audit):
         nullable=False,
         default=lambda: datetime.now(tz=timezone.utc),
     )
-    disbursement_status_code = db.Column(
-        db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True
-    )
+    disbursement_status_code = db.Column(db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     refund_email = db.Column(db.String(100), nullable=False)
-    short_name_id = db.Column(
-        db.Integer, ForeignKey("eft_short_names.id"), nullable=False
-    )
+    short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False)
     status = db.Column(db.String(25), nullable=True)
 
     @classmethod

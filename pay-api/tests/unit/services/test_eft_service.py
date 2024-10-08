@@ -66,9 +66,7 @@ def test_get_payment_method_code(session):
 
 def test_has_no_payment_blockers(session):
     """Test for no payment blockers."""
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     payment_account.save()
     eft_service.ensure_no_payment_blockers(payment_account)
     assert True
@@ -76,9 +74,7 @@ def test_has_no_payment_blockers(session):
 
 def test_has_payment_blockers(session):
     """Test has payment blockers."""
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     payment_account.has_overdue_invoices = datetime.now(tz=timezone.utc)
     payment_account.save()
 
@@ -225,9 +221,7 @@ def test_refund_eft_credits_exceed_balance(session):
 )
 def test_eft_invoice_refund(session, test_name):
     """Test various scenarios for eft_invoice_refund."""
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     invoice = factory_invoice(
         payment_account=payment_account,
         status_code=InvoiceStatus.APPROVED.value,
@@ -252,13 +246,9 @@ def test_eft_invoice_refund(session, test_name):
         case "1_invoice_non_exist":
             pass
         case "2_no_eft_credit_link":
-            factory_invoice_reference(
-                invoice_id=invoice.id, invoice_number="1234"
-            ).save()
+            factory_invoice_reference(invoice_id=invoice.id, invoice_number="1234").save()
         case "3_pending_credit_link":
-            factory_invoice_reference(
-                invoice_id=invoice.id, invoice_number="1234"
-            ).save()
+            factory_invoice_reference(invoice_id=invoice.id, invoice_number="1234").save()
             # Filler rows to make sure PENDING is the highest ID
             cil_1 = factory_eft_credit_invoice_link(
                 invoice_id=invoice.id,
@@ -284,14 +274,8 @@ def test_eft_invoice_refund(session, test_name):
                 status_code=EFTCreditInvoiceStatus.PENDING.value,
                 link_group_id=3,
             ).save()
-        case (
-            "4_completed_credit_link"
-            | "5_consolidated_invoice_block"
-            | "6_partial_refund_block"
-        ):
-            invoice_reference = factory_invoice_reference(
-                invoice_id=invoice.id, invoice_number="1234"
-            ).save()
+        case "4_completed_credit_link" | "5_consolidated_invoice_block" | "6_partial_refund_block":
+            invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number="1234").save()
             if test_name == "5_consolidated_invoice_block":
                 invoice_reference.is_consolidated = True
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
@@ -349,9 +333,7 @@ def test_eft_invoice_refund(session, test_name):
 
     if test_name in ("5_consolidated_invoice_block", "6_partial_refund_block"):
         with pytest.raises(BusinessException) as excinfo:
-            invoice.invoice_status_code = eft_service.process_cfs_refund(
-                invoice, payment_account, None
-            )
+            invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
             invoice.save()
         error = (
             Error.INVALID_CONSOLIDATED_REFUND.value
@@ -361,9 +343,7 @@ def test_eft_invoice_refund(session, test_name):
         assert excinfo.value.code == error[0]
         return
 
-    invoice.invoice_status_code = eft_service.process_cfs_refund(
-        invoice, payment_account, None
-    )
+    invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
     invoice.save()
 
     match test_name:
@@ -432,9 +412,7 @@ def assert_shortname_refund_history(eft_credit, eft_history, invoice):
 
 def test_eft_partner_disbursement(session):
     """Small test to assert if partner disbursement enabled a row is created."""
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.EFT.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     invoice = factory_invoice(
         payment_account=payment_account,
         status_code=InvoiceStatus.APPROVED.value,

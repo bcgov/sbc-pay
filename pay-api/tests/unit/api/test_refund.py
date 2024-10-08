@@ -70,9 +70,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
         headers=headers,
     )
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         f"/api/v1/payment-requests/{inv_id}/refunds",
@@ -92,17 +90,13 @@ def test_create_drawdown_refund(session, client, jwt, app):
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="DRAWDOWN"
-            )
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="DRAWDOWN")
         ),
         headers=headers,
     )
     inv_id = rv.json.get("id")
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         f"/api/v1/payment-requests/{inv_id}/refunds",
@@ -121,30 +115,20 @@ def test_create_eft_refund(session, client, jwt, app):
 
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="EFT"
-            )
-        ),
+        data=json.dumps(get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="EFT")),
         headers=headers,
     )
     inv_id = rv.json.get("id")
 
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="EFT"
-            )
-        ),
+        data=json.dumps(get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="EFT")),
         headers=headers,
     )
     inv_id2 = rv.json.get("id")
     factory_invoice_reference(inv_id2, invoice_number="REG3904393").save()
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         f"/api/v1/payment-requests/{inv_id}/refunds",
@@ -179,9 +163,7 @@ def test_create_pad_refund(session, client, jwt, app):
         data=json.dumps(get_unlinked_pad_account_payload(account_id=auth_account_id)),
         headers=headers,
     )
-    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        auth_account_id
-    )
+    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(pay_account.id)[0]
     cfs_account.cfs_party = "1111"
     cfs_account.cfs_account = "1111"
@@ -201,11 +183,7 @@ def test_create_pad_refund(session, client, jwt, app):
 
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_payment_method(
-                payment_method=PaymentMethod.PAD.value
-            )
-        ),
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.PAD.value)),
         headers=headers,
     )
 
@@ -217,9 +195,7 @@ def test_create_pad_refund(session, client, jwt, app):
     inv.payment_date = datetime.now(tz=timezone.utc)
     inv.save()
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         f"/api/v1/payment-requests/{inv_id}/refunds",
@@ -230,9 +206,7 @@ def test_create_pad_refund(session, client, jwt, app):
     assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["PAD.PAID"]
 
     # Assert credit is updated.
-    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        auth_account_id
-    )
+    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     credit = pay_account.credit
     assert pay_account.credit == inv_total
 
@@ -246,17 +220,13 @@ def test_create_pad_refund(session, client, jwt, app):
 
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_service_fees(corp_type="CP", filing_type="OTADD")
-        ),
+        data=json.dumps(get_payment_request_with_service_fees(corp_type="CP", filing_type="OTADD")),
         headers=headers,
     )
     assert rv.status_code == 201
     inv_total = rv.json.get("total")
 
-    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        auth_account_id
-    )
+    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     credit -= Decimal(str(inv_total))
     assert pay_account.credit == credit
 
@@ -270,11 +240,7 @@ def test_create_pad_refund(session, client, jwt, app):
 
     rv = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(
-            get_payment_request_with_payment_method(
-                payment_method=PaymentMethod.PAD.value
-            )
-        ),
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.PAD.value)),
         headers=headers,
     )
     assert rv.status_code == 201
@@ -312,9 +278,7 @@ def test_create_duplicate_refund_fails(session, client, jwt, app):
         headers=headers,
     )
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         f"/api/v1/payment-requests/{inv_id}/refunds",
@@ -344,9 +308,7 @@ def test_create_refund_with_existing_routing_slip(session, client, jwt, app):
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     payload = get_routing_slip_request()
     routingslip_amount = payload.get("payments")[0].get("paidAmount")
-    rv = client.post(
-        "/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers
-    )
+    rv = client.post("/api/v1/fas/routing-slips", data=json.dumps(payload), headers=headers)
     rs_number = rv.json.get("number")
 
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -368,10 +330,7 @@ def test_create_refund_with_existing_routing_slip(session, client, jwt, app):
     inv.payment_date = datetime.now(tz=timezone.utc)
     inv.save()
 
-    assert (
-        items[0].get("remainingAmount")
-        == payload.get("payments")[0].get("paidAmount") - total
-    )
+    assert items[0].get("remainingAmount") == payload.get("payments")[0].get("paidAmount") - total
 
     rv = client.post(
         f"/api/v1/payment-requests/{inv_id}/refunds",
@@ -379,9 +338,7 @@ def test_create_refund_with_existing_routing_slip(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 202
-    assert (
-        rv.json.get("message") == REFUND_SUCCESS_MESSAGES["INTERNAL.REFUND_REQUESTED"]
-    )
+    assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["INTERNAL.REFUND_REQUESTED"]
 
     rv = client.post(
         "/api/v1/fas/routing-slips/queries",
@@ -454,9 +411,7 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     invoice.invoice_status_code = InvoiceStatus.APPROVED.value
     invoice.save()
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         f"/api/v1/payment-requests/{inv_id}/refunds",
@@ -476,9 +431,7 @@ def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(
-                business_identifier="CP0002000", payment_method="DIRECT_PAY"
-            )
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="DIRECT_PAY")
         ),
         headers=headers,
     )
@@ -487,9 +440,7 @@ def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):
     invoice.invoice_status_code = InvoiceStatus.APPROVED.value
     invoice.save()
 
-    token = jwt.create_jwt(
-        get_claims(app_request=app, role=Role.SYSTEM.value), token_header
-    )
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     def mock_process_cfs_refund(self, invoice, payment_account, refund_partial):

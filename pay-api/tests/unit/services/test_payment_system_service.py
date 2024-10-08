@@ -34,18 +34,10 @@ def test_base_payment_system(session):
             "update_invoice": lambda self: print("Inside update_invoice"),
             "cancel_invoice": lambda self: print("Inside cancel_invoice"),
             "get_receipt": lambda self: print("Inside get_receipt"),
-            "get_payment_system_code": lambda self: print(
-                "Inside get_payment_system_code"
-            ),
-            "get_payment_method_code": lambda self: print(
-                "Inside get_payment_method_code"
-            ),
-            "get_default_invoice_status": lambda self: print(
-                "Inside get_default_invoice_status"
-            ),
-            "get_default_payment_status": lambda self: print(
-                "Inside get_default_payment_status"
-            ),
+            "get_payment_system_code": lambda self: print("Inside get_payment_system_code"),
+            "get_payment_method_code": lambda self: print("Inside get_payment_method_code"),
+            "get_default_invoice_status": lambda self: print("Inside get_default_invoice_status"),
+            "get_default_payment_status": lambda self: print("Inside get_default_payment_status"),
             "complete_post_invoice": lambda self: print("Inside complete_post_invoice"),
         },
     )()

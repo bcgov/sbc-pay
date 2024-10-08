@@ -21,9 +21,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
 from pay_api.utils.endpoints_enums import EndpointEnum
 
-bp = Blueprint(
-    "FEE_SCHEDULE", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/fees/schedules"
-)
+bp = Blueprint("FEE_SCHEDULE", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/fees/schedules")
 
 
 @bp.route("", methods=["GET", "OPTIONS"])

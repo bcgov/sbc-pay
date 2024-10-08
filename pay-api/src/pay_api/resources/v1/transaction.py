@@ -52,23 +52,17 @@ def post_transaction(invoice_id: int = None, payment_id: int = None):
     valid_format, errors = schema_utils.validate(request_json, "transaction_request")
 
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     try:
         if invoice_id:
             response, status = (
-                TransactionService.create_transaction_for_invoice(
-                    invoice_id, request_json
-                ).asdict(),
+                TransactionService.create_transaction_for_invoice(invoice_id, request_json).asdict(),
                 HTTPStatus.CREATED,
             )
         elif payment_id:
             response, status = (
-                TransactionService.create_transaction_for_payment(
-                    payment_id, request_json
-                ).asdict(),
+                TransactionService.create_transaction_for_payment(payment_id, request_json).asdict(),
                 HTTPStatus.CREATED,
             )
 
@@ -88,9 +82,7 @@ def post_transaction(invoice_id: int = None, payment_id: int = None):
 )
 @cross_origin(origins="*", methods=["GET", "PATCH"])
 @_jwt.requires_auth
-def get_transaction(
-    invoice_id: int = None, payment_id: int = None, transaction_id=None
-):
+def get_transaction(invoice_id: int = None, payment_id: int = None, transaction_id=None):
     """Get the Transaction record."""
     current_app.logger.info(
         "<Transaction.get for invoice : %s, payment : %s, transaction %s",
@@ -114,13 +106,9 @@ def get_transaction(
     "/payment-requests/<int:invoice_id>/transactions/<uuid:transaction_id>",
     methods=["PATCH"],
 )
-@bp.route(
-    "/payments/<int:payment_id>/transactions/<uuid:transaction_id>", methods=["PATCH"]
-)
+@bp.route("/payments/<int:payment_id>/transactions/<uuid:transaction_id>", methods=["PATCH"])
 @cross_origin(origins="*")
-def patch_transaction(
-    invoice_id: int = None, payment_id: int = None, transaction_id=None
-):
+def patch_transaction(invoice_id: int = None, payment_id: int = None, transaction_id=None):
     """Update the transaction record by querying payment system."""
     current_app.logger.info(
         "<patch_transaction for invoice : %s, payment : %s, transaction %s",
@@ -132,9 +120,7 @@ def patch_transaction(
 
     try:
         response, status = (
-            TransactionService.update_transaction(
-                transaction_id, pay_response_url
-            ).asdict(),
+            TransactionService.update_transaction(transaction_id, pay_response_url).asdict(),
             HTTPStatus.OK,
         )
     except BusinessException as exception:

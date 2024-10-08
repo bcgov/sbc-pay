@@ -52,9 +52,7 @@ class CfsCreditInvoices(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
+    account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
     amount_applied = db.Column(db.Numeric, nullable=False)
     # External application_id that comes straight from the CSV, looks like an identifier in an external system.
     application_id = db.Column(db.Integer, nullable=True, index=True, unique=True)
@@ -66,9 +64,7 @@ class CfsCreditInvoices(BaseModel):
         nullable=False,
         default=lambda: datetime.now(tz=timezone.utc),
     )
-    credit_id = db.Column(
-        db.Integer, ForeignKey("credits.id"), nullable=True, index=True
-    )
+    credit_id = db.Column(db.Integer, ForeignKey("credits.id"), nullable=True, index=True)
     invoice_amount = db.Column(db.Numeric, nullable=False)
     invoice_number = db.Column(db.String(50), nullable=False)
 
@@ -76,9 +72,7 @@ class CfsCreditInvoices(BaseModel):
     def credit_for_invoice_number(cls, invoice_number: str):
         """Return the credit associated with the invoice number."""
         return (
-            cls.query.with_entities(
-                func.sum(CfsCreditInvoices.amount_applied).label("credit_invoice_total")
-            )
+            cls.query.with_entities(func.sum(CfsCreditInvoices.amount_applied).label("credit_invoice_total"))
             .filter_by(invoice_number=invoice_number)
             .scalar()
         )

@@ -52,9 +52,7 @@ def test_statement_recipients_find_statement_notification(session):
         email="email",
         payment_account_id=payment_account.id,
     ).save()
-    statement_notification = (
-        StatementRecipientsService().find_statement_notification_details("1")
-    )
+    statement_notification = StatementRecipientsService().find_statement_notification_details("1")
     assert statement_notification
     assert statement_notification["recipients"]
     assert statement_notification["recipients"][0]["auth_user_id"] == 1
@@ -76,16 +74,11 @@ def test_update_statement_notification_details(session):
             }
         ]
     }
-    StatementRecipientsService().update_statement_notification_details(
-        "987", notification_details=notification_details
-    )
+    StatementRecipientsService().update_statement_notification_details("987", notification_details=notification_details)
     recipients = StatementRecipientsModel().find_all_recipients("987")
     assert recipients
     assert len(recipients) > 0
-    assert (
-        str(recipients[0].auth_user_id)
-        == notification_details["recipients"][0]["authUserId"]
-    )
+    assert str(recipients[0].auth_user_id) == notification_details["recipients"][0]["authUserId"]
     assert recipients[0].firstname == notification_details["recipients"][0]["firstname"]
     assert recipients[0].lastname == notification_details["recipients"][0]["lastname"]
     assert recipients[0].email == notification_details["recipients"][0]["email"]

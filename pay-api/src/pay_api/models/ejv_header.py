@@ -45,14 +45,8 @@ class EjvHeader(BaseModel):  # pylint: disable=too-many-instance-attributes
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    disbursement_status_code = db.Column(
-        db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True
-    )
+    disbursement_status_code = db.Column(db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True)
     ejv_file_id = db.Column(db.Integer, ForeignKey("ejv_files.id"), nullable=False)
-    partner_code = db.Column(
-        db.String(10), ForeignKey("corp_types.code"), nullable=True
-    )  # For partners
-    payment_account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True
-    )  # For gov accounts
+    partner_code = db.Column(db.String(10), ForeignKey("corp_types.code"), nullable=True)  # For partners
+    payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True)  # For gov accounts
     message = db.Column("message", db.String, nullable=True, index=False)

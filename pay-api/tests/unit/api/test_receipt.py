@@ -145,9 +145,7 @@ def test_create_pad_payment_receipt(session, client, jwt, app):
     )
     auth_account_id = rv.json.get("accountId")
     # Update the payment account as ACTIVE
-    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        auth_account_id
-    )
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
     payment_account.save()
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
@@ -202,9 +200,7 @@ def test_receipt_creation_with_invalid_request(session, client, jwt, app):
         headers=headers,
     )
     invoice_id = rv.json.get("id")
-    redirect_uri = (
-        "http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd"
-    )
+    redirect_uri = "http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd"
     receipt_number = "123451"
     rv = client.post(
         f"/api/v1/payment-requests/{invoice_id}/transactions?redirect_uri={redirect_uri}",
@@ -299,7 +295,5 @@ def test_get_receipt(session, client, jwt, app):
         headers=headers,
     )
 
-    pay_receipt = client.get(
-        f"/api/v1/payment-requests/{inovice_id}/receipts", headers=headers
-    )
+    pay_receipt = client.get(f"/api/v1/payment-requests/{inovice_id}/receipts", headers=headers)
     assert pay_receipt.status_code == 200

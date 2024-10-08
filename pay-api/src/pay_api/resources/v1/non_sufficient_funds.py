@@ -45,9 +45,7 @@ def get_non_sufficient_funds(account_id: str):
         one_of_roles=[MAKE_PAYMENT, EDIT_ROLE, VIEW_ROLE],
     )
     response, status = (
-        NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
-            account_id=account_id
-        ),
+        NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id),
         HTTPStatus.OK,
     )
     current_app.logger.debug(">get_non_sufficient_funds")
@@ -67,15 +65,9 @@ def get_non_sufficient_funds_statement_pdf(account_id: str):
         one_of_roles=[MAKE_PAYMENT, EDIT_ROLE, VIEW_ROLE],
     )
     try:
-        pdf, pdf_filename = (
-            NonSufficientFundsService.create_non_sufficient_funds_statement_pdf(
-                account_id=account_id
-            )
-        )
+        pdf, pdf_filename = NonSufficientFundsService.create_non_sufficient_funds_statement_pdf(account_id=account_id)
         response = Response(pdf, 201)
-        response.headers.set(
-            "Content-Disposition", "attachment", filename=f"{pdf_filename}.pdf"
-        )
+        response.headers.set("Content-Disposition", "attachment", filename=f"{pdf_filename}.pdf")
         response.headers.set("Content-Type", "application/pdf")
         response.headers.set("Access-Control-Expose-Headers", "Content-Disposition")
         current_app.logger.debug(">get_non_sufficient_funds_statement")

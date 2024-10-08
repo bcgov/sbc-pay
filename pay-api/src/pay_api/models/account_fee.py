@@ -60,18 +60,12 @@ class AccountFee(Audit, Versioned, BaseModel):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
+    account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
     apply_filing_fees = db.Column("apply_filing_fees", Boolean(), default=True)
-    service_fee_code = db.Column(
-        db.String(10), ForeignKey("fee_codes.code"), nullable=True
-    )
+    service_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     product = db.Column(db.String(20), nullable=True)
 
-    service_fee = relationship(
-        FeeCode, foreign_keys=[service_fee_code], lazy="joined", innerjoin=False
-    )
+    service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy="joined", innerjoin=False)
 
     @classmethod
     def find_by_account_id(cls, account_id: str):
@@ -81,14 +75,10 @@ class AccountFee(Audit, Versioned, BaseModel):
     @classmethod
     def find_by_account_id_and_product(cls, account_id: str, product: str):
         """Return by account id and product."""
-        return AccountFee.query.filter(
-            AccountFee.account_id == account_id, AccountFee.product == product
-        ).one_or_none()
+        return AccountFee.query.filter(AccountFee.account_id == account_id, AccountFee.product == product).one_or_none()
 
     @classmethod
-    def find_by_auth_account_id_and_corp_type(
-        cls, account_id: str, corp_type_code: str
-    ) -> AccountFee:
+    def find_by_auth_account_id_and_corp_type(cls, account_id: str, corp_type_code: str) -> AccountFee:
         """Return by auth account id and corp type code."""
         account_fee: AccountFee = None
         if account_id and corp_type_code:

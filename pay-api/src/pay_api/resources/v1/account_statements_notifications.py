@@ -48,9 +48,7 @@ def get_account_notifications(account_id):
         contains_role=EDIT_ROLE,
         is_premium=True,
     )
-    statement_notification_details = (
-        StatementRecipients.find_statement_notification_details(account_id)
-    )
+    statement_notification_details = StatementRecipients.find_statement_notification_details(account_id)
     response, status = statement_notification_details, HTTPStatus.OK
     current_app.logger.debug(">get_account_notifications")
     return jsonify(response), status
@@ -63,13 +61,9 @@ def post_account_notification(account_id):
     """Update the statement settings ."""
     current_app.logger.info("<post_account_notification")
     request_json = request.get_json()
-    valid_format, errors = schema_utils.validate(
-        request_json, "statement_notification_request"
-    )
+    valid_format, errors = schema_utils.validate(request_json, "statement_notification_request")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     current_app.logger.debug(request_json)
 
@@ -82,9 +76,7 @@ def post_account_notification(account_id):
     )
 
     try:
-        StatementRecipients.update_statement_notification_details(
-            account_id, request_json
-        )
+        StatementRecipients.update_statement_notification_details(account_id, request_json)
 
     except BusinessException as exception:
         return exception.response()

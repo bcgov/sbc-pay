@@ -60,18 +60,12 @@ class Credit(BaseModel):
         default=lambda: datetime.now(tz=timezone.utc),
     )
 
-    account_id = db.Column(
-        db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True
-    )
+    account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
 
     @classmethod
     def find_by_cfs_identifier(cls, cfs_identifier: str, credit_memo: bool = False):
         """Find Credit by cfs identifier."""
-        return (
-            cls.query.filter_by(cfs_identifier=cfs_identifier)
-            .filter_by(is_credit_memo=credit_memo)
-            .one_or_none()
-        )
+        return cls.query.filter_by(cfs_identifier=cfs_identifier).filter_by(is_credit_memo=credit_memo).one_or_none()
 
 
 class CreditSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors

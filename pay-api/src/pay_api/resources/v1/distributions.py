@@ -58,9 +58,7 @@ def put_fee_distribution(distribution_code_id: int):
 
     valid_format, errors = schema_utils.validate(request_json, "distribution_code")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     try:
         response, status = (
@@ -97,9 +95,7 @@ def post_fee_distribution():
 
     valid_format, errors = schema_utils.validate(request_json, "distribution_code")
     if not valid_format:
-        return error_to_response(
-            Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-        )
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     try:
         response, status = (
@@ -118,9 +114,7 @@ def get_fee_distribution_schedules(distribution_code_id: int):
     """Return all fee schedules linked to the distribution."""
     try:
         response, status = (
-            DistributionCodeService.find_fee_schedules_by_distribution_id(
-                distribution_code_id
-            ),
+            DistributionCodeService.find_fee_schedules_by_distribution_id(distribution_code_id),
             HTTPStatus.OK,
         )
 

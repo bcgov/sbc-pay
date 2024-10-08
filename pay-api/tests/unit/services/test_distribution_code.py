@@ -43,9 +43,7 @@ test_user_token = {"preferred_username": "test"}
 def test_distribution_code_saved_from_new(session, public_user_mock):
     """Assert that the fee schedule is saved to the table."""
     distribution_code_svc = services.DistributionCode()
-    distribution_code = distribution_code_svc.save_or_update(
-        get_distribution_code_payload()
-    )
+    distribution_code = distribution_code_svc.save_or_update(get_distribution_code_payload())
     assert distribution_code is not None
     assert distribution_code.get("client") == "100"
 
@@ -53,9 +51,7 @@ def test_distribution_code_saved_from_new(session, public_user_mock):
 def test_create_distribution_to_fee_link(session, public_user_mock):
     """Assert that the fee schedule is saved to the table."""
     distribution_code_svc = services.DistributionCode()
-    distribution_code = distribution_code_svc.save_or_update(
-        get_distribution_code_payload()
-    )
+    distribution_code = distribution_code_svc.save_or_update(get_distribution_code_payload())
     assert distribution_code is not None
     distribution_id = distribution_code.get("distribution_code_id")
 
@@ -64,9 +60,7 @@ def test_create_distribution_to_fee_link(session, public_user_mock):
         distribution_id,
     )
 
-    schedules = distribution_code_svc.find_fee_schedules_by_distribution_id(
-        distribution_id
-    )
+    schedules = distribution_code_svc.find_fee_schedules_by_distribution_id(distribution_id)
     assert len(schedules.get("items")) == 3
 
 
@@ -80,17 +74,13 @@ def test_update_distribution(session, public_user_mock, monkeypatch):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
 
     # Create a direct pay
-    payment_account = factory_payment_account(
-        payment_method_code=PaymentMethod.DIRECT_PAY.value
-    )
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
     payment_account.save()
 
     invoice = factory_invoice(payment_account, total=30)
     invoice.save()
     invoice_reference = factory_invoice_reference(invoice.id).save()
-    line = factory_payment_line_item(
-        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id
-    )
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
     factory_payment(
@@ -104,18 +94,14 @@ def test_update_distribution(session, public_user_mock, monkeypatch):
 
     distribution_code = distribution_code_svc.find_by_id(distribution_id)
 
-    transaction = PaymentTransactionService.create_transaction_for_invoice(
-        invoice.id, get_paybc_transaction_request()
-    )
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     def get_receipt(
         cls, payment_account, pay_response_url: str, invoice_reference
     ):  # pylint: disable=unused-argument; mocks of library methods
         return "1234567890", datetime.now(tz=timezone.utc), 30.00
 
-    monkeypatch.setattr(
-        "pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt
-    )
+    monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
 
     # Update transaction without response url, which should update the receipt
     PaymentTransactionService.update_transaction(transaction.id, pay_response_url=None)
@@ -134,6 +120,4 @@ def test_update_distribution(session, public_user_mock, monkeypatch):
     distribution_code["client"] = "001"
     distribution_code_svc.save_or_update(distribution_code, distribution_id)
     invoice = InvoiceModel.find_by_id(invoice.id)
-    assert (
-        invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value
-    )
+    assert invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value

@@ -25,9 +25,7 @@ def test_send_email(app, monkeypatch):
     """Test send email."""
     app.config["NOTIFY_API_ENDPOINT"] = "http://test_notify_api_endpoint/"
 
-    monkeypatch.setattr(
-        "pay_api.services.email_service.get_service_account_token", lambda: "test"
-    )
+    monkeypatch.setattr("pay_api.services.email_service.get_service_account_token", lambda: "test")
 
     with app.app_context():
         with patch("pay_api.services.email_service.OAuthService.post") as mock_post:

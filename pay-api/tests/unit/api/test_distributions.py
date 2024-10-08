@@ -40,9 +40,7 @@ def test_fee_schedules_for_corp_and_filing_type(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(role=Role.STAFF.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.get(
-        "/api/v1/fees/schedules?corp_type=CP&filing_type=OTANN", headers=headers
-    )
+    rv = client.get("/api/v1/fees/schedules?corp_type=CP&filing_type=OTANN", headers=headers)
     assert rv.status_code == 200
     assert len(rv.json.get("items")) == 1
 
@@ -169,13 +167,9 @@ def test_get_distribution_schedules(session, client, jwt, app):
     )
     assert rv.status_code == 201
 
-    rv = client.get(
-        f"/api/v1/fees/distributions/{distribution_id}/schedules", headers=headers
-    )
+    rv = client.get(f"/api/v1/fees/distributions/{distribution_id}/schedules", headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get("items")[0].get(
-        "feeScheduleId"
-    ) == get_distribution_schedules_payload()[0].get("feeScheduleId")
+    assert rv.json.get("items")[0].get("feeScheduleId") == get_distribution_schedules_payload()[0].get("feeScheduleId")
 
 
 def test_put_distribution_updates_invoice_status(session, client, jwt, app):

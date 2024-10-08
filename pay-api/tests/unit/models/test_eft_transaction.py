@@ -40,17 +40,13 @@ def test_eft_transaction_defaults(session):
     eft_transaction.save()
 
     eft_transaction = (
-        db.session.query(EFTTransactionModel)
-        .filter(EFTTransactionModel.id == eft_transaction.id)
-        .one_or_none()
+        db.session.query(EFTTransactionModel).filter(EFTTransactionModel.id == eft_transaction.id).one_or_none()
     )
 
     assert eft_transaction.id is not None
     assert eft_transaction.created_on is not None
     assert eft_transaction.last_updated_on is not None
-    assert eft_transaction.created_on.replace(
-        microsecond=0
-    ) == eft_transaction.last_updated_on.replace(microsecond=0)
+    assert eft_transaction.created_on.replace(microsecond=0) == eft_transaction.last_updated_on.replace(microsecond=0)
     assert eft_transaction.status_code == EFTProcessStatus.FAILED.value
     assert eft_transaction.file_id == eft_file.id
     assert eft_transaction.line_number == 1
@@ -98,9 +94,7 @@ def test_eft_file_all_attributes(session):
     assert eft_transaction is not None
     assert eft_transaction.created_on is not None
     assert eft_transaction.last_updated_on is not None
-    assert eft_transaction.created_on.replace(
-        microsecond=0
-    ) == eft_transaction.last_updated_on.replace(microsecond=0)
+    assert eft_transaction.created_on.replace(microsecond=0) == eft_transaction.last_updated_on.replace(microsecond=0)
     assert eft_transaction.status_code == EFTProcessStatus.COMPLETED.value
     assert eft_transaction.file_id == eft_file.id
     assert eft_transaction.sequence_number == sequence_number

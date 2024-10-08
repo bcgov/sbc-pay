@@ -40,11 +40,7 @@ def test_eft_refund_defaults(session):
     eft_refund.save()
 
     # Retrieve and assert the EFT refund
-    eft_refund = (
-        db.session.query(EFTRefundModel)
-        .filter(EFTRefundModel.id == eft_refund.id)
-        .one_or_none()
-    )
+    eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()
 
     assert eft_refund.id is not None
     assert eft_refund.created_on is not None
@@ -87,11 +83,7 @@ def test_eft_refund_all_attributes(session):
     )
     eft_refund.save()
 
-    eft_refund = (
-        db.session.query(EFTRefundModel)
-        .filter(EFTRefundModel.id == eft_refund.id)
-        .one_or_none()
-    )
+    eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()
 
     assert eft_refund is not None
     assert eft_refund.short_name_id == short_name.id

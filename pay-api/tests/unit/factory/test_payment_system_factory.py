@@ -48,9 +48,7 @@ def test_paybc_system_factory(session, public_user_mock):
     assert isinstance(instance, PaymentSystemService)
 
     # Test for CC and CP
-    instance = PaymentSystemFactory.create(
-        payment_method=PaymentMethod.DIRECT_PAY.value, corp_type="CP"
-    )
+    instance = PaymentSystemFactory.create(payment_method=PaymentMethod.DIRECT_PAY.value, corp_type="CP")
     assert isinstance(instance, DirectPayService)
     assert isinstance(instance, PaymentSystemService)
 
@@ -65,23 +63,17 @@ def test_paybc_system_factory(session, public_user_mock):
     assert isinstance(instance, PaymentSystemService)
 
     # Test for Direct Pay Service
-    instance = PaymentSystemFactory.create_from_payment_method(
-        PaymentMethod.DIRECT_PAY.value
-    )
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.DIRECT_PAY.value)
     assert isinstance(instance, DirectPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for Internal Service
-    instance = PaymentSystemFactory.create_from_payment_method(
-        PaymentMethod.INTERNAL.value
-    )
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.INTERNAL.value)
     assert isinstance(instance, InternalPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for BCOL Service
-    instance = PaymentSystemFactory.create_from_payment_method(
-        PaymentMethod.DRAWDOWN.value
-    )
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.DRAWDOWN.value)
     assert isinstance(instance, BcolService)
     assert isinstance(instance, PaymentSystemService)
 
@@ -145,12 +137,8 @@ def test_pad_factory_for_system_fails(session, system_user_mock):
     assert excinfo.value.code == Error.ACCOUNT_IN_PAD_CONFIRMATION_PERIOD.name
 
     time_delay = current_app.config["PAD_CONFIRMATION_PERIOD_IN_DAYS"]
-    with freeze_time(
-        datetime.now(tz=timezone.utc) + timedelta(days=time_delay + 1, minutes=1)
-    ):
-        instance = PaymentSystemFactory.create(
-            payment_method="PAD", payment_account=pad_account
-        )
+    with freeze_time(datetime.now(tz=timezone.utc) + timedelta(days=time_delay + 1, minutes=1)):
+        instance = PaymentSystemFactory.create(payment_method="PAD", payment_account=pad_account)
         assert isinstance(instance, PadService)
 
 

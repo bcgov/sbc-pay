@@ -30,16 +30,12 @@ def test_get_links(session):
     """Assert routing slip functionalities comprehensively."""
     payment_account = factory_payment_account()
     payment_account.save()
-    child_rs = factory_routing_slip(
-        payment_account_id=payment_account.id, total=10, remaining_amount=5
-    )
+    child_rs = factory_routing_slip(payment_account_id=payment_account.id, total=10, remaining_amount=5)
     child_rs.save()
 
     parent_payment_account2 = factory_payment_account()
     parent_payment_account2.save()
-    parent_rs = factory_routing_slip(
-        payment_account_id=parent_payment_account2.id, total=100, remaining_amount=50
-    )
+    parent_rs = factory_routing_slip(payment_account_id=parent_payment_account2.id, total=100, remaining_amount=50)
     parent_rs.save()
 
     links = RoutingSlip_service.get_links(child_rs.number)
@@ -54,14 +50,9 @@ def test_get_links(session):
     assert child.get("remaining_amount") == 0
 
     # do a search for parent
-    results = RoutingSlip_service.search(
-        {"routingSlipNumber": parent_rs.number}, page=1, limit=1
-    )
+    results = RoutingSlip_service.search({"routingSlipNumber": parent_rs.number}, page=1, limit=1)
     parent_rs_from_search = results.get("items")[0]
-    assert (
-        parent_rs_from_search.get("remaining_amount")
-        == child_rs.remaining_amount + parent_rs.remaining_amount
-    )
+    assert parent_rs_from_search.get("remaining_amount") == child_rs.remaining_amount + parent_rs.remaining_amount
     assert parent_rs_from_search.get("total") == parent_rs.total
 
 
@@ -83,10 +74,8 @@ def test_create_routing_slip(session, staff_user_mock):
 
     rs = RoutingSlip_service.create(routing_slip_payload)
     assert rs
-    cfs_account_model: CfsAccountModel = (
-        CfsAccountModel.find_effective_by_payment_method(
-            rs.get("payment_account").get("id"), PaymentMethod.INTERNAL.value
-        )
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
+        rs.get("payment_account").get("id"), PaymentMethod.INTERNAL.value
     )
     assert cfs_account_model.status == CfsAccountStatus.PENDING.value
 
@@ -117,10 +106,8 @@ def test_create_routing_slip_usd_one_of_payments(session, staff_user_mock):
     rs = RoutingSlip_service.create(routing_slip_payload)
     assert rs
     assert rs.get("total_usd") == 80
-    cfs_account_model: CfsAccountModel = (
-        CfsAccountModel.find_effective_by_payment_method(
-            rs.get("payment_account").get("id"), PaymentMethod.INTERNAL.value
-        )
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
+        rs.get("payment_account").get("id"), PaymentMethod.INTERNAL.value
     )
     assert cfs_account_model.status == CfsAccountStatus.PENDING.value
 
@@ -152,9 +139,7 @@ def test_create_routing_slip_usd_both_payments(session, staff_user_mock):
     rs = RoutingSlip_service.create(routing_slip_payload)
     assert rs
     assert rs.get("total_usd") == 180
-    cfs_account_model: CfsAccountModel = (
-        CfsAccountModel.find_effective_by_payment_method(
-            rs.get("payment_account").get("id"), PaymentMethod.INTERNAL.value
-        )
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
+        rs.get("payment_account").get("id"), PaymentMethod.INTERNAL.value
     )
     assert cfs_account_model.status == CfsAccountStatus.PENDING.value

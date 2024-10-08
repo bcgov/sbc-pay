@@ -186,9 +186,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     @user_context
-    def create_routing_slip_refund(
-        cls, routing_slip_number: str, request: Dict[str, str], **kwargs
-    ) -> Dict[str, str]:
+    def create_routing_slip_refund(cls, routing_slip_number: str, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create Routing slip refund."""
         current_app.logger.debug("<create Routing slip  refund")
         #
@@ -206,9 +204,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.INVALID_REQUEST)
         user_name = kwargs["user"].user_name
         if get_quantized(rs_model.remaining_amount) == 0:
-            raise BusinessException(
-                Error.INVALID_REQUEST
-            )  # refund not possible for zero amount routing slips
+            raise BusinessException(Error.INVALID_REQUEST)  # refund not possible for zero amount routing slips
 
         is_refund_finalized = refund_status in (
             RoutingSlipStatus.REFUND_AUTHORIZED.value,
@@ -257,9 +253,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     @user_context
-    def create_refund(
-        cls, invoice_id: int, request: Dict[str, str], **kwargs
-    ) -> Dict[str, str]:
+    def create_refund(cls, invoice_id: int, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create refund."""
         current_app.logger.debug(f"Starting refund : {invoice_id}")
         # Do validation by looking up the invoice
@@ -272,9 +266,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         )
 
         if invoice.invoice_status_code not in paid_statuses:
-            current_app.logger.info(
-                f"Cannot process refund as status of {invoice_id} is {invoice.invoice_status_code}"
-            )
+            current_app.logger.info(f"Cannot process refund as status of {invoice_id} is {invoice.invoice_status_code}")
             raise BusinessException(Error.INVALID_REQUEST)
 
         refund: RefundService = RefundService()
@@ -282,10 +274,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.reason = get_str_by_path(request, "reason")
         refund.requested_by = kwargs["user"].user_name
         refund.requested_date = datetime.now(tz=timezone.utc)
-        pay_system_service: PaymentSystemService = (
-            PaymentSystemFactory.create_from_payment_method(
-                payment_method=invoice.payment_method_code
-            )
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+            payment_method=invoice.payment_method_code
         )
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         refund_revenue = (request or {}).get("refundRevenue", None)
@@ -299,13 +289,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         )
         refund.flush()
         cls._save_partial_refund_lines(refund_partial_lines)
-        message = REFUND_SUCCESS_MESSAGES.get(
-            f"{invoice.payment_method_code}.{invoice.invoice_status_code}"
-        )
+        message = REFUND_SUCCESS_MESSAGES.get(f"{invoice.payment_method_code}.{invoice.invoice_status_code}")
         # set invoice status
-        invoice.invoice_status_code = (
-            invoice_status or InvoiceStatus.REFUND_REQUESTED.value
-        )
+        invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
         if invoice.invoice_status_code in (
             InvoiceStatus.REFUNDED.value,
@@ -356,8 +342,4 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def get_refund_partials_by_payment_line_item_id(payment_line_item_id: int):
         """Return refund partials by payment line item id."""
-        return (
-            db.session.query(RefundPartialModel)
-            .filter(PaymentLineItemModel.id == payment_line_item_id)
-            .all()
-        )
+        return db.session.query(RefundPartialModel).filter(PaymentLineItemModel.id == payment_line_item_id).all()

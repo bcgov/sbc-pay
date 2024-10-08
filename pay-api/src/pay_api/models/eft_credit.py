@@ -61,12 +61,8 @@ class EFTCredit(BaseModel):
     )
 
     eft_file_id = db.Column(db.Integer, ForeignKey("eft_files.id"), nullable=False)
-    short_name_id = db.Column(
-        db.Integer, ForeignKey("eft_short_names.id"), nullable=False
-    )
-    eft_transaction_id = db.Column(
-        db.Integer, ForeignKey("eft_transactions.id"), nullable=True
-    )
+    short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False)
+    eft_transaction_id = db.Column(db.Integer, ForeignKey("eft_transactions.id"), nullable=True)
 
     @classmethod
     def find_by_payment_account_id(cls, payment_account_id: int):
@@ -77,9 +73,7 @@ class EFTCredit(BaseModel):
     def get_eft_credit_balance(cls, short_name_id: int) -> Decimal:
         """Calculate pay account eft balance by account id."""
         result = (
-            cls.query.with_entities(
-                func.sum(cls.remaining_amount).label("credit_balance")
-            )
+            cls.query.with_entities(func.sum(cls.remaining_amount).label("credit_balance"))
             .filter(cls.short_name_id == short_name_id)
             .group_by(cls.short_name_id)
             .one_or_none()
@@ -88,9 +82,7 @@ class EFTCredit(BaseModel):
         return Decimal(result.credit_balance) if result else 0
 
     @classmethod
-    def get_eft_credits(
-        cls, short_name_id: int, include_zero_remaining=False
-    ) -> List[Self]:
+    def get_eft_credits(cls, short_name_id: int, include_zero_remaining=False) -> List[Self]:
         """Get EFT Credits with a remaining amount."""
         return (
             cls.query.filter(include_zero_remaining or EFTCredit.remaining_amount > 0)

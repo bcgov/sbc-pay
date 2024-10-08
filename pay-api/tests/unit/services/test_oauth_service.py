@@ -34,9 +34,7 @@ def test_get(app):
         mock_get.return_value = Mock(status_code=201)
         mock_get.return_value.json.return_value = {}
 
-        get_token_response = OAuthService.get(
-            "http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON
-        )
+        get_token_response = OAuthService.get("http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON)
 
         mock_get_token.stop()
 
@@ -51,9 +49,7 @@ def test_post(app):
         mock_get.return_value = Mock(status_code=201)
         mock_get.return_value.json.return_value = {}
 
-        get_token_response = OAuthService.post(
-            "http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON, {}
-        )
+        get_token_response = OAuthService.post("http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON, {})
 
         mock_get_token.stop()
 
@@ -68,9 +64,7 @@ def test_get_with_connection_errors(app):
         mock_get.side_effect = HTTPError()
         mock_get.return_value.json.return_value = {}
         with pytest.raises(HTTPError) as excinfo:
-            OAuthService.get(
-                "http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON
-            )
+            OAuthService.get("http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON)
         assert excinfo.type == HTTPError
         mock_get_token.stop()
 
@@ -79,18 +73,14 @@ def test_get_with_connection_errors(app):
             side_effect=ConnectionError("mocked error"),
         ):
             with pytest.raises(ServiceUnavailableException) as excinfo:
-                OAuthService.get(
-                    "http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON
-                )
+                OAuthService.get("http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON)
             assert excinfo.type == ServiceUnavailableException
         with patch(
             "pay_api.services.oauth_service.requests.Session.get",
             side_effect=ConnectTimeout("mocked error"),
         ):
             with pytest.raises(ServiceUnavailableException) as excinfo:
-                OAuthService.get(
-                    "http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON
-                )
+                OAuthService.get("http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON)
             assert excinfo.type == ServiceUnavailableException
 
 
@@ -102,9 +92,7 @@ def test_post_with_connection_errors(app):
         mock_get.side_effect = HTTPError()
         mock_get.return_value.json.return_value = {}
         with pytest.raises(HTTPError) as excinfo:
-            OAuthService.post(
-                "http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON, {}
-            )
+            OAuthService.post("http://google.com/", "", AuthHeaderType.BEARER, ContentType.JSON, {})
         assert excinfo.type == HTTPError
         mock_get_token.stop()
 

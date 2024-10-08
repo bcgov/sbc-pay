@@ -51,9 +51,7 @@ def get_account_payments(account_id: str):
     limit: int = int(request.args.get("limit", "10"))
     status: str = request.args.get("status", None)
     response, status = (
-        PaymentService.search_account_payments(
-            auth_account_id=account_id, status=status, page=page, limit=limit
-        ),
+        PaymentService.search_account_payments(auth_account_id=account_id, status=status, page=page, limit=limit),
         HTTPStatus.OK,
     )
     current_app.logger.debug(">get_account_payments")
@@ -68,20 +66,14 @@ def post_account_payment(account_id: str):
     current_app.logger.info("<post_account_payment")
     response, status = None, None
     # Check if user is authorized to perform this action
-    check_auth(
-        business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT
-    )
+    check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT)
     # If it's a staff user, then create credits.
-    if set([Role.STAFF.value, Role.CREATE_CREDITS.value]).issubset(
-        set(g.jwt_oidc_token_info.get("roles"))
-    ):
+    if set([Role.STAFF.value, Role.CREATE_CREDITS.value]).issubset(set(g.jwt_oidc_token_info.get("roles"))):
         credit_request = request.get_json()
         # Valid payment payload.
         valid_format, errors = schema_utils.validate(credit_request, "payment")
         if not valid_format:
-            return error_to_response(
-                Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors)
-            )
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         if credit_request.get("paymentMethod") in (
             PaymentMethod.EFT.value,
@@ -94,19 +86,13 @@ def post_account_payment(account_id: str):
                 HTTPStatus.CREATED,
             )
     else:
-        is_retry_payment: bool = (
-            request.args.get("retryFailedPayment", "false").lower() == "true"
-        )
+        is_retry_payment: bool = request.args.get("retryFailedPayment", "false").lower() == "true"
         pay_outstanding_balance = False
         all_invoice_statuses = False
 
         if flags.is_on("enable-eft-payment-method", default=False):
-            pay_outstanding_balance = (
-                request.args.get("payOutstandingBalance", "false").lower() == "true"
-            )
-            all_invoice_statuses = (
-                request.args.get("allInvoiceStatuses", "false").lower() == "true"
-            )
+            pay_outstanding_balance = request.args.get("payOutstandingBalance", "false").lower() == "true"
+            all_invoice_statuses = request.args.get("allInvoiceStatuses", "false").lower() == "true"
 
         response, status = (
             PaymentService.create_account_payment(
