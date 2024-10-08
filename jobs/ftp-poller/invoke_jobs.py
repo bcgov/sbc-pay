@@ -20,17 +20,16 @@ import sys
 
 import sentry_sdk
 from flask import Flask
-from sentry_sdk.integrations.flask import FlaskIntegration
 from pay_api.services.gcp_queue import queue
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
 from utils.logger import setup_logging
 
+setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.conf"))  # important to do this first
 
-setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
-
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
+def create_app(run_mode=os.getenv("FLASK_ENV", "production")):
     """Return a configured Flask App using the Factory method."""
     from pay_api.models import db, ma
 
@@ -38,13 +37,10 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
     app.config.from_object(config.CONFIGURATION[run_mode])
     # Configure Sentry
-    if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
-        if app.config.get('SENTRY_DSN', None):
-            sentry_sdk.init(
-                dsn=app.config.get('SENTRY_DSN'),
-                integrations=[FlaskIntegration()]
-            )
-    app.logger.info('<<<< Starting Ftp Poller Job >>>>')
+    if str(app.config.get("SENTRY_ENABLE")).lower() == "true":
+        if app.config.get("SENTRY_DSN", None):
+            sentry_sdk.init(dsn=app.config.get("SENTRY_DSN"), integrations=[FlaskIntegration()])
+    app.logger.info("<<<< Starting Ftp Poller Job >>>>")
     queue.init_app(app)
     ma.init_app(app)
 
@@ -58,9 +54,7 @@ def register_shellcontext(app):
 
     def shell_context():
         """Shell context objects."""
-        return {
-            'app': app
-        }  # pragma: no cover
+        return {"app": app}  # pragma: no cover
 
     app.shell_context_processor(shell_context)
 
@@ -73,19 +67,19 @@ def run(job_name):
     application = create_app()
 
     application.app_context().push()
-    if job_name == 'CAS_FTP_POLLER':
+    if job_name == "CAS_FTP_POLLER":
         CASPollerFtpTask.poll_ftp()
-        application.logger.info(f'<<<< Completed Polling CAS FTP >>>>')
-    elif job_name == 'CGI_FTP_POLLER':
+        application.logger.info(f"<<<< Completed Polling CAS FTP >>>>")
+    elif job_name == "CGI_FTP_POLLER":
         CGIFeederPollerTask.poll_ftp()
-        application.logger.info(f'<<<< Completed Polling CGI FTP >>>>')
-    elif job_name == 'EFT_FTP_POLLER':
+        application.logger.info(f"<<<< Completed Polling CGI FTP >>>>")
+    elif job_name == "EFT_FTP_POLLER":
         EFTPollerFtpTask.poll_ftp()
-        application.logger.info(f'<<<< Completed Polling EFT FTP >>>>')
+        application.logger.info(f"<<<< Completed Polling EFT FTP >>>>")
     else:
-        application.logger.debug('No valid args passed.Exiting job without running any ***************')
+        application.logger.debug("No valid args passed.Exiting job without running any ***************")
 
 
 if __name__ == "__main__":
-    print('----------------------------Scheduler Ran With Argument--', sys.argv[1])
+    print("----------------------------Scheduler Ran With Argument--", sys.argv[1])
     run(sys.argv[1])

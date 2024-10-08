@@ -17,35 +17,35 @@
 import time
 
 import pytest
+
 from invoke_jobs import create_app
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def app():
     """Return a session-wide application configured in TEST mode."""
-    return create_app('testing')
+    return create_app("testing")
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def session(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a function-scoped session."""
     with app.app_context():
         yield app
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def auto(docker_services, app):  # pylint: disable=redefined-outer-name
     """Spin up docker instances."""
-    if app.config['USE_DOCKER_MOCK']:
-        docker_services.start('proxy')
-        docker_services.start('sftp')
+    if app.config["USE_DOCKER_MOCK"]:
+        docker_services.start("proxy")
+        docker_services.start("sftp")
         time.sleep(2)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def docker_compose_files(pytestconfig):
     """Get the docker-compose.yml absolute path."""
     import os  # pylint: disable=import-outside-toplevel
-    return [
-        os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
-    ]
+
+    return [os.path.join(str(pytestconfig.rootdir), "tests/docker", "docker-compose.yml")]

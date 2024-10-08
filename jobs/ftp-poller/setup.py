@@ -16,7 +16,4 @@
 
 from setuptools import find_packages, setup
 
-setup(
-    name="ftp_poller",
-    packages=find_packages()
-)
+setup(name="ftp_poller", packages=find_packages())

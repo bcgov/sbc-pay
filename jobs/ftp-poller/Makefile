@@ -45,15 +45,27 @@ install: clean
 #################################################################################
 # COMMANDS - CI                                                                 #
 #################################################################################
-ci: lint flake8 test ## CI flow
+ci: isort-ci black-ci lint flake8 test ## CI flow
+
+isort: 
+	poetry run isort .
+
+isort-ci:
+	poetry run isort --check .
+
+black: ## Linting with black
+	poetry run black .
+
+black-ci:
+	poetry run black --check .
 
 pylint: ## Linting with pylint
-	poetry run pylint --rcfile=setup.cfg tasks tests utils
+	poetry run pylint tasks tests utils
 
 flake8: ## Linting with flake8
 	poetry run flake8 tasks tests utils
 
-lint: pylint flake8 ## run all lint type scripts
+lint: isort black pylint flake8 ## run all lint type scripts
 
 test: ## Unit testing
 	poetry run pytest
