@@ -52,11 +52,12 @@ isort:
 isort-ci:
 	poetry run isort --check .
 
-black-ci:
-	poetry run black --check .
 
 black: ## Linting with black
 	poetry run black .
+
+black-ci:
+	poetry run black --check .
 
 pylint: ## Linting with pylint
 	poetry run pylint src/$(PROJECT_NAME)
