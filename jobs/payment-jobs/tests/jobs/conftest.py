@@ -16,6 +16,7 @@
 
 import os
 import time
+from unittest.mock import Mock
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -180,3 +181,22 @@ def admin_users_mock(monkeypatch):
         }
     monkeypatch.setattr('pay_api.services.auth.get_account_admin_users',
                         get_account_admin_users)
+
+
+@pytest.fixture()
+def emails_with_keycloak_role_mock(monkeypatch):
+    """Mock auth rest call to get org admins."""
+    def get_emails_with_keycloak_role(role):
+        return 'test@email.com'
+
+    monkeypatch.setattr('tasks.eft_overpayment_notification_task.get_emails_with_keycloak_role',
+                        get_emails_with_keycloak_role)
+
+
+@pytest.fixture()
+def send_email_mock(monkeypatch):
+    """Mock send_email."""
+    send_email = Mock(return_value=True)
+    monkeypatch.setattr('tasks.eft_overpayment_notification_task.send_email',
+                        send_email)
+    return send_email
