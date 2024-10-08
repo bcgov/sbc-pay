@@ -55,8 +55,9 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(f"{statement_len} Statements with Pending notifications Found!")
         token = get_token()
 
+        image_name = current_app.config.get("REGISTRIES_LOGO_IMAGE_NAME")
         params = {
-            "logo_url": f"{current_app.config.get('AUTH_WEB_URL')}/{current_app.config.get('REGISTRIES_LOGO_IMAGE_NAME')}",
+            "logo_url": f"{current_app.config.get('AUTH_WEB_URL')}/{image_name}",
             "url": f"{current_app.config.get('AUTH_WEB_URL')}",
         }
         template = ENV.get_template("statement_notification.html")
