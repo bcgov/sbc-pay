@@ -62,7 +62,7 @@ def _get_template(template_file_name: str):
 def _render_eft_overpayment_template(params: Dict) -> str:
     """Render eft overpayment template."""
     template = _get_template('eft_overpayment.html')
-    short_name_detail_url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/short-name-details/{params['shortNameId']}"
+    short_name_detail_url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{params['shortNameId']}"
     params['shortNameDetailUrl'] = short_name_detail_url
 
     return template.render(params)

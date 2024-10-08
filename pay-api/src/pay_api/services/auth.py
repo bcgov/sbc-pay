@@ -126,8 +126,8 @@ def get_emails_with_keycloak_role(role: str) -> str:
     """Retrieve emails with the specified keycloak role."""
     users = get_users_with_keycloak_role(role)
     # Purpose of this is so our TEST users don't get hammered with emails, also our tester can easily switch this on.
-    if override_emails := flags.is_on('override-eft-refund-emails', default=False):
-        return override_emails
+    if flags.is_on('override-eft-refund-emails', default=False):
+        return flags.value('override-eft-refund-emails')
     return ','.join([user['email'] for user in users])
 
 
