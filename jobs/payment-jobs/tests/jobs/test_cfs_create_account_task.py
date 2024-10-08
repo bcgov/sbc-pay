@@ -40,7 +40,7 @@ def test_create_account_setup(session):
 def test_create_pad_account(session):
     """Test create account."""
     # Create a pending account first, then call the job
-    account = factory_create_pad_account(auth_account_id='1')
+    account = factory_create_pad_account(auth_account_id="1")
     CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
@@ -55,7 +55,7 @@ def test_create_pad_account(session):
 def test_create_eft_account(session):
     """Test create account."""
     # Create a pending account first, then call the job
-    account = factory_create_eft_account(auth_account_id='1')
+    account = factory_create_eft_account(auth_account_id="1")
     CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.EFT.value)
@@ -66,16 +66,16 @@ def test_create_eft_account(session):
 def test_create_pad_account_user_error(session):
     """Test create account."""
     # Create a pending account first, then call the job
-    account = factory_create_pad_account(auth_account_id='1')
+    account = factory_create_pad_account(auth_account_id="1")
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.PENDING.value
     mock_response = requests.models.Response()
-    mock_response.headers['CAS-Returned-Messages'] = '[Errors = [34] Bank Account Number is Invalid]'
+    mock_response.headers["CAS-Returned-Messages"] = "[Errors = [34] Bank Account Number is Invalid]"
     mock_response.status_code = 404
 
     side_effect = HTTPError(response=mock_response)
-    with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
-        with patch('pay_api.services.CFSService.create_cfs_account', side_effect=side_effect):
+    with patch.object(mailer, "publish_mailer_events") as mock_mailer:
+        with patch("pay_api.services.CFSService.create_cfs_account", side_effect=side_effect):
             CreateAccountTask.create_accounts()
             mock_mailer.assert_called
 
@@ -87,16 +87,16 @@ def test_create_pad_account_user_error(session):
 def test_create_pad_account_system_error(session):
     """Test create account."""
     # Create a pending account first, then call the job
-    account = factory_create_pad_account(auth_account_id='1')
+    account = factory_create_pad_account(auth_account_id="1")
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.PENDING.value
     mock_response = requests.models.Response()
-    mock_response.headers['CAS-Returned-Messages'] = '[CFS Down]'
+    mock_response.headers["CAS-Returned-Messages"] = "[CFS Down]"
     mock_response.status_code = 404
 
     side_effect = HTTPError(response=mock_response)
-    with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
-        with patch('pay_api.services.CFSService.create_cfs_account', side_effect=side_effect):
+    with patch.object(mailer, "publish_mailer_events") as mock_mailer:
+        with patch("pay_api.services.CFSService.create_cfs_account", side_effect=side_effect):
             CreateAccountTask.create_accounts()
             mock_mailer.assert_not_called()
 
@@ -108,7 +108,7 @@ def test_create_pad_account_system_error(session):
 def test_create_pad_account_no_confirmation_period(session):
     """Test create account.Arbitrary scenario when there is no confirmation period."""
     # Create a pending account first, then call the job
-    account = factory_create_pad_account(auth_account_id='1', confirmation_period=0)
+    account = factory_create_pad_account(auth_account_id="1", confirmation_period=0)
     CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
@@ -123,7 +123,7 @@ def test_create_pad_account_no_confirmation_period(session):
 def test_create_online_banking_account(session):
     """Test create account."""
     # Create a pending account first, then call the job
-    account = factory_create_online_banking_account(auth_account_id='2')
+    account = factory_create_online_banking_account(auth_account_id="2")
     CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
@@ -138,13 +138,13 @@ def test_create_online_banking_account(session):
 def test_update_online_banking_account(session):
     """Test update account."""
     # Create a pending account first, then call the job
-    account = factory_create_online_banking_account(auth_account_id='2')
+    account = factory_create_online_banking_account(auth_account_id="2")
     CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
 
     # Update account, which shouldn't change any details
-    OnlineBankingService().update_account(name='Test', cfs_account=cfs_account, payment_info=None)
+    OnlineBankingService().update_account(name="Test", cfs_account=cfs_account, payment_info=None)
     updated_cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
 
     assert updated_cfs_account.status == CfsAccountStatus.ACTIVE.value
@@ -154,7 +154,7 @@ def test_update_online_banking_account(session):
 def test_update_pad_account(session):
     """Test update account."""
     # Create a pending account first, then call the job
-    account = factory_create_pad_account(auth_account_id='2')
+    account = factory_create_pad_account(auth_account_id="2")
     CreateAccountTask.create_accounts()
 
     account = PaymentAccount.find_by_id(account.id)
@@ -164,11 +164,11 @@ def test_update_pad_account(session):
 
     # Now update the account.
     new_payment_details = {
-        'bankInstitutionNumber': '111',
-        'bankTransitNumber': '222',
-        'bankAccountNumber': '3333333333'
+        "bankInstitutionNumber": "111",
+        "bankTransitNumber": "222",
+        "bankAccountNumber": "3333333333",
     }
-    PadService().update_account(name='Test', cfs_account=cfs_account, payment_info=new_payment_details)
+    PadService().update_account(name="Test", cfs_account=cfs_account, payment_info=new_payment_details)
     cfs_account = CfsAccount.find_by_id(cfs_account.id)
 
     # Run the job again
@@ -176,9 +176,9 @@ def test_update_pad_account(session):
 
     updated_cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
     assert updated_cfs_account.id != cfs_account.id
-    assert updated_cfs_account.bank_account_number == new_payment_details.get('bankAccountNumber')
-    assert updated_cfs_account.bank_branch_number == new_payment_details.get('bankTransitNumber')
-    assert updated_cfs_account.bank_number == new_payment_details.get('bankInstitutionNumber')
+    assert updated_cfs_account.bank_account_number == new_payment_details.get("bankAccountNumber")
+    assert updated_cfs_account.bank_branch_number == new_payment_details.get("bankTransitNumber")
+    assert updated_cfs_account.bank_number == new_payment_details.get("bankInstitutionNumber")
 
     assert cfs_account.status == CfsAccountStatus.INACTIVE.value
     assert updated_cfs_account.status == CfsAccountStatus.ACTIVE.value

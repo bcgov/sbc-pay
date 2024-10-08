@@ -13,8 +13,8 @@
 # limitations under the License.
 """Task to update refunded invoices that have been processed by BCOL."""
 from __future__ import annotations
-from datetime import datetime, timezone
 
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Dict, List
 
@@ -44,42 +44,45 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         invoice_refs = cls._get_paydb_invoice_refs_for_update()
         if invoice_refs:
             bcol_refund_records = cls._get_colin_bcol_records_for_invoices(invoice_refs)
-            current_app.logger.debug('BCOL refunded invoice numbers: %s', bcol_refund_records)
+            current_app.logger.debug("BCOL refunded invoice numbers: %s", bcol_refund_records)
 
             if bcol_refund_records:
                 cls._compare_and_update_records(invoice_refs, bcol_refund_records)
         else:
-            current_app.logger.debug('No BCOL refunds to confirm.')
+            current_app.logger.debug("No BCOL refunds to confirm.")
 
     @classmethod
     def _get_paydb_invoice_refs_for_update(cls) -> List[InvoiceReference]:
         """Get outstanding refund requested BCOL invoice references."""
-        current_app.logger.debug('Collecting refund requested BCOL invoices...')
-        return db.session.query(InvoiceReference) \
-            .join(Invoice, Invoice.id == InvoiceReference.invoice_id) \
-            .join(Payment, Payment.invoice_number == InvoiceReference.invoice_number) \
-            .filter(Payment.payment_system_code == PaymentSystem.BCOL.value) \
-            .filter(Invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value).all()
+        current_app.logger.debug("Collecting refund requested BCOL invoices...")
+        return (
+            db.session.query(InvoiceReference)
+            .join(Invoice, Invoice.id == InvoiceReference.invoice_id)
+            .join(Payment, Payment.invoice_number == InvoiceReference.invoice_number)
+            .filter(Payment.payment_system_code == PaymentSystem.BCOL.value)
+            .filter(Invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
+            .all()
+        )
 
     @classmethod
     def _get_colin_bcol_records_for_invoices(cls, invoice_refs: List[InvoiceReference]) -> Dict[str, Decimal]:
         """Get BCOL refund records for the given invoice references."""
-        current_app.logger.debug('Refund requested BCOL invoice references: %s', invoice_refs)
+        current_app.logger.debug("Refund requested BCOL invoice references: %s", invoice_refs)
         # split invoice refs into groups of 1000
         invoice_ref_chunks = []
         for i in range(0, len(invoice_refs), 1000):
-            invoice_ref_chunks.append(invoice_refs[i:i + 1000])
+            invoice_ref_chunks.append(invoice_refs[i : i + 1000])
 
-        current_app.logger.debug('Connecting to Oracle instance...')
+        current_app.logger.debug("Connecting to Oracle instance...")
         cursor = oracle_db.connection.cursor()
 
         bcol_refunds_all = {}
 
         # do for each group of 1000 (oracle wont let you do more)
         for invoice_ref_grp in invoice_ref_chunks:
-            invoice_numbers_str = ', '.join("'" + str(x.invoice_number) + "'" for x in invoice_ref_grp)
+            invoice_numbers_str = ", ".join("'" + str(x.invoice_number) + "'" for x in invoice_ref_grp)
 
-            current_app.logger.debug('Collecting COLIN BCOL refund records...')
+            current_app.logger.debug("Collecting COLIN BCOL refund records...")
             # key == invoice_number
             bcol_refunds = cursor.execute(
                 f"""
@@ -107,10 +110,12 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
             invoice = Invoice.find_by_id(invoice_ref.invoice_id)
             if invoice.total + bcol_records[invoice_ref.invoice_number] != 0:
                 # send sentry error and skip
-                capture_message(f'Invoice refund total mismatch for {invoice_ref.invoice_number}.'
-                                f'PAY-DB: {invoice.total} COLIN-DB: {bcol_records[invoice_ref.invoice_number]}',
-                                level='error')
-                current_app.logger.error('Invoice refund total mismatch for %s', invoice_ref.invoice_number)
+                capture_message(
+                    f"Invoice refund total mismatch for {invoice_ref.invoice_number}."
+                    f"PAY-DB: {invoice.total} COLIN-DB: {bcol_records[invoice_ref.invoice_number]}",
+                    level="error",
+                )
+                current_app.logger.error("Invoice refund total mismatch for %s", invoice_ref.invoice_number)
                 continue
 
             # refund was processed and value is correct. Update invoice state and refund date

@@ -37,9 +37,11 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
         2. Activate them.
         """
         pending_pad_activation_accounts = CfsAccountModel.find_all_accounts_with_status(
-            status=CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
+            status=CfsAccountStatus.PENDING_PAD_ACTIVATION.value
+        )
         current_app.logger.info(
-            f'Found {len(pending_pad_activation_accounts)} CFS Accounts to be pending PAD activation.')
+            f"Found {len(pending_pad_activation_accounts)} CFS Accounts to be pending PAD activation."
+        )
         if len(pending_pad_activation_accounts) == 0:
             return
 
@@ -47,15 +49,15 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
 
             # check is still in the pad activation period
-            is_activation_period_over = pay_account.pad_activation_date - timedelta(hours=1) \
-                < datetime.now(tz=timezone.utc).replace(tzinfo=None)
-            current_app.logger.info(
-                f'Account {pay_account.id} ready for activation:{is_activation_period_over}')
+            is_activation_period_over = pay_account.pad_activation_date - timedelta(hours=1) < datetime.now(
+                tz=timezone.utc
+            ).replace(tzinfo=None)
+            current_app.logger.info(f"Account {pay_account.id} ready for activation:{is_activation_period_over}")
 
             if is_activation_period_over:
                 pending_account.status = CfsAccountStatus.ACTIVE.value
                 pending_account.save()
-                if flags.is_on('multiple-payment-methods', default=False) is False:
+                if flags.is_on("multiple-payment-methods", default=False) is False:
                     # If account was in another payment method, update it to pad
                     if pay_account.payment_method != PaymentMethod.PAD.value:
                         pay_account.payment_method = PaymentMethod.PAD.value

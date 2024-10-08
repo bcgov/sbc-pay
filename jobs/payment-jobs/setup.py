@@ -16,7 +16,4 @@
 
 from setuptools import find_packages, setup
 
-setup(
-    name="payment_jobs",
-    packages=find_packages()
-)
+setup(name="payment_jobs", packages=find_packages())

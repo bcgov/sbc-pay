@@ -14,8 +14,8 @@
 
 """This manages all of the email notification service."""
 import os
-from typing import Dict
 from decimal import Decimal
+from typing import Dict
 
 from attr import define
 from flask import current_app
@@ -29,40 +29,41 @@ def send_email(recipients: str, subject: str, body: str):
     """Send the email notification."""
     # Note if we send HTML in the body, we aren't sending through GCNotify, ideally we'd like to send through GCNotify.
     token = get_service_account_token()
-    current_app.logger.info(f'>send_email to recipients: {recipients}')
-    notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
+    current_app.logger.info(f">send_email to recipients: {recipients}")
+    notify_url = current_app.config.get("NOTIFY_API_ENDPOINT") + "notify/"
     notify_body = {
-        'recipients': recipients,
-        'content': {
-            'subject': subject,
-            'body': body
-        }
+        "recipients": recipients,
+        "content": {"subject": subject, "body": body},
     }
 
     try:
-        notify_response = OAuthService.post(notify_url, token=token,
-                                            auth_header_type=AuthHeaderType.BEARER,
-                                            content_type=ContentType.JSON, data=notify_body)
-        current_app.logger.info('<send_email notify_response')
+        notify_response = OAuthService.post(
+            notify_url,
+            token=token,
+            auth_header_type=AuthHeaderType.BEARER,
+            content_type=ContentType.JSON,
+            data=notify_body,
+        )
+        current_app.logger.info("<send_email notify_response")
         if notify_response:
-            current_app.logger.info(f'Successfully sent email to {recipients}')
+            current_app.logger.info(f"Successfully sent email to {recipients}")
     except Exception as e:  # NOQA pylint:disable=broad-except
-        current_app.logger.error(f'Error sending email to {recipients}: {e}')
+        current_app.logger.error(f"Error sending email to {recipients}: {e}")
 
 
 def _get_template(template_file_name: str):
     """Retrieve template."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
-    templates_dir = os.path.join(project_root_dir, 'templates')
+    templates_dir = os.path.join(project_root_dir, "templates")
     env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
     return env.get_template(template_file_name)
 
 
 def _render_eft_overpayment_template(params: Dict) -> str:
     """Render eft overpayment template."""
-    template = _get_template('eft_overpayment.html')
+    template = _get_template("eft_overpayment.html")
     short_name_detail_url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{params['shortNameId']}"
-    params['shortNameDetailUrl'] = short_name_detail_url
+    params["shortNameDetailUrl"] = short_name_detail_url
 
     return template.render(params)

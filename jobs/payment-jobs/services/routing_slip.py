@@ -32,26 +32,31 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
             identifier=pay_account.name,
             contact_info={},
             site_name=routing_slip.number,
-            is_fas=True
+            is_fas=True,
         )
-        cfs_account.cfs_account = cfs_account_details.get('account_number')
-        cfs_account.cfs_party = cfs_account_details.get('party_number')
-        cfs_account.cfs_site = cfs_account_details.get('site_number')
+        cfs_account.cfs_account = cfs_account_details.get("account_number")
+        cfs_account.cfs_party = cfs_account_details.get("party_number")
+        cfs_account.cfs_site = cfs_account_details.get("site_number")
         cfs_account.status = CfsAccountStatus.ACTIVE.value
         cfs_account.payment_method = PaymentMethod.INTERNAL.value
-        CFSService.create_cfs_receipt(cfs_account=cfs_account,
-                                      rcpt_number=routing_slip.number,
-                                      rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
-                                      amount=routing_slip.total,
-                                      payment_method=pay_account.payment_method,
-                                      access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
+        CFSService.create_cfs_receipt(
+            cfs_account=cfs_account,
+            rcpt_number=routing_slip.number,
+            rcpt_date=routing_slip.routing_slip_date.strftime("%Y-%m-%d"),
+            amount=routing_slip.total,
+            payment_method=pay_account.payment_method,
+            access_token=CFSService.get_token(PaymentSystem.FAS).json().get("access_token"),
+        )
         cfs_account.commit()
         return
 
     except Exception as e:  # NOQA # pylint: disable=broad-except
 
-        capture_message(f'Error on creating Routing Slip CFS Account: account id={pay_account.id}, '
-                        f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
+        capture_message(
+            f"Error on creating Routing Slip CFS Account: account id={pay_account.id}, "
+            f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}",
+            level="error",
+        )
         current_app.logger.error(e)
         cfs_account.rollback()
         return

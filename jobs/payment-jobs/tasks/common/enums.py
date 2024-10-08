@@ -18,8 +18,8 @@ from enum import Enum
 class PaymentDetailsGlStatus(Enum):
     """Payment details GL status."""
 
-    PAID = 'PAID'
-    INPRG = 'INPRG'
-    RJCT = 'RJCT'  # Should have refundglerrormessage
-    CMPLT = 'CMPLT'
-    DECLINED = 'DECLINED'
+    PAID = "PAID"
+    INPRG = "INPRG"
+    RJCT = "RJCT"  # Should have refundglerrormessage
+    CMPLT = "CMPLT"
+    DECLINED = "DECLINED"

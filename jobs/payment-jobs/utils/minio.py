@@ -21,16 +21,25 @@ from urllib3 import HTTPResponse
 
 def put_object(value_as_bytes, file_name: str, file_size: int = 0):
     """Return a pre-signed URL for new doc upload."""
-    current_app.logger.debug(f'Creating pre-signed URL for {file_name}')
+    current_app.logger.debug(f"Creating pre-signed URL for {file_name}")
     minio_client: Minio = _get_client()
     value_as_stream = io.BytesIO(value_as_bytes)
-    minio_client.put_object(current_app.config.get('MINIO_BUCKET_NAME'), file_name, value_as_stream, file_size)
+    minio_client.put_object(
+        current_app.config.get("MINIO_BUCKET_NAME"),
+        file_name,
+        value_as_stream,
+        file_size,
+    )
 
 
 def _get_client() -> Minio:
     """Return a minio client."""
-    minio_endpoint = current_app.config.get('MINIO_ENDPOINT')
-    minio_key = current_app.config.get('MINIO_ACCESS_KEY')
-    minio_secret = current_app.config.get('MINIO_ACCESS_SECRET')
-    return Minio(minio_endpoint, access_key=minio_key, secret_key=minio_secret,
-                 secure=current_app.config.get('MINIO_SECURE'))
+    minio_endpoint = current_app.config.get("MINIO_ENDPOINT")
+    minio_key = current_app.config.get("MINIO_ACCESS_KEY")
+    minio_secret = current_app.config.get("MINIO_ACCESS_SECRET")
+    return Minio(
+        minio_endpoint,
+        access_key=minio_key,
+        secret_key=minio_secret,
+        secure=current_app.config.get("MINIO_SECURE"),
+    )

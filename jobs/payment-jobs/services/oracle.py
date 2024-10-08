@@ -19,6 +19,7 @@ import cx_Oracle
 from flask import current_app
 from flask.globals import app_ctx
 
+
 class OracleDB:
     """Oracle database connection object for re-use in application."""
 
@@ -41,7 +42,7 @@ class OracleDB:
         """Oracle session pool cleans up after itself."""
         if not ctx:
             ctx = app_ctx
-        if hasattr(ctx, '_oracle_pool'):
+        if hasattr(ctx, "_oracle_pool"):
             ctx._oracle_pool.close()  # pylint: disable=protected-access
 
     @staticmethod
@@ -56,21 +57,25 @@ class OracleDB:
             cursor = conn.cursor()
             cursor.execute("alter session set TIME_ZONE = 'America/Vancouver'")
 
-        return cx_Oracle.SessionPool(user=current_app.config.get('ORACLE_USER'),  # pylint:disable=c-extension-no-member
-                                     password=current_app.config.get('ORACLE_PASSWORD'),
-                                     dsn='{0}:{1}/{2}'.format(current_app.config.get('ORACLE_HOST'),
-                                                              current_app.config.get('ORACLE_PORT'),
-                                                              current_app.config.get('ORACLE_DB_NAME')),
-                                     min=1,
-                                     max=10,
-                                     increment=1,
-                                     threaded=True,  # wraps the underlying calls in a Mutex
-                                     getmode=cx_Oracle.SPOOL_ATTRVAL_NOWAIT,  # pylint:disable=c-extension-no-member
-                                     waitTimeout=1500,
-                                     timeout=3600,
-                                     sessionCallback=init_session,
-                                     encoding='UTF-8',
-                                     nencoding='UTF-8')
+        return cx_Oracle.SessionPool(
+            user=current_app.config.get("ORACLE_USER"),  # pylint:disable=c-extension-no-member
+            password=current_app.config.get("ORACLE_PASSWORD"),
+            dsn="{0}:{1}/{2}".format(
+                current_app.config.get("ORACLE_HOST"),
+                current_app.config.get("ORACLE_PORT"),
+                current_app.config.get("ORACLE_DB_NAME"),
+            ),
+            min=1,
+            max=10,
+            increment=1,
+            threaded=True,  # wraps the underlying calls in a Mutex
+            getmode=cx_Oracle.SPOOL_ATTRVAL_NOWAIT,  # pylint:disable=c-extension-no-member
+            waitTimeout=1500,
+            timeout=3600,
+            sessionCallback=init_session,
+            encoding="UTF-8",
+            nencoding="UTF-8",
+        )
 
     @property
     def connection(self):  # pylint: disable=inconsistent-return-statements
@@ -83,7 +88,7 @@ class OracleDB:
         """
         ctx = app_ctx
         if ctx is not None:
-            if not hasattr(ctx, '_oracle_pool'):
+            if not hasattr(ctx, "_oracle_pool"):
                 ctx._oracle_pool = self._create_pool()  # pylint: disable = protected-access; need this method
             return ctx._oracle_pool.acquire()  # pylint: disable = protected-access; need this method
 
