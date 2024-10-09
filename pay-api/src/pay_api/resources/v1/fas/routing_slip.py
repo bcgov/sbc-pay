@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for Account payments endpoints."""
+import re
 from http import HTTPStatus
 
 from flask import Blueprint, Response, current_app, jsonify, request
@@ -85,6 +86,10 @@ def post_search_routing_slips():
 def post_routing_slip_report(date: str):
     """Create routing slip report."""
     current_app.logger.info("<post_routing_slip_report")
+
+    # Validate the date parameter to ensure it matches the expected format (YYYY-MM-DD)
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", date):
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=["date"])
 
     pdf, file_name = RoutingSlipService.create_daily_reports(date)
 
