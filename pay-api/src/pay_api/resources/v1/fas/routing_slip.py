@@ -15,6 +15,7 @@
 from http import HTTPStatus
 
 from flask import Blueprint, Response, current_app, jsonify, request
+import re
 from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
@@ -85,6 +86,10 @@ def post_search_routing_slips():
 def post_routing_slip_report(date: str):
     """Create routing slip report."""
     current_app.logger.info("<post_routing_slip_report")
+
+    # Validate the date parameter to ensure it matches the expected format (YYYY-MM-DD)
+    if not re.match(r'^\d{4}-\d{2}-\d{2}$', date):
+        return error_to_response(Error.INVALID_REQUEST, message="Invalid date format. Expected YYYY-MM-DD.")
 
     pdf, file_name = RoutingSlipService.create_daily_reports(date)
 
