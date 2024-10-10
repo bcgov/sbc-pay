@@ -114,11 +114,7 @@ class EFTRefund:
                 latest_disbursement.status_code = DisbursementStatus.CANCELLED.value
                 latest_disbursement.processed_on = datetime.now(tz=timezone.utc)
                 latest_disbursement.flush()
-            case (
-                DisbursementStatus.COMPLETED.value
-                | DisbursementStatus.ERRORED.value
-                | DisbursementStatus.UPLOADED.value
-            ):
+            case _:
                 # We'll assume errored should be fixed in the future.
                 PartnerDisbursementsModel(
                     amount=invoice.total - invoice.service_fees,
