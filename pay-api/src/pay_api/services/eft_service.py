@@ -290,16 +290,9 @@ class EftService(DepositService):
         for invoice, total_amount in invoice_disbursements.items():
             if total_amount != invoice.total:
                 raise BusinessException(Error.EFT_PARTIAL_REFUND)
+            if invoice.total - invoice.service_fees > 0:
+                EFTRefundService.handle_partner_disbursement_rows(invoice)
 
-            if total_amount - invoice.service_fees > 0:
-                PartnerDisbursementsModel(
-                    amount=total_amount - invoice.service_fees,
-                    is_reversal=True,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                    target_id=invoice.id,
-                    target_type=EJVLinkType.INVOICE.value,
-                ).flush()
         statement = StatementModel.find_by_id(statement_id)
         EFTHistoryService.create_statement_reverse(
             EFTHistory(
