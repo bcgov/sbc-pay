@@ -24,7 +24,7 @@ depends_on = None
 
 def upgrade():
     op.execute(
-        f"update partner_disbursements set status_code = '{DisbursementStatus.WAITING_FOR_JOB.value}' where status = 'WAITING_FOR_RECEIPT'"
+        f"update partner_disbursements set status_code = '{DisbursementStatus.WAITING_FOR_JOB.value}' where status_code = 'WAITING_FOR_RECEIPT'"
     )
 
 
