@@ -11,7 +11,7 @@ from tests.utilities.base_test import factory_invoice, factory_partner_disbursem
 
 
 def setup_data() -> InvoiceModel:
-    """Setup data for testing."""
+    """Get THAT data setup."""
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account, total=8.5, service_fees=1.5).save()
     corp_type = CorpTypeModel.find_by_code("CP")
