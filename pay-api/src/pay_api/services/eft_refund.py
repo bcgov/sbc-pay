@@ -109,20 +109,25 @@ class EFTRefund:
             current_app.logger.error(f"Duplicate Existing Partner Disbursement Reversal for invoice {invoice.id}")
             return
 
-        if latest_disbursement.status_code == DisbursementStatus.WAITING_FOR_JOB.value:
-            latest_disbursement.status_code = DisbursementStatus.CANCELLED.value
-            latest_disbursement.processed_on = datetime.now(tz=timezone.utc)
-            latest_disbursement.flush()
-        # We'll assume errored should be fixed in the future.
-        if latest_disbursement.status_code in [DisbursementStatus.ERRORED.value, DisbursementStatus.COMPLETED.value]:
-            PartnerDisbursementsModel(
-                amount=invoice.total - invoice.service_fees,
-                is_reversal=True,
-                partner_code=invoice.corp_type_code,
-                status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                target_id=invoice.id,
-                target_type=EJVLinkType.INVOICE.value,
-            ).flush()
+        match latest_disbursement.status_code:
+            case DisbursementStatus.WAITING_FOR_JOB.value:
+                latest_disbursement.status_code = DisbursementStatus.CANCELLED.value
+                latest_disbursement.processed_on = datetime.now(tz=timezone.utc)
+                latest_disbursement.flush()
+            case (
+                DisbursementStatus.COMPLETED.value
+                | DisbursementStatus.ERRORED.value
+                | DisbursementStatus.UPLOADED.value
+            ):
+                # We'll assume errored should be fixed in the future.
+                PartnerDisbursementsModel(
+                    amount=invoice.total - invoice.service_fees,
+                    is_reversal=True,
+                    partner_code=invoice.corp_type_code,
+                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                    target_id=invoice.id,
+                    target_type=EJVLinkType.INVOICE.value,
+                ).flush()
 
     @staticmethod
     def handle_invoice_refund(
