@@ -137,6 +137,7 @@ extend-exclude = '''
   migrations
   | devops
   | .history
+  | lib
 )/
 '''
 
