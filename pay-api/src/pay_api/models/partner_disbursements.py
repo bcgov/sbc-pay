@@ -76,3 +76,12 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
     def find_by_target(cls, target_id: int, target_type: str):
         """Find the Partner Disbursement by target."""
         return cls.query.filter_by(target_id=target_id, target_type=target_type).first()
+
+    @classmethod
+    def find_by_target_latest(cls, target_id: int, target_type: str):
+        """Find the latest Partner Disbursement by target."""
+        return (
+            cls.query.filter_by(target_id=target_id, target_type=target_type)
+            .order_by(PartnerDisbursements.id.desc())
+            .first()
+        )
