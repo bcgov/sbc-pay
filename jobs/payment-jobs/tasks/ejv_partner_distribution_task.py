@@ -151,6 +151,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     PartnerDisbursementsModel.target_type == EJVLinkType.INVOICE.value,
                 ),
             )
+            .join(InvoiceModel, InvoiceModel.id == PaymentLineItemModel.invoice_id)
             .join(
                 DistributionCodeModel,
                 DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
