@@ -59,6 +59,7 @@ from .eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from .email_service import _render_payment_reversed_template, send_email
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
+from .partner_disbursements import PartnerDisbursements
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .statement import Statement as StatementService
@@ -290,8 +291,7 @@ class EftService(DepositService):
         for invoice, total_amount in invoice_disbursements.items():
             if total_amount != invoice.total:
                 raise BusinessException(Error.EFT_PARTIAL_REFUND)
-            if invoice.total - invoice.service_fees > 0:
-                EFTRefundService.handle_partner_disbursement_rows(invoice)
+            PartnerDisbursements.handle_reversal(invoice)
 
         statement = StatementModel.find_by_id(statement_id)
         EFTHistoryService.create_statement_reverse(
@@ -478,6 +478,9 @@ class EftService(DepositService):
             credit_invoice_link.save_or_add(auto_save)
             eft_credit.remaining_amount = 0
             eft_credit.save_or_add(auto_save)
+
+        if invoice_balance == 0:
+            PartnerDisbursements.handle_payment(invoice)
 
     @staticmethod
     def process_owing_statements(short_name_id: int, auth_account_id: str, is_new_link: bool = False):

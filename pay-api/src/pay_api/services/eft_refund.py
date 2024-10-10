@@ -1,6 +1,5 @@
 """Module for EFT refunds that go tghrough the AP module via EFT."""
 
-from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List
 
@@ -8,24 +7,21 @@ from flask import current_app
 
 from pay_api.dtos.eft_shortname import EFTShortNameRefundGetRequest, EFTShortNameRefundPatchRequest
 from pay_api.exceptions import BusinessException, Error
-from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentAccount
 from pay_api.models.eft_credit import EFTCredit as EFTCreditModel
 from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.email_service import ShortNameRefundEmailContent, send_email
+from pay_api.services.partner_disbursements import PartnerDisbursements
 from pay_api.utils.enums import (
-    DisbursementStatus,
     EFTCreditInvoiceStatus,
     EFTHistoricalTypes,
     EFTShortnameRefundStatus,
-    EJVLinkType,
     InvoiceStatus,
     Role,
 )
@@ -94,38 +90,6 @@ class EFTRefund:
         return EFTRefundModel.find_by_id(refund_id)
 
     @staticmethod
-    def handle_partner_disbursement_rows(invoice: InvoiceModel):
-        """Handle partner disbursement rows."""
-        if invoice.total - invoice.service_fees <= 0:
-            return
-        corp_type = CorpTypeModel.find_by_code(invoice.corp_type_code)
-        if corp_type.has_partner_disbursements is False:
-            return
-        latest_disbursement = PartnerDisbursementsModel.find_by_target_latest(invoice.id, EJVLinkType.INVOICE.value)
-        if not latest_disbursement:
-            current_app.logger.error(f"Existing Partner Disbursement Payment not found for invoice {invoice.id}")
-            return
-        if latest_disbursement.is_reversal is True:
-            current_app.logger.error(f"Duplicate Existing Partner Disbursement Reversal for invoice {invoice.id}")
-            return
-
-        match latest_disbursement.status_code:
-            case DisbursementStatus.WAITING_FOR_JOB.value:
-                latest_disbursement.status_code = DisbursementStatus.CANCELLED.value
-                latest_disbursement.processed_on = datetime.now(tz=timezone.utc)
-                latest_disbursement.flush()
-            case _:
-                # We'll assume errored should be fixed in the future.
-                PartnerDisbursementsModel(
-                    amount=invoice.total - invoice.service_fees,
-                    is_reversal=True,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                    target_id=invoice.id,
-                    target_type=EJVLinkType.INVOICE.value,
-                ).flush()
-
-    @staticmethod
     def handle_invoice_refund(
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
@@ -170,7 +134,7 @@ class EFTRefund:
                 if reversal_total != invoice.total:
                     raise BusinessException(Error.EFT_PARTIAL_REFUND)
 
-        EFTRefund.handle_partner_disbursement_rows(invoice)
+        PartnerDisbursements.handle_reversal(invoice)
         current_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:
             short_name_history = EFTHistoryModel.find_by_related_group_link_id(latest_link.link_group_id)
