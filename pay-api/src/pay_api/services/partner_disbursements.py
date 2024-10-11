@@ -18,7 +18,7 @@ class PartnerDisbursements:
         """Determine if partner disbursement should be skipped."""
         return (
             invoice.total - invoice.service_fees <= 0
-            or CorpTypeModel.find_by_code(invoice.corp_type_code).has_partner_disbursements is False
+            or bool(CorpTypeModel.find_by_code(invoice.corp_type_code).has_partner_disbursements) is False
         )
 
     @staticmethod
