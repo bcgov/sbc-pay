@@ -100,16 +100,7 @@ class EftService(DepositService):
     ) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
-        if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-            if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:
-                PartnerDisbursementsModel(
-                    amount=invoice.total - invoice.service_fees,
-                    is_reversal=False,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_JOB.value,
-                    target_id=invoice.id,
-                    target_type=EJVLinkType.INVOICE.value,
-                ).flush()
+        PartnerDisbursements.handle_payment(invoice)
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
