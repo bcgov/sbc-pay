@@ -96,6 +96,9 @@ class EFTRefund:
         cils: List[EFTCreditInvoiceLinkModel],
     ) -> InvoiceStatus:
         """Create EFT Short name funds received historical record."""
+        if invoice.invoice_status_code == InvoiceStatus.PAID.value:
+            PartnerDisbursements.handle_reversal(invoice)
+
         # 2. No EFT Credit Link - Job needs to reverse invoice in CFS
         # (Invoice needs to be reversed, receipt doesn't exist.)
         if not cils:
@@ -134,7 +137,6 @@ class EFTRefund:
                 if reversal_total != invoice.total:
                     raise BusinessException(Error.EFT_PARTIAL_REFUND)
 
-        PartnerDisbursements.handle_reversal(invoice)
         current_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:
             short_name_history = EFTHistoryModel.find_by_related_group_link_id(latest_link.link_group_id)
