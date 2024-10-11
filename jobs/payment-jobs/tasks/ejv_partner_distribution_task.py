@@ -156,7 +156,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 DistributionCodeModel,
                 DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
             )
-            .filter(PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_RECEIPT.value)
+            .filter(PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value)
             .filter(PartnerDisbursementsModel.partner_code == partner.code)
             .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None))
             .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()))

@@ -129,7 +129,7 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
         amount=10,
         is_reversal=False,
         partner_code=eft_invoice.corp_type_code,
-        status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
         target_id=eft_invoice.id,
         target_type=EJVLinkType.INVOICE.value,
     ).save()
@@ -299,7 +299,7 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
         amount=10,
         is_reversal=False,
         partner_code=eft_invoice.corp_type_code,
-        status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
         target_id=eft_invoice.id,
         target_type=EJVLinkType.INVOICE.value,
     ).save()
@@ -476,7 +476,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
         amount=10,
         is_reversal=True,
         partner_code=eft_invoice.corp_type_code,
-        status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
+        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
         target_id=eft_invoice.id,
         target_type=EJVLinkType.INVOICE.value,
     ).save()

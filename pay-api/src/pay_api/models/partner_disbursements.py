@@ -23,6 +23,8 @@ This is used in three different distinct flows for EFT only currently (provided 
 
 from datetime import datetime, timezone
 
+from pay_api.utils.enums import DisbursementStatus
+
 from .base_model import BaseModel
 from .db import db
 
@@ -76,3 +78,13 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
     def find_by_target(cls, target_id: int, target_type: str):
         """Find the Partner Disbursement by target."""
         return cls.query.filter_by(target_id=target_id, target_type=target_type).first()
+
+    @classmethod
+    def find_by_target_latest_exclude_cancelled(cls, target_id: int, target_type: str):
+        """Find the latest Partner Disbursement by target."""
+        return (
+            cls.query.filter_by(target_id=target_id, target_type=target_type)
+            .filter(PartnerDisbursements.status_code != DisbursementStatus.CANCELLED.value)
+            .order_by(PartnerDisbursements.id.desc())
+            .first()
+        )

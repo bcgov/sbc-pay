@@ -132,7 +132,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def _send_notifications(cls):
         """Send over payment notification."""
-        if cls.short_names == {}:
+        if not cls.short_names:
             return
 
         qualified_receiver_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND.value)

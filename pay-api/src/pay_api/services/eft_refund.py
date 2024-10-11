@@ -7,12 +7,10 @@ from flask import current_app
 
 from pay_api.dtos.eft_shortname import EFTShortNameRefundGetRequest, EFTShortNameRefundPatchRequest
 from pay_api.exceptions import BusinessException, Error
-from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentAccount
 from pay_api.models.eft_credit import EFTCredit as EFTCreditModel
 from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -20,11 +18,9 @@ from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.email_service import ShortNameRefundEmailContent, send_email
 from pay_api.utils.enums import (
-    DisbursementStatus,
     EFTCreditInvoiceStatus,
     EFTHistoricalTypes,
     EFTShortnameRefundStatus,
-    EJVLinkType,
     InvoiceStatus,
     Role,
 )
@@ -136,17 +132,6 @@ class EFTRefund:
 
                 if reversal_total != invoice.total:
                     raise BusinessException(Error.EFT_PARTIAL_REFUND)
-
-                if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-                    if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:
-                        PartnerDisbursementsModel(
-                            amount=invoice.total - invoice.service_fees,
-                            is_reversal=True,
-                            partner_code=invoice.corp_type_code,
-                            status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
-                            target_id=invoice.id,
-                            target_type=EJVLinkType.INVOICE.value,
-                        ).flush()
 
         current_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:
