@@ -22,7 +22,7 @@ class PartnerDisbursements:
         )
 
     @staticmethod
-    def handle_payment(invoice: InvoiceModel, is_apply_credit=False):
+    def handle_payment(invoice: InvoiceModel):
         """Insert a partner disbursement row if necessary with is_reversal as False."""
         if PartnerDisbursements._skip_partner_disbursement(invoice):
             return
