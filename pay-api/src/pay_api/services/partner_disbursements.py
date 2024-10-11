@@ -22,7 +22,7 @@ class PartnerDisbursements:
         )
 
     @staticmethod
-    def handle_payment(invoice: InvoiceModel):
+    def handle_payment(invoice: InvoiceModel, is_apply_credit=False):
         """Insert a partner disbursement row if necessary with is_reversal as False."""
         if PartnerDisbursements._skip_partner_disbursement(invoice):
             return
@@ -40,8 +40,10 @@ class PartnerDisbursements:
                 target_id=invoice.id,
                 target_type=EJVLinkType.INVOICE.value,
             ).flush()
-        elif latest_active_disbursement.is_reversal is False:
-            current_app.logger.error(f"Duplicate Existing Partner Disbursement Payment for invoice {invoice.id}")
+        else:
+            # If this was already called at invoice creation, it might be called again when mapping credits.
+            # If we're mapping credits after invoice creation, we don't want to create a new row.
+            current_app.logger.info(f"Skipping Partner Disbursement Payment creation for {invoice.id} already exists.")
 
     @staticmethod
     def handle_reversal(invoice: InvoiceModel):
