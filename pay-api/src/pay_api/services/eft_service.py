@@ -29,7 +29,6 @@ from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
@@ -39,9 +38,7 @@ from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.enums import (
     CfsAccountStatus,
-    DisbursementStatus,
     EFTCreditInvoiceStatus,
-    EJVLinkType,
     InvoiceReferenceStatus,
     InvoiceStatus,
     PaymentMethod,

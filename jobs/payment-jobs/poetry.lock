@@ -2105,7 +2105,7 @@ werkzeug = "3.0.3"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "partner_disbursement_fixes"
-resolved_reference = "80f51e0da10cef2fae68283042f09a0aed0979ed"
+resolved_reference = "9803db9dbd0a06f3d520adad2b5dae930f9ab5e8"
 subdirectory = "pay-api"
 
 [[package]]
