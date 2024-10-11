@@ -17,7 +17,6 @@ from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink as EFTCr
 from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.email_service import ShortNameRefundEmailContent, send_email
-from pay_api.services.partner_disbursements import PartnerDisbursements
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus,
     EFTHistoricalTypes,
@@ -96,8 +95,6 @@ class EFTRefund:
         cils: List[EFTCreditInvoiceLinkModel],
     ) -> InvoiceStatus:
         """Create EFT Short name funds received historical record."""
-        PartnerDisbursements.handle_reversal(invoice)
-
         # 2. No EFT Credit Link - Job needs to reverse invoice in CFS
         # (Invoice needs to be reversed, receipt doesn't exist.)
         if not cils:

@@ -148,6 +148,7 @@ class EftService(DepositService):
         refund_partial: List[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
+        PartnerDisbursements.handle_reversal(invoice)
         cils = EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)
         # 1. Possible to have no CILs and no invoice_reference, nothing to reverse.
         if (
