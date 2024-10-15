@@ -260,8 +260,8 @@ class EFTRefund:
             cas_supplier_number=get_str_by_path(request, "casSupplierNum"),
             refund_email=get_str_by_path(request, "refundEmail"),
             comment=comment,
-        )
-        refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
+            status=EFTShortnameRefundStatus.PENDING_APPROVAL.value
+        ) 
         refund.flush()
         return refund
 
