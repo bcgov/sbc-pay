@@ -1045,6 +1045,7 @@ def test_post_shortname_refund_success(db, session, client, jwt, emails_with_key
     assert eft_refund.cas_supplier_number == "CAS123"
     assert eft_refund.refund_email == "test@example.com"
     assert eft_refund.comment == "Refund for overpayment"
+    assert eft_refund.status == EFTShortnameRefundStatus.PENDING_APPROVAL.value
 
     history_record = db.session.query(EFTShortnamesHistoryModel).one_or_none()
     assert history_record is not None
