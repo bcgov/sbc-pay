@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any, Dict, List
 
 from flask import current_app
@@ -338,12 +339,12 @@ class EftService(DepositService):
 
     @staticmethod
     @user_context
-    def _send_reversed_payment_notification(statement: StatementModel, reversed_amount, **kwargs):
+    def _send_reversed_payment_notification(statement: StatementModel, reversed_amount: Decimal, **kwargs):
         payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
         summary_dict: dict = StatementService.get_summary(payment_account.auth_account_id)
 
         due_date = StatementService.calculate_due_date(statement.to_date)
-        outstanding_balance = summary_dict["total_due"] + reversed_amount
+        outstanding_balance = Decimal(str(summary_dict["total_due"])) + reversed_amount
         email_params = {
             "accountId": payment_account.auth_account_id,
             "accountName": payment_account.name,
@@ -366,7 +367,6 @@ class EftService(DepositService):
             recipients=recipients,
             subject="Outstanding Balance Adjustment Notice",
             body=_render_payment_reversed_template(email_params),
-            **kwargs,
         )
 
     @staticmethod

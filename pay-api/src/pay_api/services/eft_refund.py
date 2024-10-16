@@ -71,7 +71,7 @@ class EFTRefund:
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
             url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{short_name_id}",
         ).render_body()
-        send_email(qualified_receiver_recipients, subject, html_body, **kwargs)
+        send_email(qualified_receiver_recipients, subject, html_body)
         history.save()
         refund.save()
 
