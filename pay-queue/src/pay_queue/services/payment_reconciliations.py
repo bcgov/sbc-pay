@@ -475,7 +475,7 @@ def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]
 
 def _handle_credit_invoices_and_adjust_invoice_paid(row):
     """Create CfsCreditInvoices and adjust the invoice paid amount."""
-    application_id = _get_row_value(row, Column.APP_ID)
+    application_id = int(_get_row_value(row, Column.APP_ID))
     cfs_identifier = _get_row_value(row, Column.SOURCE_TXN_NO)
     if CfsCreditInvoices.find_by_application_id(application_id):
         current_app.logger.warning(f"Credit invoices exists with application_id {application_id}.")
