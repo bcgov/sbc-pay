@@ -436,7 +436,6 @@ class EftService(DepositService):
             .filter(StatementInvoicesModel.statement_id == statement_id)
             .filter(EFTCreditModel.short_name_id == shortname_id)
             .filter(EFTCreditInvoiceLinkModel.status_code != EFTCreditInvoiceStatus.CANCELLED.value)
-            .filter(EFTCreditInvoiceLinkModel.link_group_id == max(EFTCreditInvoiceLinkModel.link_group_id))
             .order_by(
                 EFTCreditInvoiceLinkModel.invoice_id.desc(),
                 EFTCreditInvoiceLinkModel.created_on.desc(),
