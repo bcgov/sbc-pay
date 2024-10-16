@@ -409,7 +409,6 @@ class EftService(DepositService):
         """Get most recent EFT Credit invoice links associated to a statement and short name."""
         query = (
             db.session.query(EFTCreditInvoiceLinkModel)
-            .distinct(EFTCreditInvoiceLinkModel.invoice_id)
             .join(
                 EFTCreditModel,
                 EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id,
