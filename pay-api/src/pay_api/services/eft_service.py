@@ -407,6 +407,15 @@ class EftService(DepositService):
     @staticmethod
     def get_statement_credit_invoice_links(shortname_id, statement_id) -> List[EFTCreditInvoiceLinkModel]:
         """Get most recent EFT Credit invoice links associated to a statement and short name."""
+        max_link_group_id_subquery = (
+            db.session.query(
+                EFTCreditInvoiceLinkModel.invoice_id,
+                func.max(EFTCreditInvoiceLinkModel.link_group_id).label("max_link_group_id"),
+            )
+            .group_by(EFTCreditInvoiceLinkModel.invoice_id)
+            .subquery()
+        )
+
         query = (
             db.session.query(EFTCreditInvoiceLinkModel)
             .join(
@@ -417,9 +426,17 @@ class EftService(DepositService):
                 StatementInvoicesModel,
                 StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id,
             )
+            .join(
+                max_link_group_id_subquery,
+                and_(
+                    EFTCreditInvoiceLinkModel.invoice_id == max_link_group_id_subquery.c.invoice_id,
+                    EFTCreditInvoiceLinkModel.link_group_id == max_link_group_id_subquery.c.max_link_group_id,
+                ),
+            )
             .filter(StatementInvoicesModel.statement_id == statement_id)
             .filter(EFTCreditModel.short_name_id == shortname_id)
             .filter(EFTCreditInvoiceLinkModel.status_code != EFTCreditInvoiceStatus.CANCELLED.value)
+            .filter(EFTCreditInvoiceLinkModel.link_group_id == max(EFTCreditInvoiceLinkModel.link_group_id))
             .order_by(
                 EFTCreditInvoiceLinkModel.invoice_id.desc(),
                 EFTCreditInvoiceLinkModel.created_on.desc(),
