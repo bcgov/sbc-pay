@@ -126,6 +126,12 @@ def mock_publish(monkeypatch):
     )
 
 
+@pytest.fixture(autouse=True)
+def mock_queue_auth(mocker):
+    """Mock queue authorization."""
+    mocker.patch("pay_queue.external.gcp_auth.verify_jwt", return_value="")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def initialize_pubsub(app):
     """Initialize pubsub emulator and respective publisher and subscribers."""
