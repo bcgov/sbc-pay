@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any, Dict, List
 
 from flask import current_app
@@ -29,7 +30,6 @@ from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
@@ -39,9 +39,7 @@ from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.enums import (
     CfsAccountStatus,
-    DisbursementStatus,
     EFTCreditInvoiceStatus,
-    EJVLinkType,
     InvoiceReferenceStatus,
     InvoiceStatus,
     PaymentMethod,
@@ -59,6 +57,7 @@ from .eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from .email_service import _render_payment_reversed_template, send_email
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
+from .partner_disbursements import PartnerDisbursements
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .statement import Statement as StatementService
@@ -99,16 +98,7 @@ class EftService(DepositService):
     ) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
-        if corp_type := CorpTypeModel.find_by_code(invoice.corp_type_code):
-            if corp_type.has_partner_disbursements and invoice.total - invoice.service_fees > 0:
-                PartnerDisbursementsModel(
-                    amount=invoice.total - invoice.service_fees,
-                    is_reversal=False,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
-                    target_id=invoice.id,
-                    target_type=EJVLinkType.INVOICE.value,
-                ).flush()
+        PartnerDisbursements.handle_payment(invoice)
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
@@ -147,6 +137,7 @@ class EftService(DepositService):
         refund_partial: List[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
+        PartnerDisbursements.handle_reversal(invoice)
         cils = EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)
         # 1. Possible to have no CILs and no invoice_reference, nothing to reverse.
         if (
@@ -290,16 +281,8 @@ class EftService(DepositService):
         for invoice, total_amount in invoice_disbursements.items():
             if total_amount != invoice.total:
                 raise BusinessException(Error.EFT_PARTIAL_REFUND)
+            PartnerDisbursements.handle_reversal(invoice)
 
-            if total_amount - invoice.service_fees > 0:
-                PartnerDisbursementsModel(
-                    amount=total_amount - invoice.service_fees,
-                    is_reversal=True,
-                    partner_code=invoice.corp_type_code,
-                    status_code=DisbursementStatus.WAITING_FOR_RECEIPT.value,
-                    target_id=invoice.id,
-                    target_type=EJVLinkType.INVOICE.value,
-                ).flush()
         statement = StatementModel.find_by_id(statement_id)
         EFTHistoryService.create_statement_reverse(
             EFTHistory(
@@ -356,12 +339,12 @@ class EftService(DepositService):
 
     @staticmethod
     @user_context
-    def _send_reversed_payment_notification(statement: StatementModel, reversed_amount, **kwargs):
+    def _send_reversed_payment_notification(statement: StatementModel, reversed_amount: Decimal, **kwargs):
         payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
         summary_dict: dict = StatementService.get_summary(payment_account.auth_account_id)
 
         due_date = StatementService.calculate_due_date(statement.to_date)
-        outstanding_balance = summary_dict["total_due"] + reversed_amount
+        outstanding_balance = Decimal(str(summary_dict["total_due"])) + reversed_amount
         email_params = {
             "accountId": payment_account.auth_account_id,
             "accountName": payment_account.name,
@@ -384,7 +367,6 @@ class EftService(DepositService):
             recipients=recipients,
             subject="Outstanding Balance Adjustment Notice",
             body=_render_payment_reversed_template(email_params),
-            **kwargs,
         )
 
     @staticmethod
@@ -425,9 +407,17 @@ class EftService(DepositService):
     @staticmethod
     def get_statement_credit_invoice_links(shortname_id, statement_id) -> List[EFTCreditInvoiceLinkModel]:
         """Get most recent EFT Credit invoice links associated to a statement and short name."""
+        max_link_group_id_subquery = (
+            db.session.query(
+                EFTCreditInvoiceLinkModel.invoice_id,
+                func.max(EFTCreditInvoiceLinkModel.link_group_id).label("max_link_group_id"),
+            )
+            .group_by(EFTCreditInvoiceLinkModel.invoice_id)
+            .subquery()
+        )
+
         query = (
             db.session.query(EFTCreditInvoiceLinkModel)
-            .distinct(EFTCreditInvoiceLinkModel.invoice_id)
             .join(
                 EFTCreditModel,
                 EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id,
@@ -435,6 +425,13 @@ class EftService(DepositService):
             .join(
                 StatementInvoicesModel,
                 StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id,
+            )
+            .join(
+                max_link_group_id_subquery,
+                and_(
+                    EFTCreditInvoiceLinkModel.invoice_id == max_link_group_id_subquery.c.invoice_id,
+                    EFTCreditInvoiceLinkModel.link_group_id == max_link_group_id_subquery.c.max_link_group_id,
+                ),
             )
             .filter(StatementInvoicesModel.statement_id == statement_id)
             .filter(EFTCreditModel.short_name_id == shortname_id)
@@ -485,6 +482,9 @@ class EftService(DepositService):
             credit_invoice_link.save_or_add(auto_save)
             eft_credit.remaining_amount = 0
             eft_credit.save_or_add(auto_save)
+
+        if invoice_balance == 0:
+            PartnerDisbursements.handle_payment(invoice)
 
     @staticmethod
     def process_owing_statements(short_name_id: int, auth_account_id: str, is_new_link: bool = False):

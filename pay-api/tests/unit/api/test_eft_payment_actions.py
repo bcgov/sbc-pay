@@ -33,6 +33,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.services import EftService
 from pay_api.utils.enums import (
+    DisbursementStatus,
     EFTCreditInvoiceStatus,
     EFTPaymentActions,
     InvoiceStatus,
@@ -46,6 +47,7 @@ from tests.utilities.base_test import (
     factory_eft_shortname,
     factory_eft_shortname_link,
     factory_invoice,
+    factory_partner_disbursement,
     factory_payment_account,
     factory_statement,
     factory_statement_invoices,
@@ -394,6 +396,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     )
     credit_invoice_links[0].receipt_number = "ABC123"
     credit_invoice_links[0].save()
+    factory_partner_disbursement(invoices[0], status_code=DisbursementStatus.COMPLETED.value).save()
     with patch("pay_api.services.eft_service.send_email") as mock_email:
         rv = client.post(
             f"/api/v1/eft-shortnames/{short_name.id}/payment",
@@ -424,6 +427,6 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     assert credit_invoice_links[1].receipt_number == credit_invoice_links[0].receipt_number
     assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 100
 
-    partner_disbursement = PartnerDisbursements.query.first()
+    partner_disbursement = PartnerDisbursements.query.order_by(PartnerDisbursements.id.desc()).first()
     assert partner_disbursement.is_reversal is True
     assert partner_disbursement.amount == 100

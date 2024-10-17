@@ -27,6 +27,7 @@ from .hashing import HashingService
 from .internal_pay_service import InternalPayService
 from .invoice import Invoice as InvoiceService
 from .non_sufficient_funds import NonSufficientFundsService
+from .partner_disbursements import PartnerDisbursements
 from .payment import Payment
 from .payment_service import PaymentService
 from .payment_transaction import PaymentTransaction as TransactionService

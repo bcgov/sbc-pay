@@ -49,12 +49,15 @@ from pay_api.models import (
     StatementInvoices,
     StatementSettings,
 )
+from pay_api.models.partner_disbursements import PartnerDisbursements
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus,
+    DisbursementStatus,
     EFTHistoricalTypes,
     EFTShortnameStatus,
     EFTShortnameType,
+    EJVLinkType,
     InvoiceReferenceStatus,
     InvoiceStatus,
     LineItemStatus,
@@ -984,3 +987,17 @@ def factory_distribution_code(
 def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
     """Return Factory."""
     return DistributionCodeLink(fee_schedule_id=fee_schedule_id, distribution_code_id=distribution_code_id)
+
+
+def factory_partner_disbursement(
+    invoice, total=10.0, is_reversal=False, status_code=DisbursementStatus.WAITING_FOR_JOB.value
+):
+    """Return partner disbursements model."""
+    return PartnerDisbursements(
+        amount=invoice.total - invoice.service_fees,
+        is_reversal=is_reversal,
+        partner_code=invoice.corp_type_code,
+        status_code=status_code,
+        target_id=invoice.id,
+        target_type=EJVLinkType.INVOICE.value,
+    ).flush()

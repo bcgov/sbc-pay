@@ -31,6 +31,7 @@ from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.services.eft_refund import EFTRefund as EFTRefundService
 from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
+    DisbursementStatus,
     EFTCreditInvoiceStatus,
     EFTHistoricalTypes,
     InvoiceReferenceStatus,
@@ -45,6 +46,7 @@ from tests.utilities.base_test import (
     factory_eft_shortname,
     factory_invoice,
     factory_invoice_reference,
+    factory_partner_disbursement,
     factory_payment_account,
 )
 
@@ -327,6 +329,7 @@ def test_eft_invoice_refund(session, test_name):
             corp_type = CorpTypeModel.find_by_code("CP")
             corp_type.has_partner_disbursements = True
             corp_type.save()
+            factory_partner_disbursement(invoice, is_reversal=False, status_code=DisbursementStatus.COMPLETED.value)
         case _:
             raise NotImplementedError
 
@@ -392,8 +395,8 @@ def test_eft_invoice_refund(session, test_name):
             assert EFTCreditInvoiceLinkModel.query.count() == 7 + pending_refund_count
             eft_history = session.query(EFTHistoryModel).one()
             assert_shortname_refund_history(eft_credit, eft_history, invoice)
-            assert PartnerDisbursements.query.count() == 1
-            partner_disbursement = PartnerDisbursements.query.first()
+            assert PartnerDisbursements.query.count() == 2
+            partner_disbursement = PartnerDisbursements.query.order_by(PartnerDisbursements.id.desc()).first()
             assert partner_disbursement.is_reversal is True
             assert partner_disbursement.partner_code == "CP"
             assert partner_disbursement.amount == amount
