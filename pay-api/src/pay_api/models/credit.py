@@ -13,8 +13,9 @@
 # limitations under the License.
 """Model to handle all operations related to Credit data."""
 from datetime import datetime, timezone
+from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy import Boolean, ForeignKey, func
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -67,6 +68,15 @@ class Credit(BaseModel):
     def find_by_cfs_identifier(cls, cfs_identifier: str, credit_memo: bool = False):
         """Find Credit by cfs identifier."""
         return cls.query.filter_by(cfs_identifier=cfs_identifier).filter_by(is_credit_memo=credit_memo).one_or_none()
+
+    @classmethod
+    def find_remaining_by_account_id(cls, account_id: int) -> Decimal:
+        """Find Credit by account id."""
+        return (
+            cls.query.with_entities(func.coalesce(func.sum(Credit.remaining_amount), 0))
+            .filter_by(account_id=account_id)
+            .scalar()
+        )
 
 
 class CreditSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
