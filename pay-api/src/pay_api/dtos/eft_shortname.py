@@ -75,6 +75,6 @@ class EFTShortNameRefundGetRequest:
     @classmethod
     def from_dict(cls, data: dict):
         """Convert from request json to EFTShortNameRefundDTO."""
-        input_string = data.get("status", "")
+        input_string = data.get("statuses", "")
         statuses = input_string.split(",") if input_string else []
         return EFTShortNameRefundGetRequest(statuses=statuses)
