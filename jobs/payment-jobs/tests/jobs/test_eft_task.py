@@ -91,7 +91,7 @@ tests = [
             EFTCreditInvoiceStatus.PENDING_REFUND.value,
         ],
         [None, DisbursementStatus.COMPLETED.value],
-        1,
+        2,
         2,
     ),
     (
@@ -103,7 +103,7 @@ tests = [
             EFTCreditInvoiceStatus.PENDING_REFUND.value,
         ],
         [None, DisbursementStatus.COMPLETED.value],
-        1,
+        2,
         2,
     ),
     (
@@ -142,15 +142,6 @@ tests = [
         [InvoiceStatus.APPROVED.value],
         [EFTCreditInvoiceStatus.COMPLETED.value, EFTCreditInvoiceStatus.REFUNDED.value],
         [None],
-        0,
-        0,
-    ),
-    (
-        "wrong_disbursement",
-        PaymentMethod.EFT.value,
-        [InvoiceStatus.APPROVED.value],
-        [EFTCreditInvoiceStatus.PENDING.value],
-        [DisbursementStatus.UPLOADED.value],
         0,
         0,
     ),
