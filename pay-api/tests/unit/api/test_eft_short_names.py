@@ -1071,8 +1071,8 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
     [
         (lambda short_id: "", "get_all", 3),
         (
-            lambda short_id: f"?short_name_id={short_id}&statuses={EFTShortnameRefundStatus.APPROVED.value}," \
-                f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
+            lambda short_id: f"?short_name_id={short_id}&statuses={EFTShortnameRefundStatus.APPROVED.value},"
+            f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
             "short_name_id_status_filter_multiple",
             2,
         ),
@@ -1082,8 +1082,8 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
             1,
         ),
         (
-            lambda short_id: f"?statuses={EFTShortnameRefundStatus.APPROVED.value}," \
-                f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
+            lambda short_id: f"?statuses={EFTShortnameRefundStatus.APPROVED.value}," 
+            f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
             "status_filter_multiple",
             2,
         ),
