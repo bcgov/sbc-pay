@@ -68,7 +68,7 @@ class EFTShortNameRefundPatchRequest(Serializable):
 
 
 @define
-class EFTShortNameRefundGetRequest():
+class EFTShortNameRefundGetRequest(Serializable):
     """EFT Short name refund DTO."""
 
     statuses: List[str]
