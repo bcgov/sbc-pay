@@ -8,7 +8,6 @@ In the near future, will find a library that generates our API spec based off of
 """
 
 from decimal import Decimal
-from typing import List
 
 from attrs import define
 
