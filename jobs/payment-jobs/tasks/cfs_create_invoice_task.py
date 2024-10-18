@@ -20,6 +20,7 @@ from typing import List
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -284,7 +285,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 .all()
             )
 
-            payment_account: PaymentAccountService = PaymentAccountService.find_by_id(account.id)
+            payment_account = PaymentAccountService.find_by_id(account.id)
 
             if len(account_invoices) == 0:
                 continue
@@ -352,14 +353,17 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     )
                     current_app.logger.error(e)
                     continue
-
+            # This is synced after receiving a CSV file at 9:30 AM each day.
+            credit_remaining_total = CreditModel.find_remaining_by_account_id(account.id)
+            bank_charge_total = max(invoice_total - credit_remaining_total, 0)
             additional_params = {
-                "invoice_total": float(invoice_total),
+                "invoice_total": float(bank_charge_total),
                 "invoice_process_date": f"{datetime.now(tz=timezone.utc)}",
             }
+
             mailer.publish_mailer_events(
                 QueueMessageTypes.PAD_INVOICE_CREATED.value,
-                payment_account,
+                PaymentAccountModel.find_by_id(account.id),
                 additional_params,
             )
             # Iterate invoice and create invoice reference records

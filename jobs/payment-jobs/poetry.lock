@@ -2104,8 +2104,8 @@ werkzeug = "3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "partner_disbursement_fixes"
-resolved_reference = "9803db9dbd0a06f3d520adad2b5dae930f9ab5e8"
+reference = "19182"
+resolved_reference = "6b262f323a9807752262932b7e70344d1c1fa03a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3256,4 +3256,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "d0b9e45ab0a884c4142cac902e5be6569b23ba15aa65d564fe3ed945d112aa12"
+content-hash = "8122ae50a0cb62b7d1a723733cbac39bd65a9d725fdba57a59a3e7752fef7fdf"
