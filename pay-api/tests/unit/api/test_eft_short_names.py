@@ -1071,12 +1071,12 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
     [
         ("", "get_all", 3),
         (
-            f"?status={EFTShortnameRefundStatus.APPROVED.value},{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
+            f"?statuses={EFTShortnameRefundStatus.APPROVED.value},{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
             "status_filter_multiple",
             2,
         ),
         (
-            f"?status={EFTShortnameRefundStatus.DECLINED.value}",
+            f"?statuses={EFTShortnameRefundStatus.DECLINED.value}",
             "status_filter_rejected",
             1,
         ),
