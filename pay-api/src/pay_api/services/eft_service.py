@@ -474,6 +474,7 @@ class EftService(DepositService):
                 credit_invoice_link.save_or_add(auto_save)
                 eft_credit.remaining_amount -= invoice_balance
                 eft_credit.save_or_add(auto_save)
+                invoice_balance = 0
                 break
 
             # Credit covers partial invoice balance
