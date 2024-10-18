@@ -154,7 +154,7 @@ def get_emails_with_keycloak_role(role: str) -> List[str]:
     users = get_users_with_keycloak_role(role)
     # Purpose of this is so our TEST users don't get hammered with emails, also our tester can easily switch this on.
     if flags.is_on("override-eft-refund-emails", default=False):
-        return flags.value("override-eft-refund-emails").split(',')
+        return flags.value("override-eft-refund-emails").split(",")
     return [user["email"] for user in users]
 
 
