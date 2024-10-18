@@ -1082,7 +1082,7 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
             1,
         ),
         (
-            lambda short_id: f"?statuses={EFTShortnameRefundStatus.APPROVED.value}," 
+            lambda short_id: f"?statuses={EFTShortnameRefundStatus.APPROVED.value},"
             f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
             "status_filter_multiple",
             2,
