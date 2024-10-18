@@ -200,9 +200,9 @@ class EFTRefund:
         refund = EFTRefundModel.find_by_id(refund_id)
         if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
             raise BusinessException(Error.REFUND_ALREADY_FINALIZED)
-        refund.comment = data.comment
+        refund.comment = data.comment or refund.comment
         refund.status = data.status
-        refund.decline_reason = data.decline_reason
+        refund.decline_reason = data.decline_reason or refund.decline_reason
         refund.save_or_add(auto_save=False)
         short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
         match data.status:
@@ -245,7 +245,7 @@ class EFTRefund:
                 client_body = content.render_body(is_for_client=True)
                 send_email(client_recipients, subject, client_body)
             case _:
-                pass
+                raise NotImplementedError("Invalid status")
         return refund.to_dict()
 
     @staticmethod

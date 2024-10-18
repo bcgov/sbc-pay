@@ -60,8 +60,8 @@ class EFTShortNameSummaryGetRequest(Serializable):
 class EFTShortNameRefundPatchRequest(Serializable):
     """EFT Short name refund DTO."""
 
-    comment: str
     status: str
+    comment: str = None
     decline_reason: str = None
 
 
