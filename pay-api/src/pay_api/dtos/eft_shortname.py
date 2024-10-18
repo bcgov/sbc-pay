@@ -77,4 +77,4 @@ class EFTShortNameRefundGetRequest(Serializable):
         """Convert from request json to EFTShortNameRefundDTO."""
         dto = super().from_dict(data)
         dto.statuses = dto.statuses.split(",") if dto.statuses else []
-        return EFTShortNameRefundGetRequest(statuses=dto.statuses, short_name_id=dto.short_name_id)
+        return dto
