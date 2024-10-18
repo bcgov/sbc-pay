@@ -97,3 +97,8 @@ class Converter(cattrs.Converter):
             elif val is not None:
                 new_data[key] = val
         return new_data
+
+    @staticmethod
+    def convert_to_int(value):
+        """Convert to int if not None."""
+        return int(value) if value is not None else None
