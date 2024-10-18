@@ -77,7 +77,7 @@ class EFTRefund(Audit):
         """Return all refunds by status."""
         query = cls.query
         if statuses:
-            query = cls.query.filter(EFTRefund.status.in_(statuses))
+            query = query.filter(EFTRefund.status.in_(statuses))
         if short_name_id:
             query = query.filter(EFTRefund.short_name_id == short_name_id)
         return query.all()
