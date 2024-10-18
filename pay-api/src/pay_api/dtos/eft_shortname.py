@@ -12,7 +12,6 @@ from typing import List
 
 from attrs import define
 
-from pay_api.utils.converter import Converter
 from pay_api.utils.serializable import Serializable
 
 
@@ -71,14 +70,12 @@ class EFTShortNameRefundPatchRequest(Serializable):
 class EFTShortNameRefundGetRequest(Serializable):
     """EFT Short name refund DTO."""
 
-    statuses: List[str]
+    statuses: str = None
     short_name_id: int = None
 
     @classmethod
     def from_dict(cls, data: dict):
         """Convert from request json to EFTShortNameRefundDTO."""
-        converter = Converter()
-        short_name_id = converter.convert_to_int(data.get("shortNameId"))
-        input_string = data.get("statuses", "")
-        statuses = input_string.split(",") if input_string else []
-        return EFTShortNameRefundGetRequest(statuses=statuses, short_name_id=short_name_id)
+        dto = super().from_dict(data)
+        dto.statuses = dto.statuses.split(",") if dto.statuses else []
+        return EFTShortNameRefundGetRequest(statuses=dto.statuses, short_name_id=dto.short_name_id)
