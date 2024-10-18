@@ -31,7 +31,6 @@ from pay_api.services.eft_service import EftService
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.enums import (
     CfsAccountStatus,
-    DisbursementStatus,
     EFTCreditInvoiceStatus,
     InvoiceReferenceStatus,
     InvoiceStatus,
@@ -41,7 +40,7 @@ from pay_api.utils.enums import (
     ReverseOperation,
 )
 from sentry_sdk import capture_message
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.orm import lazyload, registry
 
 from utils.auth_event import AuthEvent
@@ -138,18 +137,11 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 # Handles 3. EFT Credit Link - PENDING, CANCEL that link reverse invoice. See eft_service refund.
                 query = query.filter(InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
             case EFTCreditInvoiceStatus.PENDING.value:
-                query = query.filter(InvoiceModel.disbursement_status_code.is_(None))
                 query = query.filter(
                     InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.OVERDUE.value])
                 )
             case EFTCreditInvoiceStatus.PENDING_REFUND.value:
                 # Handles 4. EFT Credit Link - COMPLETED from refund flow. See eft_service refund.
-                query = query.filter(
-                    or_(
-                        InvoiceModel.disbursement_status_code.is_(None),
-                        InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value,
-                    )
-                )
                 query = query.filter(
                     InvoiceModel.invoice_status_code.in_(
                         [InvoiceStatus.PAID.value, InvoiceStatus.REFUND_REQUESTED.value]
