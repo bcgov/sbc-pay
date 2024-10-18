@@ -72,11 +72,11 @@ class Credit(BaseModel):
     @classmethod
     def find_remaining_by_account_id(cls, account_id: int) -> Decimal:
         """Find Credit by account id."""
-        return (
+        return Decimal(str(
             cls.query.with_entities(func.coalesce(func.sum(Credit.remaining_amount), 0))
             .filter_by(account_id=account_id)
             .scalar()
-        )
+        ))
 
 
 class CreditSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
