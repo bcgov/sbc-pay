@@ -79,5 +79,5 @@ class EFTRefund(Audit):
         if statuses:
             query = cls.query.filter(EFTRefund.status.in_(statuses))
         if short_name_id:
-            query = cls.query.filter(EFTRefund.short_name_id == short_name_id)
+            query = query.filter(EFTRefund.short_name_id == short_name_id)
         return query.all()
