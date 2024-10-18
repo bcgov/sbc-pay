@@ -245,7 +245,7 @@ class EFTRefund:
                 client_body = content.render_body(is_for_client=True)
                 send_email(client_recipients, subject, client_body)
             case _:
-                raise NotImplementedError('Invalid status')
+                raise NotImplementedError("Invalid status")
         return refund.to_dict()
 
     @staticmethod

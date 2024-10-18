@@ -290,13 +290,36 @@ def post_shortname_refund():
     return jsonify(response), status
 
 
+@bp.route("/shortname-refund/<int:eft_refund_id>", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET", "POST", "PATCH"])
+@_jwt.has_one_of_roles([Role.EFT_REFUND.value, Role.EFT_REFUND_APPROVER.value])
+def get_shortname_refund_by_id(eft_refund_id: int):
+    """Get EFT short name refund."""
+    current_app.logger.info("<get_eft_shortname_refund_by_id")
+
+    try:
+        refund = EFTRefundService.find_refund_by_id(eft_refund_id)
+        if refund:
+            response, status = (
+                EFTRefundService.find_refund_by_id(eft_refund_id).to_dict(),
+                HTTPStatus.OK,
+            )
+        else:
+            response, status = {}, HTTPStatus.NOT_FOUND
+    except BusinessException as exception:
+        return exception.response()
+
+    current_app.logger.debug(">get_shortname_refund_by_id")
+    return jsonify(response), status
+
+
 @bp.route("/shortname-refund/<int:eft_refund_id>", methods=["PATCH"])
 @cross_origin(origins="*")
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.EFT_REFUND_APPROVER.value])
 def patch_shortname_refund(eft_refund_id: int):
-    """Patch EFT short name link."""
-    current_app.logger.info("<patch_eft_shortname_link")
+    """Patch EFT short name refund."""
+    current_app.logger.info("<patch_eft_shortname_refund")
     request_json = request.get_json()
     short_name_refund = EFTShortNameRefundPatchRequest.from_dict(request_json)
     try:
@@ -310,5 +333,5 @@ def patch_shortname_refund(eft_refund_id: int):
     except BusinessException as exception:
         return exception.response()
 
-    current_app.logger.debug(">patch_eft_shortname_link")
+    current_app.logger.debug(">patch_eft_shortname_refund")
     return jsonify(response), status
