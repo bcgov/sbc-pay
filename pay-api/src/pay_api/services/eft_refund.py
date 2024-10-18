@@ -241,7 +241,7 @@ class EFTRefund:
                 staff_body = content.render_body()
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
                 send_email(expense_authority_recipients, subject, staff_body)
-                client_recipients = refund.refund_email
+                client_recipients = [refund.refund_email]
                 client_body = content.render_body(is_for_client=True)
                 send_email(client_recipients, subject, client_body)
             case _:
