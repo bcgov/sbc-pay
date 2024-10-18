@@ -71,10 +71,14 @@ class EFTShortNameRefundGetRequest:
     """EFT Short name refund DTO."""
 
     statuses: List[str]
+    short_name_id: int = None
 
     @classmethod
     def from_dict(cls, data: dict):
         """Convert from request json to EFTShortNameRefundDTO."""
         input_string = data.get("statuses", "")
+        short_name_id = None
+        if data.get("shortNameId", None) is not None:
+            short_name_id = int(data.get("shortNameId", None))
         statuses = input_string.split(",") if input_string else []
-        return EFTShortNameRefundGetRequest(statuses=statuses)
+        return EFTShortNameRefundGetRequest(statuses=statuses, short_name_id=short_name_id)
