@@ -80,7 +80,7 @@ class EFTRefund:
     @staticmethod
     def get_shortname_refunds(data: EFTShortNameRefundGetRequest):
         """Get all refunds."""
-        refunds = EFTRefundModel.find_refunds(data.statuses)
+        refunds = EFTRefundModel.find_refunds(data.statuses, data.short_name_id)
         return [refund.to_dict() for refund in refunds]
 
     @staticmethod
