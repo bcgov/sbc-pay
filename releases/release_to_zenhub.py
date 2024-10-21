@@ -7,7 +7,7 @@ auth_issue_ids, _ = get_issues_from_repo('sbc-auth')
 pay_issue_ids, release_names = get_issues_from_repo('sbc-pay', latest_release_only=True)
 pay_release_issue_ids = list(set([item for item in pay_issue_ids if item not in auth_issue_ids]))
 target_release_name = f'Pay Release - {release_names[0]}'
-release_id = get_workspace_release_for_report(f'Pay - {release_names[0]}')
+release_id = get_workspace_release_for_report(target_release_name)
 if release_id is None:
     release_id = create_release(target_release_name)
     print(f'Zenhub release created id: {release_id} - {target_release_name}')
