@@ -30,7 +30,9 @@ from .factory import (
     factory_invoice,
     factory_invoice_reference,
     factory_payment,
-    factory_refund_invoice, factory_payment_line_item, factory_refund_partial,
+    factory_payment_line_item,
+    factory_refund_invoice,
+    factory_refund_partial,
 )
 
 
@@ -139,8 +141,7 @@ def test_complete_refund_partial(session, monkeypatch):
     invoice.refund_date = datetime.datetime.now(tz=datetime.timezone.utc)
     invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
-    payment = factory_payment("PAYBC", invoice_number=invoice.id,
-                              payment_status_code=PaymentStatus.COMPLETED.value)
+    payment = factory_payment("PAYBC", invoice_number=invoice.id, payment_status_code=PaymentStatus.COMPLETED.value)
     factory_refund_invoice(invoice.id)
 
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
@@ -156,7 +157,7 @@ def test_complete_refund_partial(session, monkeypatch):
     )
 
     def payment_status(
-            cls,
+        cls,
     ):  # pylint: disable=unused-argument; mocks of library methods
         return {"revenue": [{"refund_data": [{"refundglstatus": "CMPLT", "refundglerrormessage": ""}]}]}
 
@@ -164,7 +165,7 @@ def test_complete_refund_partial(session, monkeypatch):
     monkeypatch.setattr(target, payment_status)
 
     with freeze_time(
-            datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
+        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
     ):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
@@ -181,8 +182,8 @@ def test_complete_refund_partial(session, monkeypatch):
 @pytest.mark.parametrize(
     "gl_error_code, gl_error_message",
     [
-        (PaymentDetailsGlStatus.RJCT.value, 'REJECTED'),
-        (PaymentDetailsGlStatus.DECLINED.value, 'DECLINED'),
+        (PaymentDetailsGlStatus.RJCT.value, "REJECTED"),
+        (PaymentDetailsGlStatus.DECLINED.value, "DECLINED"),
     ],
 )
 def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_message):
@@ -191,8 +192,7 @@ def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_mess
     invoice.refund_date = datetime.datetime.now(tz=datetime.timezone.utc)
     invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
-    payment = factory_payment("PAYBC", invoice_number=invoice.id,
-                              payment_status_code=PaymentStatus.COMPLETED.value)
+    payment = factory_payment("PAYBC", invoice_number=invoice.id, payment_status_code=PaymentStatus.COMPLETED.value)
     factory_refund_invoice(invoice.id)
 
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
@@ -208,15 +208,17 @@ def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_mess
     )
 
     def payment_status(
-            cls,
+        cls,
     ):  # pylint: disable=unused-argument; mocks of library methods
-        return {"revenue": [{"refund_data": [{"refundglstatus": gl_error_code, "refundglerrormessage": gl_error_message}]}]}
+        return {
+            "revenue": [{"refund_data": [{"refundglstatus": gl_error_code, "refundglerrormessage": gl_error_message}]}]
+        }
 
     target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
     with freeze_time(
-            datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
+        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
     ):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)

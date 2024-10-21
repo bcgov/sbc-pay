@@ -192,8 +192,6 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         refund.gl_posted = datetime.now(tz=timezone.utc)
         refund.save()
 
-
-
     @staticmethod
     def _is_glstatus_rejected_or_declined(status: OrderStatus) -> bool:
         """Check for bad refundglstatus."""
@@ -248,8 +246,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     def _find_refund_partials_by_invoice_id(invoice_id: int) -> List[RefundsPartialModel]:
         """Retrieve Refunds partials by invoice id to be processed."""
         return (
-            RefundsPartialModel.query
-            .filter(RefundsPartialModel.invoice_id == invoice_id)
+            RefundsPartialModel.query.filter(RefundsPartialModel.invoice_id == invoice_id)
             .filter(RefundModel.gl_posted.is_(None) & RefundModel.gl_error.is_(None))
             .all()
         )
