@@ -61,7 +61,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
             .filter(RefundsPartialModel.gl_posted.is_(None))
-            .order_by(RefundsPartialModel.created_on.asc())
+            .order_by(InvoiceModel.id, RefundsPartialModel.id)
             .distinct(InvoiceModel.id)
             .all()
         )
