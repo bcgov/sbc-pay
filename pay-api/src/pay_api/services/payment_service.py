@@ -64,6 +64,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         business_info = payment_request.get("businessInfo")
         filing_info = payment_request.get("filingInfo")
         account_info = payment_request.get("accountInfo", None)
+        skip_payment = payment_request.get("skipPayment", False)
         corp_type = business_info.get("corpType", None)
         business_identifier = business_info.get("businessIdentifier")
 
@@ -132,11 +133,15 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 corp_type_code=invoice.corp_type_code,
             )
 
-            invoice.commit()
-
-            # TODO put in partner disbursement row.. requires migration, handle in disbursement ticket
-
-            pay_service.complete_post_invoice(invoice, invoice_reference)
+            # Note this flow is for DEV/TEST/SANDBOX ONLY.
+            if skip_payment and current_app.config.get("ALLOW_SKIP_PAYMENT") is True:
+                invoice.invoice_status_code = InvoiceStatus.PAID.value
+                invoice.paid = invoice.total
+                invoice.commit()
+                pay_service._release_payment(invoice)  # pylint: disable=protected-access
+            else:
+                invoice.commit()
+                pay_service.complete_post_invoice(invoice, invoice_reference)
 
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
 

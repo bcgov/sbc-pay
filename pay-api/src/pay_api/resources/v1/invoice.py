@@ -57,7 +57,6 @@ def post_invoice():
     """Create the payment request records."""
     request_json = request.get_json()
     current_app.logger.debug(f"<Payment Request : {request_json}")
-    # Validate the input request
     valid_format, errors = schema_utils.validate(request_json, "payment_request")
 
     if not valid_format:
@@ -66,7 +65,6 @@ def post_invoice():
     # Check if user is authorized to perform this action
     business_identifier = get_str_by_path(request_json, "businessInfo/businessIdentifier")
     corp_type_code = get_str_by_path(request_json, "businessInfo/corpType")
-
     authorization = check_auth(
         business_identifier=business_identifier,
         corp_type_code=corp_type_code,
