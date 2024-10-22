@@ -192,6 +192,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                     "created_name",
                     "routing_slip_date",
                     "status",
+                    "refund_status",
                     "invoices.business_identifier",
                     "payments.cheque_receipt_number",
                     "remaining_amount",
@@ -408,6 +409,10 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         if (routing_slip := RoutingSlipModel.find_by_number(rs_number)) is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
+
+        if patch_action == PatchActions.UPDATE_REFUND_STATUS:
+            refund_status = request_json.get("refund_status")
+            routing_slip.refund_status = refund_status
 
         if patch_action == PatchActions.UPDATE_STATUS:
             status = request_json.get("status")

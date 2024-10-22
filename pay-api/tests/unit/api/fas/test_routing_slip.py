@@ -29,7 +29,7 @@ from pay_api.models import PaymentAccount, RoutingSlip
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipCustomStatus, RoutingSlipStatus
+from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipCustomStatus, RoutingSlipRefundStatus, RoutingSlipStatus
 from tests.utilities.base_test import factory_invoice, get_claims, get_routing_slip_request, token_header
 
 fake = Faker()
@@ -732,6 +732,30 @@ def test_update_routing_slip_status(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 400
+
+
+def test_update_routing_slip_refund_status(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(
+        get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
+        token_header,
+    )
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/fas/routing-slips",
+        data=json.dumps(get_routing_slip_request()),
+        headers=headers,
+    )
+    rs_number = rv.json.get("number")
+
+    rv = client.patch(
+        f"/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_REFUND_STATUS.value}",
+        data=json.dumps({"refund_status": RoutingSlipRefundStatus.CHEQUE_UNDELIVERABLE.value}),
+        headers=headers,
+    )
+    assert rv.status_code == 200
+    assert rv.json.get("refundStatus") == RoutingSlipRefundStatus.CHEQUE_UNDELIVERABLE.value
 
 
 def test_routing_slip_report(session, client, jwt, app):

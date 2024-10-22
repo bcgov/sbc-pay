@@ -34,7 +34,7 @@ from pay_api.services.flags import flags
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import InvoiceStatus, Role, RoutingSlipStatus
+from pay_api.utils.enums import InvoiceStatus, Role, RoutingSlipRefundStatus, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_quantized, get_str_by_path
@@ -219,6 +219,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             reason = f"Refund Rejected by {user_name}"
 
         rs_model.status = refund_status
+        rs_model.refund_status = (RoutingSlipRefundStatus.PROCESSED
+                                  if refund_status in (RoutingSlipStatus.REFUND_AUTHORIZED.value)
+                                  else RoutingSlipRefundStatus.PROCESSING)
         rs_model.flush()
 
         refund: RefundService = RefundService()

@@ -255,6 +255,14 @@ class RoutingSlipStatus(Enum):
     HOLD = "HOLD"  # new
     VOID = "VOID"
     CORRECTION = "CORRECTION"
+    
+
+class RoutingSlipRefundStatus(Enum):
+    """Routing slip refund statuses."""
+
+    PROCESSING = "PROCESSING"
+    PROCESSED = "PROCESSED"
+    CHEQUE_UNDELIVERABLE = "CHEQUE_UNDELIVERABLE"
 
 
 class RoutingSlipCustomStatus(Enum):
@@ -297,6 +305,7 @@ class PatchActions(Enum):
     """Patch Actions."""
 
     UPDATE_STATUS = "updateStatus"
+    UPDATE_REFUND_STATUS = "updateRefundStatus"
 
     @classmethod
     def from_value(cls, value):
