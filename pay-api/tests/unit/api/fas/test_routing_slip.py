@@ -29,7 +29,14 @@ from pay_api.models import PaymentAccount, RoutingSlip
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipCustomStatus, RoutingSlipRefundStatus, RoutingSlipStatus
+from pay_api.utils.enums import (
+    PatchActions,
+    PaymentMethod,
+    Role,
+    RoutingSlipCustomStatus,
+    RoutingSlipRefundStatus,
+    RoutingSlipStatus,
+)
 from tests.utilities.base_test import factory_invoice, get_claims, get_routing_slip_request, token_header
 
 fake = Faker()

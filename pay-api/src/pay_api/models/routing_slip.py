@@ -126,7 +126,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         f'[f"{RoutingSlipStatus.REFUND_REQUESTED.value}",'
         f'f"{RoutingSlipStatus.ACTIVE.value}",'
         f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}",'
-        f'f"{RoutingSlipStatus.REFUND_COMPLETED.value}",'
+        f'f"{RoutingSlipStatus.REFUND_PROCESSED.value}",'
         f'f"{RoutingSlipStatus.REFUND_REJECTED.value}",'
         f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}"]))',
         lazy="joined",
@@ -212,7 +212,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
         if status := search_filter.get("status", None):
             query = query.filter(RoutingSlip.status == status)
-            
+
         if refund_status := search_filter.get("refundStatus", None):
             query = query.filter(RoutingSlip.refund_status == refund_status)
 

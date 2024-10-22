@@ -541,7 +541,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         invalid_statuses: Set[str] = {
             RoutingSlipStatus.REFUND_REQUESTED.value,
             RoutingSlipStatus.REFUND_AUTHORIZED.value,
-            RoutingSlipStatus.REFUND_COMPLETED.value,
+            RoutingSlipStatus.REFUND_PROCESSED.value,
             RoutingSlipStatus.WRITE_OFF_REQUESTED.value,
             RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value,
             RoutingSlipStatus.WRITE_OFF_COMPLETED.value,

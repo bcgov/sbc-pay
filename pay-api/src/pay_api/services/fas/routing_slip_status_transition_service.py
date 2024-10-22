@@ -55,7 +55,7 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
             RoutingSlipCustomStatus.CANCEL_WRITE_OFF_REQUEST.custom_status,  # pylint: disable=no-member
         ],
         RoutingSlipStatus.REFUND_AUTHORIZED.value: [],
-        RoutingSlipStatus.REFUND_COMPLETED.value: [],
+        RoutingSlipStatus.REFUND_PROCESSED.value: [],
         RoutingSlipStatus.LINKED.value: [],
         RoutingSlipStatus.VOID.value: [],
         RoutingSlipStatus.CORRECTION.value: [RoutingSlipStatus.CORRECTION.value],
