@@ -339,7 +339,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             refund_partial=refund_partial_lines,
         )
         refund.flush()
-        cls._save_partial_refund_lines(refund_partial_lines)
+        cls._save_partial_refund_lines(refund_partial_lines, invoice)
         message = REFUND_SUCCESS_MESSAGES.get(f"{invoice.payment_method_code}.{invoice.invoice_status_code}")
         # set invoice status
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
@@ -360,10 +360,11 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         return {"message": message}
 
     @staticmethod
-    def _save_partial_refund_lines(partial_refund_lines: List[RefundPartialLine]):
+    def _save_partial_refund_lines(partial_refund_lines: List[RefundPartialLine], invoice: InvoiceModel):
         """Persist a list of partial refund lines."""
         for line in partial_refund_lines:
             refund_line = RefundPartialModel(
+                invoice_id=invoice.id,
                 payment_line_item_id=line.payment_line_item_id,
                 refund_amount=line.refund_amount,
                 refund_type=line.refund_type,

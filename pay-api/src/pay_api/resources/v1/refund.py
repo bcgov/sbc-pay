@@ -48,5 +48,7 @@ def post_refund(invoice_id):
 
     except BusinessException as exception:
         return exception.response()
+    except Exception as exception:
+        return exception.response()
     current_app.logger.debug(f">post_refund : {invoice_id}")
     return jsonify(response), HTTPStatus.ACCEPTED
