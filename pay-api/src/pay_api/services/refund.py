@@ -34,7 +34,7 @@ from pay_api.services.flags import flags
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import InvoiceStatus, Role, RoutingSlipStatus
+from pay_api.utils.enums import InvoiceStatus, RefundsPartialType, Role, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_quantized, get_str_by_path
@@ -251,6 +251,53 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         if not has_refund_approver_role:
             raise BusinessException(Error.INVALID_REQUEST)
 
+    @staticmethod
+    def _get_total_partial_refund_amount(refund_revenue: List[RefundPartialLine]):
+        """Sum refund revenue refund amounts."""
+        return sum(revenue.refund_amount for revenue in refund_revenue)
+
+    @staticmethod
+    def _get_line_item_amount_by_refund_type(refund_type: str, payment_line_item: PaymentLineItemModel):
+        """Return payment line item fee amount by refund type."""
+        match refund_type:
+            case RefundsPartialType.BASE_FEES.value:
+                return payment_line_item.filing_fees
+            case RefundsPartialType.FUTURE_EFFECTIVE_FEES.value:
+                return payment_line_item.future_effective_fees
+            case RefundsPartialType.SERVICE_FEES.value:
+                return payment_line_item.service_fees
+            case RefundsPartialType.PRIORITY_FEES.value:
+                return payment_line_item.priority_fees
+            case _:
+                return 0
+
+    @staticmethod
+    def _validate_refund_amount(refund_line: RefundPartialLine, payment_line_item: PaymentLineItemModel):
+        """Validate refund amount does not exceed line item amount and is positive."""
+        threshold_amount = RefundService._get_line_item_amount_by_refund_type(
+            refund_line.refund_type, payment_line_item
+        )
+        refund_amount = refund_line.refund_amount
+
+        if refund_amount < 0 or refund_amount > threshold_amount:
+            raise BusinessException(Error.REFUND_AMOUNT_INVALID)
+
+    @staticmethod
+    def _validate_partial_refund_lines(refund_revenue: List[RefundPartialLine], invoice: InvoiceModel):
+        """Validate partial refund line amounts."""
+        for refund_line in refund_revenue:
+            payment_line: PaymentLineItemModel = next(
+                (
+                    line_item
+                    for line_item in invoice.payment_line_items
+                    if line_item.id == refund_line.payment_line_item_id
+                ),
+                None,
+            )
+            if payment_line is None:
+                raise BusinessException(Error.REFUND_PAYMENT_LINE_ITEM_INVALID)
+            RefundService._validate_refund_amount(refund_line, payment_line)
+
     @classmethod
     @user_context
     def create_refund(cls, invoice_id: int, request: Dict[str, str], **kwargs) -> Dict[str, str]:
@@ -265,7 +312,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value,
         )
 
-        if invoice.invoice_status_code not in paid_statuses:
+        if invoice.invoice_status_code not in paid_statuses or (
+            invoice.invoice_status_code == InvoiceStatus.PAID.value and invoice.refund_date is not None
+        ):
             current_app.logger.info(f"Cannot process refund as status of {invoice_id} is {invoice.invoice_status_code}")
             raise BusinessException(Error.INVALID_REQUEST)
 
@@ -281,22 +330,29 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund_revenue = (request or {}).get("refundRevenue", None)
         if refund_revenue and not flags.is_on("enable-partial-refunds", default=False):
             raise BusinessException(Error.INVALID_REQUEST)
+
         refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
+        cls._validate_partial_refund_lines(refund_partial_lines, invoice)
         invoice_status = pay_system_service.process_cfs_refund(
             invoice,
             payment_account=payment_account,
             refund_partial=refund_partial_lines,
         )
         refund.flush()
-        cls._save_partial_refund_lines(refund_partial_lines)
+        cls._save_partial_refund_lines(refund_partial_lines, invoice)
         message = REFUND_SUCCESS_MESSAGES.get(f"{invoice.payment_method_code}.{invoice.invoice_status_code}")
         # set invoice status
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
-        invoice.refund = invoice.total  # no partial refund
+        invoice.refund = (
+            RefundService._get_total_partial_refund_amount(refund_partial_lines)
+            if refund_partial_lines
+            else invoice.total
+        )
         if invoice.invoice_status_code in (
             InvoiceStatus.REFUNDED.value,
             InvoiceStatus.CANCELLED.value,
             InvoiceStatus.CREDITED.value,
+            InvoiceStatus.PAID.value,
         ):
             invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.save()
@@ -304,10 +360,11 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         return {"message": message}
 
     @staticmethod
-    def _save_partial_refund_lines(partial_refund_lines: List[RefundPartialLine]):
+    def _save_partial_refund_lines(partial_refund_lines: List[RefundPartialLine], invoice: InvoiceModel):
         """Persist a list of partial refund lines."""
         for line in partial_refund_lines:
             refund_line = RefundPartialModel(
+                invoice_id=invoice.id,
                 payment_line_item_id=line.payment_line_item_id,
                 refund_amount=line.refund_amount,
                 refund_type=line.refund_type,

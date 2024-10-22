@@ -583,6 +583,7 @@ def factory_refund_invoice(invoice_id: int, details={}):
 
 def factory_refund_partial(
     payment_line_item_id: int,
+    invoice_id: int,
     refund_amount: float,
     refund_type: str,
     created_by="test",
@@ -590,6 +591,7 @@ def factory_refund_partial(
 ):
     """Return Factory."""
     return RefundsPartial(
+        invoice_id=invoice_id,
         payment_line_item_id=payment_line_item_id,
         refund_amount=refund_amount,
         refund_type=refund_type,

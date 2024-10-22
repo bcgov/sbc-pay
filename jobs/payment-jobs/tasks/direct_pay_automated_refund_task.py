@@ -19,6 +19,7 @@ from flask import current_app
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import Refund as RefundModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models.invoice import Invoice
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.oauth_service import OAuthService
@@ -50,6 +51,39 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     def process_cc_refunds(cls):
         """Check Credit Card refunds through CAS service."""
         cls.handle_non_complete_credit_card_refunds()
+        cls.handle_credit_card_refund_partials()
+
+    @classmethod
+    def handle_credit_card_refund_partials(cls):
+        """Process credit card partial refunds."""
+        invoices: List[InvoiceModel] = (
+            InvoiceModel.query.join(RefundsPartialModel, RefundsPartialModel.invoice_id == Invoice.id)
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
+            .filter(RefundsPartialModel.gl_posted.is_(None))
+            .order_by(InvoiceModel.id, RefundsPartialModel.id)
+            .distinct(InvoiceModel.id)
+            .all()
+        )
+
+        current_app.logger.info(f"Found {len(invoices)} invoices to process for partial refunds.")
+        for invoice in invoices:
+            try:
+                current_app.logger.debug(f"Processing invoice: {invoice.id} - refund_date: {invoice.refund_date}")
+                status = OrderStatus.from_dict(cls._query_order_status(invoice))
+                if cls._is_glstatus_rejected_or_declined(status):
+                    cls._refund_error(status=status, invoice=invoice)
+                elif cls._is_status_complete(status):
+                    cls._refund_complete(invoice=invoice, is_partial_refund=True)
+                else:
+                    current_app.logger.info("No action taken for invoice partial refund.")
+            except Exception as e:  # NOQA # pylint: disable=broad-except disable=invalid-name
+                capture_message(
+                    f"Error on processing credit card partial refund - invoice: {invoice.id}"
+                    f"status={invoice.invoice_status_code} ERROR : {str(e)}",
+                    level="error",
+                )
+                current_app.logger.error(e, exc_info=True)
 
     @classmethod
     def handle_non_complete_credit_card_refunds(cls):
@@ -146,10 +180,13 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         cls._set_invoice_and_payment_to_refunded(invoice)
 
     @classmethod
-    def _refund_complete(cls, invoice: Invoice):
+    def _refund_complete(cls, invoice: Invoice, is_partial_refund: bool = False):
         """Refund was successfully posted to a GL. Set gl_posted to now (filtered out)."""
         # Set these to refunded, incase we skipped the PAID state and went to CMPLT
-        cls._set_invoice_and_payment_to_refunded(invoice)
+        if not is_partial_refund:
+            cls._set_invoice_and_payment_to_refunded(invoice)
+        else:
+            cls._set_refund_partials_posted(invoice)
         current_app.logger.info("Refund complete - GL was posted - setting refund.gl_posted to now.")
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_posted = datetime.now(tz=timezone.utc)
@@ -196,3 +233,20 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         payment = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
         payment.save()
+
+    @classmethod
+    def _set_refund_partials_posted(cls, invoice: Invoice):
+        """Set Refund partials gl_posted."""
+        refund_partials = cls._find_refund_partials_by_invoice_id(invoice.id)
+        for refund_partial in refund_partials:
+            refund_partial.gl_posted = datetime.now(tz=timezone.utc)
+            refund_partial.save()
+
+    @staticmethod
+    def _find_refund_partials_by_invoice_id(invoice_id: int) -> List[RefundsPartialModel]:
+        """Retrieve Refunds partials by invoice id to be processed."""
+        return (
+            RefundsPartialModel.query.filter(RefundsPartialModel.invoice_id == invoice_id)
+            .filter(RefundModel.gl_posted.is_(None) & RefundModel.gl_error.is_(None))
+            .all()
+        )
