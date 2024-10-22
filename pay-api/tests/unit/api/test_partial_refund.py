@@ -17,9 +17,11 @@
 Test-Suite to ensure that the refunds endpoint for partials is working as expected.
 """
 import json
+from datetime import datetime, timezone
 from typing import List
 from unittest.mock import patch
 
+import pytest
 from _decimal import Decimal
 
 from pay_api.models import Invoice as InvoiceModel
@@ -119,6 +121,11 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
             assert refund.refund_amount == refund_amount
             assert refund.refund_type == RefundsPartialType.BASE_FEES.value
 
+            invoice = InvoiceModel.find_by_id(invoice.id)
+            assert invoice.invoice_status_code == InvoiceStatus.PAID.value
+            assert invoice.refund_date.date() == datetime.now(tz=timezone.utc).date()
+            assert invoice.refund == refund_amount
+
 
 def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     """Assert that the endpoint returns 400."""
@@ -178,6 +185,86 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
         refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
         assert not refunds_partial
         assert len(refunds_partial) == 0
+
+
+@pytest.mark.parametrize(
+    "fee_type",
+    [
+        RefundsPartialType.BASE_FEES.value,
+        RefundsPartialType.FUTURE_EFFECTIVE_FEES.value,
+        RefundsPartialType.PRIORITY_FEES.value,
+        RefundsPartialType.SERVICE_FEES.value,
+    ],
+)
+def test_create_refund_validation(session, client, jwt, app, monkeypatch, fee_type):
+    """Assert that the partial refund amount validation returns 400."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+    inv_id = rv.json.get("id")
+    invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.save()
+
+    data = {
+        "clientSystemUrl": "http://localhost:8080/coops-web/transactions/transaction_id=abcd",
+        "payReturnUrl": "http://localhost:8080/pay-web",
+    }
+    receipt_number = "123451"
+    rv = client.post(
+        f"/api/v1/payment-requests/{inv_id}/transactions",
+        data=json.dumps(data),
+        headers=headers,
+    )
+    txn_id = rv.json.get("id")
+    client.patch(
+        f"/api/v1/payment-requests/{inv_id}/transactions/{txn_id}",
+        data=json.dumps({"receipt_number": receipt_number}),
+        headers=headers,
+    )
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    payment_line_item = payment_line_items[0]
+    refund_amount = 0
+    match fee_type:
+        case RefundsPartialType.BASE_FEES.value:
+            refund_amount = payment_line_item.filing_fees + 1
+        case RefundsPartialType.FUTURE_EFFECTIVE_FEES.value:
+            refund_amount = payment_line_item.future_effective_fees + 1
+        case RefundsPartialType.SERVICE_FEES.value:
+            refund_amount = payment_line_item.service_fees + 1
+        case RefundsPartialType.PRIORITY_FEES.value:
+            refund_amount = payment_line_item.priority_fees + 1
+    refund_revenue = [
+        {
+            "paymentLineItemId": payment_line_items[0].id,
+            "refundAmount": float(refund_amount),
+            "refundType": fee_type,
+        }
+    ]
+    base_paybc_response = _get_base_paybc_response()
+    with patch("pay_api.services.direct_pay_service.DirectPayService.get") as mock_get:
+        mock_get.return_value.ok = True
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = base_paybc_response
+
+        with patch("pay_api.services.payment_service.flags.is_on", return_value=True):
+            rv = client.post(
+                f"/api/v1/payment-requests/{inv_id}/refunds",
+                data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
+                headers=headers,
+            )
+            assert rv.status_code == 400
+            assert rv.json.get("type") == Error.REFUND_AMOUNT_INVALID.name
+            assert RefundModel.find_by_invoice_id(inv_id) is None
 
 
 def _get_base_paybc_response():

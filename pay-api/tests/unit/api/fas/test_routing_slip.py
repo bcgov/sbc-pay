@@ -257,7 +257,7 @@ def test_link_routing_slip_invalid_status(session, client, jwt, app):
     client.post("/api/v1/fas/routing-slips", data=json.dumps(child1), headers=headers)
 
     rv = client.get(f"/api/v1/fas/routing-slips/{child.get('number')}/links", headers=headers)
-    assert rv.json.get("parent") is None
+    assert rv.json.get("parent") == {}
 
     rv = client.patch(
         f"/api/v1/fas/routing-slips/{child.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
@@ -314,7 +314,7 @@ def test_link_routing_slip(session, client, jwt, app):
     client.post("/api/v1/fas/routing-slips", data=json.dumps(parent), headers=headers)
 
     rv = client.get(f"/api/v1/fas/routing-slips/{child.get('number')}/links", headers=headers)
-    assert rv.json.get("parent") is None
+    assert rv.json.get("parent") == {}
 
     # attempt to link NSF, should fail
     nsf = get_routing_slip_request("933458069")

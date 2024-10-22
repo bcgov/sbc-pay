@@ -8,7 +8,6 @@ In the near future, will find a library that generates our API spec based off of
 """
 
 from decimal import Decimal
-from typing import List
 
 from attrs import define
 
@@ -61,20 +60,21 @@ class EFTShortNameSummaryGetRequest(Serializable):
 class EFTShortNameRefundPatchRequest(Serializable):
     """EFT Short name refund DTO."""
 
-    comment: str
     status: str
+    comment: str = None
     decline_reason: str = None
 
 
 @define
-class EFTShortNameRefundGetRequest:
+class EFTShortNameRefundGetRequest(Serializable):
     """EFT Short name refund DTO."""
 
-    statuses: List[str]
+    statuses: str = None
+    short_name_id: int = None
 
     @classmethod
     def from_dict(cls, data: dict):
         """Convert from request json to EFTShortNameRefundDTO."""
-        input_string = data.get("status", "")
-        statuses = input_string.split(",") if input_string else []
-        return EFTShortNameRefundGetRequest(statuses=statuses)
+        dto = super().from_dict(data)
+        dto.statuses = dto.statuses.split(",") if dto.statuses else []
+        return dto

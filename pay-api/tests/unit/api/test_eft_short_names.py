@@ -1067,24 +1067,37 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
 
 
 @pytest.mark.parametrize(
-    "query_string, test_name, count",
+    "query_string_factory, test_name, count",
     [
-        ("", "get_all", 3),
+        (lambda short_id: "", "get_all", 3),
         (
-            f"?status={EFTShortnameRefundStatus.APPROVED.value},{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
+            lambda short_id: f"?short_name_id={short_id}&statuses={EFTShortnameRefundStatus.APPROVED.value},"
+            f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
+            "short_name_id_status_filter_multiple",
+            2,
+        ),
+        (
+            lambda short_id: f"?short_name_id={short_id}&statuses={EFTShortnameRefundStatus.DECLINED.value}",
+            "short_name_id_status_filter_rejected",
+            1,
+        ),
+        (
+            lambda short_id: f"?statuses={EFTShortnameRefundStatus.APPROVED.value},"
+            f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
             "status_filter_multiple",
             2,
         ),
         (
-            f"?status={EFTShortnameRefundStatus.DECLINED.value}",
+            lambda short_id: f"?statuses={EFTShortnameRefundStatus.DECLINED.value}",
             "status_filter_rejected",
             1,
         ),
     ],
 )
-def test_get_shortname_refund(session, client, jwt, query_string, test_name, count):
+def test_get_shortname_refund(session, client, jwt, query_string_factory, test_name, count):
     """Test get short name refund."""
     short_name = factory_eft_shortname("TEST_SHORTNAME").save()
+    query_string = query_string_factory(short_name.id)
     factory_eft_refund(short_name_id=short_name.id, status=EFTShortnameRefundStatus.APPROVED.value)
     factory_eft_refund(
         short_name_id=short_name.id,
@@ -1213,3 +1226,25 @@ def test_patch_shortname(session, client, jwt):
     assert result is not None
     assert result["casSupplierNumber"] == data["casSupplierNumber"]
     assert result["email"] == data["email"]
+
+
+def test_get_refund_by_id(session, client, jwt):
+    """Test get refund by id."""
+    short_name = factory_eft_shortname("TEST_SHORTNAME").save()
+    refund = factory_eft_refund(
+        short_name_id=short_name.id,
+        refund_amount=10,
+        status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
+        decline_reason="sucks",
+    )
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND_APPROVER.value]), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    rv = client.get(f"/api/v1/eft-shortnames/shortname-refund/{refund.id}", headers=headers)
+    assert rv.status_code == 200
+    assert rv.json["comment"] == refund.comment
+    assert rv.json["status"] == refund.status
+    assert rv.json["refundAmount"] == refund.refund_amount
+    assert rv.json["casSupplierNumber"] == refund.cas_supplier_number
+    assert rv.json["refundEmail"] == refund.refund_email
+    assert rv.json["shortNameId"] == refund.short_name_id
+    assert rv.json["declineReason"] == refund.decline_reason

@@ -27,7 +27,7 @@ from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.serializable import Serializable
 
 
-def send_email(recipients: list, subject: str, body: str):
+def send_email(recipients: list[str], subject: str, body: str):
     """Send the email notification."""
     # Note if we send HTML in the body, we aren't sending through GCNotify, ideally we'd like to send through GCNotify.
     token = get_service_account_token()

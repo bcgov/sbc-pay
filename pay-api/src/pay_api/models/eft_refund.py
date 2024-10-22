@@ -73,9 +73,11 @@ class EFTRefund(Audit):
     status = db.Column(db.String(25), nullable=True)
 
     @classmethod
-    def find_refunds(cls, statuses: List[str]):
+    def find_refunds(cls, statuses: List[str], short_name_id: int = None):
         """Return all refunds by status."""
         query = cls.query
         if statuses:
-            query = cls.query.filter(EFTRefund.status.in_(statuses))
+            query = query.filter(EFTRefund.status.in_(statuses))
+        if short_name_id:
+            query = query.filter(EFTRefund.short_name_id == short_name_id)
         return query.all()

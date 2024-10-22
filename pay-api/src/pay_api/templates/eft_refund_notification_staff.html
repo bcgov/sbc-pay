@@ -1,15 +1,11 @@
-# {{ state }} Refund Request for Short Name {{ shortname }}
+{% set status_display = {
+    'PENDING_APPROVAL': 'Pending',
+    'APPROVED': 'Approved',
+    'DECLINED': 'Declined' } 
+%}
+# {{ status_display.get(status) }} Refund Request for Short Name {{ shortName }}
 
-There is a refund request of ${{ refundAmount }} for short name: {{ shortname }}
-{% if state == 'APPROVED' %}
-    is now approved.
-{% elif state == 'DECLINED' %}
-    is declined with the following message: {{ decline_message }}
-{% elif state == 'PENDING' %}
-    .
-{% else %}
-    .
-{% endif %}
+The refund request of ${{ '%.2f'|format(refundAmount) }} for short name: {{ shortName }} {% if status_display.get(status) == 'Approved' %}is now approved.{% elif status_display.get(status) == 'Declined' %}is declined with the following message: {{ declineReason }}.{% else %}.{% endif %}
 
 Please review the information using the following link:
 

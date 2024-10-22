@@ -310,6 +310,14 @@ class EjvPartnerDistributionTask(CgiEjv):
         else:
             raise NotImplementedError("Unknown disbursement type")
 
+        # Possible this could already be created, eg two PLI.
+        if db.session.query(EjvLinkModel).filter(
+            EjvLinkModel.link_id == disbursement.line_item.identifier,
+            EjvLinkModel.link_type == disbursement.line_item.target_type,
+            EjvLinkModel.ejv_header_id == ejv_header_model.id,
+        ).first():
+            return
+
         db.session.add(
             EjvLinkModel(
                 link_id=disbursement.line_item.identifier,
