@@ -216,12 +216,12 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         # Rejected refund makes routing slip active
         if refund_status == RoutingSlipStatus.REFUND_REJECTED.value:
             refund_status = RoutingSlipStatus.ACTIVE.value
+            rs_model.refund_status = None
             reason = f"Refund Rejected by {user_name}"
+        else:
+            rs_model.refund_status = RoutingSlipRefundStatus.PROCESSING
 
         rs_model.status = refund_status
-        rs_model.refund_status = (RoutingSlipRefundStatus.PROCESSED
-                                  if refund_status in (RoutingSlipStatus.REFUND_AUTHORIZED.value)
-                                  else RoutingSlipRefundStatus.PROCESSING)
         rs_model.flush()
 
         refund: RefundService = RefundService()

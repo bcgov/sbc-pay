@@ -459,7 +459,7 @@ def _process_ap_header_routing_slips(line) -> bool:
             level="error",
         )
     else:
-        routing_slip.status = RoutingSlipStatus.REFUND_COMPLETED.value
+        routing_slip.status = RoutingSlipStatus.REFUND_PROCESSED.value
         refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
         refund.gl_posted = datetime.now()
         refund.save()

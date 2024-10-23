@@ -7,6 +7,7 @@ Create Date: 2024-10-22 14:56:56.311470
 """
 from alembic import op
 import sqlalchemy as sa
+from pay_api.utils.enums import RoutingSlipStatus
 
 
 # revision identifiers, used by Alembic.
@@ -24,36 +25,35 @@ from alembic import op
 import sqlalchemy as sa
 
 def upgrade():
-    op.execute("set statement_timeout=20000;")
     with op.batch_alter_table('routing_slips', schema=None) as batch_op:
         batch_op.add_column(sa.Column('refund_status', sa.String(length=50), nullable=True))
 
-    op.execute("""
+    op.execute(f"""
         UPDATE routing_slip_status_codes
-        SET code = 'REFUND_PROCESSED', description = 'Refund Processed'
+        SET code = '{RoutingSlipStatus.REFUND_PROCESSED.value}', description = 'Refund Processed'
         WHERE code = 'REFUND_COMPLETED';
     """)
 
     # Update the records in routing_slips where status is 'REFUND_COMPLETED'
-    op.execute("""
+    op.execute(f"""
         UPDATE routing_slips
-        SET status = 'REFUND_PROCESSED'
+        SET status = '{RoutingSlipStatus.REFUND_PROCESSED.value}'
         WHERE status = 'REFUND_COMPLETED';
     """)
 
 
 def downgrade():
     op.execute("set statement_timeout=20000;")
-    op.execute("""
+    op.execute(f"""
         UPDATE routing_slips
         SET status = 'REFUND_COMPLETED'
-        WHERE status = 'REFUND_PROCESSED';
+        WHERE status = '{RoutingSlipStatus.REFUND_PROCESSED.value}';
     """)
 
-    op.execute("""
+    op.execute(f"""
         UPDATE routing_slip_status_codes
         SET code = 'REFUND_COMPLETED', description = 'Refund Complete'
-        WHERE code = 'REFUND_PROCESSED';
+        WHERE code = '{RoutingSlipStatus.REFUND_PROCESSED.value}';
     """)
 
     with op.batch_alter_table('routing_slips', schema=None) as batch_op:
