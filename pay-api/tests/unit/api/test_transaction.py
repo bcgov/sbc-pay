@@ -508,6 +508,7 @@ def test_transaction_post_for_nsf_payment(session, client, jwt, app):
 
 def test_valid_redirect_url(session, jwt, client, app):
     """Assert the valid redirect url endpoint works."""
+    old_urls = app.config["VALID_REDIRECT_URLS"]
     data = {"redirectUrl": "https://www.google.ca"}
     headers = {"content-type": "application/json"}
     rv = client.post(
@@ -525,3 +526,4 @@ def test_valid_redirect_url(session, jwt, client, app):
     )
     assert rv.status_code == 200
     assert rv.json.get("isValid") is True
+    app.config["VALID_REDIRECT_URLS"] = old_urls
