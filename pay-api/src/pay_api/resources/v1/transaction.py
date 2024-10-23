@@ -23,6 +23,7 @@ from pay_api.services import TransactionService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.errors import Error
+from pay_api.utils.util import is_valid_redirect_url
 
 bp = Blueprint("TRANSACTIONS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}")
 
@@ -126,3 +127,13 @@ def patch_transaction(invoice_id: int = None, payment_id: int = None, transactio
         return exception.response()
     current_app.logger.debug(">patch_transaction")
     return jsonify(response), status
+
+
+@bp.route("/valid-redirect-url", methods=["POST"])
+@cross_origin(origins="*")
+def post_is_valid_redirect_url():
+    """Check if the redirect URL is valid."""
+    current_app.logger.info("<is_valid_redirect_url")
+    is_valid = is_valid_redirect_url(request.get_json().get("redirectUrl", None))
+    current_app.logger.debug(">is_valid_redirect_url")
+    return jsonify({"isValid": is_valid}), HTTPStatus.OK
