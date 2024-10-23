@@ -504,3 +504,24 @@ def test_transaction_post_for_nsf_payment(session, client, jwt, app):
     assert rv.json.get("paymentId") == payment_2.id
 
     assert schema_utils.validate(rv.json, "transaction")[0]
+
+
+def test_valid_redirect_url(session, jwt, client, app):
+    """Assert the valid redirect url endpoint works."""
+    data = {"redirectUrl": "https://www.google.ca"}
+    headers = {"content-type": "application/json"}
+    rv = client.post(
+        "/api/v1/valid-redirect-url",
+        data=json.dumps(data),
+        headers=headers,
+    )
+    assert rv.status_code == 200
+    assert rv.json.get("isValid") is False
+    app.config["VALID_REDIRECT_URLS"] = ["https://www.google.ca"]
+    rv = client.post(
+        "/api/v1/valid-redirect-url",
+        data=json.dumps(data),
+        headers=headers,
+    )
+    assert rv.status_code == 200
+    assert rv.json.get("isValid") is True
