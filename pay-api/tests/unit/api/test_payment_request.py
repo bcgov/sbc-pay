@@ -1397,3 +1397,14 @@ def test_payment_request_skip_payment(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get("statusCode") == TransactionStatus.COMPLETED.value
     assert rv.json.get("paid") == rv.json.get("total")
+
+    # Skip payment EFT invoice references are created later.
+    data["paymentInfo"] = {"methodOfPayment": PaymentMethod.EFT.value}
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(data),
+        headers=headers,
+    )
+    assert rv.status_code == 201
+    assert rv.json.get("statusCode") == TransactionStatus.COMPLETED.value
+    assert rv.json.get("paid") == rv.json.get("total")
