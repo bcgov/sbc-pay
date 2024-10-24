@@ -138,6 +138,14 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
                 invoice.paid = invoice.total
                 invoice.commit()
+                Payment.create(
+                    payment_method=pay_service.get_payment_method_code(),
+                    payment_system=pay_service.get_payment_system_code(),
+                    payment_status=PaymentStatus.COMPLETED.value,
+                    invoice_number=invoice_reference.invoice_number,
+                    invoice_amount=invoice.total,
+                    payment_account_id=invoice.payment_account_id,
+                ).commit()
                 pay_service._release_payment(invoice)  # pylint: disable=protected-access
             else:
                 invoice.commit()
