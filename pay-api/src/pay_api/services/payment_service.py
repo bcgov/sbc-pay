@@ -176,6 +176,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             ).commit()
             pay_service._release_payment(invoice)  # pylint: disable=protected-access
         else:
+            # Normal flow of code here.
             invoice.commit()
             pay_service.complete_post_invoice(invoice, invoice_reference)
 
