@@ -34,7 +34,7 @@ from pay_api.services.flags import flags
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import InvoiceStatus, RefundsPartialType, Role, RoutingSlipStatus
+from pay_api.utils.enums import InvoiceStatus, RefundsPartialType, Role, RoutingSlipRefundStatus, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_quantized, get_str_by_path
@@ -200,13 +200,13 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         if not rs_model:
             raise BusinessException(Error.RS_DOESNT_EXIST)
         reason = get_str_by_path(request, "reason")
-        if (refund_status := get_str_by_path(request, "status")) is None:
+        if (status := get_str_by_path(request, "status")) is None:
             raise BusinessException(Error.INVALID_REQUEST)
         user_name = kwargs["user"].user_name
         if get_quantized(rs_model.remaining_amount) == 0:
             raise BusinessException(Error.INVALID_REQUEST)  # refund not possible for zero amount routing slips
 
-        is_refund_finalized = refund_status in (
+        is_refund_finalized = status in (
             RoutingSlipStatus.REFUND_AUTHORIZED.value,
             RoutingSlipStatus.REFUND_REJECTED.value,
         )
@@ -214,11 +214,14 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             RefundService._is_authorised_refund()
 
         # Rejected refund makes routing slip active
-        if refund_status == RoutingSlipStatus.REFUND_REJECTED.value:
-            refund_status = RoutingSlipStatus.ACTIVE.value
+        if status == RoutingSlipStatus.REFUND_REJECTED.value:
+            status = RoutingSlipStatus.ACTIVE.value
+            rs_model.refund_status = None
             reason = f"Refund Rejected by {user_name}"
+        else:
+            rs_model.refund_status = RoutingSlipRefundStatus.PROCESSING
 
-        rs_model.status = refund_status
+        rs_model.status = status
         rs_model.flush()
 
         refund: RefundService = RefundService()

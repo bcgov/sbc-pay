@@ -53,20 +53,21 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
         "include_properties": [
-            "id",
             "cas_version_suffix",
             "created_by",
             "created_name",
             "created_on",
+            "id",
             "number",
             "parent_number",
             "payment_account_id",
             "refund_amount",
+            "refund_status",
             "remaining_amount",
             "routing_slip_date",
             "status",
-            "total",
             "total_usd",
+            "total",
             "updated_by",
             "updated_name",
             "updated_on",
@@ -87,6 +88,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     routing_slip_date = db.Column(db.Date, nullable=False)
     parent_number = db.Column(db.String(), ForeignKey("routing_slips.number"), nullable=True)
     refund_amount = db.Column(db.Numeric(), nullable=True, default=0)
+    refund_status = db.Column(db.String(), nullable=True)
     total_usd = db.Column(db.Numeric(), nullable=True)  # Capture total usd payments if one of payments has USD payment
     # It's not possible to update a receipt's amount or number in CAS (PUT/PATCH).
     # Allows to create a new receipt in CAS for the same routing slip number.
@@ -124,7 +126,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         f'[f"{RoutingSlipStatus.REFUND_REQUESTED.value}",'
         f'f"{RoutingSlipStatus.ACTIVE.value}",'
         f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}",'
-        f'f"{RoutingSlipStatus.REFUND_COMPLETED.value}",'
+        f'f"{RoutingSlipStatus.REFUND_PROCESSED.value}",'
         f'f"{RoutingSlipStatus.REFUND_REJECTED.value}",'
         f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}"]))',
         lazy="joined",
@@ -210,6 +212,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
         if status := search_filter.get("status", None):
             query = query.filter(RoutingSlip.status == status)
+
+        if refund_status := search_filter.get("refundStatus", None):
+            query = query.filter(RoutingSlip.refund_status == refund_status)
 
         if exclude_statuses := search_filter.get("excludeStatuses", None):
             query = query.filter(~RoutingSlip.status.in_(exclude_statuses))
@@ -347,5 +352,6 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
     refunds = ma.Nested(RefundSchema, many=True, data_key="refunds")
     invoices = ma.Nested(InvoiceSchema, many=True, data_key="invoices", exclude=["_links"])
     status = fields.String(data_key="status")
+    refund_status = fields.String(data_key="refund_status")
     parent_number = fields.String(data_key="parent_number")
     total_usd = fields.Float(data_key="total_usd")

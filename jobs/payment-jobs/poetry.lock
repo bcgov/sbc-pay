@@ -2103,9 +2103,9 @@ werkzeug = "3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/ochiu/sbc-pay.git"
-reference = "23154-Partial-Refunds"
-resolved_reference = "214e6fb9ce310695971cc287cc675c008d2dafb0"
+url = "https://github.com/jxio/sbc-pay.git"
+reference = "19361"
+resolved_reference = "e2affd1cb7d82480065b9b8c27f4c2cf94162ff6"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3256,4 +3256,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "253a5d7278df8beaff390e0f936a00c4d8498c7126e614c69d048e862ad4b78f"
+content-hash = "f4122392074d67050b37abf80d154ae7ad9431ff3f70396192062d1c5fbc01e8"

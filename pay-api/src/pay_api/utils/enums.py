@@ -248,13 +248,21 @@ class RoutingSlipStatus(Enum):
     REFUND_AUTHORIZED = "REFUND_AUTHORIZED"
     REFUND_UPLOADED = "REFUND_UPLOADED"
     REFUND_REJECTED = "REFUND_REJECTED"
-    REFUND_COMPLETED = "REFUND_COMPLETED"
+    REFUND_PROCESSED = "REFUND_PROCESSED"
     WRITE_OFF_REQUESTED = "WRITE_OFF_REQUESTED"
     WRITE_OFF_AUTHORIZED = "WRITE_OFF_AUTHORIZED"
     WRITE_OFF_COMPLETED = "WRITE_OFF_COMPLETED"
     HOLD = "HOLD"  # new
     VOID = "VOID"
     CORRECTION = "CORRECTION"
+
+
+class RoutingSlipRefundStatus(Enum):
+    """Routing slip refund statuses."""
+
+    PROCESSING = "PROCESSING"
+    PROCESSED = "PROCESSED"
+    CHEQUE_UNDELIVERABLE = "CHEQUE_UNDELIVERABLE"
 
 
 class RoutingSlipCustomStatus(Enum):
@@ -297,6 +305,7 @@ class PatchActions(Enum):
     """Patch Actions."""
 
     UPDATE_STATUS = "updateStatus"
+    UPDATE_REFUND_STATUS = "updateRefundStatus"
 
     @classmethod
     def from_value(cls, value):
