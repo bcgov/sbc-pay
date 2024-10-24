@@ -53,24 +53,24 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     #       Exception, id is always first, _fields first
     __mapper_args__ = {
         "include_properties": [
-            "id",
             "cas_version_suffix",
             "created_by",
             "created_name",
             "created_on",
+            "id",
             "number",
             "parent_number",
             "payment_account_id",
             "refund_amount",
+            "refund_status",
             "remaining_amount",
             "routing_slip_date",
             "status",
-            "total",
             "total_usd",
+            "total",
             "updated_by",
             "updated_name",
             "updated_on",
-            "refund_status"
         ]
     }
 
