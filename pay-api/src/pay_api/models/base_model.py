@@ -14,6 +14,8 @@
 """Super class to handle all operations related to base model."""
 
 
+from decimal import Decimal
+
 from .db import db
 
 
@@ -55,7 +57,17 @@ class BaseModel(db.Model):
     def to_dict(self):
         """Quick and easy way to convert to a dict."""
         # We need a better way to do this in the future.
-        return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns if getattr(self, c.name) is not None}
+        result = {}
+        for column in self.__table__.columns:
+            value = getattr(self, column.name)
+            if value is not None:
+                if isinstance(value, int):
+                    result[column.name] = value
+                elif isinstance(value, (Decimal, float)):
+                    result[column.name] = float(value)
+                else:
+                    result[column.name] = str(value)
+        return result
 
     @staticmethod
     def rollback():

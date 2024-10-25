@@ -23,7 +23,7 @@ from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 from pay_api.utils.errors import Error
-from pay_api.utils.util import get_str_by_path
+from pay_api.utils.util import generate_transaction_number, get_str_by_path
 
 from .base_payment_system import PaymentSystemService
 from .fee_schedule import FeeSchedule
@@ -64,6 +64,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         business_info = payment_request.get("businessInfo")
         filing_info = payment_request.get("filingInfo")
         account_info = payment_request.get("accountInfo", None)
+        skip_payment = payment_request.get("skipPayment", False)
         corp_type = business_info.get("corpType", None)
         business_identifier = business_info.get("businessIdentifier")
 
@@ -132,11 +133,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 corp_type_code=invoice.corp_type_code,
             )
 
-            invoice.commit()
-
-            # TODO put in partner disbursement row.. requires migration, handle in disbursement ticket
-
-            pay_service.complete_post_invoice(invoice, invoice_reference)
+            cls._handle_invoice(invoice, invoice_reference, pay_service, skip_payment)
 
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
 
@@ -155,6 +152,33 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug(">Finished creating payment request")
 
         return invoice.asdict(include_dynamic_fields=True)
+
+    @classmethod
+    def _handle_invoice(cls, invoice, invoice_reference, pay_service, skip_payment):
+        """Handle invoice related operations."""
+        # Note this flow is for DEV/TEST/SANDBOX ONLY.
+        if skip_payment and current_app.config.get("ALLOW_SKIP_PAYMENT") is True:
+            invoice.invoice_status_code = InvoiceStatus.PAID.value
+            invoice.paid = invoice.total
+            invoice.commit()
+            # Invoice references for PAD etc can be created at job, not API.
+            if not invoice_reference:
+                invoice_reference = InvoiceReference.create(invoice.id, generate_transaction_number(invoice.id), None)
+            invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+            invoice_reference.save()
+            Payment.create(
+                payment_method=pay_service.get_payment_method_code(),
+                payment_system=pay_service.get_payment_system_code(),
+                payment_status=PaymentStatus.COMPLETED.value,
+                invoice_number=invoice_reference.invoice_number,
+                invoice_amount=invoice.total,
+                payment_account_id=invoice.payment_account_id,
+            ).commit()
+            pay_service._release_payment(invoice)  # pylint: disable=protected-access
+        else:
+            # Normal flow of code here.
+            invoice.commit()
+            pay_service.complete_post_invoice(invoice, invoice_reference)
 
     @classmethod
     def _find_payment_account(cls, authorization):

@@ -14,41 +14,13 @@
 
 """This manages all of the email notification service."""
 import os
-from decimal import Decimal
 from typing import Dict
 
-from attr import define
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
-
-
-def send_email(recipients: str, subject: str, body: str):
-    """Send the email notification."""
-    # Note if we send HTML in the body, we aren't sending through GCNotify, ideally we'd like to send through GCNotify.
-    token = get_service_account_token()
-    current_app.logger.info(f">send_email to recipients: {recipients}")
-    notify_url = current_app.config.get("NOTIFY_API_ENDPOINT") + "notify/"
-    notify_body = {
-        "recipients": recipients,
-        "content": {"subject": subject, "body": body},
-    }
-
-    try:
-        notify_response = OAuthService.post(
-            notify_url,
-            token=token,
-            auth_header_type=AuthHeaderType.BEARER,
-            content_type=ContentType.JSON,
-            data=notify_body,
-        )
-        current_app.logger.info("<send_email notify_response")
-        if notify_response:
-            current_app.logger.info(f"Successfully sent email to {recipients}")
-    except Exception as e:  # NOQA pylint:disable=broad-except
-        current_app.logger.error(f"Error sending email to {recipients}: {e}")
 
 
 def _get_template(template_file_name: str):

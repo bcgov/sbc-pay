@@ -31,7 +31,7 @@ from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role, RoutingSlipStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role, RoutingSlipStatus, TransactionStatus
 from tests.utilities.base_test import (
     activate_pad_account,
     get_basic_account_payload,
@@ -1371,3 +1371,40 @@ def test_business_identifier_too_long(session, client, jwt, app):
 
     rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 400
+
+
+def test_payment_request_skip_payment(session, client, jwt, app):
+    """Assert that the invoice status was moved correctly with ALLOW_SKIP_PAYMENT."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    data = get_payment_request_with_service_fees()
+    data["skipPayment"] = True
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(data),
+        headers=headers,
+    )
+    assert rv.status_code == 201
+    assert rv.json.get("statusCode") == InvoiceStatus.CREATED.value
+
+    app.config["ALLOW_SKIP_PAYMENT"] = True
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(data),
+        headers=headers,
+    )
+    assert rv.status_code == 201
+    assert rv.json.get("statusCode") == TransactionStatus.COMPLETED.value
+    assert rv.json.get("paid") == rv.json.get("total")
+
+    # Skip payment EFT invoice references are created later.
+    data["paymentInfo"] = {"methodOfPayment": PaymentMethod.EFT.value}
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(data),
+        headers=headers,
+    )
+    assert rv.status_code == 201
+    assert rv.json.get("statusCode") == TransactionStatus.COMPLETED.value
+    assert rv.json.get("paid") == rv.json.get("total")

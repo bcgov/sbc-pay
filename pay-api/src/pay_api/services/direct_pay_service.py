@@ -248,7 +248,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
                 message = "Refund error: " + refund_response.get("message")
                 current_app.logger.error(message)
                 raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
-
         except HTTPError as e:
             current_app.logger.error(f"PayBC Refund request failed: {str(e)}")
             error_detail = None
@@ -264,6 +263,10 @@ class DirectPayService(PaymentSystemService, OAuthService):
             raise BusinessException(error) from e
 
         current_app.logger.debug(">process_cfs_refund")
+        if refund_partial:
+            return InvoiceStatus.PAID.value
+
+        return InvoiceStatus.REFUND_REQUESTED.value
 
     def get_receipt(
         self,

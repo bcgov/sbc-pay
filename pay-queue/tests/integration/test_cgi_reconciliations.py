@@ -1087,7 +1087,7 @@ def test_successful_refund_reconciliations(session, app, client):
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     for rs_number in rs_numbers:
         routing_slip = RoutingSlipModel.find_by_number(rs_number)
-        assert routing_slip.status == RoutingSlipStatus.REFUND_COMPLETED.value
+        assert routing_slip.status == RoutingSlipStatus.REFUND_PROCESSED.value
 
 
 def test_failed_refund_reconciliations(session, app, client):
@@ -1224,7 +1224,7 @@ def test_failed_refund_reconciliations(session, app, client):
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     routing_slip_1 = RoutingSlipModel.find_by_number(rs_numbers[0])
-    assert routing_slip_1.status == RoutingSlipStatus.REFUND_COMPLETED.value
+    assert routing_slip_1.status == RoutingSlipStatus.REFUND_PROCESSED.value
 
     routing_slip_2 = RoutingSlipModel.find_by_number(rs_numbers[1])
     assert routing_slip_2.status == RoutingSlipStatus.REFUND_REJECTED.value

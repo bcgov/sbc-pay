@@ -14,6 +14,7 @@
 
 """This manages all of the authorization service."""
 import base64
+from typing import List
 
 from flask import abort, current_app, g
 
@@ -148,13 +149,13 @@ def get_account_admin_users(auth_account_id, **kwargs):
     ).json()
 
 
-def get_emails_with_keycloak_role(role: str) -> str:
+def get_emails_with_keycloak_role(role: str) -> List[str]:
     """Retrieve emails with the specified keycloak role."""
     users = get_users_with_keycloak_role(role)
     # Purpose of this is so our TEST users don't get hammered with emails, also our tester can easily switch this on.
     if flags.is_on("override-eft-refund-emails", default=False):
-        return flags.value("override-eft-refund-emails")
-    return ",".join([user["email"] for user in users])
+        return flags.value("override-eft-refund-emails").split(",")
+    return [user["email"] for user in users]
 
 
 def get_users_with_keycloak_role(role: str) -> dict:
