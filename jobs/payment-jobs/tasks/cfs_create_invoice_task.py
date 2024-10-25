@@ -355,9 +355,11 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     continue
             # This is synced after receiving a CSV file at 9:30 AM each day.
             credit_remaining_total = CreditModel.find_remaining_by_account_id(account.id)
-            bank_charge_total = max(invoice_total - credit_remaining_total, 0)
+            current_app.logger.info('credit_remaining_total: %s', credit_remaining_total)
+            credit_total = min(credit_remaining_total, invoice_total)
             additional_params = {
-                "invoice_total": float(bank_charge_total),
+                "credit_total": float(credit_total),
+                "invoice_total": float(invoice_total),
                 "invoice_process_date": f"{datetime.now(tz=timezone.utc)}",
             }
 
