@@ -111,7 +111,8 @@ def test_create_pad_invoice_mixed_pli_values(session):
 
     now = datetime.now(tz=timezone.utc)
     additional_params = {
-        "invoice_total": 1.5 - 1,
+        "credit_total": 1,
+        "invoice_total": 1.5,
         "invoice_process_date": f"{now}",
     }
     with freeze_time(now):
