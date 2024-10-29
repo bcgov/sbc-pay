@@ -28,22 +28,34 @@ def upgrade():
     with op.batch_alter_table('routing_slips', schema=None) as batch_op:
         batch_op.add_column(sa.Column('refund_status', sa.String(length=50), nullable=True))
 
+    # 1. Insert the new status into the `routing_slip_status_codes` table
     op.execute(f"""
-        UPDATE routing_slip_status_codes
-        SET code = '{RoutingSlipStatus.REFUND_PROCESSED.value}', description = 'Refund Processed'
-        WHERE code = 'REFUND_COMPLETED';
+        INSERT INTO routing_slip_status_codes (code, description)
+        VALUES ('{RoutingSlipStatus.REFUND_PROCESSED.value}', 'Refund Processed')
+        ON CONFLICT (code) DO NOTHING;
     """)
 
-    # Update the records in routing_slips where status is 'REFUND_COMPLETED'
+    # 2. Update the status reference in the `routing_slips` table
     op.execute(f"""
         UPDATE routing_slips
         SET status = '{RoutingSlipStatus.REFUND_PROCESSED.value}'
         WHERE status = 'REFUND_COMPLETED';
     """)
 
+    # 3. Delete the old status `REFUND_COMPLETED`
+    op.execute("""
+        DELETE FROM routing_slip_status_codes
+        WHERE code = 'REFUND_COMPLETED';
+    """)
+
 
 def downgrade():
-    op.execute("set statement_timeout=20000;")
+    op.execute("""
+        INSERT INTO routing_slip_status_codes (code, description)
+        VALUES ('REFUND_COMPLETED', 'Refund Complete')
+        ON CONFLICT (code) DO NOTHING;
+    """)
+
     op.execute(f"""
         UPDATE routing_slips
         SET status = 'REFUND_COMPLETED'
@@ -51,8 +63,7 @@ def downgrade():
     """)
 
     op.execute(f"""
-        UPDATE routing_slip_status_codes
-        SET code = 'REFUND_COMPLETED', description = 'Refund Complete'
+        DELETE FROM routing_slip_status_codes
         WHERE code = '{RoutingSlipStatus.REFUND_PROCESSED.value}';
     """)
 

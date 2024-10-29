@@ -111,7 +111,11 @@ def check_auth(
         if required_roles := kwargs.get("all_of_roles", None):
             is_authorized = len(set(required_roles) & set(roles)) == len(set(required_roles))
         # Check if premium flag is required
-        if kwargs.get("is_premium", False) and auth_response["account"]["accountType"] not in PREMIUM_ACCOUNT_TYPES:
+        if (
+            flags.is_on("remove-premium-restrictions", default=False) is False
+            and kwargs.get("is_premium", False)
+            and auth_response["account"]["accountType"] not in PREMIUM_ACCOUNT_TYPES
+        ):
             is_authorized = False
         # For staff users, if the account is coming as empty add stub data
         # (businesses which are not affiliated won't have account)
