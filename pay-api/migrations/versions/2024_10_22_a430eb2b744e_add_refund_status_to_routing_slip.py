@@ -43,7 +43,6 @@ def upgrade():
 
 
 def downgrade():
-    op.execute("set statement_timeout=20000;")
     op.execute(f"""
         UPDATE routing_slips
         SET status = 'REFUND_COMPLETED'
