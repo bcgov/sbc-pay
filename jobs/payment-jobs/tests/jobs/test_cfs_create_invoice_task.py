@@ -17,8 +17,10 @@
 Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
+from unittest.mock import call, patch
 
+from freezegun import freeze_time
+from pay_api.models import Credit as CreditModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
@@ -29,6 +31,7 @@ from pay_api.services import CFSService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from requests import Response
 from requests.exceptions import HTTPError
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
 
@@ -65,14 +68,13 @@ def test_create_pad_invoice_single_transaction(session):
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
+
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
     CreateInvoiceTask.create_invoices()
 
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        invoice.id, InvoiceReferenceStatus.ACTIVE.value
-    )
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
@@ -104,14 +106,24 @@ def test_create_pad_invoice_mixed_pli_values(session):
         service_fees=1.5,
     )
     line.save()
+    CreditModel(account_id=account.id, amount=1, remaining_amount=1).save()
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
-    CreateInvoiceTask.create_invoices()
+    now = datetime.now(tz=timezone.utc)
+    additional_params = {
+        "credit_total": 1,
+        "invoice_total": 1.5,
+        "invoice_process_date": f"{now}",
+    }
+    with freeze_time(now):
+        with patch("utils.mailer.publish_mailer_events") as mock_publish_mailer_events:
+            CreateInvoiceTask.create_invoices()
+            mock_publish_mailer_events.assert_has_calls(
+                [call(QueueMessageTypes.PAD_INVOICE_CREATED.value, account, additional_params)]
+            )
 
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        invoice.id, InvoiceReferenceStatus.ACTIVE.value
-    )
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
@@ -165,10 +177,8 @@ def test_create_rs_invoice_single_transaction(session):
         CreateInvoiceTask.create_invoices()
         mock_create_invoice.assert_called()
 
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        invoice.id, InvoiceReferenceStatus.COMPLETED.value
-    )
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.PAID.value
@@ -203,10 +213,8 @@ def test_create_pad_invoice_single_transaction_run_again(session):
         CreateInvoiceTask.create_invoices()
         mock_cfs.assert_called()
 
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        invoice.id, InvoiceReferenceStatus.ACTIVE.value
-    )
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
@@ -238,10 +246,8 @@ def test_create_pad_invoice_for_frozen_accounts(session):
 
     CreateInvoiceTask.create_invoices()
 
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        invoice.id, InvoiceReferenceStatus.ACTIVE.value
-    )
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref is None
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
