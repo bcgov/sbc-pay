@@ -84,6 +84,9 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
 
         if total_fees == 0:
             _instance = InternalPayService()
+        # TIP = Testing in production
+        elif Role.TIP_INTERNAL_PAYMENT_OVERRIDE in user.roles:
+            _instance = InternalPayService()
         elif Role.STAFF.value in user.roles:
             if has_bcol_account_number:
                 _instance = BcolService()
