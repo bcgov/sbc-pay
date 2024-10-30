@@ -140,6 +140,7 @@ class Role(Enum):
     MANAGE_EFT = "manage_eft"
     EFT_REFUND = "eft_refund"
     EFT_REFUND_APPROVER = "eft_refund_approver"
+    TIP_INTERNAL_PAYMENT_OVERRIDE = "tip_internal_payment_override"
 
 
 class Code(Enum):
