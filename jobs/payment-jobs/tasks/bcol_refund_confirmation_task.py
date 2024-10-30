@@ -23,7 +23,7 @@ from pay_api.models import Invoice, InvoiceReference, Payment, db
 from pay_api.utils.enums import InvoiceStatus, PaymentSystem
 from sentry_sdk import capture_message
 
-from services import oracle_db
+from services import data_warehouse
 
 
 class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
@@ -65,36 +65,32 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         )
 
     @classmethod
-    def _get_colin_bcol_records_for_invoices(cls, invoice_refs: List[InvoiceReference]) -> Dict[str, Decimal]:
-        """Get BCOL refund records for the given invoice references."""
+    def _get_data_warehouse_bcol_records_for_invoices(cls, invoice_refs: List[InvoiceReference]) -> Dict[str, Decimal]:
+        """Get BCOL refund records for the given invoice references from the Data Warehouse."""
         current_app.logger.debug("Refund requested BCOL invoice references: %s", invoice_refs)
-        # split invoice refs into groups of 1000
+        # Split invoice refs into groups of 1000
         invoice_ref_chunks = []
         for i in range(0, len(invoice_refs), 1000):
-            invoice_ref_chunks.append(invoice_refs[i : i + 1000])
-
-        current_app.logger.debug("Connecting to Oracle instance...")
-        cursor = oracle_db.connection.cursor()
+            invoice_ref_chunks.append(invoice_refs[i: i + 1000])
 
         bcol_refunds_all = {}
+        current_app.logger.debug("Connecting to data_warehouse...")
+        with data_warehouse.session() as session:
+            for invoice_ref_grp in invoice_ref_chunks:
+                invoice_numbers_str = ", ".join("'" + str(x.invoice_number) + "'" for x in invoice_ref_grp)
 
-        # do for each group of 1000 (oracle wont let you do more)
-        for invoice_ref_grp in invoice_ref_chunks:
-            invoice_numbers_str = ", ".join("'" + str(x.invoice_number) + "'" for x in invoice_ref_grp)
-
-            current_app.logger.debug("Collecting COLIN BCOL refund records...")
-            # key == invoice_number
-            bcol_refunds = cursor.execute(
-                f"""
-                SELECT key, total_amt
-                FROM bconline_billing_record
-                WHERE key in ({invoice_numbers_str})
-                    AND qty = -1
+                current_app.logger.debug("Collecting Data Warehouse BCOL refund records...")
+                query = f"""
+                    SELECT key, total_amt
+                    FROM bconline_billing_record
+                    WHERE key IN ({invoice_numbers_str})
+                        AND qty = -1
                 """
-            ).fetchall()
-            # total_amt will be type float from oracle. Convert to str first to avoid Decimal cast adding extra decimals
-            bcol_refunds_all.update({x[0]: Decimal(str(x[1])) for x in bcol_refunds})
 
+                results = session.execute(query).fetchall()
+
+                # Convert float from the database to Decimal
+                bcol_refunds_all.update({row['key']: Decimal(str(row['total_amt'])) for row in results})
         # set invoice_number as the key (makes it easier map against)
         return bcol_refunds_all
 
