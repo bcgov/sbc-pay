@@ -95,8 +95,8 @@ def run(job_name, argument=None):
     from tasks.statement_task import StatementTask
     from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
 
-    jobs_with_oracle_connections = ["BCOL_REFUND_CONFIRMATION"]
-    application = create_app(job_name=job_name, init_oracle=job_name in jobs_with_oracle_connections)
+    jobs_with_data_warehouse_connections = ["BCOL_REFUND_CONFIRMATION"]
+    application = create_app(job_name=job_name, init_data_warehouse=job_name in jobs_with_data_warehouse_connections)
 
     application.app_context().push()
     match job_name:
