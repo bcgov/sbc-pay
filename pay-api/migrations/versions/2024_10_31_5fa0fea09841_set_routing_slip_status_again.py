@@ -23,7 +23,7 @@ depends_on = None
 
 def upgrade():
     op.execute(f"update routing_slips set status = '{RoutingSlipRefundStatus.PROCESSED.value}' where status = 'REFUND_COMPLETED';")
-    op.execute("delete from routing_slp_status_codes where code = 'REFUND_COMPLETED';")
+    op.execute("delete from routing_slip_status_codes where code = 'REFUND_COMPLETED';")
 
 def downgrade():
     op.execute("INSERT INTO routing_slip_status_codes (code, description) VALUES ('REFUND_COMPLETED', 'Refund Complete');")
