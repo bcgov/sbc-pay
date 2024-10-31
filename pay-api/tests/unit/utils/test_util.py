@@ -18,11 +18,13 @@ Test-Suite to ensure that the util functions are working as expected.
 """
 from datetime import datetime
 
+import pytest
+from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.util import get_nearest_business_day
+from pay_api.utils.util import get_nearest_business_day, is_valid_redirect_url
 
 
 def test_next_business_day(session):
@@ -117,3 +119,41 @@ def test_validate_schema():
     """Assert get_schema works."""
     schema_utils.get_schema("transaction_request.json")
     assert True
+
+
+@pytest.mark.parametrize(
+    "redirect_url, valid_urls, expected_result",
+    [
+        ("https://bcregistry.ca", ["https://www.bcregistry.ca/*"], True),
+        ("https://bcregistry.ca", ["https://www.bcregistry.ca/"], True),
+        ("https://bcregistry.ca", ["https://www.bcregistry.ca"], True),
+        ("https://bcregistry.ca/", ["https://www.bcregistry.ca/*"], True),
+        ("https://bcregistry.ca/", ["https://www.bcregistry.ca/"], True),
+        ("https://bcregistry.ca/", ["https://www.bcregistry.ca"], True),
+        ("https://www.bcregistry.ca", ["https://www.bcregistry.ca/*"], True),
+        ("https://www.bcregistry.ca", ["https://www.bcregistry.ca/"], True),
+        ("https://www.bcregistry.ca", ["https://www.bcregistry.ca"], True),
+        ("https://www.bcregistry.ca/", ["https://www.bcregistry.ca/*"], True),
+        ("https://www.bcregistry.ca/", ["https://www.bcregistry.ca/"], True),
+        ("https://www.bcregistry.ca/", ["https://www.bcregistry.ca"], True),
+        ("https://www.bcregistry.ca", ["https://bcregistry.ca/*"], True),
+        ("https://www.bcregistry.ca", ["https://bcregistry.ca/"], True),
+        ("https://www.bcregistry.ca", ["https://bcregistry.ca"], True),
+        ("https://www.bcregistry.ca/", ["https://bcregistry.ca/*"], True),
+        ("https://www.bcregistry.ca/", ["https://bcregistry.ca/"], True),
+        ("https://www.bcregistry.ca/", ["https://bcregistry.ca"], True),
+        ("https://www.bcregistry.ca/abc", ["https://bcregistry.ca/*"], True),
+        ("https://www.bcregistry.ca/abc/123", ["https://bcregistry.ca/*"], True),
+        ("https://www.bcregistry.com/abc", ["https://bcregistry.ca"], False),
+        ("https://www.bcregistry.com/abc/123", ["https://bcregistry.ca"], False),
+        ("https://www.bcreg.ca/", ["https://bcregistry.ca"], False),
+        ("https://bcreg.ca/", ["https://bcregistry.ca"], False),
+        ("https://bcreg.ca/", ["https://bcregistry.ca", "https://www.bcreg.ca", "https://test.com"], True),
+    ],
+)
+def test_validate_redirect_url(app, redirect_url, valid_urls, expected_result):
+    """Test validate redirect url."""
+    app.config["DISABLE_VALID_REDIRECT_URLS"] = False
+    app.config["VALID_REDIRECT_URLS"] = valid_urls
+    with app.app_context():
+        assert is_valid_redirect_url(redirect_url) == expected_result

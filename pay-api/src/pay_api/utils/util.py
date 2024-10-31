@@ -21,7 +21,7 @@ import calendar
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict
-from urllib.parse import parse_qsl
+from urllib.parse import parse_qsl, urlparse
 
 import pytz
 from dpath import get as dpath_get
@@ -55,6 +55,16 @@ def cors_preflight(methods: str = "GET"):
     return wrapper
 
 
+def normalize_url(url: str) -> str:
+    """Normalize the URL by removing 'www.' if present and strip trailing slash."""
+    parsed = urlparse(url)
+    netloc = parsed.netloc
+    if netloc.startswith("www."):
+        netloc = netloc[4:]
+    path = parsed.path.rstrip("/")
+    return f"{parsed.scheme}://{netloc}{path}"
+
+
 def is_valid_redirect_url(url: str) -> bool:
     """Validate if the url is valid based on the VALID Redirect Url."""
     disable_redirect_validation: bool = current_app.config.get("DISABLE_VALID_REDIRECT_URLS")
@@ -62,8 +72,10 @@ def is_valid_redirect_url(url: str) -> bool:
         return True
     valid_urls: list = current_app.config.get("VALID_REDIRECT_URLS")
     is_valid = False
+    url = normalize_url(url)
     for valid_url in valid_urls:
-        is_valid = url.startswith(valid_url[:-1]) if valid_url.endswith("*") else valid_url == url
+        valid_url = normalize_url(valid_url)
+        is_valid = url.startswith(normalize_url(valid_url[:-1])) if valid_url.endswith("*") else valid_url == url
         if is_valid:
             break
     return is_valid
