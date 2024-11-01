@@ -91,7 +91,7 @@ def test_bcol_refund_confirmation(
     sentry_mock = Mock()
 
     monkeypatch.setattr(
-        "tasks.bcol_refund_confirmation_task.BcolRefundConfirmationTask._get_colin_bcol_records_for_invoices",
+        "tasks.bcol_refund_confirmation_task.BcolRefundConfirmationTask._get_data_warehouse_bcol_records_for_invoices",
         colin_bcol_records_mock,
     )
     monkeypatch.setattr("tasks.bcol_refund_confirmation_task.capture_message", sentry_mock)

@@ -13,11 +13,13 @@
 # limitations under the License.
 
 """tests/services/test_data_warehouse_connection.py."""
+from unittest.mock import MagicMock, patch
+
 import pytest
 from flask import Flask
-from unittest.mock import patch, MagicMock
-from services.data_warehouse import data_warehouse
 from sqlalchemy import text
+
+from services.data_warehouse import data_warehouse
 
 
 @pytest.fixture
@@ -33,7 +35,8 @@ def app():
 
 
 @patch("services.data_warehouse.create_engine")
-def test_data_warehouse_connection(mock_create_engine, app):
+@patch("services.data_warehouse.Connector")
+def test_data_warehouse_connection(mock_connector, mock_create_engine, app):
     """Test the connection to the Data Warehouse."""
     mock_engine = MagicMock()
     mock_connection = MagicMock()
@@ -42,6 +45,7 @@ def test_data_warehouse_connection(mock_create_engine, app):
 
     mock_result = [(1,)]
     mock_connection.execute.return_value.fetchone.return_value = mock_result[0]
+    mock_connector.return_value.connect.return_value = mock_connection
 
     data_warehouse.init_app(app)
 
