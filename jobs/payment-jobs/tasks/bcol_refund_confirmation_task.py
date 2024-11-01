@@ -22,6 +22,7 @@ from flask import current_app
 from pay_api.models import Invoice, InvoiceReference, Payment, db
 from pay_api.utils.enums import InvoiceStatus, PaymentSystem
 from sentry_sdk import capture_message
+from sqlalchemy import text
 
 from services import data_warehouse
 
@@ -43,7 +44,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         """
         invoice_refs = cls._get_paydb_invoice_refs_for_update()
         if invoice_refs:
-            bcol_refund_records = cls._get_colin_bcol_records_for_invoices(invoice_refs)
+            bcol_refund_records = cls._get_data_warehouse_bcol_records_for_invoices(invoice_refs)
             current_app.logger.debug("BCOL refunded invoice numbers: %s", bcol_refund_records)
 
             if bcol_refund_records:
@@ -68,10 +69,10 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
     def _get_data_warehouse_bcol_records_for_invoices(cls, invoice_refs: List[InvoiceReference]) -> Dict[str, Decimal]:
         """Get BCOL refund records for the given invoice references from the Data Warehouse."""
         current_app.logger.debug("Refund requested BCOL invoice references: %s", invoice_refs)
-        # Split invoice refs into groups of 1000
+        # Split invoice refs into groups of 5000
         invoice_ref_chunks = []
-        for i in range(0, len(invoice_refs), 1000):
-            invoice_ref_chunks.append(invoice_refs[i: i + 1000])
+        for i in range(0, len(invoice_refs), 5000):
+            invoice_ref_chunks.append(invoice_refs[i: i + 5000])
 
         bcol_refunds_all = {}
         current_app.logger.debug("Connecting to data_warehouse...")
@@ -80,12 +81,12 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
                 invoice_numbers_str = ", ".join("'" + str(x.invoice_number) + "'" for x in invoice_ref_grp)
 
                 current_app.logger.debug("Collecting Data Warehouse BCOL refund records...")
-                query = f"""
-                    SELECT key, total_amt
-                    FROM bconline_billing_record
-                    WHERE key IN ({invoice_numbers_str})
-                        AND qty = -1
-                """
+                query = text(f"""
+                            SELECT key, total_amt
+                            FROM colin.bconline_billing_record
+                            WHERE key IN ({invoice_numbers_str})
+                                AND qty = -1
+                        """)
 
                 results = session.execute(query).fetchall()
 

@@ -65,7 +65,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     DB_NAME = os.getenv("DATABASE_NAME", "")
     DB_HOST = os.getenv("DATABASE_HOST", "")
     DB_PORT = os.getenv("DATABASE_PORT", "5432")
-    if DB_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
+    if DW_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
         SQLALCHEMY_DATABASE_URI = 'postgresql+pg8000://'
     else:
         SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
@@ -75,6 +75,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     DW_NAME = os.getenv("DW_NAME", "")
     DW_USER = os.getenv("DW_USER", "")
     DW_PASSWORD = os.getenv("DW_PASSWORD", "")
+    DW_HOST = os.getenv("DW_HOST", "")
+    DW_PORT = os.getenv("DW_PORT", "")
 
     # PAYBC Direct Pay Settings
     PAYBC_DIRECT_PAY_REF_NUMBER = os.getenv("PAYBC_DIRECT_PAY_REF_NUMBER")

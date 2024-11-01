@@ -18,16 +18,17 @@ These will get initialized by the application.
 
 # services/data_warehouse.py
 
+import pg8000
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from google.cloud.sql.connector import Connector
-from flask import current_app, Flask
 from dataclasses import dataclass
 
 
 @dataclass
 class DBConfig:
     """Database configuration settings."""
+
     database: str
     user: str
     password: str
@@ -58,10 +59,14 @@ def getconn(connector: Connector, db_config: DBConfig) -> object:
             driver='pg8000',
         )
     else:
-        # Use direct TCP connection for local testing
-        return create_engine(
-            f"postgresql+pg8000://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}/{db_config.database}"
-        ).connect()
+        conn = pg8000.connect(
+            database=db_config.database,
+            user=db_config.user,
+            password=db_config.password,
+            host=db_config.host,
+            port=db_config.port
+        )
+        return conn
 
 
 class DataWarehouseDB:
@@ -76,14 +81,14 @@ class DataWarehouseDB:
     def init_app(self, app):
         """Initialize the app with the Data Warehouse engine and session."""
         self.connector = Connector(refresh_strategy="lazy")
-        
+
         db_config = DBConfig(
-            unix_sock=app.config.get("DB_UNIX_SOCKET"),
-            host=app.config.get("DB_HOST"),
-            port=app.config.get("DB_PORT", 5432),
-            database=app.config.get("DB_NAME"),
-            user=app.config.get("DB_USER"),
-            password=app.config.get("DB_PASSWORD"),
+            unix_sock=app.config.get("DW_UNIX_SOCKET"),
+            host=app.config.get("DW_HOST"),
+            port=app.config.get("DW_PORT", 5432),
+            database=app.config.get("DW_NAME"),
+            user=app.config.get("DW_USER"),
+            password=app.config.get("DW_PASSWORD"),
         )
 
         self.engine = create_engine(
@@ -91,8 +96,9 @@ class DataWarehouseDB:
             creator=lambda: getconn(self.connector, db_config),
             pool_size=5,
             max_overflow=2,
-            pool_timeout=30,
+            pool_timeout=10,
             pool_recycle=1800,
+            connect_args={"use_native_uuid": False}
         )
 
         app.teardown_appcontext(self.teardown)
