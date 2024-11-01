@@ -25,7 +25,7 @@ from pay_api.services.gcp_queue import queue
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
-from services import oracle_db
+from services import data_warehouse
 from tasks.eft_overpayment_notification_task import EFTOverpaymentNotificationTask
 from tasks.eft_statement_due_task import EFTStatementDueTask
 from tasks.eft_task import EFTTask
@@ -38,7 +38,7 @@ setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.
 def create_app(
     run_mode=os.getenv("DEPLOYMENT_ENV", "production"),
     job_name="unknown",
-    init_oracle=False,
+    init_data_warehouse=False,
 ):
     """Return a configured Flask App using the Factory method."""
     from pay_api.models import db, ma
@@ -58,8 +58,9 @@ def create_app(
     app.logger.info("<<<< Starting Payment Jobs >>>>")
     queue.init_app(app)
     db.init_app(app)
-    if init_oracle:
-        oracle_db.init_app(app)
+    if init_data_warehouse:
+        data_warehouse.init_app(app)
+
     ma.init_app(app)
     flag_service = Flags()
     flag_service.init_app(app)
@@ -94,8 +95,8 @@ def run(job_name, argument=None):
     from tasks.statement_task import StatementTask
     from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
 
-    jobs_with_oracle_connections = ["BCOL_REFUND_CONFIRMATION"]
-    application = create_app(job_name=job_name, init_oracle=job_name in jobs_with_oracle_connections)
+    jobs_with_data_warehouse_connections = ["BCOL_REFUND_CONFIRMATION"]
+    application = create_app(job_name=job_name, init_data_warehouse=job_name in jobs_with_data_warehouse_connections)
 
     application.app_context().push()
     match job_name:

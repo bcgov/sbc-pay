@@ -66,5 +66,11 @@
             "gtksf3",
             "topics"
         ]
+    },
+    {
+        "vault": "database",
+        "application": [
+            "fin-warehouse"
+        ]
     }
 ]

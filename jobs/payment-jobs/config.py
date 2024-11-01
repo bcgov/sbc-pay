@@ -73,11 +73,13 @@ class _Config(object):  # pylint: disable=too-few-public-methods
         SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     SQLALCHEMY_ECHO = False
 
-    ORACLE_USER = os.getenv("ORACLE_USER", "")
-    ORACLE_PASSWORD = os.getenv("ORACLE_PASSWORD", "")
-    ORACLE_DB_NAME = os.getenv("ORACLE_DB_NAME", "")
-    ORACLE_HOST = os.getenv("ORACLE_HOST", "")
-    ORACLE_PORT = int(os.getenv("ORACLE_PORT", "1521"))
+    # Data Warehouse Settings
+    DW_UNIX_SOCKET = os.getenv("DW_UNIX_SOCKET", "")
+    DW_NAME = os.getenv("DW_NAME", "")
+    DW_USER = os.getenv("DW_USER", "")
+    DW_PASSWORD = os.getenv("DW_PASSWORD", "")
+    DW_HOST = os.getenv("DW_HOST", "")
+    DW_PORT = os.getenv("DW_PORT", "5432")
 
     # PAYBC Direct Pay Settings
     PAYBC_DIRECT_PAY_REF_NUMBER = os.getenv("PAYBC_DIRECT_PAY_REF_NUMBER")
