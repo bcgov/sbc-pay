@@ -18,7 +18,7 @@ on:
         - prod
 
 jobs:
-  bcol-api-cd:
+  ftp-poller-cd:
     uses: bcgov/bcregistry-sre/.github/workflows/backend-cd-ocp.yaml@main
     with:
       target: ${{ inputs.target }}
