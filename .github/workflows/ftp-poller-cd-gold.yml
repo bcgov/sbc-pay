@@ -1,0 +1,34 @@
+name: FTP Poller GOLD CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "jobs/ftp-poller/**"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deploy To"
+        required: true
+        type: choice
+        options:
+        - dev
+        - test
+        - prod
+
+jobs:
+  bcol-api-cd:
+    uses: bcgov/bcregistry-sre/.github/workflows/backend-cd-ocp.yaml@main
+    with:
+      target: ${{ inputs.target }}
+      app_name: "ftp-poller"
+      working_directory: "./jobs/ftp-poller"
+    secrets:
+      OP_CONNECT_URL: ${{ secrets.OP_GOLD_CONNECT_URL }}
+      OP_CONNECT_TOKEN: ${{ secrets.OP_GOLD_CONNECT_TOKEN }}
+      OPENSHIFT_DOCKER_REGISTRY: ${{ secrets.OPENSHIFT_GOLD_DOCKER_REGISTRY }}
+      OPENSHIFT_LOGIN_REGISTRY: ${{secrets.OPENSHIFT_GOLD_LOGIN_REGISTRY}}
+      OPENSHIFT_SA_NAME: ${{ secrets.OPENSHIFT_GOLD_SA_NAME }}
+      OPENSHIFT_SA_TOKEN: ${{ secrets.OPENSHIFT_GOLD_SA_TOKEN }}
+      OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT_GOLD_REPOSITORY }}
