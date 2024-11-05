@@ -144,8 +144,6 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     )
 
     inv_ref = factory_invoice_reference(invoice_id=eft_invoice_approved.id)
-    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
-    factory_receipt(invoice_id=eft_invoice_approved.id, receipt_date=datetime.now(tz=timezone.utc)).save()
     partner_disbursement_approved = PartnerDisbursementsModel(
         amount=10,
         is_reversal=False,
