@@ -302,6 +302,14 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             RefundService._validate_refund_amount(refund_line, payment_line)
 
     @classmethod
+    def _validate_allow_partial_refund(cls, refund_revenue, invoice: InvoiceModel):
+        if refund_revenue:
+            if not flags.is_on("enable-partial-refunds", default=False):
+                raise BusinessException(Error.INVALID_REQUEST)
+            if invoice.corp_type.has_partner_disbursements:
+                raise BusinessException(Error.PARTIAL_REFUND_DISBURSEMENTS_UNSUPPORTED)
+
+    @classmethod
     @user_context
     def create_refund(cls, invoice_id: int, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create refund."""
@@ -331,8 +339,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         )
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         refund_revenue = (request or {}).get("refundRevenue", None)
-        if refund_revenue and not flags.is_on("enable-partial-refunds", default=False):
-            raise BusinessException(Error.INVALID_REQUEST)
+        cls._validate_allow_partial_refund(refund_revenue, invoice)
 
         refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
         cls._validate_partial_refund_lines(refund_partial_lines, invoice)

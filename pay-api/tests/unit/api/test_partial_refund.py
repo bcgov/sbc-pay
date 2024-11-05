@@ -187,6 +187,45 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
         assert len(refunds_partial) == 0
 
 
+def test_refund_validation_for_disbursements(session, client, jwt, app, monkeypatch):
+    """Assert that the partial refund amount validation returns 400 when the invoice corp_type has disbursements."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+    inv_id = rv.json.get("id")
+    invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.corp_type_code = 'VS'
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    refund_revenue = [
+        {
+            "paymentLineItemId": payment_line_items[0].id,
+            "refundAmount": float(payment_line_items[0].filing_fees),
+            "refundType": RefundsPartialType.BASE_FEES.value,
+        }
+    ]
+
+    with patch("pay_api.services.payment_service.flags.is_on", return_value=True):
+        rv = client.post(
+            f"/api/v1/payment-requests/{inv_id}/refunds",
+            data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
+            headers=headers,
+        )
+        assert rv.status_code == 400
+        assert rv.json.get("type") == Error.PARTIAL_REFUND_DISBURSEMENTS_UNSUPPORTED.name
+        assert RefundModel.find_by_invoice_id(inv_id) is None
+
+
 @pytest.mark.parametrize(
     "fee_type",
     [
