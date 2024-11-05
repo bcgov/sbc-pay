@@ -184,7 +184,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 
         assert partner_disbursement.status_code == DisbursementStatus.UPLOADED.value
         assert partner_disbursement.processed_on
-        assert partner_disbursement_approved.status_code is None
+        assert partner_disbursement_approved.status_code == DisbursementStatus.WAITING_FOR_JOB.value
 
     # Reverse those payments and assert records.
     # Set the status of invoice as disbursement completed, so that reversal can kick start.
