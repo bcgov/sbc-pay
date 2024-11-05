@@ -126,6 +126,35 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
         target_type=EJVLinkType.INVOICE.value,
     ).save()
 
+    eft_invoice_approved = factory_invoice(
+        payment_account=pad_account,
+        corp_type_code=corp_type.code,
+        total=11.5,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code="APPROVED",
+    )
+
+    factory_payment_line_item(
+        invoice_id=eft_invoice_approved.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        filing_fees=10,
+        total=10,
+        service_fees=1.5,
+        fee_dist_id=fee_distribution.distribution_code_id,
+    )
+
+    inv_ref = factory_invoice_reference(invoice_id=eft_invoice_approved.id)
+    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
+    factory_receipt(invoice_id=eft_invoice_approved.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+    partner_disbursement_approved = PartnerDisbursementsModel(
+        amount=10,
+        is_reversal=False,
+        partner_code=eft_invoice.corp_type_code,
+        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+        target_id=eft_invoice_approved.id,
+        target_type=EJVLinkType.INVOICE.value,
+    ).save()
+
     EjvPartnerDistributionTask.create_ejv_file()
 
     # Lookup invoice and assert disbursement status
@@ -141,6 +170,9 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
         invoice = Invoice.find_by_id(invoice.id)
         assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
+        eft_invoice_approved = Invoice.find_by_id(eft_invoice_approved.id)
+        assert eft_invoice_approved.disbursement_status_code is None
+
         ejv_inv_link = db.session.query(EjvLink).filter(EjvLink.link_id == invoice.id).first()
         assert ejv_inv_link
 
@@ -154,6 +186,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 
         assert partner_disbursement.status_code == DisbursementStatus.UPLOADED.value
         assert partner_disbursement.processed_on
+        assert partner_disbursement_approved.status_code is None
 
     # Reverse those payments and assert records.
     # Set the status of invoice as disbursement completed, so that reversal can kick start.
