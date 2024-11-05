@@ -118,7 +118,7 @@ def test_account_purchase_history_with_basic_account(session, client, jwt, app):
         headers=headers,
     )
 
-    pay_account: PaymentAccount = PaymentAccountService.find_account(get_auth_basic_user())
+    pay_account = PaymentAccountService.find_account(get_auth_basic_user())
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries",
@@ -141,8 +141,8 @@ def test_account_purchase_history_pagination(session, client, jwt, app):
             headers=headers,
         )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=5",
@@ -184,8 +184,8 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
             headers=headers,
         )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code="CSO"), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -382,6 +382,19 @@ def test_account_purchase_history_default_list(session, client, jwt, app):
     assert rv.status_code == 200
     # Assert the total is coming as 10 which is the value of default TRANSACTION_REPORT_DEFAULT_TOTAL
     assert rv.json.get("total") == 10
+
+
+def test_bad_id_payment_queries(session, client, jwt, app):
+    """Assert testing a string inside of the route doesn't work."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    rv = client.post(
+        "/api/v1/accounts/undefined/payments/queries",
+        data=json.dumps({}),
+        headers=headers,
+    )
+    assert rv.status_code == 400
+    assert rv.json.get("invalidParams") == "account_number"
 
 
 def test_basic_account_creation(session, client, jwt, app):

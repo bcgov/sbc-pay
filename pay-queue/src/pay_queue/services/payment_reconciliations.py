@@ -296,7 +296,7 @@ def _process_file_content(
             RecordType.PADR.value,
             RecordType.PAYR.value,
         )
-        if float(_get_row_value(row, Column.APP_AMOUNT)) == 0 and record_type not in pad_record_types:
+        if float(_get_row_value(row, Column.APP_AMOUNT) or 0.0) == 0 and record_type not in pad_record_types:
             continue
 
         # If PAD, lookup the payment table and mark status based on the payment status

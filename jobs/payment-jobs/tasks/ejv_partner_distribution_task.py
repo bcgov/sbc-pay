@@ -32,7 +32,7 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
-from sqlalchemy import Date, and_, cast
+from sqlalchemy import Date, and_, cast, or_
 
 from tasks.common.cgi_ejv import CgiEjv
 from tasks.common.dataclasses import Disbursement, DisbursementLineItem
@@ -160,6 +160,15 @@ class EjvPartnerDistributionTask(CgiEjv):
             .filter(PartnerDisbursementsModel.partner_code == partner.code)
             .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None))
             .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()))
+            .filter(
+                or_(
+                    and_(
+                        PartnerDisbursementsModel.is_reversal.is_(False),
+                        InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
+                    ),
+                    PartnerDisbursementsModel.is_reversal.is_(True),
+                )
+            )
             .order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id)
             .all()
         )
@@ -311,11 +320,15 @@ class EjvPartnerDistributionTask(CgiEjv):
             raise NotImplementedError("Unknown disbursement type")
 
         # Possible this could already be created, eg two PLI.
-        if db.session.query(EjvLinkModel).filter(
-            EjvLinkModel.link_id == disbursement.line_item.identifier,
-            EjvLinkModel.link_type == disbursement.line_item.target_type,
-            EjvLinkModel.ejv_header_id == ejv_header_model.id,
-        ).first():
+        if (
+            db.session.query(EjvLinkModel)
+            .filter(
+                EjvLinkModel.link_id == disbursement.line_item.identifier,
+                EjvLinkModel.link_type == disbursement.line_item.target_type,
+                EjvLinkModel.ejv_header_id == ejv_header_model.id,
+            )
+            .first()
+        ):
             return
 
         db.session.add(
