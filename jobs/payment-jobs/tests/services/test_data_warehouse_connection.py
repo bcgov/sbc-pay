@@ -26,11 +26,11 @@ from services.data_warehouse import data_warehouse
 def app():
     """Create a Flask app instance configured for testing."""
     app = Flask(__name__)
-    app.config['DW_HOST'] = 'mock_host'
-    app.config['DW_PORT'] = 5432
-    app.config['DW_NAME'] = 'mock_database'
-    app.config['DW_USER'] = 'mock_user'
-    app.config['DW_PASSWORD'] = 'mock_password'
+    app.config["DW_HOST"] = "mock_host"
+    app.config["DW_PORT"] = 5432
+    app.config["DW_NAME"] = "mock_database"
+    app.config["DW_USER"] = "mock_user"
+    app.config["DW_PASSWORD"] = "mock_password"
     return app
 
 

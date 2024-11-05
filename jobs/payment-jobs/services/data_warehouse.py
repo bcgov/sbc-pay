@@ -18,11 +18,12 @@ These will get initialized by the application.
 
 # services/data_warehouse.py
 
+from dataclasses import dataclass
+
 import pg8000
+from google.cloud.sql.connector import Connector
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-from google.cloud.sql.connector import Connector
-from dataclasses import dataclass
 
 
 @dataclass
@@ -49,14 +50,14 @@ def getconn(connector: Connector, db_config: DBConfig) -> object:
     """
     if db_config.unix_sock:
         # Use Unix socket connection with the Connector for deployment
-        instance_connection_string = db_config.unix_sock.replace('/cloudsql/', '')
+        instance_connection_string = db_config.unix_sock.replace("/cloudsql/", "")
         return connector.connect(
             instance_connection_string=instance_connection_string,
-            ip_type='private',
+            ip_type="private",
             user=db_config.user,
             password=db_config.password,
             db=db_config.database,
-            driver='pg8000',
+            driver="pg8000",
         )
     else:
         conn = pg8000.connect(
@@ -64,7 +65,7 @@ def getconn(connector: Connector, db_config: DBConfig) -> object:
             user=db_config.user,
             password=db_config.password,
             host=db_config.host,
-            port=db_config.port
+            port=db_config.port,
         )
         return conn
 
@@ -98,7 +99,7 @@ class DataWarehouseDB:
             max_overflow=2,
             pool_timeout=10,
             pool_recycle=1800,
-            connect_args={"use_native_uuid": False}
+            connect_args={"use_native_uuid": False},
         )
 
         app.teardown_appcontext(self.teardown)

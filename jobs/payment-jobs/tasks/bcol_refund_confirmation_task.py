@@ -72,7 +72,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         # Split invoice refs into groups of 5000
         invoice_ref_chunks = []
         for i in range(0, len(invoice_refs), 5000):
-            invoice_ref_chunks.append(invoice_refs[i: i + 5000])
+            invoice_ref_chunks.append(invoice_refs[i : i + 5000])
 
         bcol_refunds_all = {}
         current_app.logger.debug("Connecting to data_warehouse...")
@@ -81,17 +81,19 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
                 invoice_numbers_str = ", ".join("'" + str(x.invoice_number) + "'" for x in invoice_ref_grp)
 
                 current_app.logger.debug("Collecting Data Warehouse BCOL refund records...")
-                query = text(f"""
+                query = text(
+                    f"""
                             SELECT key, total_amt
                             FROM colin.bconline_billing_record
                             WHERE key IN ({invoice_numbers_str})
                                 AND qty = -1
-                        """)
+                        """
+                )
 
                 results = session.execute(query).fetchall()
 
                 # Convert float from the database to Decimal
-                bcol_refunds_all.update({row['key']: Decimal(str(row['total_amt'])) for row in results})
+                bcol_refunds_all.update({row["key"]: Decimal(str(row["total_amt"])) for row in results})
         # set invoice_number as the key (makes it easier map against)
         return bcol_refunds_all
 
