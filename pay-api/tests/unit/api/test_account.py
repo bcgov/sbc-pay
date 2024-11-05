@@ -384,6 +384,19 @@ def test_account_purchase_history_default_list(session, client, jwt, app):
     assert rv.json.get("total") == 10
 
 
+def test_bad_id_payment_queries(session, client, jwt, app):
+    """Assert testing a string inside of the route doesn't work."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    rv = client.post(
+        "/api/v1/accounts/HELLO/payments/queries",
+        data=json.dumps({}),
+        headers=headers,
+    )
+    assert rv.status_code == 400
+    assert rv.json.get("invalidParams") == "account_number"
+
+
 def test_basic_account_creation(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
