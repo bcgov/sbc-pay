@@ -258,7 +258,7 @@ def put_account_fee_product(account_number: str, product: str):
 def post_search_purchase_history(account_number: str):
     """Search purchase history."""
     current_app.logger.info("<post_search_purchase_history")
-    if account_number and account_number.isnumeric() is False:
+    if account_number == "undefined":
         return error_to_response(Error.INVALID_REQUEST, invalid_params='account_number')
     request_json = request.get_json()
     current_app.logger.debug(request_json)
