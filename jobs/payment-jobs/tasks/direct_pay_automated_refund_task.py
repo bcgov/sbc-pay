@@ -151,7 +151,13 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             )
         )[0]
         payment_url: str = f"{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{completed_reference.invoice_number}"
-        payment_response = OAuthService.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+        payment_response = OAuthService.get(
+            payment_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        ).json()
         return payment_response
 
     @classmethod

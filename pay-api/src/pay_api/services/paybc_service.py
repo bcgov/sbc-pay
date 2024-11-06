@@ -148,6 +148,7 @@ class PaybcService(PaymentSystemService, CFSService):
                 AuthHeaderType.BEARER,
                 ContentType.JSON,
                 retry_on_failure=True,
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
             ).json()
             for receipt in receipts_response.get("items"):
                 expanded_receipt = self._get_receipt_by_number(access_token, receipt_url, receipt.get("receipt_number"))
@@ -179,7 +180,7 @@ class PaybcService(PaymentSystemService, CFSService):
     ):
         """Get receipt details by receipt number."""
         receipt_url = receipt_url + f"{receipt_number}/"
-        return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True).json()
+        return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True, additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},).json()
 
     def process_cfs_refund(
         self,
