@@ -27,7 +27,7 @@ def paybc_token_response(cls, *args):  # pylint: disable=unused-argument; mocks 
     )
 
 
-def refund_payload_response(cls, *args):  # pylint: disable=unused-argument; mocks of library methods
+def refund_payload_response(cls, *args, **kwargs):  # pylint: disable=unused-argument; mocks of library methods
     """Mock refund payload response."""
     return Mock(
         status_code=201,
