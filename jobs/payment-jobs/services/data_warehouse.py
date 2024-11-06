@@ -53,7 +53,7 @@ def getconn(connector: Connector, db_config: DBConfig) -> object:
         instance_connection_string = db_config.unix_sock.replace("/cloudsql/", "")
         return connector.connect(
             instance_connection_string=instance_connection_string,
-            ip_type="private",
+            ip_type="public",
             user=db_config.user,
             password=db_config.password,
             db=db_config.database,
