@@ -22,3 +22,6 @@ The application runs a collection of tasks at definite intervals.
 |                       	|                                                           	|            	|                                          	|                              	|                      	|
 |                       	|                                                           	|            	|                                          	|                              	|                      	|
 |                       	|                                                           	|            	|                                          	|                              	|                      	|
+
+CD flow looks for https://github.com/bcgov/bcregistry-sre/blob/3ef95fd20b1ff5d7039b63fc28b1d179331ccd9d/.github/actions/backend-deploy-job/files/cloudbuild.yaml#L119
+run_* to generate jobs in cloud jobs.
