@@ -3,7 +3,8 @@ name: Payment Jobs CD GCP
 on:
   push:
     branches:
-      - feature-gcp
+      - main
+      - feature*
     paths:
       - "jobs/payment-jobs/**"
       - "pay-api/src/pay_api/models/**"
