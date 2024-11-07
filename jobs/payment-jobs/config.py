@@ -94,6 +94,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CFS_CLIENT_SECRET = os.getenv("CFS_CLIENT_SECRET")
     CONNECT_TIMEOUT = int(os.getenv("CONNECT_TIMEOUT", 10))
     GENERATE_RANDOM_INVOICE_NUMBER = os.getenv("CFS_GENERATE_RANDOM_INVOICE_NUMBER", "False")
+    PAY_CONNECTOR_AUTH = os.getenv("PAY_CONNECTOR_AUTH", "")
 
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv("LEGISLATIVE_TIMEZONE", "America/Vancouver")
@@ -200,8 +201,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     EFT_HOLDING_GL = os.getenv("EFT_HOLDING_GL", "")
     EFT_TRANSFER_DESC = os.getenv("EFT_TRANSFER_DESC", "BCREGISTRIES {} {} EFT TRANSFER")
     EFT_OVERDUE_NOTIFY_EMAILS = os.getenv("EFT_OVERDUE_NOTIFY_EMAILS", "")
-    # Reverse Proxy secret
-    PAY_CONNECTOR_SECRET = os.getenv("PAY_CONNECTOR_SECRET", "")
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods

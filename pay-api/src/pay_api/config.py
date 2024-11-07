@@ -113,6 +113,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     CFS_INVOICE_PREFIX = os.getenv("CFS_INVOICE_PREFIX", "REG")
     CFS_RECEIPT_PREFIX = os.getenv("CFS_RECEIPT_PREFIX", "RCPT")
     CFS_PARTY_PREFIX = os.getenv("CFS_PARTY_PREFIX", "BCR-")
+    PAY_CONNECTOR_AUTH = os.getenv("PAY_CONNECTOR_AUTH", "")
 
     # EFT Config
     EFT_INVOICE_PREFIX = os.getenv("EFT_INVOICE_PREFIX", "REG")
@@ -199,8 +200,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     # Used for DEV/TEST/SANDBOX only. If True, will skip payment and return success and send queue message.
     ALLOW_SKIP_PAYMENT = os.getenv("ALLOW_SKIP_PAYMENT", "False").lower() == "true"
 
-    # Reverse Proxy secret
-    PAY_CONNECTOR_SECRET = os.getenv("PAY_CONNECTOR_SECRET", "")
+
 
     TESTING = False
     DEBUG = True

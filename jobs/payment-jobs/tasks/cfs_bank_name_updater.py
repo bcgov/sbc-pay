@@ -123,7 +123,8 @@ def get_bank_info(
         + f"/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/"
     )
     access_token: str = CFSService.get_token().json().get("access_token")
-    payment_details = CFSService.get(site_payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+    payment_details = CFSService.get(site_payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                     additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")})
     return payment_details.json()
 
 
@@ -161,6 +162,7 @@ def save_bank_details(
         AuthHeaderType.BEARER,
         ContentType.JSON,
         payment_details,
+        additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")}
     ).json()
     current_app.logger.debug("<<<<<<")
     current_app.logger.debug(site_payment_response)

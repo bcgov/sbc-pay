@@ -156,7 +156,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         ).json()
         return payment_response
 

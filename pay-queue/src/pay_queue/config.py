@@ -89,6 +89,7 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     CFS_CLIENT_ID = os.getenv("CFS_CLIENT_ID")
     CFS_CLIENT_SECRET = os.getenv("CFS_CLIENT_SECRET")
     CONNECT_TIMEOUT = int(os.getenv("CONNECT_TIMEOUT", "10"))
+    PAY_CONNECTOR_AUTH = os.getenv("PAY_CONNECTOR_AUTH", "")
 
     # EFT Config
     EFT_TDI17_LOCATION_ID = os.getenv("EFT_TDI17_LOCATION_ID")

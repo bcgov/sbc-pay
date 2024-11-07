@@ -104,7 +104,7 @@ class CFSService(OAuthService):
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         return site_response.json()
 
@@ -125,7 +125,7 @@ class CFSService(OAuthService):
             ContentType.JSON,
             pad_stop_payload,
             is_put=True,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         return site_update_response.json()
 
@@ -152,7 +152,7 @@ class CFSService(OAuthService):
                 ContentType.JSON,
                 bank_details,
                 raise_for_error=False,
-                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
             )
 
             if bank_validation_response_obj.status_code in (
@@ -204,7 +204,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             party,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         current_app.logger.debug(">Creating party Record")
         return party_response.json()
@@ -234,7 +234,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             account,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         current_app.logger.debug(">Creating CFS account")
         return account_response.json()
@@ -279,7 +279,7 @@ class CFSService(OAuthService):
                 AuthHeaderType.BEARER,
                 ContentType.JSON,
                 site,
-                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
             ).json()
         except HTTPError as e:
             # If the site creation fails with 400, query and return site
@@ -290,7 +290,7 @@ class CFSService(OAuthService):
                         access_token,
                         AuthHeaderType.BEARER,
                         ContentType.JSON,
-                        additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+                        additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
                     )
                     .json()
                     .get("items")[0]
@@ -336,7 +336,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             payment_details,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         ).json()
 
         payment_details = {
@@ -365,7 +365,7 @@ class CFSService(OAuthService):
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         return invoice_response.json()
 
@@ -392,7 +392,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             payload,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
     @classmethod
@@ -425,7 +425,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             payload,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
     @classmethod
@@ -465,7 +465,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BASIC,
             ContentType.FORM_URL_ENCODED,
             data,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         current_app.logger.debug(">Getting token")
         return token_response
@@ -504,7 +504,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             invoice_payload,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         return invoice_response.json()
 
@@ -626,7 +626,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             {},
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
     @classmethod
@@ -658,7 +658,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             adjustment,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
         current_app.logger.debug(">Created CFS Invoice NSF Adjustment")
@@ -709,7 +709,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             adjustment,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
         current_app.logger.debug(">Created Invoice Adjustment")
@@ -754,7 +754,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             payload,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         ).json()
 
     @classmethod
@@ -774,7 +774,7 @@ class CFSService(OAuthService):
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
         current_app.logger.debug(">Received receipt response")
@@ -797,7 +797,7 @@ class CFSService(OAuthService):
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
         current_app.logger.debug(">Received CMS response")
@@ -833,7 +833,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             cms_payload,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
         current_app.logger.debug(">Received CMS response")
@@ -861,7 +861,7 @@ class CFSService(OAuthService):
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
         if (unapplied_amount := float(receipt_response.json().get("unapplied_amount", 0))) > 0:
@@ -876,14 +876,14 @@ class CFSService(OAuthService):
                 AuthHeaderType.BEARER,
                 ContentType.JSON,
                 adjustment,
-                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
             )
             receipt_response = cls.get(
                 receipt_url,
                 access_token,
                 AuthHeaderType.BEARER,
                 ContentType.JSON,
-                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
             )
             current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
 

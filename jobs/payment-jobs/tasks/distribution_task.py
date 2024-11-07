@@ -106,7 +106,7 @@ class DistributionTask:
             AuthHeaderType.BEARER,
             ContentType.JSON,
             post_revenue_payload,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
     @classmethod
@@ -150,7 +150,7 @@ class DistributionTask:
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         ).json()
         return payment_response
 
