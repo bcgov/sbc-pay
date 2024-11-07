@@ -2061,9 +2061,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/ochiu/sbc-pay.git"
-reference = "24111-EFT-Federal-Payments"
-resolved_reference = "cf3fc009657f5859145f71ce6c2425bc8e33258b"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "20767_p3"
+resolved_reference = "8b667944c9f710365984c41ffdd47bf974403758"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3186,4 +3186,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "2dac0a73b35a15ebcbb5b6b5ac9ff28decd8dc9f5f8e01ac5e2bb215cd06ece2"
+content-hash = "7771dba14db74dd99aac6f8565373fb670108fd1da860535bc18535520c07f01"

@@ -343,7 +343,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             AuthHeaderType.BASIC,
             ContentType.FORM_URL_ENCODED,
             data,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         current_app.logger.debug(">Getting token")
         return token_response
@@ -460,7 +460,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         ).json()
         return Converter().structure(payment_response, OrderStatus)
 
