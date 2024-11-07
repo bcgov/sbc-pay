@@ -201,7 +201,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     EFT_TRANSFER_DESC = os.getenv("EFT_TRANSFER_DESC", "BCREGISTRIES {} {} EFT TRANSFER")
     EFT_OVERDUE_NOTIFY_EMAILS = os.getenv("EFT_OVERDUE_NOTIFY_EMAILS", "")
     # Reverse Proxy secret
-    PAY_CONNECTOR_SECRET = os.getenv("PAY_CONNECTOR_SECRET", "ROYGBIV")
+    PAY_CONNECTOR_SECRET = os.getenv("PAY_CONNECTOR_SECRET", "")
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
