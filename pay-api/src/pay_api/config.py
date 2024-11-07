@@ -323,7 +323,6 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = "mysecretkeyforbank"
     ALLOW_SKIP_PAYMENT = False
-   
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
