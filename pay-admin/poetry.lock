@@ -2003,13 +2003,13 @@ thrift = "0.16.0"
 tornado = "6.4.1"
 typing-extensions = "4.10.0"
 urllib3 = "2.2.2"
-werkzeug = "3.0.3"
+werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "main"
-resolved_reference = "726b002cf90082cfbb795c3e7329da9ed8ef1a03"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "20767_p3"
+resolved_reference = "666644fd951ed1cc7b9d253b7d9e3e186d85b6ff"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3110,4 +3110,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "449884ee1d86b60ab1c69ddf067d25f1e8a887a71ca16efc2feec4bbc9e97d76"
+content-hash = "5d35b71238ec39941f109227d088ad44d79ed6af2d770efec30b74848b06517b"
