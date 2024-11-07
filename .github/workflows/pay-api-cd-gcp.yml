@@ -3,7 +3,7 @@ name: Pay API CD GCP
 on:
   push:
     branches:
-      - feature-gcp
+      - main
     paths:
       - "pay-api/**"
   workflow_dispatch:

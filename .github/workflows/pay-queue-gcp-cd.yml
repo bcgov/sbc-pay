@@ -3,7 +3,7 @@ name: Pay Queue CD GCP
 on:
   push:
     branches:
-      - feature-gcp
+      - main
     paths:
       - "pay-queue/**"
       - "pay-api/src/pay_api/models/**"
