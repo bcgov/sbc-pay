@@ -200,7 +200,7 @@ def test_refund_validation_for_disbursements(session, client, jwt, app, monkeypa
     inv_id = rv.json.get("id")
     invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
-    invoice.corp_type_code = 'VS'
+    invoice.corp_type_code = "VS"
     invoice.save()
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)

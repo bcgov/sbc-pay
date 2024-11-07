@@ -343,6 +343,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             AuthHeaderType.BASIC,
             ContentType.FORM_URL_ENCODED,
             data,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         )
         current_app.logger.debug(">Getting token")
         return token_response
@@ -454,7 +455,13 @@ class DirectPayService(PaymentSystemService, OAuthService):
             )
         )[0]
         payment_url: str = f"{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{inv_reference.invoice_number}"
-        payment_response = cls.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+        payment_response = cls.get(
+            payment_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        ).json()
         return Converter().structure(payment_response, OrderStatus)
 
     @classmethod

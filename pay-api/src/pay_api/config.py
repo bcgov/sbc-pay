@@ -199,6 +199,9 @@ class _Config:  # pylint: disable=too-few-public-methods
     # Used for DEV/TEST/SANDBOX only. If True, will skip payment and return success and send queue message.
     ALLOW_SKIP_PAYMENT = os.getenv("ALLOW_SKIP_PAYMENT", "False").lower() == "true"
 
+    # Reverse Proxy secret
+    PAY_CONNECTOR_SECRET = os.getenv("PAY_CONNECTOR_SECRET", "")
+
     TESTING = False
     DEBUG = True
 

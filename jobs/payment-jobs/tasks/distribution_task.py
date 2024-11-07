@@ -106,6 +106,7 @@ class DistributionTask:
             AuthHeaderType.BEARER,
             ContentType.JSON,
             post_revenue_payload,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         )
 
     @classmethod
@@ -144,7 +145,13 @@ class DistributionTask:
     @classmethod
     def get_payment_details(cls, payment_url: str, access_token: str):
         """Get the receipt details by calling PayBC web service."""
-        payment_response = OAuthService.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+        payment_response = OAuthService.get(
+            payment_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        ).json()
         return payment_response
 
     @classmethod

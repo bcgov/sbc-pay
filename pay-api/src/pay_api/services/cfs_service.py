@@ -99,7 +99,13 @@ class CFSService(OAuthService):
             f"{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/"
             f"sites/{cfs_account.cfs_site}/"
         )
-        site_response = OAuthService.get(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        site_response = OAuthService.get(
+            site_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
         return site_response.json()
 
     @staticmethod
@@ -119,6 +125,7 @@ class CFSService(OAuthService):
             ContentType.JSON,
             pad_stop_payload,
             is_put=True,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         )
         return site_update_response.json()
 
@@ -145,6 +152,7 @@ class CFSService(OAuthService):
                 ContentType.JSON,
                 bank_details,
                 raise_for_error=False,
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
             )
 
             if bank_validation_response_obj.status_code in (
@@ -190,7 +198,14 @@ class CFSService(OAuthService):
         party_url = current_app.config.get("CFS_BASE_URL") + "/cfs/parties/"
         party: Dict[str, Any] = {"customer_name": party_name}
 
-        party_response = OAuthService.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party)
+        party_response = OAuthService.post(
+            party_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            party,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
         current_app.logger.debug(">Creating party Record")
         return party_response.json()
 
@@ -214,7 +229,12 @@ class CFSService(OAuthService):
         }
 
         account_response = OAuthService.post(
-            account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, account
+            account_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            account,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         )
         current_app.logger.debug(">Creating CFS account")
         return account_response.json()
@@ -254,13 +274,24 @@ class CFSService(OAuthService):
 
         try:
             site_response = OAuthService.post(
-                site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site
+                site_url,
+                access_token,
+                AuthHeaderType.BEARER,
+                ContentType.JSON,
+                site,
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
             ).json()
         except HTTPError as e:
             # If the site creation fails with 400, query and return site
             if e.response.status_code == 400:
                 site_response = (
-                    OAuthService.get(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+                    OAuthService.get(
+                        site_url,
+                        access_token,
+                        AuthHeaderType.BEARER,
+                        ContentType.JSON,
+                        additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+                    )
                     .json()
                     .get("items")[0]
                 )
@@ -305,6 +336,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             payment_details,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         ).json()
 
         payment_details = {
@@ -328,7 +360,13 @@ class CFSService(OAuthService):
             f"sites/{cfs_account.cfs_site}/invs/{inv_number}/"
         )
 
-        invoice_response = CFSService.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        invoice_response = CFSService.get(
+            invoice_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
         return invoice_response.json()
 
     @classmethod
@@ -348,7 +386,14 @@ class CFSService(OAuthService):
             ),
             "reversal_comment": cls._build_reversal_comment(operation),
         }
-        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
+        return CFSService.post(
+            receipt_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            payload,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
 
     @classmethod
     def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
@@ -374,7 +419,14 @@ class CFSService(OAuthService):
         payload = {
             "invoice_number": invoice_number,
         }
-        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
+        return CFSService.post(
+            receipt_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            payload,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
 
     @classmethod
     def update_bank_details(  # pylint: disable=too-many-arguments
@@ -413,6 +465,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BASIC,
             ContentType.FORM_URL_ENCODED,
             data,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         )
         current_app.logger.debug(">Getting token")
         return token_response
@@ -451,6 +504,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             invoice_payload,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         )
         return invoice_response.json()
 
@@ -566,7 +620,14 @@ class CFSService(OAuthService):
         cfs_base: str = current_app.config.get("CFS_BASE_URL")
         invoice_url = f"{cfs_base}/cfs/parties/invs/{inv_number}/creditbalance/"
 
-        CFSService.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, {})
+        CFSService.post(
+            invoice_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            {},
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
 
     @classmethod
     def add_nsf_adjustment(cls, cfs_account: CfsAccountModel, inv_number: str, amount: float):
@@ -597,6 +658,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             adjustment,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         )
 
         current_app.logger.debug(">Created CFS Invoice NSF Adjustment")
@@ -647,6 +709,7 @@ class CFSService(OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             adjustment,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
         )
 
         current_app.logger.debug(">Created Invoice Adjustment")
@@ -685,7 +748,14 @@ class CFSService(OAuthService):
             "comments": "",
         }
         current_app.logger.debug(">create_cfs_receipt")
-        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload).json()
+        return CFSService.post(
+            receipt_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            payload,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        ).json()
 
     @classmethod
     def get_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str) -> Dict[str, any]:
@@ -699,7 +769,13 @@ class CFSService(OAuthService):
         )
         current_app.logger.debug("Receipt URL %s", receipt_url)
 
-        receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        receipt_response = cls.get(
+            receipt_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
 
         current_app.logger.debug(">Received receipt response")
         return receipt_response.json()
@@ -716,7 +792,13 @@ class CFSService(OAuthService):
         )
         current_app.logger.debug("CMS URL %s", cms_url)
 
-        cms_response = cls.get(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        cms_response = cls.get(
+            cms_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
 
         current_app.logger.debug(">Received CMS response")
         return cms_response.json()
@@ -745,7 +827,14 @@ class CFSService(OAuthService):
             "lines": cls.build_lines(line_items, negate=True),
         }
 
-        cms_response = CFSService.post(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, cms_payload)
+        cms_response = CFSService.post(
+            cms_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            cms_payload,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
 
         current_app.logger.debug(">Received CMS response")
         return cms_response.json()
@@ -767,7 +856,13 @@ class CFSService(OAuthService):
         adjustment_url = f"{receipt_url}adjustment"
         current_app.logger.debug("Receipt Adjustment URL %s", adjustment_url)
 
-        receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        receipt_response = cls.get(
+            receipt_url,
+            access_token,
+            AuthHeaderType.BEARER,
+            ContentType.JSON,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+        )
         current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
         if (unapplied_amount := float(receipt_response.json().get("unapplied_amount", 0))) > 0:
             adjustment = {
@@ -781,8 +876,15 @@ class CFSService(OAuthService):
                 AuthHeaderType.BEARER,
                 ContentType.JSON,
                 adjustment,
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
             )
-            receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+            receipt_response = cls.get(
+                receipt_url,
+                access_token,
+                AuthHeaderType.BEARER,
+                ContentType.JSON,
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_SECRET")},
+            )
             current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
 
         current_app.logger.debug(">adjust_receipt_to_zero")
