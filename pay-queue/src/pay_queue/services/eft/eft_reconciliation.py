@@ -455,23 +455,29 @@ def _update_transactions_to_complete(eft_file_model: EFTFileModel) -> int:
     return result
 
 
-def _get_shortname(short_name: str, short_name_type: str,
-                   generate_short_name: bool = False, eft_record: EFTRecord = None) -> EFTShortnameModel:
+def _get_shortname(
+    short_name: str, short_name_type: str, generate_short_name: bool = False, eft_record: EFTRecord = None
+) -> EFTShortnameModel:
     """Save short name if it doesn't exist."""
     eft_short_name = (
-        db.session.query(EFTShortnameModel)
-        .filter(EFTShortnameModel.short_name == short_name)
-        .filter(EFTShortnameModel.type == short_name_type)
-        .one_or_none()
-    ) if not generate_short_name else None
+        (
+            db.session.query(EFTShortnameModel)
+            .filter(EFTShortnameModel.short_name == short_name)
+            .filter(EFTShortnameModel.type == short_name_type)
+            .one_or_none()
+        )
+        if not generate_short_name
+        else None
+    )
 
     if eft_short_name is None:
         eft_short_name = EFTShortnameModel()
         eft_short_name.type = short_name_type
         eft_short_name.short_name = short_name
         if generate_short_name:
-            generated_short_name = f'{short_name} {EFTShortnameModel.get_next_short_name_seq()}'
+            generated_short_name = f"{short_name} {EFTShortnameModel.get_next_short_name_seq()}"
             eft_short_name.short_name = generated_short_name
+            eft_short_name.is_generated = True
             eft_record.transaction_description = generated_short_name
         eft_short_name.save()
 

@@ -384,10 +384,13 @@ def test_eft_tdi17_basic_process(session, app, client):
 
     assert not short_name_link_1
     assert eft_shortnames[0].short_name == "ABC123"
+    assert not eft_shortnames[0].is_generated
     assert not short_name_link_2
     assert eft_shortnames[1].short_name == "DEF456"
+    assert not eft_shortnames[1].is_generated
     assert not short_name_link_3
     assert eft_shortnames[2].short_name == "FEDERAL PAYMENT CANADA 1"
+    assert eft_shortnames[2].is_generated
 
     eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
     assert eft_credits is not None
@@ -407,7 +410,6 @@ def test_eft_tdi17_basic_process(session, app, client):
     assert eft_credits[2].amount == 100
     assert eft_credits[2].remaining_amount == 100
     assert eft_credits[2].eft_transaction_id == eft_transactions[2].id
-
 
     # Expecting no credit links as they have not been applied to invoices
     eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
@@ -705,8 +707,10 @@ def test_eft_multiple_generated_short_names(session, app, client):
     assert eft_shortnames is not None
     assert len(eft_shortnames) == 2
 
-    assert eft_shortnames[0].short_name == f'{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN} 1'
-    assert eft_shortnames[1].short_name == f'{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN} 2'
+    assert eft_shortnames[0].short_name == f"{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN} 1"
+    assert eft_shortnames[0].is_generated
+    assert eft_shortnames[1].short_name == f"{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN} 2"
+    assert eft_shortnames[1].is_generated
 
 
 def create_test_data():

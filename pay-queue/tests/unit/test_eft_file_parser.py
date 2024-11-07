@@ -167,17 +167,37 @@ def test_eft_parse_trailer_invalid_numbers():
 @pytest.mark.parametrize(
     "test_type, short_name_type, transaction_description, line_index, expected",
     [
-        ('EFT', EFTShortnameType.EFT.value, f'{EFTRecord.EFT_DESCRIPTION_PATTERN} EFTSN1', 1,
-         {'is_generated': False, 'short_name': 'EFTSN1'}),
-        ('WIRE', EFTShortnameType.WIRE.value, f'{EFTRecord.WIRE_DESCRIPTION_PATTERN} WIRESN1', 2,
-         {'is_generated': False, 'short_name': 'WIRESN1'}),
-        ('FEDERAL PAYMENT', EFTShortnameType.EFT.value, f'{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN}', 3,
-         {'is_generated': True, 'short_name': EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN}),
-        ('PAD', None, f'{EFTRecord.PAD_DESCRIPTION_PATTERN}', 4,
-         {'is_generated': False, 'short_name': EFTRecord.PAD_DESCRIPTION_PATTERN}),
-        ('UNKNOWN', None, 'ABC 123', 5,
-         {'is_generated': False, 'short_name': 'ABC 123'})
-    ])
+        (
+            "EFT",
+            EFTShortnameType.EFT.value,
+            f"{EFTRecord.EFT_DESCRIPTION_PATTERN} EFTSN1",
+            1,
+            {"is_generated": False, "short_name": "EFTSN1"},
+        ),
+        (
+            "WIRE",
+            EFTShortnameType.WIRE.value,
+            f"{EFTRecord.WIRE_DESCRIPTION_PATTERN} WIRESN1",
+            2,
+            {"is_generated": False, "short_name": "WIRESN1"},
+        ),
+        (
+            "FEDERAL PAYMENT",
+            EFTShortnameType.EFT.value,
+            f"{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN}",
+            3,
+            {"is_generated": True, "short_name": EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN},
+        ),
+        (
+            "PAD",
+            None,
+            f"{EFTRecord.PAD_DESCRIPTION_PATTERN}",
+            4,
+            {"is_generated": False, "short_name": EFTRecord.PAD_DESCRIPTION_PATTERN},
+        ),
+        ("UNKNOWN", None, "ABC 123", 5, {"is_generated": False, "short_name": "ABC 123"}),
+    ],
+)
 def test_eft_parse_records(test_type, short_name_type, transaction_description, line_index, expected):
     """Test EFT Record parser."""
     content = factory_eft_record(
@@ -209,7 +229,7 @@ def test_eft_parse_records(test_type, short_name_type, transaction_description, 
     assert record.deposit_datetime == deposit_datetime
     assert record.location_id == "85004"
     assert record.transaction_sequence == "001"
-    assert record.transaction_description == expected['short_name']
+    assert record.transaction_description == expected["short_name"]
     assert record.deposit_amount == 13500
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
@@ -219,7 +239,7 @@ def test_eft_parse_records(test_type, short_name_type, transaction_description, 
     assert record.jv_type == "I"
     assert record.jv_number == "002425669"
     assert record.short_name_type == short_name_type
-    assert record.generate_short_name == expected['is_generated']
+    assert record.generate_short_name == expected["is_generated"]
 
 
 def test_eft_parse_record_invalid_length():
