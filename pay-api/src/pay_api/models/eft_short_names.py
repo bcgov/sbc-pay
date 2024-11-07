@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from _decimal import Decimal
 from attrs import define
 from sql_versioning import Versioned
+from sqlalchemy import text
 
 from .base_model import BaseModel
 from .db import db
@@ -42,6 +43,7 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
             "cas_supplier_number",
             "created_on",
             "email",
+            "is_generated",
             "short_name",
             "type",
         ]
@@ -58,11 +60,17 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     email = db.Column(db.String(100), nullable=True)
     cas_supplier_number = db.Column(db.String(), nullable=True)
     type = db.Column(db.String(), nullable=False)
+    is_generated = db.Column(db.Boolean(), nullable=False, default=False)
 
     @classmethod
     def find_by_short_name(cls, short_name: str, short_name_type: str):
         """Find by eft short name."""
         return cls.query.filter_by(short_name=short_name).filter_by(type=short_name_type).one_or_none()
+
+    @classmethod
+    def get_next_short_name_seq(cls):
+        """Get next value of EFT Short name Sequence."""
+        return db.session.execute(text("SELECT nextval('eft_short_name_seq')")).scalar()
 
 
 @define

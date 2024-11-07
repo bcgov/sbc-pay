@@ -200,8 +200,6 @@ class _Config:  # pylint: disable=too-few-public-methods
     # Used for DEV/TEST/SANDBOX only. If True, will skip payment and return success and send queue message.
     ALLOW_SKIP_PAYMENT = os.getenv("ALLOW_SKIP_PAYMENT", "False").lower() == "true"
 
-
-
     TESTING = False
     DEBUG = True
 
