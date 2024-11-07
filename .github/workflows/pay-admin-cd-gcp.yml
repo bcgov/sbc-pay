@@ -3,7 +3,7 @@ name: Pay Admin CD GCP
 on:
   push:
     branches:
-      - feature-gcp
+      - main
     paths:
       - "pay-admin/**"
   workflow_dispatch:
