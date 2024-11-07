@@ -14,6 +14,7 @@
 """This manages the EFT Transaction record."""
 import decimal
 from datetime import datetime
+from typing import Tuple
 
 from pay_api.utils.enums import EFTShortnameType
 
@@ -29,6 +30,8 @@ class EFTRecord(EFTBase):
     PAD_DESCRIPTION_PATTERN = "MISC PAYMENT BCONLINE"
     EFT_DESCRIPTION_PATTERN = "MISC PAYMENT"
     WIRE_DESCRIPTION_PATTERN = "FUNDS TRANSFER CR TT"
+    FEDERAL_PAYMENT_DESCRIPTION_PATTERN = "FEDERAL PAYMENT CANADA"
+    GENERATE_SHORT_NAME_PATTERNS: Tuple = (FEDERAL_PAYMENT_DESCRIPTION_PATTERN, )
 
     ministry_code: str
     program_code: str
@@ -46,6 +49,7 @@ class EFTRecord(EFTBase):
     jv_number: str  # mandatory if JV batch specified
     transaction_date: datetime  # optional
     short_name_type: str = None
+    generate_short_name: bool = False
 
     def __init__(self, content: str, index: int):
         """Return an EFT Transaction record."""
@@ -107,6 +111,12 @@ class EFTRecord(EFTBase):
     def parse_transaction_description(self):
         """Determine if the transaction is an EFT/Wire and parse it."""
         if not self.transaction_description:
+            return
+
+        if self.transaction_description.startswith(self.GENERATE_SHORT_NAME_PATTERNS):
+            self.short_name_type = EFTShortnameType.EFT.value
+            self.transaction_description = self.FEDERAL_PAYMENT_DESCRIPTION_PATTERN.strip()
+            self.generate_short_name = True
             return
 
         if self.transaction_description.startswith(self.WIRE_DESCRIPTION_PATTERN):

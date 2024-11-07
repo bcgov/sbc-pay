@@ -195,6 +195,12 @@ def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
     for shortname in shortname_balance.keys():
         short_name_type = shortname_balance[shortname]["short_name_type"]
         eft_short_name = _get_shortname(shortname, short_name_type)
+
+        # Generated short names will not have auto payments since they will always be created then manually mapped
+        # Skip for efficiency
+        if eft_short_name.is_generated:
+            continue
+
         eft_credit_balance = EFTCreditModel.get_eft_credit_balance(eft_short_name.id)
         shortname_links = EFTShortnamesService.get_shortname_links(eft_short_name.id).get("items", [])
         for shortname_link in shortname_links:
@@ -391,7 +397,7 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
 
     if eft_record.transaction_description and eft_record.short_name_type:
         eft_short_name: EFTShortnameModel = _get_shortname(
-            eft_record.transaction_description, eft_record.short_name_type
+            eft_record.transaction_description, eft_record.short_name_type, eft_record.generate_short_name, eft_record
         )
         eft_transaction_model.short_name_id = eft_short_name.id
 
@@ -449,19 +455,24 @@ def _update_transactions_to_complete(eft_file_model: EFTFileModel) -> int:
     return result
 
 
-def _get_shortname(short_name: str, short_name_type: str) -> EFTShortnameModel:
+def _get_shortname(short_name: str, short_name_type: str,
+                   generate_short_name: bool = False, eft_record: EFTRecord = None) -> EFTShortnameModel:
     """Save short name if it doesn't exist."""
     eft_short_name = (
         db.session.query(EFTShortnameModel)
         .filter(EFTShortnameModel.short_name == short_name)
         .filter(EFTShortnameModel.type == short_name_type)
         .one_or_none()
-    )
+    ) if not generate_short_name else None
 
     if eft_short_name is None:
         eft_short_name = EFTShortnameModel()
-        eft_short_name.short_name = short_name
         eft_short_name.type = short_name_type
+        eft_short_name.short_name = short_name
+        if generate_short_name:
+            generated_short_name = f'{short_name} {EFTShortnameModel.get_next_short_name_seq()}'
+            eft_short_name.short_name = generated_short_name
+            eft_record.transaction_description = generated_short_name
         eft_short_name.save()
 
     return eft_short_name

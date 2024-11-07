@@ -42,6 +42,7 @@ from pay_api.utils.enums import (
     StatementFrequency,
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
+from sqlalchemy import text
 
 from pay_queue.services.eft import EFTRecord
 from pay_queue.services.eft.eft_enums import EFTConstants
@@ -367,26 +368,30 @@ def test_eft_tdi17_basic_process(session, app, client):
     )
 
     assert eft_transactions is not None
-    assert len(eft_transactions) == 2
+    assert len(eft_transactions) == 3
     assert eft_transactions[0].short_name_id is not None
     assert eft_transactions[1].short_name_id is not None
+    assert eft_transactions[2].short_name_id is not None
 
     eft_shortnames = db.session.query(EFTShortnameModel).all()
 
     assert eft_shortnames is not None
-    assert len(eft_shortnames) == 2
+    assert len(eft_shortnames) == 3
 
     short_name_link_1 = EFTShortnameLinksModel.find_by_short_name_id(eft_shortnames[0].id)
     short_name_link_2 = EFTShortnameLinksModel.find_by_short_name_id(eft_shortnames[1].id)
+    short_name_link_3 = EFTShortnameLinksModel.find_by_short_name_id(eft_shortnames[2].id)
 
     assert not short_name_link_1
     assert eft_shortnames[0].short_name == "ABC123"
     assert not short_name_link_2
     assert eft_shortnames[1].short_name == "DEF456"
+    assert not short_name_link_3
+    assert eft_shortnames[2].short_name == "FEDERAL PAYMENT CANADA 1"
 
     eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
     assert eft_credits is not None
-    assert len(eft_credits) == 2
+    assert len(eft_credits) == 3
     assert eft_credits[0].short_name_id == eft_shortnames[0].id
     assert eft_credits[0].eft_file_id == eft_file_model.id
     assert eft_credits[0].amount == 135
@@ -397,6 +402,12 @@ def test_eft_tdi17_basic_process(session, app, client):
     assert eft_credits[1].amount == 5250
     assert eft_credits[1].remaining_amount == 5250
     assert eft_credits[1].eft_transaction_id == eft_transactions[1].id
+    assert eft_credits[2].short_name_id == eft_shortnames[2].id
+    assert eft_credits[2].eft_file_id == eft_file_model.id
+    assert eft_credits[2].amount == 100
+    assert eft_credits[2].remaining_amount == 100
+    assert eft_credits[2].eft_transaction_id == eft_transactions[2].id
+
 
     # Expecting no credit links as they have not been applied to invoices
     eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
@@ -661,6 +672,43 @@ def test_eft_tdi17_rerun(session, app, client):
     assert eft_transactions[0].deposit_amount_cents == 13500
 
 
+def test_eft_multiple_generated_short_names(session, app, client):
+    """Test EFT Reconciliations worker is able to generate short names by sequence."""
+    file_name: str = "test_eft_tdi17.txt"
+    create_generated_short_names_file(file_name)
+    session.execute(text("ALTER SEQUENCE eft_short_name_seq RESTART WITH 1"))
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value,
+    )
+
+    # Assert EFT File record was created
+    eft_file_model: EFTFileModel = (
+        db.session.query(EFTFileModel).filter(EFTFileModel.file_ref == file_name).one_or_none()
+    )
+
+    assert eft_file_model is not None
+    assert eft_file_model.id is not None
+    assert eft_file_model.file_ref == file_name
+    assert eft_file_model.created_on is not None
+    assert eft_file_model.file_creation_date == datetime(2023, 8, 14, 16, 1)
+    assert eft_file_model.deposit_from_date == datetime(2023, 8, 10)
+    assert eft_file_model.deposit_to_date == datetime(2023, 8, 10)
+    assert eft_file_model.number_of_details == 2
+    assert eft_file_model.total_deposit_cents == 20000
+
+    # Complete - short name is not mapped but credited
+    assert eft_file_model.status_code == EFTProcessStatus.COMPLETED.value
+    eft_shortnames = db.session.query(EFTShortnameModel).all()
+
+    assert eft_shortnames is not None
+    assert len(eft_shortnames) == 2
+
+    assert eft_shortnames[0].short_name == f'{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN} 1'
+    assert eft_shortnames[1].short_name == f'{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN} 2'
+
+
 def create_test_data():
     """Create test seed data."""
     payment_account = factory_create_eft_account()
@@ -749,11 +797,11 @@ def generate_basic_tdi17_file(file_name: str):
         deposit_time="0000",
         location_id="85004",
         transaction_sequence="003",
-        transaction_description="SHOULDIGNORE",
-        deposit_amount="525000",
+        transaction_description=f"{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN}",
+        deposit_amount="10000",
         currency="",
         exchange_adj_amount="0",
-        deposit_amount_cad="525000",
+        deposit_amount_cad="10000",
         destination_bank_number="0003",
         batch_number="002400986",
         jv_type="I",
@@ -768,7 +816,27 @@ def generate_basic_tdi17_file(file_name: str):
         deposit_date="20230810",
         deposit_time="0000",
         location_id="85004",
-        transaction_sequence="004",
+        transaction_sequence="003",
+        transaction_description="SHOULDIGNORE",
+        deposit_amount="525000",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="525000",
+        destination_bank_number="0004",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
+
+    transaction_5 = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="005",
         transaction_description=f"{EFTRecord.PAD_DESCRIPTION_PATTERN} SHOULDIGNORE",
         deposit_amount="525000",
         currency="",
@@ -783,7 +851,7 @@ def generate_basic_tdi17_file(file_name: str):
 
     create_and_upload_eft_file(
         file_name,
-        [header, transaction_1, transaction_2, transaction_3, transaction_4, trailer],
+        [header, transaction_1, transaction_2, transaction_3, transaction_4, transaction_5, trailer],
     )
 
 
@@ -886,6 +954,68 @@ def generate_tdi17_file(file_name: str):
     create_and_upload_eft_file(
         file_name,
         [header, transaction_1, transaction_2, transaction_3, transaction_4, trailer],
+    )
+
+
+def create_generated_short_names_file(file_name: str):
+    """Generate multiple TDI17 transactions that will generate short names to test sequencing."""
+    header = factory_eft_header(
+        record_type=EFTConstants.HEADER_RECORD_TYPE.value,
+        file_creation_date="20230814",
+        file_creation_time="1601",
+        deposit_start_date="20230810",
+        deposit_end_date="20230810",
+    )
+
+    trailer = factory_eft_trailer(
+        record_type=EFTConstants.TRAILER_RECORD_TYPE.value,
+        number_of_details="2",
+        total_deposit_amount="20000",
+    )
+
+    transaction_1 = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="001",
+        transaction_description=f"{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN}",
+        deposit_amount="10000",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="10000",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
+
+    transaction_2 = factory_eft_record(
+        record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
+        ministry_code="AT",
+        program_code="0146",
+        deposit_date="20230810",
+        deposit_time="0000",
+        location_id="85004",
+        transaction_sequence="002",
+        transaction_description=f"{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN}",
+        deposit_amount="10000",
+        currency="",
+        exchange_adj_amount="0",
+        deposit_amount_cad="10000",
+        destination_bank_number="0003",
+        batch_number="002400986",
+        jv_type="I",
+        jv_number="002425669",
+        transaction_date="",
+    )
+
+    create_and_upload_eft_file(
+        file_name,
+        [header, transaction_1, transaction_2, trailer],
     )
 
 
