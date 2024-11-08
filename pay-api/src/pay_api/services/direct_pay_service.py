@@ -312,6 +312,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             AuthHeaderType.BEARER,
             ContentType.JSON,
             return_none_if_404=True,
+            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
         if transaction_response:
