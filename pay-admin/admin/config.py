@@ -19,6 +19,7 @@ All modules and lookups get their configuration from the Flask config,
 rather than reading environment variables directly or by accessing this configuration directly.
 """
 
+import json
 import os
 import sys
 
@@ -85,7 +86,10 @@ class _Config:  # pylint: disable=too-few-public-methods
     SQLALCHEMY_ECHO = _get_config("SQLALCHEMY_ECHO", default="False").lower() == "true"
 
     # Normal Keycloak parameters.
+    # Backwards compat for OCP and GCP.
     OIDC_CLIENT_SECRETS = os.getenv("PAY_OIDC_CLIENT_SECRETS", "secrets/keycloak.json")
+    if not os.path.isfile(OIDC_CLIENT_SECRETS):
+        OIDC_CLIENT_SECRETS = json.loads(OIDC_CLIENT_SECRETS)
     OIDC_SCOPES = ["openid", "email", "profile"]
     # Undocumented Keycloak parameter: allows sending cookies without the secure flag, which we need for the local
     # non-TLS HTTP server. Set this to non-"True" for local development, and use the default everywhere else.
