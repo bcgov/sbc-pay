@@ -257,6 +257,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         limit: int,
         return_all: bool,
         max_no_records: int = 0,
+        count: int = None,
         **kwargs,
     ):
         """Search for purchase history."""
@@ -264,36 +265,30 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         search_filter["userProductCode"] = user.product_code
 
         # Exclude 'receipts' they aren't serialized, use specific fields that will be serialized.
-        # Step 1: Calculate total count if not returning all
-        count = None
-        if not return_all:
+        # Step 1: Calculate the total count only if needed
+        if count is None and not return_all:
             count = cls.get_count(auth_account_id, search_filter)
             if count > 60000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
 
-        # Step 2: Set up sub_query for pagination or limiting results
+        # Step 2: Set up pagination subquery to avoid redundant queries
         sub_query = None
-        has_sub_query = False
         if not return_all:
             # Pagination using limit and page
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page).subquery()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
-            has_sub_query = True
         elif max_no_records > 0:
-            # If maximum number of records is provided, set the page with that number
             sub_query = cls.generate_subquery(auth_account_id, search_filter, max_no_records, None).subquery()
-            has_sub_query = True
-        else:
-            count = cls.get_count(auth_account_id, search_filter)
-            if count > 60000:
-                raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
 
+        # Step 3: Create the main query, dynamically adding outer joins as needed
         query = db.session.query(Invoice)
 
-        if has_sub_query:
+        if sub_query is not None:
             query = query.join(sub_query, Invoice.id == sub_query.c.id)
+
+        query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
 
         query = (
             query.outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
@@ -350,12 +345,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             )
         )
 
-        # Step 4: Retrieve results based on max_no_records, if applicable
-        if has_sub_query:
-            result = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
-            count = sub_query.count() if max_no_records > 0 else count
-        else:
-            result = query.order_by(Invoice.id.desc()).all()
+        # Step 4: Retrieve results with order and limit
+        result = query.order_by(Invoice.id.desc()).limit(limit).all()
 
         return result, count or len(result)
 
