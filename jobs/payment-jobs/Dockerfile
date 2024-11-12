@@ -24,20 +24,6 @@ RUN curl https://github.com/$SOURCE_REPO/go-crond/releases/download/$GOCROND_VER
 RUN chmod ug+x /usr/local/bin/go-crond
 # ========================================================================================================
 
-# Installing Oracle instant client
-WORKDIR    /opt/oracle
-RUN        apt-get update && apt-get install -y libaio1 gdb wget unzip \
-    && wget https://download.oracle.com/otn_software/linux/instantclient/211000/instantclient-basiclite-linux.x64-21.1.0.0.0.zip \
-    && wget https://download.oracle.com/otn_software/linux/instantclient/211000/instantclient-sqlplus-linux.x64-21.1.0.0.0.zip \
-    && unzip instantclient-basiclite-linux.x64-21.1.0.0.0.zip \
-    && rm -f instantclient-basiclite-linux.x64-21.1.0.0.0.zip \
-    && unzip instantclient-sqlplus-linux.x64-21.1.0.0.0.zip \
-    && rm -f instantclient-sqlplus-linux.x64-21.1.0.0.0.zip \
-    && cd /opt/oracle/instantclient* \
-    && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
-    && echo /opt/oracle/instantclient* > /etc/ld.so.conf.d/oracle-instantclient.conf \
-    && ldconfig
-
 # Add a job user
 ARG uid=1001
 ARG user=pay
