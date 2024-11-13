@@ -71,6 +71,14 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             "updated_by",
             "updated_name",
             "updated_on",
+            "contact_name",
+            "street",
+            "street_additional",
+            "city",
+            "region",
+            "postal_code",
+            "country",
+            "delivery_instructions",
         ]
     }
 
@@ -94,6 +102,14 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     # Allows to create a new receipt in CAS for the same routing slip number.
     # Earlier versions should be adjusted to zero before increasing the cas_version_suffix.
     cas_version_suffix = db.Column(db.Integer, default=1)
+    contact_name = db.Column(db.String(), nullable=True)
+    street = db.Column(db.String(), nullable=True)
+    street_additional = db.Column(db.String(), nullable=True)
+    city = db.Column(db.String(), nullable=True)
+    region = db.Column(db.String(), nullable=True)
+    postal_code = db.Column(db.String(), nullable=True)
+    country = db.Column(db.String(), nullable=True)
+    delivery_instructions = db.Column(db.String(), nullable=True)
 
     payment_account = relationship(
         PaymentAccount,
@@ -355,3 +371,11 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
     refund_status = fields.String(data_key="refund_status")
     parent_number = fields.String(data_key="parent_number")
     total_usd = fields.Float(data_key="total_usd")
+    contact_name = fields.String(data_key="contact_name")
+    street = fields.String(data_key="street")
+    street_additional = fields.String(data_key="street_additional")
+    city = fields.String(data_key="city")
+    region = fields.String(data_key="region")
+    postal_code = fields.String(data_key="postal_code")
+    country = fields.String(data_key="country")
+    delivery_instructions = fields.String(data_key="delivery_instructions")
