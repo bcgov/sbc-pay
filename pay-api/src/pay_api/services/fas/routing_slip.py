@@ -368,6 +368,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             sum(float(payment.get("paidUsdAmount", 0)) for payment in request_json.get("payments"))
         )
 
+        mailing_address = request_json['mailingAddress', {}]
         # Create a routing slip record.
         routing_slip: RoutingSlipModel = RoutingSlipModel(
             number=rs_number,
@@ -378,13 +379,13 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             routing_slip_date=string_to_date(request_json.get("routingSlipDate")),
             total_usd=total_usd,
             contact_name=request_json.get("contactName"),
-            street=request_json["mailingAddress"].get("street"),
-            street_additional=request_json["mailingAddress"].get("streetAdditional"),
-            city=request_json["mailingAddress"].get("city"),
-            region=request_json["mailingAddress"].get("region"),
-            postal_code=request_json["mailingAddress"].get("postalCode"),
-            country=request_json["mailingAddress"].get("country"),
-            delivery_instructions=request_json["mailingAddress"].get("deliveryInstructions"),
+            street=mailing_address.get("street"),
+            street_additional=mailing_address.get("streetAdditional"),
+            city=mailing_address.get("city"),
+            region=mailing_address.get("region"),
+            postal_code=mailing_address.get("postalCode"),
+            country=mailing_address.get("country"),
+            delivery_instructions=mailing_address.get("deliveryInstructions"),
         ).flush()
 
         for payment in request_json.get("payments"):
