@@ -95,10 +95,7 @@ def test_routing_slip_usd_creation(session):
     payment_account = factory_payment_account()
     payment_account.save()
 
-    rs = factory_routing_slip_usd(
-        payment_account_id=payment_account.id,
-        total_usd=50
-    )
+    rs = factory_routing_slip_usd(payment_account_id=payment_account.id, total_usd=50)
     rs.save()
     assert rs.id is not None
     assert rs.total_usd == 50

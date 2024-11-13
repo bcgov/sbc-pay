@@ -78,7 +78,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             "region",
             "postal_code",
             "country",
-            "delivery_instructions"
+            "delivery_instructions",
         ]
     }
 

@@ -284,8 +284,16 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         routing_slip_dict: Dict[str, any] = None
         routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
         if routing_slip:
-            routing_slip_schema = RoutingSlipSchema(exclude=(
-                'city', 'country', 'delivery_instructions', 'postal_code', 'region', 'street', 'street_additional')
+            routing_slip_schema = RoutingSlipSchema(
+                exclude=(
+                    "city",
+                    "country",
+                    "delivery_instructions",
+                    "postal_code",
+                    "region",
+                    "street",
+                    "street_additional",
+                )
             )
             routing_slip_dict = routing_slip_schema.dump(routing_slip)
             routing_slip_dict["allowedStatuses"] = RoutingSlipStatusTransitionService.get_possible_transitions(
@@ -298,7 +306,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 "postalCode": routing_slip.postal_code,
                 "region": routing_slip.region,
                 "street": routing_slip.street,
-                "streetAdditional": routing_slip.street_additional
+                "streetAdditional": routing_slip.street_additional,
             }
 
         return routing_slip_dict
@@ -376,7 +384,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             region=request_json["mailingAddress"].get("region"),
             postal_code=request_json["mailingAddress"].get("postalCode"),
             country=request_json["mailingAddress"].get("country"),
-            delivery_instructions=request_json["mailingAddress"].get("deliveryInstructions")
+            delivery_instructions=request_json["mailingAddress"].get("deliveryInstructions"),
         ).flush()
 
         for payment in request_json.get("payments"):
