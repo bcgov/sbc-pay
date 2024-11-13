@@ -102,13 +102,13 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     # Allows to create a new receipt in CAS for the same routing slip number.
     # Earlier versions should be adjusted to zero before increasing the cas_version_suffix.
     cas_version_suffix = db.Column(db.Integer, default=1)
-    name = db.Column(db.String(), nullable=False)
-    street = db.Column(db.String(), nullable=False)
+    name = db.Column(db.String(), nullable=True)
+    street = db.Column(db.String(), nullable=True)
     street_additional = db.Column(db.String(), nullable=True)
-    city = db.Column(db.String(), nullable=False)
-    region = db.Column(db.String(), nullable=False)
-    postal_code = db.Column(db.String(), nullable=False)
-    country = db.Column(db.String(), nullable=False)
+    city = db.Column(db.String(), nullable=True)
+    region = db.Column(db.String(), nullable=True)
+    postal_code = db.Column(db.String(), nullable=True)
+    country = db.Column(db.String(), nullable=True)
     delivery_instructions = db.Column(db.String(), nullable=True)
 
     payment_account = relationship(

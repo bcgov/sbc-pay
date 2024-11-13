@@ -22,13 +22,13 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('routing_slips', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('name', sa.String(length=50), nullable=False))
-        batch_op.add_column(sa.Column('street', sa.String(length=100), nullable=False))
+        batch_op.add_column(sa.Column('name', sa.String(length=50), nullable=True))
+        batch_op.add_column(sa.Column('street', sa.String(length=100), nullable=True))
         batch_op.add_column(sa.Column('street_additional', sa.String(length=100), nullable=True))
-        batch_op.add_column(sa.Column('city', sa.String(length=50), nullable=False))
-        batch_op.add_column(sa.Column('region', sa.String(length=50), nullable=False))
-        batch_op.add_column(sa.Column('postal_code', sa.String(length=20), nullable=False))
-        batch_op.add_column(sa.Column('country', sa.String(length=50), nullable=False))
+        batch_op.add_column(sa.Column('city', sa.String(length=50), nullable=True))
+        batch_op.add_column(sa.Column('region', sa.String(length=50), nullable=True))
+        batch_op.add_column(sa.Column('postal_code', sa.String(length=20), nullable=True))
+        batch_op.add_column(sa.Column('country', sa.String(length=50), nullable=True))
         batch_op.add_column(sa.Column('delivery_instructions', sa.String(length=100), nullable=True))
 
 
