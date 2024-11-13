@@ -32,9 +32,27 @@ def test_routing_slip_find_creation(session):
     payment_account = factory_payment_account()
     payment_account.save()
 
-    rs = factory_routing_slip(payment_account_id=payment_account.id)
+    rs = factory_routing_slip(
+        payment_account_id=payment_account.id,
+        name="John Doe",
+        street="123 Main St",
+        street_additional="Suite 200",
+        city="Victoria",
+        region="BC",
+        postal_code="V8V 3V3",
+        country="CA",
+        delivery_instructions="Leave at the door",
+    )
     rs.save()
     assert rs.id is not None
+    assert rs.name == "John Doe"
+    assert rs.street == "123 Main St"
+    assert rs.street_additional == "Suite 200"
+    assert rs.city == "Victoria"
+    assert rs.region == "BC"
+    assert rs.postal_code == "V8V 3V3"
+    assert rs.country == "CA"
+    assert rs.delivery_instructions == "Leave at the door"
 
     routing_slip = RoutingSlip()
     assert routing_slip.find_by_number(rs.number) is not None
@@ -77,7 +95,10 @@ def test_routing_slip_usd_creation(session):
     payment_account = factory_payment_account()
     payment_account.save()
 
-    rs = factory_routing_slip_usd(payment_account_id=payment_account.id, total_usd=50)
+    rs = factory_routing_slip_usd(
+        payment_account_id=payment_account.id,
+        total_usd=50
+    )
     rs.save()
     assert rs.id is not None
     assert rs.total_usd == 50
