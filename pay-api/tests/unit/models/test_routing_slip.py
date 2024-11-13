@@ -34,7 +34,7 @@ def test_routing_slip_find_creation(session):
 
     rs = factory_routing_slip(
         payment_account_id=payment_account.id,
-        name="John Doe",
+        contact_name="John Doe",
         street="123 Main St",
         street_additional="Suite 200",
         city="Victoria",
@@ -45,7 +45,7 @@ def test_routing_slip_find_creation(session):
     )
     rs.save()
     assert rs.id is not None
-    assert rs.name == "John Doe"
+    assert rs.contact_name == "John Doe"
     assert rs.street == "123 Main St"
     assert rs.street_additional == "Suite 200"
     assert rs.city == "Victoria"

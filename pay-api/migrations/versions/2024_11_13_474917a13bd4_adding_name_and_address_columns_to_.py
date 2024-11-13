@@ -22,7 +22,7 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('routing_slips', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('name', sa.String(length=50), nullable=True))
+        batch_op.add_column(sa.Column('contact_name', sa.String(length=50), nullable=True))
         batch_op.add_column(sa.Column('street', sa.String(length=100), nullable=True))
         batch_op.add_column(sa.Column('street_additional', sa.String(length=100), nullable=True))
         batch_op.add_column(sa.Column('city', sa.String(length=50), nullable=True))
@@ -34,7 +34,7 @@ def upgrade():
 
 def downgrade():
     with op.batch_alter_table('routing_slips', schema=None) as batch_op:
-        batch_op.drop_column('name')
+        batch_op.drop_column('contact_name')
         batch_op.drop_column('street')
         batch_op.drop_column('street_additional')
         batch_op.drop_column('city')
