@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - main
-      - feature/*
+      - feature*
+      - hotfix*
     paths:
       - "pay-api/**"
   workflow_dispatch:
