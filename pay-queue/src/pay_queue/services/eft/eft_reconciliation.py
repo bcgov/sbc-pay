@@ -203,6 +203,11 @@ def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
 
         eft_credit_balance = EFTCreditModel.get_eft_credit_balance(eft_short_name.id)
         shortname_links = EFTShortnamesService.get_shortname_links(eft_short_name.id).get("items", [])
+
+        # Don't apply auto payments for multi link accounts
+        if len(shortname_links) > 1:
+            continue
+
         for shortname_link in shortname_links:
             # We are expecting pending payments to have been cleared since this runs after the
             # eft task job. Something may have gone wrong, we will skip this link.

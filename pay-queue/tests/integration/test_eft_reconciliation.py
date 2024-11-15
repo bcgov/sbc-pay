@@ -1063,6 +1063,40 @@ def test_apply_pending_payments(session, app, client):
     assert short_name_link.get("amount_owing") == 150.50
 
 
+def test_multi_link_apply_pending_payments(session, app, client):
+    """Test automatic payments do not apply to multi link accounts."""
+    payment_account, eft_short_name, invoice = create_test_data()
+    payment_account_2 = factory_create_eft_account(auth_account_id="2222")
+    EFTShortnameLinksModel(
+        eft_short_name_id=eft_short_name.id,
+        auth_account_id=payment_account_2.auth_account_id,
+        status_code=EFTShortnameStatus.LINKED.value,
+        updated_by="TEST",
+        updated_by_name="TEST",
+        updated_on=datetime.now(),
+    ).save()
+    create_statement_from_invoices(payment_account, [invoice])
+    file_name: str = "test_eft_tdi17.txt"
+    generate_tdi17_file(file_name)
+
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value,
+    )
+    short_name_id = eft_short_name.id
+    eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
+    assert eft_credit_balance == 150.50
+
+    short_name_links = EFTShortNamesService.get_shortname_links(short_name_id)
+    assert short_name_links["items"]
+    assert len(short_name_links["items"]) == 2
+
+    short_name_link = short_name_links["items"][0]
+    assert short_name_link.get("has_pending_payment") is False
+    assert short_name_link.get("amount_owing") == 150.50
+
+
 def test_skip_on_existing_pending_payments(session, app, client):
     """Test auto payment skipping payment when there exists a pending payment."""
     payment_account, eft_short_name, invoice = create_test_data()
