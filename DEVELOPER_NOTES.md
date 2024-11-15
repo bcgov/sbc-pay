@@ -233,3 +233,7 @@ e.g. Set overdue status for overdue invoices on auth account 1234.
 
 Date Override: The date you want to emulate the job is running on.
 Account Id: The auth account id to run the job against.
+
+
+24. How do I manually apply an eft payment to a specific statement?
+Here: https://drive.google.com/file/d/12WqEis2rQMyKHFNitZRukXWlSLKTa-x1/view?usp=drive_link
