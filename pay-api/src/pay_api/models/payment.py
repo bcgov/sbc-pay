@@ -25,6 +25,7 @@ from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql.expression import literal
 
 from pay_api.exceptions import BusinessException
+from pay_api.models.transactions_materialized_view import TransactionsMaterializedView
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
@@ -264,61 +265,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         search_filter["userProductCode"] = user.product_code
 
         # Exclude 'receipts' they aren't serialized, use specific fields that will be serialized.
-        query = (
-            db.session.query(Invoice)
-            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-            .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            .outerjoin(
-                FeeSchedule,
-                FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
-            )
-            .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-            .options(
-                lazyload("*"),
-                load_only(
-                    Invoice.id,
-                    Invoice.corp_type_code,
-                    Invoice.created_on,
-                    Invoice.payment_date,
-                    Invoice.refund_date,
-                    Invoice.invoice_status_code,
-                    Invoice.total,
-                    Invoice.service_fees,
-                    Invoice.paid,
-                    Invoice.refund,
-                    Invoice.folio_number,
-                    Invoice.created_name,
-                    Invoice.invoice_status_code,
-                    Invoice.payment_method_code,
-                    Invoice.details,
-                    Invoice.business_identifier,
-                    Invoice.created_by,
-                    Invoice.filing_id,
-                    Invoice.bcol_account,
-                    Invoice.disbursement_date,
-                    Invoice.disbursement_reversal_date,
-                    Invoice.overdue_date,
-                ),
-                contains_eager(Invoice.payment_line_items)
-                .load_only(
-                    PaymentLineItem.description,
-                    PaymentLineItem.gst,
-                    PaymentLineItem.pst,
-                )
-                .contains_eager(PaymentLineItem.fee_schedule)
-                .load_only(FeeSchedule.filing_type_code),
-                contains_eager(Invoice.payment_account).load_only(
-                    PaymentAccount.auth_account_id,
-                    PaymentAccount.name,
-                    PaymentAccount.billable,
-                ),
-                contains_eager(Invoice.references).load_only(
-                    InvoiceReference.invoice_number,
-                    InvoiceReference.reference_number,
-                    InvoiceReference.status_code,
-                ),
-            )
-        )
+        query = db.session.query(TransactionsMaterializedView)
+
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
             count = cls.get_count(auth_account_id, search_filter)

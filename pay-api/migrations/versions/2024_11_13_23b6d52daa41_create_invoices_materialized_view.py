@@ -8,6 +8,8 @@ Create Date: 2024-11-13 09:31:35.075717
 from alembic import op
 import sqlalchemy as sa
 
+from pay_api.utils.enums import DataBaseViews
+
 
 # revision identifiers, used by Alembic.
 # Note you may see foreign keys with distribution_codes_history
@@ -22,9 +24,10 @@ depends_on = None
 
 def upgrade():
     op.execute("set statement_timeout=900000;")
-    op.execute('''
-        CREATE MATERIALIZED VIEW transactions_materialized_view AS
-        SELECT 
+    op.execute(f'''
+        CREATE MATERIALIZED VIEW {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value} AS
+        SELECT
+            ROW_NUMBER() OVER () AS row_id,
             fee_schedules.fee_schedule_id,
             fee_schedules.filing_type_code,
             payment_line_items.id AS line_item_id,
@@ -69,17 +72,17 @@ def upgrade():
         ORDER BY invoices.id DESC;
     ''')
 
-    op.execute('''
-        CREATE INDEX idx_transactions_materialized_view_auth_account_id_invoice_id_desc
-        ON transactions_materialized_view (auth_account_id, invoice_id DESC);
+    op.execute(f'''
+        CREATE INDEX {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW_IDX.value}
+        ON {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value} (auth_account_id, invoice_id DESC);
     ''')
 
 
 def downgrade():
-    op.execute('''
-        DROP INDEX IF EXISTS idx_transactions_materialized_view_auth_account_id_invoice_id_desc;
+    op.execute(f'''
+        DROP INDEX IF EXISTS {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW_IDX.value};
     ''')
 
-    op.execute('''
-        DROP MATERIALIZED VIEW IF EXISTS transactions_materialized_view;
+    op.execute(f'''
+        DROP MATERIALIZED VIEW IF EXISTS {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value};
     ''')
