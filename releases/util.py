@@ -16,6 +16,8 @@ def get_issues_from_repo(target, latest_release_only=False):
         for l in release.body.splitlines():
             if re.search(r'\d+ -', l):
                 issue_ids.append(re.search(r'\d+ -', l).group(0).replace(' -',''))
+            if re.search(r'\d+-', l):
+                issue_ids.append(re.search(r'\d+-', l).group(0).replace('-',''))
         if latest_release_only:
             break
     return issue_ids, release_names
