@@ -8,7 +8,8 @@ Create Date: 2024-11-13 09:31:35.075717
 from alembic import op
 import sqlalchemy as sa
 
-from pay_api.utils.enums import DataBaseViews
+from pay_api.utils.enums import DatabaseViews
+from pay_api.utils.serializable import Serializable
 
 
 # revision identifiers, used by Alembic.
@@ -23,66 +24,26 @@ depends_on = None
 
 
 def upgrade():
+    base_query = Serializable.generate_base_transaction_query()
+    query_sql = str(base_query.statement.compile(compile_kwargs={"literal_binds": True}))
     op.execute("set statement_timeout=900000;")
     op.execute(f'''
-        CREATE MATERIALIZED VIEW {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value} AS
-        SELECT
-            ROW_NUMBER() OVER () AS row_id,
-            fee_schedules.fee_schedule_id,
-            fee_schedules.filing_type_code,
-            payment_line_items.id AS line_item_id,
-            payment_line_items.description,
-            payment_line_items.gst,
-            payment_line_items.pst,
-            payment_accounts.id AS payment_account_id,
-            payment_accounts.auth_account_id,
-            payment_accounts.name AS payment_account_name,
-            payment_accounts.billable,
-            invoice_references.id AS invoice_reference_id,
-            invoice_references.invoice_number,
-            invoice_references.reference_number,
-            invoice_references.status_code AS invoice_reference_status_code,
-            invoices.id AS invoice_id,
-            invoices.invoice_status_code,
-            invoices.payment_method_code,
-            invoices.corp_type_code,
-            invoices.disbursement_date,
-            invoices.disbursement_reversal_date,
-            invoices.created_on,
-            invoices.business_identifier,
-            invoices.total,
-            invoices.paid,
-            invoices.payment_date,
-            invoices.overdue_date,
-            invoices.refund_date,
-            invoices.refund,
-            invoices.filing_id,
-            invoices.folio_number,
-            invoices.bcol_account,
-            invoices.service_fees,
-            invoices.details,
-            invoices.created_by,
-            invoices.created_name
-        FROM 
-            invoices
-        LEFT OUTER JOIN payment_accounts ON invoices.payment_account_id = payment_accounts.id
-        LEFT OUTER JOIN payment_line_items ON payment_line_items.invoice_id = invoices.id
-        LEFT OUTER JOIN fee_schedules ON fee_schedules.fee_schedule_id = payment_line_items.fee_schedule_id
-        LEFT OUTER JOIN invoice_references ON invoice_references.invoice_id = invoices.id
-        ORDER BY invoices.id DESC;
+        CREATE MATERIALIZED VIEW {DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value} AS
+        {query_sql}
+        ORDER BY id DESC;
     ''')
 
     op.execute(f'''
-        CREATE INDEX {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW_IDX.value}
-        ON {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value} (auth_account_id, invoice_id DESC);
+        CREATE INDEX {DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW_IDX.value}
+        ON {DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value} (auth_account_id, id DESC);
     ''')
 
 
 def downgrade():
     op.execute(f'''
-        DROP INDEX IF EXISTS {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW_IDX.value};
+        DROP INDEX IF EXISTS {DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW_IDX.value};
     ''')
 
     op.execute(f'''
-        DROP MATERIALIZED VIEW IF EXISTS {DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value};
+        DROP MATERIALIZED VIEW IF EXISTS {DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value};
     ''')

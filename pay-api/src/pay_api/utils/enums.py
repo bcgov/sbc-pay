@@ -452,7 +452,7 @@ class SuspensionReasonCodes(Enum):
     PAD_NSF = "PAD_NSF"
 
 
-class DataBaseViews(Enum):
+class DatabaseViews(Enum):
     """Database Views."""
 
     TRANSACTIONS_MATERIALIZED_VIEW = "transactions_materialized_view"

@@ -19,18 +19,19 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select, text
+from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, and_, cast, func, literal_column, or_, select, text, union_all
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
-from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
+from sqlalchemy.orm import aliased, contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql.expression import literal
+from sqlalchemy.sql import column, select, text, table
 
 from pay_api.exceptions import BusinessException
-from pay_api.models.transactions_materialized_view import TransactionsMaterializedView
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import InvoiceReferenceStatus
+from pay_api.utils.enums import DatabaseViews, TransactionsViewColumns, InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
+from pay_api.utils.serializable import Serializable
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
@@ -249,6 +250,18 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
+    def get_today_invoices(cls):
+        """Fetch invoices created on today's date, based on the base query structure."""
+        base_query = Serializable.generate_base_transaction_query()
+
+        today_query = (
+            base_query
+            .filter(Invoice.created_on <= datetime.today())
+        )
+
+        return today_query
+
+    @classmethod
     @user_context
     def search_purchase_history(  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
         cls,
@@ -265,14 +278,45 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         search_filter["userProductCode"] = user.product_code
 
         # Exclude 'receipts' they aren't serialized, use specific fields that will be serialized.
-        query = db.session.query(TransactionsMaterializedView)
+        transactions_materialized_view = Table(
+            DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value,
+            MetaData(),
+            autoload_with=db.engine
+        )
+        view_columns = [col.name for col in transactions_materialized_view.columns]
+        # base_query = Serializable.generate_base_transaction_query()
+        # today_query = base_query.with_entities(
+        #     *(getattr(Invoice, col) if hasattr(Invoice, col) else literal_column("NULL").label(col) for col in view_columns)
+        # )
+        # print('today>>>>>>>>>>>>>>>>>>>>>>>', str(today_query))
+        # historical_query = select(
+        #     *(transactions_materialized_view.c[col] for col in view_columns)
+        # )
+        # print('historical_query>>>>>>>>>>>>>>>>>>>>>>>', str(historical_query.compile(compile_kwargs={"literal_binds": True})))
+        # combined_query = union_all(
+        #     today_query,
+        #     historical_query
+        # ).alias("combined_transactions")
 
-        query = cls.filter(query, auth_account_id, search_filter)
+        # Convert historical_query to a subquery
+        # historical_subquery = historical_query.subquery()
+
+        # Create a query using the subquery
+        # query = db.session.query(historical_subquery)
+        query = db.session.query(transactions_materialized_view)
+        query = cls.filter(query, auth_account_id, search_filter, table_alias=transactions_materialized_view)
+        print("Query2:", str(query))
         if not return_all:
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            result = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query.subquery().select())).all()
+            result_query = (
+                query.filter(transactions_materialized_view.c.id.in_(sub_query.subquery().select()))
+                .order_by(transactions_materialized_view.c.id.desc())
+                .execution_options(stream_results=True)
+            )
+            print("result_query<<<<<<<<<<<<<<:", str(result_query.statement.compile(compile_kwargs={"literal_binds": True})))
+            result = result_query.all()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
@@ -334,10 +378,24 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return count
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False):
+    def filter(cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False, table_alias=None):
         """For filtering queries."""
+        table_ = table_alias if table_alias is not None else Invoice
+
+        def get_column(table_, column_name):
+            if hasattr(table_, "c"):  # For Table objects
+                return getattr(table_.c, column_name, None)
+            else:  # For ORM models
+                return getattr(table_, column_name, None)
+
+        # Check for `auth_account_id` and filter the query
         if auth_account_id:
-            query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
+            column_ = get_column(table_, "auth_account_id")
+            if column_ is not None:  # Explicitly check for None
+                query = query.filter(column_ == auth_account_id)
+            else:
+                query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
+
         if account_name := search_filter.get("accountName", None):
             query = query.filter(PaymentAccount.name.ilike(f"%{account_name}%"))
         if status_code := search_filter.get("statusCode", None):

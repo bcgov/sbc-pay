@@ -134,6 +134,8 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     bcol_account = db.Column(db.String(50), nullable=True, index=True)
     service_fees = db.Column(db.Numeric(19, 2), nullable=True)
     details = db.Column(JSONB)
+    created_by = db.Column(db.String(50), nullable=True)
+    created_name = db.Column(db.String(50), nullable=True)
 
     payment_line_items = relationship("PaymentLineItem", lazy="joined")
     receipts = relationship("Receipt", lazy="joined")
