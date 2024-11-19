@@ -368,7 +368,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             sum(float(payment.get("paidUsdAmount", 0)) for payment in request_json.get("payments"))
         )
 
-        mailing_address = request_json.get('mailingAddress', {})
+        mailing_address = request_json.get("mailingAddress", {})
         # Create a routing slip record.
         routing_slip: RoutingSlipModel = RoutingSlipModel(
             number=rs_number,
