@@ -864,7 +864,7 @@ def test_get_eft_statement_with_invoices(session):
                         "account_id": "1234",
                         "billable": True,
                     },
-                    "payment_date": get_local_formatted_date_time(invoice_4.payment_date, "%Y-%m-%dT%H:%M:%S"),
+                    "payment_date": datetime.strftime(invoice_4.payment_date, "%Y-%m-%dT%H:%M:%S"),
                     "payment_method": "EFT",
                     "product": "BUSINESS",
                     "refund": 0.0,
