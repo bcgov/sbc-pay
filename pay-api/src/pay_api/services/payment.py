@@ -430,9 +430,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             total_due += invoice.get("total", 0)
             payment_date = invoice.get("payment_date")
             if not statement or (
-                statement
-                and payment_date
-                and get_local_formatted_date(payment_date) <= get_local_formatted_date(statement.get("to_date"))
+                statement and payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date"))
             ):
                 total_due -= invoice.get("paid", 0)
                 total_paid += invoice.get("paid", 0)

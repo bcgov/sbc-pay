@@ -31,7 +31,7 @@ from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
-from pay_api.utils.util import get_local_formatted_date
+from pay_api.utils.util import get_local_formatted_date, get_local_formatted_date_time
 from tests.utilities.base_test import (
     factory_eft_shortname,
     factory_eft_shortname_link,
@@ -657,7 +657,7 @@ def test_get_eft_statement_with_invoices(session):
         status_code=InvoiceStatus.PAID.value,
         total=50,
         paid=50,
-        payment_date=datetime.now(tz=timezone.utc),
+        payment_date=datetime.now(tz=timezone.utc) + timedelta(days=9000),
     ).save()
     factory_payment_line_item(invoice_id=invoice_3.id, fee_schedule_id=1).save()
 
@@ -667,9 +667,9 @@ def test_get_eft_statement_with_invoices(session):
         status_code=InvoiceStatus.PAID.value,
         total=50,
         paid=50,
-        payment_date=statement_model.to_date,
+        payment_date=statement_model.from_date + timedelta(days=1),
     ).save()
-    factory_payment_line_item(invoice_id=invoice_3.id, fee_schedule_id=1).save()
+    factory_payment_line_item(invoice_id=invoice_4.id, fee_schedule_id=1).save()
 
     factory_invoice_reference(invoice_1.id).save()
     factory_invoice_reference(invoice_2.id).save()
@@ -794,6 +794,84 @@ def test_get_eft_statement_with_invoices(session):
                     "status_code": "Invoice Approved",
                     "total": 50.0,
                 },
+                {
+                    "bcol_account": "TEST",
+                    "business_identifier": "CP0001234",
+                    "corp_type_code": "CP",
+                    "created_by": "test",
+                    "created_name": "test name",
+                    "created_on": get_local_formatted_date(invoice_3.created_on),
+                    "details": [
+                        {
+                            "label": "label",
+                            "value": "value",
+                        },
+                    ],
+                    "folio_number": "1234567890",
+                    "id": invoice_3.id,
+                    "invoice_number": "10021",
+                    "line_items": [
+                        {
+                            "description": None,
+                            "filing_type_code": "OTANN",
+                            "gst": 0.0,
+                            "pst": 0.0,
+                            "service_fees": 0.0,
+                            "total": 10.0,
+                        },
+                    ],
+                    "paid": 50.0,
+                    "payment_account": {
+                        "account_id": "1234",
+                        "billable": True,
+                    },
+                    "payment_date": datetime.strftime(invoice_3.payment_date, "%Y-%m-%dT%H:%M:%S.%f"),
+                    "payment_method": "EFT",
+                    "product": "BUSINESS",
+                    "refund": 0.0,
+                    "service_fees": 0.0,
+                    "status_code": "COMPLETED",
+                    "total": 50.0,
+                },
+                {
+                    "bcol_account": "TEST",
+                    "business_identifier": "CP0001234",
+                    "corp_type_code": "CP",
+                    "created_by": "test",
+                    "created_name": "test name",
+                    "created_on": get_local_formatted_date(invoice_4.created_on),
+                    "details": [
+                        {
+                            "label": "label",
+                            "value": "value",
+                        },
+                    ],
+                    "folio_number": "1234567890",
+                    "id": invoice_4.id,
+                    "invoice_number": "10021",
+                    "line_items": [
+                        {
+                            "description": None,
+                            "filing_type_code": "OTANN",
+                            "gst": 0.0,
+                            "pst": 0.0,
+                            "service_fees": 0.0,
+                            "total": 10.0,
+                        },
+                    ],
+                    "paid": 50.0,
+                    "payment_account": {
+                        "account_id": "1234",
+                        "billable": True,
+                    },
+                    "payment_date": get_local_formatted_date_time(invoice_4.payment_date, "%Y-%m-%dT%H:%M:%S"),
+                    "payment_method": "EFT",
+                    "product": "BUSINESS",
+                    "refund": 0.0,
+                    "service_fees": 0.0,
+                    "status_code": "COMPLETED",
+                    "total": 50.0,
+                },
             ],
             "statement": {
                 "amount_owing": 250.0,
@@ -814,8 +892,9 @@ def test_get_eft_statement_with_invoices(session):
                 ),  # pylint: disable=protected-access
                 "lastStatementTotal": 0,
                 "lastStatementPaidAmount": 0,
-                "latestStatementPaymentDate": None,
+                "latestStatementPaymentDate": get_local_formatted_date_time(invoice_3.payment_date, "%Y-%m-%d"),
             },
+            # 2 are paid - looking with reference to the "statement", 1 is paid within the statement period
             "total": {
                 "due": 300.0,
                 "fees": 350.0,
