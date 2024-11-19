@@ -642,7 +642,6 @@ def test_get_eft_statement_with_invoices(session):
         paid=0,
     ).save()
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
-
     invoice_2 = factory_invoice(
         payment_account,
         payment_method_code=PaymentMethod.EFT.value,
@@ -652,11 +651,35 @@ def test_get_eft_statement_with_invoices(session):
     ).save()
     factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
 
+    invoice_3 = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.PAID.value,
+        total=50,
+        paid=50,
+        payment_date=datetime.now(tz=timezone.utc),
+    ).save()
+    factory_payment_line_item(invoice_id=invoice_3.id, fee_schedule_id=1).save()
+
+    invoice_4 = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.PAID.value,
+        total=50,
+        paid=50,
+        payment_date=statement_model.to_date,
+    ).save()
+    factory_payment_line_item(invoice_id=invoice_3.id, fee_schedule_id=1).save()
+
     factory_invoice_reference(invoice_1.id).save()
     factory_invoice_reference(invoice_2.id).save()
+    factory_invoice_reference(invoice_3.id).save()
+    factory_invoice_reference(invoice_4.id).save()
+
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_1.id)
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_2.id)
-
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_3.id)
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_4.id)
     expected_report_name = (
         f"bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-"
         f"to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf"
@@ -794,11 +817,11 @@ def test_get_eft_statement_with_invoices(session):
                 "latestStatementPaymentDate": None,
             },
             "total": {
-                "due": 250.0,
-                "fees": 250.0,
-                "paid": 0.0,
+                "due": 300.0,
+                "fees": 350.0,
+                "paid": 50.0,
                 "serviceFees": 0.0,
-                "statutoryFees": 250.0,
+                "statutoryFees": 350.0,
             },
         }
         expected_report_inputs = ReportRequest(

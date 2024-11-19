@@ -348,12 +348,13 @@ class Statement:  # pylint:disable=too-many-public-methods
     @classmethod
     def _populate_statement_summary(cls, statement: StatementModel, statement_invoices: List[InvoiceModel]) -> dict:
         """Populate statement summary with additional information."""
-        previous_statement: StatementModel = Statement.get_previous_statement(statement)
+        previous_statement = Statement.get_previous_statement(statement)
         previous_totals = None
         if previous_statement:
             previous_invoices = StatementModel.find_all_payments_and_invoices_for_statement(previous_statement.id)
-            previous_items: dict = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
-            previous_totals = PaymentService.get_invoices_totals(previous_items.get("items", None))
+            previous_items = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
+            # Skip passing statement, we need the totals independent of the statement/payment date.
+            previous_totals = PaymentService.get_invoices_totals(previous_items.get("items", None), None)
 
         latest_payment_date = None
         for invoice in statement_invoices:

@@ -415,21 +415,27 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return report_response
 
     @staticmethod
-    def get_invoices_totals(invoices):
+    def get_invoices_totals(invoices: dict, statement: dict) -> dict:
         """Tally up totals for a list of invoices."""
         total_stat_fees = 0
         total_service_fees = 0
         total = 0
         total_paid = 0
+        total_due = 0
 
         for invoice in invoices:
             total += invoice.get("total", 0)
             total_stat_fees += invoice.get("total", 0) - invoice.get("service_fees", 0)
-
             total_service_fees += invoice.get("service_fees", 0)
-            total_paid += invoice.get("paid", 0)
-
-            # Format date to local
+            total_due += invoice.get("total", 0)
+            payment_date = invoice.get("payment_date")
+            if not statement or (
+                statement
+                and payment_date
+                and get_local_formatted_date(payment_date) <= get_local_formatted_date(statement.get("to_date"))
+            ):
+                total_due -= invoice.get("paid", 0)
+                total_paid += invoice.get("paid", 0)
             invoice["created_on"] = get_local_formatted_date(parser.parse(invoice["created_on"]))
 
         return {
@@ -437,7 +443,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             "serviceFees": total_service_fees,
             "fees": total,
             "paid": total_paid,
-            "due": total - total_paid,
+            "due": total_due,
         }
 
     @staticmethod
@@ -479,7 +485,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             }
         else:
             invoices = results.get("items", None)
-            totals = Payment.get_invoices_totals(invoices)
+            statement = kwargs.get("statement", {})
+            totals = Payment.get_invoices_totals(invoices, statement)
 
             account_info = None
             if kwargs.get("auth", None):
