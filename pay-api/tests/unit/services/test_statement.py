@@ -894,7 +894,7 @@ def test_get_eft_statement_with_invoices(session):
                 "lastStatementPaidAmount": 0,
                 "latestStatementPaymentDate": get_local_formatted_date_time(invoice_3.payment_date, "%Y-%m-%d"),
             },
-            # 2 are paid - looking with reference to the "statement", 1 is paid within the statement period
+            # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {
                 "due": 300.0,
                 "fees": 350.0,
