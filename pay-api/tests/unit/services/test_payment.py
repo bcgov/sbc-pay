@@ -16,13 +16,13 @@
 
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 import pytz
 
 from pay_api.models.payment_account import PaymentAccount
-from pay_api.services.payment import Payment as Payment_service
+from pay_api.services.payment import Payment as payment_service
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import (
@@ -31,6 +31,7 @@ from tests.utilities.base_test import (
     factory_payment,
     factory_payment_account,
     factory_payment_line_item,
+    factory_statement,
     factory_usd_payment,
 )
 
@@ -46,7 +47,7 @@ def test_payment_saved_from_new(session):
     invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
-    p = Payment_service.find_by_id(payment.id)
+    p = payment_service.find_by_id(payment.id)
 
     assert p is not None
     assert p.id is not None
@@ -57,7 +58,7 @@ def test_payment_saved_from_new(session):
 
 def test_payment_invalid_lookup(session):
     """Test invalid lookup."""
-    p = Payment_service.find_by_id(999)
+    p = payment_service.find_by_id(999)
 
     assert p is not None
     assert p.id is None
@@ -72,7 +73,7 @@ def test_payment_with_no_active_invoice(session):
     invoice = factory_invoice(payment_account, InvoiceStatus.DELETED.value)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
-    p = Payment_service.find_by_id(payment.id)
+    p = payment_service.find_by_id(payment.id)
 
     assert p is not None
     assert p.id is not None
@@ -273,7 +274,7 @@ def test_search_payment_history(
     else:
         return_all = False
     limit = 2
-    results = Payment_service.search_purchase_history(
+    results = payment_service.search_purchase_history(
         auth_account_id=auth_account_id,
         search_filter=search_filter,
         limit=limit,
@@ -303,7 +304,7 @@ def test_search_payment_history_for_all(session):
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
-    results = Payment_service.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
+    results = payment_service.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
     assert results is not None
     assert results.get("items") is not None
     # Returns only the default number if payload is empty
@@ -323,7 +324,7 @@ def test_create_payment_report_csv(session, rest_call_mock):
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
-    Payment_service.create_payment_report(
+    payment_service.create_payment_report(
         auth_account_id=auth_account_id,
         search_filter={},
         content_type="text/csv",
@@ -345,7 +346,7 @@ def test_create_payment_report_pdf(session, rest_call_mock):
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
-    Payment_service.create_payment_report(
+    payment_service.create_payment_report(
         auth_account_id=auth_account_id,
         search_filter={},
         content_type="application/pdf",
@@ -367,7 +368,7 @@ def test_search_payment_history_with_tz(session):
     factory_invoice_reference(invoice.id).save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = Payment_service.search_purchase_history(
+    results = payment_service.search_purchase_history(
         auth_account_id=auth_account_id, search_filter={}, limit=1, page=1
     )
     assert results is not None
@@ -384,7 +385,7 @@ def test_search_payment_history_with_tz(session):
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
-    results = Payment_service.search_purchase_history(
+    results = payment_service.search_purchase_history(
         auth_account_id=auth_account_id, search_filter={}, limit=1, page=1
     )
     assert results is not None
@@ -411,7 +412,7 @@ def test_search_account_payments(session):
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = Payment_service.search_account_payments(auth_account_id=auth_account_id, status=None, limit=1, page=1)
+    results = payment_service.search_account_payments(auth_account_id=auth_account_id, status=None, limit=1, page=1)
     assert results is not None
     assert results.get("items") is not None
     assert results.get("total") == 1
@@ -436,7 +437,7 @@ def test_search_account_failed_payments(session):
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = Payment_service.search_account_payments(auth_account_id=auth_account_id, status="FAILED", limit=1, page=1)
+    results = payment_service.search_account_payments(auth_account_id=auth_account_id, status="FAILED", limit=1, page=1)
     assert results.get("items")
     assert results.get("total") == 1
 
@@ -456,7 +457,7 @@ def test_search_account_failed_payments(session):
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = Payment_service.search_account_payments(auth_account_id=auth_account_id, status="FAILED", limit=1, page=1)
+    results = payment_service.search_account_payments(auth_account_id=auth_account_id, status="FAILED", limit=1, page=1)
     assert results.get("items")
     assert results.get("total") == 2
 
@@ -470,7 +471,7 @@ def test_search_account_failed_payments(session):
     inv_number_3 = "REG00003"
     factory_invoice_reference(invoice_1.id, invoice_number=inv_number_3).save()
     factory_invoice_reference(invoice_2.id, invoice_number=inv_number_3).save()
-    results = Payment_service.search_account_payments(auth_account_id=auth_account_id, status="FAILED", limit=1, page=1)
+    results = payment_service.search_account_payments(auth_account_id=auth_account_id, status="FAILED", limit=1, page=1)
     # Now there are no active failed payments, so it should return zero records
     assert not results.get("items")
     assert results.get("total") == 0
@@ -493,11 +494,11 @@ def test_create_account_payments_for_one_failed_payment(session):
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = Payment_service.search_account_payments(auth_account_id=auth_account_id, status="FAILED", limit=1, page=1)
+    results = payment_service.search_account_payments(auth_account_id=auth_account_id, status="FAILED", limit=1, page=1)
     assert results.get("total") == 1
 
-    new_payment = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
-    old_payment = Payment_service.find_by_id(payment_1.id)
+    new_payment = payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    old_payment = payment_service.find_by_id(payment_1.id)
     # Assert new payment invoice number is same as old payment as there is only one failed payment.
     assert new_payment.invoice_number == old_payment.invoice_number
 
@@ -537,14 +538,14 @@ def test_create_account_payments_for_multiple_failed_payments(session):
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = Payment_service.search_account_payments(
+    results = payment_service.search_account_payments(
         auth_account_id=auth_account_id, status="FAILED", limit=10, page=1
     )
     assert results.get("total") == 2
 
-    new_payment = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
-    payment_1 = Payment_service.find_by_id(payment_1.id)
-    payment_2 = Payment_service.find_by_id(payment_2.id)
+    new_payment = payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    payment_1 = payment_service.find_by_id(payment_1.id)
+    payment_2 = payment_service.find_by_id(payment_2.id)
     # Assert new payment invoice number is different from old payment as there are more than one failed payments.
     assert new_payment.invoice_number != payment_1.invoice_number
     assert new_payment.invoice_number != payment_2.invoice_number
@@ -587,14 +588,14 @@ def test_create_account_payments_after_consolidation(session):
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = Payment_service.search_account_payments(
+    results = payment_service.search_account_payments(
         auth_account_id=auth_account_id, status="FAILED", limit=10, page=1
     )
     assert results.get("total") == 2
 
-    new_payment_1 = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    new_payment_1 = payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
     # Create account payment again and assert both payments returns same.
-    new_payment_2 = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    new_payment_2 = payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
 
     assert new_payment_1.id == new_payment_2.id
 
@@ -635,12 +636,12 @@ def test_failed_payment_after_consolidation(session):
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = Payment_service.search_account_payments(
+    results = payment_service.search_account_payments(
         auth_account_id=auth_account_id, status="FAILED", limit=10, page=1
     )
     assert results.get("total") == 2
 
-    new_payment_1 = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    new_payment_1 = payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
 
     # Create another failed payment.
     inv_number_3 = "REG00003"
@@ -657,7 +658,7 @@ def test_failed_payment_after_consolidation(session):
     )
     payment_3.save()
 
-    new_payment_2 = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    new_payment_2 = payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
     assert new_payment_1.id != new_payment_2.id
     assert (
         new_payment_2.invoice_amount == payment_1.invoice_amount + payment_2.invoice_amount + payment_3.invoice_amount
@@ -673,7 +674,7 @@ def test_payment_usd(session):
     invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
-    p = Payment_service.find_by_id(payment.id)
+    p = payment_service.find_by_id(payment.id)
 
     assert p is not None
     assert p.id is not None
@@ -681,3 +682,91 @@ def test_payment_usd(session):
     assert p.payment_method_code is not None
     assert p.payment_status_code is not None
     assert p.paid_usd_amount == 100
+
+
+def test_get_invoice_totals_for_statements(session):
+    """This tests the invoice totals that is used for generating the amount owing in the statements."""
+    statement = factory_statement()
+    payment_account = factory_payment_account().save()
+    # Old flow there due = total - paid - for non EFT invoices.
+    data = payment_service.create_payment_report_details(
+        [
+            factory_invoice(payment_account, total=100, service_fees=50).save(),
+            factory_invoice(payment_account, paid=75, total=100, service_fees=50).save(),
+            factory_invoice(payment_account, refund=100, paid=100, total=100, service_fees=20).save(),
+        ],
+        {"items": []},
+    )
+    totals = payment_service.get_invoices_totals(data["items"], {"to_date": statement.to_date})
+    assert totals["statutoryFees"] == 180
+    assert totals["serviceFees"] == 120
+    assert totals["fees"] == 300
+    assert totals["paid"] == 175
+    assert totals["due"] == 125
+
+    # EFT flow
+    statement.from_date = datetime.now(tz=timezone.utc)
+    statement.to_date = datetime.now(tz=timezone.utc) + timedelta(days=30)
+    statement.save()
+
+    # FUTURE - Partial refunds?
+    data = payment_service.create_payment_report_details(
+        [
+            factory_invoice(
+                payment_account, paid=0, refund=0, total=100, payment_method_code=PaymentMethod.EFT.value
+            ).save(),
+            factory_invoice(
+                payment_account, paid=0, refund=0, total=50, payment_method_code=PaymentMethod.EFT.value
+            ).save(),
+            # Refund outside of range - These only get considered if PAID = 0
+            factory_invoice(
+                payment_account,
+                paid=0,
+                refund=100,
+                total=100,
+                payment_method_code=PaymentMethod.EFT.value,
+                refund_date=statement.to_date + timedelta(days=1),
+            ).save(),
+            # Refund within range
+            factory_invoice(
+                payment_account,
+                paid=0,
+                refund=100,
+                total=100,
+                payment_method_code=PaymentMethod.EFT.value,
+                refund_date=statement.to_date,
+            ).save(),
+            # Payment Date outside of range
+            factory_invoice(
+                payment_account,
+                paid=100,
+                total=100,
+                payment_method_code=PaymentMethod.EFT.value,
+                payment_date=statement.to_date + timedelta(days=1),
+            ).save(),
+            # Payment Date within range
+            factory_invoice(
+                payment_account,
+                paid=100,
+                total=100,
+                payment_method_code=PaymentMethod.EFT.value,
+                payment_date=statement.to_date,
+            ).save(),
+            # Payment and Refund only consider payment
+            factory_invoice(
+                payment_account,
+                paid=100,
+                refund=100,
+                total=100,
+                payment_method_code=PaymentMethod.EFT.value,
+                payment_date=statement.to_date,
+            ).save(),
+        ],
+        {"items": []},
+    )
+
+    totals = payment_service.get_invoices_totals(data["items"], {"to_date": statement.to_date.strftime("%Y-%m-%d")})
+    assert totals["fees"] == 650
+    assert totals["paid"] == 200
+    # fees - paid - refund
+    assert totals["due"] == 650 - 200 - 100
