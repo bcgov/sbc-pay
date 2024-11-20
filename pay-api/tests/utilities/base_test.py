@@ -529,7 +529,7 @@ def factory_invoice(
     created_name="test name",
     details=[{"label": "label", "value": "value"}],
     payment_date=None,
-    refund=0,
+    refund=None,
     refund_date=None,
 ):
     """Return Factory."""
