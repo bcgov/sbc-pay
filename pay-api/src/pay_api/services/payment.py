@@ -45,12 +45,7 @@ from pay_api.utils.enums import (
     PaymentSystem,
 )
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import (
-    generate_receipt_number,
-    generate_transaction_number,
-    get_local_formatted_date,
-    get_local_formatted_date_time,
-)
+from pay_api.utils.util import generate_receipt_number, generate_transaction_number, get_local_formatted_date_time
 
 from ..exceptions import BusinessException
 from ..utils.errors import Error
@@ -417,32 +412,34 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @staticmethod
     def get_invoices_totals(invoices: dict, statement: dict) -> dict:
         """Tally up totals for a list of invoices."""
-        total_stat_fees = 0
-        total_service_fees = 0
-        total = 0
-        total_paid = 0
-        total_due = 0
+        totals = {
+            "statutoryFees": 0,
+            "serviceFees": 0,
+            "fees": 0,
+            "paid": 0,
+            "due": 0,
+        }
 
         for invoice in invoices:
-            total += invoice.get("total", 0)
-            total_stat_fees += invoice.get("total", 0) - invoice.get("service_fees", 0)
-            total_service_fees += invoice.get("service_fees", 0)
-            total_due += invoice.get("total", 0)
+            total = invoice.get("total", 0)
+            service_fees = invoice.get("service_fees", 0)
+            paid = invoice.get("paid", 0)
+            payment_method = invoice.get("payment_method")
             payment_date = invoice.get("payment_date")
-            if not statement or (
-                statement and payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date"))
-            ):
-                total_due -= invoice.get("paid", 0)
-                total_paid += invoice.get("paid", 0)
-            invoice["created_on"] = get_local_formatted_date(parser.parse(invoice["created_on"]))
 
-        return {
-            "statutoryFees": total_stat_fees,
-            "serviceFees": total_service_fees,
-            "fees": total,
-            "paid": total_paid,
-            "due": total_due,
-        }
+            totals["fees"] += total
+            totals["statutoryFees"] += total - service_fees
+            totals["serviceFees"] += service_fees
+            totals["due"] += total
+
+            if not statement or payment_method != PaymentMethod.EFT.value:
+                totals["due"] -= paid
+                totals["paid"] += paid
+            elif payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
+                totals["due"] -= paid
+                totals["paid"] += paid
+
+        return totals
 
     @staticmethod
     @user_context
