@@ -381,7 +381,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return data
 
     @classmethod
-    def create_payment_report_details(cls, purchases: Tuple, data: Dict):  # pylint:disable=too-many-locals
+    def create_payment_report_details(cls, purchases: Tuple, data: Dict) -> dict:  # pylint:disable=too-many-locals
         """Return payment report details by fetching the line items.
 
         purchases is tuple of payment and invoice model records.

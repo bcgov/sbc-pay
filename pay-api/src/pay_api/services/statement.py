@@ -385,7 +385,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         from_date_string: str = statement_svc.from_date.strftime(DT_SHORT_FORMAT)
         to_date_string: str = statement_svc.to_date.strftime(DT_SHORT_FORMAT)
 
-        extension: str = "pdf" if content_type == ContentType.PDF.value else "csv"
+        extension = "pdf" if content_type == ContentType.PDF.value else "csv"
 
         if statement_svc.frequency == StatementFrequency.DAILY.value:
             report_name = f"{report_name}-{from_date_string}.{extension}"
@@ -394,7 +394,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
         statement_purchases = StatementModel.find_all_payments_and_invoices_for_statement(statement_id)
 
-        result_items: dict = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
+        result_items = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
         statement = statement_svc.asdict()
         statement["from_date"] = from_date_string
         statement["to_date"] = to_date_string
