@@ -683,14 +683,16 @@ def test_get_invoice_totals_for_statements(session):
         [
             factory_invoice(payment_account, total=100, service_fees=50).save(),
             factory_invoice(payment_account, paid=75, total=100, service_fees=50).save(),
+            # Refund on APPROVAL scenario - not paid
+            factory_invoice(payment_account, paid=0, refund=10, total=10).save(),
             factory_invoice(payment_account, refund=100, paid=100, total=100, service_fees=20).save(),
         ],
         {"items": []},
     )
     totals = PaymentService.get_invoices_totals(data["items"], {"to_date": statement.to_date})
-    assert totals["statutoryFees"] == 180
+    assert totals["statutoryFees"] == 190
     assert totals["serviceFees"] == 120
-    assert totals["fees"] == 300
+    assert totals["fees"] == 310
     assert totals["paid"] == 175
     assert totals["due"] == 125
 
