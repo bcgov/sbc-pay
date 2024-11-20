@@ -724,7 +724,7 @@ def test_get_eft_statement_with_invoices(session):
                     "corp_type_code": "CP",
                     "created_by": "test",
                     "created_name": "test name",
-                    "created_on": get_local_formatted_date(invoice_1.created_on, '%Y-%m-%d %H:%M:%S.%f'),
+                    "created_on": get_local_formatted_date(invoice_1.created_on),
                     "details": [
                         {
                             "label": "label",
@@ -762,7 +762,7 @@ def test_get_eft_statement_with_invoices(session):
                     "corp_type_code": "CP",
                     "created_by": "test",
                     "created_name": "test name",
-                    "created_on": get_local_formatted_date(invoice_2.created_on, '%Y-%m-%d %H:%M:%S.%f'),
+                    "created_on": get_local_formatted_date(invoice_2.created_on),
                     "details": [
                         {
                             "label": "label",
@@ -800,7 +800,7 @@ def test_get_eft_statement_with_invoices(session):
                     "corp_type_code": "CP",
                     "created_by": "test",
                     "created_name": "test name",
-                    "created_on": get_local_formatted_date(invoice_3.created_on, '%Y-%m-%d %H:%M:%S.%f'),
+                    "created_on": get_local_formatted_date(invoice_3.created_on),
                     "details": [
                         {
                             "label": "label",

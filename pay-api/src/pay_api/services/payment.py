@@ -45,7 +45,12 @@ from pay_api.utils.enums import (
     PaymentSystem,
 )
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import generate_receipt_number, generate_transaction_number, get_local_formatted_date_time
+from pay_api.utils.util import (
+    generate_receipt_number,
+    generate_transaction_number,
+    get_local_formatted_date,
+    get_local_formatted_date_time,
+)
 
 from ..exceptions import BusinessException
 from ..utils.errors import Error
@@ -421,6 +426,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         }
 
         for invoice in invoices:
+            invoice["created_on"] = get_local_formatted_date(parser.parse(invoice["created_on"]))
             total = invoice.get("total", 0)
             service_fees = invoice.get("service_fees", 0)
             paid = invoice.get("paid", 0)
