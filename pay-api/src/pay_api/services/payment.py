@@ -430,20 +430,29 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             total = invoice.get("total", 0)
             service_fees = invoice.get("service_fees", 0)
             paid = invoice.get("paid", 0)
+            refund = invoice.get("refund", 0)
             payment_method = invoice.get("payment_method")
             payment_date = invoice.get("payment_date")
+            refund_date = invoice.get("refund_date")
 
             totals["fees"] += total
             totals["statutoryFees"] += total - service_fees
             totals["serviceFees"] += service_fees
             totals["due"] += total
-
             if not statement or payment_method != PaymentMethod.EFT.value:
                 totals["due"] -= paid
                 totals["paid"] += paid
-            elif payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
-                totals["due"] -= paid
-                totals["paid"] += paid
+            else:
+                if payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
+                    totals["due"] -= paid
+                    totals["paid"] += paid
+                # Scenario where payment was refunded, paid $0, refund = invoice total
+                if (
+                    paid == 0
+                    and refund_date
+                    and parser.parse(refund_date) <= parser.parse(statement.get("to_date", ""))
+                ):
+                    totals["due"] -= refund
 
         return totals
 
