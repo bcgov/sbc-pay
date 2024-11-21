@@ -61,6 +61,22 @@ class EFTReconciliation:  # pylint: disable=too-few-public-methods
             send_error_email(email_service_params)
 
 
+def _validate_configuration(context: EFTReconciliation) -> bool:
+    """Validate required configuration is available."""
+    is_valid = True
+    if current_app.config.get("EFT_TDI17_LOCATION_ID") is None:
+        is_valid = False
+        context.eft_error_handling("N/A", "Missing EFT_TDI17_LOCATION_ID configuration")
+    if not current_app.config.get("EFT_WIRE_PATTERNS"):
+        is_valid = False
+        context.eft_error_handling("N/A", "Missing EFT_WIRE_PATTERNS configuration")
+    if not current_app.config.get("EFT_PATTERNS"):
+        is_valid = False
+        context.eft_error_handling("N/A", "Missing EFT_PATTERNS configuration")
+
+    return is_valid
+
+
 def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     """Read the TDI17 file, create processing records and update payment details.
 
@@ -76,12 +92,11 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     8: Finalize and complete
     """
     context = EFTReconciliation(ce)
+    if not _validate_configuration(context):
+        return
 
     # Used to filter transactions by location id to isolate EFT specific transactions from the TDI17
     eft_location_id = current_app.config.get("EFT_TDI17_LOCATION_ID")
-    if eft_location_id is None:
-        context.eft_error_handling("N/A", "Missing EFT_TDI17_LOCATION_ID configuration")
-        return
 
     # Fetch EFT File
     file = get_object(context.minio_location, context.file_name)
@@ -268,9 +283,6 @@ def _process_eft_trailer(eft_trailer: EFTTrailer, eft_file_model: EFTFileModel) 
         )
         return False
 
-    # Populate header and trailer data on EFT File record - values will return None if parsing failed
-    _set_eft_trailer_on_file(eft_trailer, eft_file_model)
-
     # Errors on parsing trailer - create EFT error records
     if eft_trailer is not None and eft_trailer.has_errors():
         _save_eft_trailer_error(eft_trailer, eft_file_model)
@@ -333,12 +345,6 @@ def _set_eft_header_on_file(eft_header: EFTHeader, eft_file_model: EFTFileModel)
     eft_file_model.file_creation_date = getattr(eft_header, "creation_datetime", None)
     eft_file_model.deposit_from_date = getattr(eft_header, "starting_deposit_date", None)
     eft_file_model.deposit_to_date = getattr(eft_header, "ending_deposit_date", None)
-
-
-def _set_eft_trailer_on_file(eft_trailer: EFTTrailer, eft_file_model: EFTFileModel):
-    """Set EFT Trailer information on EFTFile model."""
-    eft_file_model.number_of_details = getattr(eft_trailer, "number_of_details", None)
-    eft_file_model.total_deposit_cents = getattr(eft_trailer, "total_deposit_amount", None)
 
 
 def _set_eft_base_error(line_type: str, index: int, eft_file_id: int, error_messages: [str]) -> EFTTransactionModel:

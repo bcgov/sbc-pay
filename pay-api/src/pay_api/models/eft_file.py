@@ -46,9 +46,7 @@ class EFTFile(BaseModel):  # pylint: disable=too-many-instance-attributes
             "deposit_to_date",
             "file_creation_date",
             "file_ref",
-            "number_of_details",
-            "status_code",
-            "total_deposit_cents",
+            "status_code"
         ]
     }
 
@@ -63,8 +61,6 @@ class EFTFile(BaseModel):  # pylint: disable=too-many-instance-attributes
     deposit_from_date = db.Column("deposit_from_date", db.DateTime, nullable=True)
     deposit_to_date = db.Column("deposit_to_date", db.DateTime, nullable=True)
     file_creation_date = db.Column("file_creation_date", db.DateTime, nullable=True)
-    number_of_details = db.Column("number_of_details", db.Integer, nullable=True)
-    total_deposit_cents = db.Column("total_deposit_cents", db.BigInteger, nullable=True)
     file_ref = db.Column("file_ref", db.String, nullable=False, index=True)
     status_code = db.Column(
         db.String,
