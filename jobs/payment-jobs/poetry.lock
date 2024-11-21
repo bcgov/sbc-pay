@@ -2113,9 +2113,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "20767_p3"
-resolved_reference = "8b667944c9f710365984c41ffdd47bf974403758"
+url = "https://github.com/ochiu/sbc-pay.git"
+reference = "24454-EFT-TDI17-Processing-Updates"
+resolved_reference = "2ffedcc99ada34b00fac72661ac8aa5ea9cdd779"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3266,4 +3266,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "9600aaae4db56a867451a7437b19b28c2cf9f9aaf762bc2cb06ed6cbafa2e397"
+content-hash = "f099c61f6e432678e246210a649c1a5baf9e06d285e44e9e7c5ca3f80ca54357"
