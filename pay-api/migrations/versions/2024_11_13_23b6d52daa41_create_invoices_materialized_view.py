@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 from pay_api.utils.enums import DatabaseViews
-from pay_api.utils.serializable import Serializable
+from pay_api.utils.query_helpers import TransactionQuery
 
 
 # revision identifiers, used by Alembic.
@@ -24,7 +24,18 @@ depends_on = None
 
 
 def upgrade():
-    base_query = Serializable.generate_base_transaction_query()
+    """
+    This model represents the `transactions_materialized_view` materialized view in the database.
+    It is designed to improve query performance for purchase history and other related queries by
+    pre-joining data from multiple tables, thereby reducing the need for complex joins in real-time queries.
+    Note:
+    - This model should be treated as read-only.
+    Any updates to the underlying tables will not automatically reflect in this materialized view
+    until it is refreshed.
+    - Use this model to query data in the materialized view rather than directly
+    joining multiple tables when possible for performance benefits.
+    """
+    base_query = TransactionQuery.generate_base_transaction_query()
     query_sql = str(base_query.statement.compile(compile_kwargs={"literal_binds": True}))
     op.execute("set statement_timeout=900000;")
     op.execute(f'''

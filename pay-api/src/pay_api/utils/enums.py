@@ -457,3 +457,11 @@ class DatabaseViews(Enum):
 
     TRANSACTIONS_MATERIALIZED_VIEW = "transactions_materialized_view"
     TRANSACTIONS_MATERIALIZED_VIEW_IDX = "idx_transactions_materialized_view_auth_account_id_invoice_id_desc"
+
+class ViewColumnAliases(Enum):
+    """View Columns."""
+    
+    INVOICE_ID = 'invoice_id'
+    LINE_ITEM_ID = 'line_item_id'
+    ACCOUNT_ID = 'account_id'
+    REFERENCE_ID = 'reference_id'

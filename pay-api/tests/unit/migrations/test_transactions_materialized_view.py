@@ -15,13 +15,13 @@
 """Tests to assure the Transactions Materialized View exist."""
 from pay_api.models import db
 from sqlalchemy import text
-from pay_api.utils.enums import DataBaseViews
+from pay_api.utils.enums import DatabaseViews
 
 
 def test_transactions_materialized_view_exists(app):
     """Test to ensure the transactions materialized view and index exist."""
-    view_name = DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value
-    index_name = DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW_IDX.value
+    view_name = DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value
+    index_name = DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW_IDX.value
 
     with app.app_context():
         view_exists = db.session.execute(
@@ -38,7 +38,7 @@ def test_transactions_materialized_view_exists(app):
 def test_transactions_materialized_view_columns(app):
     """Test that the transactions materialized view has the correct columns."""
     expected_columns = {
-        "fee_schedule_id", "filing_type_code", "line_item_id", "description",
+        "row_id", "fee_schedule_id", "filing_type_code", "line_item_id", "description",
         "gst", "pst", "payment_account_id", "auth_account_id",
         "payment_account_name", "billable", "invoice_reference_id", "invoice_number",
         "reference_number", "invoice_reference_status_code", "invoice_id",
@@ -49,7 +49,7 @@ def test_transactions_materialized_view_columns(app):
         "service_fees", "details", "created_by", "created_name"
     }
 
-    view_name = DataBaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value
+    view_name = DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value
 
     with app.app_context():
         db.session.execute(text(f"REFRESH MATERIALIZED VIEW {view_name};"))
