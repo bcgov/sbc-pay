@@ -326,4 +326,3 @@ def unstructure_schema_items(schema, items):
     converter = Converter()
 
     return converter.unstructure(results)
-

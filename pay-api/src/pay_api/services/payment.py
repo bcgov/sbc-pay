@@ -391,7 +391,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         # TODO remove try catch after confirmed working
         try:
-            invoice_search_list = InvoiceSearchModel.from_flat_rows(purchases)
+            invoice_search_list = [InvoiceSearchModel.from_row(row) for row in purchases]
             converter = Converter()
             invoice_list = converter.unstructure(invoice_search_list)
             data["items"] = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]

@@ -19,7 +19,7 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, alias, and_, cast, func, or_
+from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import select, text
@@ -328,7 +328,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
             invoice_ids = {item for t in sub_query for item in t}
             query = query.filter(Invoice.id.in_(invoice_ids)).order_by(Invoice.id.desc())
-            result = query.all()
+            result = db.session.query(Invoice).from_statement(query).all()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count

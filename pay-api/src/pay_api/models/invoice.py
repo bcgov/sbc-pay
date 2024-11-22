@@ -14,7 +14,6 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
-import copy
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
@@ -23,13 +22,12 @@ import pytz
 from attrs import define
 from dateutil.relativedelta import relativedelta
 from marshmallow import fields, post_dump
-from sqlalchemy import ForeignKey, Row
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
-from pay_api.utils.util import FlexibleObject
 
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
@@ -377,7 +375,8 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             details=row.details,
             payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
             line_items=line_items,
-            product='row.product' or row.corp_type.product,
+            # TODO fix this
+            product="row.product" or row.corp_type.product,
             payment_date=row.payment_date,
             refund_date=row.refund_date,
             disbursement_date=row.disbursement_date,
