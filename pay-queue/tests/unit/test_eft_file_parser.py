@@ -19,6 +19,7 @@ Test-Suite to ensure that the EFT File parser is working as intended.
 from datetime import datetime
 
 import pytest
+from flask import current_app
 from pay_api.utils.enums import EFTShortnameType
 
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
@@ -27,7 +28,7 @@ from pay_queue.services.eft.eft_errors import EFTError
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
 
-def test_eft_parse_header():
+def test_eft_parse_header(app):
     """Test EFT header parser."""
     content = factory_eft_header(
         record_type=EFTConstants.HEADER_RECORD_TYPE.value,
@@ -50,7 +51,7 @@ def test_eft_parse_header():
     assert header.ending_deposit_date == deposit_date_end
 
 
-def test_eft_parse_header_invalid_length():
+def test_eft_parse_header_invalid_length(app):
     """Test EFT header parser invalid length."""
     content = " "
     header: EFTHeader = EFTHeader(content, 0)
@@ -62,7 +63,7 @@ def test_eft_parse_header_invalid_length():
     assert header.errors[0].index == 0
 
 
-def test_eft_parse_header_invalid_record_type():
+def test_eft_parse_header_invalid_record_type(app):
     """Test EFT header parser invalid record type."""
     content = factory_eft_header(
         record_type="X",
@@ -81,7 +82,7 @@ def test_eft_parse_header_invalid_record_type():
     assert header.errors[0].index == 0
 
 
-def test_eft_parse_header_invalid_dates():
+def test_eft_parse_header_invalid_dates(app):
     """Test EFT header parser invalid dates."""
     content = factory_eft_header(
         record_type=EFTConstants.HEADER_RECORD_TYPE.value,
@@ -106,7 +107,7 @@ def test_eft_parse_header_invalid_dates():
     assert header.errors[2].index == 0
 
 
-def test_eft_parse_trailer():
+def test_eft_parse_trailer(app):
     """Test EFT trailer parser."""
     content = factory_eft_trailer(
         record_type=EFTConstants.TRAILER_RECORD_TYPE.value,
@@ -121,7 +122,7 @@ def test_eft_parse_trailer():
     assert trailer.total_deposit_amount == 3733750
 
 
-def test_eft_parse_trailer_invalid_length():
+def test_eft_parse_trailer_invalid_length(app):
     """Test EFT trailer parser invalid number types."""
     content = " "
     trailer: EFTTrailer = EFTTrailer(content, 1)
@@ -133,7 +134,7 @@ def test_eft_parse_trailer_invalid_length():
     assert trailer.errors[0].index == 1
 
 
-def test_eft_parse_trailer_invalid_record_type():
+def test_eft_parse_trailer_invalid_record_type(app):
     """Test EFT trailer parser invalid record_type."""
     content = factory_eft_trailer(record_type="X", number_of_details="5", total_deposit_amount="3733750")
     trailer: EFTTrailer = EFTTrailer(content, 1)
@@ -145,7 +146,7 @@ def test_eft_parse_trailer_invalid_record_type():
     assert trailer.errors[0].index == 1
 
 
-def test_eft_parse_trailer_invalid_numbers():
+def test_eft_parse_trailer_invalid_numbers(app):
     """Test EFT trailer parser invalid number values."""
     content = factory_eft_trailer(
         record_type=EFTConstants.TRAILER_RECORD_TYPE.value,
@@ -165,41 +166,39 @@ def test_eft_parse_trailer_invalid_numbers():
 
 
 @pytest.mark.parametrize(
-    "test_type, short_name_type, transaction_description, line_index, expected",
+    "pattern_type, pattern, expected",
     [
         (
-            "EFT",
-            EFTShortnameType.EFT.value,
-            f"{EFTRecord.EFT_DESCRIPTION_PATTERN} EFTSN1",
-            1,
-            {"is_generated": False, "short_name": "EFTSN1"},
-        ),
+            "EFT_PATTERNS",
+            pattern,
+            {"is_generated": False, "short_name_type": EFTShortnameType.EFT.value, "short_name": "EFTSHORTNAME"},
+        )
+        for pattern in ["ACCOUNT PAYABLE PMT", "BILL PAYMENT", "COMM BILL PAYMENT", "MISC PAYMENT", "PAYROLL DEPOSIT"]
+    ]
+    + [
         (
-            "WIRE",
-            EFTShortnameType.WIRE.value,
-            f"{EFTRecord.WIRE_DESCRIPTION_PATTERN} WIRESN1",
-            2,
-            {"is_generated": False, "short_name": "WIRESN1"},
-        ),
+            "WIRE_PATTERNS",
+            pattern,
+            {"is_generated": False, "short_name_type": EFTShortnameType.WIRE.value, "short_name": "WIRESHORTNAME"},
+        )
+        for pattern in ["FUNDS TRANSFER CR TT"]
+    ]
+    + [
         (
-            "FEDERAL PAYMENT",
-            EFTShortnameType.EFT.value,
-            f"{EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN}",
-            3,
-            {"is_generated": True, "short_name": EFTRecord.FEDERAL_PAYMENT_DESCRIPTION_PATTERN},
-        ),
-        (
-            "PAD",
-            None,
-            f"{EFTRecord.PAD_DESCRIPTION_PATTERN}",
-            4,
-            {"is_generated": False, "short_name": EFTRecord.PAD_DESCRIPTION_PATTERN},
-        ),
-        ("UNKNOWN", None, "ABC 123", 5, {"is_generated": False, "short_name": "ABC 123"}),
+            "UNKNOWN_PATTERNS",
+            pattern,
+            {"is_generated": True, "short_name_type": EFTShortnameType.EFT.value, "short_name": None},
+        )
+        for pattern in ["FEDERAL PAYMENT CANADA", "PROV/LOCAL GVT PYMT PROVINCE OF BC"]
     ],
 )
-def test_eft_parse_records(test_type, short_name_type, transaction_description, line_index, expected):
+def test_eft_parse_records(app, pattern_type, pattern, expected):
     """Test EFT Record parser."""
+    if expected["short_name"]:
+        transaction_description = f"{pattern} {expected['short_name']}"
+    else:
+        transaction_description = pattern
+
     content = factory_eft_record(
         record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
         ministry_code="AT",
@@ -220,16 +219,15 @@ def test_eft_parse_records(test_type, short_name_type, transaction_description, 
         transaction_date="",
     )
 
-    record: EFTRecord = EFTRecord(content, line_index)
+    record: EFTRecord = EFTRecord(content, 1)
     deposit_datetime = datetime(2023, 8, 10, 0, 0)
-    assert record.index == line_index
+    assert record.index == 1
     assert record.record_type == "2"
     assert record.ministry_code == "AT"
     assert record.program_code == "0146"
     assert record.deposit_datetime == deposit_datetime
     assert record.location_id == "85004"
     assert record.transaction_sequence == "001"
-    assert record.transaction_description == expected["short_name"]
     assert record.deposit_amount == 13500
     assert record.currency == EFTConstants.CURRENCY_CAD.value
     assert record.exchange_adj_amount == 0
@@ -238,11 +236,15 @@ def test_eft_parse_records(test_type, short_name_type, transaction_description, 
     assert record.batch_number == "002400986"
     assert record.jv_type == "I"
     assert record.jv_number == "002425669"
-    assert record.short_name_type == short_name_type
+    assert record.short_name_type == expected["short_name_type"]
     assert record.generate_short_name == expected["is_generated"]
+    if expected["is_generated"]:
+        assert record.transaction_description == pattern
+    else:
+        assert record.transaction_description == expected["short_name"]
 
 
-def test_eft_parse_record_invalid_length():
+def test_eft_parse_record_invalid_length(app):
     """Test EFT record parser invalid length."""
     content = " "
     record: EFTRecord = EFTRecord(content, 0)
@@ -254,7 +256,7 @@ def test_eft_parse_record_invalid_length():
     assert record.errors[0].index == 0
 
 
-def test_eft_parse_record_invalid_record_type():
+def test_eft_parse_record_invalid_record_type(app):
     """Test EFT record parser invalid record_type."""
     content = factory_eft_record(
         record_type="X",
@@ -284,7 +286,7 @@ def test_eft_parse_record_invalid_record_type():
     assert record.errors[0].index == 0
 
 
-def test_eft_parse_record_invalid_dates():
+def test_eft_parse_record_invalid_dates(app):
     """Test EFT record parser for invalid dates."""
     content = factory_eft_record(
         record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
@@ -335,7 +337,7 @@ def test_eft_parse_record_invalid_dates():
     assert record.transaction_date is None
 
 
-def test_eft_parse_record_invalid_numbers():
+def test_eft_parse_record_invalid_numbers(app):
     """Test EFT record parser for invalid numbers."""
     content = factory_eft_record(
         record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
@@ -372,7 +374,7 @@ def test_eft_parse_record_invalid_numbers():
     assert record.errors[2].index == 0
 
 
-def test_eft_parse_record_transaction_description_required():
+def test_eft_parse_record_transaction_description_required(app):
     """Test EFT record parser transaction description required."""
     content = factory_eft_record(
         record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
@@ -403,7 +405,7 @@ def test_eft_parse_record_transaction_description_required():
     assert record.errors[0].index == 0
 
 
-def test_eft_parse_file():
+def test_eft_parse_file(app):
     """Test EFT parsing a file."""
     with open("tests/unit/test_data/tdi17_sample.txt", "r") as f:
         contents = f.read()
@@ -450,7 +452,7 @@ def test_eft_parse_file():
         assert eft_records[0].jv_type == "I"
         assert eft_records[0].jv_number == "002425669"
         assert eft_records[0].transaction_date is None
-        assert eft_records[0].short_name_type is None
+        assert eft_records[0].short_name_type is EFTShortnameType.EFT.value
 
         assert eft_records[1].index == 2
         assert eft_records[1].record_type == "2"

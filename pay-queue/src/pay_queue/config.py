@@ -50,6 +50,11 @@ def get_named_config(config_name: str = "production"):
     return app_config
 
 
+def get_comma_delimited_string_as_tuple(value: str) -> tuple:
+    """Get comma delimited string as a tuple."""
+    return tuple(val.strip() for val in value.split(",") if val.strip())
+
+
 class _Config:  # pylint: disable=too-few-public-methods,protected-access
     """Base class configuration that should set reasonable defaults.
 
@@ -93,6 +98,8 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
 
     # EFT Config
     EFT_TDI17_LOCATION_ID = os.getenv("EFT_TDI17_LOCATION_ID")
+    EFT_WIRE_PATTERNS = get_comma_delimited_string_as_tuple(os.getenv("EFT_WIRE_PATTERNS", ""))
+    EFT_PATTERNS = get_comma_delimited_string_as_tuple(os.getenv("EFT_PATTERNS", ""))
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY")
