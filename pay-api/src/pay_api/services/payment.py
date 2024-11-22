@@ -381,7 +381,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return data
 
     @classmethod
-    def create_payment_report_details(cls, purchases: Tuple, data: Dict):  # pylint:disable=too-many-locals
+    def create_payment_report_details(cls, purchases: Tuple, data: Dict) -> dict:  # pylint:disable=too-many-locals
         """Return payment report details by fetching the line items.
 
         purchases is tuple of payment and invoice model records.
@@ -415,30 +415,49 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return report_response
 
     @staticmethod
-    def get_invoices_totals(invoices):
+    def get_invoices_totals(invoices: dict, statement: dict) -> dict:
         """Tally up totals for a list of invoices."""
-        total_stat_fees = 0
-        total_service_fees = 0
-        total = 0
-        total_paid = 0
+        totals = {
+            "statutoryFees": 0,
+            "serviceFees": 0,
+            "fees": 0,
+            "paid": 0,
+            "due": 0,
+        }
 
         for invoice in invoices:
-            total += invoice.get("total", 0)
-            total_stat_fees += invoice.get("total", 0) - invoice.get("service_fees", 0)
-
-            total_service_fees += invoice.get("service_fees", 0)
-            total_paid += invoice.get("paid", 0)
-
-            # Format date to local
             invoice["created_on"] = get_local_formatted_date(parser.parse(invoice["created_on"]))
+            total = invoice.get("total", 0)
+            service_fees = invoice.get("service_fees", 0)
+            paid = invoice.get("paid", 0)
+            refund = invoice.get("refund", 0)
+            payment_method = invoice.get("payment_method")
+            payment_date = invoice.get("payment_date")
+            refund_date = invoice.get("refund_date")
 
-        return {
-            "statutoryFees": total_stat_fees,
-            "serviceFees": total_service_fees,
-            "fees": total,
-            "paid": total_paid,
-            "due": total - total_paid,
-        }
+            totals["fees"] += total
+            totals["statutoryFees"] += total - service_fees
+            totals["serviceFees"] += service_fees
+            totals["due"] += total
+            if not statement or payment_method != PaymentMethod.EFT.value:
+                totals["due"] -= paid
+                totals["paid"] += paid
+                if paid == 0 and refund > 0:
+                    totals["due"] -= refund
+            elif payment_method == PaymentMethod.EFT.value:
+                if payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
+                    totals["due"] -= paid
+                    totals["paid"] += paid
+                # Scenario where payment was refunded, paid $0, refund = invoice total
+                if (
+                    paid == 0
+                    and refund > 0
+                    and refund_date
+                    and parser.parse(refund_date) <= parser.parse(statement.get("to_date", ""))
+                ):
+                    totals["due"] -= refund
+
+        return totals
 
     @staticmethod
     @user_context
@@ -479,7 +498,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             }
         else:
             invoices = results.get("items", None)
-            totals = Payment.get_invoices_totals(invoices)
+            statement = kwargs.get("statement", {})
+            totals = Payment.get_invoices_totals(invoices, statement)
 
             account_info = None
             if kwargs.get("auth", None):
