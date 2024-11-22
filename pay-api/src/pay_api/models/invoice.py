@@ -337,43 +337,6 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     disbursement_reversal_date: datetime
 
     @classmethod
-    def from_flat_rows(cls, rows):
-        """Specific function for flat rows that don't contain complex nested objects."""
-        # Group together all the rows, this is typically done in ORM, but since we're joining to a materialized view
-        # We need to do this ourselves for now.
-        # sqlalchemy.Row is immutable. Have to use dicts for now.
-        mod_row = []
-        for row in rows:
-            row_dict = row._mapping
-            
-            # Group Payment Line Items by invoice id
-            # PaymentLineItem.id,
-            # PaymentLineItem.description,
-            # PaymentLineItem.gst,
-            # PaymentLineItem.pst
-
-            # Group Invoice References by invoice id 'referneces
-            # InvoiceReference.id,
-            # InvoiceReference.invoice_number,
-            # InvoiceReference.reference_number,
-            # InvoiceReference.status_code,
-
-            # Payment Account - follows specific structure
-            payment_account = {
-                'auth_account_id': row_dict.get('auth_account_id'),
-                'billable': row_dict.get('billable'),
-                'name': row_dict.get('name'),
-                'branch_name': row_dict.get('branch_name'),
-            }
-            # Corp Type? Product?
-
-            d = {'product': 'good', 'payment_account': FlexibleObject(payment_account), 'payment_line_items': [], 'references': [], **row_dict}
-            mod_row.append(FlexibleObject(d))
-
-        results = [cls.from_row(row) for row in mod_row]
-        return results
-
-    @classmethod
     def from_row(
         cls,
         row,
@@ -414,7 +377,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             details=row.details,
             payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
             line_items=line_items,
-            product=row.product or row.corp_type.product,
+            product='row.product' or row.corp_type.product,
             payment_date=row.payment_date,
             refund_date=row.refund_date,
             disbursement_date=row.disbursement_date,

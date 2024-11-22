@@ -327,8 +327,3 @@ def unstructure_schema_items(schema, items):
 
     return converter.unstructure(results)
 
-
-class FlexibleObject(object):
-    """Build an object from a dict very easily."""
-    def __init__(self, adict):
-        self.__dict__.update(adict)
