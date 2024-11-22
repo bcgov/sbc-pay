@@ -14,6 +14,7 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
+import copy
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
@@ -22,12 +23,13 @@ import pytz
 from attrs import define
 from dateutil.relativedelta import relativedelta
 from marshmallow import fields, post_dump
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Row
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.util import FlexibleObject
 
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
@@ -337,33 +339,51 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     @classmethod
     def from_flat_rows(cls, rows):
         """Specific function for flat rows that don't contain complex nested objects."""
-        # TODO
         # Group together all the rows, this is typically done in ORM, but since we're joining to a materialized view
         # We need to do this ourselves for now.
+        # sqlalchemy.Row is immutable. Have to use dicts for now.
+        mod_row = []
+        for row in rows:
+            row_dict = row._mapping
+            
+            # Group Payment Line Items by invoice id
+            # PaymentLineItem.id,
+            # PaymentLineItem.description,
+            # PaymentLineItem.gst,
+            # PaymentLineItem.pst
 
-        # Group Payment Line Items by invoice id
-        # PaymentLineItem.id,
-        # PaymentLineItem.description,
-        # PaymentLineItem.gst,
-        # PaymentLineItem.pst
+            # Group Invoice References by invoice id 'referneces
+            # InvoiceReference.id,
+            # InvoiceReference.invoice_number,
+            # InvoiceReference.reference_number,
+            # InvoiceReference.status_code,
 
-        # Group Invoice References by invoice id
+            # Payment Account - follows specific structure
+            payment_account = {
+                'auth_account_id': row_dict.get('auth_account_id'),
+                'billable': row_dict.get('billable'),
+                'name': row_dict.get('name'),
+                'branch_name': row_dict.get('branch_name'),
+            }
+            # Corp Type? Product?
 
-        # Setup Payment Account - follows specific structure
+            d = {'product': 'good', 'payment_account': FlexibleObject(payment_account), 'payment_line_items': [], 'references': [], **row_dict}
+            mod_row.append(FlexibleObject(d))
 
-        # Corp Type? Product?
-
-        results = [cls.from_row(row) for row in rows]
+        results = [cls.from_row(row) for row in mod_row]
         return results
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(
+        cls,
+        row,
+    ):
         """From row is used so we don't tightly couple to our database class.
 
         https://www.attrs.org/en/stable/init.html
         """
         # Similar to _clean_up in InvoiceSchema.
-        # In the future may need to add a mapping from EFT Status: APPROVED -> COMPLETED
+
         status_code = (
             PaymentStatus.COMPLETED.value
             if row.invoice_status_code == InvoiceStatus.PAID.value

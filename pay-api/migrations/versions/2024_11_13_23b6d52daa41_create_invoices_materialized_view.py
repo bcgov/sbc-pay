@@ -6,10 +6,9 @@ Create Date: 2024-11-13 09:31:35.075717
 
 """
 from alembic import op
-import sqlalchemy as sa
 
 from pay_api.utils.enums import DatabaseViews
-from pay_api.utils.query_helpers import TransactionQuery
+from pay_api.models.payment import Payment
 
 
 # revision identifiers, used by Alembic.
@@ -35,7 +34,7 @@ def upgrade():
     - Use this model to query data in the materialized view rather than directly
     joining multiple tables when possible for performance benefits.
     """
-    base_query = TransactionQuery.generate_base_transaction_query()
+    base_query = Payment.generate_base_transaction_query()
     query_sql = str(base_query.statement.compile(compile_kwargs={"literal_binds": True}))
     op.execute("set statement_timeout=900000;")
     op.execute(f'''

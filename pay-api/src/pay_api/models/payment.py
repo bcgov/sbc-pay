@@ -19,7 +19,7 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, and_, cast, func, or_
+from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, alias, and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import select, text
@@ -298,7 +298,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
         )
 
-
     @classmethod
     @user_context
     def search_purchase_history(  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
@@ -319,7 +318,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         )
         query = (
             cls.generate_base_transaction_query()
-            .filter(Invoice.created_on >= datetime.now(tz=timezone.utc).date())
+            # .filter(Invoice.created_on >= datetime.now(tz=timezone.utc).date())
             .union(transactions_materialized_view.select())
         )
         query = cls.filter(query, auth_account_id, search_filter)
@@ -327,18 +326,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            query = query.order_by(Invoice.id.desc())
-            # TODO Replace code below - doesn't know how to map without .all()
-            try:
-                invoice_ids = []
-                for t in sub_query.all():
-                    for item in t:
-                        invoice_ids.append(item)
-                query = query.filter(Invoice.id.in_(invoice_ids))
-                print(query.statement)
-                result = query.all()
-            except Exception as e:
-                print(e)
+            invoice_ids = {item for t in sub_query for item in t}
+            query = query.filter(Invoice.id.in_(invoice_ids)).order_by(Invoice.id.desc())
+            result = query.all()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
@@ -522,10 +512,23 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def generate_subquery(cls, auth_account_id, search_filter, limit, page):
         """Generate subquery for invoices, used for pagination."""
-        sub_query = db.session.query(Invoice).outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+        transactions_materialized_view = Table(
+            DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value, MetaData(), autoload_with=db.engine
+        )
+        sub_query = (
+            db.session.query(
+                Invoice.id,
+            )
+            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+            .filter(Invoice.created_on >= datetime.now(tz=timezone.utc).date())
+            .union(
+                select(
+                    transactions_materialized_view.c.id,
+                ).select_from(transactions_materialized_view)
+            )
+        )
         sub_query = (
             cls.filter(sub_query, auth_account_id, search_filter, add_outer_joins=True)
-            .with_entities(Invoice.id)
             .group_by(Invoice.id)
             .order_by(Invoice.id.desc())
         )
