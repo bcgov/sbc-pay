@@ -528,9 +528,6 @@ def factory_invoice(
     folio_number=1234567890,
     created_name="test name",
     details=[{"label": "label", "value": "value"}],
-    payment_date=None,
-    refund=None,
-    refund_date=None,
 ):
     """Return Factory."""
     return Invoice(
@@ -549,9 +546,6 @@ def factory_invoice(
         payment_method_code=payment_method_code,
         routing_slip=routing_slip,
         details=details,
-        payment_date=payment_date,
-        refund=refund,
-        refund_date=refund_date,
     )
 
 
