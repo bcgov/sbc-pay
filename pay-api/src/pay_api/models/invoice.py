@@ -333,7 +333,28 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     refund_date: datetime
     disbursement_date: datetime
     disbursement_reversal_date: datetime
-    # Add disbursement_reversal_date when CSO is prepared.
+
+    @classmethod
+    def from_flat_rows(cls, rows):
+        """Specific function for flat rows that don't contain complex nested objects."""
+        # TODO
+        # Group together all the rows, this is typically done in ORM, but since we're joining to a materialized view
+        # We need to do this ourselves for now.
+
+        # Group Payment Line Items by invoice id
+        # PaymentLineItem.id,
+        # PaymentLineItem.description,
+        # PaymentLineItem.gst,
+        # PaymentLineItem.pst
+
+        # Group Invoice References by invoice id
+
+        # Setup Payment Account - follows specific structure
+
+        # Corp Type? Product?
+
+        results = [cls.from_row(row) for row in rows]
+        return results
 
     @classmethod
     def from_row(cls, row):
@@ -351,7 +372,6 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
         business_identifier = (
             None if row.business_identifier and row.business_identifier.startswith("T") else row.business_identifier
         )
-
         line_items = [PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items]
         invoice_number = row.references[0].invoice_number if len(row.references) > 0 else None
 
@@ -359,7 +379,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             id=row.id,
             bcol_account=row.bcol_account,
             business_identifier=business_identifier,
-            corp_type_code=row.corp_type.code,
+            corp_type_code=row.corp_type_code or row.corp_type.code,
             created_by=row.created_by,
             created_on=row.created_on,
             paid=row.paid,
@@ -374,7 +394,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             details=row.details,
             payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
             line_items=line_items,
-            product=row.corp_type.product,
+            product=row.product or row.corp_type.product,
             payment_date=row.payment_date,
             refund_date=row.refund_date,
             disbursement_date=row.disbursement_date,

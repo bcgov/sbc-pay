@@ -13,17 +13,17 @@
 # limitations under the License.
 """Model to handle all operations related to Payment data."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, and_, cast, func, literal_column, or_, select, text, union_all
+from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
-from sqlalchemy.orm import aliased, contains_eager, lazyload, load_only, relationship
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import select, text
 from sqlalchemy.sql.expression import literal
-from sqlalchemy.sql import column, select, text, table
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -31,8 +31,6 @@ from pay_api.utils.enums import DatabaseViews, InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
-from pay_api.utils.query_helpers import TransactionQuery
-from pay_api.utils.serializable import Serializable
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
@@ -251,16 +249,55 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
-    def get_today_invoices(cls):
-        """Fetch invoices created on today's date, based on the base query structure."""
-        base_query = TransactionQuery.generate_base_transaction_query()
-
-        today_query = (
-            base_query
-            .filter(Invoice.created_on <= datetime.today())
+    @classmethod
+    def generate_base_transaction_query(cls):
+        """Generate a base query matching the structure of the Transactions materialized view."""
+        return (
+            db.session.query(
+                Invoice.id,
+                Invoice.corp_type_code,
+                Invoice.created_on,
+                Invoice.payment_date,
+                Invoice.refund_date,
+                Invoice.invoice_status_code,
+                Invoice.total,
+                Invoice.service_fees,
+                Invoice.paid,
+                Invoice.refund,
+                Invoice.folio_number,
+                Invoice.created_name,
+                Invoice.invoice_status_code,
+                Invoice.payment_method_code,
+                Invoice.details,
+                Invoice.business_identifier,
+                Invoice.created_by,
+                Invoice.filing_id,
+                Invoice.bcol_account,
+                Invoice.disbursement_date,
+                Invoice.disbursement_reversal_date,
+                Invoice.overdue_date,
+                PaymentLineItem.id,
+                PaymentLineItem.description,
+                PaymentLineItem.gst,
+                PaymentLineItem.pst,
+                PaymentAccount.id,
+                PaymentAccount.auth_account_id,
+                PaymentAccount.name,
+                PaymentAccount.billable,
+                InvoiceReference.id,
+                InvoiceReference.invoice_number,
+                InvoiceReference.reference_number,
+                InvoiceReference.status_code,
+            )
+            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+            .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            .outerjoin(
+                FeeSchedule,
+                FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
+            )
+            .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
         )
 
-        return today_query
 
     @classmethod
     @user_context
@@ -277,105 +314,31 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search for purchase history."""
         user: UserContext = kwargs["user"]
         search_filter["userProductCode"] = user.product_code
-
-        # Exclude 'receipts' they aren't serialized, use specific fields that will be serialized.
         transactions_materialized_view = Table(
-            DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value,
-            MetaData(),
-            autoload_with=db.engine
+            DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value, MetaData(), autoload_with=db.engine
         )
-        # view_columns = [col.name for col in transactions_materialized_view.columns]
-        # base_query = Serializable.generate_base_transaction_query()
-        # today_query = base_query.with_entities(
-        #     *(getattr(Invoice, col) if hasattr(Invoice, col) else literal_column("NULL").label(col) for col in view_columns)
-        # )
-        # print('today>>>>>>>>>>>>>>>>>>>>>>>', str(today_query))
-        # historical_query = select(
-        #     *(transactions_materialized_view.c[col] for col in view_columns)
-        # )
-        # print('historical_query>>>>>>>>>>>>>>>>>>>>>>>', str(historical_query.compile(compile_kwargs={"literal_binds": True})))
-        # combined_query = union_all(
-        #     today_query,
-        #     historical_query
-        # ).alias("combined_transactions")
-
-        # Convert historical_query to a subquery
-        # historical_subquery = historical_query.subquery()
-
-        # Create a query using the subquery
-        # query = db.session.query(historical_subquery)
-        
-        query = db.session.query(transactions_materialized_view)
-        query = cls.filter(query, auth_account_id, search_filter, table_alias=transactions_materialized_view)
-        # query = (
-        #     db.session.query(Invoice)
-        #     .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-        #     .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-        #     .outerjoin(
-        #         FeeSchedule,
-        #         FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
-        #     )
-        #     .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-        #     .options(
-        #         lazyload("*"),
-        #         load_only(
-        #             Invoice.id,
-        #             Invoice.corp_type_code,
-        #             Invoice.created_on,
-        #             Invoice.payment_date,
-        #             Invoice.refund_date,
-        #             Invoice.invoice_status_code,
-        #             Invoice.total,
-        #             Invoice.service_fees,
-        #             Invoice.paid,
-        #             Invoice.refund,
-        #             Invoice.folio_number,
-        #             Invoice.created_name,
-        #             Invoice.invoice_status_code,
-        #             Invoice.payment_method_code,
-        #             Invoice.details,
-        #             Invoice.business_identifier,
-        #             Invoice.created_by,
-        #             Invoice.filing_id,
-        #             Invoice.bcol_account,
-        #             Invoice.disbursement_date,
-        #             Invoice.disbursement_reversal_date,
-        #             Invoice.overdue_date,
-        #         ),
-        #         contains_eager(Invoice.payment_line_items)
-        #         .load_only(
-        #             PaymentLineItem.description,
-        #             PaymentLineItem.gst,
-        #             PaymentLineItem.pst,
-        #         )
-        #         .contains_eager(PaymentLineItem.fee_schedule)
-        #         .load_only(FeeSchedule.filing_type_code),
-        #         contains_eager(Invoice.payment_account).load_only(
-        #             PaymentAccount.auth_account_id,
-        #             PaymentAccount.name,
-        #             PaymentAccount.billable,
-        #         ),
-        #         contains_eager(Invoice.references).load_only(
-        #             InvoiceReference.invoice_number,
-        #             InvoiceReference.reference_number,
-        #             InvoiceReference.status_code,
-        #         ),
-        #     )
-        # )
-        # query = cls.filter(query, auth_account_id, search_filter)
-        print("Query2:", str(query))
+        query = (
+            cls.generate_base_transaction_query()
+            .filter(Invoice.created_on >= datetime.now(tz=timezone.utc).date())
+            .union(transactions_materialized_view.select())
+        )
+        query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            # result_query = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query.subquery().select()))
-            result_query = (
-                query.filter(transactions_materialized_view.c.invoice_id.in_(sub_query.subquery().select()))
-                .order_by(transactions_materialized_view.c.invoice_id.desc())
-                .execution_options(stream_results=True)
-            )
-            print("result_query<<<<<<<<<<<<<<:", str(result_query.statement.compile(compile_kwargs={"literal_binds": True})))
-            result = result_query.all()
+            query = query.order_by(Invoice.id.desc())
+            # TODO Replace code below - doesn't know how to map without .all()
+            try:
+                invoice_ids = []
+                for t in sub_query.all():
+                    for item in t:
+                        invoice_ids.append(item)
+                query = query.filter(Invoice.id.in_(invoice_ids))
+                print(query.statement)
+                result = query.all()
+            except Exception as e:
+                print(e)
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
@@ -437,24 +400,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return count
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False, table_alias=None):
+    def filter(cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False):
         """For filtering queries."""
-        table_ = table_alias if table_alias is not None else Invoice
-
-        def get_column(table_, column_name):
-            if hasattr(table_, "c"):  # For Table objects
-                return getattr(table_.c, column_name, None)
-            else:  # For ORM models
-                return getattr(table_, column_name, None)
-
-        # Check for `auth_account_id` and filter the query
         if auth_account_id:
-            column_ = get_column(table_, "auth_account_id")
-            if column_ is not None:  # Explicitly check for None
-                query = query.filter(column_ == auth_account_id)
-            else:
-                query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
-
+            query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
         if account_name := search_filter.get("accountName", None):
             query = query.filter(PaymentAccount.name.ilike(f"%{account_name}%"))
         if status_code := search_filter.get("statusCode", None):

@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """Tests to assure the Transactions Materialized View exist."""
-from pay_api.models import db
 from sqlalchemy import text
+
+from pay_api.models import db
 from pay_api.utils.enums import DatabaseViews
 
 
