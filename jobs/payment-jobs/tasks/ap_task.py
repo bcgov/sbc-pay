@@ -81,7 +81,7 @@ class ApTask(CgiAP):
             cls._create_routing_slip_refund_file()
         except Exception as e:
             capture_message(
-                "Error creating routing slip refund file " f"ERROR : {str(e)}",
+                f"Error creating routing slip refund file ERROR : {str(e)}",
                 level="error",
             )
             current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
@@ -89,7 +89,7 @@ class ApTask(CgiAP):
             cls._create_non_gov_disbursement_file()
         except Exception as e:
             capture_message(
-                "Error creating non gov disbursement file " f"ERROR : {str(e)}",
+                f"Error creating non gov disbursement file ERROR : {str(e)}",
                 level="error",
             )
             current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
@@ -97,7 +97,7 @@ class ApTask(CgiAP):
             cls._create_eft_refund_file()
         except Exception as e:
             capture_message(
-                "Error creating eft refund file " f"ERROR : {str(e)}",
+                f"Error creating eft refund file ERROR : {str(e)}",
                 level="error",
             )
             current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
