@@ -14,6 +14,7 @@
 """Task to create AP file for FAS refunds and Disbursement via EFT for non-government orgs without a GL."""
 
 import time
+import traceback
 from datetime import date, datetime, timedelta, timezone
 from typing import List
 
@@ -21,10 +22,7 @@ from flask import current_app
 from more_itertools import batched
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
-from pay_api.models import EFTCredit as EFTCreditModel
-from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTRefund as EFTRefundModel
-from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvLink as EjvLinkModel
@@ -42,6 +40,7 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RoutingSlipStatus,
 )
+from sentry_sdk import capture_message
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ap import CgiAP
@@ -78,29 +77,37 @@ class ApTask(CgiAP):
         10. After some time, a feedback file will arrive and Payment-reconciliation queue will move these
             EFT refunds to REFUNDED. (filter out)
         """
-        cls._create_routing_slip_refund_file()
-        cls._create_non_gov_disbursement_file()
-        cls._create_eft_refund_file()
+        try:
+            cls._create_routing_slip_refund_file()
+        except Exception as e:
+            capture_message(
+                "Error creating routing slip refund file " f"ERROR : {str(e)}",
+                level="error",
+            )
+            current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
+        try:
+            cls._create_non_gov_disbursement_file()
+        except Exception as e:
+            capture_message(
+                "Error creating non gov disbursement file " f"ERROR : {str(e)}",
+                level="error",
+            )
+            current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
+        try:
+            cls._create_eft_refund_file()
+        except Exception as e:
+            capture_message(
+                "Error creating eft refund file " f"ERROR : {str(e)}",
+                level="error",
+            )
+            current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
 
     @classmethod
     def _create_eft_refund_file(cls):
         """Create AP file for EFT refunds and upload to CGI."""
         cls.ap_type = EjvFileType.EFT_REFUND
-        eft_refunds_dao: List[EFTRefundModel] = (
+        eft_refunds_dao = (
             db.session.query(EFTRefundModel)
-            .join(
-                EFTShortnameLinksModel,
-                EFTRefundModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id,
-            )
-            .join(
-                EFTCreditModel,
-                EFTCreditModel.short_name_id == EFTShortnameLinksModel.eft_short_name_id,
-            )
-            .join(
-                EFTCreditInvoiceLinkModel,
-                EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id,
-            )
-            .join(InvoiceModel, EFTCreditInvoiceLinkModel.invoice_id == InvoiceModel.id)
             .filter(EFTRefundModel.status == EFTShortnameRefundStatus.APPROVED.value)
             .filter(EFTRefundModel.disbursement_status_code != DisbursementStatus.UPLOADED.value)
             .filter(EFTRefundModel.refund_amount > 0)
