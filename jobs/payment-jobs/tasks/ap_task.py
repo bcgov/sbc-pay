@@ -41,7 +41,7 @@ from pay_api.utils.enums import (
     RoutingSlipStatus,
 )
 from sentry_sdk import capture_message
-from sqlalchemy import Date, cast, or_
+from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APLine
@@ -109,8 +109,7 @@ class ApTask(CgiAP):
         eft_refunds_dao = (
             db.session.query(EFTRefundModel)
             .filter(EFTRefundModel.status == EFTShortnameRefundStatus.APPROVED.value)
-            .filter(or_(EFTRefundModel.disbursement_status_code != DisbursementStatus.UPLOADED.value,
-                        EFTRefundModel.disbursement_status_code.is_(None)))
+            .filter(EFTRefundModel.disbursement_status_code.is_(None))
             .filter(EFTRefundModel.refund_amount > 0)
             .all()
         )

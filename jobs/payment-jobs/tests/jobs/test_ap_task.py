@@ -64,7 +64,7 @@ def test_eft_refunds(session, monkeypatch):
     )
     short_name = factory_create_eft_shortname("SHORTNAMETEST")
     eft_refund = factory_create_eft_refund(
-        disbursement_status_code=DisbursementStatus.ACKNOWLEDGED.value,
+        disbursement_status_code=None,
         refund_amount=100,
         refund_email="test@test.com",
         short_name_id=short_name.id,
