@@ -16,6 +16,7 @@ import decimal
 from datetime import datetime
 from typing import Tuple
 
+from flask import current_app
 from pay_api.utils.enums import EFTShortnameType
 
 from pay_queue.services.eft.eft_base import EFTBase
@@ -27,11 +28,8 @@ from pay_queue.services.eft.eft_parse_error import EFTParseError
 class EFTRecord(EFTBase):
     """Defines the structure of the transaction record of a received EFT file."""
 
-    PAD_DESCRIPTION_PATTERN = "MISC PAYMENT BCONLINE"
-    EFT_DESCRIPTION_PATTERN = "MISC PAYMENT"
-    WIRE_DESCRIPTION_PATTERN = "FUNDS TRANSFER CR TT"
-    FEDERAL_PAYMENT_DESCRIPTION_PATTERN = "FEDERAL PAYMENT CANADA"
-    GENERATE_SHORT_NAME_PATTERNS: Tuple = (FEDERAL_PAYMENT_DESCRIPTION_PATTERN,)
+    eft_patterns: Tuple
+    eft_wire_patterns: Tuple
 
     ministry_code: str
     program_code: str
@@ -54,6 +52,8 @@ class EFTRecord(EFTBase):
     def __init__(self, content: str, index: int):
         """Return an EFT Transaction record."""
         super().__init__(content, index)
+        self.eft_patterns = current_app.config.get("EFT_PATTERNS")
+        self.eft_wire_patterns: Tuple = current_app.config.get("EFT_WIRE_PATTERNS")
         self._process()
 
     @staticmethod
@@ -113,20 +113,17 @@ class EFTRecord(EFTBase):
         if not self.transaction_description:
             return
 
-        if self.transaction_description.startswith(self.GENERATE_SHORT_NAME_PATTERNS):
-            self.short_name_type = EFTShortnameType.EFT.value
-            self.transaction_description = self.FEDERAL_PAYMENT_DESCRIPTION_PATTERN.strip()
-            self.generate_short_name = True
-            return
-
-        if self.transaction_description.startswith(self.WIRE_DESCRIPTION_PATTERN):
+        if matching_pattern := self.find_matching_pattern(self.eft_wire_patterns, self.transaction_description):
             self.short_name_type = EFTShortnameType.WIRE.value
-            self.transaction_description = self.transaction_description[len(self.WIRE_DESCRIPTION_PATTERN) :].strip()
+            self.transaction_description = self.transaction_description[len(matching_pattern) :].strip()
             return
 
-        # Check if this a PAD or EFT Transaction
-        if self.transaction_description.startswith(
-            self.EFT_DESCRIPTION_PATTERN
-        ) and not self.transaction_description.startswith(self.PAD_DESCRIPTION_PATTERN):
+        if matching_pattern := self.find_matching_pattern(self.eft_patterns, self.transaction_description):
             self.short_name_type = EFTShortnameType.EFT.value
-            self.transaction_description = self.transaction_description[len(self.EFT_DESCRIPTION_PATTERN) :].strip()
+            self.transaction_description = self.transaction_description[len(matching_pattern) :].strip()
+            return
+
+        # Undefined patterns will generate a short name and default to type EFT
+        self.short_name_type = EFTShortnameType.EFT.value
+        self.transaction_description = self.transaction_description.strip()
+        self.generate_short_name = True

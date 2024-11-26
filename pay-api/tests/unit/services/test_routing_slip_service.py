@@ -70,6 +70,14 @@ def test_create_routing_slip(session, staff_user_mock):
                 "paidAmount": 100,
             }
         ],
+        "contactName": "John Doe",
+        "mailingAddress": {
+            "street": "123 Main St",
+            "city": "Victoria",
+            "region": "BC",
+            "postalCode": "V8V 3V3",
+            "country": "CA",
+        },
     }
 
     rs = RoutingSlip_service.create(routing_slip_payload)
@@ -101,6 +109,14 @@ def test_create_routing_slip_usd_one_of_payments(session, staff_user_mock):
                 "paidUsdAmount": 80,
             },
         ],
+        "contactName": "John Doe",
+        "mailingAddress": {
+            "street": "123 Main St",
+            "city": "Victoria",
+            "region": "BC",
+            "postalCode": "V8V 3V3",
+            "country": "CA",
+        },
     }
 
     rs = RoutingSlip_service.create(routing_slip_payload)
@@ -134,6 +150,14 @@ def test_create_routing_slip_usd_both_payments(session, staff_user_mock):
                 "paidUsdAmount": 80,
             },
         ],
+        "contactName": "John Doe",
+        "mailingAddress": {
+            "street": "123 Main St",
+            "city": "Victoria",
+            "region": "BC",
+            "postalCode": "V8V 3V3",
+            "country": "CA",
+        },
     }
 
     rs = RoutingSlip_service.create(routing_slip_payload)

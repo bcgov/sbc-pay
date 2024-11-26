@@ -25,6 +25,7 @@ from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pay_queue import create_app
+from pay_queue.config import get_comma_delimited_string_as_tuple
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -181,6 +182,10 @@ def mock_pub_sub_call(mocker):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def set_eft_tdi17_location_id(app):
-    """Set TDI17 Location ID for tests."""
+def set_eft_configuration(app):
+    """Set EFT TDI17 processing configuration for tests."""
     app.config["EFT_TDI17_LOCATION_ID"] = "85004"
+    app.config["EFT_WIRE_PATTERNS"] = get_comma_delimited_string_as_tuple("FUNDS TRANSFER CR TT")
+    app.config["EFT_PATTERNS"] = get_comma_delimited_string_as_tuple(
+        "ACCOUNT PAYABLE PMT,BILL PAYMENT,COMM BILL PAYMENT,MISC PAYMENT,PAYROLL DEPOSIT"
+    )

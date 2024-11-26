@@ -445,6 +445,14 @@ def factory_routing_slip(
     total: int = 0,
     remaining_amount: Decimal = 0.0,
     routing_slip_date=datetime.now(tz=timezone.utc),
+    contact_name="John Doe",
+    street="123 Main St",
+    street_additional=None,
+    city="Victoria",
+    region="BC",
+    postal_code="V8V 3V3",
+    country="CA",
+    delivery_instructions=None,
 ):
     """Return Factory."""
     routing_slip: RoutingSlip = RoutingSlip(
@@ -455,6 +463,14 @@ def factory_routing_slip(
         remaining_amount=Decimal(str(remaining_amount)),
         created_by="test",
         routing_slip_date=routing_slip_date,
+        contact_name=contact_name,
+        street=street,
+        street_additional=street_additional,
+        city=city,
+        region=region,
+        postal_code=postal_code,
+        country=country,
+        delivery_instructions=delivery_instructions,
     )
     return routing_slip
 
@@ -467,6 +483,14 @@ def factory_routing_slip_usd(
     remaining_amount: int = 0,
     routing_slip_date=datetime.now(tz=timezone.utc),
     total_usd=0,
+    contact_name="John Doe",
+    street="123 Main St",
+    street_additional=None,
+    city="Victoria",
+    region="BC",
+    postal_code="V8V 3V3",
+    country="CA",
+    delivery_instructions=None,
 ):
     """Return Factory."""
     routing_slip: RoutingSlip = RoutingSlip(
@@ -478,6 +502,14 @@ def factory_routing_slip_usd(
         created_by="test",
         routing_slip_date=routing_slip_date,
         total_usd=total_usd,
+        contact_name=contact_name,
+        street=street,
+        street_additional=street_additional,
+        city=city,
+        region=region,
+        postal_code=postal_code,
+        country=country,
+        delivery_instructions=delivery_instructions,
     )
     return routing_slip
 
@@ -496,6 +528,9 @@ def factory_invoice(
     folio_number=1234567890,
     created_name="test name",
     details=[{"label": "label", "value": "value"}],
+    payment_date=None,
+    refund=None,
+    refund_date=None,
 ):
     """Return Factory."""
     return Invoice(
@@ -514,6 +549,9 @@ def factory_invoice(
         payment_method_code=payment_method_code,
         routing_slip=routing_slip,
         details=details,
+        payment_date=payment_date,
+        refund=refund,
+        refund_date=refund_date,
     )
 
 

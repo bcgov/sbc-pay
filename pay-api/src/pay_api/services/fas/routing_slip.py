@@ -284,11 +284,31 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         routing_slip_dict: Dict[str, any] = None
         routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
         if routing_slip:
-            routing_slip_schema = RoutingSlipSchema()
+            routing_slip_schema = RoutingSlipSchema(
+                exclude=(
+                    "city",
+                    "country",
+                    "delivery_instructions",
+                    "postal_code",
+                    "region",
+                    "street",
+                    "street_additional",
+                )
+            )
             routing_slip_dict = routing_slip_schema.dump(routing_slip)
             routing_slip_dict["allowedStatuses"] = RoutingSlipStatusTransitionService.get_possible_transitions(
                 routing_slip
             )
+            routing_slip_dict["mailingAddress"] = {
+                "city": routing_slip.city,
+                "country": routing_slip.country,
+                "deliveryInstructions": routing_slip.delivery_instructions,
+                "postalCode": routing_slip.postal_code,
+                "region": routing_slip.region,
+                "street": routing_slip.street,
+                "streetAdditional": routing_slip.street_additional,
+            }
+
         return routing_slip_dict
 
     @classmethod
@@ -348,6 +368,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             sum(float(payment.get("paidUsdAmount", 0)) for payment in request_json.get("payments"))
         )
 
+        mailing_address = request_json.get("mailingAddress", {})
         # Create a routing slip record.
         routing_slip: RoutingSlipModel = RoutingSlipModel(
             number=rs_number,
@@ -357,6 +378,14 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             remaining_amount=total,
             routing_slip_date=string_to_date(request_json.get("routingSlipDate")),
             total_usd=total_usd,
+            contact_name=request_json.get("contactName"),
+            street=mailing_address.get("street", ""),
+            street_additional=mailing_address.get("streetAdditional", ""),
+            city=mailing_address.get("city", ""),
+            region=mailing_address.get("region", ""),
+            postal_code=mailing_address.get("postalCode", ""),
+            country=mailing_address.get("country", ""),
+            delivery_instructions=mailing_address.get("deliveryInstructions", ""),
         ).flush()
 
         for payment in request_json.get("payments"):

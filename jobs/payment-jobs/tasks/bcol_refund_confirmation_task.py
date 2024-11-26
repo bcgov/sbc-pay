@@ -93,7 +93,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
                 results = session.execute(query).fetchall()
 
                 # Convert float from the database to Decimal
-                bcol_refunds_all.update({row["key"]: Decimal(str(row["total_amt"])) for row in results})
+                bcol_refunds_all.update({row[0]: Decimal(str(row[1])) for row in results})
         # set invoice_number as the key (makes it easier map against)
         return bcol_refunds_all
 

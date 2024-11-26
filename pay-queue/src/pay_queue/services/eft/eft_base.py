@@ -58,7 +58,7 @@
 """This manages the EFT base class."""
 import decimal
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from pay_queue.services.eft.eft_errors import EFTError
@@ -139,6 +139,13 @@ class EFTBase:
             self.add_error(EFTParseError(error))
 
         return result
+
+    def find_matching_pattern(self, patterns: Tuple, value: str) -> str:
+        """Find matching pattern for a value."""
+        for pattern in patterns:
+            if value.startswith(pattern):
+                return pattern
+        return None
 
     def add_error(self, error: EFTParseError):
         """Add parse error to error array."""
