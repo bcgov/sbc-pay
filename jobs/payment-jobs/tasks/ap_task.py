@@ -109,8 +109,11 @@ class ApTask(CgiAP):
         eft_refunds_dao = (
             db.session.query(EFTRefundModel)
             .filter(EFTRefundModel.status == EFTShortnameRefundStatus.APPROVED.value)
-            .filter(or_(EFTRefundModel.disbursement_status_code != DisbursementStatus.UPLOADED.value,
-                        EFTRefundModel.disbursement_status_code.is_(None)))
+            .filter(or_(
+                EFTRefundModel.disbursement_status_code != DisbursementStatus.UPLOADED.value,
+                EFTRefundModel.disbursement_status_code != DisbursementStatus.ERRORED.value,
+                EFTRefundModel.disbursement_status_code.is_(None)
+            ))
             .filter(EFTRefundModel.refund_amount > 0)
             .all()
         )
