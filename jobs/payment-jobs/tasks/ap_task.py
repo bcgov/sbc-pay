@@ -41,7 +41,7 @@ from pay_api.utils.enums import (
     RoutingSlipStatus,
 )
 from sentry_sdk import capture_message
-from sqlalchemy import Date, cast, or_
+from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APLine
