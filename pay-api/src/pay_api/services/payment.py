@@ -389,14 +389,10 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         if data is None or "items" not in data:
             data = {"items": []}
 
-        # TODO remove try catch after confirmed working
-        try:
-            invoice_search_list = [InvoiceSearchModel.from_row(row) for row in purchases]
-            converter = Converter()
-            invoice_list = converter.unstructure(invoice_search_list)
-            data["items"] = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
-        except Exception as e:  # pylint: disable=broad-except
-            print(e)
+        invoice_search_list = [InvoiceSearchModel.from_row(row) for row in purchases]
+        converter = Converter()
+        invoice_list = converter.unstructure(invoice_search_list)
+        data["items"] = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
         return data
 
     @staticmethod

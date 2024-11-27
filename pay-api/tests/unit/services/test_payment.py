@@ -284,10 +284,7 @@ def test_search_payment_history(
     assert results is not None
     assert results.get("items") is not None
     assert results.get("total") == expected_total
-    if len(results.get("items")) < limit:
-        assert len(results.get("items")) == expected_total
-    else:
-        assert limit
+    assert len(results.get("items")) == expected_total if len(results.get("items")) < limit else limit
 
     if expected_key:
         for item in results.get("items"):
