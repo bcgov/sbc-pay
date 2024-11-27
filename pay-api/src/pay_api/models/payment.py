@@ -19,7 +19,7 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, Text, and_, cast, func, or_
+from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import select
@@ -46,7 +46,13 @@ from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
 
+# TODO move this to a common place
+from sqlalchemy.types import UserDefinedType
 
+class JSONPath(UserDefinedType):
+    def get_col_spec(self):
+        return "jsonpath"
+            
 class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment ."""
 
@@ -489,16 +495,34 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if details := search_filter.get("details", None):
             if is_count:
                 query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            query = query.filter(cast(Invoice.details, Text).ilike(f"%{details}%"))
+            query = query.filter(
+                or_(
+                    func.jsonb_path_exists(
+                        Invoice.details,
+                        cast(f'$[*] ? (@.value like_regex "(?i).*{details}.*")', JSONPath())
+                    ),
+                    func.jsonb_path_exists(
+                        Invoice.details,
+                        cast(f'$[*] ? (@.label like_regex "(?i).*{details}.*")', JSONPath())
+                    ),
+                )
+            )
         if line_item_or_details := search_filter.get("lineItemsAndDetails", None):
             if is_count:
                 query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.filter(
                 or_(
                     PaymentLineItem.description.ilike(f"%{line_item_or_details}%"),
-                    cast(Invoice.details, Text).ilike(f"%{line_item_or_details}%"),
+                    func.jsonb_path_exists(
+                        Invoice.details,
+                        cast(f'$[*] ? (@.value like_regex "(?i).*{line_item_or_details}.*")', JSONPath())
+                    ),
+                    func.jsonb_path_exists(
+                        Invoice.details,
+                        cast(f'$[*] ? (@.label like_regex "(?i).*{line_item_or_details}.*")', JSONPath())
+                    ),
                 )
-            ).params(details_search=f"%{line_item_or_details}%")
+            )
 
         return query
 
