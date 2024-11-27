@@ -324,9 +324,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            # Need to do it this way otherwise doesn't know how to join for the subquery for some reason.
-            invoice_ids = {item for t in sub_query.all() for item in t}
-            query = query.filter(Invoice.id.in_(invoice_ids)).order_by(Invoice.id.desc())
+            query = query.filter(Invoice.id.in_(sub_query)).order_by(Invoice.id.desc())
             result = db.session.query(Invoice).from_statement(query).all()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
