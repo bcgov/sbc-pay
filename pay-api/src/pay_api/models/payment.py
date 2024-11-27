@@ -32,7 +32,12 @@ from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
+from pay_api.utils.util import (
+    get_first_and_last_dates_of_month,
+    get_midnight_vancouver_time_from_utc,
+    get_str_by_path,
+    get_week_start_and_end_date,
+)
 
 from .base_model import BaseModel
 from .base_schema import BaseSchema
@@ -313,14 +318,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search for purchase history."""
         user: UserContext = kwargs["user"]
         search_filter["userProductCode"] = user.product_code
-        transactions_materialized_view = Table(
-            DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value, MetaData(), autoload_with=db.engine
-        )
-        query = (
-            cls.generate_base_transaction_query()
-            # .filter(Invoice.created_on >= datetime.now(tz=timezone.utc).date())
-            .union(transactions_materialized_view.select())
-        )
+        query = cls.generate_base_transaction_query()
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
             count = cls.get_count(auth_account_id, search_filter)
@@ -382,11 +380,23 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
+    def query_tables_and_materialized_view(cls):
+        """Query tables and materialized view, look at today's transactions from the tables, the rest get from MV."""
+        transactions_materialized_view = Table(
+            DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value, MetaData(), autoload_with=db.engine
+        )
+        query = (
+            cls.generate_base_transaction_query()
+            .filter(Invoice.created_on >= get_midnight_vancouver_time_from_utc())
+            .union(transactions_materialized_view.select())
+        )
+        return query
+
+    @classmethod
     def get_count(cls, auth_account_id: str, search_filter: Dict):
         """Slimmed downed version for count (less joins)."""
-        # We need to exclude the outer joins for performance here, they get re-added in filter.
-        query = db.session.query(Invoice).outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-        # Replace with union -^
+        query = cls.query_tables_and_materialized_view()
+        query = query.outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
         count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
@@ -522,14 +532,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def generate_subquery(cls, auth_account_id, search_filter, limit, page):
         """Generate subquery for invoices, used for pagination."""
-        transactions_materialized_view = Table(
-            DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value, MetaData(), autoload_with=db.engine
-        )
-        subquery = (
-            cls.generate_base_transaction_query()
-            # .filter(Invoice.created_on >= datetime.now(tz=timezone.utc).date())
-            .union(transactions_materialized_view.select())
-        )
+        subquery = cls.query_tables_and_materialized_view()
         subquery = subquery.outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         subquery = (
             cls.filter(subquery, auth_account_id, search_filter, add_outer_joins=True)

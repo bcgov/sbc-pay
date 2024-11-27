@@ -24,13 +24,9 @@ depends_on = None
 
 def upgrade():
     """
-    This model represents the `transactions_materialized_view` materialized view in the database.
+    This migration represents the `transactions_materialized_view` materialized view in the database.
     It is designed to improve query performance for purchase history and other related queries by
     pre-joining data from multiple tables, thereby reducing the need for complex joins in real-time queries.
-    Note:
-    - This model should be treated as read-only.
-    Any updates to the underlying tables will not automatically reflect in this materialized view
-    until it is refreshed.
     - Use this model to query data in the materialized view rather than directly
     joining multiple tables when possible for performance benefits.
     """
