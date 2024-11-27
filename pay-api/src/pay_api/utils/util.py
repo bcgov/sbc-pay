@@ -19,12 +19,12 @@ A simple decorator to add the options method to a Request Class.
 import ast
 import calendar
 from datetime import datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from typing import Dict
 from urllib.parse import parse_qsl, urlparse
 
 import pytz
+from dateutil.relativedelta import relativedelta
 from dpath import get as dpath_get
 from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
