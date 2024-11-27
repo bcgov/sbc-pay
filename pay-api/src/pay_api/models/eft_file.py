@@ -46,7 +46,7 @@ class EFTFile(BaseModel):  # pylint: disable=too-many-instance-attributes
             "deposit_to_date",
             "file_creation_date",
             "file_ref",
-            "status_code"
+            "status_code",
         ]
     }
 

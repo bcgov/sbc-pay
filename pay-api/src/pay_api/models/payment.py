@@ -13,17 +13,16 @@
 # limitations under the License.
 """Model to handle all operations related to Payment data."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict
 
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, and_, cast, func, or_
+from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, Text, and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import select, text
-from sqlalchemy.sql.expression import literal
+from sqlalchemy.sql import select
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -249,12 +248,12 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
-    @classmethod
     def generate_base_transaction_query(cls):
         """Generate a base query matching the structure of the Transactions materialized view."""
         return (
             db.session.query(
                 Invoice.id,
+                Invoice.payment_account_id,
                 Invoice.corp_type_code,
                 Invoice.created_on,
                 Invoice.payment_date,
@@ -326,8 +325,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            invoice_ids = {item for t in sub_query for item in t}
+            invoice_ids = {item for t in sub_query.all() for item in t}
             query = query.filter(Invoice.id.in_(invoice_ids)).order_by(Invoice.id.desc())
+            # query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
             result = db.session.query(Invoice).from_statement(query).all()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
@@ -343,7 +343,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             count = cls.get_count(auth_account_id, search_filter)
             if count > 60000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
-            result = query.all()
+            result = db.session.query(Invoice).from_statement(query).all()
         return result, count
 
     @classmethod
@@ -385,6 +385,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Slimmed downed version for count (less joins)."""
         # We need to exclude the outer joins for performance here, they get re-added in filter.
         query = db.session.query(Invoice).outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+        # Replace with union -^
         query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
         count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
@@ -488,24 +489,16 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if details := search_filter.get("details", None):
             if is_count:
                 query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
-            query = query.filter(
-                or_(
-                    text("value ->> 'value' ilike :details"),
-                    text("value ->> 'label' ilike :details"),
-                )
-            ).params(details=f"%{details}%")
+            query = query.filter(cast(Invoice.details, Text).ilike(f"%{details}%"))
         if line_item_or_details := search_filter.get("lineItemsAndDetails", None):
             if is_count:
                 query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
             query = query.filter(
                 or_(
                     PaymentLineItem.description.ilike(f"%{line_item_or_details}%"),
-                    text("value ->> 'value' ilike :details"),
-                    text("value ->> 'label' ilike :details"),
+                    cast(Invoice.details, Text).ilike(f"%{line_item_or_details}%"),
                 )
-            ).params(details=f"%{line_item_or_details}%")
+            ).params(details_search=f"%{line_item_or_details}%")
 
         return query
 
@@ -515,28 +508,23 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         transactions_materialized_view = Table(
             DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value, MetaData(), autoload_with=db.engine
         )
-        sub_query = (
-            db.session.query(
-                Invoice.id,
-            )
-            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-            .filter(Invoice.created_on >= datetime.now(tz=timezone.utc).date())
-            .union(
-                select(
-                    transactions_materialized_view.c.id,
-                ).select_from(transactions_materialized_view)
-            )
+        subquery = (
+            cls.generate_base_transaction_query()
+            # .filter(Invoice.created_on >= datetime.now(tz=timezone.utc).date())
+            .union(transactions_materialized_view.select())
         )
-        sub_query = (
-            cls.filter(sub_query, auth_account_id, search_filter, add_outer_joins=True)
+        subquery = subquery.outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+        subquery = (
+            cls.filter(subquery, auth_account_id, search_filter, add_outer_joins=True)
+            .with_entities(Invoice.id)
             .group_by(Invoice.id)
             .order_by(Invoice.id.desc())
         )
         if limit:
-            sub_query = sub_query.limit(limit)
+            subquery = subquery.limit(limit)
         if limit and page:
-            sub_query = sub_query.offset((page - 1) * limit)
-        return sub_query
+            subquery = subquery.offset((page - 1) * limit)
+        return db.session.query(subquery.subquery())
 
 
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors

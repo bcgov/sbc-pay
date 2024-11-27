@@ -1,7 +1,7 @@
 """create transactions_materialized_view
 
 Revision ID: 23b6d52daa41
-Revises: 0f02d5964a63
+Revises: 8bd139bbb602
 Create Date: 2024-11-13 09:31:35.075717
 
 """
@@ -17,7 +17,7 @@ from pay_api.models.payment import Payment
 # Please ignore those lines and don't include in migration.
 
 revision = '23b6d52daa41'
-down_revision = '0f02d5964a63'
+down_revision = '8bd139bbb602'
 branch_labels = None
 depends_on = None
 
