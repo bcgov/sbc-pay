@@ -30,6 +30,7 @@ from pay_api.utils.enums import DatabaseViews, InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
+from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
@@ -46,13 +47,7 @@ from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
 
-# TODO move this to a common place
-from sqlalchemy.types import UserDefinedType
 
-class JSONPath(UserDefinedType):
-    def get_col_spec(self):
-        return "jsonpath"
-            
 class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment ."""
 
@@ -498,12 +493,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(
                 or_(
                     func.jsonb_path_exists(
-                        Invoice.details,
-                        cast(f'$[*] ? (@.value like_regex "(?i).*{details}.*")', JSONPath())
+                        Invoice.details, cast(f'$[*] ? (@.value like_regex "(?i).*{details}.*")', JSONPath())
                     ),
                     func.jsonb_path_exists(
-                        Invoice.details,
-                        cast(f'$[*] ? (@.label like_regex "(?i).*{details}.*")', JSONPath())
+                        Invoice.details, cast(f'$[*] ? (@.label like_regex "(?i).*{details}.*")', JSONPath())
                     ),
                 )
             )
@@ -515,11 +508,11 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     PaymentLineItem.description.ilike(f"%{line_item_or_details}%"),
                     func.jsonb_path_exists(
                         Invoice.details,
-                        cast(f'$[*] ? (@.value like_regex "(?i).*{line_item_or_details}.*")', JSONPath())
+                        cast(f'$[*] ? (@.value like_regex "(?i).*{line_item_or_details}.*")', JSONPath()),
                     ),
                     func.jsonb_path_exists(
                         Invoice.details,
-                        cast(f'$[*] ? (@.label like_regex "(?i).*{line_item_or_details}.*")', JSONPath())
+                        cast(f'$[*] ? (@.label like_regex "(?i).*{line_item_or_details}.*")', JSONPath()),
                     ),
                 )
             )
