@@ -320,9 +320,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search for purchase history."""
         user: UserContext = kwargs["user"]
         search_filter["userProductCode"] = user.product_code
-        from flask_executor import Executor
+        from flask_executor import Executor # TODO fix this
         executor = Executor(current_app)
-        query = cls.query_tables_and_materialized_view()
+        query = cls.generate_base_transaction_query()
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
             count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
@@ -385,23 +385,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
-    def query_tables_and_materialized_view(cls):
-        """Query tables and materialized view, look at today's transactions from the tables, the rest get from MV."""
-        # TODO remove perhaps
-        transactions_materialized_view = Table(
-            DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value, MetaData(), autoload_with=db.engine
-        )
-        query = (
-            cls.generate_base_transaction_query()
-            .filter(Invoice.created_on >= get_midnight_vancouver_time_from_utc())
-            .union(transactions_materialized_view.select())
-        )
-        return query
-
-    @classmethod
     def get_count(cls, auth_account_id: str, search_filter: Dict):
         """Slimmed downed version for count (less joins)."""
-        query = cls.query_tables_and_materialized_view()
+        query = cls.generate_base_transaction_query()
         query = cls.filter(query, auth_account_id, search_filter)
         count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
@@ -429,7 +415,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(Invoice.created_name.ilike(f"%{created_name}%"))  # pylint: disable=no-member
         if invoice_id := search_filter.get("id", None):
             query = query.filter(cast(Invoice.id, String).like(f"%{invoice_id}%"))
-
         if invoice_number := search_filter.get("invoiceNumber", None):
             query = query.filter(InvoiceReference.invoice_number.ilike(f"%{invoice_number}%"))
 
@@ -528,7 +513,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def generate_subquery(cls, auth_account_id, search_filter, limit, page):
         """Generate subquery for invoices, used for pagination."""
-        subquery = cls.query_tables_and_materialized_view()
+        subquery = cls.generate_base_transaction_query()
         subquery = (
             cls.filter(subquery, auth_account_id, search_filter)
             .with_entities(Invoice.id)
