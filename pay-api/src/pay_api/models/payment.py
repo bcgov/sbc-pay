@@ -19,25 +19,20 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, MetaData, String, Table, and_, cast, func, or_
+from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import select
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import DatabaseViews, InvoiceReferenceStatus
+from pay_api.utils.enums import InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import (
-    get_first_and_last_dates_of_month,
-    get_midnight_vancouver_time_from_utc,
-    get_str_by_path,
-    get_week_start_and_end_date,
-)
+from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
 from .base_model import BaseModel
 from .base_schema import BaseSchema
@@ -320,7 +315,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search for purchase history."""
         user: UserContext = kwargs["user"]
         search_filter["userProductCode"] = user.product_code
-        from flask_executor import Executor # TODO fix this
+        from flask_executor import Executor  # TODO fix this
+
         executor = Executor(current_app)
         query = cls.generate_base_transaction_query()
         query = cls.filter(query, auth_account_id, search_filter)

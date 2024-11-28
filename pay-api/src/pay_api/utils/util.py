@@ -24,7 +24,6 @@ from typing import Dict
 from urllib.parse import parse_qsl, urlparse
 
 import pytz
-from dateutil.relativedelta import relativedelta
 from dpath import get as dpath_get
 from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC

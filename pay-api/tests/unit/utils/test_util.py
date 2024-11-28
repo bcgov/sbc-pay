@@ -157,4 +157,3 @@ def test_validate_redirect_url(app, redirect_url, valid_urls, expected_result):
     app.config["VALID_REDIRECT_URLS"] = valid_urls
     with app.app_context():
         assert is_valid_redirect_url(redirect_url) == expected_result
-
