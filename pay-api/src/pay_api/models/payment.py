@@ -255,7 +255,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def generate_base_transaction_query(cls):
-        """Generate a base query matching the structure of the Transactions materialized view."""
+        """Generate a base query Transactions materialized view uses this query."""
+        # Note if this changes, it's important to create a migration to recreate the materialized view.
+        # There is no automatic process for recreating the materialized view if this changes.
         return (
             db.session.query(
                 Invoice.id,
@@ -318,14 +320,19 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search for purchase history."""
         user: UserContext = kwargs["user"]
         search_filter["userProductCode"] = user.product_code
-        query = cls.generate_base_transaction_query()
+        from flask_executor import Executor
+        executor = Executor(current_app)
+        query = cls.query_tables_and_materialized_view()
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
-            count = cls.get_count(auth_account_id, search_filter)
-            # Add pagination
+            count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            query = query.filter(Invoice.id.in_(sub_query)).order_by(Invoice.id.desc())
-            result = db.session.query(Invoice).from_statement(query).all()
+            # Need to do it this way otherwise doesn't know how to join for the subquery for some reason.
+            invoice_ids = {item for t in sub_query.all() for item in t}
+            query = query.filter(Invoice.id.in_(invoice_ids)).order_by(Invoice.id.desc())
+            result_future = executor.submit(db.session.query(Invoice).from_statement(query).all)
+            count = count_future.result()
+            result = result_future.result()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
@@ -380,6 +387,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def query_tables_and_materialized_view(cls):
         """Query tables and materialized view, look at today's transactions from the tables, the rest get from MV."""
+        # TODO remove perhaps
         transactions_materialized_view = Table(
             DatabaseViews.TRANSACTIONS_MATERIALIZED_VIEW.value, MetaData(), autoload_with=db.engine
         )
@@ -394,13 +402,12 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     def get_count(cls, auth_account_id: str, search_filter: Dict):
         """Slimmed downed version for count (less joins)."""
         query = cls.query_tables_and_materialized_view()
-        query = query.outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-        query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
-        count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
+        query = cls.filter(query, auth_account_id, search_filter)
+        count = query.group_by(Invoice.id).group_by(PaymentAccount.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False):
+    def filter(cls, query, auth_account_id: str, search_filter: Dict):
         """For filtering queries."""
         if auth_account_id:
             query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
@@ -424,14 +431,11 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(cast(Invoice.id, String).like(f"%{invoice_id}%"))
 
         if invoice_number := search_filter.get("invoiceNumber", None):
-            # could have multiple invoice reference rows, but is handled in sub_query below (group by)
-            if add_outer_joins:
-                query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
             query = query.filter(InvoiceReference.invoice_number.ilike(f"%{invoice_number}%"))
 
         query = cls.filter_corp_type(query, search_filter)
         query = cls.filter_payment(query, search_filter)
-        query = cls.filter_details(query, search_filter, add_outer_joins)
+        query = cls.filter_details(query, search_filter)
         query = cls.filter_date(query, search_filter)
         return query
 
@@ -489,15 +493,11 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query
 
     @classmethod
-    def filter_details(cls, query, search_filter: dict, is_count: bool):
+    def filter_details(cls, query, search_filter: dict):
         """Filter by details."""
         if line_item := search_filter.get("lineItems", None):
-            if is_count:
-                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.filter(PaymentLineItem.description.ilike(f"%{line_item}%"))
         if details := search_filter.get("details", None):
-            if is_count:
-                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.filter(
                 or_(
                     func.jsonb_path_exists(
@@ -509,8 +509,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 )
             )
         if line_item_or_details := search_filter.get("lineItemsAndDetails", None):
-            if is_count:
-                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.filter(
                 or_(
                     PaymentLineItem.description.ilike(f"%{line_item_or_details}%"),
@@ -531,9 +529,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     def generate_subquery(cls, auth_account_id, search_filter, limit, page):
         """Generate subquery for invoices, used for pagination."""
         subquery = cls.query_tables_and_materialized_view()
-        subquery = subquery.outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         subquery = (
-            cls.filter(subquery, auth_account_id, search_filter, add_outer_joins=True)
+            cls.filter(subquery, auth_account_id, search_filter)
             .with_entities(Invoice.id)
             .group_by(Invoice.id)
             .order_by(Invoice.id.desc())

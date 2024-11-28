@@ -324,13 +324,12 @@ def get_topic_for_corp_type(corp_type: str):
 def unstructure_schema_items(schema, items):
     """Return unstructured results by schema."""
     results = [schema.from_row(item) for item in items]
-    converter = Converter()
+    return Converter().unstructure(results)
 
-    return converter.unstructure(results)
-
-
+# TODO REMOVE PERHAPS
 def get_midnight_vancouver_time_from_utc():
     """Get the midnight vancouver time from UTC date adjusted for daylight savings."""
+    # Midnight think about this.
     target_date = datetime.now(tz=timezone.utc).date()
     target_datetime = datetime.combine(target_date, datetime.min.time())
     # Correct for daylight savings.

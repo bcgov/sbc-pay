@@ -79,6 +79,7 @@ pg8000 = "^1.30.5"
 sql-versioning = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/sql-versioning", branch = "main" }
 aiohttp = "^3.9.5"
 setuptools = "^73.0.1"
+flask-executor = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
