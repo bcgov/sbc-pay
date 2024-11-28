@@ -158,6 +158,3 @@ def test_validate_redirect_url(app, redirect_url, valid_urls, expected_result):
     with app.app_context():
         assert is_valid_redirect_url(redirect_url) == expected_result
 
-
-def test_midnight_vancouver_time_from_utc(app):
-    pass
