@@ -250,9 +250,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def generate_base_transaction_query(cls):
-        """Generate a base query Transactions materialized view uses this query."""
-        # Note if this changes, it's important to create a migration to recreate the materialized view.
-        # There is no automatic process for recreating the materialized view if this changes.
+        """Generate a base query."""
         return (
             db.session.query(
                 Invoice.id,
