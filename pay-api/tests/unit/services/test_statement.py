@@ -892,7 +892,7 @@ def test_get_eft_statement_with_invoices(session):
                 ),  # pylint: disable=protected-access
                 "lastStatementTotal": 0,
                 "lastStatementPaidAmount": 0,
-                "latestStatementPaymentDate": get_local_formatted_date_time(invoice_3.payment_date, "%Y-%m-%d"),
+                "latestStatementPaymentDate": invoice_3.payment_date.strftime("%Y-%m-%d"),
             },
             # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {
