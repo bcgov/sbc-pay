@@ -315,9 +315,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search for purchase history."""
         user: UserContext = kwargs["user"]
         search_filter["userProductCode"] = user.product_code
-        from flask_executor import Executor  # TODO fix this
-
-        executor = Executor(current_app)
+        executor = current_app.extensions["flask_executor"]
         query = cls.generate_base_transaction_query()
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
@@ -336,7 +334,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             # If maximum number of records is provided, set the page with that number
             sub_query = cls.generate_subquery(auth_account_id, search_filter, max_no_records, page=None)
             result, count = (
-                query.filter(Invoice.id.in_(sub_query.subquery().select())).all(),
+                db.session.query(Invoice)
+                .from_statement(query.filter(Invoice.id.in_(sub_query.subquery().select())))
+                .all(),
                 sub_query.count(),
             )
         else:

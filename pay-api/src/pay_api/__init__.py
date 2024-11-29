@@ -20,12 +20,12 @@ import os
 
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask
+from flask_executor import Executor
 from flask_migrate import Migrate, upgrade
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
-# import pay_api.config as config
 from pay_api import config
 from pay_api.config import _Config
 from pay_api.models import db, ma
@@ -52,6 +52,7 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     if run_mode != "testing":
         if app.config.get("CLOUD_PLATFORM") != "OCP":
             Migrate(app, db)
+            app.logger.info(f"Booting up with CPU count (useful for GCP): {os.cpu_count()}")
             app.logger.info("Running migration upgrade.")
             with app.app_context():
                 execute_migrations(app)
@@ -75,6 +76,8 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     setup_jwt_manager(app, jwt)
 
     ExceptionHandler(app)
+
+    app.extensions["flask_executor"] = Executor(app)
 
     @app.after_request
     def handle_after_request(response):  # pylint: disable=unused-variable
