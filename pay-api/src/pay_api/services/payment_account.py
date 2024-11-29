@@ -197,9 +197,9 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             auth_account_id = str(payment_account.auth_account_id)
             statements_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(auth_account_id)
 
+            PaymentAccount._check_and_update_statement_notifications(payment_account)
             if statements_settings is not None and statements_settings.frequency != StatementFrequency.MONTHLY.value:
                 StatementSettings.update_statement_settings(auth_account_id, StatementFrequency.MONTHLY.value)
-                PaymentAccount._check_and_update_statement_notifications(payment_account)
 
     @classmethod
     def _check_and_update_statement_notifications(cls, payment_account: PaymentAccountModel):
