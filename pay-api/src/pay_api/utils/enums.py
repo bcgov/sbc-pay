@@ -450,10 +450,3 @@ class SuspensionReasonCodes(Enum):
 
     OVERDUE_EFT = "OVERDUE_EFT"
     PAD_NSF = "PAD_NSF"
-
-
-class DatabaseViews(Enum):
-    """Database Views."""
-
-    TRANSACTIONS_MATERIALIZED_VIEW = "transactions_materialized_view"
-    TRANSACTIONS_MATERIALIZED_VIEW_IDX = "idx_transactions_materialized_view_auth_account_id_invoice_id_desc"
