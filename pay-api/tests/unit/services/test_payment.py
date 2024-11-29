@@ -223,13 +223,7 @@ def test_payment_with_no_active_invoice(session):
     ],
 )
 def test_search_payment_history(
-    session,
-    test_name,
-    search_filter,
-    view_all,
-    expected_total,
-    expected_key,
-    expected_value,
+    session, executor_mock, test_name, search_filter, view_all, expected_total, expected_key, expected_value
 ):
     """Assert that the search payment history is working."""
     payment_account = factory_payment_account(name="account 1", auth_account_id="1")

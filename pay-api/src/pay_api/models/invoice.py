@@ -331,16 +331,18 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     refund_date: datetime
     disbursement_date: datetime
     disbursement_reversal_date: datetime
-    # Add disbursement_reversal_date when CSO is prepared.
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(
+        cls,
+        row,
+    ):
         """From row is used so we don't tightly couple to our database class.
 
         https://www.attrs.org/en/stable/init.html
         """
         # Similar to _clean_up in InvoiceSchema.
-        # In the future may need to add a mapping from EFT Status: APPROVED -> COMPLETED
+
         status_code = (
             PaymentStatus.COMPLETED.value
             if row.invoice_status_code == InvoiceStatus.PAID.value
@@ -349,7 +351,6 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
         business_identifier = (
             None if row.business_identifier and row.business_identifier.startswith("T") else row.business_identifier
         )
-
         line_items = [PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items]
         invoice_number = row.references[0].invoice_number if len(row.references) > 0 else None
 

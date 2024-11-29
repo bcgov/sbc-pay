@@ -313,3 +313,23 @@ def send_email_mock(monkeypatch):
     # Note this needs to be moved to a prism spec, we need to come up with one for NotifyAPI.
     monkeypatch.setattr("pay_api.services.email_service.send_email", send_email)
     monkeypatch.setattr("pay_api.services.eft_refund.send_email", send_email)
+
+
+@pytest.fixture()
+def executor_mock(app):
+    """Mock executor extension."""
+
+    class SimpleMockFuture:
+        def __init__(self, func, *args, **kwargs):
+            self._func = func
+            self._args = args
+            self._kwargs = kwargs
+
+        def result(self):
+            return self._func(*self._args, **self._kwargs)
+
+    class SimpleMockExecutor:
+        def submit(self, func, *args, **kwargs):
+            return SimpleMockFuture(func, *args, **kwargs)
+
+    app.extensions["flask_executor"] = SimpleMockExecutor()

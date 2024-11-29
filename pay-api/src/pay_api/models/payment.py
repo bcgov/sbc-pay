@@ -19,10 +19,10 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select, text
+from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
-from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
-from sqlalchemy.sql.expression import literal
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import select
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -30,6 +30,7 @@ from pay_api.utils.enums import InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
+from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
@@ -248,6 +249,56 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
+    def generate_base_transaction_query(cls):
+        """Generate a base query."""
+        return (
+            db.session.query(
+                Invoice.id,
+                Invoice.payment_account_id,
+                Invoice.corp_type_code,
+                Invoice.created_on,
+                Invoice.payment_date,
+                Invoice.refund_date,
+                Invoice.invoice_status_code,
+                Invoice.total,
+                Invoice.service_fees,
+                Invoice.paid,
+                Invoice.refund,
+                Invoice.folio_number,
+                Invoice.created_name,
+                Invoice.invoice_status_code,
+                Invoice.payment_method_code,
+                Invoice.details,
+                Invoice.business_identifier,
+                Invoice.created_by,
+                Invoice.filing_id,
+                Invoice.bcol_account,
+                Invoice.disbursement_date,
+                Invoice.disbursement_reversal_date,
+                Invoice.overdue_date,
+                PaymentLineItem.id,
+                PaymentLineItem.description,
+                PaymentLineItem.gst,
+                PaymentLineItem.pst,
+                PaymentAccount.id,
+                PaymentAccount.auth_account_id,
+                PaymentAccount.name,
+                PaymentAccount.billable,
+                InvoiceReference.id,
+                InvoiceReference.invoice_number,
+                InvoiceReference.reference_number,
+                InvoiceReference.status_code,
+            )
+            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+            .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            .outerjoin(
+                FeeSchedule,
+                FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
+            )
+            .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+        )
+
+    @classmethod
     @user_context
     def search_purchase_history(  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
         cls,
@@ -262,69 +313,18 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search for purchase history."""
         user: UserContext = kwargs["user"]
         search_filter["userProductCode"] = user.product_code
-
-        # Exclude 'receipts' they aren't serialized, use specific fields that will be serialized.
-        query = (
-            db.session.query(Invoice)
-            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-            .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            .outerjoin(
-                FeeSchedule,
-                FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
-            )
-            .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-            .options(
-                lazyload("*"),
-                load_only(
-                    Invoice.id,
-                    Invoice.corp_type_code,
-                    Invoice.created_on,
-                    Invoice.payment_date,
-                    Invoice.refund_date,
-                    Invoice.invoice_status_code,
-                    Invoice.total,
-                    Invoice.service_fees,
-                    Invoice.paid,
-                    Invoice.refund,
-                    Invoice.folio_number,
-                    Invoice.created_name,
-                    Invoice.invoice_status_code,
-                    Invoice.payment_method_code,
-                    Invoice.details,
-                    Invoice.business_identifier,
-                    Invoice.created_by,
-                    Invoice.filing_id,
-                    Invoice.bcol_account,
-                    Invoice.disbursement_date,
-                    Invoice.disbursement_reversal_date,
-                    Invoice.overdue_date,
-                ),
-                contains_eager(Invoice.payment_line_items)
-                .load_only(
-                    PaymentLineItem.description,
-                    PaymentLineItem.gst,
-                    PaymentLineItem.pst,
-                )
-                .contains_eager(PaymentLineItem.fee_schedule)
-                .load_only(FeeSchedule.filing_type_code),
-                contains_eager(Invoice.payment_account).load_only(
-                    PaymentAccount.auth_account_id,
-                    PaymentAccount.name,
-                    PaymentAccount.billable,
-                ),
-                contains_eager(Invoice.references).load_only(
-                    InvoiceReference.invoice_number,
-                    InvoiceReference.reference_number,
-                    InvoiceReference.status_code,
-                ),
-            )
-        )
+        executor = current_app.extensions["flask_executor"]
+        query = cls.generate_base_transaction_query()
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
-            count = cls.get_count(auth_account_id, search_filter)
-            # Add pagination
+            count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            result = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query.subquery().select())).all()
+            # Need to do it this way otherwise doesn't know how to join for the subquery for some reason.
+            invoice_ids = {item for t in sub_query.all() for item in t}
+            query = query.filter(Invoice.id.in_(invoice_ids)).order_by(Invoice.id.desc())
+            result_future = executor.submit(db.session.query(Invoice).from_statement(query).all)
+            count = count_future.result()
+            result = result_future.result()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
@@ -332,14 +332,16 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             # If maximum number of records is provided, set the page with that number
             sub_query = cls.generate_subquery(auth_account_id, search_filter, max_no_records, page=None)
             result, count = (
-                query.filter(Invoice.id.in_(sub_query.subquery().select())).all(),
+                db.session.query(Invoice)
+                .from_statement(query.filter(Invoice.id.in_(sub_query.subquery().select())))
+                .all(),
                 sub_query.count(),
             )
         else:
             count = cls.get_count(auth_account_id, search_filter)
             if count > 60000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
-            result = query.all()
+            result = db.session.query(Invoice).from_statement(query).all()
         return result, count
 
     @classmethod
@@ -379,14 +381,13 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_count(cls, auth_account_id: str, search_filter: Dict):
         """Slimmed downed version for count (less joins)."""
-        # We need to exclude the outer joins for performance here, they get re-added in filter.
-        query = db.session.query(Invoice).outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-        query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
+        query = cls.generate_base_transaction_query()
+        query = cls.filter(query, auth_account_id, search_filter)
         count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False):
+    def filter(cls, query, auth_account_id: str, search_filter: Dict):
         """For filtering queries."""
         if auth_account_id:
             query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
@@ -408,16 +409,12 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(Invoice.created_name.ilike(f"%{created_name}%"))  # pylint: disable=no-member
         if invoice_id := search_filter.get("id", None):
             query = query.filter(cast(Invoice.id, String).like(f"%{invoice_id}%"))
-
         if invoice_number := search_filter.get("invoiceNumber", None):
-            # could have multiple invoice reference rows, but is handled in sub_query below (group by)
-            if add_outer_joins:
-                query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
             query = query.filter(InvoiceReference.invoice_number.ilike(f"%{invoice_number}%"))
 
         query = cls.filter_corp_type(query, search_filter)
         query = cls.filter_payment(query, search_filter)
-        query = cls.filter_details(query, search_filter, add_outer_joins)
+        query = cls.filter_details(query, search_filter)
         query = cls.filter_date(query, search_filter)
         return query
 
@@ -475,51 +472,53 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query
 
     @classmethod
-    def filter_details(cls, query, search_filter: dict, is_count: bool):
+    def filter_details(cls, query, search_filter: dict):
         """Filter by details."""
         if line_item := search_filter.get("lineItems", None):
-            if is_count:
-                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.filter(PaymentLineItem.description.ilike(f"%{line_item}%"))
         if details := search_filter.get("details", None):
-            if is_count:
-                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
             query = query.filter(
                 or_(
-                    text("value ->> 'value' ilike :details"),
-                    text("value ->> 'label' ilike :details"),
+                    func.jsonb_path_exists(
+                        Invoice.details, cast(f'$[*] ? (@.value like_regex "(?i).*{details}.*")', JSONPath())
+                    ),
+                    func.jsonb_path_exists(
+                        Invoice.details, cast(f'$[*] ? (@.label like_regex "(?i).*{details}.*")', JSONPath())
+                    ),
                 )
-            ).params(details=f"%{details}%")
+            )
         if line_item_or_details := search_filter.get("lineItemsAndDetails", None):
-            if is_count:
-                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
             query = query.filter(
                 or_(
                     PaymentLineItem.description.ilike(f"%{line_item_or_details}%"),
-                    text("value ->> 'value' ilike :details"),
-                    text("value ->> 'label' ilike :details"),
+                    func.jsonb_path_exists(
+                        Invoice.details,
+                        cast(f'$[*] ? (@.value like_regex "(?i).*{line_item_or_details}.*")', JSONPath()),
+                    ),
+                    func.jsonb_path_exists(
+                        Invoice.details,
+                        cast(f'$[*] ? (@.label like_regex "(?i).*{line_item_or_details}.*")', JSONPath()),
+                    ),
                 )
-            ).params(details=f"%{line_item_or_details}%")
+            )
 
         return query
 
     @classmethod
     def generate_subquery(cls, auth_account_id, search_filter, limit, page):
         """Generate subquery for invoices, used for pagination."""
-        sub_query = db.session.query(Invoice).outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-        sub_query = (
-            cls.filter(sub_query, auth_account_id, search_filter, add_outer_joins=True)
+        subquery = cls.generate_base_transaction_query()
+        subquery = (
+            cls.filter(subquery, auth_account_id, search_filter)
             .with_entities(Invoice.id)
             .group_by(Invoice.id)
             .order_by(Invoice.id.desc())
         )
         if limit:
-            sub_query = sub_query.limit(limit)
+            subquery = subquery.limit(limit)
         if limit and page:
-            sub_query = sub_query.offset((page - 1) * limit)
-        return sub_query
+            subquery = subquery.offset((page - 1) * limit)
+        return db.session.query(subquery.subquery())
 
 
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors

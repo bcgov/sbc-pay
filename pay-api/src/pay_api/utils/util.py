@@ -323,6 +323,4 @@ def get_topic_for_corp_type(corp_type: str):
 def unstructure_schema_items(schema, items):
     """Return unstructured results by schema."""
     results = [schema.from_row(item) for item in items]
-    converter = Converter()
-
-    return converter.unstructure(results)
+    return Converter().unstructure(results)

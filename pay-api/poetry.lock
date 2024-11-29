@@ -870,6 +870,23 @@ files = [
 Flask = ">=0.9"
 
 [[package]]
+name = "flask-executor"
+version = "1.0.0"
+description = "An easy to use Flask wrapper for concurrent.futures"
+optional = false
+python-versions = "*"
+files = [
+    {file = "Flask-Executor-1.0.0.tar.gz", hash = "sha256:4bc113def5d9f1c7ff272ff7ba09f843468eab80469bdbd21625a111b2c8ae7b"},
+    {file = "Flask_Executor-1.0.0-py3-none-any.whl", hash = "sha256:c044dc6393326a83351e69e4ddf3686270abffeac2b599260cebf0ea5d1e93de"},
+]
+
+[package.dependencies]
+Flask = "*"
+
+[package.extras]
+test = ["flask-sqlalchemy", "pytest"]
+
+[[package]]
 name = "flask-jwt-oidc"
 version = "0.7.0"
 description = "Opinionated flask oidc client"
@@ -2880,4 +2897,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "02d2165224fe975cfab85453d451ab199e8c6f717fef5b905fcc89dab5f40a43"
+content-hash = "decd848efa9a3eec81a5a887c574570e2dd4ffdee7cd3a90ca320212feff113b"

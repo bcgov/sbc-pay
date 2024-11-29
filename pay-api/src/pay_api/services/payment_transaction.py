@@ -266,7 +266,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-            # todo Remove this and use payment.payment_method_code when payment methods are not created upfront
             payment_method=(invoice.payment_method_code if invoice else payment.payment_method_code)
         )
 

@@ -108,7 +108,6 @@ def test_create_drawdown_refund(session, client, jwt, app):
 
 def test_create_eft_refund(session, client, jwt, app):
     """Assert EFT refunds work."""
-    # TODO add more.
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 

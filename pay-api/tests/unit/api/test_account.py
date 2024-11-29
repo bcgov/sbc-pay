@@ -129,7 +129,7 @@ def test_account_purchase_history_with_basic_account(session, client, jwt, app):
     assert rv.status_code == 200
 
 
-def test_account_purchase_history_pagination(session, client, jwt, app):
+def test_account_purchase_history_pagination(session, client, jwt, app, executor_mock):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -155,7 +155,7 @@ def test_account_purchase_history_pagination(session, client, jwt, app):
     assert len(rv.json.get("items")) == 5
 
 
-def test_account_purchase_history_with_service_account(session, client, jwt, app):
+def test_account_purchase_history_with_service_account(session, client, jwt, app, executor_mock):
     """Assert that purchase history returns only invoices for that product."""
     # Point CSO fee schedule to a valid distribution code.
     fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type("CSO", "CSBVFEE").fee_schedule_id
@@ -357,7 +357,7 @@ def test_account_purchase_history_export_invalid_request(session, client, jwt, a
     assert rv.status_code == 400
 
 
-def test_account_purchase_history_default_list(session, client, jwt, app):
+def test_account_purchase_history_default_list(session, client, jwt, app, executor_mock):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
