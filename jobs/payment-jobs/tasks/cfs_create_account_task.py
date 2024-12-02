@@ -49,10 +49,11 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         # Check business hours based on the day
         if day_of_week in range(0, 5):
             return weekday_hours[0] <= current_time <= weekday_hours[1]
-        elif day_of_week == 5:
+        if day_of_week == 5:
             return saturday_hours[0] <= current_time <= saturday_hours[1]
-        elif day_of_week == 6:
+        if day_of_week == 6:
             return sunday_hours[0] <= current_time <= sunday_hours[1]
+        return False
 
     @classmethod
     def create_accounts(cls):  # pylint: disable=too-many-locals
