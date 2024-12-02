@@ -13,9 +13,10 @@
 # limitations under the License.
 """Task to create CFS account offline."""
 import re
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from typing import Dict
 
+import pytz
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -34,6 +35,25 @@ from utils.auth import get_token
 class CreateAccountTask:  # pylint: disable=too-few-public-methods
     """Create CFS Account."""
 
+    @staticmethod
+    def is_within_cas_business_hours():
+        """Check if the current time is within business hours."""
+        # https://bcgov.sharepoint.com/sites/FIN-OCG-CAS-CFS/SitePages/Calendar.aspx
+        vancouver_tz = pytz.timezone("America/Vancouver")
+        now_vancouver = datetime.now(vancouver_tz)
+        day_of_week = now_vancouver.weekday()
+        weekday_hours = (time(6, 0), time(21, 0))  # Monday-Friday: 6am - 9pm
+        saturday_hours = (time(6, 0), time(19, 0))  # Saturday: 6am - 7pm
+        sunday_hours = (time(9, 0), time(21, 0))  # Sunday: 9am - 9pm
+        current_time = now_vancouver.time()
+        # Check business hours based on the day
+        if day_of_week in range(0, 5):
+            return weekday_hours[0] <= current_time <= weekday_hours[1]
+        elif day_of_week == 5:
+            return saturday_hours[0] <= current_time <= saturday_hours[1]
+        elif day_of_week == 6:
+            return sunday_hours[0] <= current_time <= sunday_hours[1]
+
     @classmethod
     def create_accounts(cls):  # pylint: disable=too-many-locals
         """Find all pending accounts to be created in CFS.
@@ -43,6 +63,10 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         2. Create CFS accounts.
         3. Publish a message to the queue if successful.
         """
+        if not CreateAccountTask.is_within_cas_business_hours():
+            current_app.logger.info("Outside business hours. Skipping account creation.")
+            return
+
         # Pass payment method if offline account creation has be restricted based on payment method.
         pending_accounts = CfsAccountModel.find_all_pending_accounts()
         current_app.logger.info(f"Found {len(pending_accounts)} CFS Accounts to be created.")
