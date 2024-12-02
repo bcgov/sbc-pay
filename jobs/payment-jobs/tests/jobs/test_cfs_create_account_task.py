@@ -32,9 +32,7 @@ from tasks.cfs_create_account_task import CreateAccountTask
 from utils import mailer
 
 from .factory import factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account
-
-valid_time_for_job = datetime.now(pytz.timezone("America/Vancouver")).replace(hour=12)
-invalid_time_for_job = datetime.now(pytz.timezone("America/Vancouver")).replace(hour=1)
+from .utils import invalid_time_for_job, valid_time_for_job
 
 
 def test_create_account_setup(session):
