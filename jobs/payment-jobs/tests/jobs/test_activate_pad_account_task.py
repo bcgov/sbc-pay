@@ -27,6 +27,7 @@ from tasks.activate_pad_account_task import ActivatePadAccountTask
 from tasks.cfs_create_account_task import CreateAccountTask
 
 from .factory import factory_create_pad_account
+from .utils import valid_time_for_job
 
 
 def test_activate_pad_accounts(session):
@@ -39,7 +40,8 @@ def test_activate_pad_accounts_with_time_check(session):
     """Test Activate account."""
     # Create a pending account first, then call the job
     account = factory_create_pad_account(auth_account_id="1")
-    CreateAccountTask.create_accounts()
+    with freeze_time(valid_time_for_job):
+        CreateAccountTask.create_accounts()
     account: PaymentAccount = PaymentAccount.find_by_id(account.id)
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, "Created account has pending pad status"
@@ -66,7 +68,9 @@ def test_activate_bcol_change_to_pad(session):
     """Test Activate account."""
     # Create a pending account first, then call the job
     account = factory_create_pad_account(auth_account_id="1", payment_method=PaymentMethod.DRAWDOWN.value)
-    CreateAccountTask.create_accounts()
+
+    with freeze_time(valid_time_for_job):
+        CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
     cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, "Created account has pending pad status"

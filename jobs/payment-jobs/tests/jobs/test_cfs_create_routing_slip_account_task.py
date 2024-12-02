@@ -17,21 +17,24 @@
 Test-Suite to ensure that the CreateAccountTask for routing slip is working as expected.
 """
 
+from freezegun import freeze_time
 from pay_api.models import CfsAccount
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
 
 from tasks.cfs_create_account_task import CreateAccountTask
 
 from .factory import factory_routing_slip_account
+from .utils import valid_time_for_job
 
 
 def test_create_rs_account(session):
     """Test create account."""
     # Create a pending account first, then call the job
-    account = factory_routing_slip_account()
-    CreateAccountTask.create_accounts()
-    cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.INTERNAL.value)
-    assert cfs_account.status == CfsAccountStatus.ACTIVE.value
-    assert cfs_account.cfs_party
-    assert cfs_account.cfs_site
-    assert cfs_account.cfs_account
+    with freeze_time(valid_time_for_job):
+        account = factory_routing_slip_account()
+        CreateAccountTask.create_accounts()
+        cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.INTERNAL.value)
+        assert cfs_account.status == CfsAccountStatus.ACTIVE.value
+        assert cfs_account.cfs_party
+        assert cfs_account.cfs_site
+        assert cfs_account.cfs_account
