@@ -36,7 +36,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
     """Create CFS Account."""
 
     @staticmethod
-    def is_within_cas_business_hours() -> bool:
+    def is_within_cfs_business_hours() -> bool:
         """Check if the current time is within business hours."""
         # https://bcgov.sharepoint.com/sites/FIN-OCG-CAS-CFS/SitePages/Calendar.aspx
         vancouver_tz = pytz.timezone("America/Vancouver")
@@ -64,7 +64,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         2. Create CFS accounts.
         3. Publish a message to the queue if successful.
         """
-        if not CreateAccountTask.is_within_cas_business_hours():
+        if not CreateAccountTask.is_within_cfs_business_hours():
             current_app.logger.info("Outside business hours. Skipping account creation.")
             return
 
