@@ -36,7 +36,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
     """Create CFS Account."""
 
     @staticmethod
-    def is_within_cas_business_hours():
+    def is_within_cas_business_hours() -> bool:
         """Check if the current time is within business hours."""
         # https://bcgov.sharepoint.com/sites/FIN-OCG-CAS-CFS/SitePages/Calendar.aspx
         vancouver_tz = pytz.timezone("America/Vancouver")
