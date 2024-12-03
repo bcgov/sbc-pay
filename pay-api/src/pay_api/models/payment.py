@@ -319,9 +319,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if not return_all:
             count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            # Need to do it this way otherwise doesn't know how to join for the subquery for some reason.
-            invoice_ids = {item for t in sub_query.all() for item in t}
-            query = query.filter(Invoice.id.in_(invoice_ids)).order_by(Invoice.id.desc())
+            query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
             result_future = executor.submit(db.session.query(Invoice).from_statement(query).all)
             count = count_future.result()
             result = result_future.result()
@@ -518,7 +516,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             subquery = subquery.limit(limit)
         if limit and page:
             subquery = subquery.offset((page - 1) * limit)
-        return db.session.query(subquery.subquery())
+        return subquery
 
 
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
