@@ -240,7 +240,7 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
             credit_distribution.stop_ejv = True
     else:
         effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
-        _update_invoice_disbursement_status(details.invoice, effective_date, details.partner_disbursement)
+        _update_invoice_disbursement_status(details, effective_date)
     return has_errors
 
 
@@ -318,30 +318,29 @@ def _update_partner_disbursement(partner_disbursement, status_code, effective_da
     """Update the partner disbursement status."""
     if partner_disbursement is None:
         return
+    if status_code == DisbursementStatus.COMPLETED.value and partner_disbursement.is_reversal:
+        current_app.logging.error("Marking as completed when it was a reversal.")
+    elif status_code == DisbursementStatus.REVERSED.value and not partner_disbursement.is_reversal:
+        current_app.logging.error("Marking as reversed when it was not a reversal.")
     partner_disbursement.status_code = status_code
     partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
     partner_disbursement.feedback_on = effective_date
 
 
 def _update_invoice_disbursement_status(
-    invoice: InvoiceModel,
+    details: JVDetailsFeedback,
     effective_date: datetime,
-    partner_disbursement: PartnerDisbursementsModel,
 ):
     """Update status to reversed if its a refund, else to completed."""
-    # Look up partner disbursements table and update the status.
-    if invoice.invoice_status_code in (
-        InvoiceStatus.REFUNDED.value,
-        InvoiceStatus.REFUND_REQUESTED.value,
-        InvoiceStatus.CREDITED.value,
-    ):
-        _update_partner_disbursement(partner_disbursement, DisbursementStatus.REVERSED.value, effective_date)
-        invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
-        invoice.disbursement_reversal_date = effective_date
+    # This assumes we're only looking at credits.  if credit_or_debit_line == "C"
+    if details.line[30:33] == '112':
+        _update_partner_disbursement(details.partner_disbursement, DisbursementStatus.REVERSED.value, effective_date)
+        details.invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
+        details.invoice.disbursement_reversal_date = effective_date
     else:
-        _update_partner_disbursement(partner_disbursement, DisbursementStatus.COMPLETED.value, effective_date)
-        invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
-        invoice.disbursement_date = effective_date
+        _update_partner_disbursement(details.partner_disbursement, DisbursementStatus.COMPLETED.value, effective_date)
+        details.invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+        details.invoice.disbursement_date = effective_date
 
 
 def _create_payment_record(amount, ejv_header, receipt_number):
@@ -515,9 +514,5 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
         )
     else:
         # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.
-        _update_invoice_disbursement_status(invoice, effective_date=datetime.now(), partner_disbursement=None)
-        if invoice.invoice_status_code != InvoiceStatus.PAID.value:
-            refund = RefundModel.find_by_invoice_id(invoice.id)
-            refund.gl_posted = datetime.now()
-            refund.save()
+        raise NotImplementedError("This is not implemented yet.")
     return has_errors
