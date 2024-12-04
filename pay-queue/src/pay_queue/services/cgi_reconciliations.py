@@ -333,7 +333,7 @@ def _update_invoice_disbursement_status(
 ):
     """Update status to reversed if its a refund, else to completed."""
     # This assumes we're only looking at credits.  if credit_or_debit_line == "C"
-    if details.line[30:33] == '112':
+    if details.line[30:33] == "112":
         _update_partner_disbursement(details.partner_disbursement, DisbursementStatus.REVERSED.value, effective_date)
         details.invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
         details.invoice.disbursement_reversal_date = effective_date
