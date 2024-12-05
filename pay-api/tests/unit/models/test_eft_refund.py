@@ -34,7 +34,7 @@ def test_eft_refund_defaults(session):
         short_name_id=short_name_id,
         refund_amount=100.00,
         cas_supplier_number="SUP123456",
-        cas_supplier_site="SUP123456",
+        cas_supplier_site="123",
         refund_email="test@example.com",
         comment="Test comment",
     )
@@ -49,7 +49,7 @@ def test_eft_refund_defaults(session):
     assert eft_refund.short_name_id == short_name_id
     assert eft_refund.refund_amount == 100.00
     assert eft_refund.cas_supplier_number == "SUP123456"
-    assert eft_refund.cas_supplier_site == "SUP123456"
+    assert eft_refund.cas_supplier_site == "123"
     assert eft_refund.refund_email == "test@example.com"
     assert eft_refund.comment == "Test comment"
     assert eft_refund.status is None
@@ -63,7 +63,7 @@ def test_eft_refund_all_attributes(session):
     short_name = factory_eft_shortname(short_name="Test Short Name").save()
     refund_amount = 150.00
     cas_supplier_number = "SUP654321"
-    cas_supplier_site = "SUP654321"
+    cas_supplier_site = "123"
     refund_email = "updated@example.com"
     comment = "Updated comment"
     status = "COMPLETED"

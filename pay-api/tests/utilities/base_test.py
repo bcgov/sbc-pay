@@ -966,7 +966,7 @@ def factory_eft_refund(
     short_name_id,
     refund_amount=10.00,
     cas_supplier_number="1234567",
-    cas_supplier_site="1234567",
+    cas_supplier_site="123",
     refund_email="test@test.com",
     comment="test comment",
     status="PENDING",
