@@ -130,11 +130,9 @@ class CgiAP(CgiEjv):
         """Get AP Comment Override. EFT only."""
         line_text = "0001"
         combined_comment = f"{cls.EMPTY:<1}{short_name_id}{cls.EMPTY:<1}-{cls.EMPTY:<1}{comment}"[:40]
-        supplier_number = supplier_line.supplier_number if supplier_line else None
-        supplier_site = supplier_line.supplier_site if supplier_line else None
         ap_comment = (
-            f"{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number(supplier_number)}"
-            f"{cls._supplier_location(supplier_site)}{refund_id:<50}{line_text}{combined_comment}"
+            f"{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number(supplier_line.supplier_number)}"
+            f"{cls._supplier_location(supplier_line.supplier_site)}{refund_id:<50}{line_text}{combined_comment}"
             f"{cls.DELIMITER}{os.linesep}"
         )
         return ap_comment
