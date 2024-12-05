@@ -1031,7 +1031,7 @@ def test_post_shortname_refund_success(db, session, client, jwt, emails_with_key
         "authAccountId": payment_account.auth_account_id,
         "refundAmount": 100.00,
         "casSupplierNum": "CAS123",
-        "casSupplierSite": "CAS123",
+        "casSupplierSite": "123",
         "refundEmail": "test@example.com",
         "comment": "Refund for overpayment",
     }
