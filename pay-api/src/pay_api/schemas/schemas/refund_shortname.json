@@ -4,7 +4,7 @@
   "type": "object",
   "title": "Refund",
   "required":[
-    "shortNameId", "refundAmount", "casSupplierNum", "refundEmail"
+    "shortNameId", "refundAmount", "casSupplierNum", "casSupplierSite", "refundEmail"
   ],
   "properties":{
     "short_name_id":{
@@ -32,6 +32,16 @@
       "type":"string",
       "title":"CAS Supplier Number",
       "description":"CAS supplier number.",
+      "default":"",
+      "examples":[
+        "22901"
+      ]
+    },
+    "cas_supplier_site":{
+      "$id":"#/properties/casSupplierSite",
+      "type":"string",
+      "title":"CAS Supplier Site",
+      "description":"CAS supplier site.",
       "default":"",
       "examples":[
         "22901"

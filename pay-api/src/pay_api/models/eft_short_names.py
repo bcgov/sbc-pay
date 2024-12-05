@@ -41,6 +41,7 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
         "include_properties": [
             "id",
             "cas_supplier_number",
+            "cas_supplier_site",
             "created_on",
             "email",
             "is_generated",
@@ -59,6 +60,7 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     short_name = db.Column("short_name", db.String, nullable=False, index=True)
     email = db.Column(db.String(100), nullable=True)
     cas_supplier_number = db.Column(db.String(), nullable=True)
+    cas_supplier_site = db.Column(db.String(), nullable=True)
     type = db.Column(db.String(), nullable=False)
     is_generated = db.Column(db.Boolean(), nullable=False, default=False)
 
@@ -85,6 +87,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     created_on: datetime
     email: str
     cas_supplier_number: str
+    cas_supplier_site: str
     short_name: str
     short_name_type: str
     statement_id: int
@@ -108,6 +111,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             short_name_type=row.type,
             email=getattr(row, "email"),
             cas_supplier_number=getattr(row, "cas_supplier_number"),
+            cas_supplier_site=getattr(row, "cas_supplier_site"),
             statement_id=getattr(row, "latest_statement_id", None),
             status_code=getattr(row, "status_code", None),
             cfs_account_status=getattr(row, "cfs_account_status", None),

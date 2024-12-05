@@ -598,6 +598,7 @@ def create_eft_summary_search_data():
         short_name_id=short_name_1.id,
         refund_amount=100.00,
         cas_supplier_number="123",
+        cas_supplier_site="123",
         refund_email="test@example.com",
         comment="Test comment",
         status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
@@ -1043,6 +1044,7 @@ def test_post_shortname_refund_success(db, session, client, jwt, emails_with_key
     assert eft_refund.short_name_id == short_name.id
     assert eft_refund.refund_amount == 100.00
     assert eft_refund.cas_supplier_number == "CAS123"
+    assert eft_refund.cas_supplier_site == "CAS123"
     assert eft_refund.refund_email == "test@example.com"
     assert eft_refund.comment == "Refund for overpayment"
     assert eft_refund.status == EFTShortnameRefundStatus.PENDING_APPROVAL.value
@@ -1245,6 +1247,7 @@ def test_get_refund_by_id(session, client, jwt):
     assert rv.json["status"] == refund.status
     assert rv.json["refundAmount"] == refund.refund_amount
     assert rv.json["casSupplierNumber"] == refund.cas_supplier_number
+    assert rv.json["casSupplierSite"] == refund.cas_supplier_site
     assert rv.json["refundEmail"] == refund.refund_email
     assert rv.json["shortNameId"] == refund.short_name_id
     assert rv.json["declineReason"] == refund.decline_reason
