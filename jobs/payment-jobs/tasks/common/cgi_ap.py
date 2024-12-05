@@ -48,7 +48,7 @@ class CgiAP(CgiEjv):
         )
 
     @classmethod
-    def get_ap_header(cls, total, invoice_number, invoice_date, supplier_number: str = None):
+    def get_ap_header(cls, total, invoice_number, invoice_date, supplier_number: str = None, supplier_site: str = None):
         """Get AP Invoice Header string."""
         invoice_type = "ST"
         remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
@@ -62,7 +62,7 @@ class CgiAP(CgiEjv):
         term = f"{cls.EMPTY:<50}" if cls.ap_type == EjvFileType.REFUND else f"Immediate{cls.EMPTY:<41}"
         ap_header = (
             f"{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number(supplier_number)}"
-            f"{cls._supplier_location()}{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}"
+            f"{cls._supplier_location(supplier_site)}{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}"
             f"GEN {disbursement_method} N{remit_code}{cls.format_amount(total)}{currency}{effective_date}"
             f"{term}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}"
             f"{oracle_invoice_batch_name:<30}{cls.EMPTY:<9}Y{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}"
@@ -70,7 +70,7 @@ class CgiAP(CgiEjv):
         return ap_header
 
     @classmethod
-    def get_ap_invoice_line(cls, ap_line: APLine, supplier_number: str = None):
+    def get_ap_invoice_line(cls, ap_line: APLine, supplier_number: str = None, supplier_site: str = None):
         """Get AP Invoice Line string."""
         commit_line_number = f"{cls.EMPTY:<4}"
         # Pad Zeros to four digits. EG. 0001
@@ -79,7 +79,7 @@ class CgiAP(CgiEjv):
         line_code = cls._get_line_code(ap_line)
         ap_line = (
             f"{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number(supplier_number)}"
-            f"{cls._supplier_location()}{ap_line.invoice_number:<50}{line_number}{commit_line_number}"
+            f"{cls._supplier_location(supplier_site)}{ap_line.invoice_number:<50}{line_number}{commit_line_number}"
             f"{cls.format_amount(ap_line.total)}{line_code}{cls._distribution(ap_line.distribution)}{cls.EMPTY:<55}"
             f"{effective_date}{cls.EMPTY:<10}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}"
             f"{cls.EMPTY:<20}{cls.EMPTY:<4}{cls.EMPTY:<30}{cls.EMPTY:<25}{cls.EMPTY:<30}{cls.EMPTY:<8}{cls.EMPTY:<1}"
@@ -123,13 +123,13 @@ class CgiAP(CgiEjv):
         return ap_address
 
     @classmethod
-    def get_eft_ap_comment(cls, comment, refund_id, short_name_id, supplier_number):
+    def get_eft_ap_comment(cls, comment, refund_id, short_name_id, supplier_number, supplier_site):
         """Get AP Comment Override. EFT only."""
         line_text = "0001"
         combined_comment = f"{cls.EMPTY:<1}{short_name_id}{cls.EMPTY:<1}-{cls.EMPTY:<1}{comment}"[:40]
         ap_comment = (
             f"{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number(supplier_number)}"
-            f"{cls._supplier_location()}{refund_id:<50}{line_text}{combined_comment}"
+            f"{cls._supplier_location(supplier_site)}{refund_id:<50}{line_text}{combined_comment}"
             f"{cls.DELIMITER}{os.linesep}"
         )
         return ap_comment
@@ -175,8 +175,10 @@ class CgiAP(CgiEjv):
                 raise RuntimeError("ap_type not selected.")
 
     @classmethod
-    def _supplier_location(cls):
+    def _supplier_location(cls, supplier_site: str = None):
         """Return location."""
+        if supplier_site:
+            return f"{supplier_site:<3}"
         match cls.ap_type:
             case EjvFileType.NON_GOV_DISBURSEMENT:
                 return f"{current_app.config.get('BCA_SUPPLIER_LOCATION'):<3}"

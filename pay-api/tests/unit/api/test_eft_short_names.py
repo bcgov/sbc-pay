@@ -1031,6 +1031,7 @@ def test_post_shortname_refund_success(db, session, client, jwt, emails_with_key
         "authAccountId": payment_account.auth_account_id,
         "refundAmount": 100.00,
         "casSupplierNum": "CAS123",
+        "casSupplierSite": "CAS123",
         "refundEmail": "test@example.com",
         "comment": "Refund for overpayment",
     }
@@ -1209,7 +1210,7 @@ def test_patch_shortname_refund(
 
 def test_patch_shortname(session, client, jwt):
     """Test patch EFT Short name."""
-    data = {"email": "invalid_email", "casSupplierNumber": "1234567ABC"}
+    data = {"email": "invalid_email", "casSupplierNumber": "1234567ABC", "casSupplierSite": "1234567ABC"}
 
     short_name = factory_eft_shortname("TEST_SHORTNAME").save()
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
@@ -1227,6 +1228,7 @@ def test_patch_shortname(session, client, jwt):
     result = rv.json
     assert result is not None
     assert result["casSupplierNumber"] == data["casSupplierNumber"]
+    assert result["casSupplierSite"] == data["casSupplierSite"]
     assert result["email"] == data["email"]
 
 

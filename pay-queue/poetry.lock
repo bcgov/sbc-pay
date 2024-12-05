@@ -2063,7 +2063,7 @@ werkzeug = "^3.0.3"
 type = "git"
 url = "https://github.com/ochiu/sbc-pay.git"
 reference = "24454-EFT-TDI17-Processing-Updates"
-resolved_reference = "a9255050676f190cac9be0fd2f31974a9e01918d"
+resolved_reference = "f3c107fbd27ac534ba4288472540f0a2e9afc3dd"
 subdirectory = "pay-api"
 
 [[package]]
