@@ -14,6 +14,16 @@
         "ABC123"
       ]
     },
+    "casSupplierSite": {
+      "$id": "#/properties/casSupplierSite",
+      "type": "string",
+      "title": "CAS Supplier Site",
+      "description": "EFT Short name associated CAS supplier site.",
+      "maxLength": 25,
+      "examples": [
+        "ABC123"
+      ]
+    },
     "email": {
       "$id": "#/properties/email",
       "type": "string",

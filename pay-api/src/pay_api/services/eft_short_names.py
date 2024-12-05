@@ -99,12 +99,15 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug("<patch_shortname")
         email = request.get("email", None)
         cas_supplier_number = request.get("casSupplierNumber", None)
+        cas_supplier_site = request.get("casSupplierSite", None)
         short_name = EFTShortnameModel.find_by_id(short_name_id)
 
         if email is not None:
             short_name.email = email.strip()
         if cas_supplier_number is not None:
             short_name.cas_supplier_number = cas_supplier_number.strip()
+        if cas_supplier_site is not None:
+            short_name.cas_supplier_site = cas_supplier_site.strip()
         short_name.save()
 
         current_app.logger.debug(">patch_shortname")
@@ -402,6 +405,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             EFTShortnameModel.short_name,
             EFTShortnameModel.type,
             EFTShortnameModel.cas_supplier_number,
+            EFTShortnameModel.cas_supplier_site,
             EFTShortnameModel.email,
             EFTShortnameModel.created_on,
         )

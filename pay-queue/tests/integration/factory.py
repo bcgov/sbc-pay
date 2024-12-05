@@ -216,6 +216,7 @@ def factory_create_eft_shortname(short_name: str, short_name_type: str = EFTShor
 
 def factory_create_eft_refund(
     cas_supplier_number: str = "1234",
+    cas_supplier_site: str = "123",
     comment: str = "Test Comment",
     refund_amount: float = 100.0,
     refund_email: str = "test@email.com",
@@ -226,6 +227,7 @@ def factory_create_eft_refund(
     """Return Factory."""
     eft_refund = EFTRefund(
         cas_supplier_number=cas_supplier_number,
+        cas_supplier_site=cas_supplier_site,
         comment=comment,
         disbursement_status_code=disbursement_status_code,
         refund_amount=refund_amount,

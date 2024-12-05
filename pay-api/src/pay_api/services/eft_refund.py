@@ -258,6 +258,7 @@ class EFTRefund:
             short_name_id=shortname_id,
             refund_amount=amount,
             cas_supplier_number=get_str_by_path(request, "casSupplierNum"),
+            cas_supplier_site=get_str_by_path(request, "casSupplierSite"),
             refund_email=get_str_by_path(request, "refundEmail"),
             comment=comment,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,

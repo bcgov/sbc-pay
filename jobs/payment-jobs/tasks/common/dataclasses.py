@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
+from sqlite3 import Date
 from typing import List, Optional
 
 from dataclass_wizard import JSONWizard
@@ -71,6 +72,24 @@ class OrderStatus(JSONWizard):  # pylint:disable=too-many-instance-attributes
 
 
 @dataclass
+class APSupplier:
+    """Mapping for supplier items."""
+
+    supplier_number: str = None
+    supplier_site: str = None
+
+
+@dataclass
+class APHeader:
+    """Used as a parameter to build AP header."""
+
+    total: float
+    invoice_number: str
+    invoice_date: Date = None
+    ap_supplier: APSupplier = field(default_factory=APSupplier)
+
+
+@dataclass
 class APLine:
     """Used as a parameter to build AP inbox files."""
 
@@ -79,6 +98,7 @@ class APLine:
     line_number: int
     is_reversal: Optional[bool] = None
     distribution: Optional[str] = None
+    ap_supplier: APSupplier = field(default_factory=APSupplier)
 
     @classmethod
     def from_invoice_and_line_item(
