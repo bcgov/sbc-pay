@@ -62,8 +62,8 @@ class CgiAP(CgiEjv):
         term = f"{cls.EMPTY:<50}" if cls.ap_type == EjvFileType.REFUND else f"Immediate{cls.EMPTY:<41}"
 
         ap_header = (
-            f"{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number(ap_header.supplier_number)}"
-            f"{cls._supplier_location(ap_header.supplier_site)}"
+            f"{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number(ap_header.ap_supplier.supplier_number)}"
+            f"{cls._supplier_location(ap_header.ap_supplier.supplier_site)}"
             f"{ap_header.invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}"
             f"GEN {disbursement_method} N{remit_code}{cls.format_amount(ap_header.total)}{currency}{effective_date}"
             f"{term}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}"
@@ -80,13 +80,13 @@ class CgiAP(CgiEjv):
         effective_date = cls._get_date(datetime.now(tz=timezone.utc))
         line_code = cls._get_line_code(ap_line)
         ap_line = (
-            f"{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number(ap_line.supplier_number)}"
-            f"{cls._supplier_location(ap_line.supplier_site)}{ap_line.invoice_number:<50}"
+            f"{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number(ap_line.ap_supplier.supplier_number)}"
+            f"{cls._supplier_location(ap_line.ap_supplier.supplier_site)}{ap_line.invoice_number:<50}"
             f"{line_number}{commit_line_number}"
             f"{cls.format_amount(ap_line.total)}{line_code}{cls._distribution(ap_line.distribution)}{cls.EMPTY:<55}"
             f"{effective_date}{cls.EMPTY:<10}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}"
             f"{cls.EMPTY:<20}{cls.EMPTY:<4}{cls.EMPTY:<30}{cls.EMPTY:<25}{cls.EMPTY:<30}{cls.EMPTY:<8}{cls.EMPTY:<1}"
-            f"{cls._dist_vendor(ap_line.supplier_number)}{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}"
+            f"{cls._dist_vendor(ap_line.ap_supplier.supplier_number)}{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}"
         )
         return ap_line
 
