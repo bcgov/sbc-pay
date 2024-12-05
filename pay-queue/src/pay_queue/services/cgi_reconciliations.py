@@ -335,10 +335,14 @@ def _update_invoice_disbursement_status(
     # This assumes we're only looking at credits.  if credit_or_debit_line == "C"
     if details.line[30:33] == "112":
         _update_partner_disbursement(details.partner_disbursement, DisbursementStatus.REVERSED.value, effective_date)
+        if details.invoice.disbursement_status_code == DisbursementStatus.REVERSED.value:
+            current_app.logger.warning("Invoice disbursement_status_code / disbursement_reversal_date overridden.")
         details.invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
         details.invoice.disbursement_reversal_date = effective_date
     else:
         _update_partner_disbursement(details.partner_disbursement, DisbursementStatus.COMPLETED.value, effective_date)
+        if details.invoice.disbursement_status_code == DisbursementStatus.COMPLETED.value:
+            current_app.logger.warning("Invoice disbursement_status_code / disbursement_date overridden.")
         details.invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
         details.invoice.disbursement_date = effective_date
 
