@@ -102,3 +102,11 @@ class APLine:
             ],
             distribution=distribution,
         )
+
+
+@dataclass
+class SupplierLine:
+    """Mapping for supplier line item."""
+
+    supplier_number: str = None
+    supplier_site: str = None

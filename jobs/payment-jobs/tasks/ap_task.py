@@ -44,7 +44,7 @@ from sentry_sdk import capture_message
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ap import CgiAP
-from tasks.common.dataclasses import APLine
+from tasks.common.dataclasses import APLine, SupplierLine
 
 
 class ApTask(CgiAP):
@@ -132,23 +132,22 @@ class ApTask(CgiAP):
                 )
                 ap_content = f"{ap_content}{cls.get_ap_header(
                     eft_refund.refund_amount, eft_refund.id, eft_refund.created_on,
-                    eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)}"
+                    SupplierLine(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site))}"
                 ap_line = APLine(
                     total=eft_refund.refund_amount,
                     invoice_number=eft_refund.id,
                     line_number=line_count_total + 1,
                 )
                 ap_content = (
-                    f"{ap_content}"
-                    f"{cls.get_ap_invoice_line(ap_line, eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)}"
+                    f"{ap_content}{cls.get_ap_invoice_line(
+                        ap_line, SupplierLine(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site))}"
                 )
                 line_count_total += 2
                 if ap_comment := cls.get_eft_ap_comment(
                     eft_refund.comment,
                     eft_refund.id,
                     eft_refund.short_name_id,
-                    eft_refund.cas_supplier_number,
-                    eft_refund.cas_supplier_site
+                    SupplierLine(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)
                 ):
                     ap_content = f"{ap_content}{ap_comment:<40}"
                     line_count_total += 1

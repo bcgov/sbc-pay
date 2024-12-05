@@ -19,7 +19,7 @@ from flask import current_app
 from pay_api.utils.enums import DisbursementMethod, EjvFileType
 from pay_api.utils.util import get_fiscal_year
 
-from tasks.common.dataclasses import APLine
+from tasks.common.dataclasses import APLine, SupplierLine
 
 from .cgi_ejv import CgiEjv
 
@@ -48,8 +48,7 @@ class CgiAP(CgiEjv):
         )
 
     @classmethod
-    def get_ap_header(cls, total, invoice_number, invoice_date,   # pylint: disable=too-many-arguments
-                      supplier_number: str = None, supplier_site: str = None):
+    def get_ap_header(cls, total, invoice_number, invoice_date, supplier_line: SupplierLine = None):
         """Get AP Invoice Header string."""
         invoice_type = "ST"
         remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
@@ -61,6 +60,9 @@ class CgiAP(CgiEjv):
             DisbursementMethod.CHEQUE.value if cls.ap_type == EjvFileType.REFUND else DisbursementMethod.EFT.value
         )
         term = f"{cls.EMPTY:<50}" if cls.ap_type == EjvFileType.REFUND else f"Immediate{cls.EMPTY:<41}"
+        supplier_number = supplier_line.supplier_number if supplier_line else None
+        supplier_site = supplier_line.supplier_site if supplier_line else None
+
         ap_header = (
             f"{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number(supplier_number)}"
             f"{cls._supplier_location(supplier_site)}{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}"
@@ -71,13 +73,15 @@ class CgiAP(CgiEjv):
         return ap_header
 
     @classmethod
-    def get_ap_invoice_line(cls, ap_line: APLine, supplier_number: str = None, supplier_site: str = None):
+    def get_ap_invoice_line(cls, ap_line: APLine, supplier_line: SupplierLine = None):
         """Get AP Invoice Line string."""
         commit_line_number = f"{cls.EMPTY:<4}"
         # Pad Zeros to four digits. EG. 0001
         line_number = f"{ap_line.line_number:04}"
         effective_date = cls._get_date(datetime.now(tz=timezone.utc))
         line_code = cls._get_line_code(ap_line)
+        supplier_number = supplier_line.supplier_number if supplier_line else None
+        supplier_site = supplier_line.supplier_site if supplier_line else None
         ap_line = (
             f"{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number(supplier_number)}"
             f"{cls._supplier_location(supplier_site)}{ap_line.invoice_number:<50}{line_number}{commit_line_number}"
@@ -124,11 +128,12 @@ class CgiAP(CgiEjv):
         return ap_address
 
     @classmethod
-    def get_eft_ap_comment(cls, comment, refund_id, short_name_id,   # pylint: disable=too-many-arguments
-                           supplier_number, supplier_site):
+    def get_eft_ap_comment(cls, comment, refund_id, short_name_id, supplier_line: SupplierLine = None):
         """Get AP Comment Override. EFT only."""
         line_text = "0001"
         combined_comment = f"{cls.EMPTY:<1}{short_name_id}{cls.EMPTY:<1}-{cls.EMPTY:<1}{comment}"[:40]
+        supplier_number = supplier_line.supplier_number if supplier_line else None
+        supplier_site = supplier_line.supplier_site if supplier_line else None
         ap_comment = (
             f"{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number(supplier_number)}"
             f"{cls._supplier_location(supplier_site)}{refund_id:<50}{line_text}{combined_comment}"
