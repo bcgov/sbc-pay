@@ -44,7 +44,7 @@ from sentry_sdk import capture_message
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ap import CgiAP
-from tasks.common.dataclasses import APLine, SupplierLine
+from tasks.common.dataclasses import APHeader, APLine, APSupplier
 
 
 class ApTask(CgiAP):
@@ -130,24 +130,26 @@ class ApTask(CgiAP):
                 current_app.logger.info(
                     f"Creating refund for EFT Refund {eft_refund.id}, Amount {eft_refund.refund_amount}."
                 )
-                ap_content = f"{ap_content}{cls.get_ap_header(
-                    eft_refund.refund_amount, eft_refund.id, eft_refund.created_on,
-                    SupplierLine(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site))}"
+                ap_header = APHeader(
+                    total=eft_refund.refund_amount,
+                    invoice_number=eft_refund.id,
+                    invoice_date=eft_refund.created_on,
+                    ap_supplier=APSupplier(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)
+                )
+                ap_content = f"{ap_content}{cls.get_ap_header(ap_header)}"
                 ap_line = APLine(
                     total=eft_refund.refund_amount,
                     invoice_number=eft_refund.id,
                     line_number=line_count_total + 1,
+                    ap_supplier=APSupplier(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)
                 )
-                ap_content = (
-                    f"{ap_content}{cls.get_ap_invoice_line(
-                        ap_line, SupplierLine(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site))}"
-                )
+                ap_content = f"{ap_content}{cls.get_ap_invoice_line(ap_line)}"
                 line_count_total += 2
                 if ap_comment := cls.get_eft_ap_comment(
                     eft_refund.comment,
                     eft_refund.id,
                     eft_refund.short_name_id,
-                    SupplierLine(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)
+                    supplier_line=APSupplier(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)
                 ):
                     ap_content = f"{ap_content}{ap_comment:<40}"
                     line_count_total += 1
@@ -189,8 +191,12 @@ class ApTask(CgiAP):
             for rs in routing_slips:
                 current_app.logger.info(f"Creating refund for {rs.number}, Amount {rs.refund_amount}.")
                 refund: RefundModel = RefundModel.find_by_routing_slip_id(rs.id)
-                ap_content = f"{ap_content}{cls.get_ap_header(rs.refund_amount, rs.number,
-                                                              datetime.now(tz=timezone.utc))}"
+                ap_header = APHeader(
+                    total=rs.refund_amount,
+                    invoice_number=rs.number,
+                    invoice_date=datetime.now(tz=timezone.utc)
+                )
+                ap_content = f"{ap_content}{cls.get_ap_header(ap_header)}"
                 ap_line = APLine(total=rs.refund_amount, invoice_number=rs.number, line_number=1)
                 ap_content = f"{ap_content}{cls.get_ap_invoice_line(ap_line)}"
                 ap_content = f"{ap_content}{cls.get_ap_address(refund.details, rs.number)}"
@@ -302,7 +308,12 @@ class ApTask(CgiAP):
                 batch_total += disbursement_invoice_total
                 if disbursement_invoice_total == 0:
                     continue
-                ap_content = f"{ap_content}{cls.get_ap_header(disbursement_invoice_total, inv.id, inv.created_on)}"
+                ap_header = APHeader(
+                    total=disbursement_invoice_total,
+                    invoice_number=inv.id,
+                    invoice_date=inv.created_on
+                )
+                ap_content = f"{ap_content}{cls.get_ap_header(ap_header)}"
                 control_total += 1
                 line_number: int = 0
                 for line_item in inv.payment_line_items:
