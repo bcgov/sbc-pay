@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from sqlite3 import Date
 from typing import List, Optional
@@ -86,7 +86,7 @@ class APHeader:
     total: float
     invoice_number: str
     invoice_date: Date = None
-    ap_supplier: APSupplier = APSupplier()
+    ap_supplier: APSupplier = field(default_factory=APSupplier)
 
 
 @dataclass
@@ -98,7 +98,7 @@ class APLine:
     line_number: int
     is_reversal: Optional[bool] = None
     distribution: Optional[str] = None
-    ap_supplier: APSupplier = APSupplier()
+    ap_supplier: APSupplier = field(default_factory=APSupplier)
 
     @classmethod
     def from_invoice_and_line_item(
