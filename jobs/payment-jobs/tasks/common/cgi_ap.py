@@ -48,7 +48,8 @@ class CgiAP(CgiEjv):
         )
 
     @classmethod
-    def get_ap_header(cls, total, invoice_number, invoice_date, supplier_number: str = None, supplier_site: str = None):
+    def get_ap_header(cls, total, invoice_number, invoice_date,   # pylint: disable=too-many-arguments
+                      supplier_number: str = None, supplier_site: str = None):
         """Get AP Invoice Header string."""
         invoice_type = "ST"
         remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
@@ -123,7 +124,8 @@ class CgiAP(CgiEjv):
         return ap_address
 
     @classmethod
-    def get_eft_ap_comment(cls, comment, refund_id, short_name_id, supplier_number, supplier_site):
+    def get_eft_ap_comment(cls, comment, refund_id, short_name_id,   # pylint: disable=too-many-arguments
+                           supplier_number, supplier_site):
         """Get AP Comment Override. EFT only."""
         line_text = "0001"
         combined_comment = f"{cls.EMPTY:<1}{short_name_id}{cls.EMPTY:<1}-{cls.EMPTY:<1}{comment}"[:40]
