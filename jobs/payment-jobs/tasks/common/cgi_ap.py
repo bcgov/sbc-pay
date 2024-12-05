@@ -184,15 +184,13 @@ class CgiAP(CgiEjv):
     @classmethod
     def _supplier_location(cls, supplier_site: str = None):
         """Return location."""
-        if supplier_site:
-            return f"{supplier_site:<3}"
         match cls.ap_type:
             case EjvFileType.NON_GOV_DISBURSEMENT:
                 return f"{current_app.config.get('BCA_SUPPLIER_LOCATION'):<3}"
             case EjvFileType.REFUND:
                 return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
             case EjvFileType.EFT_REFUND:
-                return f"{current_app.config.get('EFT_AP_SUPPLIER_LOCATION'):<3}"
+                return f"{supplier_site:<3}"
             case _:
                 raise RuntimeError("ap_type not selected.")
 
