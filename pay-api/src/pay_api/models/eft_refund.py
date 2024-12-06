@@ -59,7 +59,7 @@ class EFTRefund(Audit):
     }
 
     cas_supplier_number = db.Column(db.String(), nullable=False)
-    cas_supplier_site = db.Column(db.String(), nullable=False)
+    cas_supplier_site = db.Column(db.String(), nullable=True)
     comment = db.Column(db.String(), nullable=False)
     decline_reason = db.Column(db.String(), nullable=True)
     created_by = db.Column("created_by", db.String(100), nullable=True)
