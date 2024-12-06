@@ -28,7 +28,7 @@ def upgrade():
         "eft_short_names_history", sa.Column("cas_supplier_site", sa.String(25), nullable=True)
     )
     op.add_column(
-        "eft_refunds", sa.Column("cas_supplier_site", sa.String(25), nullable=False)
+        "eft_refunds", sa.Column("cas_supplier_site", sa.String(25), nullable=True)
     )
 
 
