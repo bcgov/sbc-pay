@@ -22,7 +22,6 @@ from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
-from sqlalchemy.sql import select
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
