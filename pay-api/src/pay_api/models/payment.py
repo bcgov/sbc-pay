@@ -289,7 +289,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 InvoiceReference.reference_number,
                 InvoiceReference.status_code,
             )
-            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+            .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
             .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             .outerjoin(
                 FeeSchedule,
@@ -379,17 +379,20 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_count(cls, auth_account_id: str, search_filter: Dict):
         """Slimmed downed version for count (less joins)."""
-        query = cls.generate_base_transaction_query()
-        query = cls.filter(query, auth_account_id, search_filter)
+        query = db.session.query(Invoice.id)
+        query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
         count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict):
+    def filter(cls, query, auth_account_id: str, search_filter: Dict, include_joins=False):
         """For filtering queries."""
+        account_name = search_filter.get("accountName", None)
+        if (auth_account_id or account_name) and include_joins:
+            query = query.join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         if auth_account_id:
             query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
-        if account_name := search_filter.get("accountName", None):
+        if account_name:
             query = query.filter(PaymentAccount.name.ilike(f"%{account_name}%"))
         if status_code := search_filter.get("statusCode", None):
             query = query.filter(Invoice.invoice_status_code == status_code)
@@ -408,11 +411,13 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if invoice_id := search_filter.get("id", None):
             query = query.filter(cast(Invoice.id, String).like(f"%{invoice_id}%"))
         if invoice_number := search_filter.get("invoiceNumber", None):
+            if include_joins:
+                query = query.join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
             query = query.filter(InvoiceReference.invoice_number.ilike(f"%{invoice_number}%"))
 
         query = cls.filter_corp_type(query, search_filter)
         query = cls.filter_payment(query, search_filter)
-        query = cls.filter_details(query, search_filter)
+        query = cls.filter_details(query, search_filter, include_joins)
         query = cls.filter_date(query, search_filter)
         return query
 
@@ -470,9 +475,13 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query
 
     @classmethod
-    def filter_details(cls, query, search_filter: dict):
+    def filter_details(cls, query, search_filter: dict, include_joins=False):
         """Filter by details."""
-        if line_item := search_filter.get("lineItems", None):
+        line_item = search_filter.get("lineItems", None)
+        line_item_or_details = search_filter.get("lineItemsAndDetails", None)
+        if (line_item or line_item_or_details) and include_joins:
+            query = query.join(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+        if line_item:
             query = query.filter(PaymentLineItem.description.ilike(f"%{line_item}%"))
         if details := search_filter.get("details", None):
             query = query.filter(
@@ -485,7 +494,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     ),
                 )
             )
-        if line_item_or_details := search_filter.get("lineItemsAndDetails", None):
+        if line_item_or_details:
             query = query.filter(
                 or_(
                     PaymentLineItem.description.ilike(f"%{line_item_or_details}%"),
@@ -505,9 +514,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def generate_subquery(cls, auth_account_id, search_filter, limit, page):
         """Generate subquery for invoices, used for pagination."""
-        subquery = cls.generate_base_transaction_query()
+        subquery = db.session.query(Invoice.id)
         subquery = (
-            cls.filter(subquery, auth_account_id, search_filter)
+            cls.filter(subquery, auth_account_id, search_filter, include_joins=True)
             .with_entities(Invoice.id)
             .group_by(Invoice.id)
             .order_by(Invoice.id.desc())
