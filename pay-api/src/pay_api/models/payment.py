@@ -252,9 +252,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Generate a base query."""
         return (
             db.session.query(Invoice)
-            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-            .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            .outerjoin(
+            .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+            .join(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            .join(
                 FeeSchedule,
                 FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
             )
@@ -290,6 +290,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     PaymentLineItem.description,
                     PaymentLineItem.gst,
                     PaymentLineItem.pst,
+                    PaymentLineItem.service_fees,
+                    PaymentLineItem.total
                 )
                 .contains_eager(PaymentLineItem.fee_schedule)
                 .load_only(FeeSchedule.filing_type_code),
@@ -297,6 +299,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     PaymentAccount.auth_account_id,
                     PaymentAccount.name,
                     PaymentAccount.billable,
+                    PaymentAccount.branch_name
                 ),
                 contains_eager(Invoice.references).load_only(
                     InvoiceReference.invoice_number,
@@ -328,7 +331,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
             query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
-            result_future = executor.submit(db.session.query(Invoice).from_statement(query).all)
+            result_future = executor.submit(query.all)
             count = count_future.result()
             result = result_future.result()
             # If maximum number of records is provided, return it as total
