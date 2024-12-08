@@ -381,7 +381,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Slimmed downed version for count (less joins)."""
         query = db.session.query(Invoice.id)
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
-        count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
+        count = query.group_by(Invoice.id).count()
         return count
 
     @classmethod
@@ -517,7 +517,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         subquery = db.session.query(Invoice.id)
         subquery = (
             cls.filter(subquery, auth_account_id, search_filter, include_joins=True)
-            .with_entities(Invoice.id)
             .group_by(Invoice.id)
             .order_by(Invoice.id.desc())
         )
