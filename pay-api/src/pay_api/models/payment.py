@@ -431,8 +431,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             payment_account_id = (
                 db.session.query(PaymentAccount.id).filter(PaymentAccount.auth_account_id == auth_account_id).scalar()
             )
-            if payment_account_id:
-                query = query.filter(Invoice.payment_account_id == payment_account_id)
+            query = query.filter(Invoice.payment_account_id == payment_account_id or -1)
         if account_name:
             if include_joins:
                 query = query.join(PaymentAccount, PaymentAccount.id == Invoice.payment_account_id)
