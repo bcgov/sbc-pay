@@ -19,9 +19,9 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_
+from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql import select
 
 from pay_api.exceptions import BusinessException
@@ -252,50 +252,59 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     def generate_base_transaction_query(cls):
         """Generate a base query."""
         return (
-            db.session.query(
-                Invoice.id,
-                Invoice.payment_account_id,
-                Invoice.corp_type_code,
-                Invoice.created_on,
-                Invoice.payment_date,
-                Invoice.refund_date,
-                Invoice.invoice_status_code,
-                Invoice.total,
-                Invoice.service_fees,
-                Invoice.paid,
-                Invoice.refund,
-                Invoice.folio_number,
-                Invoice.created_name,
-                Invoice.invoice_status_code,
-                Invoice.payment_method_code,
-                Invoice.details,
-                Invoice.business_identifier,
-                Invoice.created_by,
-                Invoice.filing_id,
-                Invoice.bcol_account,
-                Invoice.disbursement_date,
-                Invoice.disbursement_reversal_date,
-                Invoice.overdue_date,
-                PaymentLineItem.id,
-                PaymentLineItem.description,
-                PaymentLineItem.gst,
-                PaymentLineItem.pst,
-                PaymentAccount.id,
-                PaymentAccount.auth_account_id,
-                PaymentAccount.name,
-                PaymentAccount.billable,
-                InvoiceReference.id,
-                InvoiceReference.invoice_number,
-                InvoiceReference.reference_number,
-                InvoiceReference.status_code,
-            )
-            .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+            db.session.query(Invoice)
+            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
             .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             .outerjoin(
                 FeeSchedule,
                 FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
             )
             .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+            .options(
+                lazyload("*"),
+                load_only(
+                    Invoice.id,
+                    Invoice.corp_type_code,
+                    Invoice.created_on,
+                    Invoice.payment_date,
+                    Invoice.refund_date,
+                    Invoice.invoice_status_code,
+                    Invoice.total,
+                    Invoice.service_fees,
+                    Invoice.paid,
+                    Invoice.refund,
+                    Invoice.folio_number,
+                    Invoice.created_name,
+                    Invoice.invoice_status_code,
+                    Invoice.payment_method_code,
+                    Invoice.details,
+                    Invoice.business_identifier,
+                    Invoice.created_by,
+                    Invoice.filing_id,
+                    Invoice.bcol_account,
+                    Invoice.disbursement_date,
+                    Invoice.disbursement_reversal_date,
+                    Invoice.overdue_date,
+                ),
+                contains_eager(Invoice.payment_line_items)
+                .load_only(
+                    PaymentLineItem.description,
+                    PaymentLineItem.gst,
+                    PaymentLineItem.pst,
+                )
+                .contains_eager(PaymentLineItem.fee_schedule)
+                .load_only(FeeSchedule.filing_type_code),
+                contains_eager(Invoice.payment_account).load_only(
+                    PaymentAccount.auth_account_id,
+                    PaymentAccount.name,
+                    PaymentAccount.billable,
+                ),
+                contains_eager(Invoice.references).load_only(
+                    InvoiceReference.invoice_number,
+                    InvoiceReference.reference_number,
+                    InvoiceReference.status_code,
+                ),
+            )
         )
 
     @classmethod
@@ -381,19 +390,13 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Slimmed downed version for count (less joins)."""
         query = db.session.query(Invoice.id)
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
-        count = query.group_by(Invoice.id).count()
+        count = query.distinct().count()
         return count
 
     @classmethod
     def filter(cls, query, auth_account_id: str, search_filter: Dict, include_joins=False):
         """For filtering queries."""
-        account_name = search_filter.get("accountName", None)
-        if (auth_account_id or account_name) and include_joins:
-            query = query.join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-        if auth_account_id:
-            query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
-        if account_name:
-            query = query.filter(PaymentAccount.name.ilike(f"%{account_name}%"))
+        query = cls.filter_payment_account(query, auth_account_id, search_filter, include_joins)
         if status_code := search_filter.get("statusCode", None):
             query = query.filter(Invoice.invoice_status_code == status_code)
         if search_filter.get("status", None):
@@ -419,6 +422,22 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         query = cls.filter_payment(query, search_filter)
         query = cls.filter_details(query, search_filter, include_joins)
         query = cls.filter_date(query, search_filter)
+        return query
+
+    @classmethod
+    def filter_payment_account(cls, query, auth_account_id, search_filter: dict, include_joins=False):
+        """Use subquery to look for payment accounts ahead of time, much faster and easier."""
+        account_name = search_filter.get("accountName", None)
+        if auth_account_id:
+            payment_account_id = (
+                db.session.query(PaymentAccount.id).filter(PaymentAccount.auth_account_id == auth_account_id).scalar()
+            )
+            if payment_account_id:
+                query = query.filter(Invoice.payment_account_id == payment_account_id)
+        if account_name:
+            if include_joins:
+                query = query.join(PaymentAccount, PaymentAccount.id == Invoice.payment_account_id)
+            query = query.filter(PaymentAccount.name.ilike(f"%{account_name}%"))
         return query
 
     @classmethod
@@ -517,7 +536,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         subquery = db.session.query(Invoice.id)
         subquery = (
             cls.filter(subquery, auth_account_id, search_filter, include_joins=True)
-            .group_by(Invoice.id)
+            .distinct()
             .order_by(Invoice.id.desc())
         )
         if limit:
