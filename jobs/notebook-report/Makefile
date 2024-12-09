@@ -42,13 +42,6 @@ clean-test: ## clean test files
 	rm -f .coverage
 	rm -fr htmlcov/
 
-build-req: clean ## Upgrade requirements
-	test -f venv/bin/activate || python3.8 -m venv  $(CURRENT_ABS_DIR)/venv ;\
-	. venv/bin/activate ;\
-	pip install --upgrade pip ;\
-	pip install -Ur requirements/prod.txt ;\
-	pip freeze | sort > requirements.txt
-
 install: clean
 	pip install poetry ;\
 	poetry config installer.max-workers 1
