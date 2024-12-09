@@ -291,7 +291,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     PaymentLineItem.gst,
                     PaymentLineItem.pst,
                     PaymentLineItem.service_fees,
-                    PaymentLineItem.total
+                    PaymentLineItem.total,
                 )
                 .contains_eager(PaymentLineItem.fee_schedule)
                 .load_only(FeeSchedule.filing_type_code),
@@ -299,7 +299,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     PaymentAccount.auth_account_id,
                     PaymentAccount.name,
                     PaymentAccount.billable,
-                    PaymentAccount.branch_name
+                    PaymentAccount.branch_name,
                 ),
                 contains_eager(Invoice.references).load_only(
                     InvoiceReference.invoice_number,
@@ -390,7 +390,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Slimmed downed version for count (less joins)."""
         query = db.session.query(Invoice.id)
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
-        count = query.group_by(Invoice.id).count()
+        count = query.distinct(Invoice.id).count()
         return count
 
     @classmethod
@@ -505,10 +505,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(
                 or_(
                     func.jsonb_path_exists(
-                        Invoice.details, cast(f'$[*] ? (@.value like_regex "(?i).*:details.*")', JSONPath())
+                        Invoice.details, cast(f'$[*] ? (@.value like_regex "(?i).*{details}.*")', JSONPath())
                     ),
                     func.jsonb_path_exists(
-                        Invoice.details, cast(f'$[*] ? (@.label like_regex "(?i).*:details.*")', JSONPath())
+                        Invoice.details, cast(f'$[*] ? (@.label like_regex "(?i).*{details}.*")', JSONPath())
                     ),
                 )
             )

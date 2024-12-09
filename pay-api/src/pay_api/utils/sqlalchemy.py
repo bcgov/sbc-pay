@@ -6,6 +6,8 @@ from sqlalchemy.types import UserDefinedType
 class JSONPath(UserDefinedType):
     """Used to define json path when casting."""
 
+    cache_ok = True
+
     @property
     def python_type(self):
         """Return the python type."""
