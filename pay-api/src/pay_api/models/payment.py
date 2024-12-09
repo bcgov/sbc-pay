@@ -341,16 +341,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             # If maximum number of records is provided, set the page with that number
             sub_query = cls.generate_subquery(auth_account_id, search_filter, max_no_records, page=None)
             result, count = (
-                db.session.query(Invoice)
-                .from_statement(query.filter(Invoice.id.in_(sub_query.subquery().select())))
-                .all(),
+                query.filter(Invoice.id.in_(sub_query.subquery().select())).all(),
                 sub_query.count(),
             )
         else:
             count = cls.get_count(auth_account_id, search_filter)
             if count > 60000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
-            result = db.session.query(Invoice).from_statement(query).all()
+            result = query.all()
         return result, count
 
     @classmethod
