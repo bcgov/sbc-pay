@@ -31,7 +31,7 @@ serialPipeline:
       service-name: "pay-api-dev"
       container-name: "pay-api-dev"
       cloudsql-instances: "gtksf3-dev:northamerica-northeast1:pay-db-dev"
-      service-account: "sa-job@gtksf3-dev.iam.gserviceaccount.com"
+      service-account: "sa-api@gtksf3-dev.iam.gserviceaccount.com"
  - targetId: gtksf3-test
    profiles: [test]
    strategy:
