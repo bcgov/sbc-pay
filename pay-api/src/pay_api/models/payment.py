@@ -390,7 +390,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Slimmed downed version for count (less joins)."""
         query = db.session.query(Invoice.id)
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
-        count = query.distinct().count()
+        count = query.group_by(Invoice.id).count()
         return count
 
     @classmethod
@@ -505,27 +505,27 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(
                 or_(
                     func.jsonb_path_exists(
-                        Invoice.details, cast('$[*] ? (@.value like_regex "(?i).*:details.*")', JSONPath())
+                        Invoice.details, cast(f'$[*] ? (@.value like_regex "(?i).*:details.*")', JSONPath())
                     ),
                     func.jsonb_path_exists(
-                        Invoice.details, cast('$[*] ? (@.label like_regex "(?i).*:details.*")', JSONPath())
+                        Invoice.details, cast(f'$[*] ? (@.label like_regex "(?i).*:details.*")', JSONPath())
                     ),
                 )
-            ).params(details=f'%{details}%')
+            )
         if line_item_or_details:
             query = query.filter(
                 or_(
                     PaymentLineItem.description.ilike(f"%{line_item_or_details}%"),
                     func.jsonb_path_exists(
                         Invoice.details,
-                        cast('$[*] ? (@.value like_regex "(?i).*:line_item_or_details.*")', JSONPath()),
+                        cast(f'$[*] ? (@.value like_regex "(?i).*{line_item_or_details}.*")', JSONPath()),
                     ),
                     func.jsonb_path_exists(
                         Invoice.details,
-                        cast('$[*] ? (@.label like_regex "(?i).*:line_item_or_details.*")', JSONPath()),
+                        cast(f'$[*] ? (@.label like_regex "(?i).*{line_item_or_details}.*")', JSONPath()),
                     ),
                 )
-            ).params(line_item_or_details=f'%{line_item_or_details}%')
+            )
 
         return query
 
