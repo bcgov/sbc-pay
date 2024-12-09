@@ -388,9 +388,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_count(cls, auth_account_id: str, search_filter: Dict):
         """Slimmed downed version for count (less joins)."""
-        query = db.session.query(Invoice.id)
+        query = db.session.query(func.distinct(Invoice.id))
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
-        count = query.distinct(Invoice.id).count()
+        count = query.count()
         return count
 
     @classmethod
