@@ -15,8 +15,4 @@
 
 from setuptools import find_packages, setup
 
-
-setup(
-    name='pay-notebook-report',
-    packages=find_packages()
-)
+setup(name="pay-notebook-report", packages=find_packages())
