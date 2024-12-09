@@ -18,7 +18,7 @@ license: ## Verify source code license headers.
 #################################################################################
 # COMMANDS -- Setup                                                             #
 #################################################################################
-setup: install install-dev ## Setup the project
+setup: install ## Setup the project
 
 clean: clean-build clean-pyc clean-test ## Clean the project
 	rm -rf venv/
@@ -49,16 +49,10 @@ build-req: clean ## Upgrade requirements
 	pip install -Ur requirements/prod.txt ;\
 	pip freeze | sort > requirements.txt
 
-install: clean ## Install python virtrual environment
-	test -f venv/bin/activate || python3.8 -m venv  $(CURRENT_ABS_DIR)/venv ;\
-	. venv/bin/activate ;\
-	pip install --upgrade pip ;\
-	pip install -Ur requirements.txt
-
-install-dev: ## Install local application
-	. venv/bin/activate ; \
-	pip install -Ur requirements/dev.txt; \
-	pip install -e .
+install: clean
+	pip install poetry ;\
+	poetry config installer.max-workers 1
+	poetry install
 
 #################################################################################
 # COMMANDS - CI                                                                 #
