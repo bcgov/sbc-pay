@@ -62,7 +62,6 @@ class EFTRefund(Audit):
     cas_supplier_site = db.Column(db.String(), nullable=True)
     comment = db.Column(db.String(), nullable=False)
     decline_reason = db.Column(db.String(), nullable=True)
-    created_by = db.Column("created_by", db.String(100), nullable=True)
     created_on = db.Column("created_on", db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
     disbursement_date = db.Column(
         "disbursement_date", db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc)
