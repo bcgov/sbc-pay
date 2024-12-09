@@ -20,6 +20,7 @@ def get_issues_from_repo(target, latest_release_only=False):
                 issue_ids.append(re.search(r'\d+-', l).group(0).replace('-',''))
         if latest_release_only:
             break
+    issue_ids = list(set(issue_ids))
     return issue_ids, release_names
 
 def add_issues_to_release(issue_id: int, zenhub_release_hash: str):
