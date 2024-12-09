@@ -125,6 +125,9 @@ class EFTShortnameSummarySchema:
     id: int
     short_name: str
     short_name_type: str
+    cas_supplier_number: str
+    cas_supplier_site: str
+    email: str
     last_payment_received_date: datetime
     credits_remaining: Decimal
     linked_accounts_count: int
@@ -140,6 +143,9 @@ class EFTShortnameSummarySchema:
             id=row.id,
             short_name=row.short_name,
             short_name_type=row.type,
+            cas_supplier_number=getattr(row, "cas_supplier_number", None),
+            cas_supplier_site=getattr(row, "cas_supplier_site", None),
+            email=getattr(row, "email", None),
             last_payment_received_date=getattr(row, "last_payment_received_date", None),
             credits_remaining=getattr(row, "credits_remaining", None),
             linked_accounts_count=getattr(row, "linked_accounts_count", None),

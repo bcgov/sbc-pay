@@ -971,9 +971,11 @@ def factory_eft_refund(
     comment="test comment",
     status="PENDING",
     decline_reason=None,
+    created_by="TEST_USER",
 ):
     """Return an EFT Refund."""
     return EFTRefund(
+        created_by=created_by,
         decline_reason=decline_reason,
         short_name_id=short_name_id,
         refund_amount=refund_amount,

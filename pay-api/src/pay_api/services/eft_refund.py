@@ -195,7 +195,8 @@ class EFTRefund:
             raise BusinessException(Error.INVALID_REFUND)
 
     @staticmethod
-    def update_shortname_refund(refund_id: int, data: EFTShortNameRefundPatchRequest) -> EFTRefundModel:
+    @user_context
+    def update_shortname_refund(refund_id: int, data: EFTShortNameRefundPatchRequest, **kwargs) -> EFTRefundModel:
         """Update the refund status."""
         refund = EFTRefundModel.find_by_id(refund_id)
         if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
@@ -225,6 +226,9 @@ class EFTRefund:
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
                 send_email(expense_authority_recipients, subject, body)
             case EFTShortnameRefundStatus.APPROVED.value:
+                if kwargs["user"].user_name == refund.created_by:
+                    raise BusinessException(Error.EFT_REFUND_SAME_USER_APPROVAL_FORBIDDEN)
+
                 history = EFTHistoryModel.find_by_eft_refund_id(refund.id)[0]
                 history.transaction_type = EFTHistoricalTypes.SN_REFUND_APPROVED.value
                 history.save()

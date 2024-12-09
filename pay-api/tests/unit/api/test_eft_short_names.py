@@ -1118,6 +1118,15 @@ def test_get_shortname_refund(session, client, jwt, query_string_factory, test_n
     "test_name, payload, role",
     [
         (
+            "forbidden_approved_refund",
+            EFTShortNameRefundPatchRequest(
+                comment="Test comment",
+                decline_reason="Test reason",
+                status=EFTShortnameRefundStatus.APPROVED.value,
+            ).to_dict(),
+            Role.EFT_REFUND_APPROVER.value,
+        ),
+        (
             "valid_approved_refund",
             EFTShortNameRefundPatchRequest(
                 comment="Test comment",
@@ -1172,10 +1181,15 @@ def test_patch_shortname_refund(
         remaining_amount=90,
     ).save()
     eft_history = factory_eft_history(short_name.id, refund.id, 10, 10)
+    user_name = "TEST_USER"
     if test_name == "bad_transition":
         refund.status = EFTShortnameRefundStatus.APPROVED.value
         refund.save()
-    token = jwt.create_jwt(get_claims(roles=[role]), token_header)
+    elif test_name == "valid_approved_refund":
+        refund.created_by = "OTHER_USER"
+        refund.save()
+
+    token = jwt.create_jwt(get_claims(roles=[role], username=user_name), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.patch(
         f"/api/v1/eft-shortnames/shortname-refund/{refund.id}",
@@ -1183,6 +1197,8 @@ def test_patch_shortname_refund(
         json=payload,
     )
     match test_name:
+        case "forbidden_approved_refund":
+            assert rv.status_code == 403
         case "unauthorized":
             assert rv.status_code == 401
         case "bad_transition" | "invalid_patch_refund":
