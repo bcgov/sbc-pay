@@ -50,18 +50,30 @@ install: clean
 #################################################################################
 # COMMANDS - CI                                                                 #
 #################################################################################
-ci: pylint flake8 test ## CI flow
+ci: isort-ci black-ci lint flake8 test ## CI flow
+
+isort: 
+	poetry run isort .
+
+isort-ci:
+	poetry run isort --check .
+
+black: ## Linting with black
+	poetry run black .
+
+black-ci:
+	poetry run black --check .
 
 pylint: ## Linting with pylint
-	. venv/bin/activate && pylint --rcfile=setup.cfg  notebookreport.py
+	poetry run pylint notebookreport.py
 
 flake8: ## Linting with flake8
-	. venv/bin/activate && flake8 notebookreport.py
+	poetry run flake8 notebookreport.py
 
-lint: pylint flake8 ## run all lint type scripts
+lint: isort black pylint flake8 ## run all lint type scripts
 
 test: ## Unit testing
-	. venv/bin/activate && pytest
+	poetry run pytest
 
 mac-cov: local-test ## Run the coverage report and display in a browser window (mac)
 	open -a "Google Chrome" htmlcov/index.html
