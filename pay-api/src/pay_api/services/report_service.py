@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to manage report generation."""
 from dataclasses import dataclass
+from typing import Optional
 
 from flask import current_app
 
@@ -29,8 +30,8 @@ class ReportRequest:
     content_type: str
     report_name: str
     template_name: str
-    template_vars: dict
     populate_page_number: bool
+    template_vars: Optional[dict] = None
 
 
 class ReportService:
@@ -42,7 +43,7 @@ class ReportService:
         return {
             "reportName": request.report_name,
             "templateName": request.template_name,
-            "templateVars": request.template_vars,
+            "templateVars": request.template_vars or {},
             "populatePageNumber": request.populate_page_number,
         }
 
