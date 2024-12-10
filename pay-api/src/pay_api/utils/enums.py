@@ -450,3 +450,15 @@ class SuspensionReasonCodes(Enum):
 
     OVERDUE_EFT = "OVERDUE_EFT"
     PAD_NSF = "PAD_NSF"
+
+
+class DocumentTemplate(Enum):
+    """Document Templates."""
+
+    EFT_INSTRUCTIONS = "eft_instructions"
+
+
+class DocumentType(Enum):
+    """Document Types."""
+
+    EFT_INSTRUCTIONS = "eftInstructions"
