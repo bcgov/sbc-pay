@@ -7,6 +7,7 @@ load_dotenv(find_dotenv())
 
 
 class Config(object):
+    """Class configuring our environment variables in one defined place."""
     PROJECT_ROOT = os.getcwd()
     APP_FILE = os.getenv("APP_FILE", "")
     SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
@@ -23,8 +24,11 @@ class Config(object):
     WEEKLY_REPORT_DATES = os.getenv("WEEKLY_REPORT_DATES", "[1]")
     MONTHLY_REPORT_DATES = os.getenv("MONTHLY_REPORT_DATES", "[1]")
     PARTNER_CODES = os.getenv("PARTNER_CODES", "CSO,VS,RPT,ESRA")
+    REPORT_API_URL = os.getenv("REPORT_API_URL", "") + os.getenv("REPORT_API_VERSION", "/api/v1")
+    NOTEBOOK_SERVICE_ACCOUNT_ID = os.getenv("NOTEBOOK_SERVICE_ACCOUNT_ID", "")
+    NOTEBOOK_SERVICE_ACCOUNT_SECRET = os.getenv("NOTEBOOK_SERVICE_ACCOUNT_SECRET", "")
+    JWT_OIDC_ISSUER = os.getenv("JWT_OIDC_ISSUER", "")
 
-    # POSTGRESQL
     PAY_USER = os.getenv("PAY_USER", "")
     PAY_PASSWORD = os.getenv("PAY_PASSWORD", "")
     PAY_DB_NAME = os.getenv("PAY_DB_NAME", "")
