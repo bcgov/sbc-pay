@@ -100,6 +100,7 @@ def process_email_attachments(filenames, message):
             f"attachment; filename= {file}",
         )
         file = os.path.join(os.getcwd(), r"data/") + file
+        print(os.listdir(os.path.join(os.getcwd(), r"data/")))
         with open(file, "rb") as attachment:
             part.set_payload(attachment.read())
         encoders.encode_base64(part)
