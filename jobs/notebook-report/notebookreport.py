@@ -83,7 +83,6 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):
     message.attach(MIMEText("Please see the attachment(s).", "plain"))
     process_email_attachments(filenames, message)
 
-    return
     message["Subject"] = subject
     server = smtplib.SMTP(Config.EMAIL_SMTP)
     email_list = recipients.strip("][").split(", ")
