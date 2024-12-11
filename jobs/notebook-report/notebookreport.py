@@ -83,6 +83,7 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):
     message.attach(MIMEText("Please see the attachment(s).", "plain"))
     process_email_attachments(filenames, message)
 
+    return
     message["Subject"] = subject
     server = smtplib.SMTP(Config.EMAIL_SMTP)
     email_list = recipients.strip("][").split(", ")
@@ -101,8 +102,6 @@ def process_email_attachments(filenames, message):
             f"attachment; filename= {file}",
         )
         file = os.path.join(os.getcwd(), r"data/") + file
-        print('attaching file: ', file)
-        print(os.listdir(os.path.join(os.getcwd(), r"data/")))
         with open(file, "rb") as attachment:
             part.set_payload(attachment.read())
         encoders.encode_base64(part)
@@ -127,7 +126,7 @@ def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_cod
         logging.info("Processing daily notebooks for partner: %s", partner_code)
         execute_notebook(notebookdirectory, data_dir, partner_code)
 
-    print(f'Monthly report dates: {monthly_report_dates}')
+    logging.info(f'Monthly report dates: {monthly_report_dates}')
     if notebookdirectory == "monthly" and today in monthly_report_dates:
         logging.info("Processing monthly notebooks for partner: %s", partner_code)
         execute_notebook(notebookdirectory, data_dir, partner_code, is_monthly=True)
