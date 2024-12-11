@@ -7,7 +7,7 @@ import os
 import smtplib
 import sys
 import traceback
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -31,7 +31,6 @@ def create_app(config=Config):
     """Create app."""
     app = Flask(__name__)
     app.config.from_object(config)
-    # db.init_app(app)
     app.app_context().push()
     current_app.logger.debug("created the Flask App and pushed the App Context")
 
@@ -185,14 +184,12 @@ def get_partner_recipients(file_processing: str, partner_code: str) -> str:
 
 
 if __name__ == "__main__":
-    start_time = datetime.utcnow()
+    start_time = datetime.now(tz=timezone.utc)
 
     temp_dir = os.path.join(os.getcwd(), r"data/")
-    # Check if the subfolders for notebooks exist, and create them if they don't
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
 
-    # Current partner codes to execute notebooks on
     partner_codes = Config.PARTNER_CODES.split(",")
 
     # Process notebooks for each partner
@@ -205,6 +202,6 @@ if __name__ == "__main__":
     # process weekly pay notebook separate from partner notebooks
     process_notebooks("weekly", temp_dir)
 
-    end_time = datetime.utcnow()
+    end_time = datetime.now(tz=timezone.utc)
     logging.info("job - jupyter notebook report completed in: %s", end_time - start_time)
     sys.exit()
