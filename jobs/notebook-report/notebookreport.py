@@ -71,9 +71,10 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):
         elif "reconciliation_summary" in file_processing:
             year_month = datetime.strftime(datetime.now() - timedelta(1), "%Y-%m")
             subject = "Monthly Reconciliation Stats " + year_month + ext
+            if partner_code in Config.PARTNER_CODES_DISBURSEMENT.split(","):
+                filenames.append(f"{partner_code}_monthly_reconciliation_disbursed_" + year_month + ".csv")
             filenames = [
                 f"{partner_code}_monthly_reconciliation_summary_" + year_month + ".csv",
-                f"{partner_code}_monthly_reconciliation_disbursed_" + year_month + ".csv",
                 f"{partner_code}_revenue_letter.pdf",
             ]
             recipients = get_partner_recipients(file_processing, partner_code)
@@ -100,6 +101,7 @@ def process_email_attachments(filenames, message):
             f"attachment; filename= {file}",
         )
         file = os.path.join(os.getcwd(), r"data/") + file
+        print('attaching file: ', file)
         print(os.listdir(os.path.join(os.getcwd(), r"data/")))
         with open(file, "rb") as attachment:
             part.set_payload(attachment.read())
@@ -125,18 +127,9 @@ def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_cod
         logging.info("Processing daily notebooks for partner: %s", partner_code)
         execute_notebook(notebookdirectory, data_dir, partner_code)
 
-    if notebookdirectory == "monthly" and today in monthly_report_dates:
+    if notebookdirectory == "monthly":
         logging.info("Processing monthly notebooks for partner: %s", partner_code)
         execute_notebook(notebookdirectory, data_dir, partner_code, is_monthly=True)
-
-    # Ensure both daily and monthly run on the 1st of the month
-    if today == 1:
-        if notebookdirectory == "daily":
-            logging.info("Also processing daily notebooks on the 1st of the month for partner: %s", partner_code)
-            execute_notebook(notebookdirectory, data_dir, partner_code)
-        elif notebookdirectory == "monthly":
-            logging.info("Also processing monthly notebooks on the 1st of the month for partner: %s", partner_code)
-            execute_notebook(notebookdirectory, data_dir, partner_code, is_monthly=True)
 
 
 def process_notebooks(notebookdirectory: str, data_dir: str):
