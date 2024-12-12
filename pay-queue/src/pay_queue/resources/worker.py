@@ -15,6 +15,7 @@
 
 import dataclasses
 import json
+import traceback
 from http import HTTPStatus
 
 from flask import Blueprint, current_app, request
@@ -57,7 +58,7 @@ def worker():
             current_app.logger.warning("Invalid queue message type: %s", ce.type)
 
         return {}, HTTPStatus.OK
-    except Exception:  # NOQA # pylint: disable=broad-except
+    except Exception as e:  # NOQA # pylint: disable=broad-except
         # Catch Exception so that any error is still caught and the message is removed from the queue
-        current_app.logger.error("Error processing event:", exc_info=True)
+        current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
         return {}, HTTPStatus.OK
