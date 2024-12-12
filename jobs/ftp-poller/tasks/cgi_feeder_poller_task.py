@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage PAYBC services."""
+import traceback
 from typing import List
 
 from flask import current_app
@@ -65,7 +66,7 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
                         )
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error(e)
+                current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
 
     @classmethod
     def _move_file_to_backup(cls, sftp_client, backup_file_list):

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage PAYBC services."""
+import traceback
 from typing import List
 
 from flask import current_app
@@ -53,7 +54,7 @@ class CASPollerFtpTask:  # pylint:disable=too-few-public-methods
                     CASPollerFtpTask._post_process(sftp_client, payment_file_list)
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error(e)
+                current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
         return payment_file_list
 
     @classmethod
