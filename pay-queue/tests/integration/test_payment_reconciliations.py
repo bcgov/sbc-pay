@@ -794,6 +794,7 @@ def test_pad_reversal_reconciliations(session, app, client):
     assert ReceiptModel.find_by_id(receipt_id2) is None
 
 
+@pytest.mark.skip(reason="This is handled in the eft-job, similar to routing slips.")
 @pytest.mark.asyncio
 async def test_eft_wire_reconciliations(session, app, client):
     """Test Reconciliations worker."""
