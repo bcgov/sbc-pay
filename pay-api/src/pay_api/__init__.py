@@ -77,20 +77,7 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     setup_jwt_manager(app, jwt)
     ExceptionHandler(app)
     app.extensions["flask_executor"] = Executor(app)
-
-    # This is intended for DEV and TEST.
-    if app.config.get("ENABLE_403_LOGGING") is True:
-        @app.errorhandler(403)
-        def handle_403_error(error):
-            user_context = _get_context()
-
-            user_name = user_context.user_name[:5] + "..."
-            roles = user_context.roles
-            app.logger.error(f"403 Forbidden - {request.method} {request.url} - {user_name} - {roles}")
-
-            message = {"message": getattr(error, "message", error.description)}
-            headers = {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
-            return message, error.code, headers
+    setup_403_logging(app)
 
     @app.after_request
     def handle_after_request(response):  # pylint: disable=unused-variable
@@ -112,6 +99,23 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     register_shellcontext(app)
     build_cache(app)
     return app
+
+
+def setup_403_logging(app):
+    """Log setup for forbidden."""
+    # This is intended for DEV and TEST.
+    if app.config.get("ENABLE_403_LOGGING") is True:
+        @app.errorhandler(403)
+        def handle_403_error(error):
+            user_context = _get_context()
+
+            user_name = user_context.user_name[:5] + "..."
+            roles = user_context.roles
+            app.logger.error(f"403 Forbidden - {request.method} {request.url} - {user_name} - {roles}")
+
+            message = {"message": getattr(error, "message", error.description)}
+            headers = {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+            return message, error.code, headers
 
 
 def execute_migrations(app):
