@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
+import uuid
+from datetime import datetime, timezone
 from decimal import Decimal
 from threading import Thread
 from typing import Any, Dict, Tuple
@@ -20,6 +22,7 @@ from flask import copy_current_request_context, current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.models.receipt import Receipt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 from pay_api.utils.errors import Error
@@ -166,6 +169,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 invoice_reference = InvoiceReference.create(invoice.id, generate_transaction_number(invoice.id), None)
             invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
             invoice_reference.save()
+            Receipt(
+                receipt_number=f"SP-{uuid.uuid4()}",
+                receipt_amount=invoice.total,
+                invoice_id=invoice_reference.invoice_id,
+                receipt_date=datetime.now(tz=timezone.utc),
+            ).save()
             Payment.create(
                 payment_method=pay_service.get_payment_method_code(),
                 payment_system=pay_service.get_payment_system_code(),
