@@ -13,13 +13,13 @@
 # limitations under the License.
 """The Payment API service.
 
-This module is the API for the Legal Entity system.
+This module is the API for the Payment system.
 """
 
 import os
 
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
-from flask import Flask
+from flask import Flask, request
 from flask_executor import Executor
 from flask_migrate import Migrate, upgrade
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
@@ -36,6 +36,7 @@ from pay_api.utils.auth import jwt
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
+from pay_api.utils.user_context import _get_context
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
 
@@ -74,10 +75,22 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     app.after_request(convert_to_camel)
 
     setup_jwt_manager(app, jwt)
-
     ExceptionHandler(app)
-
     app.extensions["flask_executor"] = Executor(app)
+
+    # This is intended for DEV and TEST.
+    if app.config.get("ENABLE_403_LOGGING") is True:
+        @app.errorhandler(403)
+        def handle_403_error(error):
+            user_context = _get_context()
+
+            user_name = user_context.user_name[:5] + "..."
+            roles = user_context.roles
+            app.logger.error(f"403 Forbidden - {request.method} {request.url} - {user_name} - {roles}")
+
+            message = {"message": getattr(error, "message", error.description)}
+            headers = {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+            return message, error.code, headers
 
     @app.after_request
     def handle_after_request(response):  # pylint: disable=unused-variable
