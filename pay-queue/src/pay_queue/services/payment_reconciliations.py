@@ -418,7 +418,7 @@ def _process_unconsolidated_invoices(row, error_messages: List[Dict[str, any]]) 
         inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
 
         if _get_row_value(row, Column.SOURCE_TXN) == SourceTransaction.EFT_WIRE.value:
-            return
+            return has_errors
 
         inv_references: List[InvoiceReferenceModel] = (
             db.session.query(InvoiceReferenceModel)
