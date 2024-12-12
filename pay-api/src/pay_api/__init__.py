@@ -105,6 +105,7 @@ def setup_403_logging(app):
     """Log setup for forbidden."""
     # This is intended for DEV and TEST.
     if app.config.get("ENABLE_403_LOGGING") is True:
+
         @app.errorhandler(403)
         def handle_403_error(error):
             user_context = _get_context()
