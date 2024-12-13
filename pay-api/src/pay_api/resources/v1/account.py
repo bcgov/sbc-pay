@@ -267,11 +267,13 @@ def post_search_purchase_history(account_number: str):
     if account_number == "undefined":
         return error_to_response(Error.INVALID_REQUEST, invalid_params="account_number")
 
-    view_all = request.args.get("viewAll", None) == "true"
-    required_roles = [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if view_all else [Role.EDITOR.value]
+    any_org_transactions = request.args.get("viewAll", None) == "true"
+    required_roles = (
+        [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if any_org_transactions else [Role.EDITOR.value]
+    )
     check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles)
 
-    account_to_search = None if view_all else account_number
+    account_to_search = None if any_org_transactions else account_number
     page: int = int(request.args.get("page", "1"))
     limit: int = int(request.args.get("limit", "10"))
     response, status = (
