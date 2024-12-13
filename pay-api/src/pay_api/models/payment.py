@@ -30,7 +30,6 @@ from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
-from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
 from .base_model import BaseModel
@@ -310,20 +309,20 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         )
 
     @classmethod
-    @user_context
+    def search_without_counts(cls, auth_account_id: str, search_filter: Dict, page: int, limit: int):
+        """Search without using counts, ideally this will become our baseline."""
+        query = cls.generate_base_transaction_query()
+        query = cls.filter(query, auth_account_id, search_filter)
+        sub_query = cls.generate_subquery(auth_account_id, search_filter, limit + 1, page).subquery()
+        results = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
+        has_more = len(results) > limit
+        return results[:limit], has_more
+
+    @classmethod
     def search_purchase_history(  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
-        cls,
-        auth_account_id: str,
-        search_filter: Dict,
-        page: int,
-        limit: int,
-        return_all: bool,
-        max_no_records: int = 0,
-        **kwargs,
+        cls, auth_account_id: str, search_filter: Dict, page: int, limit: int, return_all: bool, max_no_records: int = 0
     ):
         """Search for purchase history."""
-        user: UserContext = kwargs["user"]
-        search_filter["userProductCode"] = user.product_code
         executor = current_app.extensions["flask_executor"]
         query = cls.generate_base_transaction_query()
         query = cls.filter(query, auth_account_id, search_filter)
