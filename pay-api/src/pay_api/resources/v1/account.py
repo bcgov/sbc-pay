@@ -258,23 +258,22 @@ def put_account_fee_product(account_number: str, product: str):
 def post_search_purchase_history(account_number: str):
     """Search purchase history."""
     current_app.logger.info("<post_search_purchase_history")
-    if account_number == "undefined":
-        return error_to_response(Error.INVALID_REQUEST, invalid_params="account_number")
+
     request_json = request.get_json()
     current_app.logger.debug(request_json)
-    # Validate the input request
     valid_format, errors = schema_utils.validate(request_json, "purchase_history_request")
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    if account_number == "undefined":
+        return error_to_response(Error.INVALID_REQUEST, invalid_params="account_number")
 
-    # if viewAll -> searches transactions across all accounts -- needs special role
-    view_all = request.args.get("viewAll", None) == "true"
-
-    # Check if user is authorized to perform this action
-    required_roles = [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if view_all else [Role.EDITOR.value]
+    any_org_transactions = request.args.get("viewAll", None) == "true"
+    required_roles = (
+        [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if any_org_transactions else [Role.EDITOR.value]
+    )
     check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles)
 
-    account_to_search = None if view_all else account_number
+    account_to_search = None if any_org_transactions else account_number
     page: int = int(request.args.get("page", "1"))
     limit: int = int(request.args.get("limit", "10"))
     response, status = (

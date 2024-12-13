@@ -268,21 +268,26 @@ def test_search_payment_history(
     else:
         return_all = False
     limit = 2
-    results = PaymentService.search_purchase_history(
-        auth_account_id=auth_account_id,
-        search_filter=search_filter,
-        limit=limit,
-        page=1,
-        return_all=return_all,
-    )
-    assert results is not None
-    assert results.get("items") is not None
-    assert results.get("total") == expected_total
-    assert len(results.get("items")) == expected_total if len(results.get("items")) < limit else limit
-
-    if expected_key:
-        for item in results.get("items"):
-            assert item[expected_key] == expected_value
+    for additional_payload in [{}, {"excludeCounts": True}]:
+        search_filter.update(additional_payload)
+        results = PaymentService.search_purchase_history(
+            auth_account_id=auth_account_id,
+            search_filter=search_filter,
+            limit=limit,
+            page=1,
+            return_all=return_all,
+        )
+        assert results is not None
+        assert "items" in results, "'items' key is missing in results"
+        if "excludeCounts" in search_filter:
+            assert "hasMore" in results, "'hasMore' key is missing in results"
+            assert results["hasMore"] is (expected_total > limit), "'hasMore' value is incorrect"
+        else:
+            assert results.get("total") == expected_total, "Total count mismatch"
+        assert len(results.get("items")) == expected_total if len(results.get("items")) < limit else limit
+        if expected_key:
+            for item in results.get("items"):
+                assert item[expected_key] == expected_value
 
 
 def test_search_payment_history_for_all(session):
@@ -349,7 +354,7 @@ def test_create_payment_report_pdf(session, rest_call_mock):
     assert True  # If no error, then good
 
 
-def test_search_payment_history_with_tz(session):
+def test_search_payment_history_with_tz(session, executor_mock):
     """Assert that the search payment history is working."""
     payment_account = factory_payment_account()
     invoice_created_on = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)

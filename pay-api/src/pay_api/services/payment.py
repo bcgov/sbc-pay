@@ -354,29 +354,28 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return Payment.search_purchase_history(auth_account_id, search_filter, 0, 0, True)
 
     @classmethod
+    @user_context
     def search_purchase_history(  # pylint: disable=too-many-locals, too-many-arguments
-        cls,
-        auth_account_id: str,
-        search_filter: Dict,
-        page: int,
-        limit: int,
-        return_all: bool = False,
+        cls, auth_account_id: str, search_filter: Dict, page: int, limit: int, return_all: bool = False, **kwargs
     ):
         """Search purchase history for the account."""
         current_app.logger.debug(f"<search_purchase_history {auth_account_id}")
-        # If the request filter is empty, return N number of records
-        # Adding offset degrades performance, so just override total records by default value if no filter is provided
-        max_no_records: int = 0
-        if not bool(search_filter) or not any(search_filter.values()):
-            max_no_records = current_app.config.get("TRANSACTION_REPORT_DEFAULT_TOTAL")
-
-        purchases, total = PaymentModel.search_purchase_history(
-            auth_account_id, search_filter, page, limit, return_all, max_no_records
+        max_no_records: int = (
+            current_app.config.get("TRANSACTION_REPORT_DEFAULT_TOTAL", 0)
+            if not search_filter or not any(search_filter.values())
+            else 0
         )
-        data = {"total": total, "page": page, "limit": limit, "items": []}
-
+        search_filter["userProductCode"] = kwargs["user"].product_code
+        data = {"page": page, "limit": limit, "items": []}
+        if bool(search_filter.get("excludeCounts")):
+            # Ideally our data tables will be using this call from now on much better performance.
+            purchases, data["hasMore"] = PaymentModel.search_without_counts(auth_account_id, search_filter, page, limit)
+        else:
+            # This is to maintain backwards compat for CSO, also for other functions like exporting to CSV etc.
+            purchases, data["total"] = PaymentModel.search_purchase_history(
+                auth_account_id, search_filter, page, limit, return_all, max_no_records
+            )
         data = cls.create_payment_report_details(purchases, data)
-
         current_app.logger.debug(">search_purchase_history")
         return data
 

@@ -72,39 +72,40 @@ def test_account_purchase_history(session, client, jwt, app):
     invoice.disbursement_reversal_date = datetime.now(tz=timezone.utc)
     invoice.save()
 
-    rv = client.post(
-        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries",
-        data=json.dumps({}),
-        headers=headers,
-    )
+    for payload in [{}, {"excludeCounts": True}]:
+        rv = client.post(
+            f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries",
+            data=json.dumps(payload),
+            headers=headers,
+        )
 
-    assert rv.status_code == 200
-    # Note this is used by CSO, they need these fields at a minimum.
-    assert rv.json
-    invoice = rv.json.get("items")[0]
-    assert invoice
-    required_fields = [
-        "id",
-        "corpTypeCode",
-        "createdOn",
-        "statusCode",
-        "total",
-        "serviceFees",
-        "paid",
-        "refund",
-        "folioNumber",
-        "createdName",
-        "paymentMethod",
-        "details",
-        "businessIdentifier",
-        "createdBy",
-        "filingId",
-        "disbursementReversalDate",
-        "disbursementDate",
-    ]
+        assert rv.status_code == 200
+        # Note this is used by CSO (non excludeCounts), they need these fields at a minimum.
+        assert rv.json
+        invoice = rv.json.get("items")[0]
+        assert invoice
+        required_fields = [
+            "id",
+            "corpTypeCode",
+            "createdOn",
+            "statusCode",
+            "total",
+            "serviceFees",
+            "paid",
+            "refund",
+            "folioNumber",
+            "createdName",
+            "paymentMethod",
+            "details",
+            "businessIdentifier",
+            "createdBy",
+            "filingId",
+            "disbursementReversalDate",
+            "disbursementDate",
+        ]
 
-    for field in required_fields:
-        assert field in invoice
+        for field in required_fields:
+            assert field in invoice
 
 
 def test_account_purchase_history_with_basic_account(session, client, jwt, app):
@@ -153,6 +154,44 @@ def test_account_purchase_history_pagination(session, client, jwt, app, executor
     assert rv.status_code == 200
     assert rv.json.get("total") == 10
     assert len(rv.json.get("items")) == 5
+
+
+def test_account_purchase_history_exclude_counts(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    for _ in range(11):
+        rv = client.post(
+            "/api/v1/payment-requests",
+            data=json.dumps(get_payment_request()),
+            headers=headers,
+        )
+
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"excludeCounts": "true"}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    assert rv.json.get("hasMore") is True
+    assert "total" not in rv.json
+    assert len(rv.json.get("items")) == 10
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=11",
+        data=json.dumps({"excludeCounts": "true"}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    assert rv.json.get("hasMore") is False
+    assert "total" not in rv.json
+    assert len(rv.json.get("items")) == 11
 
 
 def test_account_purchase_history_with_service_account(session, client, jwt, app, executor_mock):
