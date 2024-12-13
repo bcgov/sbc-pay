@@ -278,15 +278,12 @@ def test_search_payment_history(
             return_all=return_all,
         )
         assert results is not None
-        assert results.get("items") is not None
+        assert "items" in results, "'items' key is missing in results"
         if "excludeCounts" in search_filter:
-            assert "hasMore" in results
-            if expected_total > limit:
-                assert results["hasMore"] is True
-            else:
-                assert results["hasMore"] is False
+            assert "hasMore" in results, "'hasMore' key is missing in results"
+            assert results["hasMore"] is (expected_total > limit), "'hasMore' value is incorrect"
         else:
-            assert results.get("total") == expected_total
+            assert results.get("total") == expected_total, "Total count mismatch"
         assert len(results.get("items")) == expected_total if len(results.get("items")) < limit else limit
         if expected_key:
             for item in results.get("items"):
