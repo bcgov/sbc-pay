@@ -372,10 +372,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             purchases, data["hasMore"] = PaymentModel.search_without_counts(auth_account_id, search_filter, page, limit)
         else:
             # This is to maintain backwards compat for CSO, also for other functions like exporting to CSV etc.
-            purchases, total = PaymentModel.search_purchase_history(
+            purchases, data["total"] = PaymentModel.search_purchase_history(
                 auth_account_id, search_filter, page, limit, return_all, max_no_records
             )
-            data["total"] = total
         data = cls.create_payment_report_details(purchases, data)
         current_app.logger.debug(">search_purchase_history")
         return data
