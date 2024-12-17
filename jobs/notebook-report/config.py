@@ -35,6 +35,8 @@ class Config(object):
     NOTEBOOK_SERVICE_ACCOUNT_ID = os.getenv("NOTEBOOK_SERVICE_ACCOUNT_ID", "")
     NOTEBOOK_SERVICE_ACCOUNT_SECRET = os.getenv("NOTEBOOK_SERVICE_ACCOUNT_SECRET", "")
     JWT_OIDC_ISSUER = os.getenv("JWT_OIDC_ISSUER", "")
+    # Used for local dev runs.
+    DISABLE_EMAIL = os.getenv("DISABLE_EMAIL", 'false').lower() == 'true'
 
     PAY_USER = os.getenv("PAY_USER", "")
     PAY_PASSWORD = os.getenv("PAY_PASSWORD", "")
