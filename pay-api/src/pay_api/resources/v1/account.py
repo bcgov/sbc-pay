@@ -268,10 +268,12 @@ def post_search_purchase_history(account_number: str):
         return error_to_response(Error.INVALID_REQUEST, invalid_params="account_number")
 
     any_org_transactions = request.args.get("viewAll", None) == "true"
-    required_roles = (
-        [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if any_org_transactions else [Role.EDITOR.value]
-    )
-    check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles)
+    if any_org_transactions:
+        check_auth(business_identifier=None, account_id=account_number,
+                   all_of_roles=[Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value])
+    else:
+        check_auth(business_identifier=None, account_id=account_number,
+                   one_of_roles=[Role.EDITOR.value, Role.VIEW_ACCOUNT_TRANSACTIONS.value])
 
     account_to_search = None if any_org_transactions else account_number
     page: int = int(request.args.get("page", "1"))
@@ -306,7 +308,8 @@ def post_account_purchase_report(account_number: str):
         report_name = f"{report_name}.csv"
 
     # Check if user is authorized to perform this action
-    check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE)
+    check_auth(business_identifier=None, account_id=account_number,
+               one_of_roles=[EDIT_ROLE, Role.VIEW_ACCOUNT_TRANSACTIONS.value])
     try:
         report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
         response = Response(report, 201)
