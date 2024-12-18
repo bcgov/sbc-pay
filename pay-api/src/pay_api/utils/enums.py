@@ -141,6 +141,9 @@ class Role(Enum):
     EFT_REFUND = "eft_refund"
     EFT_REFUND_APPROVER = "eft_refund_approver"
     TIP_INTERNAL_PAYMENT_OVERRIDE = "tip_internal_payment_override"
+    VIEW_STATEMENTS = "view_statements"
+    VIEW_STATEMENT_SETTINGS = "view_statement_settings"
+    VIEW_ACCOUNT_TRANSACTIONS = "view_account_transactions"
 
 
 class Code(Enum):

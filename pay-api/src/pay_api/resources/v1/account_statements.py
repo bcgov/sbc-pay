@@ -23,7 +23,7 @@ from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.enums import ContentType
+from pay_api.utils.enums import ContentType, Role
 from pay_api.utils.util import string_to_bool
 
 bp = Blueprint(
@@ -40,7 +40,7 @@ def get_account_statements(account_id):
     """Get all statements records for an account."""
     current_app.logger.info("<get_account_statements")
     # Check if user is authorized to perform this action
-    check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
+    check_auth(business_identifier=None, account_id=account_id, one_of_roles=[EDIT_ROLE, Role.VIEW_STATEMENTS.value])
 
     page: int = int(request.args.get("page", "1"))
     limit: int = int(request.args.get("limit", "10"))
@@ -63,7 +63,8 @@ def get_account_statement(account_id: str, statement_id: str):
     response_content_type = request.headers.get("Accept", ContentType.PDF.value)
 
     # Check if user is authorized to perform this action
-    auth = check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
+    auth = check_auth(business_identifier=None, account_id=account_id, one_of_roles=[EDIT_ROLE,
+                                                                                     Role.VIEW_STATEMENTS.value])
 
     report, report_name = StatementService.get_statement_report(
         statement_id=statement_id, content_type=response_content_type, auth=auth

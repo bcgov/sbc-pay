@@ -23,6 +23,7 @@ from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import CHANGE_STATEMENT_SETTINGS, EDIT_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
+from pay_api.utils.enums import Role
 
 bp = Blueprint(
     "ACCOUNT_SETTINGS",
@@ -42,7 +43,7 @@ def get_account_statement_settings(account_id):
     check_auth(
         business_identifier=None,
         account_id=account_id,
-        contains_role=EDIT_ROLE,
+        one_of_roles=[EDIT_ROLE, Role.VIEW_STATEMENT_SETTINGS.value],
         is_premium=True,
     )
 
