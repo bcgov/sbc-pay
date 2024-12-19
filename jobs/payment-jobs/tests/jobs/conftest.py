@@ -157,7 +157,7 @@ def docker_compose_files(pytestconfig):
 def admin_users_mock(monkeypatch):
     """Mock auth rest call to get org admins."""
 
-    def get_account_admin_users(payment_account):
+    def get_account_admin_users(payment_account, **kwargs):
         return {
             "members": [
                 {
@@ -182,6 +182,16 @@ def admin_users_mock(monkeypatch):
         }
 
     monkeypatch.setattr("pay_api.services.auth.get_account_admin_users", get_account_admin_users)
+
+
+@pytest.fixture()
+def google_bucket_mock(monkeypatch):
+    """Mock google bucket upload."""
+
+    def upload_to_bucket(p1, p2):
+        return None
+
+    monkeypatch.setattr("tasks.common.cgi_ejv.upload_to_bucket", upload_to_bucket)
 
 
 @pytest.fixture()
