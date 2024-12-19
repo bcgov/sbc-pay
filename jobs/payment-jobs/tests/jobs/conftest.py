@@ -185,6 +185,16 @@ def admin_users_mock(monkeypatch):
 
 
 @pytest.fixture()
+def google_bucket_mock(monkeypatch):
+    """Mock google bucket upload."""
+
+    def upload_to_bucket(p1, p2):
+        return None
+
+    monkeypatch.setattr("tasks.common.cgi_ejv.upload_to_bucket", upload_to_bucket)
+
+
+@pytest.fixture()
 def emails_with_keycloak_role_mock(monkeypatch):
     """Mock auth rest call to get org admins."""
 

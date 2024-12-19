@@ -42,7 +42,7 @@ from .factory import (
 
 
 @pytest.mark.parametrize("client_code, batch_type", [("112", "GA"), ("113", "GI"), ("ABC", "GI")])
-def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type):
+def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type, google_bucket_mock):
     """Test disbursement for partners.
 
     Steps:
