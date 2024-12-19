@@ -157,7 +157,7 @@ def docker_compose_files(pytestconfig):
 def admin_users_mock(monkeypatch):
     """Mock auth rest call to get org admins."""
 
-    def get_account_admin_users(payment_account):
+    def get_account_admin_users(payment_account, **kwargs):
         return {
             "members": [
                 {
