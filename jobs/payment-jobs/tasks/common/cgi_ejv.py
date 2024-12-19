@@ -21,8 +21,8 @@ from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.utils.util import get_fiscal_year, get_nearest_business_day
 
+from utils.google_bucket import upload_to_bucket
 from utils.minio import put_object
-from utils.sftp import upload_to_ftp
 
 
 class CgiEjv:
@@ -123,7 +123,7 @@ class CgiEjv:
     @classmethod
     def upload(cls, ejv_content, file_name, file_path_with_name, trg_file_path):
         """Upload to ftp and to minio."""
-        upload_to_ftp(file_path_with_name, trg_file_path)
+        upload_to_bucket(file_path_with_name, trg_file_path)
         # Upload to MINIO
         cls.upload_to_minio(
             content=ejv_content.encode(),
