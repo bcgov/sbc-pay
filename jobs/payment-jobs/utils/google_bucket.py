@@ -28,8 +28,11 @@ def upload_to_bucket(local_file_path: str, trg_file_path: str):
     current_app.logger.info("Connecting to bucket %s", ftp_poller_bucket_name)
     bucket = client.bucket(ftp_poller_bucket_name)
     current_app.logger.info("Uploading to processing folder.")
-    blob = bucket.blob("processing/" + local_file_path)
-    blob.upload_from_filename(local_file_path)
-    blob = bucket.blob("processing/" + trg_file_path)
-    blob.upload_from_filename(trg_file_path)
-    current_app.logger.info("Upload of %s, %s complete.", local_file_path, trg_file_path)
+
+    def upload_blob(file_path):
+        blob = bucket.blob(f"processing/{file_path}")
+        blob.upload_from_filename(file_path)
+        current_app.logger.info("Upload of %s complete.", file_path)
+
+    upload_blob(local_file_path)
+    upload_blob(trg_file_path)
