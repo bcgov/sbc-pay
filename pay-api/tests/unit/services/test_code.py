@@ -58,3 +58,18 @@ def test_find_payment_types_code_values(session):
     codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
     assert codes is not None
     assert len(codes) > 0
+
+
+def test_find_valid_payment_methods_by_product_code(session):
+    """Assert that valid payment methods are returned for products."""
+    payment_methods = CodeService.find_valid_payment_methods_by_product_code()
+    assert payment_methods is not None
+    assert isinstance(payment_methods, dict)
+
+    business_payment_methods = CodeService.find_valid_payment_methods_by_product_code('BUSINESS')
+    assert business_payment_methods is not None
+    assert 'BUSINESS' in business_payment_methods
+    assert isinstance(business_payment_methods['BUSINESS'], list)
+
+    invalid_payment_methods = CodeService.find_valid_payment_methods_by_product_code('INVALID')
+    assert invalid_payment_methods == {}

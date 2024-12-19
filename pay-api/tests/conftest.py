@@ -333,11 +333,3 @@ def executor_mock(app):
             return SimpleMockFuture(func, *args, **kwargs)
 
     app.extensions["flask_executor"] = SimpleMockExecutor()
-
-
-@pytest.fixture
-def clear_products_table(session):
-    """Clear the products table before and after each test."""
-    session.execute(text("TRUNCATE TABLE products RESTART IDENTITY CASCADE"))
-    session.commit()
-    yield

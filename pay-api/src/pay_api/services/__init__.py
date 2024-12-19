@@ -29,7 +29,6 @@ from .invoice import Invoice as InvoiceService
 from .non_sufficient_funds import NonSufficientFundsService
 from .partner_disbursements import PartnerDisbursements
 from .payment import Payment
-from .payment_method_service import PaymentMethodService
 from .payment_service import PaymentService
 from .payment_transaction import PaymentTransaction as TransactionService
 from .receipt import Receipt as ReceiptService

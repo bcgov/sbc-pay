@@ -20,9 +20,14 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 from pay_api.models import CorpType
 
 
-def factory_corp_type(corp_type_code: str, corp_description: str):
+def factory_corp_type(corp_type_code: str, corp_description: str, product: str = None, payment_methods: list = None):
     """Return a valid Corp Type object."""
-    return CorpType(code=corp_type_code, description=corp_description)
+    corp_type = CorpType(code=corp_type_code, description=corp_description)
+    if product:
+        corp_type.product = product
+    if payment_methods:
+        corp_type.payment_methods = payment_methods
+    return corp_type
 
 
 def test_corp_type(session):
@@ -54,3 +59,19 @@ def test_corp_type_by_invalid_code(session):
 
     b = CorpType.find_by_code("AB")
     assert b is None
+
+
+def test_payment_methods(session):
+    """Assert that payment methods are stored and retrieved correctly."""
+    business_corp = factory_corp_type(
+        "XX",
+        "Business",
+        product="BUSINESS",
+        payment_methods=['PAD', 'DIRECT_PAY', 'ONLINE_BANKING', 'DRAWDOWN']
+    )
+    session.add(business_corp)
+    session.commit()
+
+    retrieved_corp = CorpType.find_by_code("XX")
+    assert retrieved_corp is not None
+    assert retrieved_corp.payment_methods == ['PAD', 'DIRECT_PAY', 'ONLINE_BANKING', 'DRAWDOWN']
