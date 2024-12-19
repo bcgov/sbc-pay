@@ -58,6 +58,7 @@ from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .payment_method import PaymentMethod, PaymentMethodSchema
 from .payment_status_code import PaymentStatusCode, PaymentStatusCodeSchema
 from .payment_transaction import PaymentTransaction, PaymentTransactionSchema
+from .products import Product
 from .receipt import Receipt, ReceiptSchema
 from .refund import Refund
 from .refunds_partial import RefundPartialLine, RefundsPartial
