@@ -30,7 +30,7 @@ def upload_to_bucket(local_file_path: str, trg_file_path: str):
     current_app.logger.info("Uploading to processing folder.")
 
     def upload_blob_to_processing(file_path):
-        blob = bucket.blob(f"processing/{file_path}")
+        blob = bucket.blob(f"cgi_processing/{file_path}")
         blob.upload_from_filename(file_path)
         current_app.logger.info("Upload of %s complete.", file_path)
 
