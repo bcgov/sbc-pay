@@ -68,20 +68,21 @@ def run(job_name):
     application = create_app()
 
     application.app_context().push()
-    if job_name == "CAS_FTP_POLLER":
-        CASPollerFtpTask.poll_ftp()
-        application.logger.info(f"<<<< Completed Polling CAS FTP >>>>")
-    elif job_name == "CGI_FTP_POLLER":
-        CGIFeederPollerTask.poll_ftp()
-        application.logger.info(f"<<<< Completed Polling CGI FTP >>>>")
-    elif job_name == "EFT_FTP_POLLER":
-        EFTPollerFtpTask.poll_ftp()
-        application.logger.info(f"<<<< Completed Polling EFT FTP >>>>")
-    elif job_name == "GOOGLE_BUCKET_POLLER":
-        GoogleBucketPoller.poll_google_bucket_for_ejv_files()
-        application.logger.info(f"<<<< Completed Polling Google Buckets >>>>")
-    else:
-        application.logger.debug("No valid args passed.Exiting job without running any ***************")
+    match job_name:
+        case "CAS_FTP_POLLER":
+            CASPollerFtpTask.poll_ftp()
+            application.logger.info("<<<< Completed Polling CAS FTP >>>>")
+        case "CGI_FTP_POLLER":
+            CGIFeederPollerTask.poll_ftp()
+            application.logger.info("<<<< Completed Polling CGI FTP >>>>")
+        case "EFT_FTP_POLLER":
+            EFTPollerFtpTask.poll_ftp()
+            application.logger.info("<<<< Completed Polling EFT FTP >>>>")
+        case "GOOGLE_BUCKET_POLLER":
+            GoogleBucketPoller.poll_google_bucket_for_ejv_files()
+            application.logger.info("<<<< Completed Polling Google Buckets >>>>")
+        case _:
+            application.logger.debug("No valid args passed.Exiting job without running any ***************")
 
 
 if __name__ == "__main__":
