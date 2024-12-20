@@ -181,7 +181,7 @@ def admin_users_mock(monkeypatch):
             ]
         }
 
-    monkeypatch.setattr("pay_api.services.auth.get_account_admin_users", get_account_admin_users)
+    monkeypatch.setattr("pay_api.services.payment_account.get_account_admin_users", get_account_admin_users)
 
 
 @pytest.fixture()
