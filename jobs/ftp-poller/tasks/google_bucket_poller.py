@@ -49,6 +49,7 @@ class GoogleBucketPollerTask:
                 continue
             target_path = f"{tempfile.gettempdir()}/{blob.name.split('/')[-1]}"
             current_app.logger.info(f"Downloading {blob.name} to {target_path}")
+            # This automatically overrides if the file exists.
             blob.download_to_filename(target_path)
             file_paths.append(target_path)
         current_app.logger.info(f"List of processing files: {file_paths}")
@@ -64,7 +65,7 @@ class GoogleBucketPollerTask:
             destination = f"cgi_processed/{file_name}"
             cls.bucket.copy_blob(source_blob, cls.bucket, destination)
             source_blob.delete()
-            current_app.logger.info(f"File moved to cgi_processed/{file_name}")
+            current_app.logger.info(f"File moved to {destination}.")
 
     @classmethod
     def _upload_to_sftp(cls, file_paths):
