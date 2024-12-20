@@ -259,9 +259,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CGI_SFTP_HOST = "localhost"
     GCP_AUTH_KEY = None
 
-    FTP_POLLER_BUCKET_NAME = None
-    GOOGLE_STORAGE_SA = None
-
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""

@@ -63,6 +63,7 @@ def run(job_name):
     from tasks.cas_poller_ftp import CASPollerFtpTask
     from tasks.cgi_feeder_poller_task import CGIFeederPollerTask
     from tasks.eft_poller_ftp import EFTPollerFtpTask
+    from tasks.google_bucket_poller import GoogleBucketPoller
 
     application = create_app()
 
@@ -76,6 +77,9 @@ def run(job_name):
     elif job_name == "EFT_FTP_POLLER":
         EFTPollerFtpTask.poll_ftp()
         application.logger.info(f"<<<< Completed Polling EFT FTP >>>>")
+    elif job_name == "GOOGLE_BUCKET_POLLER":
+        GoogleBucketPoller.poll_google_bucket_for_ejv_files()
+        application.logger.info(f"<<<< Completed Polling Google Buckets >>>>")
     else:
         application.logger.debug("No valid args passed.Exiting job without running any ***************")
 

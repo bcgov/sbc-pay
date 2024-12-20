@@ -24,6 +24,7 @@ launchdarkly-server-sdk = "^8.2.1"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 pay-api = {git = "https://github.com/bcgov/sbc-pay.git", branch = "main", subdirectory = "pay-api"}
 wheel = "^0.43.0"
+google-cloud-storage = "^2.19.0"
 
 
 [tool.poetry.group.dev.dependencies]
