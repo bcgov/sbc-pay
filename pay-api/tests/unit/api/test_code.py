@@ -47,3 +47,18 @@ def test_find_codes(session, client, jwt, app, code: Code):
     """Assert that the endpoint returns 200."""
     rv = client.get(f"/api/v1/codes/{code.value}", headers={})
     assert rv.status_code == 200
+
+
+def test_get_valid_payment_methods(session, client, jwt, app):
+    """Assert that the valid payment methods endpoint works."""
+    rv = client.get("/api/v1/codes/valid_payment_methods", headers={})
+    assert rv.status_code == 200
+    assert isinstance(rv.json, dict)
+
+    rv = client.get("/api/v1/codes/valid_payment_methods/VS", headers={})
+    assert rv.status_code == 200
+    assert isinstance(rv.json, dict)
+
+    rv = client.get("/api/v1/codes/valid_payment_methods/INVALID", headers={})
+    assert rv.status_code == 200
+    assert rv.json == {}

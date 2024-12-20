@@ -47,6 +47,7 @@ class CorpType(db.Model, CodeTable):
             "description",
             "has_partner_disbursements",
             "is_online_banking_allowed",
+            "payment_methods",
             "product",
         ]
     }
@@ -61,6 +62,7 @@ class CorpType(db.Model, CodeTable):
     has_partner_disbursements = db.Column(Boolean(), default=False)
     batch_type = db.Column(db.String(2), nullable=True)
     product = db.Column(db.String(20), nullable=True)
+    payment_methods = db.Column(db.ARRAY(db.String()), nullable=True)
 
     def save(self):
         """Save corp type."""
