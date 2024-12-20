@@ -202,6 +202,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     EFT_TRANSFER_DESC = os.getenv("EFT_TRANSFER_DESC", "BCREGISTRIES {} {} EFT TRANSFER")
     EFT_OVERDUE_NOTIFY_EMAILS = os.getenv("EFT_OVERDUE_NOTIFY_EMAILS", "")
 
+    FTP_POLLER_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME", "")
+    GOOGLE_STORAGE_SA = os.getenv("GOOGLE_STORAGE_SA", "")
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
