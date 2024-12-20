@@ -99,14 +99,13 @@ class Code:
     def find_valid_payment_methods_by_product_code(cls, product_code: str | None = None) -> dict:
         """Find payment methods for a product."""
         if not product_code:
-            corp_types = CorpType.query.with_entities(CorpType.product, CorpType.payment_methods).distinct().all()
-            payment_methods_by_product = {}
-            for product, payment_methods in corp_types:
-                if product:
-                    payment_methods_by_product[product] = payment_methods
-            return payment_methods_by_product
-
-        corp_type = CorpType.query.filter(CorpType.product == product_code).first()
-        if corp_type:
-            return {corp_type.product: corp_type.payment_methods}
-        return {}
+            corp_types = (
+                CorpType.query.with_entities(CorpType.product, CorpType.payment_methods)
+                .filter(CorpType.product.isnot(None))  # Exclude None at the query level
+                .distinct()
+                .all()
+            )
+            return {product: payment_methods for product, payment_methods in corp_types}
+        
+        corp_type = CorpType.query.with_entities(CorpType.product, CorpType.payment_methods).filter_by(product=product_code).first()
+        return {corp_type.product: corp_type.payment_methods} if corp_type else {}

@@ -30,18 +30,17 @@ def upgrade():
         UPDATE corp_types 
         SET payment_methods = 
             CASE product
-                WHEN 'BUSINESS' THEN ARRAY['PAD', 'DIRECT_PAY', 'ONLINE_BANKING', 'DRAWDOWN']
-                WHEN 'NRO' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'RPPR' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'VS' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'RPT' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'BUSINESS_SEARCH' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'CSO' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'ESRA' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'BCA' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'PPR' THEN ARRAY['PAD', 'DRAWDOWN']
-                WHEN 'MHR' THEN ARRAY['PAD', 'DRAWDOWN']
-                ELSE NULL
+                WHEN 'BUSINESS' THEN ARRAY['PAD', 'DIRECT_PAY', 'EFT', 'EJV', 'ONLINE_BANKING', 'DRAWDOWN', 'INTERNAL']
+                WHEN 'NRO' THEN ARRAY['DIRECT_PAY','PAD', 'DRAWDOWN', 'INTERNAL']
+                WHEN 'RPPR' THEN ARRAY['PAD', 'DRAWDOWN', 'INTERNAL']
+                WHEN 'VS' THEN ARRAY['DIRECT_PAY','PAD', 'DRAWDOWN', 'EFT', 'EJV', 'INTERNAL']
+                WHEN 'RPT' THEN ARRAY['PAD', 'DRAWDOWN', 'EFT', 'EJV', 'INTERNAL']
+                WHEN 'BUSINESS_SEARCH' THEN ARRAY['PAD', 'DIRECT_PAY', 'DRAWDOWN', 'EJV', 'EFT', 'INTERNAL']
+                WHEN 'CSO' THEN ARRAY['PAD', 'DRAWDOWN', 'EJV', 'INTERNAL']
+                WHEN 'ESRA' THEN ARRAY['PAD', 'DRAWDOWN', 'EJV', 'INTERNAL']
+                WHEN 'PPR' THEN ARRAY['PAD', 'DIRECT_PAY', 'DRAWDOWN', 'EFT', 'EJV', 'INTERNAL']
+                WHEN 'MHR' THEN ARRAY['PAD', 'DIRECT_PAY', 'DRAWDOWN', 'EFT', 'EJV', 'INTERNAL']
+                ELSE ARRAY['INTERNAL']
             END
         WHERE product IS NOT NULL
     """)
