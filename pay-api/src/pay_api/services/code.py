@@ -105,7 +105,11 @@ class Code:
                 .distinct()
                 .all()
             )
-            return {product: payment_methods for product, payment_methods in corp_types}
-        
-        corp_type = CorpType.query.with_entities(CorpType.product, CorpType.payment_methods).filter_by(product=product_code).first()
+            return dict(corp_types)
+
+        corp_type = (
+            CorpType.query.with_entities(CorpType.product, CorpType.payment_methods)
+            .filter_by(product=product_code)
+            .first()
+        )
         return {corp_type.product: corp_type.payment_methods} if corp_type else {}
