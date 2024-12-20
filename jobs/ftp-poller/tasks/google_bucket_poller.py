@@ -22,6 +22,7 @@ class GoogleBucketPollerTask:
     def poll_google_bucket_for_ejv_files(cls):
         """Check google bucket for ejv files that PAY-JOBS has created."""
         try:
+            current_app.logger.info('Polling Google bucket for EJV files.')
             cls.initialize_storage_client()
             file_paths = cls._get_processing_files()
             cls._upload_to_sftp(file_paths)
@@ -52,7 +53,7 @@ class GoogleBucketPollerTask:
             # This automatically overrides if the file exists.
             blob.download_to_filename(target_path)
             file_paths.append(target_path)
-        current_app.logger.info(f"List of processing files: {file_paths}")
+        current_app.logger.info(f"Processing files: {file_paths}")
         return file_paths
 
     @classmethod
@@ -77,7 +78,9 @@ class GoogleBucketPollerTask:
             for file_path in file_paths:
                 current_app.logger.info(f"Uploading file: {file_path}")
                 ftp_dir: str = current_app.config.get("CGI_SFTP_DIRECTORY")
-                sftp_client.put(file_path, ftp_dir + "/" + file_path)
-                current_app.logger.info(f"Uploaded file: {file_path}")
+                target_file = os.path.basename(file_path)
+                sftp_client.chdir(ftp_dir)
+                sftp_client.put(file_path, target_file)
+                current_app.logger.info(f"Uploaded file from: {file_path} to {ftp_dir}/{target_file}")
                 os.remove(file_path)
         current_app.logger.info("Uploading files via SFTP done.")
