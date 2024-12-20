@@ -124,6 +124,7 @@ class CgiEjv:
     def upload(cls, ejv_content, file_name, file_path_with_name, trg_file_path):
         """Upload to ftp and to minio."""
         upload_to_bucket(file_path_with_name, trg_file_path)
+        # Future replace minio with buckets, this will have to be a different bucket, with less strict access control.
         cls.upload_to_minio(
             content=ejv_content.encode(),
             file_name=file_name,
