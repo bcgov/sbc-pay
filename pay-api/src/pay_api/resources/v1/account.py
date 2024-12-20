@@ -26,7 +26,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.enums import CfsAccountStatus, ContentType, Role
+from pay_api.utils.enums import CfsAccountStatus, ContentType, PaymentMethod, Role
 from pay_api.utils.errors import Error
 
 bp = Blueprint("ACCOUNTS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/accounts")
@@ -46,6 +46,12 @@ def post_account():
     is_sandbox = request.args.get("sandbox", "false").lower() == "true"
     if is_sandbox and not _jwt.validate_roles([Role.CREATE_SANDBOX_ACCOUNT.value]):
         abort(HTTPStatus.FORBIDDEN)
+
+    if is_sandbox and [PaymentMethod.ONLINE_BANKING.value, PaymentMethod.DIRECT_PAY.value] in request_json.get(
+        "paymentInfo", {}
+    ).get("methodOfPayment", None):
+        current_app.logger.info('Overriding methodOfPayment to "PAD" for sandbox request')
+        request_json["paymentInfo"]["methodOfPayment"] = PaymentMethod.PAD.value
 
     # Validate the input request
     valid_format, errors = schema_utils.validate(request_json, "account_info")
