@@ -81,7 +81,7 @@ def test_eft_refunds(session, monkeypatch):
     factory_create_eft_credit_invoice_link(invoice_id=invoice.id, eft_credit_id=eft_credit.id)
     factory_eft_shortname_link(short_name_id=short_name.id)
 
-    with patch("pysftp.Connection.put") as mock_upload:
+    with patch("tasks.common.cgi_ejv.upload_to_bucket") as mock_upload:
         ApTask.create_ap_files()
         mock_upload.assert_called()
 
@@ -119,7 +119,7 @@ def test_routing_slip_refunds(session, monkeypatch):
             },
         },
     )
-    with patch("pysftp.Connection.put") as mock_upload:
+    with patch("tasks.common.cgi_ejv.upload_to_bucket") as mock_upload:
         ApTask.create_ap_files()
         mock_upload.assert_called()
 
@@ -127,7 +127,7 @@ def test_routing_slip_refunds(session, monkeypatch):
     assert routing_slip.status == RoutingSlipStatus.REFUND_UPLOADED.value
 
     # Run again and assert nothing is uploaded
-    with patch("pysftp.Connection.put") as mock_upload:
+    with patch("tasks.common.cgi_ejv.upload_to_bucket") as mock_upload:
         ApTask.create_ap_files()
         mock_upload.assert_not_called()
 
@@ -159,6 +159,6 @@ def test_ap_disbursement(session, monkeypatch):
     )
     line = factory_payment_line_item(refund_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    with patch("pysftp.Connection.put") as mock_upload:
+    with patch("tasks.common.cgi_ejv.upload_to_bucket") as mock_upload:
         ApTask.create_ap_files()
         mock_upload.assert_called()
