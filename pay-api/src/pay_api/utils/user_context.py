@@ -118,6 +118,10 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         """Return True if the user token has sandbox role."""
         return Role.SANDBOX.value in self._roles if self._roles else False
 
+    def is_api_user(self) -> bool:
+        """Return True if the user is an api_user."""
+        return Role.API_USER.value in self._roles if self._roles else False
+
     @property
     def name(self) -> str:
         """Return the name."""

@@ -26,6 +26,7 @@ from pay_api.models.receipt import Receipt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number, get_str_by_path
 
 from .base_payment_system import PaymentSystemService
@@ -43,10 +44,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
+    @user_context
     def create_invoice(
-        cls,
-        payment_request: Tuple[Dict[str, Any]],
-        authorization: Tuple[Dict[str, Any]],
+        cls, payment_request: Tuple[Dict[str, Any]], authorization: Tuple[Dict[str, Any]], **kwargs
     ) -> Dict:
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
@@ -76,6 +76,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         if payment_method == PaymentMethod.EFT.value and not flags.is_on("enable-eft-payment-method", default=False):
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
+        user: UserContext = kwargs["user"]
+        if user.is_api_user() and not user.is_sandbox():
+            if payment_method in [PaymentMethod.DIRECT_PAY.value, PaymentMethod.ONLINE_BANKING.value]:
+                raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
         current_app.logger.info(
             f"Creating Payment Request : "

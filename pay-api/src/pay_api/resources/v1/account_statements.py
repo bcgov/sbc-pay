@@ -63,8 +63,9 @@ def get_account_statement(account_id: str, statement_id: str):
     response_content_type = request.headers.get("Accept", ContentType.PDF.value)
 
     # Check if user is authorized to perform this action
-    auth = check_auth(business_identifier=None, account_id=account_id, one_of_roles=[EDIT_ROLE,
-                                                                                     Role.VIEW_STATEMENTS.value])
+    auth = check_auth(
+        business_identifier=None, account_id=account_id, one_of_roles=[EDIT_ROLE, Role.VIEW_STATEMENTS.value]
+    )
 
     report, report_name = StatementService.get_statement_report(
         statement_id=statement_id, content_type=response_content_type, auth=auth

@@ -26,7 +26,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.enums import CfsAccountStatus, ContentType, Role
+from pay_api.utils.enums import CfsAccountStatus, ContentType, PaymentMethod, Role
 from pay_api.utils.errors import Error
 
 bp = Blueprint("ACCOUNTS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/accounts")
@@ -46,6 +46,13 @@ def post_account():
     is_sandbox = request.args.get("sandbox", "false").lower() == "true"
     if is_sandbox and not _jwt.validate_roles([Role.CREATE_SANDBOX_ACCOUNT.value]):
         abort(HTTPStatus.FORBIDDEN)
+
+    if is_sandbox and request_json.get("paymentInfo", {}).get("methodOfPayment", []) in [
+        PaymentMethod.ONLINE_BANKING.value,
+        PaymentMethod.DIRECT_PAY.value,
+    ]:
+        current_app.logger.info('Overriding methodOfPayment to "PAD" for sandbox request')
+        request_json["paymentInfo"]["methodOfPayment"] = PaymentMethod.PAD.value
 
     # Validate the input request
     valid_format, errors = schema_utils.validate(request_json, "account_info")
@@ -269,11 +276,17 @@ def post_search_purchase_history(account_number: str):
 
     any_org_transactions = request.args.get("viewAll", None) == "true"
     if any_org_transactions:
-        check_auth(business_identifier=None, account_id=account_number,
-                   all_of_roles=[Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value])
+        check_auth(
+            business_identifier=None,
+            account_id=account_number,
+            all_of_roles=[Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value],
+        )
     else:
-        check_auth(business_identifier=None, account_id=account_number,
-                   one_of_roles=[Role.EDITOR.value, Role.VIEW_ACCOUNT_TRANSACTIONS.value])
+        check_auth(
+            business_identifier=None,
+            account_id=account_number,
+            one_of_roles=[Role.EDITOR.value, Role.VIEW_ACCOUNT_TRANSACTIONS.value],
+        )
 
     account_to_search = None if any_org_transactions else account_number
     page: int = int(request.args.get("page", "1"))
@@ -308,8 +321,11 @@ def post_account_purchase_report(account_number: str):
         report_name = f"{report_name}.csv"
 
     # Check if user is authorized to perform this action
-    check_auth(business_identifier=None, account_id=account_number,
-               one_of_roles=[EDIT_ROLE, Role.VIEW_ACCOUNT_TRANSACTIONS.value])
+    check_auth(
+        business_identifier=None,
+        account_id=account_number,
+        one_of_roles=[EDIT_ROLE, Role.VIEW_ACCOUNT_TRANSACTIONS.value],
+    )
     try:
         report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
         response = Response(report, 201)
