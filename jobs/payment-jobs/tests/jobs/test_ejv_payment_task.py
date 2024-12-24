@@ -24,7 +24,7 @@ from tasks.ejv_payment_task import EjvPaymentTask
 from .factory import factory_create_ejv_account, factory_distribution, factory_invoice, factory_payment_line_item
 
 
-def test_payments_for_gov_accounts(session, monkeypatch):
+def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
     """Test payments for gov accounts.
 
     Steps:

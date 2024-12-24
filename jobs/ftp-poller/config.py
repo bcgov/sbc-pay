@@ -147,6 +147,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
     PUB_ENABLE_MESSAGE_ORDERING = os.getenv("PUB_ENABLE_MESSAGE_ORDERING", "True")
 
+    FTP_POLLER_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME", "")
+    GOOGLE_STORAGE_SA = os.getenv("GOOGLE_STORAGE_SA", "")
+
     TESTING = False
     DEBUG = True
 
