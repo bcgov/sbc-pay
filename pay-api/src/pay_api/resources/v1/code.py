@@ -35,3 +35,11 @@ def get_codes_by_type(code_type):
 def get_code(code_type, code):
     """Return all codes based on code_type."""
     return CodeService.find_code_value_by_type_and_code(code_type, code), HTTPStatus.OK
+
+
+@bp.route("/valid_payment_methods", methods=["GET", "OPTIONS"])
+@bp.route("/valid_payment_methods/<string:product_code>", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET"])
+def get_valid_payment_methods(product_code=None):
+    """Return all valid payment methods based on product code."""
+    return CodeService.find_valid_payment_methods_by_product_code(product_code), HTTPStatus.OK

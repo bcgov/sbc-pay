@@ -94,3 +94,22 @@ class Code:
                 code_response = schema.dump(codes_model, many=False)
         current_app.logger.debug(">find_code_value_by_type_and_code")
         return code_response
+
+    @classmethod
+    def find_valid_payment_methods_by_product_code(cls, product_code: str | None = None) -> dict:
+        """Find payment methods for a product."""
+        if not product_code:
+            corp_types = (
+                CorpType.query.with_entities(CorpType.product, CorpType.payment_methods)
+                .filter(CorpType.product.isnot(None))  # Exclude None at the query level
+                .distinct()
+                .all()
+            )
+            return dict(corp_types)
+
+        corp_type = (
+            CorpType.query.with_entities(CorpType.product, CorpType.payment_methods)
+            .filter_by(product=product_code)
+            .first()
+        )
+        return {corp_type.product: corp_type.payment_methods} if corp_type else {}
