@@ -187,9 +187,6 @@ class _Config:  # pylint: disable=too-few-public-methods
     # The number of characters which can be exposed to admins for a bank account number
     MASK_LEN = int(_get_config("MASK_LEN", default=3))
 
-    # Config value to disable activity logs
-    DISABLE_ACTIVITY_LOGS = os.getenv("DISABLE_ACTIVITY_LOGS", "False").lower() == "true"
-
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY")
 
