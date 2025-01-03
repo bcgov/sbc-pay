@@ -39,7 +39,7 @@ serialPipeline:
       verify: false
    deployParameters:
    - values:
-      deploy-env: "test"
+      deploy-env: "development"
       deploy-project-id: "gtksf3-test"
       service-name: "pay-api-test"
       container-name: "pay-api-test"
@@ -52,7 +52,7 @@ serialPipeline:
       verify: false
    deployParameters:
    - values:
-      deploy-env: "sandbox"
+      deploy-env: "production"
       deploy-project-id: "gtksf3-tools"
       service-name: "pay-api-sandbox"
       container-name: "pay-api-sandbox"
