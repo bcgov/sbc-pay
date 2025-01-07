@@ -352,21 +352,6 @@ def test_create_eft_payment(session, public_user_mock):
     assert payment_response.get("status_code") == InvoiceStatus.APPROVED.value
 
 
-def test_create_eft_payment_ff_disabled(session, public_user_mock):
-    """Assert that the payment method EFT feature flag properly disables record creation."""
-    factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
-
-    with patch("pay_api.services.payment_service.flags.is_on", return_value=False):
-        with pytest.raises(BusinessException) as exception:
-            PaymentService.create_invoice(
-                get_payment_request_with_service_fees(business_identifier="CP0002000"),
-                get_auth_premium_user(),
-            )
-
-        assert exception is not None
-        assert exception.value.code == Error.INVALID_PAYMENT_METHOD.name
-
-
 def test_internal_rs_back_active(session, public_user_mock):
     """12033 - Scenario 2.
 

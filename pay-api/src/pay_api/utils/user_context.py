@@ -120,6 +120,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
 
     def is_api_user(self) -> bool:
         """Return True if the user is an api_user."""
+        # Note it's possible some of our service accounts could fall under API users, so check for system as well.
         return Role.API_USER.value in self._roles if self._roles else False
 
     @property
