@@ -66,10 +66,10 @@ def test_find_valid_payment_methods_by_product_code(session):
     assert payment_methods is not None
     assert isinstance(payment_methods, dict)
 
-    business_payment_methods = CodeService.find_valid_payment_methods_by_product_code('BUSINESS')
+    business_payment_methods = CodeService.find_valid_payment_methods_by_product_code("BUSINESS")
     assert business_payment_methods is not None
-    assert 'BUSINESS' in business_payment_methods
-    assert isinstance(business_payment_methods['BUSINESS'], list)
+    assert "BUSINESS" in business_payment_methods
+    assert isinstance(business_payment_methods["BUSINESS"], list)
 
-    invalid_payment_methods = CodeService.find_valid_payment_methods_by_product_code('INVALID')
+    invalid_payment_methods = CodeService.find_valid_payment_methods_by_product_code("INVALID")
     assert invalid_payment_methods == {}

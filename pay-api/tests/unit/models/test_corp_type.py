@@ -64,14 +64,11 @@ def test_corp_type_by_invalid_code(session):
 def test_payment_methods(session):
     """Assert that payment methods are stored and retrieved correctly."""
     business_corp = factory_corp_type(
-        "XX",
-        "Business",
-        product="BUSINESS",
-        payment_methods=['PAD', 'DIRECT_PAY', 'ONLINE_BANKING', 'DRAWDOWN']
+        "XX", "Business", product="BUSINESS", payment_methods=["PAD", "DIRECT_PAY", "ONLINE_BANKING", "DRAWDOWN"]
     )
     session.add(business_corp)
     session.commit()
 
     retrieved_corp = CorpType.find_by_code("XX")
     assert retrieved_corp is not None
-    assert retrieved_corp.payment_methods == ['PAD', 'DIRECT_PAY', 'ONLINE_BANKING', 'DRAWDOWN']
+    assert retrieved_corp.payment_methods == ["PAD", "DIRECT_PAY", "ONLINE_BANKING", "DRAWDOWN"]

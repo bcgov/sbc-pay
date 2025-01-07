@@ -30,7 +30,6 @@ from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.flags import flags
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
@@ -304,8 +303,6 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _validate_allow_partial_refund(cls, refund_revenue, invoice: InvoiceModel):
         if refund_revenue:
-            if not flags.is_on("enable-partial-refunds", default=False):
-                raise BusinessException(Error.INVALID_REQUEST)
             if invoice.corp_type.has_partner_disbursements:
                 raise BusinessException(Error.PARTIAL_REFUND_DISBURSEMENTS_UNSUPPORTED)
 
