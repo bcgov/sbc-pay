@@ -304,8 +304,6 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _validate_allow_partial_refund(cls, refund_revenue, invoice: InvoiceModel):
         if refund_revenue:
-            if not flags.is_on("enable-partial-refunds", default=False):
-                raise BusinessException(Error.INVALID_REQUEST)
             if invoice.corp_type.has_partner_disbursements:
                 raise BusinessException(Error.PARTIAL_REFUND_DISBURSEMENTS_UNSUPPORTED)
 
