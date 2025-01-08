@@ -18,6 +18,10 @@ def get_issues_from_repo(target, latest_release_only=False):
                 issue_ids.append(re.search(r'\d+ -', l).group(0).replace(' -',''))
             if re.search(r'\d+-', l):
                 issue_ids.append(re.search(r'\d+-', l).group(0).replace('-',''))
+            if re.search(r'(\d+)\s&\s(\d+)\s-', l):
+                issue_ids.append(re.search(r'(\d+)\s&\s(\d+)\s-', l).group(1))
+                issue_ids.append(re.search(r'(\d+)\s&\s(\d+)\s-', l).group(2))
+
         if latest_release_only:
             break
     issue_ids = list(set(issue_ids))
