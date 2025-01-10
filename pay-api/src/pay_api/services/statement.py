@@ -358,8 +358,9 @@ class Statement:  # pylint:disable=too-many-public-methods
 
         latest_payment_date = None
         for invoice in statement_invoices:
-            if latest_payment_date is None or invoice.payment_date > latest_payment_date:
-                latest_payment_date = invoice.payment_date
+            if invoice.payment_date is not None:
+                if latest_payment_date is None or invoice.payment_date > latest_payment_date:
+                    latest_payment_date = invoice.payment_date
 
         return {
             "lastStatementTotal": previous_totals["fees"] if previous_totals else 0,
