@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the EFT File parser is working as intended.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from flask import current_app
@@ -220,7 +220,7 @@ def test_eft_parse_records(app, pattern_type, pattern, expected):
     )
 
     record: EFTRecord = EFTRecord(content, 1)
-    deposit_datetime = datetime(2023, 8, 10, 0, 0)
+    deposit_datetime = datetime(2023, 8, 10, 7, 0, tzinfo=timezone.utc)
     assert record.index == 1
     assert record.record_type == "2"
     assert record.ministry_code == "AT"
@@ -439,7 +439,7 @@ def test_eft_parse_file(app):
         assert eft_records[0].record_type == "2"
         assert eft_records[0].ministry_code == "AT"
         assert eft_records[0].program_code == "0146"
-        assert eft_records[0].deposit_datetime == datetime(2023, 8, 10, 0, 0)
+        assert eft_records[0].deposit_datetime == datetime(2023, 8, 10, 7, 0, tzinfo=timezone.utc)
         assert eft_records[0].location_id == "85004"
         assert eft_records[0].transaction_sequence == "001"
         assert eft_records[0].transaction_description == "DEPOSIT          26"
@@ -458,7 +458,7 @@ def test_eft_parse_file(app):
         assert eft_records[1].record_type == "2"
         assert eft_records[1].ministry_code == "AT"
         assert eft_records[1].program_code == "0146"
-        assert eft_records[1].deposit_datetime == datetime(2023, 8, 10, 0, 0)
+        assert eft_records[1].deposit_datetime == datetime(2023, 8, 10, 7, 0, tzinfo=timezone.utc)
         assert eft_records[1].location_id == "85004"
         assert eft_records[1].transaction_sequence == "002"
         assert eft_records[1].transaction_description == "HSIMPSON"
@@ -477,7 +477,7 @@ def test_eft_parse_file(app):
         assert eft_records[2].record_type == "2"
         assert eft_records[2].ministry_code == "AT"
         assert eft_records[2].program_code == "0146"
-        assert eft_records[2].deposit_datetime == datetime(2023, 8, 10, 0, 0)
+        assert eft_records[2].deposit_datetime == datetime(2023, 8, 10, 7, 0, tzinfo=timezone.utc)
         assert eft_records[2].location_id == "85004"
         assert eft_records[2].transaction_sequence == "003"
         assert eft_records[2].transaction_description == "ABC1234567"
@@ -496,7 +496,7 @@ def test_eft_parse_file(app):
         assert eft_records[3].record_type == "2"
         assert eft_records[3].ministry_code == "AT"
         assert eft_records[3].program_code == "0146"
-        assert eft_records[3].deposit_datetime == datetime(2023, 8, 10, 0, 0)
+        assert eft_records[3].deposit_datetime == datetime(2023, 8, 10, 7, 0, tzinfo=timezone.utc)
         assert eft_records[3].location_id == "85004"
         assert eft_records[3].transaction_sequence == "004"
         assert eft_records[3].transaction_description == "INTERBLOCK C"
@@ -515,7 +515,7 @@ def test_eft_parse_file(app):
         assert eft_records[4].record_type == "2"
         assert eft_records[4].ministry_code == "AT"
         assert eft_records[4].program_code == "0146"
-        assert eft_records[4].deposit_datetime == datetime(2023, 8, 10, 16, 0)
+        assert eft_records[4].deposit_datetime == datetime(2023, 8, 10, 23, 0, tzinfo=timezone.utc)
         assert eft_records[4].location_id == "85020"
         assert eft_records[4].transaction_sequence == "001"
         assert eft_records[4].transaction_description == ""
@@ -534,7 +534,7 @@ def test_eft_parse_file(app):
         assert eft_records[5].record_type == "2"
         assert eft_records[5].ministry_code == "AT"
         assert eft_records[5].program_code == "0146"
-        assert eft_records[5].deposit_datetime == datetime(2023, 8, 10, 16, 0)
+        assert eft_records[5].deposit_datetime == datetime(2023, 8, 10, 23, 0, tzinfo=timezone.utc)
         assert eft_records[5].location_id == "85020"
         assert eft_records[5].transaction_sequence == "001"
         assert eft_records[5].transaction_description == "FEDERAL PAYMENT CANADA"

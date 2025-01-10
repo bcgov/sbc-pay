@@ -16,6 +16,7 @@ import decimal
 from datetime import datetime
 from typing import Tuple
 
+import pytz
 from flask import current_app
 from pay_api.utils.enums import EFTShortnameType
 
@@ -48,6 +49,7 @@ class EFTRecord(EFTBase):
     transaction_date: datetime  # optional
     short_name_type: str = None
     generate_short_name: bool = False
+    file_timezone = pytz.timezone("America/Vancouver")
 
     def __init__(self, content: str, index: int):
         """Return an EFT Transaction record."""
@@ -82,7 +84,7 @@ class EFTRecord(EFTBase):
         deposit_time = "0000" if len(deposit_time) == 0 else deposit_time  # default to 0000 if time not provided
 
         self.deposit_datetime = self.parse_datetime(
-            self.extract_value(7, 15) + deposit_time, EFTError.INVALID_DEPOSIT_DATETIME
+            self.extract_value(7, 15) + deposit_time, EFTError.INVALID_DEPOSIT_DATETIME, self.file_timezone
         )
         self.location_id = self.extract_value(15, 20)
         self.transaction_sequence = self.extract_value(24, 27)
@@ -105,7 +107,9 @@ class EFTRecord(EFTBase):
         # transaction date is optional - parse if there is a value
         transaction_date = self.extract_value(131, 139)
         self.transaction_date = (
-            None if len(transaction_date) == 0 else self.parse_date(transaction_date, EFTError.INVALID_TRANSACTION_DATE)
+            None
+            if len(transaction_date) == 0
+            else self.parse_datetime(transaction_date, EFTError.INVALID_TRANSACTION_DATE, self.file_timezone)
         )
 
     def parse_transaction_description(self):

@@ -29,7 +29,7 @@ from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 
-from .constants import DT_SHORT_FORMAT
+from .constants import DT_FULL_FORMAT, DT_SHORT_FORMAT
 from .converter import Converter
 from .enums import Code, CorpType, Product, StatementFrequency
 
@@ -264,6 +264,21 @@ def string_to_date(date_val: str, dt_format: str = DT_SHORT_FORMAT):
         return None
 
     return datetime.strptime(date_val, dt_format).date()
+
+
+def iso_string_to_date(date_val: str):
+    """Return date from iso formatted string."""
+    if date_val is None:
+        return None
+    return datetime.fromisoformat(date_val)
+
+
+def date_to_string(date_val: str, dt_format: str = DT_FULL_FORMAT):
+    """Return date as string."""
+    if date_val is None:
+        return None
+
+    return date_val.strftime(dt_format)
 
 
 def string_to_decimal(val: str):

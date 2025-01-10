@@ -172,6 +172,7 @@ class EFTShortnameSummaries:
             start_date=search_criteria.deposit_start_date,
             end_date=search_criteria.deposit_end_date,
             model_attribute=last_payment_subquery.c.deposit_date,
+            cast_to_date=False,
         )
         query = query.filter_conditionally(search_criteria.credit_remaining, credit_remaining_subquery.c.total)
 

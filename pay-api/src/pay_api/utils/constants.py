@@ -48,6 +48,7 @@ ALL_ALLOWED_ROLES = (EDIT_ROLE, VIEW_ROLE)
 
 LEGISLATIVE_TIMEZONE = "America/Vancouver"
 DT_SHORT_FORMAT = "%Y-%m-%d"
+DT_FULL_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 REFUND_SUCCESS_MESSAGES = {
     "PAD.APPROVED": "Your transaction has been cancelled. We will not request the initial payment from your bank.",

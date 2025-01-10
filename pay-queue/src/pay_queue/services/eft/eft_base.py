@@ -57,8 +57,10 @@
 
 """This manages the EFT base class."""
 import decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Tuple
+
+import pytz
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from pay_queue.services.eft.eft_errors import EFTError
@@ -130,10 +132,12 @@ class EFTBase:
 
         return result
 
-    def parse_datetime(self, datetime_str: str, error: EFTError) -> decimal:
+    def parse_datetime(self, datetime_str: str, error: EFTError, tz=None) -> decimal:
         """Try to parse date time value from a string, return None if it fails and add an error."""
         try:
             result = datetime.strptime(datetime_str, EFTConstants.DATE_TIME_FORMAT.value)
+            if tz:
+                result = tz.localize(result).astimezone(timezone.utc)
         except (ValueError, TypeError):
             result = None
             self.add_error(EFTParseError(error))

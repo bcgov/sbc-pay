@@ -48,6 +48,7 @@ from pay_api.utils.enums import (
     StatementFrequency,
 )
 from pay_api.utils.errors import Error
+from pay_api.utils.util import iso_string_to_date
 from tests.utilities.base_test import (
     factory_eft_credit,
     factory_eft_file,
@@ -329,13 +330,12 @@ def assert_short_name_summary(
     shortname_refund: EFTRefundModel = None,
 ):
     """Assert short name summary result."""
-    date_format = "%Y-%m-%dT%H:%M:%S"
     assert result_dict["id"] == short_name.id
     assert result_dict["shortName"] == short_name.short_name
     assert result_dict["shortNameType"] == short_name.type
     assert result_dict["creditsRemaining"] == expected_credits_remaining
     assert result_dict["linkedAccountsCount"] == expected_linked_accounts_count
-    assert datetime.strptime(result_dict["lastPaymentReceivedDate"], date_format) == transaction.deposit_date
+    assert iso_string_to_date(result_dict["lastPaymentReceivedDate"]) == transaction.deposit_date
     assert result_dict["refundStatus"] == (shortname_refund.status if shortname_refund is not None else None)
 
 
@@ -427,7 +427,8 @@ def test_eft_short_name_summaries(session, client, jwt, app):
 
     # Assert search by payment received date
     rv = client.get(
-        "/api/v1/eft-shortnames/summaries?" "paymentReceivedStartDate=2024-01-16&paymentReceivedEndDate=2024-01-16",
+        "/api/v1/eft-shortnames/summaries?"
+        "paymentReceivedStartDate=2024-01-16T08:00:00.000Z&paymentReceivedEndDate=2024-01-17T07:59:59.999Z",
         headers=headers,
     )
     assert rv.status_code == 200
@@ -532,8 +533,8 @@ def create_eft_summary_search_data():
         line_number=1,
         file_id=eft_file.id,
         status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 5, 2, 30),
-        deposit_date=datetime(2024, 1, 6, 10, 5),
+        transaction_date=datetime(2024, 1, 5, 2, 30, tzinfo=timezone.utc),
+        deposit_date=datetime(2024, 1, 6, 10, 5, tzinfo=timezone.utc),
         deposit_amount_cents=10150,
         short_name_id=short_name_1.id,
     ).save()
@@ -551,8 +552,8 @@ def create_eft_summary_search_data():
         line_number=1,
         file_id=eft_file.id,
         status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 5, 2, 30),
-        deposit_date=datetime(2024, 1, 6, 10, 5),
+        transaction_date=datetime(2024, 1, 5, 2, 30, tzinfo=timezone.utc),
+        deposit_date=datetime(2024, 1, 6, 10, 5, tzinfo=timezone.utc),
         deposit_amount_cents=10250,
         short_name_id=short_name_1.id,
     ).save()
@@ -569,8 +570,8 @@ def create_eft_summary_search_data():
         line_number=1,
         file_id=eft_file.id,
         status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 10, 2, 30),
-        deposit_date=datetime(2024, 1, 5, 10, 5),
+        transaction_date=datetime(2024, 1, 10, 2, 30, tzinfo=timezone.utc),
+        deposit_date=datetime(2024, 1, 5, 10, 5, tzinfo=timezone.utc),
         deposit_amount_cents=30150,
         short_name_id=short_name_1.id,
     ).save()
@@ -581,8 +582,8 @@ def create_eft_summary_search_data():
         line_number=1,
         file_id=eft_file.id,
         status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 15, 2, 30),
-        deposit_date=datetime(2024, 1, 16, 10, 5),
+        transaction_date=datetime(2024, 1, 15, 2, 30, tzinfo=timezone.utc),
+        deposit_date=datetime(2024, 1, 16, 8, 0, tzinfo=timezone.utc),
         deposit_amount_cents=30250,
         short_name_id=short_name_2.id,
     ).save()

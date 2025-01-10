@@ -35,7 +35,7 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
-from pay_api.utils.util import string_to_date, string_to_decimal, string_to_int
+from pay_api.utils.util import iso_string_to_date, string_to_decimal, string_to_int
 
 bp = Blueprint(
     "EFT_SHORT_NAMES",
@@ -87,8 +87,8 @@ def get_eft_shortname_summaries():
         EFTShortnameSummariesService.search(
             EFTShortnamesSearch(
                 id=string_to_int(request_data.short_name_id),
-                deposit_start_date=string_to_date(request_data.payment_received_start_date),
-                deposit_end_date=string_to_date(request_data.payment_received_end_date),
+                deposit_start_date=iso_string_to_date(request_data.payment_received_start_date),
+                deposit_end_date=iso_string_to_date(request_data.payment_received_end_date),
                 credit_remaining=string_to_decimal(request_data.credits_remaining),
                 linked_accounts_count=string_to_int(request_data.linked_accounts_count),
                 short_name=request_data.short_name,
