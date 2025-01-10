@@ -358,6 +358,8 @@ class Statement:  # pylint:disable=too-many-public-methods
 
         latest_payment_date = None
         for invoice in statement_invoices:
+            if invoice.payment_date is None:
+                continue
             if latest_payment_date is None or invoice.payment_date > latest_payment_date:
                 latest_payment_date = invoice.payment_date
 
