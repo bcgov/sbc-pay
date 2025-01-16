@@ -46,8 +46,8 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentStatus,
+    RoutingSlipRefundStatus,
     RoutingSlipStatus,
-    RoutingSlipRefundStatus
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sqlalchemy import text
@@ -1228,7 +1228,7 @@ def test_failed_refund_reconciliations(session, app, client):
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     routing_slip_1 = RoutingSlipModel.find_by_number(rs_numbers[0])
     assert routing_slip_1.status == RoutingSlipStatus.REFUND_PROCESSED.value
-    assert routing_slip.refund_status == RoutingSlipRefundStatus.PROCESSED.value
+    assert routing_slip_1.refund_status == RoutingSlipRefundStatus.PROCESSED.value
 
     routing_slip_2 = RoutingSlipModel.find_by_number(rs_numbers[1])
     assert routing_slip_2.status == RoutingSlipStatus.REFUND_REJECTED.value

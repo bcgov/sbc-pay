@@ -45,8 +45,8 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     QueueSources,
+    RoutingSlipRefundStatus,
     RoutingSlipStatus,
-    RoutingSlipRefundStatus
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
