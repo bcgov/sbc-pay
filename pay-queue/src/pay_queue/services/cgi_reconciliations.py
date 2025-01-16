@@ -45,6 +45,7 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     QueueSources,
+    RoutingSlipRefundStatus,
     RoutingSlipStatus,
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -463,6 +464,7 @@ def _process_ap_header_routing_slips(line) -> bool:
         )
     else:
         routing_slip.status = RoutingSlipStatus.REFUND_PROCESSED.value
+        routing_slip.refund_status = RoutingSlipRefundStatus.PROCESSED.value
         refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
         refund.gl_posted = datetime.now()
         refund.save()
