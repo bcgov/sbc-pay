@@ -46,8 +46,8 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentStatus,
-    RoutingSlipRefundStatus,
     RoutingSlipStatus,
+    RoutingSlipRefundStatus
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sqlalchemy import text
