@@ -90,7 +90,7 @@ class NonSufficientFundsService:
     def query_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices and their aggregate amounts."""
         query = (
-            db.session.query(InvoiceModel, InvoiceReferenceModel)
+            db.session.query(InvoiceModel, InvoiceReferenceModel, NonSufficientFunds.description)
             .join(
                 InvoiceReferenceModel,
                 InvoiceReferenceModel.invoice_id == InvoiceModel.id,
@@ -108,7 +108,7 @@ class NonSufficientFundsService:
                 InvoiceModel.invoice_status_code != InvoiceStatus.PAID.value,
             )
             .distinct(InvoiceModel.id)
-            .group_by(InvoiceModel.id, InvoiceReferenceModel.id)
+            .group_by(InvoiceModel.id, InvoiceReferenceModel.id, NonSufficientFunds.description)
         )
 
         invoice_totals_subquery = (
@@ -173,7 +173,7 @@ class NonSufficientFundsService:
         results, total, aggregate_totals, statements = (
             NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id)
         )
-        invoice_search_model = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao, _ in results]
+        invoice_search_model = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao, _, _ in results]
         invoices = Converter().unstructure(invoice_search_model)
         invoices = [Converter().remove_nones(invoice_dict) for invoice_dict in invoices]
         statements = StatementDTO.dao_to_dict(statements)
@@ -184,6 +184,7 @@ class NonSufficientFundsService:
             "total_amount": float(aggregate_totals.total_amount or 0),
             "total_amount_remaining": float(aggregate_totals.total_amount_remaining or 0),
             "nsf_amount": float(aggregate_totals.nsf_amount or 0),
+            "reason": results[0][2] if results else 'None',
         }
 
         return data
