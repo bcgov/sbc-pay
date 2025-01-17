@@ -432,8 +432,10 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         is_first_time_pad = not account.pad_activation_date
         # default it. If ever was in PAD , no new activation date needed
         if is_first_time_pad:
-            new_payment_method = PaymentMethod.PAD.value if previous_payment is None else previous_payment
             new_activation_date = PaymentAccount._calculate_activation_date()
+            new_payment_method = PaymentMethod.PAD.value
+            if new_activation_date > datetime.now(new_activation_date.tzinfo) and previous_payment is not None:
+                new_payment_method = previous_payment
         else:
             # Handle repeated changing of pad to bcol ;then to pad again etc
             new_activation_date = account.pad_activation_date  # was already in pad ;no need to extend
