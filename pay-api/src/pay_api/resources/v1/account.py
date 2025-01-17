@@ -279,7 +279,10 @@ def post_search_purchase_history(account_number: str):
         check_auth(
             business_identifier=None,
             account_id=account_number,
-            all_of_roles=[Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value],
+            one_of_role_sets=[
+                [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value],
+                [Role.VIEW_ALL_TRANSACTIONS.value],
+            ],
         )
     else:
         check_auth(
