@@ -110,6 +110,8 @@ def check_auth(
             is_authorized = kwargs.get("contains_role") in roles
         if required_roles := kwargs.get("all_of_roles", None):
             is_authorized = len(set(required_roles) & set(roles)) == len(set(required_roles))
+        if one_of_role_sets := kwargs.get("one_of_role_sets", None):
+            is_authorized = any(set(role_set).issubset(set(roles)) for role_set in one_of_role_sets)
         # Check if premium flag is required
         if (
             flags.is_on("remove-premium-restrictions", default=False) is False
