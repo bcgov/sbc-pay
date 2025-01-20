@@ -102,7 +102,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
     invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number=payment.invoice_number)
     invoice_reference.save()
     non_sufficient_funds = factory_non_sufficient_funds(
-        invoice_id=invoice.id, invoice_number=payment.invoice_number, description="NSF"
+        invoice_id=invoice.id, invoice_number=payment.invoice_number, description="EFT invoice overdue"
     )
     non_sufficient_funds.save()
     s1_settings = factory_statement_settings(
@@ -133,3 +133,4 @@ def test_find_all_non_sufficient_funds_invoices(session):
     assert find_non_sufficient_funds["total_amount"] == 0
     assert find_non_sufficient_funds["total_amount_remaining"] == 30.0
     assert find_non_sufficient_funds["nsf_amount"] == 30.0
+    assert find_non_sufficient_funds["reason"] == "EFT invoice overdue"
