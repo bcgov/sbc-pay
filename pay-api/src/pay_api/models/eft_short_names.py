@@ -19,6 +19,7 @@ from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import text
 
+from ..utils.util import date_to_string
 from .base_model import BaseModel
 from .db import db
 
@@ -128,7 +129,7 @@ class EFTShortnameSummarySchema:
     cas_supplier_number: str
     cas_supplier_site: str
     email: str
-    last_payment_received_date: datetime
+    last_payment_received_date: str
     credits_remaining: Decimal
     linked_accounts_count: int
     refund_status: str
@@ -146,7 +147,7 @@ class EFTShortnameSummarySchema:
             cas_supplier_number=getattr(row, "cas_supplier_number", None),
             cas_supplier_site=getattr(row, "cas_supplier_site", None),
             email=getattr(row, "email", None),
-            last_payment_received_date=getattr(row, "last_payment_received_date", None),
+            last_payment_received_date=date_to_string(getattr(row, "last_payment_received_date", None)),
             credits_remaining=getattr(row, "credits_remaining", None),
             linked_accounts_count=getattr(row, "linked_accounts_count", None),
             refund_status=getattr(row, "refund_status", None),

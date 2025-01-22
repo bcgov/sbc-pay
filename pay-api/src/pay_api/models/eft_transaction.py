@@ -84,8 +84,8 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
     short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=True)
     status_code = db.Column(db.String, ForeignKey("eft_process_status_codes.code"), nullable=False)
     deposit_amount_cents = db.Column("deposit_amount_cents", db.BigInteger, nullable=True)
-    deposit_date = db.Column("deposit_date", db.DateTime, nullable=True)
-    transaction_date = db.Column("transaction_date", db.DateTime, nullable=True)
+    deposit_date = db.Column("deposit_date", db.DateTime(timezone=True), nullable=True)
+    transaction_date = db.Column("transaction_date", db.DateTime(timezone=True), nullable=True)
 
 
 @define
