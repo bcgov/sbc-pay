@@ -60,8 +60,6 @@ import decimal
 from datetime import datetime, timezone
 from typing import List, Tuple
 
-import pytz
-
 from pay_queue.services.eft.eft_enums import EFTConstants
 from pay_queue.services.eft.eft_errors import EFTError
 from pay_queue.services.eft.eft_parse_error import EFTParseError
