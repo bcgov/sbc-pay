@@ -1740,13 +1740,13 @@ tests = ["codecov", "coverage", "flake8", "flake8-quotes", "flake8-typing-import
 
 [[package]]
 name = "jinja2"
-version = "3.1.4"
+version = "3.1.5"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "jinja2-3.1.4-py3-none-any.whl", hash = "sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d"},
-    {file = "jinja2-3.1.4.tar.gz", hash = "sha256:4a3aee7acbbe7303aede8e9648d13b8bf88a429282aa6122a993f0ac800cb369"},
+    {file = "jinja2-3.1.5-py3-none-any.whl", hash = "sha256:aba0f4dc9ed8013c424088f68a5c226f7d6097ed89b246d7749c2ec4175c6adb"},
+    {file = "jinja2-3.1.5.tar.gz", hash = "sha256:8fefff8dc3034e27bb80d67c671eb8a9bc424c0ef4c0826edbff304cceff43bb"},
 ]
 
 [package.dependencies]
@@ -2201,7 +2201,7 @@ holidays = "0.37"
 idna = "3.7"
 itsdangerous = "2.1.2"
 jaeger-client = "4.8.0"
-jinja2 = "3.1.4"
+jinja2 = "3.1.5"
 jsonschema = "4.17.3"
 launchdarkly-eventsource = "1.1.1"
 launchdarkly-server-sdk = "8.2.1"
@@ -2237,16 +2237,16 @@ sqlalchemy = "2.0.28"
 sqlalchemy-utils = "0.41.1"
 threadloop = "1.0.2"
 thrift = "0.16.0"
-tornado = "6.4.2"
+tornado = "^6.4.2"
 typing-extensions = "4.10.0"
 urllib3 = "2.2.2"
 werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/Jxio/sbc-pay.git"
-reference = "24695"
-resolved_reference = "db15fe371380a5518a79dc79611e4f58a3220922"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "main"
+resolved_reference = "6ccd0cd754583baebd57c7895e5953e005229a79"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3497,4 +3497,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "de07f891f0711937aec88753d17dd492d35339b0d3e350ead632d92f33d1d18e"
+content-hash = "f04fdbff5e060048f85caaf7c7c4aea5395b758174b252c571d99efcea06073b"
