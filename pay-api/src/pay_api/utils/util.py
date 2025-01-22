@@ -273,7 +273,7 @@ def iso_string_to_date(date_val: str):
     return datetime.fromisoformat(date_val)
 
 
-def date_to_string(date_val: str, dt_format: str = DT_FULL_FORMAT):
+def date_to_string(date_val: datetime, dt_format: str = DT_FULL_FORMAT):
     """Return date as string."""
     if date_val is None:
         return None
