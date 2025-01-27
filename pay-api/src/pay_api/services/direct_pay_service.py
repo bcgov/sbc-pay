@@ -130,18 +130,18 @@ class DirectPayService(PaymentSystemService, OAuthService):
         payment_line_items = PaymentLineItemModel.find_by_invoice_ids([invoice.id])
         index: int = 0
         revenue_item = []
-        for payment_line_item in payment_line_items:
-            if payment_line_item.total == 0:
-                continue
 
+        for payment_line_item in payment_line_items:
             distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                 payment_line_item.fee_distribution_id
             )
 
-            index = index + 1
-            revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
+            if payment_line_item.total > 0:
+                index = index + 1
+                revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
 
-            revenue_item.append(f"{index}:{revenue_string}")
+                revenue_item.append(f"{index}:{revenue_string}")
+
             if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
                 index = index + 1
                 service_fee: DistributionCodeModel = DistributionCodeModel.find_by_id(

@@ -97,7 +97,10 @@ def test_get_payment_system_url(session, public_user_mock):
     assert expected_hash_str == url_param_dict["hashValue"]
 
 
-def test_get_payment_system_url_service_fees(session, public_user_mock):
+@pytest.mark.parametrize(
+    "base_fee, service_fee, expected_revenue_strs", [(None, 100, 2), (Decimal("0.00"), Decimal("1.50"), 1)]
+)
+def test_get_payment_system_url_service_fees(session, public_user_mock, base_fee, service_fee, expected_revenue_strs):
     """Assert that the url returned is correct."""
     today = current_local_time().strftime(PAYBC_DATE_FORMAT)
     payment_account = factory_payment_account()
@@ -117,16 +120,18 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     # update the existing gl code with new values
     distribution_code_svc.save_or_update(distribution_code_payload, distribution_code.distribution_code_id)
 
-    service_fee = 100
     line = factory_payment_line_item(
         invoice.id,
         fee_schedule_id=fee_schedule.fee_schedule_id,
+        total=base_fee if base_fee is not None else Decimal("10.00"),
+        filing_fees=base_fee if base_fee is not None else Decimal("10.00"),
         service_fees=service_fee,
     )
     line.save()
     direct_pay_service = DirectPayService()
     payment_response_url = direct_pay_service.get_payment_system_url_for_invoice(invoice, invoice_ref, "google.com")
     url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
+
     assert url_param_dict["trnDate"] == today
     assert url_param_dict["glDate"] == today
     assert url_param_dict["description"] == "Direct_Sale"
@@ -135,23 +140,33 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     assert url_param_dict["trnAmount"] == str(invoice.total)
     assert url_param_dict["paymentMethod"] == "CC"
     assert url_param_dict["redirectUri"] == "google.com"
-    revenue_str = (
-        f"1:{distribution_code_payload['client']}."
-        f"{distribution_code_payload['responsibilityCentre']}."
-        f"{distribution_code_payload['serviceLine']}."
-        f"{distribution_code_payload['stob']}."
-        f"{distribution_code_payload['projectCode']}."
-        f"000000.0000:10.00"
-    )
+
+    # Generate revenue strings based on base fee and service fee
+    revenue_strs = []
+    if base_fee is None or base_fee > 0:
+        revenue_str = (
+            f"1:{distribution_code_payload['client']}."
+            f"{distribution_code_payload['responsibilityCentre']}."
+            f"{distribution_code_payload['serviceLine']}."
+            f"{distribution_code_payload['stob']}."
+            f"{distribution_code_payload['projectCode']}."
+            f"000000.0000:10.00"
+        )
+        revenue_strs.append(revenue_str)
+
     revenue_str_service_fee = (
-        f"2:{distribution_code_payload['client']}."
+        f"{len(revenue_strs) + 1}:{distribution_code_payload['client']}."
         f"{distribution_code_payload['responsibilityCentre']}."
         f"{distribution_code_payload['serviceLine']}."
         f"{distribution_code_payload['stob']}."
         f"{distribution_code_payload['projectCode']}."
         f"000000.0000:{format(service_fee, DECIMAL_PRECISION)}"
     )
-    assert url_param_dict["revenue"] == f"{revenue_str}|{revenue_str_service_fee}"
+    revenue_strs.append(revenue_str_service_fee)
+
+    assert url_param_dict["revenue"] == "|".join(revenue_strs)
+    assert len(url_param_dict["revenue"].split("|")) == expected_revenue_strs
+
     urlstring = (
         f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&"
         f"glDate={today}&description=Direct_Sale&"
@@ -160,11 +175,9 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
         f"paymentMethod=CC&"
         f"redirectUri=google.com&"
         f"currency=CAD&"
-        f"revenue={revenue_str}|"
-        f"{revenue_str_service_fee}"
+        f"revenue={url_param_dict['revenue']}"
     )
     expected_hash_str = HashingService.encode(urlstring)
-
     assert expected_hash_str == url_param_dict["hashValue"]
 
 
