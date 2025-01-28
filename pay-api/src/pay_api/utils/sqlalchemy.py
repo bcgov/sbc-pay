@@ -16,3 +16,7 @@ class JSONPath(UserDefinedType):
     def get_col_spec(self):
         """Return the column specification."""
         return "jsonpath"
+
+    def _with_collation(self, collation):
+        """Handle collation for JSONPath."""
+        return self
