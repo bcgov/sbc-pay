@@ -184,7 +184,7 @@ class NonSufficientFundsService:
             "total_amount": float(aggregate_totals.total_amount or 0),
             "total_amount_remaining": float(aggregate_totals.total_amount_remaining or 0),
             "nsf_amount": float(aggregate_totals.nsf_amount or 0),
-            "reason": results[0][2] if results else 'None',
+            "reason": results[0][2] if results else "None",
         }
 
         return data
