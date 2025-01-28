@@ -629,22 +629,26 @@ dotenv = ["python-dotenv"]
 
 [[package]]
 name = "flask-jwt-oidc"
-version = "0.8.0"
+version = "0.7.0"
 description = "Opinionated flask oidc client"
 optional = false
-python-versions = "<4,>=3.9"
-files = [
-    {file = "flask_jwt_oidc-0.8.0-py3-none-any.whl", hash = "sha256:9be9b9eba9824888ae04bdc8c6af15fa6ce5d2013129c9a1a9990b8412fc63e0"},
-    {file = "flask_jwt_oidc-0.8.0.tar.gz", hash = "sha256:fe1c28d3c71a1ec56b09f586f5dcda0357df7be4895656737b6268557c2d15e4"},
-]
+python-versions = ">=3.9,<4"
+files = []
+develop = false
 
 [package.dependencies]
-cachelib = ">=0.13.0,<0.14.0"
+cachelib = "^0.13.0"
 cryptography = ">=3.4.0"
 Flask = ">=2"
-pyjwt = ">=2.8.0,<3.0.0"
-six = ">=1.16.0,<2.0.0"
-zimports = ">=0.6.1,<0.7.0"
+pyjwt = "^2.8.0"
+six = "^1.16.0"
+zimports = "^0.6.1"
+
+[package.source]
+type = "git"
+url = "https://github.com/seeker25/flask-jwt-oidc.git"
+reference = "main"
+resolved_reference = "e2a41e40f2f9ac94e5dd9a18e8651eec11b23696"
 
 [[package]]
 name = "flask-moment"
@@ -2136,4 +2140,4 @@ tomli = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "082576c0841049b59b39aad6e4bc7c3258236ff92ab2782fec07195a9a314ef0"
+content-hash = "01a44d6c55e5cb2b012e3f051b1ddf23047a0420bf92e7e96e10b32e706552f5"
