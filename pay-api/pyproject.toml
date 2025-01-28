@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-flask-caching = "2.3.0"
+flask-caching = { git = "https://github.com/pallets-eco/flask-caching.git", branch = "master" }
 flask-cors = "5.0.0"
 flask-migrate = "4.0.7"
 flask-moment = "1.0.5"
@@ -23,7 +23,6 @@ werkzeug = "^3.0.3"
 alembic = "1.13.1"
 attrs = "23.2.0"
 blinker = "1.7.0"
-cachelib = "0.9.0"
 cachetools = "5.3.3"
 cattrs = "23.2.3"
 certifi = "2024.7.4"
@@ -35,7 +34,6 @@ cryptography = "43.0.1"
 dpath = "2.1.6"
 ecdsa = "0.18.0"
 expiringdict = "1.2.2"
-flask-jwt-oidc = {git = "https://github.com/seeker25/flask-jwt-oidc.git"}
 flask-marshmallow = "1.2.0"
 gcp-queue = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/gcp-queue", branch = "main" }
 greenlet = "3.0.3"
@@ -80,6 +78,8 @@ sql-versioning = { git = "https://github.com/bcgov/sbc-connect-common.git", subd
 aiohttp = "^3.10.11"
 setuptools = "^73.0.1"
 flask-executor = "^1.0.0"
+cachelib = "^0.13.0"
+flask-jwt-oidc = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
