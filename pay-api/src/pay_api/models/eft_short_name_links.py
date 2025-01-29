@@ -165,7 +165,7 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
         """
         statements = getattr(row, "statements", [])
         statements_owing = (
-            [StatementOwingSchema.from_row(statement) for statement in statements] if statements is not None else []
+            [StatementOwingSchema.from_row(statement) for statement in statements or []]
         )
 
         return cls(
