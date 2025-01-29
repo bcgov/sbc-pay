@@ -18,8 +18,10 @@ from .distribution_code import DistributionCode
 from .eft_service import EftService
 from .eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from .eft_short_name_historical import EFTShortnameHistory, EFTShortnameHistorySearch
+from .eft_short_name_links import EFTShortnameLinks as EFTShortNameLinkService
 from .eft_short_name_summaries import EFTShortnameSummaries as EFTShortNameSummaryService
 from .eft_short_names import EFTShortnames as EFTShortNamesService
+from .eft_statements import EFTStatements as EFTStatementService
 from .fee_schedule import FeeSchedule
 from .flags import Flags
 from .gcp_queue import GcpQueue

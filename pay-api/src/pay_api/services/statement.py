@@ -194,7 +194,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         return statement
 
     @staticmethod
-    def get_account_statements(auth_account_id: str, page, limit, is_owing: bool = None):
+    def get_account_statements(auth_account_id: str, page, limit, is_owing: bool = None, statement_id: int = None):
         """Return all active statements for an account."""
         query = (
             db.session.query(StatementModel)
@@ -214,6 +214,8 @@ class Statement:  # pylint:disable=too-many-public-methods
             query = query.filter(owing_subquery.c.amount_owing > 0)
         else:
             query = query.add_columns(literal(0).label("amount_owing"))
+
+        query = query.filter_conditionally(statement_id, StatementModel.id)
 
         frequency_case = case(
             (

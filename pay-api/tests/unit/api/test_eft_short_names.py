@@ -38,6 +38,7 @@ from pay_api.utils.enums import (
     EFTCreditInvoiceStatus,
     EFTFileLineType,
     EFTHistoricalTypes,
+    EFTPaymentActions,
     EFTProcessStatus,
     EFTShortnameRefundStatus,
     EFTShortnameStatus,
@@ -269,7 +270,13 @@ def test_get_eft_short_name_links(session, client, jwt, app):
     ).save()
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME").save()
 
-    invoice = factory_invoice(account, payment_method_code=PaymentMethod.EFT.value, total=50, paid=0).save()
+    invoice = factory_invoice(
+        payment_account=account,
+        payment_method_code=PaymentMethod.EFT.value,
+        total=50,
+        paid=0,
+        status_code=InvoiceStatus.APPROVED.value,
+    ).save()
     statement_settings = factory_statement_settings(
         payment_account_id=account.id, frequency=StatementFrequency.MONTHLY.value
     )
@@ -309,6 +316,7 @@ def test_get_eft_short_name_links(session, client, jwt, app):
     assert len(link_list_dict["items"]) == 1
 
     link = link_list_dict["items"][0]
+    statements_owing = link["statementsOwing"]
     assert link["accountId"] == account.auth_account_id
     assert link["id"] == link_dict["id"]
     assert link["shortNameId"] == short_name.id
@@ -319,6 +327,72 @@ def test_get_eft_short_name_links(session, client, jwt, app):
     assert link["statementId"] == statement.id
     assert link["statusCode"] == EFTShortnameStatus.PENDING.value
     assert link["updatedBy"] == "IDIR/JSMITH"
+    assert statements_owing
+    assert statements_owing[0]["amountOwing"] == invoice.total
+    assert statements_owing[0]["pendingPaymentsAmount"] == 0
+    assert statements_owing[0]["pendingPaymentsCount"] == 0
+    assert statements_owing[0]["statementId"] == statement.id
+
+    invoice2 = factory_invoice(
+        payment_account=account,
+        payment_method_code=PaymentMethod.EFT.value,
+        total=100,
+        paid=0,
+        status_code=InvoiceStatus.APPROVED.value,
+    ).save()
+    statement2 = factory_statement(
+        payment_account_id=account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=statement_settings.id,
+    )
+    factory_statement_invoices(statement_id=statement2.id, invoice_id=invoice2.id)
+    eft_file = factory_eft_file()
+    factory_eft_credit(
+        eft_file_id=eft_file.id, short_name_id=short_name.id, amount=invoice.total, remaining_amount=invoice.total
+    )
+
+    rv = client.post(
+        f"/api/v1/eft-shortnames/{short_name.id}/payment",
+        data=json.dumps(
+            {
+                "action": EFTPaymentActions.APPLY_CREDITS.value,
+                "accountId": account.auth_account_id,
+                "statementId": statement.id,
+            }
+        ),
+        headers=headers,
+    )
+
+    rv = client.get(f"/api/v1/eft-shortnames/{short_name.id}/links", headers=headers)
+
+    link_list_dict = rv.json
+    assert rv.status_code == 200
+    assert link_list_dict is not None
+    assert link_list_dict["items"] is not None
+    assert len(link_list_dict["items"]) == 1
+
+    link = link_list_dict["items"][0]
+    statements_owing = link["statementsOwing"]
+    assert link["accountId"] == account.auth_account_id
+    assert link["id"] == link_dict["id"]
+    assert link["shortNameId"] == short_name.id
+    assert link["accountId"] == account.auth_account_id
+    assert link["accountName"] == "ABC"
+    assert link["accountBranch"] == "123"
+    assert link["amountOwing"] == invoice.total + invoice2.total
+    assert link["statementId"] == statement2.id
+    assert link["statusCode"] == EFTShortnameStatus.PENDING.value
+    assert link["updatedBy"] == "IDIR/JSMITH"
+    assert statements_owing
+    assert len(statements_owing) == 2
+    assert statements_owing[0]["amountOwing"] == invoice.total
+    assert statements_owing[0]["pendingPaymentsAmount"] == 0
+    assert statements_owing[0]["pendingPaymentsCount"] == 0
+    assert statements_owing[0]["statementId"] == statement.id
+    assert statements_owing[1]["amountOwing"] == invoice2.total
+    assert statements_owing[1]["pendingPaymentsAmount"] == 0
+    assert statements_owing[1]["pendingPaymentsCount"] == 0
+    assert statements_owing[1]["statementId"] == statement2.id
 
 
 def assert_short_name_summary(
