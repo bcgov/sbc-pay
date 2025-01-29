@@ -164,9 +164,7 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
         https://www.attrs.org/en/stable/init.html
         """
         statements = getattr(row, "statements", [])
-        statements_owing = (
-            [StatementOwingSchema.from_row(statement) for statement in statements or []]
-        )
+        statements_owing = [StatementOwingSchema.from_row(statement) for statement in statements or []]
 
         return cls(
             id=row.id,

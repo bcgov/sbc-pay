@@ -198,7 +198,9 @@ class EftService(DepositService):
         ):
             raise BusinessException(Error.EFT_PAYMENT_ACTION_STATEMENT_ID_INVALID)
 
-        EftService.process_owing_statements(short_name_id, auth_account_id, statement_id)
+        EftService.process_owing_statements(
+            short_name_id=short_name_id, auth_account_id=auth_account_id, statement_id=statement_id
+        )
         current_app.logger.debug(">apply_payment_action")
 
     @staticmethod
@@ -220,6 +222,7 @@ class EftService(DepositService):
             payment_account_id=payment_account.id,
             invoice_id=invoice_id,
             statuses=[EFTCreditInvoiceStatus.PENDING.value],
+            statement_id=statement_id,
         )
         link_group_ids = set()
         for credit_link in credit_links:
@@ -331,6 +334,7 @@ class EftService(DepositService):
         payment_account_id: int,
         statuses: List[str],
         invoice_id: int = None,
+        statement_id: int = None,
     ) -> List[EFTCreditInvoiceLinkModel]:
         """Get short name credit invoice links by account."""
         credit_links_query = (
@@ -340,10 +344,12 @@ class EftService(DepositService):
                 EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id,
             )
             .join(InvoiceModel, InvoiceModel.id == EFTCreditInvoiceLinkModel.invoice_id)
+            .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id)
             .filter(InvoiceModel.payment_account_id == payment_account_id)
             .filter(EFTCreditModel.short_name_id == short_name_id)
             .filter(EFTCreditInvoiceLinkModel.status_code.in_(statuses))
         )
+        credit_links_query = credit_links_query.filter_conditionally(statement_id, StatementInvoicesModel.statement_id)
         credit_links_query = credit_links_query.filter_conditionally(invoice_id, InvoiceModel.id)
         return credit_links_query.all()
 

@@ -78,7 +78,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 case EFTPaymentActions.APPLY_CREDITS.value:
                     EftService.apply_payment_action(short_name_id, auth_account_id, statement_id)
                 case EFTPaymentActions.CANCEL.value:
-                    EftService.cancel_payment_action(short_name_id, auth_account_id)
+                    EftService.cancel_payment_action(short_name_id, auth_account_id, statement_id)
                 case EFTPaymentActions.REVERSE.value:
                     EftService.reverse_payment_action(short_name_id, statement_id)
                 case _:
