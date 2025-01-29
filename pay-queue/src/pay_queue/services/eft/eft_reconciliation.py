@@ -23,8 +23,8 @@ from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
-from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
 from pay_api.services.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksService
+from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
 from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus, EFTShortnameType
 from sentry_sdk import capture_message
 
