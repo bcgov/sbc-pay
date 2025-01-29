@@ -199,4 +199,4 @@ class BcolService(PaymentSystemService, OAuthService):
         """Complete any post payment activities if needed."""
         self.complete_payment(invoice, invoice_reference)
         # Publish message to the queue with payment token, so that they can release records on their side.
-        self._release_payment(invoice=invoice)
+        self.release_payment_or_reversal(invoice=invoice)

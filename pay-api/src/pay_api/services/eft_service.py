@@ -103,7 +103,7 @@ class EftService(DepositService):
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.
-        self._release_payment(invoice=invoice)
+        self.release_payment_or_reversal(invoice=invoice)
 
     def get_default_invoice_status(self) -> str:
         """Return the default status for invoice when created."""

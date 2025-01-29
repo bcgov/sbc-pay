@@ -74,7 +74,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
             self.complete_payment(invoice, invoice_reference)
 
         # Publish message to the queue with payment token, so that they can release records on their side.
-        self._release_payment(invoice=invoice)
+        self.release_payment_or_reversal(invoice=invoice)
 
     def process_cfs_refund(
         self,

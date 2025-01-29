@@ -33,7 +33,14 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import InvoiceStatus, RefundsPartialType, Role, RoutingSlipRefundStatus, RoutingSlipStatus
+from pay_api.utils.enums import (
+    InvoiceStatus,
+    RefundsPartialType,
+    Role,
+    RoutingSlipRefundStatus,
+    RoutingSlipStatus,
+    TransactionStatus,
+)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_quantized, get_str_by_path
@@ -362,6 +369,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             InvoiceStatus.PAID.value,
         ):
             invoice.refund_date = datetime.now(tz=timezone.utc)
+            if invoice.invoice_status_code != InvoiceStatus.PAID.value:
+                pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
         invoice.save()
         current_app.logger.debug(f"Completed refund : {invoice_id}")
         return {"message": message}

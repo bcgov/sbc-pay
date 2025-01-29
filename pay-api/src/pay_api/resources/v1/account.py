@@ -88,6 +88,7 @@ def get_eft_accounts():
     return jsonify(response), status
 
 
+# NOTE: STRR and BAR use this route to check the PAD status and/or payment method, be careful when changing.
 @bp.route("/<string:account_number>", methods=["GET", "OPTIONS"])
 @cross_origin(origins="*", methods=["GET", "PUT", "DELETE"])
 @_jwt.requires_auth
