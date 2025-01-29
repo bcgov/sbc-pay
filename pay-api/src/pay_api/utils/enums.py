@@ -68,6 +68,7 @@ class TransactionStatus(Enum):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
     EVENT_FAILED = "EVENT_FAILED"
+    REVERSED = "REVERSED"
 
 
 class LineItemStatus(Enum):

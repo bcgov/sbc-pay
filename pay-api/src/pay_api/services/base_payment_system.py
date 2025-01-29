@@ -35,6 +35,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.flags import flags
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
@@ -195,7 +196,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.EFT_INVOICES_OVERDUE)
 
     @staticmethod
-    def _release_payment(invoice: Invoice):
+    def release_payment_or_reversal(invoice: Invoice, transaction_status=TransactionStatus.COMPLETED.value):
         """Release record."""
         from .payment_transaction import PaymentTransaction  # pylint:disable=import-outside-toplevel,cyclic-import
 
@@ -207,9 +208,12 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         ]:
             return
 
-        payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
+        if transaction_status == TransactionStatus.REVERSED.value and not flags.is_on("queue-message-for-reversals", default=False):
+            return
+
+        payload = PaymentTransaction.create_event_payload(invoice, transaction_status)
         try:
-            current_app.logger.info(f"Releasing record for invoice {invoice.id}")
+            current_app.logger.info(f"Releasing record for invoice {invoice.id} with status {transaction_status}")
             gcp_queue_publisher.publish_to_queue(
                 gcp_queue_publisher.QueueMessage(
                     source=QueueSources.PAY_API.value,
@@ -370,7 +374,7 @@ def skip_complete_post_invoice_for_sandbox(function):
             current_app.logger.info("Completing the payment as sandbox token is detected.")
             instance: PaymentSystemService = func_args[0]
             instance.complete_payment(func_args[1], func_args[2])  # invoice and invoice ref
-            instance._release_payment(func_args[1])  # pylint: disable=protected-access
+            instance.release_payment_or_reversal(func_args[1])
             return None
         return function(*func_args, **func_kwargs)
 
