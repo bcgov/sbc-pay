@@ -117,6 +117,29 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
 
 
 @define
+class StatementOwingSchema:  # pylint: disable=too-few-public-methods
+    """Schema used to serialize the EFT Short name link statements owing."""
+
+    statement_id: int
+    amount_owing: Decimal
+    pending_payments_count: int
+    pending_payments_amount: Decimal
+
+    @classmethod
+    def from_row(cls, row: dict):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(
+            statement_id=row.get("statement_id"),
+            amount_owing=row.get("amount_owing"),
+            pending_payments_count=row.get("pending_payments_count"),
+            pending_payments_amount=row.get("pending_payments_amount"),
+        )
+
+
+@define
 class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
     """Main schema used to serialize the EFT Short name link."""
 
@@ -132,6 +155,7 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
     updated_by_name: str
     updated_on: datetime
     has_pending_payment: bool
+    statements_owing: List[StatementOwingSchema]
 
     @classmethod
     def from_row(cls, row: EFTShortnameLinks):
@@ -139,6 +163,9 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
+        statements = getattr(row, "statements", [])
+        statements_owing = [StatementOwingSchema.from_row(statement) for statement in statements or []]
+
         return cls(
             id=row.id,
             short_name_id=row.eft_short_name_id,
@@ -152,4 +179,5 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
             updated_by_name=row.updated_by_name,
             updated_on=row.updated_on,
             has_pending_payment=bool(getattr(row, "invoice_count", 0)),
+            statements_owing=statements_owing,
         )

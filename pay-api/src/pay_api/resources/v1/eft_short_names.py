@@ -28,6 +28,7 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.services.eft_refund import EFTRefund as EFTRefundService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTShortnameHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorySearch
+from pay_api.services.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinkService
 from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
 from pay_api.services.eft_short_names import EFTShortnamesSearch
@@ -173,7 +174,7 @@ def get_eft_shortname_links(short_name_id: int):
             response, status = {}, HTTPStatus.NOT_FOUND
         else:
             response, status = (
-                EFTShortnameService.get_shortname_links(short_name_id),
+                EFTShortnameLinkService.get_shortname_links(short_name_id),
                 HTTPStatus.OK,
             )
     except BusinessException as exception:
@@ -197,7 +198,7 @@ def post_eft_shortname_link(short_name_id: int):
         else:
             account_id = request_json.get("accountId", None)
             response, status = (
-                EFTShortnameService.create_shortname_link(short_name_id, account_id),
+                EFTShortnameLinkService.create_shortname_link(short_name_id, account_id),
                 HTTPStatus.OK,
             )
     except BusinessException as exception:
@@ -217,12 +218,12 @@ def patch_eft_shortname_link(short_name_id: int, short_name_link_id: int):
     request_json = request.get_json()
 
     try:
-        link = EFTShortnameService.find_link_by_id(short_name_link_id)
+        link = EFTShortnameLinkService.find_link_by_id(short_name_link_id)
         if not link or link["short_name_id"] != short_name_id:
             response, status = {}, HTTPStatus.NOT_FOUND
         else:
             response, status = (
-                EFTShortnameService.patch_shortname_link(short_name_link_id, request_json),
+                EFTShortnameLinkService.patch_shortname_link(short_name_link_id, request_json),
                 HTTPStatus.OK,
             )
     except BusinessException as exception:

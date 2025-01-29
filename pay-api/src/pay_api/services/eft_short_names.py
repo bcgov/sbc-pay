@@ -15,32 +15,29 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import Dict, List, Optional
 
 from _decimal import Decimal
 from flask import current_app
-from sqlalchemy import and_, case, func, or_
+from sqlalchemy import case, or_
 from sqlalchemy.sql.expression import exists
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
-from pay_api.models import EFTShortnameLinkSchema
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnameSchema
-from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import Statement as StatementModel
-from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import EFTPaymentActions, EFTShortnameStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import EFTPaymentActions, EFTShortnameStatus, PaymentMethod
 from pay_api.utils.errors import Error
-from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
 
+from ..utils.query_util import QueryUtils
 from .eft_service import EftService
+from .eft_statements import EFTStatements
 
 
 @dataclass
@@ -79,9 +76,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         try:
             match action:
                 case EFTPaymentActions.APPLY_CREDITS.value:
-                    EftService.apply_payment_action(short_name_id, auth_account_id)
+                    EftService.apply_payment_action(short_name_id, auth_account_id, statement_id)
                 case EFTPaymentActions.CANCEL.value:
-                    EftService.cancel_payment_action(short_name_id, auth_account_id)
+                    EftService.cancel_payment_action(short_name_id, auth_account_id, statement_id)
                 case EFTPaymentActions.REVERSE.value:
                     EftService.reverse_payment_action(short_name_id, statement_id)
                 case _:
@@ -112,126 +109,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug(">patch_shortname")
         return cls.find_by_short_name_id(short_name_id)
-
-    @classmethod
-    def patch_shortname_link(cls, link_id: int, request: Dict):
-        """Patch EFT short name link."""
-        current_app.logger.debug("<patch_shortname_link")
-        valid_statuses = [EFTShortnameStatus.INACTIVE.value]
-        status_code = request.get("statusCode", None)
-
-        if status_code is None or status_code not in valid_statuses:
-            raise BusinessException(Error.EFT_SHORT_NAME_LINK_INVALID_STATUS)
-
-        shortname_link = EFTShortnameLinksModel.find_by_id(link_id)
-        shortname_link.status_code = status_code
-        shortname_link.save()
-
-        current_app.logger.debug(">patch_shortname_link")
-        return cls.find_link_by_id(link_id)
-
-    @classmethod
-    @user_context
-    def create_shortname_link(cls, short_name_id: int, auth_account_id: str, **kwargs) -> EFTShortnameLinksModel:
-        """Create EFT short name auth account link."""
-        current_app.logger.debug("<create_shortname_link")
-
-        if auth_account_id is None:
-            raise BusinessException(Error.EFT_SHORT_NAME_ACCOUNT_ID_REQUIRED)
-
-        short_name = cls.find_by_auth_account_id_state(
-            auth_account_id,
-            [EFTShortnameStatus.LINKED.value, EFTShortnameStatus.PENDING.value],
-        )
-
-        # This BCROS account already has an active link to a short name
-        if short_name:
-            raise BusinessException(Error.EFT_SHORT_NAME_ALREADY_MAPPED)
-
-        # Re-activate link if it previously existed
-        eft_short_name_link = EFTShortnameLinksModel.find_inactive_link(short_name_id, auth_account_id)
-        if eft_short_name_link is None:
-            eft_short_name_link = EFTShortnameLinksModel(
-                eft_short_name_id=short_name_id,
-                auth_account_id=auth_account_id,
-            )
-
-        eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value
-        eft_short_name_link.updated_by = kwargs["user"].user_name
-        eft_short_name_link.updated_by_name = kwargs["user"].name
-        eft_short_name_link.updated_on = datetime.now(tz=timezone.utc)
-
-        db.session.add(eft_short_name_link)
-        db.session.flush()
-
-        EftService.process_owing_statements(
-            short_name_id=short_name_id,
-            auth_account_id=auth_account_id,
-            is_new_link=True,
-        )
-
-        eft_short_name_link.save()
-        current_app.logger.debug(">create_shortname_link")
-        return cls.find_link_by_id(eft_short_name_link.id)
-
-    @classmethod
-    def delete_shortname_link(cls, short_name_link_id: int):
-        """Delete EFT short name auth account link."""
-        current_app.logger.debug("<delete_shortname_link")
-        short_name_link: EFTShortnameLinksModel = EFTShortnameLinksModel.find_by_id(short_name_link_id)
-
-        if short_name_link.status_code != EFTShortnameStatus.PENDING.value:
-            raise BusinessException(Error.EFT_SHORT_NAME_LINK_INVALID_STATUS)
-
-        short_name_link.delete()
-        current_app.logger.debug(">delete_shortname_link")
-
-    @classmethod
-    def get_shortname_links(cls, short_name_id: int) -> dict:
-        """Get EFT short name account links."""
-        current_app.logger.debug("<get_shortname_links")
-        statement_summary_query = cls.get_statement_summary_query().subquery()
-        invoice_count_query = EftService.get_pending_payment_count()
-
-        query = db.session.query(
-            EFTShortnameLinksModel.id.label("id"),
-            EFTShortnameLinksModel.eft_short_name_id,
-            EFTShortnameLinksModel.status_code,
-            EFTShortnameLinksModel.auth_account_id,
-            EFTShortnameLinksModel.updated_by,
-            EFTShortnameLinksModel.updated_by_name,
-            EFTShortnameLinksModel.updated_on,
-            invoice_count_query.label("invoice_count"),
-        ).join(
-            PaymentAccountModel,
-            PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id,
-        )
-
-        query = cls.add_payment_account_name_columns(query)
-        query = (
-            query.add_columns(
-                statement_summary_query.c.total_owing,
-                statement_summary_query.c.latest_statement_id,
-            )
-            .outerjoin(
-                statement_summary_query,
-                statement_summary_query.c.payment_account_id == PaymentAccountModel.id,
-            )
-            .filter(EFTShortnameLinksModel.eft_short_name_id == short_name_id)
-            .filter(
-                EFTShortnameLinksModel.status_code.in_(
-                    [EFTShortnameStatus.LINKED.value, EFTShortnameStatus.PENDING.value]
-                )
-            )
-        )
-
-        query = query.order_by(EFTShortnameLinksModel.created_on.asc())
-
-        link_models = query.all()
-        link_list = unstructure_schema_items(EFTShortnameLinkSchema, link_models)
-
-        current_app.logger.debug(">get_shortname_links")
-        return {"items": link_list}
 
     @classmethod
     def find_by_short_name_id(cls, short_name_id: int) -> EFTShortnames:
@@ -271,17 +148,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         return result
 
     @classmethod
-    def find_link_by_id(cls, link_id: int) -> List[EFTShortnames]:
-        """Find EFT shortname link by id."""
-        current_app.logger.debug("<find_link_by_id")
-        link_model: EFTShortnameLinksModel = EFTShortnameLinksModel.find_by_id(link_id)
-        converter = Converter()
-        result = converter.unstructure(EFTShortnameLinkSchema.from_row(link_model))
-
-        current_app.logger.debug(">find_link_by_id")
-        return result
-
-    @classmethod
     def search(cls, search_criteria: EFTShortnamesSearch):
         """Search eft short name records."""
         current_app.logger.debug("<search")
@@ -300,38 +166,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             "total": pagination.total,
         }
 
-    @staticmethod
-    def get_statement_summary_query():
-        """Query for latest statement id and total amount owing of invoices in statements."""
-        return (
-            db.session.query(
-                StatementModel.payment_account_id,
-                func.max(StatementModel.id).label("latest_statement_id"),
-                func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.paid), 0).label("total_owing"),
-            )
-            .join(
-                StatementInvoicesModel,
-                StatementInvoicesModel.statement_id == StatementModel.id,
-            )
-            .join(
-                InvoiceModel,
-                and_(
-                    InvoiceModel.id == StatementInvoicesModel.invoice_id,
-                    InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
-                ),
-            )
-            .filter(
-                InvoiceModel.invoice_status_code.notin_(
-                    [
-                        InvoiceStatus.CANCELLED.value,
-                        InvoiceStatus.REFUND_REQUESTED.value,
-                        InvoiceStatus.REFUNDED.value,
-                    ]
-                )
-            )
-            .group_by(StatementModel.payment_account_id)
-        )
-
     @classmethod
     def get_search_count(cls, search_criteria: EFTShortnamesSearch):
         """Get total count of results based on short name state search criteria."""
@@ -346,28 +180,10 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug(">get_search_count")
         return count_query.count()
 
-    @staticmethod
-    def add_payment_account_name_columns(query):
-        """Add payment account name and branch to query select columns."""
-        return query.add_columns(
-            case(
-                (
-                    PaymentAccountModel.name.like("%-" + PaymentAccountModel.branch_name),
-                    func.replace(
-                        PaymentAccountModel.name,
-                        "-" + PaymentAccountModel.branch_name,
-                        "",
-                    ),
-                ),
-                else_=PaymentAccountModel.name,
-            ).label("account_name"),
-            PaymentAccountModel.branch_name.label("account_branch"),
-        )
-
     @classmethod
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
         """Query for short names based on search criteria."""
-        statement_summary_query = cls.get_statement_summary_query().subquery()
+        statement_summary_query = EFTStatements.get_statement_summary_query().subquery()
 
         # Case statement is to check for and remove the branch name from the name, so they can be filtered on separately
         # The branch name was added to facilitate a better short name search experience and the existing
@@ -412,7 +228,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
         # Join payment information if this is NOT the count query
         if not is_count:
-            links_subquery = cls.add_payment_account_name_columns(links_subquery)
+            links_subquery = QueryUtils.add_payment_account_name_columns(links_subquery)
 
             links_subquery = links_subquery.add_columns(
                 statement_summary_query.c.total_owing,

@@ -330,13 +330,13 @@ redis = ["redis (>=2.10.5)"]
 
 [[package]]
 name = "cachelib"
-version = "0.9.0"
+version = "0.13.0"
 description = "A collection of cache libraries in the same API interface."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "cachelib-0.9.0-py3-none-any.whl", hash = "sha256:811ceeb1209d2fe51cd2b62810bd1eccf70feba5c52641532498be5c675493b3"},
-    {file = "cachelib-0.9.0.tar.gz", hash = "sha256:38222cc7c1b79a23606de5c2607f4925779e37cdcea1c2ad21b8bae94b5425a5"},
+    {file = "cachelib-0.13.0-py3-none-any.whl", hash = "sha256:8c8019e53b6302967d4e8329a504acf75e7bc46130291d30188a6e4e58162516"},
+    {file = "cachelib-0.13.0.tar.gz", hash = "sha256:209d8996e3c57595bee274ff97116d1d73c4980b2fd9a34c7846cd07fd2e1a48"},
 ]
 
 [[package]]
@@ -905,19 +905,23 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
-name = "flask-caching"
+name = "Flask-Caching"
 version = "2.3.0"
 description = "Adds caching support to Flask applications."
 optional = false
 python-versions = ">=3.8"
-files = [
-    {file = "Flask_Caching-2.3.0-py3-none-any.whl", hash = "sha256:51771c75682e5abc1483b78b96d9131d7941dc669b073852edfa319dd4e29b6e"},
-    {file = "flask_caching-2.3.0.tar.gz", hash = "sha256:d7e4ca64a33b49feb339fcdd17e6ba25f5e01168cf885e53790e885f83a4d2cf"},
-]
+files = []
+develop = false
 
 [package.dependencies]
-cachelib = ">=0.9.0,<0.10.0"
+cachelib = ">=0.9.0"
 Flask = "*"
+
+[package.source]
+type = "git"
+url = "https://github.com/pallets-eco/flask-caching.git"
+reference = "master"
+resolved_reference = "494d49882537a6cbcfe3cb41c4df05ae8acf60ce"
 
 [[package]]
 name = "flask-cors"
@@ -952,24 +956,25 @@ test = ["flask-sqlalchemy", "pytest"]
 
 [[package]]
 name = "flask-jwt-oidc"
-version = "0.7.0"
+version = "0.8.1"
 description = "Opinionated flask oidc client"
 optional = false
-python-versions = "^3.9"
+python-versions = ">=3.9,<4"
 files = []
 develop = false
 
 [package.dependencies]
-cachelib = "0.*"
+cachelib = "^0.13.0"
+cryptography = ">=3.4.0"
 Flask = ">=2"
-python-jose = "^3.3.0"
+pyjwt = "^2.8.0"
 six = "^1.16.0"
 
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/flask-jwt-oidc.git"
-reference = "HEAD"
-resolved_reference = "563f01ef6453eb0ea1cc0a2d71c6665350c853ff"
+reference = "main"
+resolved_reference = "bba7bb26625b213f4be817b01f28fb8bbb5b05d1"
 
 [[package]]
 name = "flask-marshmallow"
@@ -2008,7 +2013,7 @@ aiohttp = "^3.10.11"
 alembic = "1.13.1"
 attrs = "23.2.0"
 blinker = "1.7.0"
-cachelib = "0.9.0"
+cachelib = "^0.13.0"
 cachetools = "5.3.3"
 cattrs = "23.2.3"
 certifi = "2024.7.4"
@@ -2021,10 +2026,10 @@ dpath = "2.1.6"
 ecdsa = "0.18.0"
 expiringdict = "1.2.2"
 flask = "3.0.2"
-flask-caching = "2.3.0"
+flask-caching = {git = "https://github.com/pallets-eco/flask-caching.git", branch = "master"}
 flask-cors = "5.0.0"
 flask-executor = "^1.0.0"
-flask-jwt-oidc = {git = "https://github.com/seeker25/flask-jwt-oidc.git"}
+flask-jwt-oidc = {git = "https://github.com/seeker25/flask-jwt-oidc.git", branch = "main"}
 flask-marshmallow = "1.2.0"
 flask-migrate = "4.0.7"
 flask-moment = "1.0.5"
@@ -2081,8 +2086,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/ochiu/sbc-pay.git"
-reference = "23812"
-resolved_reference = "1fd3d251e9da4c47b0d9d0ecbcdc0e696871a1f2"
+reference = "25334-EFT-Statement-Payment"
+resolved_reference = "cc2e95782971aa569458fecc5e8f7cb6d047ca60"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2508,6 +2513,23 @@ files = [
     {file = "pyhumps-3.8.0-py3-none-any.whl", hash = "sha256:060e1954d9069f428232a1adda165db0b9d8dfdce1d265d36df7fbff540acfd6"},
     {file = "pyhumps-3.8.0.tar.gz", hash = "sha256:498026258f7ee1a8e447c2e28526c0bea9407f9a59c03260aee4bd6c04d681a3"},
 ]
+
+[[package]]
+name = "pyjwt"
+version = "2.10.1"
+description = "JSON Web Token implementation in Python"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "PyJWT-2.10.1-py3-none-any.whl", hash = "sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb"},
+    {file = "pyjwt-2.10.1.tar.gz", hash = "sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953"},
+]
+
+[package.extras]
+crypto = ["cryptography (>=3.4.0)"]
+dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
+docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
+tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
 
 [[package]]
 name = "pylint"
@@ -3289,4 +3311,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "44319e688a7a5f4e67b38889bff7221bcd81dd2ebdd07cf9915d79aa612da347"
+content-hash = "4193f48e6e6d170e4a80c501b31a1be04a53350b305be54d4634419df8cdb200"
