@@ -386,8 +386,8 @@ def test_get_eft_short_name_links(session, client, jwt, app):
     assert statements_owing
     assert len(statements_owing) == 2
     assert statements_owing[0]["amountOwing"] == invoice.total
-    assert statements_owing[0]["pendingPaymentsAmount"] == 0
-    assert statements_owing[0]["pendingPaymentsCount"] == 0
+    assert statements_owing[0]["pendingPaymentsAmount"] == invoice.total
+    assert statements_owing[0]["pendingPaymentsCount"] == 1
     assert statements_owing[0]["statementId"] == statement.id
     assert statements_owing[1]["amountOwing"] == invoice2.total
     assert statements_owing[1]["pendingPaymentsAmount"] == 0
