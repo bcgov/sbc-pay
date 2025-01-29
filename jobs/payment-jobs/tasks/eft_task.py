@@ -447,5 +447,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice_reference.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = datetime.now(tz=timezone.utc)
+        # Release queue message refunded
+        EftService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
         invoice.refund = invoice.total
         invoice.flush()

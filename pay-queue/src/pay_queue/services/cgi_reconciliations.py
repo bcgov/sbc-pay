@@ -300,10 +300,13 @@ def _set_invoice_jv_reversal(invoice: InvoiceModel, effective_date: datetime, is
     if is_reversal:
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = effective_date
+        # Release message refunded
+        EjvPayService().release_payment_refunded(invoice, transaction_status=TransactionStatus.REVERSAL.value)
     else:
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.payment_date = effective_date
         invoice.paid = invoice.total
+        EjvPayService().release_payment_refunded(invoice)
 
 
 def _fix_invoice_line(line):
