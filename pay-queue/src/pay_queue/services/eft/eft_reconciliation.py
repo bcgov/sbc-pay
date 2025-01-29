@@ -24,6 +24,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
+from pay_api.services.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksService
 from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus, EFTShortnameType
 from sentry_sdk import capture_message
 
@@ -217,7 +218,7 @@ def _apply_eft_pending_payments(context: EFTReconciliation, shortname_balance):
             continue
 
         eft_credit_balance = EFTCreditModel.get_eft_credit_balance(eft_short_name.id)
-        shortname_links = EFTShortnamesService.get_shortname_links(eft_short_name.id).get("items", [])
+        shortname_links = EFTShortnameLinksService.get_shortname_links(eft_short_name.id).get("items", [])
 
         # Don't apply auto payments for multi link accounts
         if len(shortname_links) > 1:

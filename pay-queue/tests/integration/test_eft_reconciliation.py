@@ -30,6 +30,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import EFTShortNamesService
+from pay_api.services import EFTShortNameLinkService
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus,
     EFTFileLineType,
@@ -1027,7 +1028,7 @@ def test_apply_pending_payments(session, app, client):
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     assert eft_credit_balance == 0
 
-    short_name_links = EFTShortNamesService.get_shortname_links(short_name_id)
+    short_name_links = EFTShortNameLinkService.get_shortname_links(short_name_id)
     assert short_name_links["items"]
     assert len(short_name_links["items"]) == 1
 
@@ -1061,7 +1062,7 @@ def test_multi_link_apply_pending_payments(session, app, client):
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     assert eft_credit_balance == 150.50
 
-    short_name_links = EFTShortNamesService.get_shortname_links(short_name_id)
+    short_name_links = EFTShortNameLinkService.get_shortname_links(short_name_id)
     assert short_name_links["items"]
     assert len(short_name_links["items"]) == 2
 
@@ -1118,7 +1119,7 @@ def test_skip_on_insufficient_balance(session, app, client):
     eft_credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
     assert eft_credit_balance == 150.50
 
-    short_name_links = EFTShortNamesService.get_shortname_links(short_name_id)
+    short_name_links = EFTShortNameLinkService.get_shortname_links(short_name_id)
     assert short_name_links["items"]
     assert len(short_name_links["items"]) == 1
 
