@@ -58,7 +58,7 @@ def post_invoice_receipt(invoice_id):
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-        pdf = ReceiptService.create_receipt(invoice_id, request_json)
+        pdf = ReceiptService.create_receipt(invoice_id, request_json, skip_auth_check=True)
         current_app.logger.info("<InvoiceReceipt received pdf")
         response = Response(pdf, 201)
         file_name = request_json.get("fileName")
