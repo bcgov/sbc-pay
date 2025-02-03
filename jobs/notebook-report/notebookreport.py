@@ -39,6 +39,8 @@ def create_app(config=Config):
 
 def findfiles(directory, pattern):
     """Find files matched."""
+    if not os.path.exists(directory):
+        return
     for filename in os.listdir(directory):
         if fnmatch.fnmatch(filename.lower(), pattern):
             yield os.path.join(directory, filename)
