@@ -8,11 +8,13 @@ def get_issues_from_repo(target, latest_release_only=False):
     """Get issue ids from repos on github."""
     issue_ids = []
     release_names = []
+    release_dates = []
     g = Github(os.getenv("GITHUB_ACCESS_TOKEN"))
     repository_owner = 'bcgov'
     repo = g.get_repo(f"{repository_owner}/{target}")
     for release in repo.get_releases():
         release_names.append(release.title)
+        release_dates.append(release.created_at)
         for l in release.body.splitlines():
             if re.search(r'\d+ -', l):
                 issue_ids.append(re.search(r'\d+ -', l).group(0).replace(' -',''))
@@ -25,7 +27,7 @@ def get_issues_from_repo(target, latest_release_only=False):
         if latest_release_only:
             break
     issue_ids = list(set(issue_ids))
-    return issue_ids, release_names
+    return issue_ids, release_names, release_dates
 
 def add_issues_to_release(issue_id: int, zenhub_release_hash: str):
     """Add issues to Zenhub release."""
@@ -85,7 +87,7 @@ def get_workspace_release_for_report(release_name):
         return nodes[0].get('id')
     return None
 
-def create_release(release_name):
+def create_release(release_name, release_date):
     """Create release in Zenhub."""
     response = requests.post('https://api.zenhub.com/public/graphql',
     headers={
@@ -98,8 +100,8 @@ def create_release(release_name):
                 "release": {
                     "title": release_name,
                     "description": release_name,
-                    "startOn": "2024-01-01T00:00:00.000Z",
-                    "endOn": "2024-01-02T00:00:00.000Z",
+                    "startOn": "2025-01-01T00:00:00.000Z",
+                    "endOn": release_date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
                     "repositoryGhIds": [int(os.getenv('ENTITY_GITHUB_REPO_ID'))]
                 }
             }
