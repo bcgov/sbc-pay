@@ -43,6 +43,7 @@ EDIT_ROLE = "edit"
 VIEW_ROLE = "view"
 MAKE_PAYMENT = "make_payment"
 CHANGE_STATEMENT_SETTINGS = "change_statement_settings"
+MAXIMUS_STAFF = "maximus_staff"
 
 ALL_ALLOWED_ROLES = (EDIT_ROLE, VIEW_ROLE)
 

@@ -23,7 +23,7 @@ from pay_api.services import Payment as PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.services.flags import flags
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import EDIT_ROLE, MAKE_PAYMENT, VIEW_ROLE
+from pay_api.utils.constants import EDIT_ROLE, MAKE_PAYMENT, MAXIMUS_STAFF, VIEW_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import PaymentMethod, Role
 from pay_api.utils.errors import Error
@@ -66,7 +66,7 @@ def post_account_payment(account_id: str):
     current_app.logger.info("<post_account_payment")
     response, status = None, None
     # Check if user is authorized to perform this action
-    check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT)
+    check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT, exclude_role=MAXIMUS_STAFF)
     # If it's a staff user, then create credits.
     if set([Role.STAFF.value, Role.CREATE_CREDITS.value]).issubset(set(g.jwt_oidc_token_info.get("roles"))):
         credit_request = request.get_json()

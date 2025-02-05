@@ -108,6 +108,8 @@ def check_auth(
             is_authorized = len(list(set(kwargs.get("one_of_roles")) & set(roles))) > 0
         if kwargs.get("contains_role", None):
             is_authorized = kwargs.get("contains_role") in roles
+        if kwargs.get("exclude_role", None):
+            is_authorized = kwargs.get("exclude_role") not in roles
         if required_roles := kwargs.get("all_of_roles", None):
             is_authorized = len(set(required_roles) & set(roles)) == len(set(required_roles))
         if one_of_role_sets := kwargs.get("one_of_role_sets", None):

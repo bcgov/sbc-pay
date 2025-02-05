@@ -23,7 +23,7 @@ from pay_api.services import PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import MAKE_PAYMENT
+from pay_api.utils.constants import MAKE_PAYMENT, MAXIMUS_STAFF
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
@@ -69,6 +69,7 @@ def post_invoice():
         business_identifier=business_identifier,
         corp_type_code=corp_type_code,
         contains_role=MAKE_PAYMENT,
+        exclude_role=MAXIMUS_STAFF
     )
     try:
         response, status = (
