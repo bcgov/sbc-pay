@@ -110,7 +110,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
             InvoiceModel.overdue_date.isnot(None),
             InvoiceModel.overdue_date <= now,
             InvoiceModel.invoice_status_code.in_(cls.unpaid_status),
-            )
+        )
         if cls.auth_account_override:
             current_app.logger.info(f"Using auth account override for auth_account_id: {cls.auth_account_override}")
             payment_account_id = (
@@ -127,10 +127,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
 
         # Check for overdue accounts and lock them
         overdue_query = (
-            select(
-                PaymentAccountModel,
-                StatementModel
-            )
+            select(PaymentAccountModel, StatementModel)
             .select_from(InvoiceModel)
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
@@ -139,7 +136,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
                 InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
                 InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value,
                 InvoiceModel.overdue_date <= now,
-                StatementModel.overdue_notification_date.is_(None)
+                StatementModel.overdue_notification_date.is_(None),
             )
             .group_by(PaymentAccountModel.id, StatementModel.id)
         )

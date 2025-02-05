@@ -18,7 +18,7 @@ Test-Suite to ensure that the UnpaidStatementNotifyTask is working as expected.
 """
 import decimal
 from datetime import datetime
-from unittest.mock import patch, ANY, call
+from unittest.mock import ANY, call, patch
 
 import pytest
 from dateutil.relativedelta import relativedelta
@@ -65,7 +65,7 @@ def create_test_data(
     statement_frequency: str,
     invoice_total: decimal = 0.00,
     invoice_paid: decimal = 0.00,
-    auth_account_id="1"
+    auth_account_id="1",
 ):
     """Create seed data for tests."""
     account = factory_create_account(auth_account_id=auth_account_id, payment_method_code=payment_method_code)
@@ -200,7 +200,7 @@ def test_account_lock(setup, session):
         payment_date=datetime(2023, 1, 1, 8),
         statement_frequency=StatementFrequency.MONTHLY.value,
         invoice_total=351.50,
-        auth_account_id="1"
+        auth_account_id="1",
     )
 
     # For second statement on account 1
@@ -209,7 +209,7 @@ def test_account_lock(setup, session):
         created_on=datetime(2023, 2, 5, 8),
         payment_method_code=PaymentMethod.EFT.value,
         status_code=InvoiceStatus.APPROVED.value,
-        total=100
+        total=100,
     )
     factory_invoice_reference(invoice_id=invoice2.id)
 
@@ -232,7 +232,7 @@ def test_account_lock(setup, session):
         with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
             EFTStatementDueTask.process_unpaid_statements()
             mock_auth_event.assert_called_once()
-            expected_calls = [call(account1, '')]
+            expected_calls = [call(account1, "")]
             mock_auth_event.assert_has_calls(expected_calls, any_order=True)
             assert account1.has_overdue_invoices
             assert statements[0][0].overdue_notification_date
@@ -246,7 +246,7 @@ def test_account_lock(setup, session):
         created_on=datetime(2023, 3, 5, 8),
         payment_method_code=PaymentMethod.EFT.value,
         status_code=InvoiceStatus.APPROVED.value,
-        total=120
+        total=120,
     )
     factory_invoice_reference(invoice_id=invoice3.id)
 
@@ -275,7 +275,7 @@ def test_multi_account_lock(setup, session):
         payment_date=datetime(2023, 1, 1, 8),
         statement_frequency=StatementFrequency.MONTHLY.value,
         invoice_total=351.50,
-        auth_account_id="1"
+        auth_account_id="1",
     )
 
     # For second statement on account 1
@@ -284,7 +284,7 @@ def test_multi_account_lock(setup, session):
         created_on=datetime(2023, 2, 5, 8),
         payment_method_code=PaymentMethod.EFT.value,
         status_code=InvoiceStatus.APPROVED.value,
-        total=100
+        total=100,
     )
     factory_invoice_reference(invoice_id=invoice1a.id)
 
@@ -293,7 +293,7 @@ def test_multi_account_lock(setup, session):
         payment_date=datetime(2023, 1, 10, 8),
         statement_frequency=StatementFrequency.MONTHLY.value,
         invoice_total=150.50,
-        auth_account_id=2
+        auth_account_id=2,
     )
 
     with freeze_time(datetime(2023, 2, 1, 8, 0, 1)):
@@ -319,7 +319,7 @@ def test_multi_account_lock(setup, session):
         with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
             EFTStatementDueTask.process_unpaid_statements()
             mock_auth_event.call_count == 2
-            expected_calls = [call(account1, ''), call(account2, '')]
+            expected_calls = [call(account1, ""), call(account2, "")]
             mock_auth_event.assert_has_calls(expected_calls, any_order=True)
             assert statements1[0][1].overdue_notification_date
             assert NonSufficientFundsModel.find_by_invoice_id(invoice1.id)
