@@ -229,7 +229,7 @@ def test_account_lock(setup, session):
     assert invoices2[0].invoice_id == invoice2.id
 
     with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
-        with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
+        with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
             mock_auth_event.assert_called_once()
             expected_calls = [call(account1, "")]
