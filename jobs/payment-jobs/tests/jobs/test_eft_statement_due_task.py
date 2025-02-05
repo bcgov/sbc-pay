@@ -259,7 +259,7 @@ def test_account_lock(setup, session):
     assert invoices3[0].invoice_id == invoice3.id
 
     with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
-        with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
+        with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
             # Already locked we should not be publishing another event
             mock_auth_event.assert_not_called()
@@ -316,7 +316,7 @@ def test_multi_account_lock(setup, session):
     assert invoices2[0].invoice_id == invoice2.id
 
     with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
-        with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
+        with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
             mock_auth_event.call_count == 2
             expected_calls = [call(account1, ""), call(account2, "")]
