@@ -4,10 +4,12 @@ import ast
 import fnmatch
 import logging
 import os
+import pytz
 import smtplib
 import sys
 import traceback
 from datetime import date, datetime, timedelta, timezone
+from dateutil.relativedelta import relativedelta
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -71,8 +73,13 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):
             filenames = ["weekly_pay_stats_till_" + date_str + ".csv"]
             recipients = Config.WEEKLY_PAY_RECIPIENTS
         elif "reconciliation_summary" in file_processing:
-            year_month = datetime.strftime(datetime.now() - timedelta(1), "%Y-%m")
-            subject = "Monthly Reconciliation Stats " + year_month + ext
+            override_current_date = Config.OVERRIDE_CURRENT_DATE
+            current_time = datetime.strptime(override_current_date, "%Y-%m-%d") if override_current_date \
+                else datetime.now(pytz.timezone("America/Vancouver"))
+            last_month = current_time - relativedelta(months=1)
+            last_month = last_month.replace(day=1)
+            year_month = datetime.strftime(last_month, "%Y-%m")
+            subject = f"{partner_code} Monthly Reconciliation Stats for {year_month}{ext}"
             filenames = [f for f in os.listdir(os.path.join(os.getcwd(), r"data/")) if f.startswith(partner_code)]
             recipients = get_partner_recipients(file_processing, partner_code)
 
