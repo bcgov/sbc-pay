@@ -50,3 +50,4 @@ class Config(object):
         port=int(PAY_PORT),
         name=PAY_DB_NAME,
     )
+    OVERRIDE_CURRENT_DATE = os.getenv("OVERRIDE_CURRENT_DATE", "")

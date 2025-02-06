@@ -73,12 +73,7 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):
         elif "reconciliation_summary" in file_processing:
             year_month = datetime.strftime(datetime.now() - timedelta(1), "%Y-%m")
             subject = "Monthly Reconciliation Stats " + year_month + ext
-            if partner_code in Config.PARTNER_CODES_DISBURSEMENT.split(","):
-                filenames.append(f"{partner_code}_monthly_reconciliation_disbursed_" + year_month + ".csv")
-            filenames = [
-                f"{partner_code}_monthly_reconciliation_summary_" + year_month + ".csv",
-                f"{partner_code}_revenue_letter.pdf",
-            ]
+            filenames = [f for f in os.listdir(os.path.join(os.getcwd(), r"data/")) if f.startswith(partner_code)]
             recipients = get_partner_recipients(file_processing, partner_code)
 
     # Add body to email
