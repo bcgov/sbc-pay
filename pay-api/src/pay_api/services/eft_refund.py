@@ -69,7 +69,7 @@ class EFTRefund:
             short_name_id=short_name_id,
             short_name=short_name.short_name,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
-            url=f"{current_app.config.get('PAY_WEB_URL')}/pay/shortname-details/{short_name_id}",
+            url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{short_name_id}",
         ).render_body()
         send_email(qualified_receiver_recipients, subject, html_body)
         history.save()
