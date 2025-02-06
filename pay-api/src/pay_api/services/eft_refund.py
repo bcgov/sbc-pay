@@ -69,7 +69,7 @@ class EFTRefund:
             short_name_id=short_name_id,
             short_name=short_name.short_name,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
-            url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{short_name_id}",
+            url=f"{current_app.config.get('PAY_WEB_URL')}/pay/shortname-details/{short_name_id}",
         ).render_body()
         send_email(qualified_receiver_recipients, subject, html_body)
         history.save()
@@ -221,7 +221,7 @@ class EFTRefund:
                     short_name_id=refund.short_name_id,
                     short_name=short_name.short_name,
                     status=data.status,
-                    url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{refund.short_name_id}",
+                    url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{refund.short_name_id}",
                 ).render_body()
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
                 send_email(expense_authority_recipients, subject, body)
@@ -240,7 +240,7 @@ class EFTRefund:
                     short_name_id=refund.short_name_id,
                     short_name=short_name.short_name,
                     status=data.status,
-                    url=f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{refund.short_name_id}",
+                    url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{refund.short_name_id}",
                 )
                 staff_body = content.render_body()
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
