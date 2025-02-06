@@ -148,6 +148,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     BCOL_API_ENDPOINT = f"{BCOL_API_URL + BCOL_API_VERSION}/"
 
     AUTH_WEB_URL = os.getenv("AUTH_WEB_URL", "")
+    PAY_WEB_URL = os.getenv("PAY_WEB_URL", "")
     NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "")
     NOTIFY_API_VERSION = os.getenv("NOTIFY_API_VERSION", "")
     NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"
