@@ -99,7 +99,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if invoice.invoice_status_code != InvoiceStatus.APPROVED.value:
             self.complete_payment(invoice, invoice_reference)
             # Publish message to the queue with payment token, so that they can release records on their side.
-        self._release_payment(invoice=invoice)
+        self.release_payment_or_reversal(invoice=invoice)
 
     def get_default_invoice_status(self) -> str:
         """Return the default status for invoice when created."""
