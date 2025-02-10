@@ -49,6 +49,7 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     QueueSources,
+    SuspensionReasonCodes,
 )
 from pay_api.utils.util import get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -395,7 +396,13 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
                 additional_emails = current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS")
-                AuthEvent.publish_lock_account_event(payment_account, additional_emails, PaymentMethod.PAD.value)
+                AuthEvent.publish_lock_account_event(
+                    payment_account,
+                    additional_emails,
+                    PaymentMethod.PAD.value,
+                    QueueSources.PAY_QUEUE.value,
+                    SuspensionReasonCodes.PAD_NSF.value
+                )
         else:
             error_msg = f"Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}."
             has_errors = True
