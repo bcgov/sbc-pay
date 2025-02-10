@@ -30,13 +30,7 @@ from pay_api.models.statement_recipients import StatementRecipients as Statement
 from pay_api.services import NonSufficientFundsService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
-from pay_api.utils.enums import (
-    InvoiceStatus,
-    PaymentMethod,
-    StatementFrequency,
-    QueueSources,
-    SuspensionReasonCodes,
-)
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources, StatementFrequency, SuspensionReasonCodes
 from pay_api.utils.util import current_local_time
 from sentry_sdk import capture_message
 from sqlalchemy import select
@@ -172,7 +166,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
                     additional_emails,
                     PaymentMethod.EFT.value,
                     QueueSources.PAY_JOBS.value,
-                    SuspensionReasonCodes.OVERDUE_EFT.value
+                    SuspensionReasonCodes.OVERDUE_EFT.value,
                 )
 
             # Even if the account is locked, there is a new overdue statement that needs NSF invoices added and
