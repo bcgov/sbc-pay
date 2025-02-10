@@ -40,7 +40,6 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.utils.auth_event import AuthEvent
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     CfsAccountStatus,
@@ -58,6 +57,8 @@ from sentry_sdk import capture_message
 from pay_queue import config
 from pay_queue.minio import get_object
 from pay_queue.services.email_service import EmailParams, send_error_email
+
+from utils.auth_event import AuthEvent
 
 from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 
