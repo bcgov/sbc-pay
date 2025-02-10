@@ -40,6 +40,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
+from pay_api.utils.auth_event import AuthEvent
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     CfsAccountStatus,
@@ -392,7 +393,8 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
             # NSF Condition. Publish to account events for NSF.
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
-                _publish_account_events(QueueMessageTypes.NSF_LOCK_ACCOUNT.value, payment_account, row)
+                additional_emails = current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS")
+                AuthEvent.publish_lock_account_event(payment_account, additional_emails, PaymentMethod.PAD.value)
         else:
             error_msg = f"Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}."
             has_errors = True

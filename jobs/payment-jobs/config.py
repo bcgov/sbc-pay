@@ -142,7 +142,10 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     TESTING = False
     DEBUG = True
+
+    # PAD config variables
     PAD_CONFIRMATION_PERIOD_IN_DAYS = int(os.getenv("PAD_CONFIRMATION_PERIOD_IN_DAYS", "3"))
+    PAD_OVERDUE_NOTIFY_EMAILS = os.getenv("PAD_OVERDUE_NOTIFY_EMAILS", "")
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY")
