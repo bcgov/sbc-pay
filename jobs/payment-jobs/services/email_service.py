@@ -18,9 +18,6 @@ from typing import Dict
 
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
-from pay_api.services.auth import get_service_account_token
-from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import AuthHeaderType, ContentType
 
 
 def _get_template(template_file_name: str):
@@ -35,7 +32,7 @@ def _get_template(template_file_name: str):
 def _render_eft_overpayment_template(params: Dict) -> str:
     """Render eft overpayment template."""
     template = _get_template("eft_overpayment.html")
-    short_name_detail_url = f"{current_app.config.get('AUTH_WEB_URL')}/pay/shortname-details/{params['shortNameId']}"
+    short_name_detail_url = f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{params['shortNameId']}"
     params["shortNameDetailUrl"] = short_name_detail_url
 
     return template.render(params)

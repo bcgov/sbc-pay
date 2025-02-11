@@ -18,7 +18,7 @@ Test-Suite to ensure that the UnpaidStatementNotifyTask is working as expected.
 """
 import decimal
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import ANY, call, patch
 
 import pytest
 from dateutil.relativedelta import relativedelta
@@ -65,9 +65,10 @@ def create_test_data(
     statement_frequency: str,
     invoice_total: decimal = 0.00,
     invoice_paid: decimal = 0.00,
+    auth_account_id="1",
 ):
     """Create seed data for tests."""
-    account = factory_create_account(auth_account_id="1", payment_method_code=payment_method_code)
+    account = factory_create_account(auth_account_id=auth_account_id, payment_method_code=payment_method_code)
     invoice = factory_invoice(
         payment_account=account,
         created_on=payment_date,
@@ -190,6 +191,142 @@ def test_overdue_invoices_updated(setup, session):
     EFTStatementDueTask.process_unpaid_statements(auth_account_override=account.auth_account_id)
     assert invoice.invoice_status_code == InvoiceStatus.OVERDUE.value
     assert invoice2.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+def test_account_lock(setup, session):
+    """Assert account locking on overdue statements."""
+    account1, invoice1, _, statement_recipient1, _ = create_test_data(
+        payment_method_code=PaymentMethod.EFT.value,
+        payment_date=datetime(2023, 1, 1, 8),
+        statement_frequency=StatementFrequency.MONTHLY.value,
+        invoice_total=351.50,
+        auth_account_id="1",
+    )
+
+    # For second statement on account 1
+    invoice2 = factory_invoice(
+        payment_account=account1,
+        created_on=datetime(2023, 2, 5, 8),
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=100,
+    )
+    factory_invoice_reference(invoice_id=invoice2.id)
+
+    # Confirm locking works for non recent statements
+    with freeze_time(datetime(2023, 2, 1, 8, 0, 1)):
+        StatementTask.generate_statements()
+
+    with freeze_time(datetime(2023, 3, 1, 8, 0, 1)):
+        StatementTask.generate_statements()
+
+    statements = StatementService.get_account_statements(auth_account_id=account1.auth_account_id, page=1, limit=100)
+    invoices1 = StatementInvoicesModel.find_all_invoices_for_statement(statements[0][1].id)
+    invoices2 = StatementInvoicesModel.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices1 is not None
+    assert invoices1[0].invoice_id == invoice1.id
+    assert invoices2 is not None
+    assert invoices2[0].invoice_id == invoice2.id
+
+    with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
+        with patch("tasks.eft_statement_due_task.publish_payment_notification"):
+            EFTStatementDueTask.process_unpaid_statements()
+            mock_auth_event.assert_called_once()
+            expected_calls = [call(account1, "")]
+            mock_auth_event.assert_has_calls(expected_calls, any_order=True)
+            assert account1.has_overdue_invoices
+            assert statements[0][0].overdue_notification_date
+            assert NonSufficientFundsModel.find_by_invoice_id(invoice1.id)
+            assert statements[0][1].overdue_notification_date
+            assert NonSufficientFundsModel.find_by_invoice_id(invoice2.id)
+
+    # Create 3rd statement, account is already locked but this statement should still have NSF invoices records added
+    invoice3 = factory_invoice(
+        payment_account=account1,
+        created_on=datetime(2023, 3, 5, 8),
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=120,
+    )
+    factory_invoice_reference(invoice_id=invoice3.id)
+
+    with freeze_time(datetime(2023, 4, 1, 8, 0, 1)):
+        StatementTask.generate_statements()
+
+    statements = StatementService.get_account_statements(auth_account_id=account1.auth_account_id, page=1, limit=100)
+    invoices3 = StatementInvoicesModel.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices3 is not None
+    assert invoices3[0].invoice_id == invoice3.id
+
+    with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
+        with patch("tasks.eft_statement_due_task.publish_payment_notification"):
+            EFTStatementDueTask.process_unpaid_statements()
+            # Already locked we should not be publishing another event
+            mock_auth_event.assert_not_called()
+            assert account1.has_overdue_invoices
+            assert statements[0][0].overdue_notification_date
+            assert NonSufficientFundsModel.find_by_invoice_id(invoice3.id)
+
+
+def test_multi_account_lock(setup, session):
+    """Assert multi account locking on overdue statements."""
+    account1, invoice1, _, statement_recipient1, _ = create_test_data(
+        payment_method_code=PaymentMethod.EFT.value,
+        payment_date=datetime(2023, 1, 1, 8),
+        statement_frequency=StatementFrequency.MONTHLY.value,
+        invoice_total=351.50,
+        auth_account_id="1",
+    )
+
+    # For second statement on account 1
+    invoice1a = factory_invoice(
+        payment_account=account1,
+        created_on=datetime(2023, 2, 5, 8),
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=100,
+    )
+    factory_invoice_reference(invoice_id=invoice1a.id)
+
+    account2, invoice2, _, statement_recipient2, _ = create_test_data(
+        payment_method_code=PaymentMethod.EFT.value,
+        payment_date=datetime(2023, 1, 10, 8),
+        statement_frequency=StatementFrequency.MONTHLY.value,
+        invoice_total=150.50,
+        auth_account_id=2,
+    )
+
+    with freeze_time(datetime(2023, 2, 1, 8, 0, 1)):
+        StatementTask.generate_statements()
+
+    with freeze_time(datetime(2023, 3, 1, 8, 0, 1)):
+        StatementTask.generate_statements()
+
+    statements1 = StatementService.get_account_statements(auth_account_id=account1.auth_account_id, page=1, limit=100)
+    invoices1 = StatementInvoicesModel.find_all_invoices_for_statement(statements1[0][1].id)
+    invoices1a = StatementInvoicesModel.find_all_invoices_for_statement(statements1[0][0].id)
+    assert invoices1 is not None
+    assert invoices1[0].invoice_id == invoice1.id
+    assert invoices1a is not None
+    assert invoices1a[0].invoice_id == invoice1a.id
+
+    statements2 = StatementService.get_account_statements(auth_account_id=account2.auth_account_id, page=1, limit=100)
+    invoices2 = StatementInvoicesModel.find_all_invoices_for_statement(statements2[0][1].id)
+    assert invoices2 is not None
+    assert invoices2[0].invoice_id == invoice2.id
+
+    with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
+        with patch("tasks.eft_statement_due_task.publish_payment_notification"):
+            EFTStatementDueTask.process_unpaid_statements()
+            mock_auth_event.call_count == 2
+            expected_calls = [call(account1, ""), call(account2, "")]
+            mock_auth_event.assert_has_calls(expected_calls, any_order=True)
+            assert statements1[0][1].overdue_notification_date
+            assert NonSufficientFundsModel.find_by_invoice_id(invoice1.id)
+            assert account1.has_overdue_invoices
+            assert statements2[0][1].overdue_notification_date
+            assert NonSufficientFundsModel.find_by_invoice_id(invoice2.id)
+            assert account2.has_overdue_invoices
 
 
 @pytest.mark.parametrize(

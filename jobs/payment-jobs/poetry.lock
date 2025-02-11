@@ -2249,9 +2249,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "update_deps"
-resolved_reference = "475dab1c853d6f50f6e21ee18c0f2d87adafebd9"
+url = "https://github.com/ochiu/sbc-pay.git"
+reference = "25334-EFT-Statement-Payment"
+resolved_reference = "cc2e95782971aa569458fecc5e8f7cb6d047ca60"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3519,4 +3519,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "60a44400a12ff6e947f4a5c3f718dff561ca8a6890984be5e8884c1ffe5099df"
+content-hash = "8eaa01df36c2c0c3e7cdd8b482baf642925d10cfb0179c18f5ef2ffaaa3b2ebc"

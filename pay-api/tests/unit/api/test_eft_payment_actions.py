@@ -31,7 +31,7 @@ from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import PartnerDisbursements
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
-from pay_api.services import EftService
+from pay_api.services import EftService, EFTShortNameLinkService
 from pay_api.utils.enums import (
     DisbursementStatus,
     EFTCreditInvoiceStatus,
@@ -430,3 +430,92 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     partner_disbursement = PartnerDisbursements.query.order_by(PartnerDisbursements.id.desc()).first()
     assert partner_disbursement.is_reversal is True
     assert partner_disbursement.amount == 100
+
+
+def test_eft_payment_actions_on_statement(db, session, client, jwt, app):
+    """Assert that EFT payment apply credits / cancel action works on specific statements."""
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    account, short_name = setup_account_shortname_data()
+    statement1 = setup_statement_data(account=account, invoice_totals=[50])
+    statement2 = setup_statement_data(account=account, invoice_totals=[100])
+    eft_credits = setup_eft_credits(short_name=short_name, credit_amounts=[50])
+
+    rv = client.post(
+        f"/api/v1/eft-shortnames/{short_name.id}/payment",
+        data=json.dumps(
+            {
+                "action": EFTPaymentActions.APPLY_CREDITS.value,
+                "accountId": account.auth_account_id,
+                "statementId": statement1.id,
+            }
+        ),
+        headers=headers,
+    )
+    assert rv.status_code == 204
+    assert eft_credits[0].remaining_amount == 0
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 0
+
+    credit_invoice_links = EftService._get_shortname_invoice_links(
+        short_name.id, account.id, [EFTCreditInvoiceStatus.PENDING.value]
+    )
+    assert credit_invoice_links
+    assert len(credit_invoice_links) == 1
+    link_group_id = credit_invoice_links[0].link_group_id
+    assert all(link.link_group_id == link_group_id and link.link_group_id is not None for link in credit_invoice_links)
+
+    links = EFTShortNameLinkService.get_shortname_links(short_name.id)
+    assert links
+    assert len(links["items"]) == 1
+    assert len(links["items"][0]["statements_owing"]) == 2
+
+    statement_owing1 = links["items"][0]["statements_owing"][0]
+    assert statement_owing1["statement_id"] == statement1.id
+    assert statement_owing1["amount_owing"] == 50
+    assert statement_owing1["pending_payments_amount"] == 50
+    assert statement_owing1["pending_payments_count"] == 1
+
+    statement_owing2 = links["items"][0]["statements_owing"][1]
+    assert statement_owing2["statement_id"] == statement2.id
+    assert statement_owing2["amount_owing"] == 100
+    assert statement_owing2["pending_payments_amount"] == 0
+    assert statement_owing2["pending_payments_count"] == 0
+
+    rv = client.post(
+        f"/api/v1/eft-shortnames/{short_name.id}/payment",
+        data=json.dumps(
+            {
+                "action": EFTPaymentActions.CANCEL.value,
+                "accountId": account.auth_account_id,
+                "statementId": statement1.id,
+            }
+        ),
+        headers=headers,
+    )
+
+    assert rv.status_code == 204
+    assert eft_credits[0].remaining_amount == 50
+    assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 50
+
+    credit_invoice_links = EftService._get_shortname_invoice_links(
+        short_name.id, account.id, [EFTCreditInvoiceStatus.PENDING.value]
+    )
+    assert not credit_invoice_links
+
+    links = EFTShortNameLinkService.get_shortname_links(short_name.id)
+    assert links
+    assert len(links["items"]) == 1
+    assert len(links["items"][0]["statements_owing"]) == 2
+
+    statement_owing1 = links["items"][0]["statements_owing"][0]
+    assert statement_owing1["statement_id"] == statement1.id
+    assert statement_owing1["amount_owing"] == 50
+    assert statement_owing1["pending_payments_amount"] == 0
+    assert statement_owing1["pending_payments_count"] == 0
+
+    statement_owing2 = links["items"][0]["statements_owing"][1]
+    assert statement_owing2["statement_id"] == statement2.id
+    assert statement_owing2["amount_owing"] == 100
+    assert statement_owing2["pending_payments_amount"] == 0
+    assert statement_owing2["pending_payments_count"] == 0

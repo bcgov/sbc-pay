@@ -236,6 +236,7 @@ class DisbursementMethod(Enum):
 class Product(Enum):
     """Product."""
 
+    BTR = "BTR"
     BUSINESS = "BUSINESS"
     BUSINESS_SEARCH = "BUSINESS_SEARCH"
     NRO = "NRO"

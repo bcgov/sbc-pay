@@ -184,17 +184,29 @@ class EftService(DepositService):
         return receipt
 
     @staticmethod
-    def apply_payment_action(short_name_id: int, auth_account_id: str):
+    def apply_payment_action(short_name_id: int, auth_account_id: str, statement_id: int = None):
         """Apply EFT payments to outstanding payments."""
         current_app.logger.debug("<apply_payment_action")
-        if auth_account_id is None or PaymentAccountModel.find_by_auth_account_id(auth_account_id) is None:
+        if (auth_account_id is None) or (
+            payment_account := PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        ) is None:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_ACCOUNT_ID_REQUIRED)
 
-        EftService.process_owing_statements(short_name_id, auth_account_id)
+        if (
+            statement_id is not None
+            and StatementModel.find_statement_by_account(payment_account.id, statement_id) is None
+        ):
+            raise BusinessException(Error.EFT_PAYMENT_ACTION_STATEMENT_ID_INVALID)
+
+        EftService.process_owing_statements(
+            short_name_id=short_name_id, auth_account_id=auth_account_id, statement_id=statement_id
+        )
         current_app.logger.debug(">apply_payment_action")
 
     @staticmethod
-    def cancel_payment_action(short_name_id: int, auth_account_id: str, invoice_id: int = None):
+    def cancel_payment_action(
+        short_name_id: int, auth_account_id: str, invoice_id: int = None, statement_id: int = None
+    ):
         """Cancel EFT pending payments."""
         current_app.logger.debug("<cancel_payment_action")
         if any(
@@ -210,6 +222,7 @@ class EftService(DepositService):
             payment_account_id=payment_account.id,
             invoice_id=invoice_id,
             statuses=[EFTCreditInvoiceStatus.PENDING.value],
+            statement_id=statement_id,
         )
         link_group_ids = set()
         for credit_link in credit_links:
@@ -321,6 +334,7 @@ class EftService(DepositService):
         payment_account_id: int,
         statuses: List[str],
         invoice_id: int = None,
+        statement_id: int = None,
     ) -> List[EFTCreditInvoiceLinkModel]:
         """Get short name credit invoice links by account."""
         credit_links_query = (
@@ -330,10 +344,12 @@ class EftService(DepositService):
                 EFTCreditModel.id == EFTCreditInvoiceLinkModel.eft_credit_id,
             )
             .join(InvoiceModel, InvoiceModel.id == EFTCreditInvoiceLinkModel.invoice_id)
+            .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id)
             .filter(InvoiceModel.payment_account_id == payment_account_id)
             .filter(EFTCreditModel.short_name_id == short_name_id)
             .filter(EFTCreditInvoiceLinkModel.status_code.in_(statuses))
         )
+        credit_links_query = credit_links_query.filter_conditionally(statement_id, StatementInvoicesModel.statement_id)
         credit_links_query = credit_links_query.filter_conditionally(invoice_id, InvoiceModel.id)
         return credit_links_query.all()
 
@@ -488,16 +504,17 @@ class EftService(DepositService):
             PartnerDisbursements.handle_payment(invoice)
 
     @staticmethod
-    def process_owing_statements(short_name_id: int, auth_account_id: str, is_new_link: bool = False):
+    def process_owing_statements(
+        short_name_id: int, auth_account_id: str, is_new_link: bool = False, statement_id: int = None
+    ):
         """Process outstanding statement invoices for an EFT Short name."""
         current_app.logger.debug("<process_owing_statements")
-        shortname_link = EFTShortnameLinksModel.find_active_link(short_name_id, auth_account_id)
 
-        if shortname_link is None:
+        if EFTShortnameLinksModel.find_active_link(short_name_id, auth_account_id) is None:
             raise BusinessException(Error.EFT_SHORT_NAME_NOT_LINKED)
 
         credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
-        summary_dict: dict = StatementService.get_summary(auth_account_id)
+        summary_dict: dict = StatementService.get_summary(auth_account_id=auth_account_id, statement_id=statement_id)
         total_due = summary_dict["total_due"]
 
         if credit_balance < total_due:
@@ -506,7 +523,7 @@ class EftService(DepositService):
             return
 
         statements, _ = StatementService.get_account_statements(
-            auth_account_id=auth_account_id, page=1, limit=1000, is_owing=True
+            auth_account_id=auth_account_id, page=1, limit=1000, is_owing=True, statement_id=statement_id
         )
         link_groups = {}
         if statements:

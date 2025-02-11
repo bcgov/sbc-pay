@@ -95,6 +95,15 @@ class Statement(BaseModel):
 
         return query.all()
 
+    @classmethod
+    def find_statement_by_account(cls, payment_account_id: int, statement_id: int):
+        """Return statement for a payment account."""
+        return (
+            cls.query.filter(Statement.payment_account_id == payment_account_id)
+            .filter(Statement.id == statement_id)
+            .all()
+        )
+
 
 class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Statements."""
