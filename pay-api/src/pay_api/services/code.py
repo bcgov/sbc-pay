@@ -15,6 +15,7 @@
 
 from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.sql import func
 
 from pay_api.models.corp_type import CorpType, CorpTypeSchema
 from pay_api.models.error_code import ErrorCode, ErrorCodeSchema
@@ -100,7 +101,7 @@ class Code:
         """Find payment methods for a product."""
         if not product_code:
             corp_types = (
-                CorpType.query.with_entities(CorpType.product, CorpType.payment_methods)
+                CorpType.query.with_entities(CorpType.product, func.coalesce(CorpType.payment_methods, []))
                 .filter(CorpType.product.isnot(None))  # Exclude None at the query level
                 .distinct()
                 .all()
@@ -112,4 +113,4 @@ class Code:
             .filter_by(product=product_code)
             .first()
         )
-        return {corp_type.product: corp_type.payment_methods} if corp_type else {}
+        return {corp_type.product: corp_type.payment_methods or []} if corp_type else {}
