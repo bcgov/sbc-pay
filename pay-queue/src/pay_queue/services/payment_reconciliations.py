@@ -49,7 +49,6 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     QueueSources,
-    SuspensionReasonCodes,
 )
 from pay_api.utils.util import get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -58,8 +57,6 @@ from sentry_sdk import capture_message
 from pay_queue import config
 from pay_queue.minio import get_object
 from pay_queue.services.email_service import EmailParams, send_error_email
-
-from utils.auth_event import AuthEvent
 
 from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 
@@ -395,14 +392,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
             # NSF Condition. Publish to account events for NSF.
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
-                additional_emails = current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS")
-                AuthEvent.publish_lock_account_event(
-                    payment_account,
-                    additional_emails,
-                    PaymentMethod.PAD.value,
-                    QueueSources.PAY_QUEUE.value,
-                    SuspensionReasonCodes.PAD_NSF.value
-                )
+                _publish_account_events(QueueMessageTypes.NSF_LOCK_ACCOUNT.value, payment_account, row)
         else:
             error_msg = f"Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}."
             has_errors = True
