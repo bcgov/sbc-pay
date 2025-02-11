@@ -23,8 +23,8 @@ depends_on = None
 def upgrade():
     op.execute("""
     UPDATE corp_types 
-    SET product_code = 'BTR'
-    WHERE product = 'BTR'
+    SET product = 'BTR'
+    WHERE code = 'BTR'
     """)
     pass
 
