@@ -135,6 +135,8 @@ def get_first_and_last_of_frequency(date: datetime, frequency: str):
         return get_first_and_last_dates_of_month(date.month, date.year)
     if frequency == StatementFrequency.WEEKLY.value:
         return get_week_start_and_end_date(date)
+    if frequency == StatementFrequency.DAILY.value:
+        return get_previous_day(date), date
     return None, None
 
 
