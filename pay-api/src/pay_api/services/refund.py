@@ -355,7 +355,6 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.flush()
         cls._save_partial_refund_lines(refund_partial_lines, invoice)
         message = REFUND_SUCCESS_MESSAGES.get(f"{invoice.payment_method_code}.{invoice.invoice_status_code}")
-        # set invoice status
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = (
             RefundService._get_total_partial_refund_amount(refund_partial_lines)
@@ -369,10 +368,14 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             InvoiceStatus.PAID.value,
         ):
             invoice.refund_date = datetime.now(tz=timezone.utc)
-            # Need to check PAID to exclude partial refunds.
-            if invoice.invoice_status_code != InvoiceStatus.PAID.value:
-                pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
         invoice.save()
+        # Exclude PAID because it's for partial refunds.
+        if invoice.invoice_status_code in (
+            InvoiceStatus.REFUNDED.value,
+            InvoiceStatus.CANCELLED.value,
+            InvoiceStatus.CREDITED.value,
+        ):
+            pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
         current_app.logger.debug(f"Completed refund : {invoice_id}")
         return {"message": message}
 

@@ -119,7 +119,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
 
             # refund was processed and value is correct. Update invoice state and refund date
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-            BcolService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
             invoice.refund_date = datetime.now(tz=timezone.utc)
             db.session.add(invoice)
+            BcolService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
         db.session.commit()
