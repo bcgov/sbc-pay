@@ -33,6 +33,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.ejv_pay_service import EjvPayService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
     DisbursementStatus,
@@ -47,6 +48,7 @@ from pay_api.utils.enums import (
     QueueSources,
     RoutingSlipRefundStatus,
     RoutingSlipStatus,
+    TransactionStatus,
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
@@ -300,7 +302,7 @@ def _set_invoice_jv_reversal(invoice: InvoiceModel, effective_date: datetime, is
     if is_reversal:
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = effective_date
-        EjvPayService().release_payment_or_reversal(invoice, transaction_status=TransactionStatus.REVERSAL.value)
+        EjvPayService().release_payment_or_reversal(invoice, transaction_status=TransactionStatus.REVERSED.value)
     else:
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.payment_date = effective_date
