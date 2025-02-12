@@ -37,6 +37,7 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     PaymentSystem,
+    TransactionStatus,
     ReverseOperation,
 )
 from sentry_sdk import capture_message
