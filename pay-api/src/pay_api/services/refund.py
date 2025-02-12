@@ -369,6 +369,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             InvoiceStatus.PAID.value,
         ):
             invoice.refund_date = datetime.now(tz=timezone.utc)
+            # Need to check PAID to exclude partial refunds.
             if invoice.invoice_status_code != InvoiceStatus.PAID.value:
                 pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
         invoice.save()
