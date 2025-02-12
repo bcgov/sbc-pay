@@ -184,7 +184,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 invoice_amount=invoice.total,
                 payment_account_id=invoice.payment_account_id,
             ).commit()
-            pay_service.release_payment_or_reversal(invoice)  # pylint: disable=protected-access
+            pay_service.release_payment_or_reversal(invoice)
         else:
             # Normal flow of code here.
             invoice.commit()
