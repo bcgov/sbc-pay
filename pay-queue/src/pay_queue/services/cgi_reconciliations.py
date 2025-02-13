@@ -165,6 +165,7 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
         if inspect(obj).identity is not None
         and isinstance(obj, InvoiceModel)
         and obj.invoice_status_code == InvoiceStatus.REFUNDED.value
+        and obj.refund_date is not None
     ]
 
     db.session.commit()
