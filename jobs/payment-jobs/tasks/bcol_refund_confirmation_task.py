@@ -101,6 +101,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _compare_and_update_records(cls, invoice_refs: List[InvoiceReference], bcol_records: dict):
         """Update the invoices statuses that have been refunded by BCOL."""
+        refund_invoices = []
         for invoice_ref in invoice_refs:
             if invoice_ref.invoice_number not in bcol_records:
                 # no bcol refund record in colin-db yet so move on
@@ -121,6 +122,9 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
             # refund was processed and value is correct. Update invoice state and refund date
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
             invoice.refund_date = datetime.now(tz=timezone.utc)
+            refund_invoices.append(invoice)
             db.session.add(invoice)
-            BcolService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
+            
         db.session.commit()
+        for invoice in refund_invoices:
+            BcolService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
