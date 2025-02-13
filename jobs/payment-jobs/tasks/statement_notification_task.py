@@ -21,7 +21,6 @@ from pay_api.models.payment import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.services import Statement as StatementService
-from pay_api.services.flags import flags
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType, NotificationStatus, PaymentMethod
 
