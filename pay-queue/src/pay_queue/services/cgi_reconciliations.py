@@ -52,6 +52,7 @@ from pay_api.utils.enums import (
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
+from sqlalchemy import inspect
 
 from pay_queue import config
 from pay_queue.minio import get_object
@@ -158,7 +159,17 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
             elif is_jv_detail:
                 has_errors = _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
+    # return invoices that were set to refunded 4 function calls deep.
+    refund_invoices = [
+        obj for obj in db.session.dirty
+        if inspect(obj).identity is not None
+        and isinstance(obj, InvoiceModel)
+        and obj.invoice_status_code == InvoiceStatus.REFUNDED.value
+    ]
+
     db.session.commit()
+    for invoice in refund_invoices:
+        EjvPayService().release_payment_or_reversal(invoice, transaction_status=TransactionStatus.REVERSED.value)
     return has_errors
 
 
@@ -302,7 +313,6 @@ def _set_invoice_jv_reversal(invoice: InvoiceModel, effective_date: datetime, is
     if is_reversal:
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.refund_date = effective_date
-        EjvPayService().release_payment_or_reversal(invoice, transaction_status=TransactionStatus.REVERSED.value)
     else:
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.payment_date = effective_date
