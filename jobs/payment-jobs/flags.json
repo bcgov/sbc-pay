@@ -2,7 +2,6 @@
     "flagValues": {
         "string-flag": "a string value",
         "bool-flag": true,
-        "integer-flag": 10,
-        "enable-eft-payment-method": true
+        "integer-flag": 10
     }
 }

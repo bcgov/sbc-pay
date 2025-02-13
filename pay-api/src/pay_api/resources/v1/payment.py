@@ -21,7 +21,6 @@ from pay_api.exceptions import error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment as PaymentService
 from pay_api.services.auth import check_auth
-from pay_api.services.flags import flags
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, MAKE_PAYMENT, VIEW_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
@@ -89,10 +88,8 @@ def post_account_payment(account_id: str):
         is_retry_payment: bool = request.args.get("retryFailedPayment", "false").lower() == "true"
         pay_outstanding_balance = False
         all_invoice_statuses = False
-
-        if flags.is_on("enable-eft-payment-method", default=False):
-            pay_outstanding_balance = request.args.get("payOutstandingBalance", "false").lower() == "true"
-            all_invoice_statuses = request.args.get("allInvoiceStatuses", "false").lower() == "true"
+        pay_outstanding_balance = request.args.get("payOutstandingBalance", "false").lower() == "true"
+        all_invoice_statuses = request.args.get("allInvoiceStatuses", "false").lower() == "true"
 
         response, status = (
             PaymentService.create_account_payment(
