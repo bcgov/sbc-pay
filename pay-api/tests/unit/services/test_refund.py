@@ -18,6 +18,7 @@ Test-Suite to ensure that the Refund Service is working as expected.
 """
 
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 import pytest
 
@@ -128,17 +129,19 @@ def test_create_refund_for_paid_invoice(
 
     factory_receipt(invoice_id=i.id, receipt_number="1234569546456").save()
 
-    message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
-    i = InvoiceModel.find_by_id(i.id)
+    with patch("google.cloud.pubsub_v1.PublisherClient") as publisher:
+        message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
+        i = InvoiceModel.find_by_id(i.id)
 
-    assert i.invoice_status_code == expected_inv_status
-    assert message["message"] == expected
-    if i.invoice_status_code in (
-        InvoiceStatus.CANCELLED.value,
-        InvoiceStatus.CREDITED.value,
-        InvoiceStatus.REFUNDED.value,
-    ):
-        assert i.refund_date
+        assert i.invoice_status_code == expected_inv_status
+        assert message["message"] == expected
+        if i.invoice_status_code in (
+            InvoiceStatus.CANCELLED.value,
+            InvoiceStatus.CREDITED.value,
+            InvoiceStatus.REFUNDED.value,
+        ):
+            assert i.refund_date
+            assert publisher.assert_called
 
 
 def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
