@@ -282,4 +282,3 @@ def test_send_eft_notifications_failure(setup, session):  # pylint: disable=unus
     statement: Statement = Statement.find_by_id(statements[0][0].id)
     assert statement is not None
     assert statement.notification_status_code == NotificationStatus.FAILED.value
-
