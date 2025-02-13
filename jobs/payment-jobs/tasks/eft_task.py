@@ -38,6 +38,7 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     ReverseOperation,
+    TransactionStatus,
 )
 from sentry_sdk import capture_message
 from sqlalchemy import func
@@ -449,3 +450,4 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.total
         invoice.flush()
+        EftService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
