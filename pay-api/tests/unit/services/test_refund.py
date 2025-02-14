@@ -141,7 +141,7 @@ def test_create_refund_for_paid_invoice(
             InvoiceStatus.REFUNDED.value,
         ):
             assert i.refund_date
-            assert publisher.assert_called
+            publisher.assert_called()
 
 
 def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):

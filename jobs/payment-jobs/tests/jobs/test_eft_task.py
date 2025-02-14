@@ -580,7 +580,7 @@ def test_handle_unlinked_refund_requested_invoices(session):
             assert invoice_ref_2.status_code == InvoiceReferenceStatus.CANCELLED.value
             # Has no invoice reference, should still move to REFUNDED
             assert invoice_3.invoice_status_code == InvoiceStatus.REFUNDED.value
-            assert publisher.assert_called
+            publisher.assert_called()
 
 
 def test_rollback_consolidated_invoice():

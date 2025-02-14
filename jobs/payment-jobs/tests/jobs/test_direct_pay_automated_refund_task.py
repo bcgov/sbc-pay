@@ -94,7 +94,7 @@ def test_successful_completed_refund(session, monkeypatch):
             assert invoice.refund_date is not None
             assert payment.payment_status_code == PaymentStatus.REFUNDED.value
             assert refund.gl_posted is not None
-            assert publisher.assert_called
+            publisher.assert_called()
 
 
 def test_bad_cfs_refund(session, monkeypatch):

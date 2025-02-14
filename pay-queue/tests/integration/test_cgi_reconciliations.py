@@ -931,7 +931,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
         add_file_event_to_queue_and_process(
             client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value
         )
-        assert publisher.assert_called
+        publisher.assert_called()
 
         # Query EJV File and assert the status is changed
         ejv_file = EjvFileModel.find_by_id(ejv_file_id)
