@@ -17,6 +17,7 @@
 Test-Suite to ensure that the Payment Reconciliation queue service is working as expected.
 """
 from datetime import datetime, timezone
+from unittest.mock import Mock, patch
 
 import pytest
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -770,7 +771,7 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         assert payment[0][0].paid_amount == inv_total_amount
 
 
-def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
+def test_successful_payment_reversal_ejv_reconciliations(session, app, client, mocker):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -926,8 +927,9 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     with open(feedback_file_name, "rb") as f:
         upload_to_minio(f.read(), feedback_file_name)
 
+    mock_publish = Mock()
+    mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
-
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
@@ -942,6 +944,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
         )
         assert invoice_ref
 
+    mock_publish.assert_called()
     # Assert payment records
     for jv_account_id in jv_account_ids:
         account = PaymentAccountModel.find_by_id(jv_account_id)

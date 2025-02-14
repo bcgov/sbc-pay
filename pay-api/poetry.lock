@@ -911,7 +911,7 @@ test = ["flask-sqlalchemy", "pytest"]
 
 [[package]]
 name = "flask-jwt-oidc"
-version = "0.7.0"
+version = "0.8.1"
 description = "Opinionated flask oidc client"
 optional = false
 python-versions = ">=3.9,<4"
@@ -929,7 +929,7 @@ six = "^1.16.0"
 type = "git"
 url = "https://github.com/seeker25/flask-jwt-oidc.git"
 reference = "main"
-resolved_reference = "37ea8ab5ffa58fe55bd38d61108fefdb9a6ec00a"
+resolved_reference = "bba7bb26625b213f4be817b01f28fb8bbb5b05d1"
 
 [[package]]
 name = "flask-marshmallow"
@@ -2384,13 +2384,13 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "8.3.2"
+version = "8.3.4"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pytest-8.3.2-py3-none-any.whl", hash = "sha256:4ba08f9ae7dcf84ded419494d229b48d0903ea6407b030eaec46df5e6a73bba5"},
-    {file = "pytest-8.3.2.tar.gz", hash = "sha256:c132345d12ce551242c87269de812483f5bcc87cdbb4722e48487ba194f9fdce"},
+    {file = "pytest-8.3.4-py3-none-any.whl", hash = "sha256:50e16d954148559c9a74109af1eaf0c945ba2d8f30f0a3d3335edde19788b6f6"},
+    {file = "pytest-8.3.4.tar.gz", hash = "sha256:965370d062bce11e73868e0335abac31b4d3de0e82f4007408d242b4f8610761"},
 ]
 
 [package.dependencies]
@@ -3038,4 +3038,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "384ca8aba0a8f5330e42081522ccf1c47de67e048db44c1b2d19ce6e19cddd83"
+content-hash = "5d7599e58b190932a17182877be5a49f36e167f6381a8da625c25bb982ed6cec"

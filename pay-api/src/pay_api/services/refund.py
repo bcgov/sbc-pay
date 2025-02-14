@@ -33,7 +33,14 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import InvoiceStatus, RefundsPartialType, Role, RoutingSlipRefundStatus, RoutingSlipStatus
+from pay_api.utils.enums import (
+    InvoiceStatus,
+    RefundsPartialType,
+    Role,
+    RoutingSlipRefundStatus,
+    RoutingSlipStatus,
+    TransactionStatus,
+)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_quantized, get_str_by_path
@@ -348,7 +355,6 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.flush()
         cls._save_partial_refund_lines(refund_partial_lines, invoice)
         message = REFUND_SUCCESS_MESSAGES.get(f"{invoice.payment_method_code}.{invoice.invoice_status_code}")
-        # set invoice status
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = (
             RefundService._get_total_partial_refund_amount(refund_partial_lines)
@@ -363,6 +369,13 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         ):
             invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.save()
+        # Exclude PAID because it's for partial refunds.
+        if invoice.invoice_status_code in (
+            InvoiceStatus.REFUNDED.value,
+            InvoiceStatus.CANCELLED.value,
+            InvoiceStatus.CREDITED.value,
+        ):
+            pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
         current_app.logger.debug(f"Completed refund : {invoice_id}")
         return {"message": message}
 

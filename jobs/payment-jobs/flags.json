@@ -2,6 +2,8 @@
     "flagValues": {
         "string-flag": "a string value",
         "bool-flag": true,
-        "integer-flag": 10
+        "integer-flag": 10,
+        "queue-message-for-reversals": true,
+        "remove-premium-restrictions": true
     }
 }
