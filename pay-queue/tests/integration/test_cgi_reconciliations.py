@@ -17,6 +17,7 @@
 Test-Suite to ensure that the Payment Reconciliation queue service is working as expected.
 """
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 import pytest
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -926,33 +927,37 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client):
     with open(feedback_file_name, "rb") as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
-
-    # Query EJV File and assert the status is changed
-    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
-    # Assert invoice and receipt records
-    for inv_id in inv_ids:
-        invoice = InvoiceModel.find_by_id(inv_id)
-        assert invoice.disbursement_status_code is None
-        assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-        assert invoice.refund_date == datetime(2023, 5, 29)
-        invoice_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
-            inv_id, InvoiceReferenceStatus.COMPLETED.value
+    with patch("google.cloud.pubsub_v1.PublisherClient") as publisher:
+        add_file_event_to_queue_and_process(
+            client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value
         )
-        assert invoice_ref
+        assert publisher.assert_called
 
-    # Assert payment records
-    for jv_account_id in jv_account_ids:
-        account = PaymentAccountModel.find_by_id(jv_account_id)
-        payment = PaymentModel.search_account_payments(
-            auth_account_id=account.auth_account_id,
-            payment_status=PaymentStatus.COMPLETED.value,
-            page=1,
-            limit=100,
-        )[0]
-        assert len(payment) == 1
-        assert payment[0][0].paid_amount == inv_total_amount
+        # Query EJV File and assert the status is changed
+        ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+        assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+        # Assert invoice and receipt records
+        for inv_id in inv_ids:
+            invoice = InvoiceModel.find_by_id(inv_id)
+            assert invoice.disbursement_status_code is None
+            assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+            assert invoice.refund_date == datetime(2023, 5, 29)
+            invoice_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
+                inv_id, InvoiceReferenceStatus.COMPLETED.value
+            )
+            assert invoice_ref
+
+        # Assert payment records
+        for jv_account_id in jv_account_ids:
+            account = PaymentAccountModel.find_by_id(jv_account_id)
+            payment = PaymentModel.search_account_payments(
+                auth_account_id=account.auth_account_id,
+                payment_status=PaymentStatus.COMPLETED.value,
+                page=1,
+                limit=100,
+            )[0]
+            assert len(payment) == 1
+            assert payment[0][0].paid_amount == inv_total_amount
 
 
 def test_successful_refund_reconciliations(session, app, client):
