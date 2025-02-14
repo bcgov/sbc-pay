@@ -21,7 +21,6 @@ from pay_api.models.payment import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.services import Statement as StatementService
-from pay_api.services.flags import flags
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType, NotificationStatus, PaymentMethod
 
@@ -84,20 +83,14 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
             # params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
 
             notification_success = True
-            eft_enabled = flags.is_on("enable-eft-payment-method", default=False)
             try:
                 if not payment_account.payment_method == PaymentMethod.EFT.value:
                     notification_success = cls.send_email(token, to_emails, template.render(params))
-                elif eft_enabled:  # This statement template currently only used for EFT
+                else:
                     result = StatementService.get_summary(payment_account.auth_account_id)
                     notification_success = publish_statement_notification(
                         payment_account, statement, result["total_due"], to_emails
                     )
-                else:  # EFT not enabled - mark skip - shouldn't happen, but safeguard for manual data injection
-                    statement.notification_status_code = NotificationStatus.SKIP.value
-                    statement.notification_date = datetime.now(tz=timezone.utc)
-                    statement.commit()
-                    continue
             except Exception as e:  # NOQA # pylint:disable=broad-except
                 current_app.logger.error("<notification failed")
                 current_app.logger.error(e)
