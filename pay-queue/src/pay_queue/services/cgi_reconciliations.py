@@ -161,7 +161,8 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
 
     # return invoices that were set to refunded 4 function calls deep.
     refund_invoices = [
-        obj for obj in db.session.dirty
+        obj
+        for obj in db.session.dirty
         if inspect(obj).identity is not None
         and isinstance(obj, InvoiceModel)
         and obj.invoice_status_code == InvoiceStatus.REFUNDED.value

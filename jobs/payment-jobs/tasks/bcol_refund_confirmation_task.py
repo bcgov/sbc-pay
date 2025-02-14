@@ -124,7 +124,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
             invoice.refund_date = datetime.now(tz=timezone.utc)
             refund_invoices.append(invoice)
             db.session.add(invoice)
-            
+
         db.session.commit()
         for invoice in refund_invoices:
             BcolService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)

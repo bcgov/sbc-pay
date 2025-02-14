@@ -2091,7 +2091,7 @@ werkzeug = "^3.0.3"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "25571"
-resolved_reference = "1a42a5171063103b877ee8e3777638b0afe44fda"
+resolved_reference = "e798ea844b693d937f82412790b198b718040615"
 subdirectory = "pay-api"
 
 [[package]]
