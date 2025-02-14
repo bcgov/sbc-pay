@@ -17,7 +17,7 @@
 Test-Suite to ensure that the EFTTask for electronic funds transfer is working as expected.
 """
 from datetime import datetime, timezone
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -535,7 +535,7 @@ def test_unlock_overdue_accounts(session):
         mock_unlock.assert_called_with(payment_account)
 
 
-def test_handle_unlinked_refund_requested_invoices(session):
+def test_handle_unlinked_refund_requested_invoices(session, mocker):
     """Test handle unlinked refund requested invoices."""
     auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
     eft_credit = factory_create_eft_credit(
@@ -567,20 +567,21 @@ def test_handle_unlinked_refund_requested_invoices(session):
         payment_method_code=PaymentMethod.EFT.value,
         total=10,
     ).save()
-    with patch("google.cloud.pubsub_v1.PublisherClient") as publisher:
-        with patch("pay_api.services.CFSService.reverse_invoice") as mock_invoice:
-            EFTTask.handle_unlinked_refund_requested_invoices()
-            mock_invoice.assert_called()
-            # Has CIL so it's excluded
-            assert invoice_1.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
-            # Has no CIL and invoice reference
-            assert invoice_2.invoice_status_code == InvoiceStatus.REFUNDED.value
-            assert invoice_2.refund_date
-            assert invoice_2.refund
-            assert invoice_ref_2.status_code == InvoiceReferenceStatus.CANCELLED.value
-            # Has no invoice reference, should still move to REFUNDED
-            assert invoice_3.invoice_status_code == InvoiceStatus.REFUNDED.value
-            publisher.assert_called()
+    mock_publish = Mock()
+    mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
+    with patch("pay_api.services.CFSService.reverse_invoice") as mock_invoice:
+        EFTTask.handle_unlinked_refund_requested_invoices()
+        mock_invoice.assert_called()
+        # Has CIL so it's excluded
+        assert invoice_1.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+        # Has no CIL and invoice reference
+        assert invoice_2.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert invoice_2.refund_date
+        assert invoice_2.refund
+        assert invoice_ref_2.status_code == InvoiceReferenceStatus.CANCELLED.value
+        # Has no invoice reference, should still move to REFUNDED
+        assert invoice_3.invoice_status_code == InvoiceStatus.REFUNDED.value
+        mock_publish.assert_called()
 
 
 def test_rollback_consolidated_invoice():

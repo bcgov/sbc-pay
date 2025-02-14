@@ -82,6 +82,7 @@ def test_bcol_refund_confirmation(
     start_status,
     expected,
     mismatch,
+    mocker,
 ):
     """Test bcol refund confirmation."""
     invoice_number = f"{test_name}000012345"
@@ -121,10 +122,11 @@ def test_bcol_refund_confirmation(
         payment_system_code=PaymentSystem.BCOL.value,
     )
 
-    with patch("google.cloud.pubsub_v1.PublisherClient") as publisher:
-        BcolRefundConfirmationTask.update_bcol_refund_invoices()
-        if test_name == "drawdown_refund_full":
-            publisher.assert_called_once()
+    mock_publish = Mock()
+    mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
+    BcolRefundConfirmationTask.update_bcol_refund_invoices()
+    if test_name == "drawdown_refund_full":
+        mock_publish.assert_called_once()
 
     # check things out
     assert (Invoice.find_by_id(invoice.id)).invoice_status_code == expected

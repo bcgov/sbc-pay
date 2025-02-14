@@ -14,7 +14,7 @@
 
 """Tests for direct pay automated refund task."""
 import datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from freezegun import freeze_time
@@ -69,7 +69,7 @@ def test_successful_paid_refund(session, monkeypatch):
     assert refund.gl_posted is None
 
 
-def test_successful_completed_refund(session, monkeypatch):
+def test_successful_completed_refund(session, monkeypatch, mocker):
     """Test successful refund (GL complete)."""
     invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.REFUNDED.value)
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
@@ -84,17 +84,18 @@ def test_successful_completed_refund(session, monkeypatch):
     target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
-    with patch("google.cloud.pubsub_v1.PublisherClient") as publisher:
-        with freeze_time(
-            datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
-        ):
-            DirectPayAutomatedRefundTask().process_cc_refunds()
-            refund = RefundModel.find_by_invoice_id(invoice.id)
-            assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-            assert invoice.refund_date is not None
-            assert payment.payment_status_code == PaymentStatus.REFUNDED.value
-            assert refund.gl_posted is not None
-            publisher.assert_called()
+    mock_publish = Mock()
+    mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
+    with freeze_time(
+        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
+    ):
+        DirectPayAutomatedRefundTask().process_cc_refunds()
+        refund = RefundModel.find_by_invoice_id(invoice.id)
+        assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert invoice.refund_date is not None
+        assert payment.payment_status_code == PaymentStatus.REFUNDED.value
+        assert refund.gl_posted is not None
+        mock_publish.assert_called()
 
 
 def test_bad_cfs_refund(session, monkeypatch):
