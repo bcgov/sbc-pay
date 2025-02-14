@@ -52,6 +52,7 @@ def test_create_refund_for_unpaid_invoice(session):
     assert excinfo.type == BusinessException
 
 
+@pytest.mark.disable_mock_pub_sub_call
 @pytest.mark.parametrize(
     "payment_method, invoice_status, pay_status, has_reference, expected_inv_status",
     [
@@ -99,14 +100,9 @@ def test_create_refund_for_unpaid_invoice(session):
         ),
     ],
 )
+@patch("google.cloud.pubsub_v1.PublisherClient.publish")
 def test_create_refund_for_paid_invoice(
-    session,
-    monkeypatch,
-    payment_method,
-    invoice_status,
-    pay_status,
-    has_reference,
-    expected_inv_status,
+    mock_publish, session, monkeypatch, payment_method, invoice_status, pay_status, has_reference, expected_inv_status
 ):
     """Assert that the create refund succeeds for paid invoices."""
     expected = REFUND_SUCCESS_MESSAGES[f"{payment_method}.{invoice_status}"]
@@ -129,19 +125,18 @@ def test_create_refund_for_paid_invoice(
 
     factory_receipt(invoice_id=i.id, receipt_number="1234569546456").save()
 
-    with patch("google.cloud.pubsub_v1.PublisherClient") as publisher:
-        message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
-        i = InvoiceModel.find_by_id(i.id)
+    message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
+    i = InvoiceModel.find_by_id(i.id)
 
-        assert i.invoice_status_code == expected_inv_status
-        assert message["message"] == expected
-        if i.invoice_status_code in (
-            InvoiceStatus.CANCELLED.value,
-            InvoiceStatus.CREDITED.value,
-            InvoiceStatus.REFUNDED.value,
-        ):
-            assert i.refund_date
-            publisher.assert_called()
+    assert i.invoice_status_code == expected_inv_status
+    assert message["message"] == expected
+    if i.invoice_status_code in (
+        InvoiceStatus.CANCELLED.value,
+        InvoiceStatus.CREDITED.value,
+        InvoiceStatus.REFUNDED.value,
+    ):
+        assert i.refund_date
+        mock_publish.assert_called()
 
 
 def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):

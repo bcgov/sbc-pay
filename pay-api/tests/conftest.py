@@ -35,8 +35,11 @@ def app():
 
 
 @pytest.fixture(autouse=True)
-def mock_pub_sub_call(mocker):
+def mock_pub_sub_call(request, mocker):
     """Mock pub sub call."""
+
+    if "disable_mock_pub_sub_call" in request.node.keywords:
+        return
 
     class Expando(object):
         """Expando class."""

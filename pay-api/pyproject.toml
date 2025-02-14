@@ -82,8 +82,8 @@ cachelib = "^0.13.0"
 flask-jwt-oidc = {git = "https://github.com/seeker25/flask-jwt-oidc.git", branch="main"}
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.1.1"
-pytest-mock = "^3.12.0"
+pytest = "^8.3.4"
+pytest-mock = "^3.14.0"
 requests = "^2.32.2"
 pyhamcrest = "^2.1.0"
 pytest-cov = "^4.1.0"
@@ -202,6 +202,7 @@ filterwarnings = [
 markers = [
    "slow",
    "serial",
+   "disable_mock_pub_sub_call: Disable mock pubsub for certain tests"
 ]
 
 [tool.coverage.run]
