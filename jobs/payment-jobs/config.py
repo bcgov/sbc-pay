@@ -260,6 +260,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CGI_SFTP_HOST = "localhost"
     GCP_AUTH_KEY = None
 
+    # Need a value for this, so we can mock the publish client.
+    BUSINESS_PAY_TOPIC = 'business-pay-topic'
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
