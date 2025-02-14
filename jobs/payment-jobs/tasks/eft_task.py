@@ -200,9 +200,13 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                     f" Invoice Id: {invoice.id} - Amount: {cil_rollup.rollup_amount}"
                 )
                 receipt_number = cil_rollup.receipt_number
-                cls._rollback_receipt_and_invoice(cfs_account, invoice, receipt_number, cil_rollup.status_code)
+                refund_invoice = cls._rollback_receipt_and_invoice(
+                    cfs_account, invoice, receipt_number, cil_rollup.status_code
+                )
                 cls._update_cil_and_shortname_history(cil_rollup)
                 db.session.commit()
+                if refund_invoice:
+                    EftService().release_payment_or_reversal(refund_invoice, TransactionStatus.REVERSED.value)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
                     f"Error on reversing EFT invoice links in CFS "
@@ -243,8 +247,9 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 invoice.id, InvoiceReferenceStatus.ACTIVE.value
             )
             try:
-                cls._handle_invoice_refund(invoice, invoice_reference)
+                refund_invoice = cls._handle_invoice_refund(invoice, invoice_reference)
                 db.session.commit()
+                EftService().release_payment_or_reversal(refund_invoice, TransactionStatus.REVERSED.value)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
                     f"Error on reversing unlinked REFUND_REQUESTED EFT invoice in CFS "
@@ -403,7 +408,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice: InvoiceModel,
         receipt_number: str,
         cil_status_code: str,
-    ):
+    ) -> InvoiceModel:
         """Rollback receipt in CFS and reset invoice status."""
         invoice_reference_requirement = {
             EFTCreditInvoiceStatus.PENDING_REFUND.value: InvoiceReferenceStatus.COMPLETED.value,
@@ -423,7 +428,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         if receipt_number:
             CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
         if is_invoice_refund:
-            cls._handle_invoice_refund(invoice, invoice_reference)
+            return cls._handle_invoice_refund(invoice, invoice_reference)
         else:
             invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
             invoice.paid = 0
@@ -436,9 +441,10 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 db.session.delete(payment)
             for receipt in ReceiptModel.find_all_receipts_for_invoice(invoice.id):
                 db.session.delete(receipt)
+        return None
 
     @classmethod
-    def _handle_invoice_refund(cls, invoice: InvoiceModel, invoice_reference: InvoiceReferenceModel):
+    def _handle_invoice_refund(cls, invoice: InvoiceModel, invoice_reference: InvoiceReferenceModel) -> InvoiceModel:
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
         if invoice_reference:
             if invoice_reference.is_consolidated:
@@ -450,4 +456,4 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.total
         invoice.flush()
-        EftService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
+        return invoice
