@@ -201,8 +201,7 @@ filterwarnings = [
 ]
 markers = [
    "slow",
-   "serial",
-   "disable_mock_pub_sub_call: Disable mock pubsub for certain tests"
+   "serial"
 ]
 
 [tool.coverage.run]
