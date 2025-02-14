@@ -30,6 +30,7 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentStatus,
+    TransactionStatus,
 )
 from sentry_sdk import capture_message
 
@@ -239,6 +240,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         payment = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
         payment.save()
+        DirectPayService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
 
     @classmethod
     def _set_refund_partials_posted(cls, invoice: Invoice):

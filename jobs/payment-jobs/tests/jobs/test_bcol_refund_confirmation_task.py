@@ -14,7 +14,7 @@
 
 """Tests to assure the BCOL Refund Confirmation Job."""
 from decimal import Decimal
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from pay_api.models import Invoice
@@ -121,8 +121,10 @@ def test_bcol_refund_confirmation(
         payment_system_code=PaymentSystem.BCOL.value,
     )
 
-    # run job
-    BcolRefundConfirmationTask.update_bcol_refund_invoices()
+    with patch("google.cloud.pubsub_v1.PublisherClient") as publisher:
+        BcolRefundConfirmationTask.update_bcol_refund_invoices()
+        if test_name == "drawdown_refund_full":
+            publisher.assert_called_once()
 
     # check things out
     assert (Invoice.find_by_id(invoice.id)).invoice_status_code == expected

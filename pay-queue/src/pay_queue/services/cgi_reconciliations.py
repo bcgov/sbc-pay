@@ -33,6 +33,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.ejv_pay_service import EjvPayService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
     DisbursementStatus,
@@ -47,9 +48,11 @@ from pay_api.utils.enums import (
     QueueSources,
     RoutingSlipRefundStatus,
     RoutingSlipStatus,
+    TransactionStatus,
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
+from sqlalchemy import inspect
 
 from pay_queue import config
 from pay_queue.minio import get_object
@@ -156,7 +159,19 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
             elif is_jv_detail:
                 has_errors = _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
+    # return invoices that were set to refunded 4 function calls deep.
+    refund_invoices = [
+        obj
+        for obj in db.session.dirty
+        if inspect(obj).identity is not None
+        and isinstance(obj, InvoiceModel)
+        and obj.invoice_status_code == InvoiceStatus.REFUNDED.value
+        and obj.refund_date is not None
+    ]
+
     db.session.commit()
+    for invoice in refund_invoices:
+        EjvPayService().release_payment_or_reversal(invoice, transaction_status=TransactionStatus.REVERSED.value)
     return has_errors
 
 
