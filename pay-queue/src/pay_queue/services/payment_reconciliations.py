@@ -40,6 +40,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
+from pay_api.utils.auth_event import AuthEvent
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     CfsAccountStatus,
@@ -48,10 +49,9 @@ from pay_api.utils.enums import (
     LineItemStatus,
     PaymentMethod,
     PaymentStatus,
-    SuspensionReasonCodes,
     QueueSources,
+    SuspensionReasonCodes,
 )
-from pay_api.utils.auth_event import AuthEvent
 from pay_api.utils.util import get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
@@ -394,16 +394,17 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
             # NSF Condition. Publish to account events for NSF.
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
-                AuthEvent.publish_lock_account_event(
-                    pay_account=payment_account,
-                    additional_emails=current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
-                    payment_method=_convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
-                    source=QueueSources.PAY_QUEUE.value,
-                    suspension_reason_code=SuspensionReasonCodes.OVERDUE_EFT.value,
-                    outstanding_amount=_get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
-                    original_amount=_get_row_value(row, Column.TARGET_TXN_ORIGINAL),
-                    amount=_get_row_value(row, Column.APP_AMOUNT)
-                )
+                lock_account_event_params = {
+                    'pay_account': payment_account,
+                    'additional_emails': current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
+                    'payment_method': _convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
+                    'source': QueueSources.PAY_QUEUE.value,
+                    'suspension_reason_code': SuspensionReasonCodes.OVERDUE_EFT.value,
+                    'outstanding_amount': _get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
+                    'original_amount': _get_row_value(row, Column.TARGET_TXN_ORIGINAL),
+                    'amount': _get_row_value(row, Column.APP_AMOUNT)
+                }
+                AuthEvent.publish_lock_account_event(lock_account_event_params)
         else:
             error_msg = f"Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}."
             has_errors = True

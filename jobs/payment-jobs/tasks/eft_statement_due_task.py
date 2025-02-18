@@ -160,14 +160,14 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
 
             # Only publish lock event if it is not already locked
             if payment_account.has_overdue_invoices is None:
-                additional_emails = current_app.config.get("EFT_OVERDUE_NOTIFY_EMAILS")
-                AuthEvent.publish_lock_account_event(
-                    pay_account=payment_account,
-                    additional_emails=additional_emails,
-                    payment_method=PaymentMethod.EFT.value,
-                    source=QueueSources.PAY_JOBS.value,
-                    suspension_reason_code=SuspensionReasonCodes.OVERDUE_EFT.value,
-                )
+                lock_account_event_params = {
+                    'pay_account': payment_account,
+                    'additional_emails': current_app.config.get("EFT_OVERDUE_NOTIFY_EMAILS"),
+                    'payment_method': PaymentMethod.EFT.value,
+                    'source': QueueSources.PAY_JOBS.value,
+                    'suspension_reason_code': SuspensionReasonCodes.OVERDUE_EFT.value
+                }
+                AuthEvent.publish_lock_account_event(lock_account_event_params)
 
             # Even if the account is locked, there is a new overdue statement that needs NSF invoices added and
             # set the most recent date for has_overdue_invoices
