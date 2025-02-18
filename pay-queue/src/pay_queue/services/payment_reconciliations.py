@@ -395,14 +395,14 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
                 lock_account_event_params = {
-                    'pay_account': payment_account,
-                    'additional_emails': current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
-                    'payment_method': _convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
-                    'source': QueueSources.PAY_QUEUE.value,
-                    'suspension_reason_code': SuspensionReasonCodes.OVERDUE_EFT.value,
-                    'outstanding_amount': _get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
-                    'original_amount': _get_row_value(row, Column.TARGET_TXN_ORIGINAL),
-                    'amount': _get_row_value(row, Column.APP_AMOUNT)
+                    "pay_account": payment_account,
+                    "additional_emails": current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
+                    "payment_method": _convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
+                    "source": QueueSources.PAY_QUEUE.value,
+                    "suspension_reason_code": SuspensionReasonCodes.OVERDUE_EFT.value,
+                    "outstanding_amount": _get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
+                    "original_amount": _get_row_value(row, Column.TARGET_TXN_ORIGINAL),
+                    "amount": _get_row_value(row, Column.APP_AMOUNT),
                 }
                 AuthEvent.publish_lock_account_event(lock_account_event_params)
         else:
