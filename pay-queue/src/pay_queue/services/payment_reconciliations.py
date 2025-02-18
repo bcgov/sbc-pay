@@ -50,6 +50,7 @@ from pay_api.utils.enums import (
     PaymentStatus,
     QueueSources,
 )
+from pay_api.utils.auth_event import AuthEvent
 from pay_api.utils.util import get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
@@ -391,6 +392,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
             current_app.logger.info("NOT PAID. NSF identified.")
             # NSF Condition. Publish to account events for NSF.
             if _process_failed_payments(row):
+                AuthEvent.publish_lock_account_event()
                 # Send mailer and account events to update status and send email notification
                 _publish_account_events(QueueMessageTypes.NSF_LOCK_ACCOUNT.value, payment_account, row)
         else:

@@ -30,12 +30,12 @@ from pay_api.models.statement_recipients import StatementRecipients as Statement
 from pay_api.services import NonSufficientFundsService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
+from pay_api.utils.auth_event import AuthEvent
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources, StatementFrequency, SuspensionReasonCodes
 from pay_api.utils.util import current_local_time
 from sentry_sdk import capture_message
 from sqlalchemy import select
 
-from utils.auth_event import AuthEvent
 from utils.enums import StatementNotificationAction
 from utils.mailer import StatementNotificationInfo, publish_payment_notification
 

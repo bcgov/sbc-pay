@@ -132,7 +132,7 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
     summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
     total_amount_owing = summary["total_due"]
 
-    with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
+    with patch("pay_api.utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
         with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
             with freeze_time(action_on):
                 # Statement due task looks at the month before.
@@ -228,7 +228,7 @@ def test_account_lock(setup, session):
     assert invoices2 is not None
     assert invoices2[0].invoice_id == invoice2.id
 
-    with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
+    with patch("pay_api.utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
         with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
             mock_auth_event.assert_called_once()
@@ -258,7 +258,7 @@ def test_account_lock(setup, session):
     assert invoices3 is not None
     assert invoices3[0].invoice_id == invoice3.id
 
-    with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
+    with patch("pay_api.utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
         with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
             # Already locked we should not be publishing another event
@@ -315,7 +315,7 @@ def test_multi_account_lock(setup, session):
     assert invoices2 is not None
     assert invoices2[0].invoice_id == invoice2.id
 
-    with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
+    with patch("pay_api.utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
         with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
             mock_auth_event.call_count == 2
@@ -364,7 +364,7 @@ def test_statement_due_overrides(setup, session, test_name, date_override, actio
     summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
     total_amount_owing = summary["total_due"]
 
-    with patch("utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
+    with patch("pay_api.utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
         with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
             # Statement due task looks at the month before.
             if test_name == "overdue":

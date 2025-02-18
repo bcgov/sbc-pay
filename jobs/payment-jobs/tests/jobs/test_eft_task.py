@@ -528,7 +528,7 @@ def test_unlock_overdue_accounts(session):
     factory_invoice_reference(invoice_id=invoice_2.id)
     factory_create_eft_credit_invoice_link(invoice_id=invoice_2.id, eft_credit_id=eft_credit.id, amount=10)
 
-    with patch("utils.auth_event.AuthEvent.publish_unlock_account_event") as mock_unlock:
+    with patch("pay_api.utils.auth_event.AuthEvent.publish_unlock_account_event") as mock_unlock:
         EFTTask.link_electronic_funds_transfers_cfs()
         assert payment_account.has_overdue_invoices is None
         mock_unlock.assert_called_once()
