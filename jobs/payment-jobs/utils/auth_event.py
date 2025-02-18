@@ -19,11 +19,20 @@ class AuthEvent:
         payment_method=None,
         source=None,
         suspension_reason_code=None,
+        outstanding_amount=None,
+        original_amount=None,
+        amount=None,
     ):
         """Publish NSF lock account event to the auth queue."""
         try:
             payload = AuthEvent._create_event_payload(
-                pay_account, additional_emails, payment_method, suspension_reason_code
+                pay_account,
+                additional_emails,
+                payment_method,
+                suspension_reason_code,
+                outstanding_amount,
+                original_amount,
+                amount
             )
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
@@ -79,10 +88,16 @@ class AuthEvent:
         additional_emails="",
         payment_method=None,
         suspension_reason_code=None,
+        outstandingAmount=None,
+        originalAmount=None,
+        amount=None,
     ):
         return {
             "accountId": pay_account.auth_account_id,
             "paymentMethod": payment_method,
             "suspensionReasonCode": suspension_reason_code,
             "additionalEmails": additional_emails,
+            "outstandingAmount": outstandingAmount,
+            "originalAmount": originalAmount,
+            "amount": amount,
         }

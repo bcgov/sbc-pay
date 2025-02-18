@@ -48,6 +48,7 @@ from pay_api.utils.enums import (
     LineItemStatus,
     PaymentMethod,
     PaymentStatus,
+    SuspensionReasonCodes,
     QueueSources,
 )
 from pay_api.utils.auth_event import AuthEvent
@@ -392,9 +393,17 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
             current_app.logger.info("NOT PAID. NSF identified.")
             # NSF Condition. Publish to account events for NSF.
             if _process_failed_payments(row):
-                AuthEvent.publish_lock_account_event()
                 # Send mailer and account events to update status and send email notification
-                _publish_account_events(QueueMessageTypes.NSF_LOCK_ACCOUNT.value, payment_account, row)
+                AuthEvent.publish_lock_account_event(
+                    pay_account=payment_account,
+                    additional_emails=current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
+                    payment_method=_convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
+                    source=QueueSources.PAY_QUEUE.value,
+                    suspension_reason_code=SuspensionReasonCodes.OVERDUE_EFT.value,
+                    outstanding_amount=_get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
+                    original_amount=_get_row_value(row, Column.TARGET_TXN_ORIGINAL),
+                    amount=_get_row_value(row, Column.APP_AMOUNT)
+                )
         else:
             error_msg = f"Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}."
             has_errors = True
@@ -840,34 +849,6 @@ def _publish_payment_event(inv: InvoiceModel):
         )
 
 
-def _publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
-    """Publish payment message to the mailer queue."""
-    # Publish message to the Queue, saying account has been created. Using the event spec.
-    payload = _create_event_payload(pay_account, row)
-    try:
-        gcp_queue_publisher.publish_to_queue(
-            QueueMessage(
-                source=QueueSources.PAY_QUEUE.value,
-                message_type=message_type,
-                payload=payload,
-                topic=current_app.config.get("ACCOUNT_MAILER_TOPIC"),
-            )
-        )
-    except Exception as e:  # NOQA pylint: disable=broad-except
-        current_app.logger.error(e)
-        current_app.logger.warning(
-            "Notification to Queue failed for the Account Mailer %s - %s",
-            pay_account.auth_account_id,
-            payload,
-        )
-        capture_message(
-            "Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.".format(
-                auth_account_id=pay_account.auth_account_id, msg=payload
-            ),
-            level="error",
-        )
-
-
 def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amount: float):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
@@ -924,44 +905,6 @@ def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amoun
             "{auth_account_id}, {msg}.".format(auth_account_id=pay_account.auth_account_id, msg=payload),
             level="error",
         )
-
-
-def _publish_account_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
-    """Publish payment message to the mailer queue."""
-    # Publish message to the Queue, saying account has been created. Using the event spec.
-    payload = _create_event_payload(pay_account, row)
-    try:
-        gcp_queue_publisher.publish_to_queue(
-            QueueMessage(
-                source=QueueSources.PAY_QUEUE.value,
-                message_type=message_type,
-                payload=payload,
-                topic=current_app.config.get("AUTH_EVENT_TOPIC"),
-            )
-        )
-    except Exception as e:  # NOQA pylint: disable=broad-except
-        current_app.logger.error(e)
-        current_app.logger.warning(
-            "Notification to Queue failed for the Account %s - %s",
-            pay_account.auth_account_id,
-            pay_account.name,
-        )
-        capture_message(
-            "Notification to Queue failed for the Account {auth_account_id}, {msg}.".format(
-                auth_account_id=pay_account.auth_account_id, msg=payload
-            ),
-            level="error",
-        )
-
-
-def _create_event_payload(pay_account, row):
-    return {
-        "accountId": pay_account.auth_account_id,
-        "paymentMethod": _convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
-        "outstandingAmount": _get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
-        "originalAmount": _get_row_value(row, Column.TARGET_TXN_ORIGINAL),
-        "amount": _get_row_value(row, Column.APP_AMOUNT),
-    }
 
 
 def _convert_payment_method(cfs_method: str) -> str:

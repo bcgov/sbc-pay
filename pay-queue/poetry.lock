@@ -2462,7 +2462,7 @@ werkzeug = "^3.0.1"
 type = "git"
 url = "https://github.com/rodrigo-barraza/sbc-pay"
 reference = "feature/24664"
-resolved_reference = "6d5e84c814297d05f8a123a56faaae1fa3bd558a"
+resolved_reference = "5a89ec62ce12ae6c6cf94b625045bf3e865e6b8b"
 subdirectory = "jobs/payment-jobs"
 
 [[package]]
