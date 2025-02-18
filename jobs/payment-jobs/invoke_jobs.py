@@ -20,6 +20,7 @@ import sys
 
 import sentry_sdk
 from flask import Flask
+from pay_api import build_cache
 from pay_api.services import Flags
 from pay_api.services.gcp_queue import queue
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -66,6 +67,7 @@ def create_app(
     flag_service.init_app(app)
 
     register_shellcontext(app)
+    build_cache(app)
 
     return app
 

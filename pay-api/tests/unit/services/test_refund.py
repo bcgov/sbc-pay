@@ -18,6 +18,7 @@ Test-Suite to ensure that the Refund Service is working as expected.
 """
 
 from datetime import datetime, timezone
+from unittest.mock import Mock
 
 import pytest
 
@@ -99,13 +100,7 @@ def test_create_refund_for_unpaid_invoice(session):
     ],
 )
 def test_create_refund_for_paid_invoice(
-    session,
-    monkeypatch,
-    payment_method,
-    invoice_status,
-    pay_status,
-    has_reference,
-    expected_inv_status,
+    session, monkeypatch, payment_method, invoice_status, pay_status, has_reference, expected_inv_status, mocker
 ):
     """Assert that the create refund succeeds for paid invoices."""
     expected = REFUND_SUCCESS_MESSAGES[f"{payment_method}.{invoice_status}"]
@@ -127,7 +122,8 @@ def test_create_refund_for_paid_invoice(
     i.save()
 
     factory_receipt(invoice_id=i.id, receipt_number="1234569546456").save()
-
+    mock_publish = Mock()
+    mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
     message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
     i = InvoiceModel.find_by_id(i.id)
 
@@ -139,6 +135,7 @@ def test_create_refund_for_paid_invoice(
         InvoiceStatus.REFUNDED.value,
     ):
         assert i.refund_date
+        mock_publish.assert_called()
 
 
 def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):

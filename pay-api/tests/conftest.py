@@ -34,7 +34,7 @@ def app():
     return _app
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def mock_pub_sub_call(mocker):
     """Mock pub sub call."""
 

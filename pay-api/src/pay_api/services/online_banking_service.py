@@ -68,7 +68,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     def apply_credit(self, invoice: Invoice) -> None:
         """Apply credit to the invoice."""
-        self._release_payment(invoice=invoice)
+        self.release_payment_or_reversal(invoice=invoice)
 
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""

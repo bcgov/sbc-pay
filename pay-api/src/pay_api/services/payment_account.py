@@ -248,8 +248,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
         # If the payment method is CC, set the payment_method as DIRECT_PAY
         if payment_method := get_str_by_path(account_request, "paymentInfo/methodOfPayment"):
-            if flags.is_on("enable-eft-payment-method", default=False):
-                cls._check_and_handle_payment_method(payment_account, payment_method)
+            cls._check_and_handle_payment_method(payment_account, payment_method)
 
             payment_account.payment_method = payment_method
             payment_account.bcol_account = account_request.get("bcolAccountNumber", None)

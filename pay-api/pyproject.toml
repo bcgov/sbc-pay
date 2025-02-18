@@ -30,7 +30,7 @@ cffi = "1.16.0"
 charset-normalizer = "3.3.2"
 click = "8.1.7"
 croniter = "2.0.2"
-cryptography = "43.0.1"
+cryptography = "44.0.1"
 dpath = "2.1.6"
 ecdsa = "0.18.0"
 expiringdict = "1.2.2"
@@ -82,8 +82,8 @@ cachelib = "^0.13.0"
 flask-jwt-oidc = {git = "https://github.com/seeker25/flask-jwt-oidc.git", branch="main"}
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.1.1"
-pytest-mock = "^3.12.0"
+pytest = "^8.3.4"
+pytest-mock = "^3.14.0"
 requests = "^2.32.2"
 pyhamcrest = "^2.1.0"
 pytest-cov = "^4.1.0"
@@ -201,7 +201,7 @@ filterwarnings = [
 ]
 markers = [
    "slow",
-   "serial",
+   "serial"
 ]
 
 [tool.coverage.run]
