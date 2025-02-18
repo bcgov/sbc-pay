@@ -161,11 +161,11 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
             # Only publish lock event if it is not already locked
             if payment_account.has_overdue_invoices is None:
                 lock_account_event_params = {
-                    'pay_account': payment_account,
-                    'additional_emails': current_app.config.get("EFT_OVERDUE_NOTIFY_EMAILS"),
-                    'payment_method': PaymentMethod.EFT.value,
-                    'source': QueueSources.PAY_JOBS.value,
-                    'suspension_reason_code': SuspensionReasonCodes.OVERDUE_EFT.value
+                    "pay_account": payment_account,
+                    "additional_emails": current_app.config.get("EFT_OVERDUE_NOTIFY_EMAILS"),
+                    "payment_method": PaymentMethod.EFT.value,
+                    "source": QueueSources.PAY_JOBS.value,
+                    "suspension_reason_code": SuspensionReasonCodes.OVERDUE_EFT.value,
                 }
                 AuthEvent.publish_lock_account_event(lock_account_event_params)
 
