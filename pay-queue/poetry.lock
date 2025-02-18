@@ -634,14 +634,13 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "cloud-sql-python-connector"
-version = "1.16.0"
-description = "The Cloud SQL Python Connector is a library that can be used alongside a database driver to allow users with sufficient permissions to connect to a Cloud SQL database without having to manually allowlist IPs or manage SSL certificates."
+version = "1.17.0"
+description = "Google Cloud SQL Python Connector library"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "cloud_sql_python_connector-1.16.0-py2.py3-none-any.whl", hash = "sha256:13dbe54a376824f30bbafefd5cd8265ee9f2f7faa26b337779060ee85a3b5ed6"},
-    {file = "cloud_sql_python_connector-1.16.0.tar.gz", hash = "sha256:4082d305e22253affbc8f91f8b213a66f8dc26b3aa78169f1f79bbb5b6855188"},
+    {file = "cloud_sql_python_connector-1.17.0-py3-none-any.whl", hash = "sha256:b83ab9a586baec0f5da4bf914773567ad2a50f2318ab05b0ca8266e282f6e94e"},
 ]
 
 [package.dependencies]
@@ -2460,9 +2459,9 @@ werkzeug = "^3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/rodrigo-barraza/sbc-pay"
+url = "https://github.com/rodrigo-barraza/sbc-pay.git"
 reference = "feature/24664"
-resolved_reference = "5a89ec62ce12ae6c6cf94b625045bf3e865e6b8b"
+resolved_reference = "a03b72f3543302e47fe384457689b3dff86e6567"
 subdirectory = "jobs/payment-jobs"
 
 [[package]]
@@ -3783,4 +3782,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "4f1523addedd5cd53c0f43e27d82c7c7b66871b6e993c9c73fa5aad38a51fe13"
+content-hash = "8571fae357c887e9bc433d4d0bedef658c2f975113fb0c3ab50ae08bf1aabded"
