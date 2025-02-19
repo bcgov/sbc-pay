@@ -102,7 +102,7 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     EFT_PATTERNS = get_comma_delimited_string_as_tuple(os.getenv("EFT_PATTERNS", ""))
 
     # PAD Config
-    PAD_OVERDUE_NOTIFY_EMAILS = os.getenv("PAD_OVERDUE_NOTIFY_EMAILS", "")
+    PAD_NSF_NOTIFY_EMAILS = os.getenv("PAD_NSF_NOTIFY_EMAILS", "")
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY")

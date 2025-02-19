@@ -1,5 +1,8 @@
 """Common code that sends AUTH events."""
 
+from dataclasses import asdict, dataclass
+from typing import Any, Optional
+
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
@@ -13,17 +16,30 @@ from pay_api.utils.enums import QueueSources
 class AuthEvent:
     """Publishes to the auth-queue as an auth event though PUBSUB, this message gets sent to account-mailer after."""
 
+    @dataclass
+    class LockAccountDetails:
+        """Lock account details."""
+
+        pay_account: Any
+        additional_emails: str = ""
+        payment_method: Optional[str] = None
+        source: Optional[str] = None
+        suspension_reason_code: Optional[str] = None
+        outstanding_amount: Optional[float] = None
+        original_amount: Optional[float] = None
+        amount: Optional[float] = None
+
     @staticmethod
-    def publish_lock_account_event(params: dict):
+    def publish_lock_account_event(params: LockAccountDetails):
         """Publish NSF lock account event to the auth queue."""
-        pay_account = params.get("pay_account")
-        additional_emails = params.get("additional_emails", "")
-        payment_method = params.get("payment_method", None)
-        source = params.get("source", None)
-        suspension_reason_code = params.get("suspension_reason_code", None)
-        outstanding_amount = params.get("outstanding_amount", None)
-        original_amount = params.get("original_amount", None)
-        amount = params.get("amount", None)
+        pay_account = params.pay_account
+        additional_emails = params.additional_emails
+        payment_method = params.payment_method
+        source = params.source
+        suspension_reason_code = params.suspension_reason_code
+        outstanding_amount = params.outstanding_amount
+        original_amount = params.original_amount
+        amount = params.amount
         try:
             lock_payload = {
                 "accountId": pay_account.auth_account_id,
