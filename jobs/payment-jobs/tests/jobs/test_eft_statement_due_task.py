@@ -359,6 +359,7 @@ def test_multi_account_lock(setup, session):
                     )
                 ),
             ]
+            mock_auth_event.assert_has_calls(expected_calls, any_order=True)
             assert statements1[0][1].overdue_notification_date
             assert NonSufficientFundsModel.find_by_invoice_id(invoice1.id)
             assert account1.has_overdue_invoices
