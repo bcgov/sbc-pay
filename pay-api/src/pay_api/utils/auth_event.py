@@ -12,6 +12,7 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import QueueSources
 
+
 @dataclass
 class LockAccountDetails:
     """Lock account details."""
@@ -24,6 +25,7 @@ class LockAccountDetails:
     outstanding_amount: Optional[float] = None
     original_amount: Optional[float] = None
     amount: Optional[float] = None
+
 
 class AuthEvent:
     """Publishes to the auth-queue as an auth event though PUBSUB, this message gets sent to account-mailer after."""
