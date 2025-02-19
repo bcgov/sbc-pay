@@ -44,7 +44,7 @@ class AuthEvent:
             }
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
-                    source=source,
+                    source=params.source,
                     message_type=QueueMessageTypes.NSF_LOCK_ACCOUNT.value,
                     payload=lock_payload,
                     topic=current_app.config.get("AUTH_EVENT_TOPIC"),
@@ -54,11 +54,11 @@ class AuthEvent:
             current_app.logger.error("Error publishing lock event:", exc_info=True)
             current_app.logger.warning(
                 f"Notification to Queue failed for the Account {
-                    pay_account.auth_account_id} - {pay_account.name}"
+                    params.pay_account.auth_account_id} - {params.pay_account.name}"
             )
             capture_message(
                 f"Notification to Queue failed for the Account {
-                    pay_account.auth_account_id}, {lock_payload}.",
+                    params.pay_account.auth_account_id}, {lock_payload}.",
                 level="error",
             )
 
