@@ -1,6 +1,6 @@
 """Common code that sends AUTH events."""
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from flask import current_app
@@ -32,23 +32,15 @@ class AuthEvent:
     @staticmethod
     def publish_lock_account_event(params: LockAccountDetails):
         """Publish NSF lock account event to the auth queue."""
-        pay_account = params.pay_account
-        additional_emails = params.additional_emails
-        payment_method = params.payment_method
-        source = params.source
-        suspension_reason_code = params.suspension_reason_code
-        outstanding_amount = params.outstanding_amount
-        original_amount = params.original_amount
-        amount = params.amount
         try:
             lock_payload = {
-                "accountId": pay_account.auth_account_id,
-                "paymentMethod": payment_method,
-                "suspensionReasonCode": suspension_reason_code,
-                "additionalEmails": additional_emails,
-                "outstandingAmount": outstanding_amount,
-                "originalAmount": original_amount,
-                "amount": amount,
+                "accountId": params.pay_account.auth_account_id,
+                "paymentMethod": params.payment_method,
+                "suspensionReasonCode": params.suspension_reason_code,
+                "additionalEmails": params.additional_emails,
+                "outstandingAmount": params.outstanding_amount,
+                "originalAmount": params.original_amount,
+                "amount": params.amount,
             }
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
