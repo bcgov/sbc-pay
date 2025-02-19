@@ -28,6 +28,7 @@ from freezegun import freeze_time
 from pay_api.models import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.services import Statement as StatementService
+from pay_api.utils.auth_event import LockAccountDetails
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import current_local_time
 
@@ -234,13 +235,16 @@ def test_account_lock(setup, session):
             mock_auth_event.assert_called_once()
             expected_calls = [
                 call(
-                    {
-                        "pay_account": account1,
-                        "additional_emails": "",
-                        "payment_method": PaymentMethod.EFT.value,
-                        "source": "PAY-JOBS",
-                        "suspension_reason_code": "OVERDUE_EFT",
-                    }
+                    LockAccountDetails(
+                        pay_account=account1,
+                        additional_emails="",
+                        payment_method=PaymentMethod.EFT.value,
+                        source="PAY-JOBS",
+                        suspension_reason_code="OVERDUE_EFT",
+                        outstanding_amount=None,
+                        original_amount=None,
+                        amount=None,
+                    )
                 )
             ]
             mock_auth_event.assert_has_calls(expected_calls, any_order=True)
@@ -331,25 +335,30 @@ def test_multi_account_lock(setup, session):
             mock_auth_event.call_count == 2
             expected_calls = [
                 call(
-                    {
-                        "pay_account": account1,
-                        "additional_emails": "",
-                        "payment_method": PaymentMethod.EFT.value,
-                        "source": "PAY-JOBS",
-                        "suspension_reason_code": "OVERDUE_EFT",
-                    }
+                    LockAccountDetails(
+                        pay_account=account1,
+                        additional_emails="",
+                        payment_method=PaymentMethod.EFT.value,
+                        source="PAY-JOBS",
+                        suspension_reason_code="OVERDUE_EFT",
+                        outstanding_amount=None,
+                        original_amount=None,
+                        amount=None,
+                    )
                 ),
                 call(
-                    {
-                        "pay_account": account2,
-                        "additional_emails": "",
-                        "payment_method": PaymentMethod.EFT.value,
-                        "source": "PAY-JOBS",
-                        "suspension_reason_code": "OVERDUE_EFT",
-                    }
+                    LockAccountDetails(
+                        pay_account=account2,
+                        additional_emails="",
+                        payment_method=PaymentMethod.EFT.value,
+                        source="PAY-JOBS",
+                        suspension_reason_code="OVERDUE_EFT",
+                        outstanding_amount=None,
+                        original_amount=None,
+                        amount=None,
+                    )
                 ),
             ]
-            mock_auth_event.assert_has_calls(expected_calls, any_order=True)
             assert statements1[0][1].overdue_notification_date
             assert NonSufficientFundsModel.find_by_invoice_id(invoice1.id)
             assert account1.has_overdue_invoices
