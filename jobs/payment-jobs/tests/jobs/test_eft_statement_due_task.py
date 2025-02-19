@@ -232,7 +232,13 @@ def test_account_lock(setup, session):
         with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
             mock_auth_event.assert_called_once()
-            expected_calls = [call(account1, "")]
+            expected_calls = [call({
+                'pay_account': account1,
+                'additional_emails': '',
+                'payment_method': PaymentMethod.EFT.value,
+                'source': 'PAY-JOBS',
+                'suspension_reason_code': 'OVERDUE_EFT'
+            })]
             mock_auth_event.assert_has_calls(expected_calls, any_order=True)
             assert account1.has_overdue_invoices
             assert statements[0][0].overdue_notification_date
@@ -319,7 +325,22 @@ def test_multi_account_lock(setup, session):
         with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
             mock_auth_event.call_count == 2
-            expected_calls = [call(account1, ""), call(account2, "")]
+            expected_calls = [
+                call({
+                    'pay_account': account1,
+                    'additional_emails': '',
+                    'payment_method': PaymentMethod.EFT.value,
+                    'source': 'PAY-JOBS',
+                    'suspension_reason_code': 'OVERDUE_EFT'
+                }),
+                call({
+                    'pay_account': account2,
+                    'additional_emails': '',
+                    'payment_method': PaymentMethod.EFT.value,
+                    'source': 'PAY-JOBS',
+                    'suspension_reason_code': 'OVERDUE_EFT'
+                })
+            ]
             mock_auth_event.assert_has_calls(expected_calls, any_order=True)
             assert statements1[0][1].overdue_notification_date
             assert NonSufficientFundsModel.find_by_invoice_id(invoice1.id)
