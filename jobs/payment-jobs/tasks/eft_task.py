@@ -29,6 +29,7 @@ from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.eft_service import EftService
 from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.utils.auth_event import AuthEvent
 from pay_api.utils.enums import (
     CfsAccountStatus,
     EFTCreditInvoiceStatus,
@@ -43,8 +44,6 @@ from pay_api.utils.enums import (
 from sentry_sdk import capture_message
 from sqlalchemy import func
 from sqlalchemy.orm import lazyload, registry
-
-from utils.auth_event import AuthEvent
 
 
 class EFTTask:  # pylint:disable=too-few-public-methods

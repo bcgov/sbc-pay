@@ -30,12 +30,12 @@ from pay_api.models.statement_recipients import StatementRecipients as Statement
 from pay_api.services import NonSufficientFundsService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.auth_event import AuthEvent, LockAccountDetails
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources, StatementFrequency, SuspensionReasonCodes
 from pay_api.utils.util import current_local_time
 from sentry_sdk import capture_message
 from sqlalchemy import select
 
-from utils.auth_event import AuthEvent
 from utils.enums import StatementNotificationAction
 from utils.mailer import StatementNotificationInfo, publish_payment_notification
 
@@ -160,8 +160,15 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
 
             # Only publish lock event if it is not already locked
             if payment_account.has_overdue_invoices is None:
-                additional_emails = current_app.config.get("EFT_OVERDUE_NOTIFY_EMAILS")
-                AuthEvent.publish_lock_account_event(payment_account, additional_emails)
+                AuthEvent.publish_lock_account_event(
+                    LockAccountDetails(
+                        pay_account=payment_account,
+                        additional_emails=current_app.config.get("EFT_OVERDUE_NOTIFY_EMAILS"),
+                        payment_method=PaymentMethod.EFT.value,
+                        source=QueueSources.PAY_JOBS.value,
+                        suspension_reason_code=SuspensionReasonCodes.OVERDUE_EFT.value,
+                    )
+                )
 
             # Even if the account is locked, there is a new overdue statement that needs NSF invoices added and
             # set the most recent date for has_overdue_invoices
