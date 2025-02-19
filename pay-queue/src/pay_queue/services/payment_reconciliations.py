@@ -40,7 +40,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.utils.auth_event import AuthEvent
+from pay_api.utils.auth_event import AuthEvent, LockAccountDetails
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     CfsAccountStatus,
@@ -395,7 +395,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
                 AuthEvent.publish_lock_account_event(
-                    AuthEvent.LockAccountDetails(
+                    LockAccountDetails(
                         pay_account=payment_account,
                         additional_emails=current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
                         payment_method=_convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
