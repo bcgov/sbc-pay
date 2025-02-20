@@ -456,7 +456,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         filing_types: List[Dict[str, str]] = []
         for line_item in invoice_dao.payment_line_items:
             business_identifier = (
-                invoice_dao.business_identifier if not invoice_dao.business_identifier.startswith("T") else ""
+                invoice_dao.business_identifier
+                if invoice_dao.business_identifier and not invoice_dao.business_identifier.startswith("T")
+                else ""
             )
             filing_types.append(
                 {
