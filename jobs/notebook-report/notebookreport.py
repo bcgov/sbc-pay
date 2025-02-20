@@ -1,30 +1,30 @@
 """The Notebook Report - This module is the API for the Pay Notebook Report."""
 
-import ast
-import fnmatch
 import logging
 import os
-import pytz
 import smtplib
 import sys
 import traceback
 from datetime import date, datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
-from email import encoders
-from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import papermill as pm
+import pytz
+from dateutil.relativedelta import relativedelta
 from flask import Flask, current_app
 
 from config import Config
+from util.helpers import (
+    create_temporary_directory,
+    get_first_last_month_dates_in_utc,
+    get_first_last_week_dates_in_utc,
+    process_email_attachments,
+)
 from util.logging import setup_logging
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.conf"))  # important to do this first
 
-# Notebook Scheduler
-# ---------------------------------------
 # This script helps with the automated processing of Jupyter Notebooks via
 # papermill (https://github.com/nteract/papermill/)
 
@@ -35,58 +35,63 @@ def create_app(config=Config):
     app.config.from_object(config)
     app.app_context().push()
     current_app.logger.debug("created the Flask App and pushed the App Context")
-
     return app
 
 
-def findfiles(directory, pattern):
-    """Find files matched."""
-    if not os.path.exists(directory):
-        return
-    for filename in os.listdir(directory):
-        if fnmatch.fnmatch(filename.lower(), pattern):
-            yield os.path.join(directory, filename)
-
-
-def send_email(file_processing, emailtype, errormessage, partner_code=None):
-    """Send email for results."""
-    message = MIMEMultipart()
+def build_subject(file_processing, partner_code):
+    """Build email subject."""
     date_str = datetime.strftime(datetime.now() - timedelta(1), "%Y-%m-%d")
-    ext = ""
-    filenames = []
-    subject = ""
-    recipients = ""
-    if not Config.ENVIRONMENT == "prod":
-        ext = " on " + Config.ENVIRONMENT
-
-    if emailtype == "ERROR":
-        subject = "Notebook Report Error '" + file_processing + "' on " + date_str + ext
-        recipients = Config.ERROR_EMAIL_RECIPIENTS
-        message.attach(MIMEText("ERROR!!! \n" + errormessage, "plain"))
-    else:
-        if "reconciliation_details" in file_processing:
-            subject = "Daily Reconciliation Stats " + date_str + ext
-            filenames = [f"{partner_code}_daily_reconciliation_" + date_str + ".csv"]
-            recipients = get_partner_recipients(file_processing, partner_code)
-        elif "pay" in file_processing:
-            subject = "Weekly PAY Stats till " + date_str + ext
-            filenames = ["weekly_pay_stats_till_" + date_str + ".csv"]
-            recipients = Config.WEEKLY_PAY_RECIPIENTS
-        elif "reconciliation_summary" in file_processing:
+    ext = f" on {Config.ENVIRONMENT}" if Config.ENVIRONMENT != "prod" else ""
+    match file_processing:
+        case "pay":
+            return "Weekly PAY Stats till " + date_str + ext
+        case "reconciliation_summary":
             override_current_date = Config.OVERRIDE_CURRENT_DATE
-            current_time = datetime.strptime(override_current_date, "%Y-%m-%d") if override_current_date \
+            current_time = (
+                datetime.strptime(override_current_date, "%Y-%m-%d")
+                if override_current_date
                 else datetime.now(pytz.timezone("America/Vancouver"))
+            )
             last_month = current_time - relativedelta(months=1)
             last_month = last_month.replace(day=1)
             year_month = datetime.strftime(last_month, "%Y-%m")
-            subject = f"{partner_code} Monthly Reconciliation Stats for {year_month}{ext}"
-            filenames = [f for f in os.listdir(os.path.join(os.getcwd(), r"data/")) if f.startswith(partner_code)]
-            recipients = get_partner_recipients(file_processing, partner_code)
+            # TODO figure out for weekly or monthly, we should calculate the dates and pass it in.
+            return f"{partner_code} Monthly Reconciliation Stats for {year_month}{ext}"
 
-    # Add body to email
-    message.attach(MIMEText("Please see the attachment(s).", "plain"))
+
+def build_recipients(email_type, file_processing, partner_code):
+    """Build email recipients."""
+    if email_type == "ERROR":
+        return Config.ERROR_EMAIL_RECIPIENTS
+    match file_processing:
+        case "pay":
+            return Config.WEEKLY_PAY_RECIPIENTS
+        case "reconciliation_summary":
+            return getattr(Config, f"{partner_code.upper()}_RECONCILIATION_RECIPIENTS", "")
+
+
+def build_filenames(file_processing, partner_code):
+    """Get filenames."""
+    condition = "weekly_pay_stats_till_" if file_processing == "pay" else partner_code
+    return [f for f in os.listdir(os.path.join(os.getcwd(), r"data/")) if f.startswith(condition)]
+
+
+def build_and_send_email(file_processing, email_type, error_message, partner_code=None):
+    """Send email for results."""
+    message = MIMEMultipart()
+    if email_type == "ERROR":
+        message.attach(MIMEText("ERROR!!! \n" + error_message, "plain"))
+    else:
+        message.attach(MIMEText("Please see the attachment(s).", "plain"))
+    subject = build_subject(file_processing, partner_code)
+    recipients = build_recipients(email_type, file_processing, partner_code)
+    filenames = build_filenames(file_processing, partner_code)
     process_email_attachments(filenames, message)
+    send_email(message, subject, recipients)
 
+
+def send_email(message, subject, recipients):
+    """Send email."""
     if Config.DISABLE_EMAIL is True:
         return
     message["Subject"] = subject
@@ -98,109 +103,53 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):
     server.quit()
 
 
-def process_email_attachments(filenames, message):
-    """Process email attachments."""
-    for file in filenames:
-        part = MIMEBase("application", "octet-stream")
-        part.add_header(
-            "Content-Disposition",
-            f"attachment; filename= {file}",
-        )
-        file = os.path.join(os.getcwd(), r"data/") + file
-        with open(file, "rb") as attachment:
-            part.set_payload(attachment.read())
-        encoders.encode_base64(part)
-        message.attach(part)
-
-
-def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_code: str):
+def process_partner_notebooks(data_dir: str):
     """Process Partner Notebook."""
-    logging.info("Start processing partner notebooks directory: %s", notebookdirectory)
-
-    try:
-        monthly_report_dates = ast.literal_eval(Config.MONTHLY_REPORT_DATES)
-    except Exception:  # noqa: B902
-        logging.exception("Error parsing monthly report dates for: %s", notebookdirectory)
-        send_email(notebookdirectory, "ERROR", traceback.format_exc())
-        return
-
     today = date.today().day
     logging.info("Today's date: %s", today)
 
-    if notebookdirectory == "daily":
-        logging.info("Processing daily notebooks for partner: %s", partner_code)
-        execute_notebook(notebookdirectory, data_dir, partner_code)
+    logging.info(f"Weekly running report dates: {Config.WEEKLY_REPORT_DATES}")
+    if date.today().isoweekday() in Config.WEEKLY_REPORT_DATES:
+        from_date, to_date = get_first_last_week_dates_in_utc(Config.OVERRIDE_CURRENT_DATE)
+        for partner_code in Config.WEEKLY_RECONCILIATION_PARTNERS:
+            logging.info(
+                "Processing weekly notebooks for partner: %s using dates: %s %s ", partner_code, from_date, to_date
+            )
+            execute_notebook("reports/reconciliation_summary.ipynb", data_dir, from_date, to_date, partner_code)
 
-    logging.info(f"Monthly report dates: {monthly_report_dates}")
-    if notebookdirectory == "monthly" and today in monthly_report_dates:
-        logging.info("Processing monthly notebooks for partner: %s", partner_code)
-        execute_notebook(notebookdirectory, data_dir, partner_code, is_monthly=True)
-
-
-def process_notebooks(notebookdirectory: str, data_dir: str):
-    """Process Notebook."""
-    logging.info("Start processing directory: %s", notebookdirectory)
-
-    try:
-        weekly_report_dates = ast.literal_eval(Config.WEEKLY_REPORT_DATES)
-    except Exception:  # noqa: B902
-        logging.exception("Error: %s.", notebookdirectory)
-        send_email(notebookdirectory, "ERROR", traceback.format_exc())
-
-    # Monday is 1 and Sunday is 7
-    if notebookdirectory == "weekly" and date.today().isoweekday() in weekly_report_dates:
-        execute_notebook(notebookdirectory, data_dir)
+    logging.info(f"Monthly running report dates: {Config.MONTHLY_REPORT_DATES}")
+    if today in Config.MONTHLY_REPORT_DATES:
+        from_date, to_date = get_first_last_month_dates_in_utc(Config.OVERRIDE_CURRENT_DATE)
+        for partner_code in Config.MONTHLY_RECONCILIATION_PARTNERS:
+            logging.info(
+                "Processing monthly notebooks for partner: %s using dates: %s %s", partner_code, from_date, to_date
+            )
+            execute_notebook("reports/reconciliation_summary.ipynb", data_dir, from_date, to_date, partner_code)
 
 
-def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None, is_monthly: bool = False):
+def execute_notebook(file: str, data_dir: str, from_date=None, to_date=None, partner_code=None):
     """Execute notebook and send emails."""
-    parameters = {"partner_code": partner_code} if partner_code else None
-    if is_monthly:
-        pattern = "reconciliation_summary.ipynb"
-    else:
-        pattern = f"{partner_code.lower()}_*.ipynb" if partner_code else "*.ipynb"
-
-    for file in findfiles(notebookdirectory, pattern):
-        try:
-            pm.execute_notebook(file, data_dir + "temp.ipynb", parameters=parameters)
-            # send email to receivers and remove files/directories which we don't want to keep
-            send_email(file, "", "", partner_code)
-            os.remove(data_dir + "temp.ipynb")
-        except Exception:  # noqa: B902
-            logging.exception("Error: %s.", file)
-            send_email(file, "ERROR", traceback.format_exc())
-
-
-def get_partner_recipients(file_processing: str, partner_code: str) -> str:
-    """Get email recipients for a partner."""
-    if "reconciliation_details" in file_processing:
-        return getattr(Config, f"{partner_code.upper()}_DAILY_RECONCILIATION_RECIPIENTS", "")
-
-    if "reconciliation_summary" in file_processing:
-        return getattr(Config, f"{partner_code.upper()}_MONTHLY_RECONCILIATION_RECIPIENTS", "")
-
-    return None
+    try:
+        pm.execute_notebook(
+            file,
+            data_dir + "temp.ipynb",
+            parameters={"partner_code": partner_code, "from_date": from_date, "to_date": to_date},
+        )
+        build_and_send_email(file, "", "", partner_code)
+        os.remove(data_dir + "temp.ipynb")
+    except Exception:  # noqa: B902
+        logging.exception("Error: %s.", file)
+        build_and_send_email(file, "ERROR", traceback.format_exc())
 
 
 if __name__ == "__main__":
     start_time = datetime.now(tz=timezone.utc)
+    temp_dir = create_temporary_directory()
+    process_partner_notebooks(temp_dir)
 
-    temp_dir = os.path.join(os.getcwd(), r"data/")
-    if not os.path.exists(temp_dir):
-        os.makedirs(temp_dir)
-
-    partner_codes = Config.PARTNER_CODES.split(",")
-
-    # Process notebooks for each partner
-    # For each daily and monthly email, it is expected there is configuration per partner
-    # e.g Config.VS_DAILY_RECONCILIATION_RECIPIENTS, Config.CSO_DAILY_RECONCILIATION_RECIPIENTS
-    for code in partner_codes:
-        for subdir in ["daily", "monthly"]:
-            process_partner_notebooks(subdir, temp_dir, code)
-
-    # process weekly pay notebook separate from partner notebooks
-    process_notebooks("weekly", temp_dir)
-
+    # Monday is 1 and Sunday is 7 - Run Pay report weekly.
+    if date.today().isoweekday() in Config.WEEKLY_REPORT_DATES:
+        execute_notebook("weekly/pay.ipynb", temp_dir)
     end_time = datetime.now(tz=timezone.utc)
-    logging.info("job - jupyter notebook report completed in: %s", end_time - start_time)
+    logging.info("Jupyter notebook report completed in: %s", end_time - start_time)
     sys.exit()
