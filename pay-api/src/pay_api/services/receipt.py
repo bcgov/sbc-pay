@@ -200,6 +200,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
                 PaymentMethod.PAD.value,
                 PaymentMethod.EJV.value,
                 PaymentMethod.EFT.value,
+                PaymentMethod.INTERNAL.value
             )
             and invoice_data.invoice_status_code != InvoiceStatus.PAID.value
         )
