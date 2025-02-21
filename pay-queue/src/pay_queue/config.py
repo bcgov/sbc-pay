@@ -125,6 +125,7 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
     PAY_AUDIENCE_SUB = os.getenv("PAY_AUDIENCE_SUB", None)
     VERIFY_PUBSUB_EMAILS = f'{os.getenv("AUTHPAY_SERVICE_ACCOUNT")},{os.getenv("BUSINESS_SERVICE_ACCOUNT")}'.split(",")
+    SKIP_CREDIT_SYNC_EXCEPTION = os.getenv("SKIP_CREDIT_SYNC_EXCEPTION", "").lower() == "true"
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
