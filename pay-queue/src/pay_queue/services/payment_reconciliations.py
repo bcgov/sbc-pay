@@ -771,10 +771,24 @@ def _sync_credit_records_with_cfs():
         )
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
-            credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
+            try:
+                credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
+            except Exception as e:  # NOQA pylint: disable=broad-except
+                # For TEST, we can't reverse these
+                if current_app.config.get("SKIP_CREDIT_SYNC_EXCEPTION"):
+                    current_app.logger.warning(f"Error fetching credit memo {credit.cfs_identifier} : {str(e)}")
+                    continue
+                raise e
             credit.remaining_amount = abs(float(credit_memo.get("amount_due")))
         else:
-            receipt = CFSService.get_receipt(cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
+            try:
+                receipt = CFSService.get_receipt(cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
+            except Exception as e:  # NOQA pylint: disable=broad-except
+                # For TEST, we can't reverse these
+                if current_app.config.get("SKIP_CREDIT_SYNC_EXCEPTION"):
+                    current_app.logger.warning(f"Error fetching receipt {credit.cfs_identifier} : {str(e)}")
+                    continue
+                raise e
             receipt_amount = float(receipt.get("receipt_amount"))
             applied_amount: float = 0
             for invoice in receipt.get("invoices", []):

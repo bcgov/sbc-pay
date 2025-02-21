@@ -205,6 +205,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     FTP_POLLER_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME", "")
     GOOGLE_STORAGE_SA = os.getenv("GOOGLE_STORAGE_SA", "")
+    SKIP_CREDIT_SYNC_EXCEPTION = os.getenv("SKIP_CREDIT_SYNC_EXCEPTION", "").lower() == "true"
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
