@@ -1,3 +1,4 @@
+import ast
 import os
 
 from dotenv import find_dotenv, load_dotenv
@@ -28,9 +29,9 @@ class Config(object):
     EMAIL_SMTP = os.getenv("EMAIL_SMTP", "")
     ENVIRONMENT = os.getenv("ENVIRONMENT", "")
 
-    WEEKLY_REPORT_DATES = os.getenv("WEEKLY_REPORT_DATES", "[1]")
+    WEEKLY_REPORT_DATES = ast.literal_eval(os.getenv("WEEKLY_REPORT_DATES", "[1]"))
     WEEKLY_RECONCILIATION_PARTNERS = os.getenv("WEEKLY_RECONCILIATION_PARTNERS", "STRR")
-    MONTHLY_REPORT_DATES = os.getenv("MONTHLY_REPORT_DATES", "[1]")
+    MONTHLY_REPORT_DATES = ast.literal_eval(os.getenv("MONTHLY_REPORT_DATES", "[1]"))
     MONTHLY_RECONCILIATION_PARTNERS = os.getenv("MONTHLY_RECONCILIATION_PARTNERS", "CSO,VS,RPT,ESRA")
 
     PARTNER_CODES = os.getenv("PARTNER_CODES", "CSO,VS,RPT,ESRA,STRR")

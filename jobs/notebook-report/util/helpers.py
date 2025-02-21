@@ -2,12 +2,32 @@
 
 import fnmatch
 import os
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from email import encoders
 from email.mime.base import MIMEBase
+from enum import Enum
 
 import pytz
 from dateutil.relativedelta import relativedelta
+
+
+@dataclass
+class ReportData:
+    """Representation of a report."""
+
+    file_processing: str = ""
+    error_message: str = None
+    from_date: str = None
+    to_date: str = None
+    partner_code: str = None
+
+
+class ReportFiles(Enum):
+    """Report names."""
+
+    WEEKLY_PAY = "weekly/pay.ipynb"
+    RECONCILIATION_SUMMARY = "reports/reconciliation_summary.ipynb"
 
 
 def get_utc_timezone_adjusted_date(target_date) -> str:
@@ -40,12 +60,22 @@ def get_first_last_week_dates_in_utc(override_current_date="") -> tuple[str, str
         if override_current_date
         else datetime.now(pytz.timezone("America/Vancouver"))
     )
-    last_month = current_time - relativedelta(months=1)
-    from_date = last_month.replace(day=1)
+    from_date = current_time - timedelta(days=7)
     from_date = get_utc_timezone_adjusted_date(from_date)
-    to_date = last_month.replace(day=1) + relativedelta(months=1)
+    to_date = current_time
     to_date = get_utc_timezone_adjusted_date(to_date)
     return from_date, to_date
+
+
+def convert_utc_date_to_inclusion_dates(from_date: str, to_date: str):
+    """Convert UTC date to display date for ranges that are in pacific time, detect monthly."""
+    is_monthly = datetime.strptime(from_date, "%Y-%m-%d %H:%M:%S") + relativedelta(months=1) <= datetime.strptime(
+        to_date, "%Y-%m-%d %H:%M:%S"
+    )
+    # Take off a day because we want to include the last day in the range, UTC is a day ahead
+    to_date_str = datetime.strptime(to_date, "%Y-%m-%d %H:%M:%S") - relativedelta(days=1)
+    date_string = from_date.split(" ")[0] + " to " + to_date_str.strftime("%Y-%m-%d")
+    return date_string, is_monthly
 
 
 def create_temporary_directory():
