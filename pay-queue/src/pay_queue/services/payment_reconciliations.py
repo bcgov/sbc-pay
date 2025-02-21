@@ -92,6 +92,11 @@ def _create_payment_records(csv_content: str):
             case RecordType.PAD.value | RecordType.PADR.value | RecordType.PAYR.value:
                 for row in payment_lines:
                     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
+                    # REGT (TEST) and REGUT (DEV) are mixed in TEST, because DEV and TEST point to CFS TEST.
+                    # There is no DEV environment for CFS feedback.
+                    if inv_number.startswith("REGUT"):
+                        current_app.logger.info("Ignoring dev invoice %s", inv_number)
+                        continue
                     invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
                     payment_date = datetime.strptime(_get_row_value(row, Column.APP_DATE), "%d-%b-%y")
                     status = (
@@ -380,7 +385,11 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 inv_number, InvoiceReferenceStatus.COMPLETED.value
             )
 
+            # REGT (TEST) and REGUT (DEV) are mixed in TEST, because DEV and TEST point to CFS TEST.
             if not inv_references and not completed_inv_references:
+                if inv_number.startswith("REGUT"):
+                    current_app.logger.info("Ignoring dev invoice %s", inv_number)
+                    return has_errors
                 error_msg = f"No invoice found for {inv_number} in the system, and cannot process {row}."
                 has_errors = True
                 _csv_error_handling(row, error_msg, error_messages)
