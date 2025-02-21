@@ -69,7 +69,7 @@ def build_recipients(report: ReportData):
 
 def build_filenames(report: ReportData):
     """Get filenames."""
-    condition = "weekly_pay_stats_till_" if report.file_processing == "weekly/pay.ipynb" else report.partner_code
+    condition = "weekly_pay_stats_till_" if report.file_processing == ReportFiles.WEEKLY_PAY else report.partner_code
     if condition:
         return [f for f in os.listdir(os.path.join(os.getcwd(), r"data/")) if f.startswith(condition)]
     return []
