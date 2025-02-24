@@ -154,6 +154,10 @@ def _create_payment_records(csv_content: str):
                     .filter(PaymentModel.receipt_number == source_txn_number)
                     .one_or_none()
                 )
+                if payment is None and current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
+                    current_app.logger.warning("Payment not found for receipt number %s skipping creation",
+                                               source_txn_number)
+                    continue
                 payment.payment_status_code = PaymentStatus.COMPLETED.value
             case _:
                 pass
