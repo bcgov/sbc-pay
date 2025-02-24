@@ -38,6 +38,7 @@ class RecordType(Enum):
     EFTP = "EFTP"
     PADR = "PADR"
     DRWP = "DRWP"
+    EFTR = "EFTR"
 
 
 class Column(Enum):

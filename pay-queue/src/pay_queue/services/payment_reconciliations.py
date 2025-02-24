@@ -334,6 +334,8 @@ def _process_file_content(
             has_errors = _process_credit_on_invoices(row, error_messages) or has_errors
         elif record_type == RecordType.ADJS.value:
             current_app.logger.info("Adjustment received for %s.", msg)
+        elif record_type == RecordType.EFTR.value:
+            current_app.logger.info("EFT Reversal already handled in EFT PAY-JOBS %s", msg)
         else:
             # For any other transactions like DM log error and continue.
             error_msg = f"Record Type is received as {record_type}, and cannot process {msg}."
