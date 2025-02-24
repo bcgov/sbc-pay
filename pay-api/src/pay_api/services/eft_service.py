@@ -498,7 +498,7 @@ class EftService(DepositService):
 
         credit_balance = EFTCreditModel.get_eft_credit_balance(short_name_id)
         summary_dict: dict = StatementService.get_summary(auth_account_id)
-        total_due = summary_dict["total_due"]
+        total_due = Decimal(str(summary_dict["total_due"]))
 
         if credit_balance < total_due:
             if not is_new_link:
