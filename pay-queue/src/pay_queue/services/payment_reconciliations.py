@@ -173,6 +173,7 @@ def _save_payment(  # pylint: disable=too-many-arguments
     # pylint: disable=import-outside-toplevel
     from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
+    current_app.logger.debug('Save payment invoice number: %s', inv_number)
     payment_account = _get_payment_account(row)
     pay_service = PaymentSystemFactory.create_from_payment_method(payment_method)
     # If status is failed, which means NSF. We already have a COMPLETED payment record, find and update iit.
