@@ -199,7 +199,7 @@ def _save_payment(  # pylint: disable=too-many-arguments
     payment.payment_system_code = pay_service.get_payment_system_code()
     payment.invoice_number = inv_number
     payment.invoice_amount = invoice_amount
-    if payment_account is None and current_app.config.get("SKIP_CREDIT_SYNC_EXCEPTION"):
+    if payment_account is None and current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
         current_app.logger.warning("Payment account not found for invoice number %s skipping creation", inv_number)
         return
     payment.payment_account_id = payment_account.id
@@ -394,7 +394,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 if inv_number.startswith("REGUT"):
                     current_app.logger.info("Ignoring dev invoice %s", inv_number)
                     return has_errors
-                if current_app.config.get("SKIP_CREDIT_SYNC_EXCEPTION"):
+                if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
                     current_app.logger.warning("Invoice not found for %s skipping creation", inv_number)
                     return has_errors
                 error_msg = f"No invoice found for {inv_number} in the system, and cannot process {row}."
@@ -782,7 +782,7 @@ def _sync_credit_records_with_cfs():
                 credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
             except Exception as e:  # NOQA pylint: disable=broad-except
                 # For TEST, we can't reverse these
-                if current_app.config.get("SKIP_CREDIT_SYNC_EXCEPTION"):
+                if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
                     current_app.logger.warning(f"Error fetching credit memo {credit.cfs_identifier} : {str(e)}")
                     continue
                 raise e
@@ -792,7 +792,7 @@ def _sync_credit_records_with_cfs():
                 receipt = CFSService.get_receipt(cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
             except Exception as e:  # NOQA pylint: disable=broad-except
                 # For TEST, we can't reverse these
-                if current_app.config.get("SKIP_CREDIT_SYNC_EXCEPTION"):
+                if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
                     current_app.logger.warning(f"Error fetching receipt {credit.cfs_identifier} : {str(e)}")
                     continue
                 raise e
