@@ -394,6 +394,9 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 if inv_number.startswith("REGUT"):
                     current_app.logger.info("Ignoring dev invoice %s", inv_number)
                     return has_errors
+                if current_app.config.get("SKIP_CREDIT_SYNC_EXCEPTION"):
+                    current_app.logger.warning("Invoice not found for %s skipping creation", inv_number)
+                    return has_errors
                 error_msg = f"No invoice found for {inv_number} in the system, and cannot process {row}."
                 has_errors = True
                 _csv_error_handling(row, error_msg, error_messages)
