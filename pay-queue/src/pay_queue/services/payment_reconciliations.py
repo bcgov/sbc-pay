@@ -199,6 +199,9 @@ def _save_payment(  # pylint: disable=too-many-arguments
     payment.payment_system_code = pay_service.get_payment_system_code()
     payment.invoice_number = inv_number
     payment.invoice_amount = invoice_amount
+    if payment_account is None and current_app.config.get("SKIP_CREDIT_SYNC_EXCEPTION"):
+        current_app.logger.warning("Payment account not found for invoice number %s skipping creation", inv_number)
+        return
     payment.payment_account_id = payment_account.id
     payment.payment_date = payment_date
     payment.paid_amount = paid_amount
