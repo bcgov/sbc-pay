@@ -116,7 +116,7 @@ def process_partner_notebooks(data_dir: str):
             logging.info(
                 "Processing weekly notebooks for partner: %s using dates: %s to %s ", partner_code, from_date, to_date
             )
-            execute_notebook(ReportFiles.RECONCILIATION_SUMMARY, data_dir, from_date, to_date, partner_code)
+            execute_notebook(ReportFiles.RECONCILIATION_SUMMARY.value, data_dir, from_date, to_date, partner_code)
 
     logging.info(f"Monthly running report dates: {Config.MONTHLY_REPORT_DATES}")
     if today.day in Config.MONTHLY_REPORT_DATES:
@@ -125,7 +125,7 @@ def process_partner_notebooks(data_dir: str):
             logging.info(
                 "Processing monthly notebooks for partner: %s using dates: %s to %s", partner_code, from_date, to_date
             )
-            execute_notebook(ReportFiles.RECONCILIATION_SUMMARY, data_dir, from_date, to_date, partner_code)
+            execute_notebook(ReportFiles.RECONCILIATION_SUMMARY.value, data_dir, from_date, to_date, partner_code)
 
 
 def execute_notebook(file: str, data_dir: str, from_date=None, to_date=None, partner_code=None):
