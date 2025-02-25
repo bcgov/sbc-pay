@@ -67,7 +67,7 @@ def get_first_last_week_dates_in_utc(override_current_date="") -> tuple[str, str
     return from_date, to_date
 
 
-def convert_utc_date_to_inclusion_dates(from_date: str, to_date: str):
+def convert_utc_date_to_inclusion_dates(from_date: str, to_date: str, output_format="default"):
     """Convert UTC date to display date for ranges that are in pacific time, detect monthly."""
     is_monthly = datetime.strptime(from_date, "%Y-%m-%d %H:%M:%S") + relativedelta(months=1) <= datetime.strptime(
         to_date, "%Y-%m-%d %H:%M:%S"
@@ -75,6 +75,18 @@ def convert_utc_date_to_inclusion_dates(from_date: str, to_date: str):
     # Take off a day because we want to include the last day in the range, UTC is a day ahead
     to_date_str = datetime.strptime(to_date, "%Y-%m-%d %H:%M:%S") - relativedelta(days=1)
     date_string = from_date.split(" ")[0] + " to " + to_date_str.strftime("%Y-%m-%d")
+
+    def format_date_full(date_obj):
+        """Format the date as "Month DaySuffix, Year."""
+        day = date_obj.day
+        suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        return date_obj.strftime(f"%B {day}{suffix}, %Y")
+
+    if output_format == "full":
+        date_string = (
+            f"{format_date_full(datetime.strptime(from_date, "%Y-%m-%d %H:%M:%S"))} to {format_date_full(to_date_str)}"
+        )
+
     return date_string, is_monthly
 
 
