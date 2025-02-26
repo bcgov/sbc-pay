@@ -16,7 +16,7 @@ defaults:
     working-directory: ./pay-queue
 jobs:
   setup-job:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     if: github.repository == 'bcgov/sbc-pay'
 
@@ -26,7 +26,7 @@ jobs:
 
   linting:
     needs: setup-job
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -69,7 +69,7 @@ jobs:
       IT_OPS_EMAIL: 'ken.li@gov.bc.ca'
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -115,7 +115,7 @@ jobs:
 
   build-check:
     needs: setup-job
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
