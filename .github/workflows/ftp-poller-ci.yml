@@ -15,7 +15,7 @@ defaults:
 
 jobs:
   setup-job:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     if: github.repository == 'bcgov/sbc-pay'
 
@@ -25,7 +25,7 @@ jobs:
 
   linting:
     needs: setup-job
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -58,7 +58,7 @@ jobs:
       SBC_AUTH_ADMIN_CLIENT_ID: "sbc-auth-admin"
       SBC_AUTH_ADMIN_CLIENT_SECRET: "2222222222"
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -104,7 +104,7 @@ jobs:
 
   build-check:
     needs: setup-job
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
