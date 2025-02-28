@@ -37,6 +37,10 @@ jobs:
         uses: redhat-actions/openshift-tools-installers@v1
         with:
           oc: "4"
+
+      - name: Check if oc is installed
+        shell: bash
+        run: which oc
         
       - name: Login Openshift
         shell: bash
