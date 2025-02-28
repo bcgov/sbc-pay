@@ -8,6 +8,11 @@ info:
   version: 1.0.7
   contact:
     name: BC Registries
+servers:
+  - url: "https://sandbox.api.connect.gov.bc.ca"
+    description: "Test"
+  - url: "https://api.connect.gov.bc.ca"
+    description: "Production"
 paths:
   '/api/v1/fees/{business_type}/{filing_type}':
     get:
@@ -1946,11 +1951,6 @@ components:
     JWT:
       type: http
       scheme: bearer
-servers:
-  - url: 'https://pay-api.pathfinder.gov.bc.ca'
-    description: Prod
-  - url: 'https://pay-api-test.pathfinder.gov.bc.ca'
-    description: Test
 security:
   - JWT: []
 tags:
