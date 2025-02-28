@@ -46,9 +46,9 @@ def build_subject(report: ReportData):
     if report.error_message:
         return f"Notebook Report Error {report.file_processing} on {date_str}{ext}"
     match report.file_processing:
-        case ReportFiles.WEEKLY_PAY:
+        case ReportFiles.WEEKLY_PAY.value:
             return f"Weekly PAY Stats till {date_str} {ext}"
-        case ReportFiles.RECONCILIATION_SUMMARY:
+        case ReportFiles.RECONCILIATION_SUMMARY.value:
             date_string, is_monthly = convert_utc_date_to_inclusion_dates(report.from_date, report.to_date)
             if is_monthly:
                 return f"{report.partner_code} Monthly Reconciliation Stats from {date_string} {ext}"
@@ -61,9 +61,9 @@ def build_recipients(report: ReportData):
     if report.error_message:
         return Config.ERROR_EMAIL_RECIPIENTS
     match report.file_processing:
-        case ReportFiles.WEEKLY_PAY:
+        case ReportFiles.WEEKLY_PAY.value:
             return Config.WEEKLY_PAY_RECIPIENTS
-        case ReportFiles.RECONCILIATION_SUMMARY:
+        case ReportFiles.RECONCILIATION_SUMMARY.value:
             return getattr(Config, f"{report.partner_code.upper()}_RECONCILIATION_RECIPIENTS", "")
 
 
@@ -149,6 +149,6 @@ if __name__ == "__main__":
     process_partner_notebooks(temp_dir)
     # Monday is 1 and Sunday is 7 - Run Pay report weekly.
     if date.today().isoweekday() in Config.WEEKLY_REPORT_DATES:
-        execute_notebook(ReportFiles.WEEKLY_PAY, temp_dir)
+        execute_notebook(ReportFiles.WEEKLY_PAY.value, temp_dir)
     logging.info("Jupyter notebook report completed in: %s", datetime.now(tz=timezone.utc) - start_time)
     sys.exit()
