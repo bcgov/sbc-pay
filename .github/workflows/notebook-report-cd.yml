@@ -37,10 +37,6 @@ jobs:
         uses: redhat-actions/openshift-tools-installers@v1
         with:
           oc: "4"
-
-      - name: Check if oc is installed
-        shell: bash
-        run: which oc
         
       - name: Login Openshift
         shell: bash
@@ -82,6 +78,11 @@ jobs:
       - name: Set env by input
         run: |
           echo "TAG_NAME=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+
+      - name: Install CLI tools from OpenShift Mirror
+        uses: redhat-actions/openshift-tools-installers@v1
+        with:
+          oc: "4"
 
       - name: Login Openshift
         shell: bash
