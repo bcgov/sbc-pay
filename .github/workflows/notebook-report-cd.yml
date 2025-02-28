@@ -33,6 +33,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install CLI tools from OpenShift Mirror
+        uses: redhat-actions/openshift-tools-installers@v1
+        with:
+          oc: "4"
+        
       - name: Login Openshift
         shell: bash
         run: |
