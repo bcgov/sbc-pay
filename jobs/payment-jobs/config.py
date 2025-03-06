@@ -131,9 +131,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CFS_STOP_PAD_ACCOUNT_CREATION = os.getenv("CFS_STOP_PAD_ACCOUNT_CREATION", "false").lower() == "true"
     CFS_PARTY_PREFIX = os.getenv("CFS_PARTY_PREFIX", "BCR-")
 
-    CFS_INVOICE_CUT_OFF_HOURS_UTC = int(os.getenv("CFS_INVOICE_CUT_OFF_HOURS_UTC", "2"))
-    CFS_INVOICE_CUT_OFF_MINUTES_UTC = int(os.getenv("CFS_INVOICE_CUT_OFF_MINUTES_UTC", "0"))
-
     SENTRY_ENABLE = os.getenv("SENTRY_ENABLE", "False")
     SENTRY_DSN = os.getenv("SENTRY_DSN", None)
 
