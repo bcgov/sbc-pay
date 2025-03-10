@@ -422,7 +422,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                         additional_emails=current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
                         payment_method=_convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
                         source=QueueSources.PAY_QUEUE.value,
-                        suspension_reason_code=SuspensionReasonCodes.OVERDUE_EFT.value,
+                        suspension_reason_code=SuspensionReasonCodes.PAD_NSF.value,
                         outstanding_amount=_get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
                         original_amount=_get_row_value(row, Column.TARGET_TXN_ORIGINAL),
                         amount=_get_row_value(row, Column.APP_AMOUNT),
