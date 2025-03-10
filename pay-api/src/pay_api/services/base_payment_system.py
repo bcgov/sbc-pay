@@ -32,6 +32,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import db
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
@@ -264,9 +265,19 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             account_id=invoice.payment_account_id,
         ).flush()
 
+        account_credits: List[CreditModel] = (
+            db.session.query(CreditModel)
+            .filter(CreditModel.remaining_amount > 0)
+            .filter(CreditModel.account_id == invoice.payment_account_id)
+            .all()
+        )
+
         # Add up the credit amount and update payment account table.
+        credit_total: float = 0
+        for account_credit in account_credits:
+            credit_total += account_credit.remaining_amount
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
-        payment_account.credit = (payment_account.credit or 0) + invoice.total
+        payment_account.credit = credit_total
         current_app.logger.info(
             f"Updating credit amount to  {payment_account.credit} for account {payment_account.auth_account_id}"
         )
