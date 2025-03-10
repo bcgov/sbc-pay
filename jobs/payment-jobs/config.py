@@ -125,6 +125,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", None)
     AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", None)
+    BUSINESS_PAY_TOPIC = os.getenv("BUSINESS_PAY_TOPIC", "business-pay-topic")
+    NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
+    STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
 
     CFS_ACCOUNT_DESCRIPTION = os.getenv("CFS_ACCOUNT_DESCRIPTION", "BCR")
     CFS_INVOICE_PREFIX = os.getenv("CFS_INVOICE_PREFIX", "REG")

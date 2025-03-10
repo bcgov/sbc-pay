@@ -122,6 +122,10 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
     AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", "auth-event-dev")
     GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
+    BUSINESS_PAY_TOPIC = os.getenv("BUSINESS_PAY_TOPIC", "business-pay-topic")
+    NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
+    STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
+
     # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
     PAY_AUDIENCE_SUB = os.getenv("PAY_AUDIENCE_SUB", None)
     VERIFY_PUBSUB_EMAILS = f'{os.getenv("AUTHPAY_SERVICE_ACCOUNT")},{os.getenv("BUSINESS_SERVICE_ACCOUNT")}'.split(",")
