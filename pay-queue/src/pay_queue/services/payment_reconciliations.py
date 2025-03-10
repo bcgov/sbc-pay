@@ -625,7 +625,7 @@ def _process_paid_invoices(inv_references, row):
         db.session.add(receipt)
         # Publish to the queue if it's an Online Banking payment
         if inv.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
-            current_app.logger.debug("Publishing payment event for OB. Invoice : %s", inv.id)
+            current_app.logger.info("Publishing payment event for OB. Invoice : %s", inv.id)
             _publish_payment_event(inv)
 
 
