@@ -20,11 +20,11 @@ on:
         - prod
 
 jobs:
-  pay-api-cd:
+  payment-job-cd:
     uses: bcgov/bcregistry-sre/.github/workflows/backend-cd-ocp.yaml@main
     with:
       target: ${{ inputs.target }}
-      app_name: "payment-jobs"
+      app_name: "payment-job"
       working_directory: "./jobs/payment-jobs"
     secrets:
       OP_CONNECT_URL: ${{ secrets.OP_CONNECT_URL }}
