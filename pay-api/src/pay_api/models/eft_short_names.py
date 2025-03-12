@@ -119,7 +119,15 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             statement_id=getattr(row, "latest_statement_id", None),
             status_code=getattr(row, "status_code", None),
             cfs_account_status=getattr(row, "cfs_account_status", None),
-            refund_method=getattr(row, "refund_method", None)
+            refund_method=getattr(row, "refund_method", None),
+            entity_name=getattr(row, "entity_name", None),
+            street=getattr(row, "street", None),
+            street_additional=getattr(row, "street_additional", None),
+            city=getattr(row, "city", None),
+            region=getattr(row, "region", None),
+            postal_code=getattr(row, "postal_code", None),
+            country=getattr(row, "country", None),
+            delivery_instructions=getattr(row, "delivery_instructions", None)
         )
 
 

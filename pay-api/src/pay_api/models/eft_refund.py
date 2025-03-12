@@ -78,6 +78,15 @@ class EFTRefund(Audit):
     short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False)
     status = db.Column(db.String(25), nullable=True)
 
+    entity_name = db.Column(db.String(), nullable=True)
+    street = db.Column(db.String(), nullable=True)
+    street_additional = db.Column(db.String(), nullable=True)
+    city = db.Column(db.String(), nullable=True)
+    region = db.Column(db.String(), nullable=True)
+    postal_code = db.Column(db.String(), nullable=True)
+    country = db.Column(db.String(), nullable=True)
+    delivery_instructions = db.Column(db.String(), nullable=True)
+
     @classmethod
     def find_refunds(cls, statuses: List[str], short_name_id: int = None):
         """Return all refunds by status."""
