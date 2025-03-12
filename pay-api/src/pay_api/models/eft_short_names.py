@@ -86,7 +86,6 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     account_branch: str
     amount_owing: Decimal
     created_on: datetime
-    cheque_status: str
     email: str
     cas_supplier_number: str
     cas_supplier_site: str
@@ -96,14 +95,6 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     statement_id: int
     status_code: str
     cfs_account_status: str
-    entity_name: str
-    street: str
-    street_additional: str
-    city: str
-    region: str
-    postal_code: str
-    country: str
-    delivery_instructions: str
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
@@ -118,7 +109,6 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             account_branch=getattr(row, "account_branch", None),
             amount_owing=getattr(row, "total_owing", None),
             created_on=row.created_on,
-            cheque_status=getattr(row, "cheque_status", None),
             short_name=row.short_name,
             short_name_type=row.type,
             email=getattr(row, "email"),
@@ -127,15 +117,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             statement_id=getattr(row, "latest_statement_id", None),
             status_code=getattr(row, "status_code", None),
             cfs_account_status=getattr(row, "cfs_account_status", None),
-            refund_method=getattr(row, "refund_method", None),
-            entity_name=getattr(row, "entity_name", None),
-            street=getattr(row, "street", None),
-            street_additional=getattr(row, "street_additional", None),
-            city=getattr(row, "city", None),
-            region=getattr(row, "region", None),
-            postal_code=getattr(row, "postal_code", None),
-            country=getattr(row, "country", None),
-            delivery_instructions=getattr(row, "delivery_instructions", None),
+            refund_method=getattr(row, "refund_method", None)
         )
 
 
