@@ -89,7 +89,6 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     email: str
     cas_supplier_number: str
     cas_supplier_site: str
-    refund_method: str
     short_name: str
     short_name_type: str
     statement_id: int
@@ -116,8 +115,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             cas_supplier_site=getattr(row, "cas_supplier_site"),
             statement_id=getattr(row, "latest_statement_id", None),
             status_code=getattr(row, "status_code", None),
-            cfs_account_status=getattr(row, "cfs_account_status", None),
-            refund_method=getattr(row, "refund_method", None)
+            cfs_account_status=getattr(row, "cfs_account_status", None)
         )
 
 
