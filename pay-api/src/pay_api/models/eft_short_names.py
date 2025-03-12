@@ -86,9 +86,11 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     account_branch: str
     amount_owing: Decimal
     created_on: datetime
+    cheque_status: str
     email: str
     cas_supplier_number: str
     cas_supplier_site: str
+    refund_method: str
     short_name: str
     short_name_type: str
     statement_id: int
@@ -108,6 +110,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             account_branch=getattr(row, "account_branch", None),
             amount_owing=getattr(row, "total_owing", None),
             created_on=row.created_on,
+            cheque_status=getattr(row, "cheque_status", None),
             short_name=row.short_name,
             short_name_type=row.type,
             email=getattr(row, "email"),
@@ -116,6 +119,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             statement_id=getattr(row, "latest_statement_id", None),
             status_code=getattr(row, "status_code", None),
             cfs_account_status=getattr(row, "cfs_account_status", None),
+            refund_method=getattr(row, "refund_method", None)
         )
 
 

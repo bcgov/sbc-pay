@@ -40,6 +40,7 @@ class EFTRefund(Audit):
             "auth_account_id",
             "cas_supplier_number",
             "cas_supplier_site",
+            "cheque_status",
             "comment",
             "created_by",
             "created_name",
@@ -50,6 +51,7 @@ class EFTRefund(Audit):
             "id",
             "refund_amount",
             "refund_email",
+            "refund_method",
             "short_name_id",
             "status",
             "updated_by",
@@ -60,6 +62,8 @@ class EFTRefund(Audit):
 
     cas_supplier_number = db.Column(db.String(), nullable=False)
     cas_supplier_site = db.Column(db.String(), nullable=True)
+    # Only applicable for cheque refund method
+    cheque_status = db.Column(db.String(25), nullable=True)
     comment = db.Column(db.String(), nullable=False)
     decline_reason = db.Column(db.String(), nullable=True)
     created_on = db.Column("created_on", db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
@@ -70,6 +74,7 @@ class EFTRefund(Audit):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     refund_email = db.Column(db.String(100), nullable=False)
+    refund_method = db.Column(db.String(25), nullable=True)
     short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False)
     status = db.Column(db.String(25), nullable=True)
 

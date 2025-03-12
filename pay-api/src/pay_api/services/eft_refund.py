@@ -202,8 +202,9 @@ class EFTRefund:
         if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
             raise BusinessException(Error.REFUND_ALREADY_FINALIZED)
         refund.comment = data.comment or refund.comment
-        refund.status = data.status
+        refund.status = data.status or refund.status
         refund.decline_reason = data.decline_reason or refund.decline_reason
+        refund.cheque_status = data.cheque_status or refund.cheque_status
         refund.save_or_add(auto_save=False)
         short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
         match data.status:
@@ -264,6 +265,7 @@ class EFTRefund:
             cas_supplier_number=get_str_by_path(request, "casSupplierNum"),
             cas_supplier_site=get_str_by_path(request, "casSupplierSite"),
             refund_email=get_str_by_path(request, "refundEmail"),
+            refund_method=get_str_by_path(request, "refundMethod"),
             comment=comment,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
         )

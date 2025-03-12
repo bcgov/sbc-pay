@@ -63,6 +63,7 @@ class EFTShortNameRefundPatchRequest(Serializable):
     status: str
     comment: str = None
     decline_reason: str = None
+    cheque_status: str = None
 
 
 @define
