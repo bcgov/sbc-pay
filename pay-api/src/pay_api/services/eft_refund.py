@@ -268,6 +268,14 @@ class EFTRefund:
             refund_method=get_str_by_path(request, "refundMethod"),
             comment=comment,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
+            entity_name=get_str_by_path(request, "entityName"),
+            street=get_str_by_path(request, "street"),
+            street_additional=get_str_by_path(request, "streetAdditional"),
+            city=get_str_by_path(request, "city"),
+            region=get_str_by_path(request, "region"),
+            postal_code=get_str_by_path(request, "postalCode"),
+            country=get_str_by_path(request, "country"),
+            delivery_instructions=get_str_by_path(request, "deliveryInstructions"),
         )
         refund.flush()
         return refund
