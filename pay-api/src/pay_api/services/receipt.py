@@ -196,12 +196,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
 
         is_pending_invoice = (
             invoice_data.payment_method_code
-            in (
-                PaymentMethod.PAD.value,
-                PaymentMethod.EJV.value,
-                PaymentMethod.EFT.value,
-                PaymentMethod.INTERNAL.value
-            )
+            in (PaymentMethod.PAD.value, PaymentMethod.EJV.value, PaymentMethod.EFT.value, PaymentMethod.INTERNAL.value)
             and invoice_data.invoice_status_code != InvoiceStatus.PAID.value
         )
         if not is_pending_invoice and not invoice_data.receipts:

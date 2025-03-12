@@ -127,7 +127,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             region=getattr(row, "region", None),
             postal_code=getattr(row, "postal_code", None),
             country=getattr(row, "country", None),
-            delivery_instructions=getattr(row, "delivery_instructions", None)
+            delivery_instructions=getattr(row, "delivery_instructions", None),
         )
 
 
