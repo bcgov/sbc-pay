@@ -96,6 +96,14 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     statement_id: int
     status_code: str
     cfs_account_status: str
+    entity_name: str
+    street: str
+    street_additional: str
+    city: str
+    region: str
+    postal_code: str
+    country: str
+    delivery_instructions: str
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
