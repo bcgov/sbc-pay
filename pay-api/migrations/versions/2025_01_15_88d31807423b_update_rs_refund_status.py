@@ -8,7 +8,7 @@ Create Date: 2025-01-15 15:33:56.268441
 from alembic import op
 import sqlalchemy as sa
 
-from pay_api.utils.enums import RoutingSlipRefundStatus, RoutingSlipStatus
+from pay_api.utils.enums import ChequeRefundStatus, RoutingSlipStatus
 
 
 # revision identifiers, used by Alembic.
@@ -25,7 +25,7 @@ depends_on = None
 def upgrade():
     op.execute(f"""
         UPDATE routing_slips
-        SET refund_status = '{RoutingSlipRefundStatus.PROCESSED.value}'
+        SET refund_status = '{ChequeRefundStatus.PROCESSED.value}'
         WHERE status = '{RoutingSlipStatus.REFUND_PROCESSED.value}';
     """)
 

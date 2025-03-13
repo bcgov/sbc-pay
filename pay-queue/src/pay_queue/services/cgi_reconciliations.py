@@ -36,6 +36,7 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.ejv_pay_service import EjvPayService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
+    ChequeRefundStatus,
     DisbursementStatus,
     EFTShortnameRefundStatus,
     EjvFileType,
@@ -46,7 +47,6 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     QueueSources,
-    RoutingSlipRefundStatus,
     RoutingSlipStatus,
     TransactionStatus,
 )
@@ -479,7 +479,7 @@ def _process_ap_header_routing_slips(line) -> bool:
         )
     else:
         routing_slip.status = RoutingSlipStatus.REFUND_PROCESSED.value
-        routing_slip.refund_status = RoutingSlipRefundStatus.PROCESSED.value
+        routing_slip.refund_status = ChequeRefundStatus.PROCESSED.value
         refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
         refund.gl_posted = datetime.now()
         refund.save()

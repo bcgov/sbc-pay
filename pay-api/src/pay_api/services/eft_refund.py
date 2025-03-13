@@ -5,7 +5,11 @@ from typing import List
 
 from flask import current_app
 
-from pay_api.dtos.eft_shortname import EFTShortNameRefundGetRequest, EFTShortNameRefundPatchRequest
+from pay_api.dtos.eft_shortname import (
+    EFTShortNameRefundGetRequest,
+    EFTShortNameRefundPatchRequest,
+    EFTShortNameRefundPostRequest,
+)
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
@@ -25,7 +29,6 @@ from pay_api.utils.enums import (
     Role,
 )
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_str_by_path
 
 
 class EFTRefund:
@@ -33,27 +36,19 @@ class EFTRefund:
 
     @staticmethod
     @user_context
-    def create_shortname_refund(request: dict, **kwargs):
-        """Create refund."""
-        # This method isn't for invoices, it's for shortname only.
-        short_name_id = int(get_str_by_path(request, "shortNameId"))
-        amount = Decimal(get_str_by_path(request, "refundAmount"))
-        comment = get_str_by_path(request, "comment")
-
-        if amount <= 0:
-            raise BusinessException(Error.INVALID_REFUND)
-
-        current_app.logger.debug(f"Starting shortname refund : {short_name_id}")
-
-        short_name = EFTShortnamesModel.find_by_id(short_name_id)
-        refund = EFTRefund._create_refund_model(request, short_name_id, amount, comment)
-        EFTRefund.refund_eft_credits(short_name_id, amount)
+    def create_shortname_refund(refund: EFTShortNameRefundPostRequest, **kwargs):
+        """Create refund. This method isn't for invoices, it's for shortname only."""
+        refund.validate_for_refund_method()
+        current_app.logger.debug(f"Starting shortname refund : {refund.short_name_id}")
+        short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
+        refund = EFTRefund._create_refund_model(refund)
+        EFTRefund.refund_eft_credits(refund.short_name_id, refund.refund_amount)
 
         history = EFTHistoryService.create_shortname_refund(
             EFTHistoryModel(
-                short_name_id=short_name_id,
-                amount=amount,
-                credit_balance=EFTCreditModel.get_eft_credit_balance(short_name_id),
+                short_name_id=refund.short_name_id,
+                amount=refund.refund_amount,
+                credit_balance=EFTCreditModel.get_eft_credit_balance(refund.short_name_id),
                 eft_refund_id=refund.id,
                 is_processing=False,
                 hidden=False,
@@ -63,13 +58,13 @@ class EFTRefund:
         qualified_receiver_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND.value)
         subject = f"Pending Refund Request for Short Name {short_name.short_name}"
         html_body = ShortNameRefundEmailContent(
-            comment=comment,
+            comment=refund.comment,
             decline_reason=refund.decline_reason,
-            refund_amount=amount,
-            short_name_id=short_name_id,
+            refund_amount=refund.refund_amount,
+            short_name_id=refund.short_name_id,
             short_name=short_name.short_name,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
-            url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{short_name_id}",
+            url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{refund.short_name_id}",
         ).render_body()
         send_email(qualified_receiver_recipients, subject, html_body)
         history.save()
@@ -202,8 +197,9 @@ class EFTRefund:
         if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
             raise BusinessException(Error.REFUND_ALREADY_FINALIZED)
         refund.comment = data.comment or refund.comment
-        refund.status = data.status
+        refund.status = data.status or refund.status
         refund.decline_reason = data.decline_reason or refund.decline_reason
+        refund.cheque_status = data.cheque_status or refund.cheque_status
         refund.save_or_add(auto_save=False)
         short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
         match data.status:
@@ -253,19 +249,28 @@ class EFTRefund:
         return refund.to_dict()
 
     @staticmethod
-    def _create_refund_model(request: dict, shortname_id: int, amount: Decimal, comment: str) -> EFTRefundModel:
+    def _create_refund_model(refund: EFTShortNameRefundPostRequest) -> EFTRefundModel:
         """Create and return the EFTRefundModel instance."""
         # AP refund job should pick up this row and send back the amount in the refund via cheque.
         # For example if we had $500 on the EFT Shortname credits and we want to refund $300,
         # then the AP refund job should send a cheque for $300 to the supplier while leaving $200 on the credits.
         refund = EFTRefundModel(
-            short_name_id=shortname_id,
-            refund_amount=amount,
-            cas_supplier_number=get_str_by_path(request, "casSupplierNum"),
-            cas_supplier_site=get_str_by_path(request, "casSupplierSite"),
-            refund_email=get_str_by_path(request, "refundEmail"),
-            comment=comment,
+            short_name_id=refund.short_name_id,
+            refund_amount=refund.refund_amount,
+            cas_supplier_number=refund.cas_supplier_number,
+            cas_supplier_site=refund.cas_supplier_site,
+            refund_email=refund.refund_email,
+            refund_method=refund.refund_method,
+            comment=refund.comment,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
+            entity_name=refund.entity_name,
+            street=refund.street,
+            street_additional=refund.street_additional,
+            city=refund.city,
+            region=refund.region,
+            postal_code=refund.postal_code,
+            country=refund.country,
+            delivery_instructions=refund.delivery_instructions,
         )
         refund.flush()
         return refund

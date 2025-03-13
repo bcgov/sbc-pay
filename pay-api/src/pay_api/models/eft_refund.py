@@ -40,26 +40,38 @@ class EFTRefund(Audit):
             "auth_account_id",
             "cas_supplier_number",
             "cas_supplier_site",
+            "cheque_status",
+            "city",
             "comment",
+            "country",
             "created_by",
             "created_name",
             "created_on",
+            "delivery_instructions",
             "disbursement_date",
             "disbursement_status_code",
             "decline_reason",
+            "entity_name",
             "id",
+            "postal_code",
             "refund_amount",
             "refund_email",
+            "refund_method",
+            "region",
             "short_name_id",
             "status",
+            "street",
+            "street_additional",
             "updated_by",
             "updated_name",
             "updated_on",
         ]
     }
 
-    cas_supplier_number = db.Column(db.String(), nullable=False)
+    cas_supplier_number = db.Column(db.String(), nullable=True)
     cas_supplier_site = db.Column(db.String(), nullable=True)
+    # Only applicable for cheque refund method
+    cheque_status = db.Column(db.String(25), nullable=True)
     comment = db.Column(db.String(), nullable=False)
     decline_reason = db.Column(db.String(), nullable=True)
     created_on = db.Column("created_on", db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
@@ -70,8 +82,18 @@ class EFTRefund(Audit):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     refund_email = db.Column(db.String(100), nullable=False)
+    refund_method = db.Column(db.String(25), nullable=True)
     short_name_id = db.Column(db.Integer, ForeignKey("eft_short_names.id"), nullable=False)
     status = db.Column(db.String(25), nullable=True)
+
+    entity_name = db.Column(db.String(), nullable=True)
+    street = db.Column(db.String(), nullable=True)
+    street_additional = db.Column(db.String(), nullable=True)
+    city = db.Column(db.String(), nullable=True)
+    region = db.Column(db.String(), nullable=True)
+    postal_code = db.Column(db.String(), nullable=True)
+    country = db.Column(db.String(), nullable=True)
+    delivery_instructions = db.Column(db.String(), nullable=True)
 
     @classmethod
     def find_refunds(cls, statuses: List[str], short_name_id: int = None):

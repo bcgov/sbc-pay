@@ -8,9 +8,14 @@ In the near future, will find a library that generates our API spec based off of
 """
 
 from decimal import Decimal
+from typing import Optional
 
 from attrs import define
+from cattrs import ClassValidationError
 
+from pay_api.exceptions import BusinessException
+from pay_api.utils.enums import APRefundMethod
+from pay_api.utils.errors import Error
 from pay_api.utils.serializable import Serializable
 
 
@@ -60,9 +65,60 @@ class EFTShortNameSummaryGetRequest(Serializable):
 class EFTShortNameRefundPatchRequest(Serializable):
     """EFT Short name refund DTO."""
 
-    status: str
-    comment: str = None
-    decline_reason: str = None
+    status: Optional[str] = None
+    comment: Optional[str] = None
+    decline_reason: Optional[str] = None
+    cheque_status: Optional[str] = None
+
+
+@define
+class EFTShortNameRefundPostRequest(Serializable):
+    """EFT Short name refund DTO."""
+
+    short_name_id: int
+    refund_amount: Decimal
+    refund_email: str
+    refund_method: str
+    comment: str
+    cas_supplier_number: Optional[str] = None
+    cas_supplier_site: Optional[str] = None
+    entity_name: Optional[str] = None
+    street: Optional[str] = None
+    street_additional: Optional[str] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
+    delivery_instructions: Optional[str] = None
+
+    def validate_for_refund_method(self):
+        """Validate refund request - cheque needs mailing info, eft needs cas info."""
+
+        def check_missing_fields(required_fields):
+            return [field for field in required_fields if getattr(self, field, None) is None]
+
+        invalid_request = check_missing_fields(["short_name_id", "refund_amount", "refund_email", "refund_method"])
+        match self.refund_method:
+            case APRefundMethod.EFT.value:
+                invalid_request = check_missing_fields(["cas_supplier_number", "cas_supplier_site"])
+            case APRefundMethod.CHEQUE.value:
+                invalid_request = check_missing_fields(
+                    ["entity_name", "street", "city", "region", "postal_code", "country"]
+                )
+            case _:
+                invalid_request = True
+        if self.refund_amount <= 0 or invalid_request:
+            raise BusinessException(Error.INVALID_REFUND)
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """Convert from request args to EFTShortNameSearchDTO."""
+        try:
+            dto = super().from_dict(data)
+            return dto
+        # This is for missing a required field.
+        except ClassValidationError as cve:
+            raise BusinessException(Error.INVALID_REQUEST) from cve
 
 
 @define

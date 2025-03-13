@@ -26,6 +26,7 @@ class Converter(cattrs.Converter):
         self.register_structure_hook(Decimal, self._structure_decimal)
         self.register_unstructure_hook(Decimal, self._unstructure_decimal)
         self.register_unstructure_hook(datetime, self._unstructure_datetime)
+        # Note we may need a hook to handle str = None, sometimes a str set to None would become 'None'
 
         if enum_to_value:
             self.register_structure_hook(Enum, self._structure_enum_value)

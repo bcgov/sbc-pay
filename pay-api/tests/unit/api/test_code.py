@@ -61,4 +61,4 @@ def test_get_valid_payment_methods(session, client, jwt, app):
 
     rv = client.get("/api/v1/codes/valid_payment_methods/INVALID", headers={})
     assert rv.status_code == 200
-    assert rv.json == {}
+    assert rv.json == {"INVALID": []}
