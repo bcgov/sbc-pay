@@ -12,6 +12,9 @@ from typing import Optional
 
 from attrs import define
 
+from pay_api.exceptions import BusinessException
+from pay_api.utils.enums import APRefundMethod
+from pay_api.utils.errors import Error
 from pay_api.utils.serializable import Serializable
 
 
@@ -86,6 +89,24 @@ class EFTShortNameRefundPostRequest(Serializable):
     postal_code: Optional[str] = None
     country: Optional[str] = None
     delivery_instructions: Optional[str] = None
+
+    def validate_for_refund_method(self):
+        """Validate refund request - cheque needs mailing info, eft needs cas info."""
+        def check_missing_fields(required_fields):
+            return [field for field in required_fields if getattr(self, field, None) is None]
+
+        invalid_request = check_missing_fields(["short_name_id", "refund_amount", "refund_email", "refund_method"])
+        match self.refund_method:
+            case APRefundMethod.EFT.value:
+                invalid_request = check_missing_fields(["cas_supplier_number", "cas_supplier_site"])
+            case APRefundMethod.CHEQUE.value:
+                invalid_request = check_missing_fields(
+                    ["entity_name", "street", "city", "region", "postal_code", "country"]
+                )
+            case _:
+                invalid_request = True
+        if self.refund_amount <= 0 or invalid_request:
+            raise BusinessException(Error.INVALID_REFUND)
 
 
 @define

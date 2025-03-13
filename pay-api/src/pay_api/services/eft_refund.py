@@ -22,7 +22,6 @@ from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.email_service import ShortNameRefundEmailContent, send_email
 from pay_api.utils.enums import (
-    APRefundMethod,
     EFTCreditInvoiceStatus,
     EFTHistoricalTypes,
     EFTShortnameRefundStatus,
@@ -36,33 +35,10 @@ class EFTRefund:
     """Service to manage EFT Refunds."""
 
     @staticmethod
-    def validate_shortname_refund(refund: EFTShortNameRefundPostRequest):
-        """Validate refund request - cheque needs mailing info, eft needs cas info."""
-        # Maybe move this into the schema itself?
-        required_fields = ["short_name_id", "refund_amount", "refund_email", "refund_method"]
-        missing_fields = [field for field in required_fields if getattr(refund, field, None) is None]
-        invalid_request = False
-        if missing_fields:
-            invalid_request = True
-        match refund.refund_method:
-            case APRefundMethod.EFT.value:
-                required_fields = ["cas_supplier_number", "cas_supplier_site"]
-                missing_fields = [field for field in required_fields if getattr(refund, field, None) is None]
-                invalid_request = missing_fields
-            case APRefundMethod.CHEQUE.value:
-                required_fields = ["entity_name", "street", "city", "region", "postal_code", "country"]
-                missing_fields = [field for field in required_fields if getattr(refund, field, None) is None]
-                invalid_request = missing_fields
-            case _:
-                invalid_request = True
-        if refund.refund_amount <= 0 or invalid_request:
-            raise BusinessException(Error.INVALID_REFUND)
-
-    @staticmethod
     @user_context
     def create_shortname_refund(refund: EFTShortNameRefundPostRequest, **kwargs):
         """Create refund. This method isn't for invoices, it's for shortname only."""
-        EFTRefund.validate_shortname_refund(refund)
+        refund.validate_for_refund_method()
         current_app.logger.debug(f"Starting shortname refund : {refund.short_name_id}")
         short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
         refund = EFTRefund._create_refund_model(refund)
