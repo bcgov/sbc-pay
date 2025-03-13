@@ -88,7 +88,7 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     def set_access_control_header(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Headers"] = (
-            "Authorization, Content-Type, registries-trace-id, Account-Id"
+            "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name"
         )
 
     def add_version(response):  # pylint: disable=unused-variable
