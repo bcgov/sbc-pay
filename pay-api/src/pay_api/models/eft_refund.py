@@ -68,7 +68,7 @@ class EFTRefund(Audit):
         ]
     }
 
-    cas_supplier_number = db.Column(db.String(), nullable=False)
+    cas_supplier_number = db.Column(db.String(), nullable=True)
     cas_supplier_site = db.Column(db.String(), nullable=True)
     # Only applicable for cheque refund method
     cheque_status = db.Column(db.String(25), nullable=True)

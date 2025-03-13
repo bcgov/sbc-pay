@@ -21,6 +21,7 @@ from pay_api.dtos.eft_shortname import (
     EFTShortNameGetRequest,
     EFTShortNameRefundGetRequest,
     EFTShortNameRefundPatchRequest,
+    EFTShortNameRefundPostRequest,
     EFTShortNameSummaryGetRequest,
 )
 from pay_api.exceptions import BusinessException, error_to_response
@@ -278,11 +279,9 @@ def post_shortname_refund():
     """Create the Refund for the Shortname."""
     current_app.logger.info("<post_shortname_refund")
     request_json = request.get_json(silent=True)
-    valid_format, errors = schema_utils.validate(request_json, "refund_shortname")
-    if not valid_format:
-        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    short_name_refund = EFTShortNameRefundPostRequest.from_dict(request_json)
     try:
-        response = EFTRefundService.create_shortname_refund(request_json)
+        response = EFTRefundService.create_shortname_refund(short_name_refund)
         status = HTTPStatus.ACCEPTED
     except BusinessException as exception:
         return exception.response()

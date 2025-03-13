@@ -5,7 +5,11 @@ from typing import List
 
 from flask import current_app
 
-from pay_api.dtos.eft_shortname import EFTShortNameRefundGetRequest, EFTShortNameRefundPatchRequest
+from pay_api.dtos.eft_shortname import (
+    EFTShortNameRefundGetRequest,
+    EFTShortNameRefundPatchRequest,
+    EFTShortNameRefundPostRequest,
+)
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
@@ -18,6 +22,7 @@ from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.email_service import ShortNameRefundEmailContent, send_email
 from pay_api.utils.enums import (
+    APRefundMethod,
     EFTCreditInvoiceStatus,
     EFTHistoricalTypes,
     EFTShortnameRefundStatus,
@@ -25,35 +30,49 @@ from pay_api.utils.enums import (
     Role,
 )
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_str_by_path
 
 
 class EFTRefund:
     """Service to manage EFT Refunds."""
 
     @staticmethod
-    @user_context
-    def create_shortname_refund(request: dict, **kwargs):
-        """Create refund."""
-        # This method isn't for invoices, it's for shortname only.
-        short_name_id = int(get_str_by_path(request, "shortNameId"))
-        amount = Decimal(get_str_by_path(request, "refundAmount"))
-        comment = get_str_by_path(request, "comment")
-
-        if amount <= 0:
+    def validate_shortname_refund(refund: EFTShortNameRefundPostRequest):
+        """Validate refund request - cheque needs mailing info, eft needs cas info."""
+        # Maybe move this into the schema itself?
+        required_fields = ["short_name_id", "refund_amount", "refund_email", "refund_method"]
+        missing_fields = [field for field in required_fields if getattr(refund, field, None) is None]
+        invalid_request = False
+        if missing_fields:
+            invalid_request = True
+        match refund.refund_method:
+            case APRefundMethod.EFT.value:
+                required_fields = ["cas_supplier_number", "cas_supplier_site"]
+                missing_fields = [field for field in required_fields if getattr(refund, field, None) is None]
+                invalid_request = missing_fields
+            case APRefundMethod.CHEQUE.value:
+                required_fields = ["entity_name", "street", "city", "region", "postal_code", "country"]
+                missing_fields = [field for field in required_fields if getattr(refund, field, None) is None]
+                invalid_request = missing_fields
+            case _:
+                invalid_request = True
+        if refund.refund_amount <= 0 or invalid_request:
             raise BusinessException(Error.INVALID_REFUND)
 
-        current_app.logger.debug(f"Starting shortname refund : {short_name_id}")
-
-        short_name = EFTShortnamesModel.find_by_id(short_name_id)
-        refund = EFTRefund._create_refund_model(request, short_name_id, amount, comment)
-        EFTRefund.refund_eft_credits(short_name_id, amount)
+    @staticmethod
+    @user_context
+    def create_shortname_refund(refund: EFTShortNameRefundPostRequest, **kwargs):
+        """Create refund. This method isn't for invoices, it's for shortname only."""
+        EFTRefund.validate_shortname_refund(refund)
+        current_app.logger.debug(f"Starting shortname refund : {refund.short_name_id}")
+        short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
+        refund = EFTRefund._create_refund_model(refund)
+        EFTRefund.refund_eft_credits(refund.short_name_id, refund.refund_amount)
 
         history = EFTHistoryService.create_shortname_refund(
             EFTHistoryModel(
-                short_name_id=short_name_id,
-                amount=amount,
-                credit_balance=EFTCreditModel.get_eft_credit_balance(short_name_id),
+                short_name_id=refund.short_name_id,
+                amount=refund.refund_amount,
+                credit_balance=EFTCreditModel.get_eft_credit_balance(refund.short_name_id),
                 eft_refund_id=refund.id,
                 is_processing=False,
                 hidden=False,
@@ -63,13 +82,13 @@ class EFTRefund:
         qualified_receiver_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND.value)
         subject = f"Pending Refund Request for Short Name {short_name.short_name}"
         html_body = ShortNameRefundEmailContent(
-            comment=comment,
+            comment=refund.comment,
             decline_reason=refund.decline_reason,
-            refund_amount=amount,
-            short_name_id=short_name_id,
+            refund_amount=refund.refund_amount,
+            short_name_id=refund.short_name_id,
             short_name=short_name.short_name,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
-            url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{short_name_id}",
+            url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{refund.short_name_id}",
         ).render_body()
         send_email(qualified_receiver_recipients, subject, html_body)
         history.save()
@@ -254,28 +273,28 @@ class EFTRefund:
         return refund.to_dict()
 
     @staticmethod
-    def _create_refund_model(request: dict, shortname_id: int, amount: Decimal, comment: str) -> EFTRefundModel:
+    def _create_refund_model(refund: EFTShortNameRefundPostRequest) -> EFTRefundModel:
         """Create and return the EFTRefundModel instance."""
         # AP refund job should pick up this row and send back the amount in the refund via cheque.
         # For example if we had $500 on the EFT Shortname credits and we want to refund $300,
         # then the AP refund job should send a cheque for $300 to the supplier while leaving $200 on the credits.
         refund = EFTRefundModel(
-            short_name_id=shortname_id,
-            refund_amount=amount,
-            cas_supplier_number=get_str_by_path(request, "casSupplierNum"),
-            cas_supplier_site=get_str_by_path(request, "casSupplierSite"),
-            refund_email=get_str_by_path(request, "refundEmail"),
-            refund_method=get_str_by_path(request, "refundMethod"),
-            comment=comment,
+            short_name_id=refund.short_name_id,
+            refund_amount=refund.refund_amount,
+            cas_supplier_number=refund.cas_supplier_number,
+            cas_supplier_site=refund.cas_supplier_site,
+            refund_email=refund.refund_email,
+            refund_method=refund.refund_method,
+            comment=refund.comment,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
-            entity_name=get_str_by_path(request, "entityName"),
-            street=get_str_by_path(request, "street"),
-            street_additional=get_str_by_path(request, "streetAdditional"),
-            city=get_str_by_path(request, "city"),
-            region=get_str_by_path(request, "region"),
-            postal_code=get_str_by_path(request, "postalCode"),
-            country=get_str_by_path(request, "country"),
-            delivery_instructions=get_str_by_path(request, "deliveryInstructions"),
+            entity_name=refund.entity_name,
+            street=refund.street,
+            street_additional=refund.street_additional,
+            city=refund.city,
+            region=refund.region,
+            postal_code=refund.postal_code,
+            country=refund.country,
+            delivery_instructions=refund.delivery_instructions,
         )
         refund.flush()
         return refund

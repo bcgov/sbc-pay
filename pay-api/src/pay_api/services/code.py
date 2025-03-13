@@ -113,4 +113,4 @@ class Code:
             .filter_by(product=product_code)
             .first()
         )
-        return {corp_type.product: corp_type.payment_methods or []} if corp_type else {}
+        return {corp_type.product: corp_type.payment_methods or []} if corp_type else {product_code: []}

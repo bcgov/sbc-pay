@@ -8,6 +8,7 @@ In the near future, will find a library that generates our API spec based off of
 """
 
 from decimal import Decimal
+from typing import Optional
 
 from attrs import define
 
@@ -60,10 +61,31 @@ class EFTShortNameSummaryGetRequest(Serializable):
 class EFTShortNameRefundPatchRequest(Serializable):
     """EFT Short name refund DTO."""
 
-    status: str
-    comment: str = None
-    decline_reason: str = None
-    cheque_status: str = None
+    status: Optional[str] = None
+    comment: Optional[str] = None
+    decline_reason: Optional[str] = None
+    cheque_status: Optional[str] = None
+
+
+@define
+class EFTShortNameRefundPostRequest(Serializable):
+    """EFT Short name refund DTO."""
+
+    short_name_id: int
+    refund_amount: Decimal
+    refund_email: str
+    refund_method: str
+    comment: str
+    cas_supplier_number: Optional[str] = None
+    cas_supplier_site: Optional[str] = None
+    entity_name: Optional[str] = None
+    street: Optional[str] = None
+    street_additional: Optional[str] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
+    delivery_instructions: Optional[str] = None
 
 
 @define

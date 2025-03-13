@@ -22,6 +22,9 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('eft_refunds', schema=None) as batch_op:
+        batch_op.alter_column('cas_supplier_number',
+               existing_type=sa.VARCHAR(length=25),
+               nullable=True)
         batch_op.add_column(sa.Column('refund_method', sa.String(length=25), nullable=True))
         batch_op.add_column(sa.Column('cheque_status', sa.String(length=25), nullable=True))
         batch_op.add_column(sa.Column('entity_name', sa.String(), nullable=True))
@@ -34,8 +37,12 @@ def upgrade():
         batch_op.add_column(sa.Column('delivery_instructions', sa.String(), nullable=True))
 
 
+
 def downgrade():
     with op.batch_alter_table('eft_refunds', schema=None) as batch_op:
+        batch_op.alter_column('cas_supplier_number',
+               existing_type=sa.VARCHAR(length=25),
+               nullable=False)
         batch_op.drop_column('refund_method')
         batch_op.drop_column('cheque_status')
         batch_op.drop_column('delivery_instructions')

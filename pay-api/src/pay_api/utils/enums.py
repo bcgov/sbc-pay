@@ -264,7 +264,7 @@ class RoutingSlipStatus(Enum):
     CORRECTION = "CORRECTION"
 
 
-class RoutingSlipRefundStatus(Enum):
+class ChequeRefundStatus(Enum):
     """Routing slip refund statuses."""
 
     PROCESSING = "PROCESSING"
@@ -468,3 +468,10 @@ class DocumentType(Enum):
     """Document Types."""
 
     EFT_INSTRUCTIONS = "eftInstructions"
+
+
+class APRefundMethod(Enum):
+    """Refund method through AP module."""
+
+    CHEQUE = "CHEQUE"
+    EFT = "EFT"
