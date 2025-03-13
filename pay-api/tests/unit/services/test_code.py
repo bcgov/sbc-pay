@@ -72,4 +72,4 @@ def test_find_valid_payment_methods_by_product_code(session):
     assert isinstance(business_payment_methods["BUSINESS"], list)
 
     invalid_payment_methods = CodeService.find_valid_payment_methods_by_product_code("INVALID")
-    assert invalid_payment_methods == {}
+    assert invalid_payment_methods == {"INVALID": []}

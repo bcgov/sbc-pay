@@ -1171,7 +1171,7 @@ def test_post_shortname_refund(db, session, client, jwt, emails_with_keycloak_ro
         rv = client.post("/api/v1/eft-shortnames/shortname-refund", headers=headers, json=data)
         if "invalid" in test_name:
             assert rv.status_code == 400
-            assert Error.INVALID_REFUND.value in rv.json["type"]
+            assert Error.INVALID_REFUND.name in rv.json["type"]
             return
         assert rv.status_code == 202
         mock_email.assert_called_once()

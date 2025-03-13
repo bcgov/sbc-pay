@@ -91,15 +91,14 @@ class EFTShortNameRefundPostRequest(Serializable):
     country: Optional[str] = None
     delivery_instructions: Optional[str] = None
 
-    @classmethod
-    def validate_for_refund_method(cls):
+    def validate_for_refund_method(self):
         """Validate refund request - cheque needs mailing info, eft needs cas info."""
 
         def check_missing_fields(required_fields):
-            return [field for field in required_fields if getattr(cls, field, None) is None]
+            return [field for field in required_fields if getattr(self, field, None) is None]
 
         invalid_request = check_missing_fields(["short_name_id", "refund_amount", "refund_email", "refund_method"])
-        match cls.refund_method:
+        match self.refund_method:
             case APRefundMethod.EFT.value:
                 invalid_request = check_missing_fields(["cas_supplier_number", "cas_supplier_site"])
             case APRefundMethod.CHEQUE.value:
@@ -108,7 +107,7 @@ class EFTShortNameRefundPostRequest(Serializable):
                 )
             case _:
                 invalid_request = True
-        if cls.refund_amount <= 0 or invalid_request:
+        if self.refund_amount <= 0 or invalid_request:
             raise BusinessException(Error.INVALID_REFUND)
 
     @classmethod
