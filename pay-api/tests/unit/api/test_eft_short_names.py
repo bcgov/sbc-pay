@@ -1206,6 +1206,17 @@ def test_post_shortname_refund(db, session, client, jwt, emails_with_keycloak_ro
     assert history_record.transaction_type == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
 
 
+def test_post_shortname_refund_invalid_request(client, mocker, jwt):
+    """Test handling of invalid request format."""
+    data = {"invalid_field": "invalid_value"}
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    rv = client.post("/api/v1/eft-shortnames/shortname-refund", headers=headers, json=data)
+
+    assert rv.status_code == 400
+    assert "INVALID_REQUEST" in rv.json["type"]
+
+
 @pytest.mark.parametrize(
     "query_string_factory, test_name, count",
     [

@@ -279,8 +279,8 @@ def post_shortname_refund():
     """Create the Refund for the Shortname."""
     current_app.logger.info("<post_shortname_refund")
     request_json = request.get_json(silent=True)
-    short_name_refund = EFTShortNameRefundPostRequest.from_dict(request_json)
     try:
+        short_name_refund = EFTShortNameRefundPostRequest.from_dict(request_json)
         response = EFTRefundService.create_shortname_refund(short_name_refund)
         status = HTTPStatus.ACCEPTED
     except BusinessException as exception:

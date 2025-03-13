@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import Optional
 
 from attrs import define
+from cattrs import ClassValidationError
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.enums import APRefundMethod
@@ -90,13 +91,15 @@ class EFTShortNameRefundPostRequest(Serializable):
     country: Optional[str] = None
     delivery_instructions: Optional[str] = None
 
-    def validate_for_refund_method(self):
+    @classmethod
+    def validate_for_refund_method(cls):
         """Validate refund request - cheque needs mailing info, eft needs cas info."""
+
         def check_missing_fields(required_fields):
-            return [field for field in required_fields if getattr(self, field, None) is None]
+            return [field for field in required_fields if getattr(cls, field, None) is None]
 
         invalid_request = check_missing_fields(["short_name_id", "refund_amount", "refund_email", "refund_method"])
-        match self.refund_method:
+        match cls.refund_method:
             case APRefundMethod.EFT.value:
                 invalid_request = check_missing_fields(["cas_supplier_number", "cas_supplier_site"])
             case APRefundMethod.CHEQUE.value:
@@ -105,8 +108,18 @@ class EFTShortNameRefundPostRequest(Serializable):
                 )
             case _:
                 invalid_request = True
-        if self.refund_amount <= 0 or invalid_request:
+        if cls.refund_amount <= 0 or invalid_request:
             raise BusinessException(Error.INVALID_REFUND)
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """Convert from request args to EFTShortNameSearchDTO."""
+        try:
+            dto = super().from_dict(data)
+            return dto
+        # This is for missing a required field.
+        except ClassValidationError as cve:
+            raise BusinessException(Error.INVALID_REQUEST) from cve
 
 
 @define
