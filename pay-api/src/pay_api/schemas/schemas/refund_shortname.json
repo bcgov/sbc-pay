@@ -4,8 +4,7 @@
   "type": "object",
   "title": "Refund",
   "required":[
-    "shortNameId", "refundAmount", "casSupplierNum", "casSupplierSite", "refundEmail",
-    "refundMethod"
+    "shortNameId", "refundAmount", "refundEmail", "refundMethod"
   ],
   "properties":{
     "short_name_id":{
