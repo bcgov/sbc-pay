@@ -4,7 +4,8 @@
   "type": "object",
   "title": "Refund",
   "required":[
-    "shortNameId", "refundAmount", "casSupplierNum", "casSupplierSite", "refundEmail"
+    "shortNameId", "refundAmount", "casSupplierNum", "casSupplierSite", "refundEmail",
+    "refundMethod"
   ],
   "properties":{
     "short_name_id":{
@@ -65,6 +66,97 @@
       "default":"",
       "examples":[
         "for comment test"
+      ]
+    },
+    "refund_method":{
+      "$id":"#/properties/refundMethod",
+      "type":"string",
+      "title":"Refund Method",
+      "description":"refund method.",
+      "default":"",
+      "examples":[
+        "CHEQUE",
+        "EFT"
+      ]
+    },
+    "entity_name":{
+      "$id":"#/properties/entityName",
+      "type":"string",
+      "title":"Entity Name",
+      "description":"entity name.",
+      "default":"",
+      "examples":[
+        "test"
+      ]
+    },
+    "street":{
+      "$id":"#/properties/street",
+      "type":"string",
+      "title":"Street",
+      "description":"street.",
+      "default":"",
+      "examples":[
+        "1234"
+      ]
+    },
+    "street_additional":{
+      "$id":"#/properties/streetAdditional",
+      "type":"string",
+      "title":"Street Additional",
+      "description":"street additional.",
+      "default":"",
+      "examples":[
+        "1234"
+      ]
+    },
+    "city":{
+      "$id":"#/properties/city",
+      "type":"string",
+      "title":"City",
+      "description":"city.",
+      "default":"",
+      "examples":[
+        "vancouver"
+      ]
+    },
+    "region":{
+      "$id":"#/properties/region",
+      "type":"string",
+      "title":"Region",
+      "description":"region.",
+      "default":"",
+      "examples":[
+        "BC"
+      ]
+    },
+    "postal_code":{
+      "$id":"#/properties/postalCode",
+      "type":"string",
+      "title":"Postal Code",
+      "description":"postal code.",
+      "default":"",
+      "examples":[
+        "V5Z 1A1"
+      ]
+    },
+    "country":{
+      "$id":"#/properties/country",
+      "type":"string",
+      "title":"Country",
+      "description":"country.",
+      "default":"",
+      "examples":[
+        "Canada"
+      ]
+    },
+    "delivery_instructions":{
+      "$id":"#/properties/deliveryInstructions",
+      "type":"string",
+      "title":"Delivery Instructions",
+      "description":"delivery instructions.",
+      "default":"",
+      "examples":[
+        "for delivery instructions test"
       ]
     }
   }
