@@ -95,6 +95,8 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
     amount: Decimal
     invoice_id: int
     eft_refund_id: int
+    eft_refund_method: str
+    eft_refund_cheque_status: str
     statement_number: int
     short_name_id: int
     short_name_balance: Decimal
@@ -119,6 +121,8 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
             account_branch=getattr(row, "account_branch", None),
             invoice_id=getattr(row, "invoice_id", None),
             eft_refund_id=getattr(row, "eft_refund_id", None),
+            eft_refund_method=getattr(row, "refund_method", None),
+            eft_refund_cheque_status=getattr(row, "cheque_status", None),
             statement_number=getattr(row, "statement_number", None),
             transaction_date=getattr(row, "transaction_date", None),
             transaction_type=getattr(row, "transaction_type", None),

@@ -23,7 +23,14 @@ from freezegun import freeze_time
 
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
-from pay_api.utils.enums import EFTHistoricalTypes, InvoiceStatus, PaymentMethod, Role
+from pay_api.utils.enums import (
+    APRefundMethod,
+    ChequeRefundStatus,
+    EFTHistoricalTypes,
+    InvoiceStatus,
+    PaymentMethod,
+    Role,
+)
 from tests.utilities.base_test import (
     factory_eft_refund,
     factory_eft_shortname,
@@ -232,7 +239,12 @@ def test_search_shortname_refund_history(session, client, jwt, app):
     transaction_date = datetime(2024, 7, 31, 0, 0, 0)
     with freeze_time(transaction_date):
         payment_account, short_name = setup_test_data(exclude_history=True)
-        eft_refund = factory_eft_refund(short_name.id, refund_amount=100).save()
+        eft_refund = factory_eft_refund(
+            short_name_id=short_name.id,
+            refund_amount=100,
+            refund_method=APRefundMethod.CHEQUE.value,
+            cheque_status=ChequeRefundStatus.PROCESSING.value,
+        ).save()
         EFTHistoryService.create_shortname_refund(
             EFTHistory(
                 short_name_id=short_name.id,
@@ -254,19 +266,22 @@ def test_search_shortname_refund_history(session, client, jwt, app):
         assert len(result_dict["items"]) == 1
 
         transaction_date = EFTHistoryService.transaction_date_now().strftime("%Y-%m-%dT%H:%M:%S")
-        invoice_refund = result_dict["items"][0]
-        assert invoice_refund["historicalId"] is not None
-        assert invoice_refund["isReversible"] is False
-        assert invoice_refund["accountId"] is None
-        assert invoice_refund["accountBranch"] is None
-        assert invoice_refund["accountName"] is None
-        assert invoice_refund["amount"] == 100
-        assert invoice_refund["shortNameBalance"] == 0
-        assert invoice_refund["shortNameId"] == short_name.id
-        assert invoice_refund["invoiceId"] is None
-        assert invoice_refund["statementNumber"] is None
-        assert invoice_refund["transactionType"] == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
-        assert invoice_refund["transactionDate"] == transaction_date
+        shortname_refund = result_dict["items"][0]
+        assert shortname_refund["historicalId"] is not None
+        assert shortname_refund["isReversible"] is False
+        assert shortname_refund["accountId"] is None
+        assert shortname_refund["accountBranch"] is None
+        assert shortname_refund["accountName"] is None
+        assert shortname_refund["amount"] == 100
+        assert shortname_refund["shortNameBalance"] == 0
+        assert shortname_refund["shortNameId"] == short_name.id
+        assert shortname_refund["invoiceId"] is None
+        assert shortname_refund["statementNumber"] is None
+        assert shortname_refund["transactionType"] == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
+        assert shortname_refund["transactionDate"] == transaction_date
+        assert shortname_refund["eftRefundId"] == eft_refund.id
+        assert shortname_refund["eftRefundMethod"] == eft_refund.refund_method
+        assert shortname_refund["eftRefundChequeStatus"] == eft_refund.cheque_status
 
 
 def test_search_statement_paid_is_reversible(session, client, jwt, app):
