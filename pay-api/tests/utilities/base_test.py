@@ -52,7 +52,9 @@ from pay_api.models import (
 from pay_api.models.partner_disbursements import PartnerDisbursements
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
+    APRefundMethod,
     CfsAccountStatus,
+    ChequeRefundStatus,
     DisbursementStatus,
     EFTHistoricalTypes,
     EFTShortnameStatus,
@@ -972,9 +974,12 @@ def factory_eft_refund(
     status="PENDING",
     decline_reason=None,
     created_by="TEST_USER",
+    refund_method=APRefundMethod.CHEQUE.value,
+    cheque_status=ChequeRefundStatus.PROCESSING.value,
 ):
     """Return an EFT Refund."""
     return EFTRefund(
+        refund_method=refund_method,
         created_by=created_by,
         decline_reason=decline_reason,
         short_name_id=short_name_id,
@@ -984,6 +989,7 @@ def factory_eft_refund(
         refund_email=refund_email,
         comment=comment,
         status=status,
+        cheque_status=cheque_status,
     ).save()
 
 

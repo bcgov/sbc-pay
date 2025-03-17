@@ -20,6 +20,7 @@ from typing import Optional
 from sqlalchemy import and_, case, exists, false, func, select
 from sqlalchemy.orm import aliased
 
+from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EFTShortnameHistorySchema
 from pay_api.models import EFTShortnamesHistorical as EFTShortnamesHistoricalModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -231,11 +232,14 @@ class EFTShortnameHistorical:
                 cls._get_account_name(),
                 PaymentAccountModel.branch_name.label("account_branch"),
                 is_reversible_statement.label("is_reversible"),
+                EFTRefundModel.refund_method,
+                EFTRefundModel.cheque_status,
             )
             .outerjoin(
                 PaymentAccountModel,
                 PaymentAccountModel.id == history_model.payment_account_id,
             )
+            .outerjoin(EFTRefundModel, EFTRefundModel.id == history_model.eft_refund_id)
             .filter(history_model.short_name_id == short_name_id)
             .filter(history_model.hidden == false())
         )
