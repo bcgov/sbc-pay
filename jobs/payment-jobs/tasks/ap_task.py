@@ -208,7 +208,7 @@ class ApTask(CgiAP):
                     total=rs.refund_amount,
                     invoice_number=rs.number,
                     line_number=1,
-                    ap_type=APFlow.ROUTING_SLIP_TO_CHEQUE,
+                    ap_flow=APFlow.ROUTING_SLIP_TO_CHEQUE,
                 )
                 content = f"{content}{cls.get_ap_invoice_line(ap_line)}"
                 content = f"{content}{cls.get_ap_address(APFlow.ROUTING_SLIP_TO_CHEQUE, refund.details, rs.number)}"
