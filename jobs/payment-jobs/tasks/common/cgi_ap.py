@@ -68,10 +68,12 @@ class CgiAP(CgiEjv):
         )
 
         ap_header = (
-            f"{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number(ap_header.ap_flow, ap_header.ap_supplier.supplier_number)}"
+            f"{cls._feeder_number()}APIH{cls.DELIMITER}"
+            f"{cls._supplier_number(ap_header.ap_flow, ap_header.ap_supplier.supplier_number)}"
             f"{cls._supplier_location(ap_header.ap_flow, ap_header.ap_supplier.supplier_site)}"
             f"{ap_header.invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}"
-            f"GEN {ap_flow_to_disbursement_method[ap_header.ap_flow]} N{remit_code}{cls.format_amount(ap_header.total)}{currency}{effective_date}"
+            f"GEN {ap_flow_to_disbursement_method[ap_header.ap_flow]} N{remit_code}{cls.format_amount(ap_header.total)}"
+            f"{currency}{effective_date}"
             f"{term}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}"
             f"{oracle_invoice_batch_name:<30}{cls.EMPTY:<9}Y{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}"
         )
