@@ -1,4 +1,4 @@
-name: PAY-API OCP
+name: PAY API CD OCP
 
 on:
   push:
