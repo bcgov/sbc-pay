@@ -361,6 +361,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 "credit_total": float(credit_total),
                 "invoice_total": float(invoice_total),
                 "invoice_process_date": f"{datetime.now(tz=timezone.utc)}",
+                "invoice_number": invoice_response.get("invoice_number"),
             }
 
             mailer.publish_mailer_events(
