@@ -130,7 +130,7 @@ class ApTask(CgiAP):
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
             ).flush()
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
-            ap_content: str = cls.get_batch_header(batch_number)
+            content: str = cls.get_batch_header(batch_number)
             batch_total = 0
             line_count_total = 0
             for eft_refund in refunds:
@@ -146,7 +146,6 @@ class ApTask(CgiAP):
                     ap_supplier=ap_supplier,
                     ap_flow=ap_flow,
                 )
-                ap_content = f"{ap_content}{cls.get_ap_header(ap_header)}"
                 ap_line = APLine(
                     total=eft_refund.refund_amount,
                     invoice_number=eft_refund.id,
@@ -154,33 +153,25 @@ class ApTask(CgiAP):
                     ap_supplier=ap_supplier,
                     ap_flow=ap_flow,
                 )
-                ap_content = f"{ap_content}{cls.get_ap_invoice_line(ap_line)}"
+                content = f"{content}{cls.get_ap_header(ap_header)}{cls.get_ap_invoice_line(ap_line)}"
                 line_count_total += 2
                 if ap_flow == APFlow.EFT_TO_CHEQUE:
-                    ap_content = f"{ap_content}{cls.get_ap_address(eft_refund, eft_refund.id)}"
+                    content = f"{content}{cls.get_ap_address(ap_flow, eft_refund, eft_refund.id)}"
                     line_count_total += 1
-                ap_comment = cls.get_eft_ap_comment(
-                    eft_refund.comment,
-                    eft_refund.id,
-                    eft_refund.short_name_id,
-                    supplier_line=ap_supplier,
-                    ap_flow=ap_flow,
-                )
-                ap_content = f"{ap_content}{ap_comment:<40}"
+                ap_comment = cls.get_eft_ap_comment(ap_flow, eft_refund, ap_supplier)
+                content = f"{content}{ap_comment:<40}"
                 line_count_total += 1
                 batch_total += eft_refund.refund_amount
                 eft_refund.disbursement_status_code = DisbursementStatus.UPLOADED.value
 
-            batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, control_total=line_count_total)
-            ap_content = f"{ap_content}{batch_trailer}"
-            cls._create_file_and_upload(ap_content)
+            content = f"{content}{cls.get_batch_trailer(batch_number, batch_total, control_total=line_count_total)}"
+            cls._create_file_and_upload(content)
 
     @classmethod
     def _create_routing_slip_refund_file(
         cls,
     ):  # pylint:disable=too-many-locals, too-many-statements
         """Create AP file for routing slip refunds (unapplied routing slip amounts) and upload to CGI."""
-        cls.ap_type = EjvFileType.REFUND
         routing_slips_dao: List[RoutingSlipModel] = (
             db.session.query(RoutingSlipModel)
             .filter(RoutingSlipModel.status == RoutingSlipStatus.REFUND_AUTHORIZED.value)
@@ -194,13 +185,13 @@ class ApTask(CgiAP):
 
         for routing_slips in list(batched(routing_slips_dao, 250)):
             ejv_file_model: EjvFileModel = EjvFileModel(
-                file_type=cls.ap_type.value,
+                file_type=EjvFileType.REFUND.value,
                 file_ref=cls.get_file_name(),
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
             ).flush()
 
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
-            ap_content: str = cls.get_batch_header(batch_number)
+            content: str = cls.get_batch_header(batch_number)
             batch_total = 0
             total_line_count: int = 0
             for rs in routing_slips:
@@ -212,25 +203,25 @@ class ApTask(CgiAP):
                     invoice_date=datetime.now(tz=timezone.utc),
                     ap_flow=APFlow.ROUTING_SLIP_TO_CHEQUE,
                 )
-                ap_content = f"{ap_content}{cls.get_ap_header(ap_header)}"
+                content = f"{content}{cls.get_ap_header(ap_header)}"
                 ap_line = APLine(
                     total=rs.refund_amount,
                     invoice_number=rs.number,
                     line_number=1,
                     ap_type=APFlow.ROUTING_SLIP_TO_CHEQUE,
                 )
-                ap_content = f"{ap_content}{cls.get_ap_invoice_line(ap_line)}"
-                ap_content = f"{ap_content}{cls.get_ap_address(refund.details, rs.number)}"
+                content = f"{content}{cls.get_ap_invoice_line(ap_line)}"
+                content = f"{content}{cls.get_ap_address(APFlow.ROUTING_SLIP_TO_CHEQUE, refund.details, rs.number)}"
                 total_line_count += 3
                 if ap_comment := cls.get_rs_ap_comment(refund.details, rs.number):
-                    ap_content = f"{ap_content}{ap_comment:<40}"
+                    content = f"{content}{ap_comment:<40}"
                     total_line_count += 1
                 batch_total += rs.refund_amount
                 rs.status = RoutingSlipStatus.REFUND_UPLOADED.value
             batch_trailer = cls.get_batch_trailer(batch_number, float(batch_total), control_total=total_line_count)
-            ap_content = f"{ap_content}{batch_trailer}"
+            content = f"{content}{batch_trailer}"
 
-            cls._create_file_and_upload(ap_content)
+            cls._create_file_and_upload(content)
 
     @classmethod
     def get_invoices_for_disbursement(cls, partner):
@@ -293,7 +284,7 @@ class ApTask(CgiAP):
     @classmethod
     def _create_non_gov_disbursement_file(cls):  # pylint:disable=too-many-locals
         """Create AP file for disbursement for non government entities without a GL code via EFT and upload to CGI."""
-        ap_type = APFlow.NON_GOV_TO_EFT
+        ap_flow = APFlow.NON_GOV_TO_EFT
         bca_partner = CorpTypeModel.find_by_code("BCA")
         # TODO these two functions need to be reworked when we onboard BCA again.
         total_invoices: List[InvoiceModel] = cls.get_invoices_for_disbursement(
