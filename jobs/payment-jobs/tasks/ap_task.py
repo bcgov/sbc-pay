@@ -220,7 +220,6 @@ class ApTask(CgiAP):
                 rs.status = RoutingSlipStatus.REFUND_UPLOADED.value
             batch_trailer = cls.get_batch_trailer(batch_number, float(batch_total), control_total=total_line_count)
             content = f"{content}{batch_trailer}"
-
             cls._create_file_and_upload(content)
 
     @classmethod
