@@ -455,6 +455,7 @@ def factory_create_eft_refund(
     short_name_id: int = 1,
     status: str = InvoiceStatus.APPROVED.value,
     disbursement_status_code: str = DisbursementStatus.ACKNOWLEDGED.value,
+    refund_method: str = PaymentMethod.EFT.value,
 ):
     """Return Factory."""
     eft_refund = EFTRefund(
@@ -467,6 +468,7 @@ def factory_create_eft_refund(
         short_name_id=short_name_id,
         status=status,
         created_on=datetime.now(tz=timezone.utc),
+        refund_method=refund_method
     )
     return eft_refund
 
