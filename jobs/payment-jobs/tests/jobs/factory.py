@@ -468,7 +468,7 @@ def factory_create_eft_refund(
         short_name_id=short_name_id,
         status=status,
         created_on=datetime.now(tz=timezone.utc),
-        refund_method=refund_method
+        refund_method=refund_method,
     )
     return eft_refund
 
