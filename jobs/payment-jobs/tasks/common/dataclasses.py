@@ -93,24 +93,24 @@ class APSupplier:
 class APHeader:
     """Used as a parameter to build AP header."""
 
+    ap_flow: APFlow
     total: float
     invoice_number: str
     invoice_date: Date = None
     ap_supplier: APSupplier = field(default_factory=APSupplier)
-    ap_flow: APFlow
 
 
 @dataclass
 class APLine:
     """Used as a parameter to build AP inbox files."""
 
+    ap_flow: APFlow
     total: float
     invoice_number: str
     line_number: int
     is_reversal: Optional[bool] = None
     distribution: Optional[str] = None
     ap_supplier: APSupplier = field(default_factory=APSupplier)
-    ap_flow: APFlow
 
     @classmethod
     def from_invoice_and_line_item(

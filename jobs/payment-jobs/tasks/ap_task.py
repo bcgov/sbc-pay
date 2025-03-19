@@ -140,18 +140,18 @@ class ApTask(CgiAP):
                     f"Creating refund for EFT Refund {eft_refund.id}, {ap_flow.value} Amount {eft_refund.refund_amount}"
                 )
                 ap_header = APHeader(
+                    ap_flow=ap_flow,
                     total=eft_refund.refund_amount,
                     invoice_number=eft_refund.id,
                     invoice_date=eft_refund.created_on,
                     ap_supplier=ap_supplier,
-                    ap_flow=ap_flow,
                 )
                 ap_line = APLine(
+                    ap_flow=ap_flow,
                     total=eft_refund.refund_amount,
                     invoice_number=eft_refund.id,
                     line_number=line_count_total + 1,
                     ap_supplier=ap_supplier,
-                    ap_flow=ap_flow,
                 )
                 content = f"{content}{cls.get_ap_header(ap_header)}{cls.get_ap_invoice_line(ap_line)}"
                 line_count_total += 2
