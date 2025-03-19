@@ -256,7 +256,7 @@ class CgiAP(CgiEjv):
     def _get_line_code(cls, ap_line: APLine):
         """Get line code."""
         match ap_line.ap_flow:
-            case APFlow.EFT_TO_EFT | APFlow.EFT_TO_CHEQUE:
+            case APFlow.EFT_TO_EFT | APFlow.EFT_TO_CHEQUE | APFlow.ROUTING_SLIP_TO_CHEQUE:
                 return "D"
             case EjvFileType.NON_GOV_DISBURSEMENT:
                 return "C" if ap_line.is_reversal else "D"
