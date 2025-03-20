@@ -258,7 +258,7 @@ class CgiAP(CgiEjv):
         match ap_line.ap_flow:
             case APFlow.EFT_TO_EFT | APFlow.EFT_TO_CHEQUE | APFlow.ROUTING_SLIP_TO_CHEQUE:
                 return "D"
-            case EjvFileType.NON_GOV_DISBURSEMENT:
+            case APFlow.NON_GOV_TO_EFT:
                 return "C" if ap_line.is_reversal else "D"
             case _:
                 raise RuntimeError("ap_flow not selected.")
