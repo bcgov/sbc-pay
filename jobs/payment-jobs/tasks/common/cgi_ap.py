@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 
 from flask import current_app
 from pay_api.models.eft_refund import EFTRefund
-from pay_api.utils.enums import DisbursementMethod, EjvFileType
+from pay_api.utils.enums import DisbursementMethod
 from pay_api.utils.util import get_fiscal_year
 
 from tasks.common.dataclasses import APFlow, APHeader, APLine, APSupplier
