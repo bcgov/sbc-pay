@@ -56,10 +56,10 @@ class CgiAP(CgiEjv):
         invoice_date = cls._get_date(ap_header.invoice_date)
         oracle_invoice_batch_name = cls._get_oracle_invoice_batch_name(ap_header.ap_flow, ap_header.invoice_number)
         ap_flow_to_disbursement_method = {
-            APFlow.NON_GOV_TO_EFT.value: DisbursementMethod.EFT.value,
-            APFlow.EFT_TO_CHEQUE.value: DisbursementMethod.CHEQUE.value,
-            APFlow.ROUTING_SLIP_TO_CHEQUE.value: DisbursementMethod.CHEQUE.value,
-            APFlow.EFT_TO_EFT.value: DisbursementMethod.EFT.value,
+            APFlow.NON_GOV_TO_EFT: DisbursementMethod.EFT.value,
+            APFlow.EFT_TO_CHEQUE: DisbursementMethod.CHEQUE.value,
+            APFlow.ROUTING_SLIP_TO_CHEQUE: DisbursementMethod.CHEQUE.value,
+            APFlow.EFT_TO_EFT: DisbursementMethod.EFT.value,
         }
         term = (
             f"{cls.EMPTY:<50}"
