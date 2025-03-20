@@ -311,7 +311,7 @@ class ApTask(CgiAP):
             ).flush()
 
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
-            ap_content: str = cls.get_batch_header(batch_number)
+            content: str = cls.get_batch_header(batch_number)
             batch_total = 0
             control_total: int = 0
             for inv in invoices:
@@ -325,7 +325,7 @@ class ApTask(CgiAP):
                     invoice_date=inv.created_on,
                     ap_flow=ap_flow,
                 )
-                ap_content = f"{ap_content}{cls.get_ap_header(ap_header)}"
+                content = f"{content}{cls.get_ap_header(ap_header)}"
                 control_total += 1
                 line_number: int = 0
                 for line_item in inv.payment_line_items:
@@ -333,11 +333,11 @@ class ApTask(CgiAP):
                         continue
                     ap_line = APLine.from_invoice_and_line_item(inv, line_item, line_number + 1, bca_distribution)
                     ap_line.ap_flow = ap_flow
-                    ap_content = f"{ap_content}{cls.get_ap_invoice_line(ap_line)}"
+                    content = f"{content}{cls.get_ap_invoice_line(ap_line)}"
                     line_number += 1
                 control_total += line_number
             batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, control_total=control_total)
-            ap_content = f"{ap_content}{batch_trailer}"
+            content = f"{content}{batch_trailer}"
 
             for inv in invoices:
                 db.session.add(
@@ -351,7 +351,7 @@ class ApTask(CgiAP):
                 inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
             db.session.flush()
 
-            cls._create_file_and_upload(ap_content)
+            cls._create_file_and_upload(content)
 
     @classmethod
     def _create_file_and_upload(cls, ap_content):

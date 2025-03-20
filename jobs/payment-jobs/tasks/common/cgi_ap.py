@@ -158,7 +158,7 @@ class CgiAP(CgiEjv):
         line_text = "0001"
         ap_comment_line = (
             f"{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number(ap_flow, supplier_line.supplier_number)}"
-            f"{cls._supplier_location(ap_flow, supplier_line.supplier_site)}{refund.refund_id:<50}{line_text}{comment}"
+            f"{cls._supplier_location(ap_flow, supplier_line.supplier_site)}{refund.id:<50}{line_text}{comment}"
             f"{cls.DELIMITER}{os.linesep}"
         )
         return ap_comment_line
