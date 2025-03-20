@@ -93,10 +93,10 @@ class CgiAP(CgiEjv):
             f"{cls._feeder_number()}APIL{cls.DELIMITER}{supplier_number}"
             f"{cls._supplier_location(ap_line.ap_flow, ap_line.ap_supplier.supplier_site)}{ap_line.invoice_number:<50}"
             f"{line_number}{commit_line_number}"
-            f"{cls.format_amount(ap_line.total)}{line_code}{cls._distribution(ap_line.distribution)}{cls.EMPTY:<55}"
-            f"{effective_date}{cls.EMPTY:<10}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}"
-            f"{cls.EMPTY:<20}{cls.EMPTY:<4}{cls.EMPTY:<30}{cls.EMPTY:<25}{cls.EMPTY:<30}{cls.EMPTY:<8}{cls.EMPTY:<1}"
-            f"{dist_vendor}{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}"
+            f"{cls.format_amount(ap_line.total)}{line_code}{cls._distribution(ap_line.ap_flow, ap_line.distribution)}"
+            f"{cls.EMPTY:<55}{effective_date}{cls.EMPTY:<10}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}"
+            f"{cls.EMPTY:<15}{cls.EMPTY:<20}{cls.EMPTY:<4}{cls.EMPTY:<30}{cls.EMPTY:<25}{cls.EMPTY:<30}{cls.EMPTY:<8}"
+            f"{cls.EMPTY:<1}{dist_vendor}{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}"
         )
         return ap_line
 
