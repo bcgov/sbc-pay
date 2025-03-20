@@ -106,9 +106,10 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
     @staticmethod
     def _validate_and_throw_error(instance: PaymentSystemService, payment_account: PaymentAccount):
         if isinstance(instance, PadService):
-            is_in_pad_confirmation_period = payment_account.pad_activation_date.replace(
-                tzinfo=timezone.utc
-            ) > datetime.now(tz=timezone.utc)
+            is_in_pad_confirmation_period = payment_account.pad_activation_date is not None \
+                and payment_account.pad_activation_date.replace(
+                    tzinfo=timezone.utc
+                ) > datetime.now(tz=timezone.utc)
             is_cfs_account_in_pending_status = (
                 payment_account.cfs_account_status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value
             )
