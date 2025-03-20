@@ -17,7 +17,7 @@
 Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
 from datetime import datetime, timedelta, timezone
-from unittest.mock import call, patch, ANY
+from unittest.mock import ANY, call, patch
 
 from freezegun import freeze_time
 from pay_api.models import Credit as CreditModel
