@@ -316,7 +316,7 @@ def get_shortname_refund_by_id(eft_refund_id: int):
 @bp.route("/shortname-refund/<int:eft_refund_id>", methods=["PATCH"])
 @cross_origin(origins="*")
 @_jwt.requires_auth
-@_jwt.has_one_of_roles([Role.EFT_REFUND_APPROVER.value])
+@_jwt.has_one_of_roles([Role.EFT_REFUND_APPROVER.value, Role.MANAGE_EFT.value])
 def patch_shortname_refund(eft_refund_id: int):
     """Patch EFT short name refund."""
     current_app.logger.info("<patch_eft_shortname_refund")

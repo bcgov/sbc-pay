@@ -1263,7 +1263,7 @@ def test_get_shortname_refund(session, client, jwt, query_string_factory, test_n
 
 
 @pytest.mark.parametrize(
-    "test_name, payload, role",
+    "test_name, payload, role, approve_first",
     [
         (
             "forbidden_approved_refund",
@@ -1273,6 +1273,7 @@ def test_get_shortname_refund(session, client, jwt, query_string_factory, test_n
                 status=EFTShortnameRefundStatus.APPROVED.value,
             ).to_dict(),
             Role.EFT_REFUND_APPROVER.value,
+            False,
         ),
         (
             "valid_approved_refund",
@@ -1280,18 +1281,41 @@ def test_get_shortname_refund(session, client, jwt, query_string_factory, test_n
                 comment="Test comment", decline_reason="Test reason", status=EFTShortnameRefundStatus.APPROVED.value
             ).to_dict(),
             Role.EFT_REFUND_APPROVER.value,
+            False,
         ),
         (
-            "valid_rejected_refund_and_cheque_status",
+            "valid_declined_refund",
             EFTShortNameRefundPatchRequest(
-                comment="Test comment",
-                decline_reason="Test reason",
-                status=EFTShortnameRefundStatus.DECLINED.value,
-                cheque_status=ChequeRefundStatus.CHEQUE_UNDELIVERABLE.value,
+                comment="Test comment", decline_reason="Test reason", status=EFTShortnameRefundStatus.DECLINED.value
             ).to_dict(),
             Role.EFT_REFUND_APPROVER.value,
+            False,
         ),
-        ("unauthorized", {}, Role.EFT_REFUND.value),
+        (
+            "valid_cheque_status",
+            EFTShortNameRefundPatchRequest(
+                cheque_status=ChequeRefundStatus.CHEQUE_UNDELIVERABLE.value,
+            ).to_dict(),
+            Role.MANAGE_EFT.value,
+            True,
+        ),
+        (
+            "invalid_cheque_status",
+            EFTShortNameRefundPatchRequest(
+                cheque_status=ChequeRefundStatus.CHEQUE_UNDELIVERABLE.value,
+            ).to_dict(),
+            Role.MANAGE_EFT.value,
+            False,
+        ),
+        (
+            "unauthorized_cheque_status",
+            EFTShortNameRefundPatchRequest(
+                cheque_status=ChequeRefundStatus.CHEQUE_UNDELIVERABLE.value,
+            ).to_dict(),
+            Role.VIEW_STATEMENTS.value,
+            False,
+        ),
+        ("unauthorized", {}, Role.EFT_REFUND.value, False),
         (
             "bad_transition",
             EFTShortNameRefundPatchRequest(
@@ -1300,6 +1324,7 @@ def test_get_shortname_refund(session, client, jwt, query_string_factory, test_n
                 status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
             ).to_dict(),
             Role.EFT_REFUND_APPROVER.value,
+            False,
         ),
     ],
 )
@@ -1310,6 +1335,7 @@ def test_patch_shortname_refund(
     payload,
     test_name,
     role,
+    approve_first,
     send_email_mock,
     emails_with_keycloak_role_mock,
 ):
@@ -1332,9 +1358,19 @@ def test_patch_shortname_refund(
     if test_name == "bad_transition":
         refund.status = EFTShortnameRefundStatus.APPROVED.value
         refund.save()
-    elif test_name == "valid_approved_refund":
+    elif test_name in ["valid_approved_refund", "valid_cheque_status"]:
         refund.created_by = "OTHER_USER"
         refund.save()
+
+    if approve_first:
+        token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND_APPROVER.value], username=user_name), token_header)
+        headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+        rv = client.patch(
+            f"/api/v1/eft-shortnames/shortname-refund/{refund.id}",
+            headers=headers,
+            json={"status": EFTShortnameRefundStatus.APPROVED.value},
+        )
+        assert rv.status_code == 200
 
     token = jwt.create_jwt(get_claims(roles=[role], username=user_name), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -1346,7 +1382,7 @@ def test_patch_shortname_refund(
     match test_name:
         case "forbidden_approved_refund":
             assert rv.status_code == 403
-        case "unauthorized":
+        case "unauthorized" | "unauthorized_cheque_status":
             assert rv.status_code == 401
         case "bad_transition" | "invalid_patch_refund":
             assert rv.status_code == 400
@@ -1355,19 +1391,34 @@ def test_patch_shortname_refund(
             assert rv.status_code == 200
             assert rv.json["status"] == EFTShortnameRefundStatus.APPROVED.value
             assert rv.json["comment"] == "Test comment"
+            assert rv.json.get("declineReason") is None
             assert eft_history.transaction_type == EFTHistoricalTypes.SN_REFUND_APPROVED.value
-        case "valid_rejected_refund_and_cheque_status":
+            history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]
+            assert history
+            assert history.credit_balance == refund.refund_amount
+            assert history.transaction_type == EFTHistoricalTypes.SN_REFUND_APPROVED.value
+            eft_credit = EFTCreditModel.find_by_id(eft_credit.id)
+            assert eft_credit.remaining_amount == eft_credit.amount - refund.refund_amount
+        case "valid_declined_refund":
             assert rv.status_code == 200
             assert rv.json["status"] == EFTShortnameRefundStatus.DECLINED.value
             assert rv.json["comment"] == "Test comment"
-            assert rv.json["chequeStatus"] == ChequeRefundStatus.CHEQUE_UNDELIVERABLE.value
+            assert rv.json["declineReason"] == "Test reason"
+            assert eft_history.transaction_type == EFTHistoricalTypes.SN_REFUND_DECLINED.value
             history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]
             assert history
-            assert history.credit_balance == 90 + 10
             assert history.transaction_type == EFTHistoricalTypes.SN_REFUND_DECLINED.value
             eft_credit = EFTCreditModel.find_by_id(eft_credit.id)
-            assert eft_credit.remaining_amount == 90 + 10
-            assert rv.json["declineReason"]
+            assert eft_credit.remaining_amount == eft_credit.amount
+            assert history.credit_balance == eft_credit.amount
+        case "valid_cheque_status":
+            assert rv.status_code == 200
+            assert rv.json["status"] == EFTShortnameRefundStatus.APPROVED.value
+            assert rv.json["comment"] == "test comment"
+            assert rv.json["chequeStatus"] == ChequeRefundStatus.CHEQUE_UNDELIVERABLE.value
+        case "invalid_cheque_status":
+            assert rv.status_code == 400
+            assert rv.json["type"] == Error.EFT_REFUND_CHEQUE_STATUS_INVALID_ACTION.name
         case _:
             raise ValueError(f"Invalid test case {test_name}")
 
