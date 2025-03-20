@@ -455,6 +455,13 @@ def factory_create_eft_refund(
     short_name_id: int = 1,
     status: str = InvoiceStatus.APPROVED.value,
     disbursement_status_code: str = DisbursementStatus.ACKNOWLEDGED.value,
+    refund_method: str = PaymentMethod.EFT.value,
+    entity_name: str = "TEST",
+    city: str = "Victoria",
+    region: str = "BC",
+    street: str = "655 Douglas St",
+    country: str = "CA",
+    postal_code: str = "V8V 0B6"
 ):
     """Return Factory."""
     eft_refund = EFTRefund(
@@ -467,6 +474,13 @@ def factory_create_eft_refund(
         short_name_id=short_name_id,
         status=status,
         created_on=datetime.now(tz=timezone.utc),
+        refund_method=refund_method,
+        entity_name=entity_name,
+        street=street,
+        postal_code=postal_code,
+        country=country,
+        city=city,
+        region=region,
     )
     return eft_refund
 

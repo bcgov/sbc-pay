@@ -14,6 +14,7 @@
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
 from dataclasses import dataclass, field
 from decimal import Decimal
+from enum import Enum
 from sqlite3 import Date
 from typing import List, Optional
 
@@ -25,6 +26,15 @@ from pay_api.models import PaymentLineItem as LineItemModel
 from pay_api.utils.enums import InvoiceStatus
 
 from tasks.common.enums import PaymentDetailsGlStatus
+
+
+class APFlow(Enum):
+    """Enum for AP type indicating the flow of the AP."""
+
+    EFT_TO_CHEQUE = "EFT_TO_CHEQUE"
+    EFT_TO_EFT = "EFT_TO_EFT"
+    NON_GOV_TO_EFT = "NON_GOV_TO_EFT"  # reserved for BCA only they are crown corp, can't pay via GL only EFT
+    ROUTING_SLIP_TO_CHEQUE = "ROUTING_SLIP_TO_CHEQUE"
 
 
 @dataclass
@@ -83,6 +93,7 @@ class APSupplier:
 class APHeader:
     """Used as a parameter to build AP header."""
 
+    ap_flow: APFlow
     total: float
     invoice_number: str
     invoice_date: Date = None
@@ -93,6 +104,7 @@ class APHeader:
 class APLine:
     """Used as a parameter to build AP inbox files."""
 
+    ap_flow: APFlow
     total: float
     invoice_number: str
     line_number: int
@@ -121,4 +133,5 @@ class APLine:
                 InvoiceStatus.CREDITED.value,
             ],
             distribution=distribution,
+            ap_flow=''
         )

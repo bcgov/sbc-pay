@@ -21,6 +21,7 @@ from unittest.mock import patch
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import RoutingSlip
 from pay_api.utils.enums import (
+    APRefundMethod,
     CfsAccountStatus,
     DisbursementStatus,
     EFTShortnameRefundStatus,
@@ -69,6 +70,7 @@ def test_eft_refunds(session, monkeypatch):
         refund_email="test@test.com",
         short_name_id=short_name.id,
         status=EFTShortnameRefundStatus.APPROVED.value,
+        refund_method=APRefundMethod.EFT.value,
     )
     eft_refund.save()
     eft_file = factory_create_eft_file()
@@ -78,6 +80,21 @@ def test_eft_refunds(session, monkeypatch):
         eft_transaction_id=eft_transaction.id,
         eft_file_id=eft_file.id,
     )
+    eft_refund_cheque = factory_create_eft_refund(
+        disbursement_status_code=None,
+        refund_amount=100,
+        refund_email="test@test.com",
+        short_name_id=short_name.id,
+        status=EFTShortnameRefundStatus.APPROVED.value,
+        refund_method=APRefundMethod.CHEQUE.value,
+        city="Victoria",
+        region="BC",
+        street="655 Douglas St",
+        country="CA",
+        postal_code="V8V 0B6",
+        entity_name="TEST"
+    )
+    eft_refund_cheque.save()
     factory_create_eft_credit_invoice_link(invoice_id=invoice.id, eft_credit_id=eft_credit.id)
     factory_eft_shortname_link(short_name_id=short_name.id)
 
