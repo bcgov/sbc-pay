@@ -63,7 +63,7 @@ class CgiAP(CgiEjv):
         }
         term = (
             f"{cls.EMPTY:<50}"
-            if ap_header.ap_flow in [APFlow.EFT_TO_CHEQUE.value, APFlow.ROUTING_SLIP_TO_CHEQUE.value]
+            if ap_header.ap_flow in [APFlow.EFT_TO_CHEQUE, APFlow.ROUTING_SLIP_TO_CHEQUE]
             else f"Immediate{cls.EMPTY:<41}"
         )
 
