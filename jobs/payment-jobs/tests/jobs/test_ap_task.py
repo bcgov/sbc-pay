@@ -87,6 +87,12 @@ def test_eft_refunds(session, monkeypatch):
         short_name_id=short_name.id,
         status=EFTShortnameRefundStatus.APPROVED.value,
         refund_method=APRefundMethod.CHEQUE.value,
+        city="Victoria",
+        region="BC",
+        street="655 Douglas St",
+        country="CA",
+        postal_code="V8V 0B6",
+        entity_name="TEST"
     )
     eft_refund_cheque.save()
     factory_create_eft_credit_invoice_link(invoice_id=invoice.id, eft_credit_id=eft_credit.id)

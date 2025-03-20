@@ -110,7 +110,7 @@ class CgiAP(CgiEjv):
             postal_code = refund_details.postal_code
             country = refund_details.country
             street = refund_details.street
-            street_additional = refund_details.street_additional
+            street_additional = refund_details.street_additional or f"{cls.EMPTY:<40}"
         else:
             name = refund_details["name"]
             city = refund_details["mailingAddress"]["city"]
