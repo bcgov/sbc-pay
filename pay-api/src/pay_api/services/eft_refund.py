@@ -61,6 +61,7 @@ class EFTRefund:
             comment=refund.comment,
             decline_reason=refund.decline_reason,
             refund_amount=refund.refund_amount,
+            refund_method=refund.refund_method,
             short_name_id=refund.short_name_id,
             short_name=short_name.short_name,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
