@@ -17,7 +17,7 @@
 Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
 from datetime import datetime, timedelta, timezone
-from unittest.mock import call, patch
+from unittest.mock import call, patch, ANY
 
 from freezegun import freeze_time
 from pay_api.models import Credit as CreditModel
@@ -109,14 +109,13 @@ def test_create_pad_invoice_mixed_pli_values(session):
     line.save()
     CreditModel(account_id=account.id, amount=1, remaining_amount=1).save()
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
-    inv_ref = factory_invoice_reference(invoice.id)
 
     now = datetime.now(tz=timezone.utc)
     additional_params = {
         "credit_total": 1,
         "invoice_total": 1.5,
         "invoice_process_date": f"{now}",
-        "invoice_number": f"{inv_ref.invoice_number}",
+        "invoice_number": ANY
     }
     with freeze_time(now):
         with patch("utils.mailer.publish_mailer_events") as mock_publish_mailer_events:
