@@ -105,12 +105,12 @@ class CgiAP(CgiEjv):
         """Grab data from dicts or EFTRefund objects."""
         if isinstance(refund_details, EFTRefund):
             name = refund_details.entity_name
-            city = refund_details.mailing_address.city
-            region = refund_details.mailing_address.region
-            postal_code = refund_details.mailing_address.postal_code
-            country = refund_details.mailing_address.country
-            street = refund_details.mailing_address.street
-            street_additional = refund_details.mailing_address.street_additional
+            city = refund_details.city
+            region = refund_details.region
+            postal_code = refund_details.postal_code
+            country = refund_details.country
+            street = refund_details.street
+            street_additional = refund_details.street_additional
         else:
             name = refund_details["name"]
             city = refund_details["mailingAddress"]["city"]
