@@ -40,6 +40,7 @@ from .factory import (
     factory_create_online_banking_account,
     factory_create_pad_account,
     factory_invoice,
+    factory_invoice_reference,
     factory_payment_line_item,
     factory_routing_slip_account,
 )
@@ -108,12 +109,14 @@ def test_create_pad_invoice_mixed_pli_values(session):
     line.save()
     CreditModel(account_id=account.id, amount=1, remaining_amount=1).save()
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+    inv_ref = factory_invoice_reference(invoice.id)
 
     now = datetime.now(tz=timezone.utc)
     additional_params = {
         "credit_total": 1,
         "invoice_total": 1.5,
         "invoice_process_date": f"{now}",
+        "invoice_number": f"{inv_ref.invoice_number}",
     }
     with freeze_time(now):
         with patch("utils.mailer.publish_mailer_events") as mock_publish_mailer_events:
