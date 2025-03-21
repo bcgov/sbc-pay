@@ -36,6 +36,7 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.ejv_pay_service import EjvPayService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
+    APRefundMethod,
     ChequeRefundStatus,
     DisbursementStatus,
     EFTShortnameRefundStatus,
@@ -504,6 +505,8 @@ def _process_ap_header_eft(line) -> bool:
         eft_refund.status = EFTShortnameRefundStatus.COMPLETED.value
         eft_refund.disbursement_status_code = DisbursementStatus.COMPLETED.value
         eft_refund.disbursement_date = datetime.now(tz=timezone.utc)
+        if eft_refund.refund_method == APRefundMethod.CHEQUE.value:
+            eft_refund.cheque_status = ChequeRefundStatus.PROCESSED.value
     eft_refund.save()
     return has_errors
 
