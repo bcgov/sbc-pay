@@ -3,7 +3,7 @@
 from decimal import Decimal
 from typing import List
 
-from flask import current_app
+from flask import abort, current_app
 
 from pay_api.dtos.eft_shortname import (
     EFTShortNameRefundGetRequest,
@@ -28,7 +28,7 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     Role,
 )
-from pay_api.utils.user_context import user_context
+from pay_api.utils.user_context import UserContext, user_context
 
 
 class EFTRefund:
@@ -61,6 +61,7 @@ class EFTRefund:
             comment=refund.comment,
             decline_reason=refund.decline_reason,
             refund_amount=refund.refund_amount,
+            refund_method=refund.refund_method,
             short_name_id=refund.short_name_id,
             short_name=short_name.short_name,
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
@@ -191,19 +192,21 @@ class EFTRefund:
 
     @staticmethod
     @user_context
-    def update_shortname_refund(refund_id: int, data: EFTShortNameRefundPatchRequest, **kwargs) -> EFTRefundModel:
-        """Update the refund status."""
-        refund = EFTRefundModel.find_by_id(refund_id)
+    def _approve_or_decline_refund(refund: EFTRefundModel, data: EFTShortNameRefundPatchRequest, **kwargs):
+        """Approve or decline an EFT Refund."""
+        user: UserContext = kwargs["user"]
+        if not user.has_role(Role.EFT_REFUND_APPROVER.value):
+            abort(403)
         if refund.status != EFTShortnameRefundStatus.PENDING_APPROVAL.value:
             raise BusinessException(Error.REFUND_ALREADY_FINALIZED)
+
         refund.comment = data.comment or refund.comment
         refund.status = data.status or refund.status
-        refund.decline_reason = data.decline_reason or refund.decline_reason
-        refund.cheque_status = data.cheque_status or refund.cheque_status
-        refund.save_or_add(auto_save=False)
+
         short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
         match data.status:
             case EFTShortnameRefundStatus.DECLINED.value:
+                refund.decline_reason = data.decline_reason or refund.decline_reason
                 EFTRefund.reverse_eft_credits(refund.short_name_id, refund.refund_amount)
                 history = EFTHistoryModel.find_by_eft_refund_id(refund.id)[0]
                 history.transaction_type = EFTHistoricalTypes.SN_REFUND_DECLINED.value
@@ -214,6 +217,7 @@ class EFTRefund:
                     comment=refund.comment,
                     decline_reason=refund.decline_reason,
                     refund_amount=refund.refund_amount,
+                    refund_method=refund.refund_method,
                     short_name_id=refund.short_name_id,
                     short_name=short_name.short_name,
                     status=data.status,
@@ -222,9 +226,8 @@ class EFTRefund:
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
                 send_email(expense_authority_recipients, subject, body)
             case EFTShortnameRefundStatus.APPROVED.value:
-                if kwargs["user"].user_name == refund.created_by:
+                if user.user_name == refund.created_by:
                     raise BusinessException(Error.EFT_REFUND_SAME_USER_APPROVAL_FORBIDDEN)
-
                 history = EFTHistoryModel.find_by_eft_refund_id(refund.id)[0]
                 history.transaction_type = EFTHistoricalTypes.SN_REFUND_APPROVED.value
                 history.save()
@@ -233,6 +236,7 @@ class EFTRefund:
                     comment=refund.comment,
                     decline_reason=refund.decline_reason,
                     refund_amount=refund.refund_amount,
+                    refund_method=refund.refund_method,
                     short_name_id=refund.short_name_id,
                     short_name=short_name.short_name,
                     status=data.status,
@@ -246,6 +250,24 @@ class EFTRefund:
                 send_email(client_recipients, subject, client_body)
             case _:
                 raise NotImplementedError("Invalid status")
+
+    @staticmethod
+    def _update_refund_cheque_status(refund: EFTRefundModel, data: EFTShortNameRefundPatchRequest):
+        """Update EFT Refund cheque status."""
+        if refund.status != EFTShortnameRefundStatus.APPROVED.value and data.cheque_status:
+            raise BusinessException(Error.EFT_REFUND_CHEQUE_STATUS_INVALID_ACTION)
+        refund.cheque_status = data.cheque_status or refund.cheque_status
+
+    @staticmethod
+    def update_shortname_refund(refund_id: int, data: EFTShortNameRefundPatchRequest) -> EFTRefundModel:
+        """Update the refund status."""
+        refund = EFTRefundModel.find_by_id(refund_id)
+        if data.cheque_status:
+            EFTRefund._update_refund_cheque_status(refund, data)
+        else:
+            EFTRefund._approve_or_decline_refund(refund, data)
+
+        refund.save()
         return refund.to_dict()
 
     @staticmethod

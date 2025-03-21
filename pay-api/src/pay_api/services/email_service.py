@@ -67,6 +67,7 @@ class ShortNameRefundEmailContent(Serializable):
     comment: str
     decline_reason: str
     refund_amount: Decimal
+    refund_method: str
     short_name_id: int
     short_name: str
     status: str
