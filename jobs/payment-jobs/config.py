@@ -199,7 +199,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CFS_FAS_CLIENT_SECRET = os.getenv("CFS_FAS_CLIENT_SECRET", "")
 
     # EFT variables
-    EFT_HOLDING_GL = os.getenv("EFT_HOLDING_GL", "")
     EFT_TRANSFER_DESC = os.getenv("EFT_TRANSFER_DESC", "BCREGISTRIES {} {} EFT TRANSFER")
     EFT_OVERDUE_NOTIFY_EMAILS = os.getenv("EFT_OVERDUE_NOTIFY_EMAILS", "")
 
