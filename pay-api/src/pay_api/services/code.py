@@ -103,6 +103,7 @@ class Code:
             corp_types = (
                 CorpType.query.with_entities(CorpType.product, func.coalesce(CorpType.payment_methods, []))
                 .filter(CorpType.product.isnot(None))  # Exclude None at the query level
+                .filter(func.cardinality(CorpType.payment_methods) > 0)  # Only include non-empty payment methods
                 .distinct()
                 .all()
             )
