@@ -49,11 +49,8 @@ def build_subject(report: ReportData):
         case ReportFiles.WEEKLY_PAY.value:
             return f"Weekly PAY Stats till {date_str} {ext}"
         case ReportFiles.RECONCILIATION_SUMMARY.value:
-            date_string, is_monthly = convert_utc_date_to_inclusion_dates(report.from_date, report.to_date)
-            if is_monthly:
-                return f"{report.partner_code} Monthly Reconciliation Stats from {date_string} {ext}"
-            else:
-                return f"{report.partner_code} Weekly Reconciliation Stats from {date_string} {ext}"
+            date_string, _ = convert_utc_date_to_inclusion_dates(report.from_date, report.to_date)
+            return f"{report.partner_code} Reconciliation Stats from {date_string} {ext}"
 
 
 def build_recipients(report: ReportData):
