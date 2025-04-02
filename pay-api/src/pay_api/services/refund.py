@@ -36,6 +36,7 @@ from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
     ChequeRefundStatus,
     InvoiceStatus,
+    PaymentMethod,
     RefundsPartialType,
     Role,
     RoutingSlipStatus,
@@ -310,8 +311,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _validate_allow_partial_refund(cls, refund_revenue, invoice: InvoiceModel):
         if refund_revenue:
-            if invoice.corp_type.has_partner_disbursements:
-                raise BusinessException(Error.PARTIAL_REFUND_DISBURSEMENTS_UNSUPPORTED)
+            if invoice.payment_method_code != PaymentMethod.DIRECT_PAY.value:
+                raise BusinessException(Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED)
 
     @classmethod
     @user_context

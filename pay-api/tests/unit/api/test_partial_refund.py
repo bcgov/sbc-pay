@@ -185,8 +185,8 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     assert len(refunds_partial) == 0
 
 
-def test_refund_validation_for_disbursements(session, client, jwt, app, monkeypatch):
-    """Assert that the partial refund amount validation returns 400 when the invoice corp_type has disbursements."""
+def test_refund_validation_for_payment_method(session, client, jwt, app, monkeypatch):
+    """Assert that the partial refund amount validation returns 400 when the invoice is not DIRECT_PAY."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
@@ -199,6 +199,7 @@ def test_refund_validation_for_disbursements(session, client, jwt, app, monkeypa
     invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
     invoice.corp_type_code = "VS"
+    invoice.payment_method_code = "EFT"
     invoice.save()
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
@@ -213,13 +214,21 @@ def test_refund_validation_for_disbursements(session, client, jwt, app, monkeypa
         }
     ]
 
+    def mock_process_cfs_refund(self, invoice, payment_account, refund_partial):
+        return "REFUNDED"
+
+    monkeypatch.setattr(
+        "pay_api.services.direct_pay_service.DirectPayService.process_cfs_refund",
+        mock_process_cfs_refund,
+    )
+
     rv = client.post(
         f"/api/v1/payment-requests/{inv_id}/refunds",
         data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
         headers=headers,
     )
     assert rv.status_code == 400
-    assert rv.json.get("type") == Error.PARTIAL_REFUND_DISBURSEMENTS_UNSUPPORTED.name
+    assert rv.json.get("type") == Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED.name
     assert RefundModel.find_by_invoice_id(inv_id) is None
 
 
