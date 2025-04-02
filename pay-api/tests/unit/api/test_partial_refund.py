@@ -185,8 +185,8 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     assert len(refunds_partial) == 0
 
 
-def test_refund_validation_for_disbursements(session, client, jwt, app, monkeypatch):
-    """Assert that the partial refund amount validation returns 400 when the invoice corp_type has disbursements."""
+def test_refund_validation_for_payment_method(session, client, jwt, app, monkeypatch):
+    """Assert that the partial refund amount validation returns 400 when the invoice is not DIRECT_PAY."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
