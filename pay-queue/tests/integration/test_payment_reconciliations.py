@@ -1075,3 +1075,73 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     assert email_params.minio_location == "payment-sftp"
     assert email_params.error_messages == error_messages
     assert email_params.table_name == CasSettlementModel.__tablename__
+
+
+def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(session, app, client):
+    """Test reconciliation skips invoice row when a COMPLETED consolidated (-C) version exists."""
+    cfs_account_number = "PAD_ACC_C_TEST"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=50.0,
+        service_fees=5.0,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=45.0, service_fees=5.0, total=45.0)
+    invoice_id = invoice.id
+    total = invoice.total
+
+    base_invoice_number = "PADINV001"
+    consolidated_invoice_number = f"{base_invoice_number}-C"
+
+    # - Base invoice reference is CANCELLED
+    factory_invoice_reference(
+        invoice_id=invoice.id,
+        invoice_number=base_invoice_number,
+        status_code=InvoiceReferenceStatus.CANCELLED.value
+    )
+    # - Consolidated invoice reference (-C) is COMPLETED (linking to the same invoice)
+    factory_invoice_reference(
+        invoice_id=invoice.id,
+        invoice_number=consolidated_invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value
+    )
+
+    file_name: str = "cas_settlement_consolidated_skip_test.csv"
+    receipt_number = "PADRCPT001"
+    date = datetime.now().strftime("%d-%b-%y")
+    row = [
+        RecordType.PAD.value,
+        SourceTransaction.PAD.value,
+        receipt_number,
+        200001,
+        date,
+        total,
+        cfs_account_number,
+        TargetTransaction.INV.value,
+        base_invoice_number,
+        total,
+        0,
+        Status.PAID.value,
+    ]
+    create_and_upload_settlement_file(file_name, [row])
+
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
+
+    updated_invoice = InvoiceModel.find_by_id(invoice_id)
+    assert updated_invoice.invoice_status_code == InvoiceStatus.PAID.value
+
+    payment: PaymentModel = PaymentModel.find_payment_by_receipt_number(receipt_number)
+    assert payment is not None, "Payment record should have been created"
+    assert payment.payment_status_code == PaymentStatus.COMPLETED.value
+    assert payment.paid_amount == total
+    assert payment.invoice_number == base_invoice_number
+
+    receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id, receipt_number)
+    assert receipt is None, "Receipt should not have been created by the skipped processing step"
