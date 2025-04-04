@@ -407,8 +407,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                         "Invoice %s not found as COMPLETED, but consolidated version %s found as COMPLETED. "
                         "It's paid by credit card. Skipping.",
                         inv_number,
-                        consolidated_inv_number,
-                        inv_number
+                        consolidated_inv_number
                     )
                     # Skip raising error for this specific case, assuming the -C row handles the actual completion.
                     return has_errors

@@ -1078,7 +1078,7 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
 
 
 def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(session, app, client):
-    """Test reconciliation skips processing a PAID base invoice row when a COMPLETED consolidated (-C) version exists."""
+    """Test reconciliation skips invoice row when a COMPLETED consolidated (-C) version exists."""
     cfs_account_number = "PAD_ACC_C_TEST"
     pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
 
