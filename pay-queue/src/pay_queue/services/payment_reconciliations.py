@@ -404,7 +404,8 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 )
                 if consolidated_completed_ref:
                     current_app.logger.warning(
-                        "Invoice %s not found as COMPLETED, but consolidated version %s found as COMPLETED. It's paid by credit card. Skipping.",
+                        "Invoice %s not found as COMPLETED, but consolidated version %s found as COMPLETED. "
+                        "It's paid by credit card. Skipping.",
                         inv_number,
                         consolidated_inv_number,
                         inv_number
