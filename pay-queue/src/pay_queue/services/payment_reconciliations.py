@@ -397,6 +397,22 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
 
             # REGT (TEST) and REGUT (DEV) are mixed in TEST, because DEV and TEST point to CFS TEST.
             if not inv_references and not completed_inv_references:
+                # Check if a corresponding consolidated invoice reference exists and is completed
+                consolidated_inv_number = f"{inv_number}-C"
+                consolidated_completed_ref = _find_invoice_reference_by_number_and_status(
+                    consolidated_inv_number, InvoiceReferenceStatus.COMPLETED.value
+                )
+                if consolidated_completed_ref:
+                    current_app.logger.warning(
+                        "Invoice %s not found as COMPLETED, but consolidated version %s found as COMPLETED. It's paid by credit card. Skipping.",
+                        inv_number,
+                        consolidated_inv_number,
+                        inv_number
+                    )
+                    # Skip raising error for this specific case, assuming the -C row handles the actual completion.
+                    return has_errors
+
+                # Original error handling continues if no completed -C version is found
                 if inv_number.startswith("REGUT"):
                     current_app.logger.info("Ignoring dev invoice %s", inv_number)
                     return has_errors
