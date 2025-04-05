@@ -26,11 +26,10 @@ from services.data_warehouse import data_warehouse
 def app():
     """Create a Flask app instance configured for testing."""
     app = Flask(__name__)
-    app.config["DW_HOST"] = "mock_host"
+    app.config["DW_UNIX_SOCKET"] = "mock_host"
     app.config["DW_PORT"] = 5432
     app.config["DW_NAME"] = "mock_database"
-    app.config["DW_USER"] = "mock_user"
-    app.config["DW_PASSWORD"] = "mock_password"
+    app.config["DW_IAM_USER"] = "mock_user"
     return app
 
 
@@ -43,11 +42,13 @@ def test_data_warehouse_connection(mock_connector, mock_create_engine, app):
     mock_create_engine.return_value = mock_engine
     mock_engine.connect.return_value.__enter__.return_value = mock_connection
 
+    # Setup mock results
     mock_result = [(1,)]
     mock_connection.execute.return_value.fetchone.return_value = mock_result[0]
     mock_connector.return_value.connect.return_value = mock_connection
 
-    data_warehouse.init_app(app)
+    # Initialize with test_connection=False to avoid the first execute call
+    data_warehouse.init_app(app, test_connection=False)
 
     with app.app_context():
         with data_warehouse.engine.connect() as connection:
