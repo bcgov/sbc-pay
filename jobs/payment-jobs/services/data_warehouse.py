@@ -72,8 +72,9 @@ class DataWarehouseDB:
                 creator=lambda: self._get_iam_connection(db_config),
                 pool_size=5,
                 max_overflow=2,
-                pool_timeout=30,
+                pool_timeout=10,
                 pool_recycle=1800,
+                connect_args={"use_native_uuid": False},
             )
 
             if test_connection:
