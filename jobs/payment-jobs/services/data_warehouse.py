@@ -20,93 +20,93 @@ These will get initialized by the application.
 
 from dataclasses import dataclass
 
-import pg8000
 from google.cloud.sql.connector import Connector
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 
 @dataclass
 class DBConfig:
-    """Database configuration settings."""
+    """Database configuration settings for IAM authentication."""
 
+    instance_connection_name: str  # Format: "project:region:instance"
     database: str
-    user: str
-    password: str
-    unix_sock: str = None
-    host: str = None  # Optional for TCP connection
-    port: int = 5432  # Optional with default for PostgreSQL
-
-
-def getconn(connector: Connector, db_config: DBConfig) -> object:
-    """Create a database connection.
-
-    Args:
-        connector (Connector): The Google Cloud SQL connector instance.
-        db_config (DBConfig): The database configuration.
-
-    Returns:
-        object: A connection object to the database.
-    """
-    if db_config.unix_sock:
-        # Use Unix socket connection with the Connector for deployment
-        instance_connection_string = db_config.unix_sock.replace("/cloudsql/", "")
-        return connector.connect(
-            instance_connection_string=instance_connection_string,
-            ip_type="public",
-            user=db_config.user,
-            password=db_config.password,
-            db=db_config.database,
-            driver="pg8000",
-        )
-    else:
-        conn = pg8000.connect(
-            database=db_config.database,
-            user=db_config.user,
-            password=db_config.password,
-            host=db_config.host,
-            port=db_config.port,
-        )
-        return conn
+    user: str  # IAM user email format: "user@project.iam"
+    enable_iam_auth: bool = True
 
 
 class DataWarehouseDB:
-    """Data Warehouse database connection object for re-use in application."""
+    """Data Warehouse connection using IAM authentication."""
 
     def __init__(self, app=None):
-        """Initialize app context on instantiation."""
         self.connector = None
+        self.engine = None
         if app:
             self.init_app(app)
 
-    def init_app(self, app):
-        """Initialize the app with the Data Warehouse engine and session."""
-        self.connector = Connector(refresh_strategy="lazy")
+    def init_app(self, app, test_connection=True):
+        """Initialize with option to skip connection test."""
+        try:
+            # Validate configuration
+            required_configs = {
+                "DW_UNIX_SOCKET": "Instance connection name",
+                "DW_NAME": "Database name",
+                "DW_IAM_USER": "IAM user email",
+            }
 
-        db_config = DBConfig(
-            unix_sock=app.config.get("DW_UNIX_SOCKET"),
-            host=app.config.get("DW_HOST"),
-            port=app.config.get("DW_PORT", 5432),
-            database=app.config.get("DW_NAME"),
-            user=app.config.get("DW_USER"),
-            password=app.config.get("DW_PASSWORD"),
+            missing = [k for k in required_configs if not app.config.get(k)]
+            if missing:
+                raise ValueError(f"Missing configs: {', '.join(missing)}")
+
+            self.connector = Connector()
+
+            db_config = DBConfig(
+                instance_connection_name=app.config["DW_UNIX_SOCKET"],
+                database=app.config["DW_NAME"],
+                user=app.config["DW_IAM_USER"],
+                enable_iam_auth=True,
+            )
+
+            self.engine = create_engine(
+                "postgresql+pg8000://",
+                creator=lambda: self._get_iam_connection(db_config),
+                pool_size=5,
+                max_overflow=2,
+                pool_timeout=30,
+                pool_recycle=1800,
+            )
+
+            if test_connection:
+                self._test_connection()
+
+        except Exception as e:
+            app.logger.error(f"Data Warehouse init failed: {str(e)}")
+            if self.connector:
+                self.connector.close()
+            raise
+
+    def _get_iam_connection(self, db_config: DBConfig):
+        """Establish connection using IAM authentication."""
+        return self.connector.connect(
+            db_config.instance_connection_name,
+            "pg8000",
+            ip_type="public",
+            db=db_config.database,
+            user=db_config.user,
+            enable_iam_auth=db_config.enable_iam_auth,
         )
 
-        self.engine = create_engine(
-            "postgresql+pg8000://",
-            creator=lambda: getconn(self.connector, db_config),
-            pool_size=5,
-            max_overflow=2,
-            pool_timeout=10,
-            pool_recycle=1800,
-            connect_args={"use_native_uuid": False},
-        )
-
-        app.teardown_appcontext(self.teardown)
+    def _test_connection(self):
+        """Test the database connection using proper SQLAlchemy text() construct."""
+        with self.engine.connect() as conn:
+            # Wrap the SQL string in text() for proper execution
+            result = conn.execute(text("SELECT version()")).fetchone()
+            print(f"Connection successful. Database version: {result[0]}")
 
     def teardown(self, exception=None):
-        """Close the connector on teardown."""
-        self.connector.close()
+        """Clean up resources."""
+        if self.connector:
+            self.connector.close()
 
     @property
     def session(self):
