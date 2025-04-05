@@ -76,8 +76,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # Data Warehouse Settings
     DW_UNIX_SOCKET = os.getenv("DW_UNIX_SOCKET", "")
     DW_NAME = os.getenv("DW_NAME", "")
-    DW_HOST = os.getenv("DW_HOST", "")
-    DW_PORT = os.getenv("DW_PORT", "5432")
     DW_IAM_USER = os.getenv("DW_IAM_USER", "")
 
     # PAYBC Direct Pay Settings
