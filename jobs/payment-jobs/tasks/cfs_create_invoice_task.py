@@ -207,11 +207,11 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 # If no invoice is created raise an error for sentry
                 if not has_invoice_created:
                     capture_message(
-                        f"Error on creating routing slip invoice: account id={invoice.payment_account.id}, "
+                        f"Error on creating routing slip invoice {invoice.id}: account id={invoice.payment_account.id},"
                         f"auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}",
                         level="error",
                     )
-                    current_app.logger.error(e)
+                    current_app.logger.error(f'Error on invoice: {invoice.id} error: {e}')
                     continue
 
             invoice_number = invoice_response.get("invoice_number", None)
