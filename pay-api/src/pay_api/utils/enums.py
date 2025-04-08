@@ -146,7 +146,7 @@ class Role(Enum):
     VIEW_STATEMENT_SETTINGS = "view_statement_settings"
     VIEW_ACCOUNT_TRANSACTIONS = "view_account_transactions"
     API_USER = "api_user"
-    CSO = "cso"
+    CSO_REFUNDS = "cso_refunds"
 
 
 class Code(Enum):
