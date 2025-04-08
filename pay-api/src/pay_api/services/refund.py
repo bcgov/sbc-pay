@@ -326,7 +326,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         if Role.CSO.value in user.roles:
             if invoice.corp_type_code != CorpType.CSO.value:
                 raise BusinessException(Error.INVALID_REQUEST)
-    
+
         paid_statuses = (
             InvoiceStatus.PAID.value,
             InvoiceStatus.APPROVED.value,
