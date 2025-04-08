@@ -35,6 +35,7 @@ from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
     ChequeRefundStatus,
+    CorpType,
     InvoiceStatus,
     PaymentMethod,
     RefundsPartialType,
@@ -321,7 +322,11 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug(f"Starting refund : {invoice_id}")
         # Do validation by looking up the invoice
         invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
-
+        user: UserContext = kwargs["user"]
+        if Role.CSO.value in user.roles:
+            if invoice.corp_type_code != CorpType.CSO.value:
+                raise BusinessException(Error.INVALID_REQUEST)
+    
         paid_statuses = (
             InvoiceStatus.PAID.value,
             InvoiceStatus.APPROVED.value,
