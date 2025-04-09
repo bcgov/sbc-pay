@@ -1301,7 +1301,6 @@ def test_create_sandbox_payment_requests(session, client, jwt, app, account_payl
         data=json.dumps(account_payload),
         headers=headers,
     )
-    app.config["ENVIRONMENT_NAME"] = "local"
 
     auth_account_id = rv.json.get("accountId")
 
@@ -1314,6 +1313,8 @@ def test_create_sandbox_payment_requests(session, client, jwt, app, account_payl
 
     payload = get_payment_request()
     rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
+
+    app.config["ENVIRONMENT_NAME"] = "local"
 
     assert rv.json.get("paymentMethod") == pay_method
     assert rv.json.get("statusCode") == "COMPLETED"
