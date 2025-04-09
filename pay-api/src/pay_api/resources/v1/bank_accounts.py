@@ -44,6 +44,7 @@ def post_bank_account_validate():
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
+        # Remove this later after we migrate to GCP, this cannot be done unless it goes through pay-connector to OCP.
         if current_app.config("ENVIRONMENT_NAME") == "sandbox":
             # Simulate a successful response from CFS
             response = {
