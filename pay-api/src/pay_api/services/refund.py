@@ -323,7 +323,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         # Do validation by looking up the invoice
         invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
         user: UserContext = kwargs["user"]
-        if Role.CSO_REFUNDS.value in user.roles:
+        if user.roles and Role.CSO_REFUNDS.value in user.roles:
             if invoice.corp_type_code != CorpType.CSO.value:
                 raise BusinessException(Error.INVALID_REQUEST)
 
