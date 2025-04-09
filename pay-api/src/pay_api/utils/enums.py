@@ -119,7 +119,6 @@ class Role(Enum):
     VIEWER = "view"
     EDITOR = "edit"
     SYSTEM = "system"
-    CREATE_SANDBOX_ACCOUNT = "create_sandbox_account"
     MANAGE_GL_CODES = "manage_gl_codes"
     PUBLIC_USER = "public_user"
     EXCLUDE_SERVICE_FEES = "exclude_service_fees"
