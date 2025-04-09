@@ -43,10 +43,7 @@ def post_account():
     current_app.logger.debug(request_json)
 
     # Check if sandbox request is authorized.
-    is_sandbox = request.args.get("sandbox", "false").lower() == "true"
-    if is_sandbox and not _jwt.validate_roles([Role.CREATE_SANDBOX_ACCOUNT.value]):
-        abort(HTTPStatus.FORBIDDEN)
-
+    is_sandbox = current_app.config("ENVIRONMENT_NAME") == "sandbox"
     if is_sandbox and request_json.get("paymentInfo", {}).get("methodOfPayment", []) in [
         PaymentMethod.ONLINE_BANKING.value,
         PaymentMethod.DIRECT_PAY.value,

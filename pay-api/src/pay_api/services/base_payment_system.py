@@ -355,7 +355,7 @@ def skip_invoice_for_sandbox(function):
     def wrapper(*func_args, **func_kwargs):
         """Complete any post invoice activities if needed."""
         if current_app.config("ENVIRONMENT_NAME") == "sandbox":
-            current_app.logger.info("Skipping invoice creation as sandbox token is detected.")
+            current_app.logger.info("Skipping invoice creation as sandbox environment is detected.")
             invoice: Invoice = func_args[3]  # 3 is invoice from the create_invoice signature
             return InvoiceReference.create(invoice.id, f"SANDBOX-{invoice.id}", f"REF-{invoice.id}")
         return function(*func_args, **func_kwargs)
@@ -370,7 +370,7 @@ def skip_complete_post_invoice_for_sandbox(function):
     def wrapper(*func_args, **func_kwargs):
         """Complete any post invoice activities."""
         if current_app.config("ENVIRONMENT_NAME") == "sandbox":
-            current_app.logger.info("Completing the payment as sandbox token is detected.")
+            current_app.logger.info("Completing the payment as sandbox environment is detected.")
             instance: PaymentSystemService = func_args[0]
             instance.complete_payment(func_args[1], func_args[2])  # invoice and invoice ref
             instance.release_payment_or_reversal(func_args[1])

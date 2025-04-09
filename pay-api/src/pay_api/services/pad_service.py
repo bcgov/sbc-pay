@@ -62,9 +62,9 @@ class PadService(PaymentSystemService, CFSService):
         cfs_account.bank_account_number = payment_info.get("bankAccountNumber")
         if current_app.config("ENVIRONMENT_NAME") == "sandbox":
             current_app.logger.info("Sandbox environment, using bogus bank credentials.")
-            cfs_account.bank_account_number = '1234567'
-            cfs_account.bank_number = '001'
-            cfs_account.bank_branch_number = '00720'
+            cfs_account.bank_account_number = "1234567"
+            cfs_account.bank_number = "001"
+            cfs_account.bank_branch_number = "00720"
         cfs_account.status = CfsAccountStatus.PENDING.value
         cfs_account.payment_method = PaymentMethod.PAD.value
         return cfs_account
@@ -82,7 +82,7 @@ class PadService(PaymentSystemService, CFSService):
 
             if current_app.config("ENVIRONMENT_NAME") == "sandbox":
                 current_app.logger.info("Sandbox environment, skipping CFS update.")
-                instrument_number = '1'
+                instrument_number = "1"
             else:
                 bank_details = CFSService.update_bank_details(
                     name=cfs_account.payment_account.name,
@@ -105,9 +105,9 @@ class PadService(PaymentSystemService, CFSService):
             updated_cfs_account.bank_branch_number = payment_info.get("bankTransitNumber")
             if current_app.config("ENVIRONMENT_NAME") == "sandbox":
                 current_app.logger.info("Sandbox environment, using bogus bank credentials.")
-                updated_cfs_account.bank_account_number = '1234567'
-                updated_cfs_account.bank_number = '001'
-                updated_cfs_account.bank_branch_number = '00720'
+                updated_cfs_account.bank_account_number = "1234567"
+                updated_cfs_account.bank_number = "001"
+                updated_cfs_account.bank_branch_number = "00720"
             updated_cfs_account.cfs_site = cfs_account.cfs_site
             updated_cfs_account.cfs_party = cfs_account.cfs_party
             updated_cfs_account.cfs_account = cfs_account.cfs_account
