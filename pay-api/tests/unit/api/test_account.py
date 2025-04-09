@@ -939,7 +939,7 @@ def test_account_delete(session, client, jwt, app):
     "test_name, pay_load, is_cfs_account_expected, expected_response_status, roles",
     [
         (
-            'good-unlinked-pad',
+            "good-unlinked-pad",
             get_unlinked_pad_account_payload(),
             True,
             201,
@@ -952,7 +952,7 @@ def test_account_delete(session, client, jwt, app):
             201,
             [Role.SYSTEM.value],
         ),
-        ('bad-wrong-environment', get_premium_account_payload(), False, 403, [Role.SYSTEM.value]),
+        ("bad-wrong-environment", get_premium_account_payload(), False, 403, [Role.SYSTEM.value]),
     ],
 )
 def test_create_sandbox_accounts(
@@ -960,14 +960,14 @@ def test_create_sandbox_accounts(
     client,
     jwt,
     app,
-    test_name
+    test_name,
     pay_load,
     is_cfs_account_expected,
     expected_response_status,
     roles,
 ):
     """Assert that the payment records are created with 202."""
-    if test_name != 'bad-wrong-environment':
+    if test_name != "bad-wrong-environment":
         app.config["ENVIRONMENT_NAME"] = "sandbox"
     token = jwt.create_jwt(get_claims(roles=roles), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
