@@ -199,6 +199,9 @@ class _Config:  # pylint: disable=too-few-public-methods
     ALLOW_SKIP_PAYMENT = os.getenv("ALLOW_SKIP_PAYMENT", "False").lower() == "true"
     ENABLE_403_LOGGING = os.getenv("ENABLE_403_LOGGING", "False").lower() == "true"
 
+    # To differentiate between local, dev, test, sandbox, prod
+    ENVIRONMENT_NAME = os.getenv("ENVIRONMENT_NAME", "local")
+
     EXECUTOR_PROPAGATE_EXCEPTIONS = True
 
     TESTING = False

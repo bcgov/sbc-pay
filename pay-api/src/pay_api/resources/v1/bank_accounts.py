@@ -38,14 +38,28 @@ def post_bank_account_validate():
     """Validate the bank account details against CFS."""
     current_app.logger.info("<BankAccounts.post")
     request_json = request.get_json()
-    current_app.logger.debug(request_json)
     # Validate the input request
     valid_format, errors = schema_utils.validate(request_json, "payment_info")
 
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
-        response, status = CFSService.validate_bank_account(request_json), HTTPStatus.OK
+        if current_app.config("ENVIRONMENT_NAME") == "sandbox":
+            # Simulate a successful response from CFS
+            response = {
+                "accountNumber": request_json["accountNumber"],
+                "bankName": request_json["bankName"],
+                "bankNumber": request_json["bankNumber"],
+                "branchNumber": request_json["branchNumber"],
+                "isValid": True,
+                "message": ["VALID"],
+                "statusCode": 200,
+                "transitAddress": "",
+            }
+            status = HTTPStatus.OK
+        else:
+            response, status = CFSService.validate_bank_account(request_json), HTTPStatus.OK
+
     except BusinessException as exception:
         current_app.logger.error(exception)
         return exception.response()
