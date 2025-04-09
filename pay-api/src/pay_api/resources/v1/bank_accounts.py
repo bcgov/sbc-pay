@@ -46,7 +46,7 @@ def post_bank_account_validate():
     try:
         # Remove this later after we migrate to GCP, this cannot be done unless it goes through pay-connector to OCP.
         if current_app.config("ENVIRONMENT_NAME") == "sandbox":
-            # Simulate a successful response from CFS
+            current_app.logger.info("Sandbox environment, returning valid CFS validation mock response.")
             response = {
                 "accountNumber": request_json["accountNumber"],
                 "bankName": request_json["bankName"],
