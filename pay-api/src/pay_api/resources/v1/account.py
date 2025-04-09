@@ -15,7 +15,7 @@
 from datetime import datetime, timezone
 from http import HTTPStatus
 
-from flask import Blueprint, Response, abort, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request
 from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
