@@ -964,12 +964,12 @@ def test_create_sandbox_accounts(
     roles,
 ):
     """Assert that the payment records are created with 202."""
-    os.environ["ENVIRONMENT_NAME"] = "sandbox"
+    app.config["ENVIRONMENT_NAME"] = "sandbox"
     token = jwt.create_jwt(get_claims(roles=roles), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post("/api/v1/accounts", data=json.dumps(pay_load), headers=headers)
 
-    os.environ["ENVIRONMENT_NAME"] = "local"
+    app.config["ENVIRONMENT_NAME"] = "local"
     assert rv.status_code == expected_response_status
     if is_cfs_account_expected:
         assert rv.json["cfsAccount"]["status"] == CfsAccountStatus.ACTIVE.value

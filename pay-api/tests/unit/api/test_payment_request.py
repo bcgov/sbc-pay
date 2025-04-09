@@ -1289,7 +1289,7 @@ def test_create_ejv_payment_request_non_billable_account(session, client, jwt, a
 )
 def test_create_sandbox_payment_requests(session, client, jwt, app, account_payload, pay_method):
     """Assert payment request works for PAD accounts."""
-    os.environ["ENVIRONMENT_NAME"] = "sandbox"
+    app.config["ENVIRONMENT_NAME"] = "sandbox"
     token = jwt.create_jwt(
         get_claims(roles=[Role.SYSTEM.value]),
         token_header,
@@ -1301,7 +1301,7 @@ def test_create_sandbox_payment_requests(session, client, jwt, app, account_payl
         data=json.dumps(account_payload),
         headers=headers,
     )
-    os.environ["ENVIRONMENT_NAME"] = "local"
+    app.config["ENVIRONMENT_NAME"] = "local"
 
     auth_account_id = rv.json.get("accountId")
 
