@@ -114,10 +114,6 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         """Return True if the user is system user."""
         return Role.SYSTEM.value in self._roles if self._roles else False
 
-    def is_sandbox(self) -> bool:
-        """Return True if the user token has sandbox role."""
-        return Role.SANDBOX.value in self._roles if self._roles else False
-
     def is_api_user(self) -> bool:
         """Return True if the user is an api_user."""
         # Note it's possible some of our service accounts could fall under API users, so check for system as well.

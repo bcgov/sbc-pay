@@ -16,9 +16,9 @@
 
 Test-Suite to ensure that the /payment-requests endpoint is working as expected.
 """
-
 import copy
 import json
+import os
 from unittest.mock import patch
 
 import pytest
@@ -1289,14 +1289,15 @@ def test_create_ejv_payment_request_non_billable_account(session, client, jwt, a
 )
 def test_create_sandbox_payment_requests(session, client, jwt, app, account_payload, pay_method):
     """Assert payment request works for PAD accounts."""
+    app.config["ENVIRONMENT_NAME"] = "sandbox"
     token = jwt.create_jwt(
-        get_claims(roles=[Role.SYSTEM.value, Role.CREATE_SANDBOX_ACCOUNT.value]),
+        get_claims(roles=[Role.SYSTEM.value]),
         token_header,
     )
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     # Create account first
     rv = client.post(
-        "/api/v1/accounts?sandbox=true",
+        "/api/v1/accounts",
         data=json.dumps(account_payload),
         headers=headers,
     )
@@ -1312,6 +1313,8 @@ def test_create_sandbox_payment_requests(session, client, jwt, app, account_payl
 
     payload = get_payment_request()
     rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
+
+    app.config["ENVIRONMENT_NAME"] = "local"
 
     assert rv.json.get("paymentMethod") == pay_method
     assert rv.json.get("statusCode") == "COMPLETED"

@@ -18,6 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
+import os
 from datetime import datetime, timezone
 from unittest.mock import patch
 
@@ -935,21 +936,22 @@ def test_account_delete(session, client, jwt, app):
 
 
 @pytest.mark.parametrize(
-    "pay_load, is_cfs_account_expected, expected_response_status, roles",
+    "test_name, pay_load, is_cfs_account_expected, expected_response_status, roles",
     [
         (
+            "good-unlinked-pad",
             get_unlinked_pad_account_payload(),
             True,
             201,
-            [Role.SYSTEM.value, Role.CREATE_SANDBOX_ACCOUNT.value],
+            [Role.SYSTEM.value],
         ),
         (
+            "good-credit-card",
             get_premium_account_payload(),
             False,
             201,
-            [Role.SYSTEM.value, Role.CREATE_SANDBOX_ACCOUNT.value],
-        ),
-        (get_premium_account_payload(), False, 403, [Role.SYSTEM.value]),
+            [Role.SYSTEM.value],
+        )
     ],
 )
 def test_create_sandbox_accounts(
@@ -957,16 +959,19 @@ def test_create_sandbox_accounts(
     client,
     jwt,
     app,
+    test_name,
     pay_load,
     is_cfs_account_expected,
     expected_response_status,
     roles,
 ):
     """Assert that the payment records are created with 202."""
+    app.config["ENVIRONMENT_NAME"] = "sandbox"
     token = jwt.create_jwt(get_claims(roles=roles), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    rv = client.post("/api/v1/accounts?sandbox=true", data=json.dumps(pay_load), headers=headers)
+    rv = client.post("/api/v1/accounts", data=json.dumps(pay_load), headers=headers)
 
+    app.config["ENVIRONMENT_NAME"] = "local"
     assert rv.status_code == expected_response_status
     if is_cfs_account_expected:
         assert rv.json["cfsAccount"]["status"] == CfsAccountStatus.ACTIVE.value

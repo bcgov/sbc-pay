@@ -74,15 +74,19 @@ class PadService(PaymentSystemService, CFSService):
             # This means, PAD account details have changed. So update banking details for this CFS account
             # Call cfs service to add new bank info.
             current_app.logger.info(f"Updating PAD account details for {cfs_account}")
-            bank_details = CFSService.update_bank_details(
-                name=cfs_account.payment_account.name,
-                party_number=cfs_account.cfs_party,
-                account_number=cfs_account.cfs_account,
-                site_number=cfs_account.cfs_site,
-                payment_info=payment_info,
-            )
 
-            instrument_number = bank_details.get("payment_instrument_number", None)
+            if current_app.config.get("ENVIRONMENT_NAME") == "sandbox":
+                current_app.logger.info("Sandbox environment, skipping CFS update.")
+                instrument_number = "1"
+            else:
+                bank_details = CFSService.update_bank_details(
+                    name=cfs_account.payment_account.name,
+                    party_number=cfs_account.cfs_party,
+                    account_number=cfs_account.cfs_account,
+                    site_number=cfs_account.cfs_site,
+                    payment_info=payment_info,
+                )
+                instrument_number = bank_details.get("payment_instrument_number", None)
 
             # Make the current CFS Account as INACTIVE in DB
             current_account_status: str = cfs_account.status
