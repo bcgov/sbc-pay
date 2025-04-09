@@ -45,7 +45,7 @@ def post_bank_account_validate():
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
         # Remove this later after we migrate to GCP, this cannot be done unless it goes through pay-connector to OCP.
-        if current_app.config("ENVIRONMENT_NAME") == "sandbox":
+        if current_app.config.get("ENVIRONMENT_NAME") == "sandbox":
             current_app.logger.info("Sandbox environment, returning valid CFS validation mock response.")
             response = {
                 "accountNumber": request_json["accountNumber"],

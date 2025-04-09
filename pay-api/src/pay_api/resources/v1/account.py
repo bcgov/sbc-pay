@@ -43,7 +43,7 @@ def post_account():
     current_app.logger.debug(request_json)
 
     # Check if sandbox request is authorized.
-    is_sandbox = current_app.config("ENVIRONMENT_NAME") == "sandbox"
+    is_sandbox = current_app.config.get("ENVIRONMENT_NAME") == "sandbox"
     if is_sandbox and request_json.get("paymentInfo", {}).get("methodOfPayment", []) in [
         PaymentMethod.ONLINE_BANKING.value,
         PaymentMethod.DIRECT_PAY.value,

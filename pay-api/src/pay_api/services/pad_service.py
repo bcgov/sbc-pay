@@ -75,7 +75,7 @@ class PadService(PaymentSystemService, CFSService):
             # Call cfs service to add new bank info.
             current_app.logger.info(f"Updating PAD account details for {cfs_account}")
 
-            if current_app.config("ENVIRONMENT_NAME") == "sandbox":
+            if current_app.config.get("ENVIRONMENT_NAME") == "sandbox":
                 current_app.logger.info("Sandbox environment, skipping CFS update.")
                 instrument_number = "1"
             else:
