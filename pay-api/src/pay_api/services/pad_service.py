@@ -148,4 +148,4 @@ class PadService(PaymentSystemService, CFSService):
         """Process refund in CFS."""
         # Move invoice to CREDITED or CANCELLED. There are no refunds for PAD, just cancellation or credit.
         # Credit memos don't return to the bank account.
-        return self._refund_and_create_credit_memo(invoice)
+        return self._refund_and_create_credit_memo(invoice, refund_partial)

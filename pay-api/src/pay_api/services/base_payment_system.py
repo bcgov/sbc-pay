@@ -47,6 +47,7 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     QueueSources,
+    RefundsPartialType,
     TransactionStatus,
 )
 from pay_api.utils.errors import Error
@@ -234,23 +235,61 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             )
 
     @staticmethod
-    def _refund_and_create_credit_memo(invoice: InvoiceModel):
+    def validate_refund_amount(refund_amount, max_amount):
+        """Validate refund amount."""
+        if refund_amount > max_amount:
+            current_app.logger.error(
+                f"Refund amount {str(refund_amount)} " f"exceeds maximum allowed amount {str(max_amount)}."
+            )
+            raise BusinessException(Error.INVALID_REQUEST)
+
+    @staticmethod
+    def _refund_and_create_credit_memo(invoice: InvoiceModel, refund_partial: List[RefundPartialLine] = None):
         # Create credit memo in CFS if the invoice status is PAID.
         # Don't do anything is the status is APPROVED.
-        current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
+        is_partial = refund_partial is not None and len(refund_partial) > 0
+
+        current_app.logger.info(
+            f"Creating {'partial' if is_partial else ''} credit memo for invoice: "
+            f"{invoice.id}, {invoice.invoice_status_code}"
+        )
         if (
             invoice.invoice_status_code == InvoiceStatus.APPROVED.value
             and InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             is None
         ):
+            if is_partial:
+                raise BusinessException(Error.PARTIAL_REFUND_INVOICE_NOT_PAID)
+
             return InvoiceStatus.CANCELLED.value
 
         cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(
             invoice.payment_account_id, invoice.payment_method_code
         )
+
         line_items: List[PaymentLineItemModel] = []
-        for line_item in invoice.payment_line_items:
-            line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
+        refund_amount = 0
+
+        if is_partial:
+            # For partial refund, validate and use only specified line items
+            for refund_line in refund_partial:
+                # Validate refund line item exists and amount
+                pli = PaymentLineItemModel.find_by_id(refund_line.payment_line_item_id)
+                if not pli or refund_line.refund_amount < 0:
+                    raise BusinessException(Error.INVALID_REQUEST)
+                is_service_fee = refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value
+                if is_service_fee:
+                    PaymentSystemService.validate_refund_amount(refund_line.refund_amount, pli.service_fees)
+                else:
+                    PaymentSystemService.validate_refund_amount(refund_line.refund_amount, pli.total)
+
+                line_items.append(pli)
+                refund_amount += refund_line.refund_amount
+        else:
+            # For full refund, use all line items
+            for line_item in invoice.payment_line_items:
+                line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
+            refund_amount = invoice.total
 
         cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
         # TODO Create a payment record for this to show up on transactions, when the ticket comes.
@@ -259,18 +298,23 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         CreditModel(
             cfs_identifier=cms_response.get("credit_memo_number"),
             is_credit_memo=True,
-            amount=invoice.total,
-            remaining_amount=invoice.total,
+            amount=refund_amount,
+            remaining_amount=refund_amount,
             account_id=invoice.payment_account_id,
         ).flush()
 
         # Add up the credit amount and update payment account table.
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
-        payment_account.credit = (payment_account.credit or 0) + invoice.total
+        payment_account.credit = (payment_account.credit or 0) + refund_amount
         current_app.logger.info(
-            f"Updating credit amount to  {payment_account.credit} for account {payment_account.auth_account_id}"
+            f"Updating credit amount to {payment_account.credit} for account {payment_account.auth_account_id}"
         )
         payment_account.flush()
+
+        # For partial refunds that aren't for the full amount, keep as PAID
+        if is_partial and refund_amount != invoice.total:
+            return InvoiceStatus.PAID.value
+
         return InvoiceStatus.CREDITED.value
 
     @staticmethod

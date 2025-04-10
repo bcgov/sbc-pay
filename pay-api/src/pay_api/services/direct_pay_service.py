@@ -373,14 +373,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return token_response
 
     @staticmethod
-    def _validate_refund_amount(refund_amount, max_amount):
-        if refund_amount > max_amount:
-            current_app.logger.error(
-                f"Refund amount {str(refund_amount)} " f"exceeds maximum allowed amount {str(max_amount)}."
-            )
-            raise BusinessException(Error.INVALID_REQUEST)
-
-    @staticmethod
     def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: List[RefundLineRequest]):
         """Build PAYBC refund revenue lines for the refund."""
         if (paybc_invoice.postedrefundamount or 0) > 0 or (paybc_invoice.refundedamount or 0) > 0:
@@ -406,7 +398,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             if revenue_match is None:
                 current_app.logger.error("Matching distribution code to revenue account not found.")
                 raise BusinessException(Error.INVALID_REQUEST)
-            DirectPayService._validate_refund_amount(line.refund_amount, revenue_match.revenueamount)
+            PaymentSystemService.validate_refund_amount(line.refund_amount, revenue_match.revenueamount)
             lines.append(
                 {
                     "lineNumber": revenue_match.linenumber,
@@ -427,11 +419,11 @@ class DirectPayService(PaymentSystemService, OAuthService):
             is_service_fee = refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value
             fee_distribution = DistributionCodeModel.find_by_id(pli.fee_distribution_id)
             if is_service_fee:
-                DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.service_fees)
+                PaymentSystemService.validate_refund_amount(refund_line.refund_amount, pli.service_fees)
                 service_fee_dist_id = fee_distribution.service_fee_distribution_code_id
                 fee_distribution = DistributionCodeModel.find_by_id(service_fee_dist_id)
             else:
-                DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.total)
+                PaymentSystemService.validate_refund_amount(refund_line.refund_amount, pli.total)
             revenue_account = DirectPayService._get_gl_coding(
                 fee_distribution, refund_line.refund_amount, exclude_total=True
             )

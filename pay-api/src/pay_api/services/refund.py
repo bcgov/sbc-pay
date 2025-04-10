@@ -311,8 +311,14 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _validate_allow_partial_refund(cls, refund_revenue, invoice: InvoiceModel):
         if refund_revenue:
-            if invoice.payment_method_code != PaymentMethod.DIRECT_PAY.value:
+            if not cls._is_payment_method_allowed_for_partial_refund(invoice.payment_method_code):
                 raise BusinessException(Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED)
+
+    @classmethod
+    def _is_payment_method_allowed_for_partial_refund(cls, payment_method_code: str) -> bool:
+        """Check if the payment method is allowed for partial refunds."""
+        allowed_methods = [PaymentMethod.DIRECT_PAY.value, PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value]
+        return payment_method_code in allowed_methods
 
     @classmethod
     @user_context
