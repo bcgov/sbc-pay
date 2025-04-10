@@ -82,4 +82,4 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         refund_partial: List[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
-        return super()._refund_and_create_credit_memo(invoice)
+        return super()._refund_and_create_credit_memo(invoice, refund_partial)

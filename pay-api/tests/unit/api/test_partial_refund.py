@@ -24,7 +24,10 @@ from unittest.mock import patch
 import pytest
 from _decimal import Decimal
 
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundPartialLine
@@ -32,9 +35,15 @@ from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.refund import RefundService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
-from pay_api.utils.enums import InvoiceStatus, RefundsPartialType, Role
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, RefundsPartialType, Role
 from pay_api.utils.errors import Error
-from tests.utilities.base_test import get_claims, get_payment_request, token_header
+from tests.utilities.base_test import (
+    get_claims,
+    get_payment_request,
+    get_payment_request_with_payment_method,
+    get_unlinked_pad_account_payload,
+    token_header,
+)
 
 
 def test_create_refund(session, client, jwt, app, monkeypatch):
@@ -124,6 +133,101 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert invoice.refund_date.date() == datetime.now(tz=timezone.utc).date()
         assert invoice.refund == refund_amount
+
+
+def test_create_pad_partial_refund(session, client, jwt, app, monkeypatch):
+    """Assert that the endpoint returns 202 and creates a credit on the account for partial refund."""
+    # Create a PAD payment_account and cfs_account
+    auth_account_id = 123456
+
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    client.post(
+        "/api/v1/accounts",
+        data=json.dumps(get_unlinked_pad_account_payload(account_id=auth_account_id)),
+        headers=headers,
+    )
+    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(pay_account.id)[0]
+    cfs_account.cfs_party = "2222"
+    cfs_account.cfs_account = "2222"
+    cfs_account.cfs_site = "2222"
+    cfs_account.status = CfsAccountStatus.ACTIVE.value
+    cfs_account.save()
+
+    pay_account.pad_activation_date = datetime.now(tz=timezone.utc)
+    pay_account.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": auth_account_id,
+    }
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.PAD.value)),
+        headers=headers,
+    )
+
+    inv_id = rv.json.get("id")
+
+    inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    inv.invoice_status_code = InvoiceStatus.PAID.value
+    inv.payment_date = datetime.now(tz=timezone.utc)
+    inv.save()
+
+    payment_line_items: List[PaymentLineItemModel] = inv.payment_line_items
+
+    refund_amount = float(payment_line_items[0].filing_fees / 2)
+    refund_revenue = [
+        {
+            "paymentLineItemId": payment_line_items[0].id,
+            "refundAmount": refund_amount,
+            "refundType": RefundsPartialType.BASE_FEES.value,
+        }
+    ]
+
+    with patch("pay_api.services.cfs_service.CFSService.create_cms") as mock_create_cms:
+        mock_create_cms.return_value = {"credit_memo_number": "CM-123456"}
+
+        token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+        headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+        rv = client.post(
+            f"/api/v1/payment-requests/{inv_id}/refunds",
+            data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
+            headers=headers,
+        )
+
+        assert rv.status_code == 202
+        assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["PAD.PAID"]
+
+        assert RefundModel.find_by_invoice_id(inv_id) is not None
+
+        refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
+        assert refunds_partial
+        assert len(refunds_partial) == 1
+
+        refund = refunds_partial[0]
+        assert refund.id is not None
+        assert refund.payment_line_item_id == payment_line_items[0].id
+        assert refund.refund_amount == refund_amount
+        assert refund.refund_type == RefundsPartialType.BASE_FEES.value
+
+        inv = InvoiceModel.find_by_id(inv.id)
+        assert inv.invoice_status_code == InvoiceStatus.PAID.value
+        assert inv.refund_date.date() == datetime.now(tz=timezone.utc).date()
+        assert inv.refund == refund_amount
+
+        credit = CreditModel.query.filter_by(account_id=inv.payment_account_id).first()
+        assert credit is not None
+        assert credit.amount == Decimal(str(refund_amount))
+        assert credit.remaining_amount == Decimal(str(refund_amount))
+        assert credit.is_credit_memo is True
+
+        pay_account = PaymentAccountModel.find_by_id(inv.payment_account_id)
+        assert pay_account.credit == Decimal(str(refund_amount))
 
 
 def test_create_refund_fails(session, client, jwt, app, monkeypatch):
