@@ -1094,8 +1094,8 @@ def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(
     invoice_id = invoice.id
     total = invoice.total
 
-    base_invoice_number = "PADINV001"
-    consolidated_invoice_number = f"{base_invoice_number}-C"
+    base_invoice_number = "REG07401364"
+    consolidated_invoice_number = "REG7401364-C"
 
     # - Base invoice reference is CANCELLED
     factory_invoice_reference(
