@@ -24,6 +24,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundPartialLine
 from pay_api.models import RefundsPartial as RefundPartialModel
@@ -36,7 +37,6 @@ from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
     ChequeRefundStatus,
     InvoiceStatus,
-    PaymentMethod,
     RefundsPartialType,
     Role,
     RoutingSlipStatus,
@@ -311,14 +311,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _validate_allow_partial_refund(cls, refund_revenue, invoice: InvoiceModel):
         if refund_revenue:
-            if not cls._is_payment_method_allowed_for_partial_refund(invoice.payment_method_code):
+            if not PaymentMethodModel.is_payment_method_allowed_for_partial_refund(invoice.payment_method_code):
                 raise BusinessException(Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED)
-
-    @classmethod
-    def _is_payment_method_allowed_for_partial_refund(cls, payment_method_code: str) -> bool:
-        """Check if the payment method is allowed for partial refunds."""
-        allowed_methods = [PaymentMethod.DIRECT_PAY.value, PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value]
-        return payment_method_code in allowed_methods
 
     @classmethod
     @user_context

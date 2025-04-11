@@ -35,11 +35,18 @@ class PaymentMethod(db.Model, CodeTable):
 
     code = db.Column(db.String(15), primary_key=True)
     description = db.Column("description", db.String(200), nullable=False)
+    partial_refund = db.Column(db.Boolean, nullable=False, default=False)
 
     def save(self):
         """Save status."""
         db.session.add(self)
         db.session.commit()
+
+    @classmethod
+    def is_payment_method_allowed_for_partial_refund(cls, payment_method_code: str) -> bool:
+        """Check if the payment method is allowed for partial refund."""
+        payment_method = cls.query.filter_by(code=payment_method_code).first()
+        return payment_method.partial_refund if payment_method else False
 
 
 class PaymentMethodSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors

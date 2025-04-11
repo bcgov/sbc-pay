@@ -247,20 +247,18 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def _refund_and_create_credit_memo(invoice: InvoiceModel, refund_partial: List[RefundPartialLine] = None):
         # Create credit memo in CFS if the invoice status is PAID.
         # Don't do anything is the status is APPROVED.
-        is_partial = refund_partial is not None and len(refund_partial) > 0
+        is_partial = bool(refund_partial)
 
-        current_app.logger.info(
-            f"Creating {'partial' if is_partial else ''} credit memo for invoice: "
-            f"{invoice.id}, {invoice.invoice_status_code}"
-        )
+        current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
+
+        if is_partial and invoice.invoice_status_code != InvoiceStatus.PAID.value:
+            raise BusinessException(Error.PARTIAL_REFUND_INVOICE_NOT_PAID)
+
         if (
             invoice.invoice_status_code == InvoiceStatus.APPROVED.value
             and InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
             is None
         ):
-            if is_partial:
-                raise BusinessException(Error.PARTIAL_REFUND_INVOICE_NOT_PAID)
-
             return InvoiceStatus.CANCELLED.value
 
         cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(
@@ -271,24 +269,18 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         refund_amount = 0
 
         if is_partial:
-            # For partial refund, validate and use only specified line items
             for refund_line in refund_partial:
-                # Validate refund line item exists and amount
                 pli = PaymentLineItemModel.find_by_id(refund_line.payment_line_item_id)
                 if not pli or refund_line.refund_amount < 0:
                     raise BusinessException(Error.INVALID_REQUEST)
-                is_service_fee = refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value
-                if is_service_fee:
-                    PaymentSystemService.validate_refund_amount(refund_line.refund_amount, pli.service_fees)
-                else:
-                    PaymentSystemService.validate_refund_amount(refund_line.refund_amount, pli.total)
-
+                max_refundable = (
+                    pli.service_fees if refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value else pli.total
+                )
+                PaymentSystemService.validate_refund_amount(refund_line.refund_amount, max_refundable)
                 line_items.append(pli)
                 refund_amount += refund_line.refund_amount
         else:
-            # For full refund, use all line items
-            for line_item in invoice.payment_line_items:
-                line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
+            line_items = [PaymentLineItemModel.find_by_id(li.id) for li in invoice.payment_line_items]
             refund_amount = invoice.total
 
         cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
@@ -311,7 +303,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         )
         payment_account.flush()
 
-        # For partial refunds that aren't for the full amount, keep as PAID
         if is_partial and refund_amount != invoice.total:
             return InvoiceStatus.PAID.value
 
