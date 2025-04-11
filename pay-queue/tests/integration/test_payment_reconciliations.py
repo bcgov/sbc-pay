@@ -17,6 +17,7 @@
 Test-Suite to ensure that the Payment Reconciliation queue service is working as expected.
 """
 from datetime import datetime, timezone
+import logging
 
 import pytest
 from pay_api.models import CasSettlement as CasSettlementModel
@@ -1077,8 +1078,8 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     assert email_params.table_name == CasSettlementModel.__tablename__
 
 
-def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(session, app, client):
-    """Test reconciliation skips invoice row when a COMPLETED consolidated (-C) version exists."""
+def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(session, app, client, caplog):
+    """Test reconciliation skips invoice row when a COMPLETED consolidated (-C) version exists."""  
     cfs_account_number = "PAD_ACC_C_TEST"
     pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
 
@@ -1128,11 +1129,16 @@ def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(
     ]
     create_and_upload_settlement_file(file_name, [row])
 
+    caplog.set_level(logging.WARNING)
+    
     add_file_event_to_queue_and_process(
         client,
         file_name=file_name,
         message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
     )
+
+    expected_warning = f"Invoice {base_invoice_number} not found as COMPLETED, but consolidated version {consolidated_invoice_number} found as COMPLETED"
+    assert any(expected_warning in record.message for record in caplog.records if record.levelname == "WARNING")
 
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.PAID.value
