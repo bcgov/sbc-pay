@@ -31,7 +31,7 @@ class PaymentMethod(db.Model, CodeTable):
     #
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
-    __mapper_args__ = {"include_properties": ["code", "description"]}
+    __mapper_args__ = {"include_properties": ["code", "description", "partial_refund"]}
 
     code = db.Column(db.String(15), primary_key=True)
     description = db.Column("description", db.String(200), nullable=False)
