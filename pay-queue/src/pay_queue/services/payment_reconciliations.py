@@ -52,7 +52,7 @@ from pay_api.utils.enums import (
     QueueSources,
     SuspensionReasonCodes,
 )
-from pay_api.utils.util import get_topic_for_corp_type, generate_consolidated_transaction_number
+from pay_api.utils.util import generate_consolidated_transaction_number, get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
