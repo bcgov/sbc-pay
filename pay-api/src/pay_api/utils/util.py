@@ -185,10 +185,10 @@ def generate_transaction_number(txn_number: str) -> str:
 
 
 def generate_consolidated_transaction_number(reg_number: str) -> str:
-    """Generate consolidated transaction number from registration number.
+    """Generate consolidated transaction number from invoice number.
 
     Args:
-        reg_number: Registration number (e.g. REG07401364)
+        reg_number: Invoice number/TARGET_TXN_NO (e.g. REG07401364)
 
     Returns:
         Consolidated transaction number (e.g. REG7401364-C)
