@@ -114,6 +114,9 @@ class OAuthService:
                 # Remove authentication from response
                 response_text = response.text if response is not None else ""
                 response_text = re.sub(r'"access_token"\s*:\s*"[^"]*",?\s*', "", response_text)
+                response_text = re.sub(r'"bank_number"\s*:\s*"[^"]*",?\s*', "", response_text)
+                response_text = re.sub(r'"branch_number"\s*:\s*"[^"]*",?\s*', "", response_text)
+                response_text = re.sub(r'"account_number"\s*:\s*"[^"]*",?\s*', "", response_text)
                 response_text = re.sub(r",\s*}", "}", response_text)
                 current_app.logger.info(f"response : {response_text}")
 
