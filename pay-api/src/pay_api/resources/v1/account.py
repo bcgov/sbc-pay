@@ -130,7 +130,7 @@ def patch_account(account_number: str):
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def put_account(account_number: str):
     """Update the payment account records."""
-    current_app.logger.info("<put_account")
+    current_app.logger.info(f"<put_account {account_number}")
     request_json = request.get_json()
     current_app.logger.debug(request_json)
     # Validate the input request
@@ -151,7 +151,7 @@ def put_account(account_number: str):
         else HTTPStatus.OK
     )
 
-    current_app.logger.debug(">put_account")
+    current_app.logger.debug(f">put_account {account_number}")
     return jsonify(response.asdict()), status
 
 
