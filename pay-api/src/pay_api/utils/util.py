@@ -184,6 +184,20 @@ def generate_transaction_number(txn_number: str) -> str:
     return f"{prefix}{txn_number:0>8}"
 
 
+def generate_consolidated_transaction_number(reg_number: str) -> str:
+    """Generate consolidated transaction number from invoice number.
+
+    Args:
+        reg_number: Invoice number/TARGET_TXN_NO (e.g. REG07401364)
+
+    Returns:
+        Consolidated transaction number (e.g. REG7401364-C)
+    """
+    if reg_number.startswith("REG") and len(reg_number[3:]) == 8:
+        reg_number = "REG" + reg_number[4:]
+    return f"{reg_number}-C"
+
+
 def get_fiscal_year(date_val: datetime = datetime.now(tz=timezone.utc)) -> int:
     """Return fiscal year for the date."""
     fiscal_year: int = date_val.year
