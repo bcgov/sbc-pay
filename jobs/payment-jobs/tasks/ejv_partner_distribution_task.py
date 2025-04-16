@@ -350,7 +350,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         if isinstance(disbursement.target, InvoiceModel):
             disbursement.target.disbursement_status_code = DisbursementStatus.UPLOADED.value
         elif isinstance(disbursement.target, PartnerDisbursementsModel):
-            # Only EFT is using partner disbursements table for now, eventually we want to move our disbursement
+            # Only EFT and Partial Refunds are using partner disbursements table for now, eventually we want to move our disbursement
             # process over to something similar: Where we have an entire table setup that
             # is used to track disbursements, instead of just the three column approach that
             # doesn't work when there are multiple reversals etc.

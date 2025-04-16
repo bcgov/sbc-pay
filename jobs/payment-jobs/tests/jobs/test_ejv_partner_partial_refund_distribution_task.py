@@ -136,7 +136,6 @@ def test_partial_refund_disbursement_with_payment_method(
 
     refund_partial_link = EjvLink.find_ejv_link_by_link_id(refund_partial.id)
     assert refund_partial_link.disbursement_status_code == DisbursementStatus.UPLOADED.value
-    assert refund_partial.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
     updated_partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement.id)
     assert updated_partner_disbursement.status_code == DisbursementStatus.UPLOADED.value

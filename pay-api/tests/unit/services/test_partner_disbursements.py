@@ -128,6 +128,7 @@ def test_handle_partial_refund(session, test_name, should_skip, has_existing_dis
     invoice = setup_data()
 
     payment_line_item = factory_payment_line_item(invoice.id, 1, filing_fees=10, total=10)
+    payment_line_item = payment_line_item.save()
 
     partial_refund = factory_refunds_partial(invoice, payment_line_item.id, refund_amount=5.0)
 

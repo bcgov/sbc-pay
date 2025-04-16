@@ -25,8 +25,8 @@ import pytest
 from _decimal import Decimal
 
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import Credit as CreditModel
 from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
