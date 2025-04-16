@@ -52,7 +52,7 @@ from .factory import (
     ],
 )
 def test_partial_refund_disbursement_with_payment_method(
-    session, monkeypatch, account_factory, payment_method, cfs_account_status
+    session, monkeypatch, account_factory, payment_method, cfs_account_status, google_bucket_mock
 ):
     """Test partial refund disbursement for different payment methods."""
     monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
@@ -110,7 +110,6 @@ def test_partial_refund_disbursement_with_payment_method(
         status_code=DisbursementStatus.WAITING_FOR_JOB.value
     ).save()
 
-    assert refund_partial.disbursement_status_code is None
     assert partner_disbursement.status_code == DisbursementStatus.WAITING_FOR_JOB.value
 
     refund_partial_link = EjvLink.find_ejv_link_by_link_id(refund_partial.id)

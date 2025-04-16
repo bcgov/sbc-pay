@@ -112,6 +112,7 @@ def factory_refunds_partial(invoice, payment_line_item_id, refund_amount=10.0, r
         payment_line_item_id=payment_line_item_id,
         refund_amount=refund_amount,
         refund_type=refund_type,
+        created_by="test_user"
     ).flush()
 
 
