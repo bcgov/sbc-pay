@@ -30,6 +30,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
 from sqlalchemy import Date, and_, cast, or_
@@ -172,6 +173,37 @@ class EjvPartnerDistributionTask(CgiEjv):
             .order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id)
             .all()
         )
+
+        partial_refund_disbursements = (
+            db.session.query(PartnerDisbursementsModel, PaymentLineItemModel, DistributionCodeModel)
+            .join(
+                PaymentLineItemModel,
+                PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id,
+                isouter=True
+            )
+            .join(
+                RefundsPartialModel,
+                and_(
+                    RefundsPartialModel.id == PartnerDisbursementsModel.target_id,
+                    PartnerDisbursementsModel.target_type == EJVLinkType.PARTIAL_REFUND.value
+                ),
+            )
+            .join(InvoiceModel, InvoiceModel.id == RefundsPartialModel.invoice_id)
+            .join(
+                DistributionCodeModel,
+                DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
+            )
+            .filter(PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value)
+            .filter(PartnerDisbursementsModel.partner_code == partner.code)
+            .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None))
+            .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()))
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
+            .filter(PartnerDisbursementsModel.is_reversal.is_(True))
+            .order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id)
+            .all()
+        )
+
+        partner_disbursements.extend(partial_refund_disbursements)
 
         for (
             partner_disbursement,
