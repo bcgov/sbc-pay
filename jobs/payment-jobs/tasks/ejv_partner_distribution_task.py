@@ -30,6 +30,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
 from sqlalchemy import Date, and_, cast, or_
@@ -140,8 +141,15 @@ class EjvPartnerDistributionTask(CgiEjv):
             )
         # ################################################################# END OF Legacy way of handling disbursements.
         # Partner disbursements - New
-        # Partial refunds need to be added to here later, although they should be fairly rare as most of them are from
         # NRO (NRO is internal, meaning no disbursement needed.)
+        disbursement_rows, distribution_code_totals = EjvPartnerDistributionTask._add_partner_disbursements(
+            partner, disbursement_date, disbursement_rows, distribution_code_totals)
+
+        return disbursement_rows, distribution_code_totals
+
+    @staticmethod
+    def _add_partner_disbursements(partner, disbursement_date, disbursement_rows, distribution_code_totals):
+        """Add partner disbursements to the results."""
         partner_disbursements = (
             db.session.query(PartnerDisbursementsModel, PaymentLineItemModel, DistributionCodeModel)
             .join(
@@ -173,6 +181,36 @@ class EjvPartnerDistributionTask(CgiEjv):
             .all()
         )
 
+        partial_refund_disbursements = (
+            db.session.query(PartnerDisbursementsModel, PaymentLineItemModel, DistributionCodeModel)
+            .join(
+                RefundsPartialModel,
+                and_(
+                    RefundsPartialModel.id == PartnerDisbursementsModel.target_id,
+                    PartnerDisbursementsModel.target_type == EJVLinkType.PARTIAL_REFUND.value
+                ),
+            )
+            .join(
+                PaymentLineItemModel,
+                PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id,
+            )
+            .join(InvoiceModel, InvoiceModel.id == RefundsPartialModel.invoice_id)
+            .join(
+                DistributionCodeModel,
+                DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
+            )
+            .filter(PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value)
+            .filter(PartnerDisbursementsModel.partner_code == partner.code)
+            .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None))
+            .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()))
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
+            .filter(PartnerDisbursementsModel.is_reversal.is_(True))
+            .order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id)
+            .all()
+        )
+
+        partner_disbursements.extend(partial_refund_disbursements)
+
         for (
             partner_disbursement,
             payment_line_item,
@@ -199,6 +237,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     ),
                 )
             )
+
         disbursement_rows.sort(key=lambda x: x.bcreg_distribution_code.distribution_code_id)
         return disbursement_rows, distribution_code_totals
 
@@ -310,7 +349,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         if isinstance(disbursement.target, InvoiceModel):
             disbursement.target.disbursement_status_code = DisbursementStatus.UPLOADED.value
         elif isinstance(disbursement.target, PartnerDisbursementsModel):
-            # Only EFT is using partner disbursements table for now, eventually we want to move our disbursement
+            # Only EFT and Partial_Refunds are using partner disbursements table for now,
+            # eventually we want to move our disbursement.
             # process over to something similar: Where we have an entire table setup that
             # is used to track disbursements, instead of just the three column approach that
             # doesn't work when there are multiple reversals etc.
