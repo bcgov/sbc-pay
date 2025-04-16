@@ -141,8 +141,15 @@ class EjvPartnerDistributionTask(CgiEjv):
             )
         # ################################################################# END OF Legacy way of handling disbursements.
         # Partner disbursements - New
-        # Partial refunds need to be added to here later, although they should be fairly rare as most of them are from
         # NRO (NRO is internal, meaning no disbursement needed.)
+        disbursement_rows, distribution_code_totals = EjvPartnerDistributionTask._add_partner_disbursements(
+            partner, disbursement_date, disbursement_rows, distribution_code_totals)
+
+        return disbursement_rows, distribution_code_totals
+
+    @staticmethod
+    def _add_partner_disbursements(partner, disbursement_date, disbursement_rows, distribution_code_totals):
+        """Add partner disbursements to the results."""
         partner_disbursements = (
             db.session.query(PartnerDisbursementsModel, PaymentLineItemModel, DistributionCodeModel)
             .join(
@@ -231,6 +238,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     ),
                 )
             )
+
         disbursement_rows.sort(key=lambda x: x.bcreg_distribution_code.distribution_code_id)
         return disbursement_rows, distribution_code_totals
 

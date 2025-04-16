@@ -26,7 +26,9 @@ from _decimal import Decimal
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Refund as RefundModel
@@ -35,7 +37,15 @@ from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.refund import RefundService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, RefundsPartialType, Role
+from pay_api.utils.enums import (
+    CfsAccountStatus,
+    DisbursementStatus,
+    EJVLinkType,
+    InvoiceStatus,
+    PaymentMethod,
+    RefundsPartialType,
+    Role,
+)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     get_claims,
@@ -178,6 +188,10 @@ def test_create_pad_partial_refund(session, client, jwt, app, monkeypatch):
     inv.payment_date = datetime.now(tz=timezone.utc)
     inv.save()
 
+    corp_type = CorpTypeModel.find_by_code(inv.corp_type_code)
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
+
     payment_line_items: List[PaymentLineItemModel] = inv.payment_line_items
 
     refund_amount = float(payment_line_items[0].filing_fees / 2)
@@ -228,6 +242,18 @@ def test_create_pad_partial_refund(session, client, jwt, app, monkeypatch):
 
         pay_account = PaymentAccountModel.find_by_id(inv.payment_account_id)
         assert pay_account.credit == Decimal(str(refund_amount))
+
+        partial_refund = refunds_partial[0]
+        disbursements = PartnerDisbursementsModel.query.filter_by(
+            target_id=partial_refund.id,
+            target_type=EJVLinkType.PARTIAL_REFUND.value
+        ).all()
+
+        assert len(disbursements) == 1
+        assert disbursements[0].amount == partial_refund.refund_amount
+        assert disbursements[0].is_reversal is True
+        assert disbursements[0].partner_code == inv.corp_type_code
+        assert disbursements[0].status_code == DisbursementStatus.WAITING_FOR_JOB.value
 
 
 def test_create_refund_fails(session, client, jwt, app, monkeypatch):

@@ -22,14 +22,17 @@ import pytest
 from flask import current_app
 from freezegun import freeze_time
 from pay_api.models import CorpType as CorpTypeModel
-from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, db
-from pay_api.utils.enums import DisbursementStatus, RefundsPartialType, PaymentMethod, CfsAccountStatus, EJVLinkType
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule
 from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
+from pay_api.models import db
+from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, EJVLinkType, PaymentMethod, RefundsPartialType
 
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 from .factory import (
     factory_create_direct_pay_account,
+    factory_create_online_banking_account,
+    factory_create_pad_account,
     factory_distribution,
     factory_distribution_link,
     factory_invoice,
@@ -37,22 +40,28 @@ from .factory import (
     factory_payment,
     factory_payment_line_item,
     factory_refund_partial,
-    factory_create_pad_account,
-    factory_create_online_banking_account,
 )
 
 
-@pytest.mark.parametrize("account_factory,payment_method", [
-    (factory_create_pad_account, PaymentMethod.PAD.value),
-    (factory_create_online_banking_account, PaymentMethod.ONLINE_BANKING.value),
-    (factory_create_direct_pay_account, PaymentMethod.DIRECT_PAY.value)
-])
-def test_partial_refund_disbursement_with_payment_method(session, monkeypatch, account_factory, payment_method):
+@pytest.mark.parametrize(
+    "account_factory,payment_method,cfs_account_status",
+    [
+        (factory_create_pad_account, PaymentMethod.PAD.value, True),
+        (factory_create_online_banking_account, PaymentMethod.ONLINE_BANKING.value, True),
+        (factory_create_direct_pay_account, PaymentMethod.DIRECT_PAY.value, False),
+    ],
+)
+def test_partial_refund_disbursement_with_payment_method(
+    session, monkeypatch, account_factory, payment_method, cfs_account_status
+):
     """Test partial refund disbursement for different payment methods."""
     monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code("VS")
 
-    pay_account = account_factory(status=CfsAccountStatus.ACTIVE.value)
+    if cfs_account_status:
+        pay_account = account_factory(status=CfsAccountStatus.ACTIVE.value)
+    else:
+        pay_account = account_factory()
 
     disbursement_distribution: DistributionCode = factory_distribution(name="VS Disbursement", client="112")
     service_fee_distribution: DistributionCode = factory_distribution(name="VS Service Fee", client="112")
@@ -86,6 +95,7 @@ def test_partial_refund_disbursement_with_payment_method(session, monkeypatch, a
 
     refund_partial = factory_refund_partial(
         pli.id,
+        invoice_id=invoice.id,
         refund_amount=1.5,
         created_by="test",
         refund_type=RefundsPartialType.SERVICE_FEES.value,

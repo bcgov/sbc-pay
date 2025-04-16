@@ -5,9 +5,15 @@ import pytest
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.services.partner_disbursements import PartnerDisbursements
-from pay_api.utils.enums import DisbursementStatus
-from tests.utilities.base_test import factory_invoice, factory_partner_disbursement, factory_payment_account
+from pay_api.utils.enums import DisbursementStatus, EJVLinkType
+from tests.utilities.base_test import (
+    factory_invoice,
+    factory_partner_disbursement,
+    factory_payment_account,
+    factory_payment_line_item,
+)
 
 
 def setup_data() -> InvoiceModel:
@@ -97,3 +103,59 @@ def test_partner_reversal(session, test_name, assertion_count):
                 .amount
                 == 7.0
             )
+
+
+def factory_refunds_partial(invoice, payment_line_item_id, refund_amount=10.0, refund_type="BASE_FEES"):
+    """Return refunds partial model."""
+    return RefundsPartialModel(
+        invoice_id=invoice.id,
+        payment_line_item_id=payment_line_item_id,
+        refund_amount=refund_amount,
+        refund_type=refund_type,
+    ).flush()
+
+
+@pytest.mark.parametrize(
+    "test_name, should_skip, has_existing_disbursement, expected_count",
+    [
+        ("skip_partner_disbursement", True, False, 0),
+        ("create_new_disbursement", False, False, 1),
+        ("existing_disbursement", False, True, 1),
+    ],
+)
+def test_handle_partial_refund(session, test_name, should_skip, has_existing_disbursement, expected_count, monkeypatch):
+    """Test partner partial refund to ensure it creates disbursement rows as expected."""
+    invoice = setup_data()
+
+    payment_line_item = factory_payment_line_item(invoice.id, 1, filing_fees=10, total=10)
+
+    partial_refund = factory_refunds_partial(invoice, payment_line_item.id, refund_amount=5.0)
+
+    if should_skip:
+        monkeypatch.setattr(PartnerDisbursements, "_skip_partner_disbursement", lambda *args: True)
+
+    if has_existing_disbursement:
+        PartnerDisbursementsModel(
+            amount=partial_refund.refund_amount,
+            is_reversal=True,
+            partner_code=invoice.corp_type_code,
+            status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+            target_id=partial_refund.id,
+            target_type=EJVLinkType.PARTIAL_REFUND.value,
+        ).flush()
+
+    PartnerDisbursements.handle_partial_refund(partial_refund, invoice)
+
+    disbursements = PartnerDisbursementsModel.query.filter_by(
+        target_id=partial_refund.id,
+        target_type=EJVLinkType.PARTIAL_REFUND.value
+    ).all()
+
+    assert len(disbursements) == expected_count
+
+    if not should_skip and not has_existing_disbursement:
+        assert disbursements[0].amount == partial_refund.refund_amount
+        assert disbursements[0].is_reversal is True
+        assert disbursements[0].partner_code == invoice.corp_type_code
+        assert disbursements[0].status_code == DisbursementStatus.WAITING_FOR_JOB.value
+        assert disbursements[0].target_type == EJVLinkType.PARTIAL_REFUND.value

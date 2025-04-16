@@ -101,5 +101,6 @@ class PartnerDisbursements:
                 target_type=EJVLinkType.PARTIAL_REFUND.value,
             ).flush()
         else:
-            current_app.logger.info(f"Skipping Partner Disbursement Partial Refund creation for {partial_refund.id} already exists.")
-
+            current_app.logger.info(
+                f"Skipping Partner Disbursement Partial Refund creation for {partial_refund.id} already exists."
+            )
