@@ -66,11 +66,8 @@ def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
 #@_jwt.has_one_of_roles([Role.VIEWER.value, Role.EDITOR.value, Role.STAFF.value])
 def get_products_fees():
     """Get Products Fees - the cost of a filing and the list of filings."""
-    try:
-        response, status = (
-            FeeSchedule.get_fee_details(), 
-            HTTPStatus.OK,
-        )
+    try:        
+        response, status = (FeeSchedule.get_fee_details() ,HTTPStatus.OK)        
     except BusinessException as exception:
         return exception.response()
     return jsonify(response), status

@@ -356,15 +356,14 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         return service_fees
     
-    @classmethod
-    @user_context
-    def get_fee_details(cls, **kwargs):
+    @staticmethod    
+    def get_fee_details():
         """Get Products Fees -the cost of a filing and the list of filings."""
         current_app.logger.debug("<get_products_fees")
         data = {"items": []}
-        products_fees = FeeScheduleModel.get_fee_details()
-        schedule_schema = FeeDetailsSchema()
-        data["items"] = schedule_schema.dump(products_fees, many=True)
+        products_fees = FeeScheduleModel.get_fee_details()              
+        feedetails_schema = FeeDetailsSchema()
+        data["items"] = feedetails_schema.dump(products_fees, many=True)
         current_app.logger.debug(data)
-        current_app.logger.debug(">get_fee_details")
+        current_app.logger.debug(">get_products_fees")
         return data

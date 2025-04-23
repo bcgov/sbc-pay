@@ -166,15 +166,15 @@ class FeeSchedule(db.Model):
          # Create aliases for the fee_codes table
         main_fee_code = aliased(FeeCode)
         service_fee_code = aliased(FeeCode)
-
+        
         query = db.session.query(
-            CorpType.code,  # Corp type code
-            FilingType.code,  # Filing type code
-            CorpType.description,  # Product description
-            FilingType.description,  # Service description
-            #func.coalesce(main_fee_code.amount, 0).label("fee"),  # Main fee amount
-            #func.coalesce(service_fee_code.amount, 0).label("service_charge"),  # Service charge amount
-            cast(0, Integer).label("gst"),  # Hardcoded GST
+            CorpType.code.label("corp_type"), 
+            FilingType.code.label("filing_type"),  
+            CorpType.description.label("product"),  
+            FilingType.description.label("service"),  
+            func.coalesce(main_fee_code.amount, 0).label("fee"),  
+            func.coalesce(service_fee_code.amount, 0).label("service_charge"), 
+            cast(0, Integer).label("gst"),  # Placeholder for GST, adjust as needed
             ).select_from(cls).join(
                 CorpType, cls.corp_type_code == CorpType.code
             ).join(
@@ -226,6 +226,6 @@ class FeeDetailsSchema(Schema):
     filing_type = fields.String()
     product = fields.String()
     service = fields.String()    
-    #fee = fields.Decimal()
-    #service_charge = fields.Decimal()
+    fee = fields.Decimal()
+    service_charge = fields.Decimal()
     gst = fields.Integer()
