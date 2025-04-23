@@ -334,6 +334,7 @@ def send_email_mock(monkeypatch):
     monkeypatch.setattr("pay_api.services.eft_refund.send_email", send_email)
     monkeypatch.setattr("pay_api.services.base_payment_system.send_email", send_email)
 
+
 @pytest.fixture()
 def executor_mock(app):
     """Mock executor extension."""
