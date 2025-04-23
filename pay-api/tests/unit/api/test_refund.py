@@ -40,7 +40,7 @@ from tests.utilities.base_test import (
 )
 
 
-def test_create_refund(session, client, jwt, app, monkeypatch):
+def test_create_refund(session, client, jwt, app, send_email_mock, monkeypatch):
     """Assert that the endpoint  returns 202."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
