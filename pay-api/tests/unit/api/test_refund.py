@@ -44,7 +44,6 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
     """Assert that the endpoint  returns 202."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    monkeypatch.setattr("pay_api.services.base_payment_system.PaymentSystemService._send_credit_notification", lambda *args, **kwargs: None)
 
     rv = client.post(
         "/api/v1/payment-requests",
@@ -147,7 +146,7 @@ def test_create_eft_refund(session, client, jwt, app):
     assert invoice2.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
 
-def test_create_pad_refund(session, client, jwt, app):
+def test_create_pad_refund(session, client, jwt, app, account_admin_mock, monkeypatch):
     """Assert that the endpoint returns 202 and creates a credit on the account."""
     # 1. Create a PAD payment_account and cfs_account.
     # 2. Create a PAD invoice and mark as PAID.
