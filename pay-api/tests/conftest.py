@@ -284,6 +284,25 @@ def admin_users_mock(monkeypatch):
         get_account_admin_users,
     )
     monkeypatch.setattr("pay_api.services.eft_service.get_account_admin_users", get_account_admin_users)
+    monkeypatch.setattr("pay_api.services.base_payment_system.get_account_admin_users", get_account_admin_users)
+
+
+@pytest.fixture()
+def account_admin_mock(monkeypatch, mocker):
+    """Mock get_account_admin_users."""
+    mock_get_account_admin_users = mocker.patch('pay_api.services.base_payment_system.get_account_admin_users')
+    mock_get_account_admin_users.return_value = {
+        'members': [
+            {
+                'user': {
+                    'contacts': [
+                        {'email': 'admin@example.com'}
+                    ]
+                }
+            }
+        ]
+    }
+    return mock_get_account_admin_users
 
 
 @pytest.fixture()
@@ -313,7 +332,7 @@ def send_email_mock(monkeypatch):
     # Note this needs to be moved to a prism spec, we need to come up with one for NotifyAPI.
     monkeypatch.setattr("pay_api.services.email_service.send_email", send_email)
     monkeypatch.setattr("pay_api.services.eft_refund.send_email", send_email)
-
+    monkeypatch.setattr("pay_api.services.base_payment_system.send_email", send_email)
 
 @pytest.fixture()
 def executor_mock(app):

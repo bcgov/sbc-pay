@@ -135,7 +135,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
         assert invoice.refund == refund_amount
 
 
-def test_create_pad_partial_refund(session, client, jwt, app, send_email_mock, monkeypatch):
+def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock, monkeypatch):
     """Assert that the endpoint returns 202 and creates a credit on the account for partial refund."""
     # Create a PAD payment_account and cfs_account
     auth_account_id = 123456

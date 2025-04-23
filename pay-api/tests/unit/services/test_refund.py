@@ -100,27 +100,14 @@ def test_create_refund_for_unpaid_invoice(session):
     ],
 )
 def test_create_refund_for_paid_invoice(
-    session, monkeypatch, payment_method, invoice_status, pay_status, has_reference, expected_inv_status, mocker
+    session, monkeypatch, payment_method, invoice_status, pay_status, has_reference,
+    expected_inv_status, account_admin_mock, mocker
 ):
     """Assert that the create refund succeeds for paid invoices."""
     expected = REFUND_SUCCESS_MESSAGES[f"{payment_method}.{invoice_status}"]
 
-    mock_send_email = None
-    mock_get_account_admin_users = None
     if payment_method in [PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value]:
-        mock_send_email = mocker.patch('pay_api.services.base_payment_system.send_email')
-        mock_get_account_admin_users = mocker.patch('pay_api.services.base_payment_system.get_account_admin_users')
-        mock_get_account_admin_users.return_value = {
-            'members': [
-                {
-                    'user': {
-                        'contacts': [
-                            {'email': 'admin@example.com'}
-                        ]
-                    }
-                }
-            ]
-        }
+        send_email_mock = mocker.patch('pay_api.services.base_payment_system.send_email')
 
     payment_account = factory_payment_account(payment_method_code=payment_method)
     payment_account.auth_account_id = 'test_account_123'
@@ -160,12 +147,12 @@ def test_create_refund_for_paid_invoice(
         if i.invoice_status_code == InvoiceStatus.CREDITED.value and payment_method in [
             PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value
         ]:
-            mock_send_email.assert_called_once()
-            recipients_arg = mock_send_email.call_args[0][0]
+            send_email_mock.assert_called_once()
+            recipients_arg = send_email_mock.call_args[0][0]
             assert 'admin@example.com' in recipients_arg
-            subject_arg = mock_send_email.call_args[0][1]
+            subject_arg = send_email_mock.call_args[0][1]
             assert 'credit was added to your account' in subject_arg
-            html_body_arg = mock_send_email.call_args[0][2]
+            html_body_arg = send_email_mock.call_args[0][2]
             assert 'test_account_123' in html_body_arg
             assert 'Test Account Branch' in html_body_arg
 
