@@ -40,10 +40,11 @@ from tests.utilities.base_test import (
 )
 
 
-def test_create_refund(session, client, jwt, app, account_admin_mock, monkeypatch):
+def test_create_refund(session, client, jwt, app, monkeypatch):
     """Assert that the endpoint  returns 202."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    monkeypatch.setattr("pay_api.services.base_payment_system._send_credit_notification", lambda *args, **kwargs: None)
 
     rv = client.post(
         "/api/v1/payment-requests",
