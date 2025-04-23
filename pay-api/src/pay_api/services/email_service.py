@@ -99,6 +99,7 @@ def _render_payment_reversed_template(params: Dict) -> str:
 
     return template.render(params)
 
+
 def _render_credit_add_notification_template(params: Dict) -> str:
     """Render credit add notification template."""
     current_dir = os.path.dirname(os.path.abspath(__file__))

@@ -303,7 +303,17 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             f"Updating credit amount to {payment_account.credit} for account {payment_account.auth_account_id}"
         )
         payment_account.flush()
-        
+
+        PaymentSystemService._send_credit_notification(payment_account, refund_amount)
+
+        if is_partial and refund_amount != invoice.total:
+            return InvoiceStatus.PAID.value
+
+        return InvoiceStatus.CREDITED.value
+
+    @staticmethod
+    def _send_credit_notification(payment_account: PaymentAccountModel, refund_amount: float):
+        """Send credit notification email to account admins."""
         receiver_recipients = []
         org_admins_response = get_account_admin_users(payment_account.auth_account_id)
 
@@ -318,15 +328,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                 "amount": refund_amount,
                 "account_number": payment_account.auth_account_id,
                 "account_name_with_branch": payment_account.branch_name,
-                "login_url": f"{current_app.config.get('AUTH_WEB_URL')}/account/{payment_account.auth_account_id}/settings/transactions",
+                "login_url": (f"{current_app.config.get('AUTH_WEB_URL')}/account/"
+                              f"{payment_account.auth_account_id}/settings/transactions"),
             }
         )
         send_email(receiver_recipients, subject, html_body)
-
-        if is_partial and refund_amount != invoice.total:
-            return InvoiceStatus.PAID.value
-
-        return InvoiceStatus.CREDITED.value
 
     @staticmethod
     def _publish_refund_to_mailer(invoice: InvoiceModel):

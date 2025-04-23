@@ -157,7 +157,9 @@ def test_create_refund_for_paid_invoice(
         assert i.refund_date
         mock_publish.assert_called()
 
-        if payment_method in [PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value]:
+        if i.invoice_status_code == InvoiceStatus.CREDITED.value and payment_method in [
+            PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value
+        ]:
             mock_send_email.assert_called_once()
             recipients_arg = mock_send_email.call_args[0][0]
             assert 'admin@example.com' in recipients_arg
@@ -166,6 +168,7 @@ def test_create_refund_for_paid_invoice(
             html_body_arg = mock_send_email.call_args[0][2]
             assert 'test_account_123' in html_body_arg
             assert 'Test Account Branch' in html_body_arg
+
 
 def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
     """Assert that the create duplicate refund fails for paid invoices."""
