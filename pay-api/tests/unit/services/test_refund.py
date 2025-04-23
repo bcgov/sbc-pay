@@ -18,7 +18,7 @@ Test-Suite to ensure that the Refund Service is working as expected.
 """
 
 from datetime import datetime, timezone
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -104,7 +104,27 @@ def test_create_refund_for_paid_invoice(
 ):
     """Assert that the create refund succeeds for paid invoices."""
     expected = REFUND_SUCCESS_MESSAGES[f"{payment_method}.{invoice_status}"]
+
+    mock_send_email = None
+    mock_get_account_admin_users = None
+    if payment_method in [PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value]:
+        mock_send_email = mocker.patch('pay_api.services.base_payment_system.send_email')
+        mock_get_account_admin_users = mocker.patch('pay_api.services.base_payment_system.get_account_admin_users')
+        mock_get_account_admin_users.return_value = {
+            'members': [
+                {
+                    'user': {
+                        'contacts': [
+                            {'email': 'admin@example.com'}
+                        ]
+                    }
+                }
+            ]
+        }
+
     payment_account = factory_payment_account(payment_method_code=payment_method)
+    payment_account.auth_account_id = 'test_account_123'
+    payment_account.branch_name = 'Test Account Branch'
     payment_account.save()
 
     i = factory_invoice(payment_account=payment_account, payment_method_code=payment_method)
@@ -137,6 +157,15 @@ def test_create_refund_for_paid_invoice(
         assert i.refund_date
         mock_publish.assert_called()
 
+        if payment_method in [PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value]:
+            mock_send_email.assert_called_once()
+            recipients_arg = mock_send_email.call_args[0][0]
+            assert 'admin@example.com' in recipients_arg
+            subject_arg = mock_send_email.call_args[0][1]
+            assert 'credit was added to your account' in subject_arg
+            html_body_arg = mock_send_email.call_args[0][2]
+            assert 'test_account_123' in html_body_arg
+            assert 'Test Account Branch' in html_body_arg
 
 def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
     """Assert that the create duplicate refund fails for paid invoices."""

@@ -34,7 +34,9 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.auth import get_account_admin_users
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.email_service import _render_credit_add_notification_template, send_email
 from pay_api.services.flags import flags
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -301,6 +303,25 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             f"Updating credit amount to {payment_account.credit} for account {payment_account.auth_account_id}"
         )
         payment_account.flush()
+        
+        receiver_recipients = []
+        org_admins_response = get_account_admin_users(payment_account.auth_account_id)
+
+        members = org_admins_response.get("members") if org_admins_response.get("members", None) else []
+        for member in members:
+            if (user := member.get("user")) and (contacts := user.get("contacts")):
+                receiver_recipients.append(contacts[0].get("email"))
+
+        subject = f"{refund_amount} credit was added to your account "
+        html_body = _render_credit_add_notification_template(
+            {
+                "amount": refund_amount,
+                "account_number": payment_account.auth_account_id,
+                "account_name_with_branch": payment_account.branch_name,
+                "login_url": f"{current_app.config.get('AUTH_WEB_URL')}/account/{payment_account.auth_account_id}/settings/transactions",
+            }
+        )
+        send_email(receiver_recipients, subject, html_body)
 
         if is_partial and refund_amount != invoice.total:
             return InvoiceStatus.PAID.value
