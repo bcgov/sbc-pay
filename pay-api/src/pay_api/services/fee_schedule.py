@@ -23,7 +23,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.models import FeeScheduleSchema
+from pay_api.models import FeeScheduleSchema, FeeDetailsSchema
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -355,3 +355,16 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
                 service_fees = FeeCodeModel.find_by_code(service_fee.code).amount
 
         return service_fees
+    
+    @classmethod
+    @user_context
+    def get_fee_details(cls, **kwargs):
+        """Get Products Fees -the cost of a filing and the list of filings."""
+        current_app.logger.debug("<get_products_fees")
+        data = {"items": []}
+        products_fees = FeeScheduleModel.get_fee_details()
+        schedule_schema = FeeDetailsSchema()
+        data["items"] = schedule_schema.dump(products_fees, many=True)
+        current_app.logger.debug(data)
+        current_app.logger.debug(">get_fee_details")
+        return data

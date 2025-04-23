@@ -16,9 +16,10 @@
 from datetime import datetime, timezone
 from operator import or_
 
-from sqlalchemy import Boolean, Date, ForeignKey, cast, func
+from sqlalchemy import Boolean, Date, ForeignKey, cast, func, Integer
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, aliased
+from marshmallow import fields, Schema
 
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
@@ -159,6 +160,35 @@ class FeeSchedule(db.Model):
 
         return query.all()
 
+    @classmethod
+    def get_fee_details(cls):
+        """Get detailed fee information including corp type, filing type, and fees."""
+         # Create aliases for the fee_codes table
+        main_fee_code = aliased(FeeCode)
+        service_fee_code = aliased(FeeCode)
+
+        query = db.session.query(
+            CorpType.code,  # Corp type code
+            FilingType.code,  # Filing type code
+            CorpType.description,  # Product description
+            FilingType.description,  # Service description
+            #func.coalesce(main_fee_code.amount, 0).label("fee"),  # Main fee amount
+            #func.coalesce(service_fee_code.amount, 0).label("service_charge"),  # Service charge amount
+            cast(0, Integer).label("gst"),  # Hardcoded GST
+            ).select_from(cls).join(
+                CorpType, cls.corp_type_code == CorpType.code
+            ).join(
+                FilingType, cls.filing_type_code == FilingType.code
+            ).outerjoin(
+                main_fee_code, cls.fee_code == main_fee_code.code
+            ).outerjoin(
+                service_fee_code, cls.service_fee_code == service_fee_code.code
+            )
+
+        results = query.all()
+        
+        return results
+
     def save(self):
         """Save fee schedule."""
         db.session.add(self)
@@ -189,3 +219,13 @@ class FeeScheduleSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-an
         ],
     )
     filing_type = ma.Nested(FilingTypeSchema, many=False, data_key="filing_type_code")
+
+class FeeDetailsSchema(Schema):
+    """Schema for fee details."""
+    corp_type = fields.String()
+    filing_type = fields.String()
+    product = fields.String()
+    service = fields.String()    
+    #fee = fields.Decimal()
+    #service_charge = fields.Decimal()
+    gst = fields.Integer()
