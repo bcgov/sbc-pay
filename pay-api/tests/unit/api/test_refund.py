@@ -146,7 +146,7 @@ def test_create_eft_refund(session, client, jwt, app):
     assert invoice2.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
 
-def test_create_pad_refund(session, client, jwt, app):
+def test_create_pad_refund(session, client, jwt, app, account_admin_mock, monkeypatch):
     """Assert that the endpoint returns 202 and creates a credit on the account."""
     # 1. Create a PAD payment_account and cfs_account.
     # 2. Create a PAD invoice and mark as PAID.

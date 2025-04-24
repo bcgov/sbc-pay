@@ -98,3 +98,13 @@ def _render_payment_reversed_template(params: Dict) -> str:
     params["statementUrl"] = statement_url
 
     return template.render(params)
+
+
+def _render_credit_add_notification_template(params: Dict) -> str:
+    """Render credit add notification template."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root_dir = os.path.dirname(current_dir)
+    templates_dir = os.path.join(project_root_dir, "templates")
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+    template = env.get_template("credit_add_notification.html")
+    return template.render(params)
