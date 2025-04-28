@@ -13,16 +13,18 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Line Item partial refunds."""
 
+from datetime import datetime
 from decimal import Decimal
 
 from attrs import define
+from marshmallow import fields
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
 from ..utils.enums import RefundsPartialType
 from .audit import Audit
 from .base_model import BaseModel
-from .db import db
+from .db import db, ma
 
 
 class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -82,4 +84,45 @@ class RefundPartialLine:
             payment_line_item_id=row.payment_line_item_id,
             refund_amount=row.refund_amount,
             refund_type=row.refund_type,
+        )
+
+
+class RefundsPartialSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
+    """Main schema used to serialize the Refunds Partial."""
+
+    class Meta:
+        """Returns all the fields from the SQLAlchemy class."""
+
+        model = RefundsPartial
+        load_instance = True
+
+    refund_amount = fields.Float(data_key="refund_amount")
+    payment_line_item_id = fields.Integer(data_key="payment_line_item_id")
+    refund_type = fields.String(data_key="refund_type")
+    gl_posted = fields.DateTime(data_key="gl_posted")
+    invoice_id = fields.Integer(data_key="invoice_id")
+
+
+@define
+class RefundsPartialSearchModel:
+    """Refunds Partial Search Model."""
+
+    refund_amount: Decimal
+    payment_line_item_id: int
+    refund_type: str
+    gl_posted: datetime
+    invoice_id: int
+
+    @classmethod
+    def from_row(cls, row: RefundsPartial):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(
+            refund_amount=row.refund_amount,
+            payment_line_item_id=row.payment_line_item_id,
+            refund_type=row.refund_type,
+            gl_posted=row.gl_posted,
+            invoice_id=row.invoice_id,
         )

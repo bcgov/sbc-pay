@@ -16,12 +16,34 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, InvoiceReference, db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus
+from pay_api.models import (
+    DistributionCode,
+    EjvFile,
+    EjvHeader,
+    EjvLink,
+    FeeSchedule,
+    Invoice,
+    InvoiceReference,
+    RefundsPartial,
+    db,
+)
+from pay_api.utils.enums import (
+    DisbursementStatus,
+    EjvFileType,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    RefundsPartialType,
+)
 
 from tasks.ejv_payment_task import EjvPaymentTask
 
-from .factory import factory_create_ejv_account, factory_distribution, factory_invoice, factory_payment_line_item
+from .factory import (
+    factory_create_ejv_account,
+    factory_distribution,
+    factory_invoice,
+    factory_payment_line_item,
+    factory_refund_partial,
+)
 
 
 def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
@@ -148,3 +170,97 @@ def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
         ejv_file: EjvFile = EjvFile.find_by_id(ejv_header.ejv_file_id)
         assert ejv_file
         assert ejv_file.file_type == EjvFileType.PAYMENT.value
+
+
+def test_ejv_partial_refund(session, monkeypatch, google_bucket_mock):
+    """Test EJV partial refund functionality.
+
+    Steps:
+    1) Create necessary distribution codes
+    2) Create government account
+    3) Create invoice and complete payment (set status to PAID)
+    4) Create partial refund record for the invoice
+    5) Run EJV task
+    6) Verify results
+    """
+    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+
+    corp_type = "BEN"
+    filing_type = "BCINC"
+    fee_schedule: FeeSchedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type, filing_type)
+
+    service_fee_dist_code = factory_distribution(
+        name="service fee",
+        client="112",
+        reps_centre="99999",
+        service_line="99999",
+        stob="9999",
+        project_code="9999999",
+    )
+    service_fee_dist_code.save()
+
+    dist_code: DistributionCode = DistributionCode.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
+
+    dist_code.client = "112"
+    dist_code.responsibility_centre = "22222"
+    dist_code.service_line = "33333"
+    dist_code.stob = "4444"
+    dist_code.project_code = "5555555"
+    dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
+    dist_code.save()
+
+    jv_account = factory_create_ejv_account(auth_account_id="partial-refund-test")
+
+    invoice = factory_invoice(
+        payment_account=jv_account,
+        corp_type_code=corp_type,
+        total=200.0,
+        status_code=InvoiceStatus.PAID.value,
+        payment_method_code=None,
+    )
+
+    line_item = factory_payment_line_item(
+        invoice_id=invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        filing_fees=190.0,
+        total=190.0,
+        service_fees=10.0,
+        fee_dist_id=dist_code.distribution_code_id,
+    )
+
+    invoice_ref = InvoiceReference(
+        invoice_id=invoice.id,
+        invoice_number=f"TEST-REF-{invoice.id}",
+        reference_number="TEST123",
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+    invoice_ref.save()
+
+    refund_partial = factory_refund_partial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=50.0,
+        refund_type=RefundsPartialType.BASE_FEES.value,
+    )
+
+    EjvPaymentTask.create_ejv_file()
+
+    refund_partial_updated = RefundsPartial.find_by_id(refund_partial.id)
+    assert refund_partial_updated.gl_posted is True
+
+    ejv_refund_link = db.session.query(EjvLink).filter(
+        EjvLink.link_id == refund_partial.id,
+        EjvLink.link_type == 'PARTIAL_REFUND'
+    ).first()
+
+    assert ejv_refund_link is not None
+    assert ejv_refund_link.disbursement_status_code == DisbursementStatus.UPLOADED.value
+
+    ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_refund_link.ejv_header_id).first()
+    assert ejv_header is not None
+    assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
+
+    ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
+    assert ejv_file is not None
+    assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert ejv_file.file_type == EjvFileType.PAYMENT.value

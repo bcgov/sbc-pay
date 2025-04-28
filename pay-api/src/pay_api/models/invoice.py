@@ -36,6 +36,7 @@ from .invoice_reference import InvoiceReferenceSchema
 from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
+from .refunds_partial import RefundsPartialSchema, RefundsPartialSearchModel
 
 
 def determine_overdue_date(context):
@@ -140,6 +141,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     payment_account = relationship("PaymentAccount", lazy="joined")
     references = relationship("InvoiceReference", lazy="joined")
     corp_type = relationship("CorpType", foreign_keys=[corp_type_code], lazy="select", innerjoin=True)
+    partial_refunds = relationship("RefundsPartial", lazy="joined")
 
     __table_args__ = (
         db.Index(
@@ -258,6 +260,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
 
     # pylint: disable=no-member
     payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key="line_items")
+    partial_refunds = ma.Nested(RefundsPartialSchema, many=True, data_key="partial_refunds")
     receipts = ma.Nested(ReceiptSchema, many=True, data_key="receipts")
     references = ma.Nested(InvoiceReferenceSchema, many=True, data_key="references")
     payment_account = ma.Nested(
@@ -325,6 +328,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     details: Optional[List[dict]]
     payment_account: Optional[PaymentAccountSearchModel]
     line_items: Optional[List[PaymentLineItemSearchModel]]
+    partial_refunds: Optional[List[RefundsPartialSearchModel]]
     product: str
     invoice_number: str
     payment_date: datetime
@@ -352,6 +356,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             None if row.business_identifier and row.business_identifier.startswith("T") else row.business_identifier
         )
         line_items = [PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items]
+        partial_refunds = [RefundsPartialSearchModel.from_row(x) for x in row.partial_refunds]
         invoice_number = row.references[0].invoice_number if len(row.references) > 0 else None
 
         return cls(
@@ -373,6 +378,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             details=row.details,
             payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
             line_items=line_items,
+            partial_refunds=partial_refunds,
             product=row.corp_type.product,
             payment_date=row.payment_date,
             refund_date=row.refund_date,
