@@ -85,7 +85,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
         """Do nothing to process refund; as the refund is handled by CRON job.
 
         Return the status after checking invoice status.
-            1. If refund_partial is not empty, return the invoice status.
+            1. If refund_partial on PAID invoice, return the invoice status.
             2. If invoice status is APPROVED:
                 2.1 return REFUND_REQUESTED if there is an ACTIVE invoice_reference
                 2.2 else return CANCELLED (as no refund process is needed for this as JV hasn't started yet)
@@ -93,7 +93,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
                 3.1 Return REFUND_REQUESTED
         """
         current_app.logger.info(f"Received JV refund for invoice {invoice.id}, {invoice.invoice_status_code}")
-        if refund_partial:
+        if refund_partial and invoice.invoice_status_code == InvoiceStatus.PAID.value:
             return invoice.invoice_status_code
         if not payment_account.billable:
             return InvoiceStatus.REFUNDED.value

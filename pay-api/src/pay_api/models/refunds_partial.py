@@ -17,14 +17,13 @@ from datetime import datetime
 from decimal import Decimal
 
 from attrs import define
-from marshmallow import fields
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
 from ..utils.enums import RefundsPartialType
 from .audit import Audit
 from .base_model import BaseModel
-from .db import db, ma
+from .db import db
 
 
 class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -85,22 +84,6 @@ class RefundPartialLine:
             refund_amount=row.refund_amount,
             refund_type=row.refund_type,
         )
-
-
-class RefundsPartialSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
-    """Main schema used to serialize the Refunds Partial."""
-
-    class Meta:
-        """Returns all the fields from the SQLAlchemy class."""
-
-        model = RefundsPartial
-        load_instance = True
-
-    refund_amount = fields.Float(data_key="refund_amount")
-    payment_line_item_id = fields.Integer(data_key="payment_line_item_id")
-    refund_type = fields.String(data_key="refund_type")
-    gl_posted = fields.DateTime(data_key="gl_posted")
-    invoice_id = fields.Integer(data_key="invoice_id")
 
 
 @define
