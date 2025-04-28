@@ -6,7 +6,7 @@ from pay_api.utils.serializable import Serializable
 
 
 @define
-class ProductGetRequest(Serializable):
-    """Retrieve product DTO."""
+class ProductFeeGetRequest(Serializable):
+    """Retrieve product fee DTO."""
 
     product_code: Optional[str] = None

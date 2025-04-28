@@ -56,7 +56,7 @@ def factory_fee_schedule(
         fee_end_date=fee_end_date,
         priority_fee_code=priority_fee_code,
         future_effective_fee_code=future_effective_fee_code,
-        service_fee_code = service_fee_code,        
+        service_fee_code=service_fee_code,
     )
 
 
@@ -181,28 +181,29 @@ def test_fee_schedule_find_by_none_corp_type_and_filing_type(session):
 
     assert fee_schedule is None
 
+
 def get_or_create_corp_type(corp_type_code: str, corp_description: str, session):
     """Return a valid Corp Type object."""
     existing = session.query(CorpType).filter_by(code=corp_type_code).first()
     if existing:
-        return existing    
+        return existing
     return CorpType(code=corp_type_code, description=corp_description)
-    
+
 
 def test_get_fee_details_all_products(session):
     """Test the get_fee_details method without providing specific product code -> found all the record."""
     print(session.query(FeeSchedule).count())
-    fee_code = factory_feecode("EN000X", 100)  
-    service_fee_code = factory_feecode("SRV001", 10)    
-    corp_type = get_or_create_corp_type("BEN", "Benefit Company",session=session) 
+    fee_code = factory_feecode("EN000X", 100)
+    service_fee_code = factory_feecode("SRV001", 10)
+    corp_type = get_or_create_corp_type("BEN", "Benefit Company", session=session)
     filing_type = factory_filing_type("OTF", "Notice of Change")
     fee_schedule = factory_fee_schedule(
         filing_type_code="OTF",
         corp_type_code="BEN",
-        fee_code="EN000X",        
+        fee_code="EN000X",
         fee_start_date=datetime.now(tz=timezone.utc),
         fee_end_date=None,
-        service_fee_code="SRV001", 
+        service_fee_code="SRV001",
     )
 
     session.add(fee_code)
@@ -212,48 +213,47 @@ def test_get_fee_details_all_products(session):
     session.add(fee_schedule)
     session.commit()
 
-
     results = fee_schedule.get_fee_details()
 
-   
     assert len(results) >= 1
     target_result = None
     for result in results:
         if (
             result.corp_type == "BEN"
             and result.filing_type == "OTF"
-            and result.product == "Benefit Company"
+            and result.corp_type_description == "Benefit Company"
             and result.service == "Notice of Change"
-            and result.fee == 100  
-            and result.service_charge == 10  
+            and result.fee == 100
+            and result.service_charge == 10
             and result.gst == 0  # Placeholder GST value
         ):
             target_result = result
             break
-    
+
     assert target_result is not None, "Expected record with specific conditions not found"
     assert target_result.corp_type == "BEN"
     assert target_result.filing_type == "OTF"
-    assert target_result.product == "Benefit Company"
+    assert target_result.corp_type_description == "Benefit Company"
     assert target_result.service == "Notice of Change"
     assert target_result.fee == 100
-    assert target_result.service_charge == 10    
+    assert target_result.service_charge == 10
     assert target_result.gst == 0  # Placeholder GST value
+
 
 def test_get_fee_details_specific_product_code(session):
     """Test the get_fee_details method by providing specific product code -> found the record with provided product code."""
-    fee_code = factory_feecode("EN000X", 100)  
-    service_fee_code = factory_feecode("SRV001", 10)    
-    corp_type = get_or_create_corp_type("BEN", "Benefit Company",session=session) 
+    fee_code = factory_feecode("EN000X", 100)
+    service_fee_code = factory_feecode("SRV001", 10)
+    corp_type = get_or_create_corp_type("BEN", "Benefit Company", session=session)
     product_code = corp_type.product
     filing_type = factory_filing_type("OTF", "Notice of Change")
     fee_schedule = factory_fee_schedule(
         filing_type_code="OTF",
         corp_type_code="BEN",
-        fee_code="EN000X",        
+        fee_code="EN000X",
         fee_start_date=datetime.now(tz=timezone.utc),
         fee_end_date=None,
-        service_fee_code="SRV001", 
+        service_fee_code="SRV001",
     )
 
     session.add(fee_code)
@@ -263,30 +263,28 @@ def test_get_fee_details_specific_product_code(session):
     session.add(fee_schedule)
     session.commit()
 
-
     results = fee_schedule.get_fee_details(product_code)
 
-   
     assert len(results) >= 1
     target_result = None
     for result in results:
         if (
             result.corp_type == "BEN"
             and result.filing_type == "OTF"
-            and result.product == "Benefit Company"
+            and result.corp_type_description == "Benefit Company"
             and result.service == "Notice of Change"
-            and result.fee == 100  
-            and result.service_charge == 10  
+            and result.fee == 100
+            and result.service_charge == 10
             and result.gst == 0  # Placeholder GST value
         ):
             target_result = result
             break
-    
+
     assert target_result is not None, "Expected record with specific conditions not found"
     assert target_result.corp_type == "BEN"
     assert target_result.filing_type == "OTF"
-    assert target_result.product == "Benefit Company"
+    assert target_result.corp_type_description == "Benefit Company"
     assert target_result.service == "Notice of Change"
     assert target_result.fee == 100
-    assert target_result.service_charge == 10    
+    assert target_result.service_charge == 10
     assert target_result.gst == 0  # Placeholder GST value

@@ -14,6 +14,7 @@
 """Model to handle all operations related to fee and fee schedule."""
 
 from datetime import datetime, timezone
+from decimal import Decimal
 from operator import or_
 
 from sqlalchemy import Boolean, Date, ForeignKey, cast, func, Integer
@@ -25,7 +26,8 @@ from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode
 from .filing_type import FilingType, FilingTypeSchema
-
+from pay_api.utils.serializable import Serializable
+from attr import define
 
 class FeeSchedule(db.Model):
     """This class manages all of the base data about a fee schedule.
@@ -161,41 +163,41 @@ class FeeSchedule(db.Model):
         return query.all()
 
     @classmethod
-    def get_fee_details(cls,product_code:str = None):
+    def get_fee_details(cls, product_code: str = None):
         """Get detailed fee information including corp type, filing type, and fees."""
-         # Create aliases for the fee_codes table
+        # Create aliases for the fee_codes table
         main_fee_code = aliased(FeeCode)
         service_fee_code = aliased(FeeCode)
-        
-         # Get the current system date
+
+        # Get the current system date
         current_date = datetime.now(tz=timezone.utc).date()
 
-        query = db.session.query(
-            CorpType.code.label("corp_type"), 
-            FilingType.code.label("filing_type"),  
-            CorpType.description.label("product"),  
-            FilingType.description.label("service"),  
-            func.coalesce(main_fee_code.amount, 0).label("fee"),  
-            func.coalesce(service_fee_code.amount, 0).label("service_charge"), 
-            cast(0, Integer).label("gst"),  # Placeholder for GST, adjust as needed
-            ).select_from(cls).join(
-                CorpType, cls.corp_type_code == CorpType.code
-            ).join(
-                FilingType, cls.filing_type_code == FilingType.code
-            ).outerjoin(
-                main_fee_code, cls.fee_code == main_fee_code.code
-            ).outerjoin(
-                service_fee_code, cls.service_fee_code == service_fee_code.code
-            ).filter(            
-            ((cls.fee_start_date.is_(None)) | (cls.fee_start_date <= current_date)) &
-            ((cls.fee_end_date.is_(None)) | (cls.fee_end_date >= current_date))
+        query = (
+            db.session.query(
+                CorpType.code.label("corp_type"),
+                FilingType.code.label("filing_type"),
+                CorpType.description.label("corp_type_description"),
+                FilingType.description.label("service"),
+                func.coalesce(main_fee_code.amount, 0).label("fee"),
+                func.coalesce(service_fee_code.amount, 0).label("service_charge"),
+                cast(0, Integer).label("gst"),  # Placeholder for GST, adjust as needed
+            )
+            .select_from(cls)
+            .join(CorpType, cls.corp_type_code == CorpType.code)
+            .join(FilingType, cls.filing_type_code == FilingType.code)
+            .outerjoin(main_fee_code, cls.fee_code == main_fee_code.code)
+            .outerjoin(service_fee_code, cls.service_fee_code == service_fee_code.code)
+            .filter(
+                (cls.fee_start_date <= current_date)
+                & ((cls.fee_end_date.is_(None)) | (cls.fee_end_date >= current_date))
+            )
         )
-        
-         # Add a filter if the product parameter is provided
+
+        # Add a filter if the product parameter is provided
         if product_code:
             query = query.filter(CorpType.product == product_code)
         results = query.all()
-        
+
         return results
 
     def save(self):
@@ -229,12 +231,16 @@ class FeeScheduleSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-an
     )
     filing_type = ma.Nested(FilingTypeSchema, many=False, data_key="filing_type_code")
 
-class FeeDetailsSchema(Schema):
+
+@define
+class FeeDetailsSchema(Serializable):
     """Schema for fee details."""
-    corp_type = fields.String()
-    filing_type = fields.String()
-    product = fields.String()
-    service = fields.String()    
-    fee = fields.Decimal()
-    service_charge = fields.Decimal()
-    gst = fields.Integer()
+
+    corp_type : str
+    filing_type : str
+    corp_type_description : str
+    service : str
+    fee : Decimal
+    service_charge : Decimal
+    gst : int    
+    
