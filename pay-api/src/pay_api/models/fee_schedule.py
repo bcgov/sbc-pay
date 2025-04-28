@@ -161,12 +161,15 @@ class FeeSchedule(db.Model):
         return query.all()
 
     @classmethod
-    def get_fee_details(cls):
+    def get_fee_details(cls,product_code:str = None):
         """Get detailed fee information including corp type, filing type, and fees."""
          # Create aliases for the fee_codes table
         main_fee_code = aliased(FeeCode)
         service_fee_code = aliased(FeeCode)
         
+         # Get the current system date
+        current_date = datetime.now(tz=timezone.utc).date()
+
         query = db.session.query(
             CorpType.code.label("corp_type"), 
             FilingType.code.label("filing_type"),  
@@ -183,8 +186,14 @@ class FeeSchedule(db.Model):
                 main_fee_code, cls.fee_code == main_fee_code.code
             ).outerjoin(
                 service_fee_code, cls.service_fee_code == service_fee_code.code
-            )
-
+            ).filter(            
+            ((cls.fee_start_date.is_(None)) | (cls.fee_start_date <= current_date)) &
+            ((cls.fee_end_date.is_(None)) | (cls.fee_end_date >= current_date))
+        )
+        
+         # Add a filter if the product parameter is provided
+        if product_code:
+            query = query.filter(CorpType.product == product_code)
         results = query.all()
         
         return results

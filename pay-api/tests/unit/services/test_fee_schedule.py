@@ -252,6 +252,45 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
     )
     assert fee_schedule.service_fees == 10
 
+def test_get_fee_details(session):
+    """Assert that get_fee_details retrieves the correct fee details."""
+    # Create mock fee details in the database
+    fee_code = "FEE001"
+ 
+    fee_code_master = FeeCode(code=fee_code, amount=100)
+    fee_code_master.save()
+   
+    filing_type_code = "TEST"
+    corp_type_code = "CP TEST"
+
+    filing_type = FilingType(code=filing_type_code, description="Test Filing Type")
+    filing_type.save()
+
+    corp_type = CorpType(code=corp_type_code, description="Test Corp Type")
+    corp_type.save()
+
+    fee_schedule = FeesScheduleModel(
+        filing_type_code=filing_type_code,
+        corp_type_code=corp_type_code,
+        fee_code=fee_code,
+        fee_start_date=datetime.now(tz=timezone.utc),
+    )
+    fee_schedule.save()    
+
+    # Call the method under test
+    result = services.FeeSchedule.get_fee_details()
+
+    # Assert the result contains the correct fee details
+    assert len(result["items"]) >= 2, "Expected at least 2 items in the result."
+
+    found_fee_code = False
+    for item in result["items"]:
+        print(f"Inspecting item: {item}")
+        if item["filing_type"] == filing_type_code and item["corp_type"] == corp_type_code:
+            found_fee_code = True
+            break        
+
+    assert found_fee_code, f"Record with fee_code {fee_code} and amount 100 not found in result."    
 
 def create_linked_data(
     filing_type_code: str,
