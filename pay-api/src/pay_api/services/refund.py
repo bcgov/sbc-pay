@@ -31,6 +31,7 @@ from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.partner_disbursements import PartnerDisbursements
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
@@ -396,6 +397,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
                 refund_type=line.refund_type,
             )
             db.session.add(refund_line)
+            PartnerDisbursements.handle_partial_refund(refund_line, invoice)
 
     @staticmethod
     def _get_partial_refund_lines(

@@ -7,6 +7,7 @@ from flask import current_app
 from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.partner_disbursements import PartnerDisbursements as PartnerDisbursementsModel
+from pay_api.models.refunds_partial import RefundsPartial as RefundsPartialModel
 from pay_api.utils.enums import DisbursementStatus, EJVLinkType
 
 
@@ -79,3 +80,27 @@ class PartnerDisbursements:
                     target_id=invoice.id,
                     target_type=EJVLinkType.INVOICE.value,
                 ).flush()
+
+    @staticmethod
+    def handle_partial_refund(partial_refund: RefundsPartialModel, invoice: InvoiceModel):
+        """Insert a partner disbursement row if necessary with is_reversal as False."""
+        if PartnerDisbursements._skip_partner_disbursement(invoice):
+            return
+
+        latest_active_disbursement = PartnerDisbursementsModel.find_by_target_latest_exclude_cancelled(
+            partial_refund.id, EJVLinkType.PARTIAL_REFUND.value
+        )
+
+        if latest_active_disbursement is None:
+            PartnerDisbursementsModel(
+                amount=partial_refund.refund_amount,
+                is_reversal=True,
+                partner_code=invoice.corp_type_code,
+                status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+                target_id=partial_refund.id,
+                target_type=EJVLinkType.PARTIAL_REFUND.value,
+            ).flush()
+        else:
+            current_app.logger.info(
+                f"Skipping Partner Disbursement Partial Refund creation for {partial_refund.id} already exists."
+            )
