@@ -312,13 +312,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         return InvoiceStatus.CREDITED.value
 
     @staticmethod
-    def get_formatted_account_name(name: str, branch_name: str = None) -> str:
-        """Format account name with branch name if needed."""
-        if branch_name and branch_name not in name:
-            return f"{name}-{branch_name}"
-        return name
-
-    @staticmethod
     def _send_credit_notification(payment_account: PaymentAccountModel, refund_amount: float):
         """Send credit notification email to account admins."""
         receiver_recipients = []
@@ -334,8 +327,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             {
                 "amount": refund_amount,
                 "account_number": payment_account.auth_account_id,
-                "account_name_with_branch": PaymentSystemService.get_formatted_account_name(
-                    payment_account.name, payment_account.branch_name
+                "account_name_with_branch": (
+                    f"{payment_account.name}-{payment_account.branch_name}"
+                    if payment_account.branch_name and payment_account.branch_name not in payment_account.name
+                    else payment_account.name
                 ),
                 "login_url": (f"{current_app.config.get('AUTH_WEB_URL')}/account/"
                               f"{payment_account.auth_account_id}/settings/transactions"),
