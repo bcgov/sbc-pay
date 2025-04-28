@@ -327,9 +327,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             {
                 "amount": refund_amount,
                 "account_number": payment_account.auth_account_id,
-                "account_name_with_branch": (payment_account.name
-                                             + (" - " + payment_account.branch_name
-                                                if payment_account.branch_name else "")),
+                "account_name_with_branch": payment_account.name,
                 "login_url": (f"{current_app.config.get('AUTH_WEB_URL')}/account/"
                               f"{payment_account.auth_account_id}/settings/transactions"),
             }
