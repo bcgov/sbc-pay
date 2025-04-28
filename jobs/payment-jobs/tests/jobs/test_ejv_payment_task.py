@@ -219,6 +219,9 @@ def test_ejv_partial_refund(session, monkeypatch, google_bucket_mock):
         payment_method_code=None,
     )
 
+    invoice.refund = 50.0
+    invoice.save()
+
     line_item = factory_payment_line_item(
         invoice_id=invoice.id,
         fee_schedule_id=fee_schedule.fee_schedule_id,

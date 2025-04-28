@@ -105,8 +105,7 @@ class EjvPaymentTask(CgiEjv):
             for inv in invoices:
                 # If it's a JV reversal credit and debit is reversed.
                 is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
-                is_partial_refund = (inv.invoice_status_code == InvoiceStatus.PAID.value
-                                     and inv.refund_amount and inv.refund_amount > 0)
+                is_partial_refund = cls._is_partial_refund(inv)
 
                 # If it's reversal, If there is no COMPLETED invoice reference, then no need to reverse it.
                 # Else mark it as CANCELLED, as new invoice reference will be created
@@ -120,7 +119,7 @@ class EjvPaymentTask(CgiEjv):
                     inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
 
                 line_items = inv.payment_line_items
-                partial_refunds = inv.partial_refunds
+                partial_refunds = RefundsPartialModel.get_partial_refunds_for_invoice(inv.id)
                 invoice_number = f"#{inv.id}"
                 description = disbursement_desc[: -len(invoice_number)] + invoice_number
                 description = f"{description[:100]:<100}"
@@ -130,14 +129,7 @@ class EjvPaymentTask(CgiEjv):
                     line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                         line.fee_distribution_id
                     )
-                    line_total = line.total
-
-                    if partial_refunds and inv.invoice_status_code == InvoiceStatus.APPROVED.value:
-                        # For approved invoice with partial refunds, reduce the line_total by the refund amount
-                        # if the line item matches the one in partial refunds
-                        for partial_refund in partial_refunds:
-                            if partial_refund.line_item_id == line.id:
-                                line_total -= partial_refund.refund_amount
+                    line_total = 0
 
                     if is_partial_refund:
                         # Find matching partial refund for this line item
@@ -148,6 +140,8 @@ class EjvPaymentTask(CgiEjv):
                         if not matching_refund:
                             continue
                         line_total = matching_refund.refund_amount
+                    else:
+                        line_total = line.total
 
                     if line_total > 0:
                         total += line_total
@@ -245,22 +239,24 @@ class EjvPaymentTask(CgiEjv):
 
             current_app.logger.info("Creating ejv invoice link records and setting invoice status.")
             sequence = 1
-            if is_partial_refund:
-                for partial_refund in partial_refunds:
-                    current_app.logger.debug(
-                        f"Creating EJV partial refund link for partial refund id: {partial_refund.id}"
-                    )
-                    ejv_partial_refund_link = EjvLinkModel(
-                        link_id=partial_refund.id,
-                        link_type=EJVLinkType.PARTIAL_REFUND.value,
-                        ejv_header_id=ejv_header_model.id,
-                        disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                        sequence=sequence,
-                    )
-                    db.session.add(ejv_partial_refund_link)
-                    sequence += 1
-                    continue
+
             for inv in invoices:
+                is_partial_refund = cls._is_partial_refund(inv)
+                if is_partial_refund:
+                    for partial_refund in partial_refunds:
+                        current_app.logger.debug(
+                            f"Creating EJV partial refund link for partial refund id: {partial_refund.id}"
+                        )
+                        ejv_partial_refund_link = EjvLinkModel(
+                            link_id=partial_refund.id,
+                            link_type=EJVLinkType.PARTIAL_REFUND.value,
+                            ejv_header_id=ejv_header_model.id,
+                            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                            sequence=sequence,
+                        )
+                        db.session.add(ejv_partial_refund_link)
+                        sequence += 1
+                    continue
                 current_app.logger.debug(f"Creating EJV Invoice Link for invoice id: {inv.id}")
                 ejv_invoice_link = EjvLinkModel(
                     link_id=inv.id,
@@ -350,3 +346,9 @@ class EjvPaymentTask(CgiEjv):
 
         current_app.logger.info(f"Found {len(invoices)} invoices to process for ejv partial refunds.")
         return invoices
+
+    @classmethod
+    def _is_partial_refund(cls, invoice):
+        """Check if the invoice is a partial refund."""
+        return (invoice.invoice_status_code == InvoiceStatus.PAID.value
+                and invoice.refund and invoice.refund > 0)
