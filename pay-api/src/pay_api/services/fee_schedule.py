@@ -367,6 +367,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
                 corp_type=fee.corp_type,
                 filing_type=fee.filing_type,
                 corp_type_description=fee.corp_type_description,
+                product_code=fee.product_code,
                 service=fee.service,
                 fee=fee.fee,
                 service_charge=fee.service_charge,

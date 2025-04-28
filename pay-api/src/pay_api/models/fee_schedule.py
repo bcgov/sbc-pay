@@ -177,6 +177,7 @@ class FeeSchedule(db.Model):
                 CorpType.code.label("corp_type"),
                 FilingType.code.label("filing_type"),
                 CorpType.description.label("corp_type_description"),
+                CorpType.product.label("product_code"),
                 FilingType.description.label("service"),
                 func.coalesce(main_fee_code.amount, 0).label("fee"),
                 func.coalesce(service_fee_code.amount, 0).label("service_charge"),
@@ -239,6 +240,7 @@ class FeeDetailsSchema(Serializable):
     corp_type : str
     filing_type : str
     corp_type_description : str
+    product_code : str
     service : str
     fee : Decimal
     service_charge : Decimal

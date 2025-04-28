@@ -276,6 +276,7 @@ def test_get_fee_details_specific_product_code(session):
             and result.fee == 100
             and result.service_charge == 10
             and result.gst == 0  # Placeholder GST value
+            and result.product_code == product_code
         ):
             target_result = result
             break
