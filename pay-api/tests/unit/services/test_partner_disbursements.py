@@ -112,7 +112,7 @@ def factory_refunds_partial(invoice, payment_line_item_id, refund_amount=10.0, r
         payment_line_item_id=payment_line_item_id,
         refund_amount=refund_amount,
         refund_type=refund_type,
-        created_by="test_user",
+        created_by="test_user"
     ).flush()
 
 
@@ -149,7 +149,8 @@ def test_handle_partial_refund(session, test_name, should_skip, has_existing_dis
     PartnerDisbursements.handle_partial_refund(partial_refund, invoice)
 
     disbursements = PartnerDisbursementsModel.query.filter_by(
-        target_id=partial_refund.id, target_type=EJVLinkType.PARTIAL_REFUND.value
+        target_id=partial_refund.id,
+        target_type=EJVLinkType.PARTIAL_REFUND.value
     ).all()
 
     assert len(disbursements) == expected_count

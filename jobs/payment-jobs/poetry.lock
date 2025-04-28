@@ -2253,8 +2253,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/jxio/sbc-pay.git"
-reference = "partner_disburse_bug_1"
-resolved_reference = "2021219e26555489127f956ab004c0cda93877b7"
+reference = "26959"
+resolved_reference = "33251adebe332a7f3712fe7f070cef062b1f01a4"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3501,4 +3501,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "ccca10a48ba4fdc0c60737cce46acf3e738ef0ba2b7f4e7c061e3c13bf76f36c"
+content-hash = "b23b6391b0819afd96086af43b77f2c6c5259484e84f11dbd447e004266f23e0"
