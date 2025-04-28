@@ -14,7 +14,6 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
-import cattr
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
