@@ -336,6 +336,7 @@ class EjvPaymentTask(CgiEjv):
             line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                 line.fee_distribution_id
             )
+            line_total, line_service_fee = None, None
 
             # Handle partial refunds - either get refund amount or use line total
             if invoice_data.is_partial_refund:
@@ -353,7 +354,7 @@ class EjvPaymentTask(CgiEjv):
                 line_total = line.total
                 line_service_fee = line.service_fees
 
-            if line_total is not None and line_total > 0:
+            if line_total > 0:
                 total += line_total
                 # Credit to BCREG GL for a transaction (non-reversal)
                 line_number += 1
@@ -392,7 +393,7 @@ class EjvPaymentTask(CgiEjv):
                 if invoice_data.is_partial_refund and matching_refund:
                     matching_refund.gl_posted = datetime.now(tz=timezone.utc)
 
-            if line_service_fee is not None and line_service_fee > 0:
+            if line_service_fee > 0:
                 service_fee_distribution_code = DistributionCodeModel.find_by_id(
                     line_distribution_code.service_fee_distribution_code_id
                 )
