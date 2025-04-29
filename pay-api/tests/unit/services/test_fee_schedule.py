@@ -279,7 +279,7 @@ def test_get_fee_details(session):
     fee_schedule.save()
 
     result = services.FeeSchedule.get_fee_details()
-    
+
     assert len(result["items"]) >= 2, "Expected at least 2 items in the result."
 
     found_fee_code = False

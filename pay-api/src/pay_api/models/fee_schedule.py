@@ -17,17 +17,19 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from operator import or_
 
-from sqlalchemy import Boolean, Date, ForeignKey, cast, func, Integer
+from attr import define
+from marshmallow import Schema, fields
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, cast, func
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import relationship, aliased
-from marshmallow import fields, Schema
+from sqlalchemy.orm import aliased, relationship
+
+from pay_api.utils.serializable import Serializable
 
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode
 from .filing_type import FilingType, FilingTypeSchema
-from pay_api.utils.serializable import Serializable
-from attr import define
+
 
 class FeeSchedule(db.Model):
     """This class manages all of the base data about a fee schedule.
@@ -165,11 +167,9 @@ class FeeSchedule(db.Model):
     @classmethod
     def get_fee_details(cls, product_code: str = None):
         """Get detailed fee information including corp type, filing type, and fees."""
-        # Create aliases for the fee_codes table
         main_fee_code = aliased(FeeCode)
         service_fee_code = aliased(FeeCode)
 
-        # Get the current system date
         current_date = datetime.now(tz=timezone.utc).date()
 
         query = (
@@ -194,7 +194,6 @@ class FeeSchedule(db.Model):
             )
         )
 
-        # Add a filter if the product parameter is provided
         if product_code:
             query = query.filter(CorpType.product == product_code)
         results = query.all()
@@ -237,12 +236,11 @@ class FeeScheduleSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-an
 class FeeDetailsSchema(Serializable):
     """Schema for fee details."""
 
-    corp_type : str
-    filing_type : str
-    corp_type_description : str
-    product_code : str
-    service : str
-    fee : Decimal
-    service_charge : Decimal
-    gst : int    
-    
+    corp_type: str
+    filing_type: str
+    corp_type_description: str
+    product_code: str
+    service: str
+    fee: Decimal
+    service_charge: Decimal
+    gst: int

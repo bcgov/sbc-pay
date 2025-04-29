@@ -309,7 +309,7 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
 
 
 def test_fees_detail_query_all(session, client, jwt, app):
-    """Assert that the endpoint returns 200."""    
+    """Assert that the endpoint returns 200."""
     factory_fee_schedule_model(
         factory_filing_type_model("XOTANN1", "TEST"),
         factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
@@ -328,7 +328,7 @@ def test_fees_detail_query_all(session, client, jwt, app):
     rv = client.get(f"/api/v1/fees")
     assert rv.status_code == 200
     assert "items" in rv.json, "Response does not contain 'items'."
-    
+
     items = rv.json["items"]
     assert len(items) >= 3, "Expected at least 3 items in the response."
 
@@ -355,6 +355,7 @@ def test_fees_detail_query_by_product_code(session, client, jwt, app):
     assert rv.json["items"][0]["corpType"] == corp_type
     assert rv.json["items"][0]["filingType"] == filing_type_code
 
+
 def test_fees_detail_query_by_product_code_future_start_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
@@ -371,6 +372,7 @@ def test_fees_detail_query_by_product_code_future_start_date(session, client, jw
     assert rv.status_code == 200
     assert "items" in rv.json, "Response does not contain 'items'."
     assert len(rv.json["items"]) == 0, "Expected 0 item in the response."
+
 
 def test_fees_detail_query_by_product_code_expired_end_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""

@@ -22,8 +22,9 @@ from sbc_common_components.tracing.service_tracing import ServiceTracing
 from pay_api.exceptions import BusinessException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import FeeCode as FeeCodeModel
+from pay_api.models import FeeDetailsSchema
 from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.models import FeeScheduleSchema, FeeDetailsSchema
+from pay_api.models import FeeScheduleSchema
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -373,6 +374,6 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
                 service_charge=fee.service_charge,
                 gst=fee.gst,
             )
-            data["items"].append(fee_details_schema.to_dict())        
+            data["items"].append(fee_details_schema.to_dict())
         current_app.logger.debug(">get_fee_details")
         return data

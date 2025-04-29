@@ -15,12 +15,12 @@
 from datetime import datetime, timezone
 from http import HTTPStatus
 
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, current_app, jsonify, request
 from flask_cors import cross_origin
 
+from pay_api.dtos.product import ProductFeeGetRequest
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
-from pay_api.dtos.product import ProductFeeGetRequest
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import DEFAULT_JURISDICTION, DT_SHORT_FORMAT
 from pay_api.utils.endpoints_enums import EndpointEnum

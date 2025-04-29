@@ -49,7 +49,7 @@ def post_bank_account_validate():
             current_app.logger.info("Sandbox environment, returning valid CFS validation mock response.")
             response = {
                 "accountNumber": request_json["bankAccountNumber"],
-                "bankName": 'Bank of Sandbox',
+                "bankName": "Bank of Sandbox",
                 "bankNumber": request_json["bankInstitutionNumber"],
                 "branchNumber": request_json["bankTransitNumber"],
                 "isValid": True,
