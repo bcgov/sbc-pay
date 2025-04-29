@@ -15,7 +15,6 @@
 
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import List
 
 from flask import current_app
@@ -26,6 +25,7 @@ from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.utils.enums import (
@@ -48,8 +48,8 @@ class InvoiceData:
 
     is_jv_reversal: bool
     is_partial_refund: bool
-    line_items: List
-    partial_refunds: List
+    line_items: List[PaymentLineItemModel]
+    partial_refunds: List[RefundsPartialModel]
 
 
 @dataclass
@@ -312,7 +312,7 @@ class EjvPaymentTask(CgiEjv):
 
     @classmethod
     def _process_invoice_line_items(
-            cls, batch_type, invoice_data, jv_params, line_counters
+            cls, batch_type: str, invoice_data: InvoiceData, jv_params: JVParams, line_counters: LineCounters
     ):
         """Process invoice line items and generate JV entries.
 
@@ -336,25 +336,11 @@ class EjvPaymentTask(CgiEjv):
             line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                 line.fee_distribution_id
             )
-            line_total, line_service_fee = None, None
+            line_total, line_service_fee = cls._calculate_line_fees(line, invoice_data)
+            if line_total and line_service_fee is None:
+                continue
 
-            # Handle partial refunds - either get refund amount or use line total
-            if invoice_data.is_partial_refund:
-                matching_refund = {pr.payment_line_item_id: pr for pr in invoice_data.partial_refunds}.get(line.id)
-                if not matching_refund:
-                    continue
-                if matching_refund.refund_type == RefundsPartialType.BASE_FEES.value:
-                    line_total = matching_refund.refund_amount
-                elif matching_refund.refund_type == RefundsPartialType.SERVICE_FEES.value:
-                    line_service_fee = matching_refund.refund_amount
-
-                if line_total is None and line_service_fee is None:
-                    continue
-            else:
-                line_total = line.total
-                line_service_fee = line.service_fees
-
-            if line_total > 0:
+            if line_total and line_total > 0:
                 total += line_total
                 # Credit to BCREG GL for a transaction (non-reversal)
                 line_number += 1
@@ -389,11 +375,8 @@ class EjvPaymentTask(CgiEjv):
                     line_number,
                     "D" if not invoice_data.is_jv_reversal or not invoice_data.is_partial_refund else "C",
                 )
-                # If it's partial refund, mark the GL posted as True, so that it's not processed again
-                if invoice_data.is_partial_refund and matching_refund:
-                    matching_refund.gl_posted = datetime.now(tz=timezone.utc)
 
-            if line_service_fee > 0:
+            if line_service_fee and line_service_fee > 0:
                 service_fee_distribution_code = DistributionCodeModel.find_by_id(
                     line_distribution_code.service_fee_distribution_code_id
                 )
@@ -430,3 +413,31 @@ class EjvPaymentTask(CgiEjv):
                 )
 
         return total, line_number, control_total, account_jv
+
+    @classmethod
+    def _calculate_line_fees(cls, line: PaymentLineItemModel, invoice_data: InvoiceData) -> tuple[float, float]:
+        """Calculate line item fees.
+
+        Based on invoice type (normal invoice or partial refund) calculate line item basic fee and service fee.
+        For partial refunds, all refund records for the same line item will be added.
+        """
+        line_total, line_service_fee = 0, 0
+
+        if invoice_data.is_partial_refund:
+            matching_refunds = [pr for pr in invoice_data.partial_refunds if pr.payment_line_item_id == line.id]
+            if not matching_refunds:
+                return None, None
+
+            for refund in matching_refunds:
+                if refund.refund_type == RefundsPartialType.SERVICE_FEES.value:
+                    line_service_fee += refund.refund_amount
+                else:
+                    line_total += refund.refund_amount
+
+            if line_total == 0 and line_service_fee == 0:
+                return None, None  # Return None to skip processing this line
+        else:
+            line_total = line.total
+            line_service_fee = line.service_fees
+
+        return line_total, line_service_fee
