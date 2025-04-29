@@ -15,6 +15,7 @@
 
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import List
 
 from flask import current_app
@@ -214,6 +215,10 @@ class EjvPaymentTask(CgiEjv):
                         )
                         for seq, pr in enumerate(partial_refunds, start=sequence)
                     ])
+                    db.session.add(InvoiceModel(
+                        id=inv.id,
+                        refund_date=datetime.now(timezone.utc),
+                    ))
                     sequence += len(partial_refunds)
                     current_app.logger.debug(f"Created {len(partial_refunds)} EJV partial refund links.")
                 else:
@@ -296,6 +301,7 @@ class EjvPaymentTask(CgiEjv):
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
             .filter(RefundsPartialModel.gl_posted.is_(None))
             .filter(InvoiceModel.payment_account_id == account_id)
+            .filter(InvoiceModel.refund_date.is_(None))
             .order_by(InvoiceModel.id, RefundsPartialModel.id)
             .distinct(InvoiceModel.id)
             .all()

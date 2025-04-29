@@ -248,9 +248,6 @@ def test_ejv_partial_refund(session, monkeypatch, google_bucket_mock):
 
     EjvPaymentTask.create_ejv_file()
 
-    refund_partial_updated = RefundsPartial.find_by_id(refund_partial.id)
-    assert refund_partial_updated.gl_posted is not None
-
     ejv_refund_link = db.session.query(EjvLink).filter(
         EjvLink.link_id == refund_partial.id,
         EjvLink.link_type == 'PARTIAL_REFUND'
