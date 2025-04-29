@@ -215,10 +215,7 @@ class EjvPaymentTask(CgiEjv):
                         )
                         for seq, pr in enumerate(partial_refunds, start=sequence)
                     ])
-                    db.session.add(InvoiceModel(
-                        id=inv.id,
-                        refund_date=datetime.now(timezone.utc),
-                    ))
+                    inv.refund_date = datetime.now(timezone.utc)
                     sequence += len(partial_refunds)
                     current_app.logger.debug(f"Created {len(partial_refunds)} EJV partial refund links.")
                 else:
