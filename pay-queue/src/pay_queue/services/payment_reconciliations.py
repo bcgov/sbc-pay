@@ -550,28 +550,6 @@ def _handle_credit_invoices_and_adjust_invoice_paid(row):
         invoice_number=invoice_number,
     ).save()
 
-    amount = CfsCreditInvoices.credit_for_invoice_number(invoice_number)
-    invoices = (
-        db.session.query(InvoiceModel)
-        .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
-        .filter(InvoiceReferenceModel.invoice_number == invoice_number)
-        .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value)
-        .filter(InvoiceReferenceModel.is_consolidated.is_(False))
-        .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
-        .order_by(InvoiceModel.id.asc())
-        .all()
-    )
-    for invoice in invoices:
-        if amount <= 0:
-            break
-        paid_adjustment = min(amount, invoice.total)
-        invoice.paid = invoice.total - paid_adjustment
-        amount -= paid_adjustment
-        invoice.save()
-
-    if amount >= 0:
-        current_app.logger.warning(f"Amount {amount} remaining after applying to invoices {invoice_number}.")
-
 
 def _process_credit_on_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
     has_errors = False
