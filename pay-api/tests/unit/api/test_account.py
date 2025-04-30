@@ -951,7 +951,7 @@ def test_account_delete(session, client, jwt, app):
             False,
             201,
             [Role.SYSTEM.value],
-        )
+        ),
     ],
 )
 def test_create_sandbox_accounts(

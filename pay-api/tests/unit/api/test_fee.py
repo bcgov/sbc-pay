@@ -308,6 +308,81 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
     assert rv.json.get("serviceFees") == 1.5
 
 
+def test_fees_detail_query_all(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    factory_fee_schedule_model(
+        factory_filing_type_model("XOTANN1", "TEST"),
+        factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
+        factory_fee_model("XXX1", 100),
+    )
+    factory_fee_schedule_model(
+        factory_filing_type_model("XOTANN2", "TEST"),
+        factory_corp_type_model("YY", "TEST", "PRODUCT_CODE_2"),
+        factory_fee_model("XXX2", 200),
+    )
+    factory_fee_schedule_model(
+        factory_filing_type_model("XOTANN3", "TEST"),
+        factory_corp_type_model("ZZ", "TEST", "PRODUCT_CODE_3"),
+        factory_fee_model("XXX3", 300),
+    )
+    rv = client.get("/api/v1/fees")
+    assert rv.status_code == 200
+    assert "items" in rv.json, "Response does not contain 'items'."
+
+    items = rv.json["items"]
+    assert len(items) >= 3, "Expected at least 3 items in the response."
+
+    filing_type = {item["filingType"] for item in items}
+    assert "XOTANN1" in filing_type, "XOTANN1 not found in response."
+    assert "XOTANN2" in filing_type, "XOTANN2 not found in response."
+    assert "XOTANN3" in filing_type, "XOTANN3 not found in response."
+
+
+def test_fees_detail_query_by_product_code(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    corp_type = "XX"
+    filing_type_code = "XOTANN"
+    factory_fee_schedule_model(
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
+        factory_fee_model("XXX", 100),
+    )
+    rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
+    assert rv.status_code == 200
+    assert "items" in rv.json, "Response does not contain 'items'."
+    assert rv.json["items"][0]["corpType"] == corp_type
+    assert rv.json["items"][0]["filingType"] == filing_type_code
+
+
+def test_fees_detail_query_by_product_code_future_start_date(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    factory_fee_schedule_model(
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
+        factory_fee_model("XXX", 100),
+        fee_start_date=datetime.now(tz=timezone.utc).date() + timedelta(days=1),
+    )
+    rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
+    assert rv.status_code == 200
+    assert "items" in rv.json, "Response does not contain 'items'."
+    assert len(rv.json["items"]) == 0, "Expected 0 item in the response."
+
+
+def test_fees_detail_query_by_product_code_expired_end_date(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    factory_fee_schedule_model(
+        factory_filing_type_model("XOTANN", "TEST"),
+        factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
+        factory_fee_model("XXX", 100),
+        fee_start_date=datetime.now(tz=timezone.utc).date() - timedelta(days=2),
+        fee_end_date=datetime.now(tz=timezone.utc).date() - timedelta(days=1),
+    )
+    rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
+    assert rv.status_code == 200
+    assert "items" in rv.json, "Response does not contain 'items'."
+    assert len(rv.json["items"]) == 0, "Expected 0 item in the response."
+
+
 def factory_filing_type_model(filing_type_code: str, filing_description: str = "TEST"):
     """Return the filing type model."""
     filing_type = FilingType(code=filing_type_code, description=filing_description)
@@ -322,9 +397,9 @@ def factory_fee_model(fee_code: str, amount: float):
     return fee_code_master
 
 
-def factory_corp_type_model(corp_type_code: str, corp_type_description: str):
+def factory_corp_type_model(corp_type_code: str, corp_type_description: str, product_code: str = None):
     """Return the corp type model."""
-    corp_type = CorpType(code=corp_type_code, description=corp_type_description)
+    corp_type = CorpType(code=corp_type_code, description=corp_type_description, product=product_code)
     corp_type.save()
     return corp_type
 

@@ -42,7 +42,7 @@ from .ejv_header import EjvHeader
 from .ejv_link import EjvLink
 from .error_code import ErrorCode, ErrorCodeSchema
 from .fee_code import FeeCode, FeeCodeSchema  # noqa: I001
-from .fee_schedule import FeeSchedule, FeeScheduleSchema
+from .fee_schedule import FeeDetailsSchema, FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .invoice import Invoice, InvoiceSchema, InvoiceSearchModel
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema

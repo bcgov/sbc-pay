@@ -15,9 +15,10 @@
 from datetime import datetime, timezone
 from http import HTTPStatus
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from flask_cors import cross_origin
 
+from pay_api.dtos.product import ProductFeeGetRequest
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
 from pay_api.utils.auth import jwt as _jwt
@@ -57,6 +58,19 @@ def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
             ).asdict(),
             HTTPStatus.OK,
         )
+    except BusinessException as exception:
+        return exception.response()
+    return jsonify(response), status
+
+
+@bp.route("", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET"])
+def get_products_fees():
+    """Get Products Fees - the cost of a filing and the list of filings."""
+    request_data = ProductFeeGetRequest.from_dict(request.args.to_dict())
+    current_app.logger.debug("request_data.product_code: %s", request_data.product_code)
+    try:
+        response, status = (FeeSchedule.get_fee_details(request_data.product_code), HTTPStatus.OK)
     except BusinessException as exception:
         return exception.response()
     return jsonify(response), status
