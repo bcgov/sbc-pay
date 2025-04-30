@@ -1,4 +1,4 @@
-"""Add partial refund for EJV
+"""Add partial refund for EJV and add columns to refunds_partial
 
 Revision ID: f4cf0914b369
 Revises: 706b28ee3b37
@@ -8,7 +8,7 @@ Create Date: 2025-04-24 16:33:41.120358
 from alembic import op
 import sqlalchemy as sa
 
-from pay_api.utils.enums import PaymentMethod
+from pay_api.utils.enums import PaymentMethod, RefundsPartialStatus
 
 
 # revision identifiers, used by Alembic.
@@ -28,6 +28,25 @@ def upgrade():
         SET partial_refund = true
         WHERE code IN ('{PaymentMethod.EJV.value}')
     """)
+    
+    op.add_column(
+        "refunds_partial", sa.Column("status", sa.String(length=20), nullable=True)
+    )
+    op.add_column(
+        "refunds_partial", sa.Column("gl_error", sa.String(length=250), nullable=True)
+    )
+
+    op.execute(f"""
+        UPDATE refunds_partial
+        SET status = '{RefundsPartialStatus.REFUND_REQUESTED.value}'
+        WHERE gl_posted IS NULL
+    """)
+    
+    op.execute(f"""
+        UPDATE refunds_partial
+        SET status = '{RefundsPartialStatus.REFUND_PROCESSED.value}'
+        WHERE gl_posted IS NOT NULL
+    """)
 
 
 def downgrade():
@@ -35,5 +54,7 @@ def downgrade():
         UPDATE payment_methods
         SET partial_refund = false
         WHERE code IN ('{PaymentMethod.EJV.value}')
-    """)
-
+    """)    
+    op.drop_column("refunds_partial", "status")
+    op.drop_column("refunds_partial", "gl_error")
+    

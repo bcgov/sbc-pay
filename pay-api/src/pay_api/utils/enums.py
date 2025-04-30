@@ -86,6 +86,15 @@ class InvoiceReferenceStatus(Enum):
     CANCELLED = "CANCELLED"
 
 
+class RefundsPartialStatus(Enum):
+    """Refunds Partial status codes."""
+
+    REFUND_REQUESTED = "REFUND_REQUESTED"
+    REFUND_PROCESSING = "REFUND_PROCESSING"
+    REFUND_PROCESSED = "REFUND_PROCESSED"
+    REFUND_DECLINED = "REFUND_DECLINED"
+
+
 class PaymentSystem(Enum):
     """Payment System Codes."""
 

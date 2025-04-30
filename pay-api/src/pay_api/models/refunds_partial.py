@@ -47,11 +47,13 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
             "created_by",
             "created_on",
             "created_name",
+            "gl_error",
             "gl_posted",
             "invoice_id",
             "payment_line_item_id",
             "refund_amount",
             "refund_type",
+            "status",
             "updated_by",
             "updated_on",
             "updated_name",
@@ -64,6 +66,8 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     refund_type = db.Column(db.String(50), nullable=True)
     gl_posted = db.Column(db.DateTime, nullable=True)
     invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=True)
+    status = db.Column(db.String(20), nullable=True)
+    gl_error = db.Column(db.String(250), nullable=True)
 
     @classmethod
     def get_partial_refunds_for_invoice(cls, invoice_id: int) -> List["RefundsPartial"]:
@@ -101,6 +105,8 @@ class RefundsPartialSearchModel:
     refund_type: str
     gl_posted: datetime
     invoice_id: int
+    status: str = None
+    gl_error: str = None
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -114,4 +120,6 @@ class RefundsPartialSearchModel:
             refund_type=row.refund_type,
             gl_posted=row.gl_posted,
             invoice_id=row.invoice_id,
+            status=row.status,
+            gl_error=row.gl_error,
         )
