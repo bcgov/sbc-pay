@@ -1009,6 +1009,7 @@ def test_credits(session, app, client, monkeypatch):
     assert credit_invoices[1].cfs_identifier == str(cm_identifier)
     assert credit_invoices[1].invoice_number == invoice_number
     invoice = InvoiceModel.find_by_id(invoice.id)
+    assert invoice.paid
     assert invoice.paid == 100
 
 
