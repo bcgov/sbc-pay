@@ -32,6 +32,7 @@ from pay_api.utils.enums import (
     EjvFileType,
     InvoiceReferenceStatus,
     InvoiceStatus,
+    PaymentMethod,
     RefundsPartialType,
 )
 
@@ -216,10 +217,11 @@ def test_ejv_partial_refund(session, monkeypatch, google_bucket_mock):
         corp_type_code=corp_type,
         total=200.0,
         status_code=InvoiceStatus.PAID.value,
-        payment_method_code=None,
+        payment_method_code=PaymentMethod.EJV.value,
     )
 
     invoice.refund = 50.0
+    invoice.refund_date = None
     invoice.save()
 
     line_item = factory_payment_line_item(
@@ -245,18 +247,33 @@ def test_ejv_partial_refund(session, monkeypatch, google_bucket_mock):
         refund_amount=50.0,
         refund_type=RefundsPartialType.BASE_FEES.value,
     )
+    db.session.flush()
+    refund_partials = RefundsPartial.get_partial_refunds_for_invoice(invoice.id)
+    assert len(refund_partials) == 1
+    assert refund_partials[0].id == refund_partial.id
+
+    partial_refund_invoices = EjvPaymentTask.get_partial_refunds_invoices(jv_account.id)
+    print(f"Partial refund invoices: {[inv.id for inv in partial_refund_invoices]}")
+    assert len(partial_refund_invoices) == 1
+    assert partial_refund_invoices[0].id == invoice.id
 
     EjvPaymentTask.create_ejv_file()
 
-    ejv_refund_link = db.session.query(EjvLink).filter(
+    all_ejv_links = db.session.query(EjvLink).all()
+    print(f"All EjvLinks: {[(link.link_id, link.link_type) for link in all_ejv_links]}")
+
+    updated_invoice = Invoice.find_by_id(invoice.id)
+    assert updated_invoice.refund_date is not None
+
+    ejv_link = db.session.query(EjvLink).filter(
         EjvLink.link_id == refund_partial.id,
-        EjvLink.link_type == 'PARTIAL_REFUND'
+        EjvLink.link_type == 'partial_refund'
     ).first()
 
-    assert ejv_refund_link is not None
-    assert ejv_refund_link.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert ejv_link is not None
+    assert ejv_link.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
-    ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_refund_link.ejv_header_id).first()
+    ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_link.ejv_header_id).first()
     assert ejv_header is not None
     assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
