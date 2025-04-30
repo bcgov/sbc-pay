@@ -18,7 +18,6 @@ from decimal import Decimal
 from operator import or_
 
 from attr import define
-from marshmallow import Schema, fields
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, cast, func
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import aliased, relationship

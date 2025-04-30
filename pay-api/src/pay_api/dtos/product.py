@@ -1,3 +1,11 @@
+"""Rationale behind creating these DTOS below.
+
+1. To ensure that the request and response payloads are validated before they are passed to the service layer.
+2. To ensure that the request and response payloads are consistent across the application.
+3. To ensure that the request and response payloads are consistent with the API documentation.
+
+In the near future, will find a library that generates our API spec based off of these DTOs.
+"""
 from typing import Optional
 
 from attrs import define
