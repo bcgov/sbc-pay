@@ -241,7 +241,7 @@ def test_get_fee_details_all_products(session):
 
 
 def test_get_fee_details_specific_product_code(session):
-    """Test the get_fee_details method by providing specific product code -> found the record with provided product code."""
+    """Test the get_fee_details method with specific product code , found the record with provided product code."""
     fee_code = factory_feecode("EN000X", 100)
     service_fee_code = factory_feecode("SRV001", 10)
     corp_type = get_or_create_corp_type("BEN", "Benefit Company", session=session)

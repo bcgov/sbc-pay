@@ -325,7 +325,7 @@ def test_fees_detail_query_all(session, client, jwt, app):
         factory_corp_type_model("ZZ", "TEST", "PRODUCT_CODE_3"),
         factory_fee_model("XXX3", 300),
     )
-    rv = client.get(f"/api/v1/fees")
+    rv = client.get("/api/v1/fees")
     assert rv.status_code == 200
     assert "items" in rv.json, "Response does not contain 'items'."
 
@@ -340,8 +340,6 @@ def test_fees_detail_query_all(session, client, jwt, app):
 
 def test_fees_detail_query_by_product_code(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     corp_type = "XX"
     filing_type_code = "XOTANN"
     factory_fee_schedule_model(
@@ -349,7 +347,7 @@ def test_fees_detail_query_by_product_code(session, client, jwt, app):
         factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
         factory_fee_model("XXX", 100),
     )
-    rv = client.get(f"/api/v1/fees?productCode=PRODUCT_CODE")
+    rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
     assert rv.status_code == 200
     assert "items" in rv.json, "Response does not contain 'items'."
     assert rv.json["items"][0]["corpType"] == corp_type
@@ -358,17 +356,13 @@ def test_fees_detail_query_by_product_code(session, client, jwt, app):
 
 def test_fees_detail_query_by_product_code_future_start_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    corp_type = "XX"
-    filing_type_code = "XOTANN"
     factory_fee_schedule_model(
         factory_filing_type_model("XOTANN", "TEST"),
         factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
         factory_fee_model("XXX", 100),
         fee_start_date=datetime.now(tz=timezone.utc).date() + timedelta(days=1),
     )
-    rv = client.get(f"/api/v1/fees?productCode=PRODUCT_CODE")
+    rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
     assert rv.status_code == 200
     assert "items" in rv.json, "Response does not contain 'items'."
     assert len(rv.json["items"]) == 0, "Expected 0 item in the response."
@@ -376,10 +370,6 @@ def test_fees_detail_query_by_product_code_future_start_date(session, client, jw
 
 def test_fees_detail_query_by_product_code_expired_end_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    corp_type = "XX"
-    filing_type_code = "XOTANN"
     factory_fee_schedule_model(
         factory_filing_type_model("XOTANN", "TEST"),
         factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
@@ -387,7 +377,7 @@ def test_fees_detail_query_by_product_code_expired_end_date(session, client, jwt
         fee_start_date=datetime.now(tz=timezone.utc).date() - timedelta(days=2),
         fee_end_date=datetime.now(tz=timezone.utc).date() - timedelta(days=1),
     )
-    rv = client.get(f"/api/v1/fees?productCode=PRODUCT_CODE")
+    rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
     assert rv.status_code == 200
     assert "items" in rv.json, "Response does not contain 'items'."
     assert len(rv.json["items"]) == 0, "Expected 0 item in the response."
