@@ -34,6 +34,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
@@ -48,6 +49,7 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentStatus,
+    RefundsPartialType,
     RoutingSlipStatus,
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -1785,3 +1787,263 @@ def test_failure_ap_disbursement(session, app, client):
     assert invoice_2.disbursement_status_code == DisbursementStatus.ERRORED.value
     invoice_link = db.session.query(EjvLinkModel).filter(EjvLinkModel.link_id == invoice_ids[1]).one_or_none()
     assert invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value
+
+
+def test_successful_ejv_partial_refund_reconciliations(session, app, client):
+    """Test successful partial refund reconciliation through EJV."""
+    # 1. Create payment account
+    # 2. Create invoice and related records with partial refund
+    # 3. Create EJV links for partial refunds
+    # 4. Create a feedback file and assert status
+    cfs_account_number = "1234"
+    partner_code = "VS"
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
+        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+    )
+
+    pay_account = factory_create_ejv_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        corp_type_code="VS",
+        payment_method_code=PaymentMethod.EJV.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    invoice_id = invoice.id
+    line_item = factory_payment_line_item(
+        invoice_id=invoice.id,
+        filing_fees=90.0,
+        service_fees=10.0,
+        total=90.0,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+    )
+
+    partial_refund = RefundsPartialModel(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=20.0,
+        refund_type=RefundsPartialType.BASE_FEES.value,
+    ).save()
+
+    invoice.refund = 20.0
+    invoice.save()
+
+    invoice_number = "1234567890"
+    factory_invoice_reference(
+        invoice_id=invoice.id,
+        invoice_number=invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+
+    file_ref = f"INBOX.{datetime.now()}"
+    ejv_file = EjvFileModel(
+        file_ref=file_ref,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        file_type=EjvFileType.PAYMENT.value
+    ).save()
+    ejv_file_id = ejv_file.id
+
+    ejv_header = EjvHeaderModel(
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ejv_file_id=ejv_file.id,
+        partner_code=partner_code,
+        payment_account_id=pay_account.id,
+    ).save()
+    ejv_header_id = ejv_header.id
+
+    ejv_link = EjvLinkModel(
+        link_id=partial_refund.id,
+        link_type=EJVLinkType.PARTIAL_REFUND.value,
+        ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        sequence=1
+    ).save()
+
+    ack_file_name = f"ACK.{file_ref}"
+    with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write("")
+        jv_file.close()
+
+    upload_to_minio(str.encode(""), ack_file_name)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+
+    feedback_content = (
+        f"GABG...........00000000{ejv_file_id}...\n"
+        f"..BH...0000................................................................................."
+        f".....................................................................CGI\n"
+        f"..JH...FI0000000{ejv_header_id}.........................000000000020.00....................."
+        f"............................................................................................"
+        f"............................................................................................"
+        f".........0000..............................................................................."
+        f".......................................................................CGI\n"
+        f"..JD...FI0000000{ejv_header_id}0000120230529112............................................."
+        f"...........000000000020.00D................................................................."
+        f"..................................#{invoice_id}                                             "
+        f"                                                                0000........................"
+        f"............................................................................................"
+        f"..................................CGI\n"
+        f"..JD...FI0000000{ejv_header_id}0000220230529105............................................."
+        f"...........000000000020.00C................................................................."
+        f"..................................#{invoice_id}                                             "
+        f"                                                                0000........................"
+        f"............................................................................................"
+        f"..................................CGI\n"
+        f"..BT.......FI0000000{ejv_header_id}000000000000002000000000040.000000......................."
+        f"............................................................................................"
+        f"...................................CGI"
+    )
+
+    feedback_file_name = f"FEEDBACK.{file_ref}"
+    with open(feedback_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+
+    with open(feedback_file_name, "rb") as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+
+    partial_refund = RefundsPartialModel.find_by_id(partial_refund.id)
+    assert partial_refund.gl_posted is not None
+
+    ejv_link = db.session.query(EjvLinkModel).filter(
+        EjvLinkModel.link_id == partial_refund.id,
+        EjvLinkModel.link_type == EJVLinkType.PARTIAL_REFUND.value
+    ).one_or_none()
+    assert ejv_link.disbursement_status_code == DisbursementStatus.COMPLETED.value
+
+
+def test_failure_ejv_partial_refund_reconciliations(session, app, client):
+    """Test failed partial refund reconciliation through EJV."""
+    # 1. Create payment account
+    # 2. Create invoice and related records with partial refund
+    # 3. Create EJV links for partial refunds
+    # 4. Create a feedback file with errors and assert status
+    cfs_account_number = "1234"
+    partner_code = "VS"
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
+        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+    )
+
+    pay_account = factory_create_ejv_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        corp_type_code="VS",
+        payment_method_code=PaymentMethod.EJV.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    invoice_id = invoice.id
+    line_item = factory_payment_line_item(
+        invoice_id=invoice.id,
+        filing_fees=90.0,
+        service_fees=10.0,
+        total=90.0,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+    )
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+
+    partial_refund = RefundsPartialModel(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=20.0,
+        refund_type=RefundsPartialType.BASE_FEES.value,
+    ).save()
+
+    invoice.refund = 20.0
+    invoice.save()
+
+    invoice_number = "1234567890"
+    factory_invoice_reference(
+        invoice_id=invoice.id,
+        invoice_number=invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+
+    file_ref = f"INBOX.{datetime.now()}"
+    ejv_file = EjvFileModel(
+        file_ref=file_ref,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        file_type=EjvFileType.PAYMENT.value
+    ).save()
+    ejv_file_id = ejv_file.id
+
+    ejv_header = EjvHeaderModel(
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ejv_file_id=ejv_file.id,
+        partner_code=partner_code,
+        payment_account_id=pay_account.id,
+    ).save()
+    ejv_header_id = ejv_header.id
+
+    ejv_link = EjvLinkModel(
+        link_id=partial_refund.id,
+        link_type=EJVLinkType.PARTIAL_REFUND.value,
+        ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        sequence=1
+    ).save()
+
+    ack_file_name = f"ACK.{file_ref}"
+    with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write("")
+        jv_file.close()
+
+    upload_to_minio(str.encode(""), ack_file_name)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+
+    feedback_content = (
+        f"GABG...........00000000{ejv_file_id}...\n"
+        f"..BH...0000................................................................................."
+        f".....................................................................CGI\n"
+        f"..JH...FI0000000{ejv_header_id}.........................000000000020.00....................."
+        f"............................................................................................"
+        f"............................................................................................"
+        f".........0000..............................................................................."
+        f".......................................................................CGI\n"
+        f"..JD...FI0000000{ejv_header_id}0000120230529112............................................."
+        f"...........000000000020.00D................................................................."
+        f"..................................#{invoice_id}                                             "
+        f"                                                                1111ERROR MESSAGE............"
+        f"............................................................................................"
+        f"..................................CGI\n"
+        f"..JD...FI0000000{ejv_header_id}0000220230529105............................................."
+        f"...........000000000020.00C................................................................."
+        f"..................................#{invoice_id}                                             "
+        f"                                                                1111ERROR MESSAGE............"
+        f"............................................................................................"
+        f"..................................CGI\n"
+        f"..BT.......FI0000000{ejv_header_id}000000000000002000000000040.000000......................."
+        f"............................................................................................"
+        f"...................................CGI"
+    )
+
+    feedback_file_name = f"FEEDBACK.{file_ref}"
+    with open(feedback_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+
+    with open(feedback_file_name, "rb") as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+
+    partial_refund = RefundsPartialModel.find_by_id(partial_refund.id)
+    assert partial_refund.gl_posted is None
+
+    ejv_link = db.session.query(EjvLinkModel).filter(
+        EjvLinkModel.link_id == partial_refund.id,
+        EjvLinkModel.link_type == EJVLinkType.PARTIAL_REFUND.value
+    ).one_or_none()
+    assert ejv_link.disbursement_status_code == DisbursementStatus.ERRORED.value
+
+    dist_code = DistributionCodeModel.find_by_active_for_account(pay_account.id)
+    assert dist_code.stop_ejv is True
