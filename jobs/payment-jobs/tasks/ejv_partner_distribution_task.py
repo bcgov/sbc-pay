@@ -159,12 +159,15 @@ class EjvPartnerDistributionTask(CgiEjv):
         for (
             partner_disbursement,
             payment_line_item,
+            partial_refund,
             distribution_code,
         ) in partner_disbursements:
-            suffix = "PR" if partner_disbursement.target_type == EJVLinkType.PARTIAL_REFUND else ""
+            is_partial_refund = partner_disbursement.target_type == EJVLinkType.PARTIAL_REFUND.value
+            suffix = "PR" if is_partial_refund else ""
             flow_through = f"{payment_line_item.invoice_id}-{partner_disbursement.id}"
             if suffix != "":
                 flow_through += f"-{suffix}"
+                flow_through += f"-{partial_refund.id}"
             distribution_code_totals.setdefault(distribution_code.distribution_code_id, 0)
             distribution_code_totals[distribution_code.distribution_code_id] += partner_disbursement.amount
             disbursement_rows.append(
@@ -374,7 +377,12 @@ class EjvPartnerDistributionTask(CgiEjv):
         is_reversal
     ):
         """Get partner disbursements."""
-        query = db.session.query(PartnerDisbursementsModel, PaymentLineItemModel, DistributionCodeModel)
+        query = db.session.query(
+            PartnerDisbursementsModel,
+            PaymentLineItemModel,
+            DistributionCodeModel,
+            RefundsPartialModel
+        )
 
         if target_type == EJVLinkType.INVOICE.value:
             query = query.join(

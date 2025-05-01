@@ -39,6 +39,7 @@ from pay_api.utils.enums import (
     ChequeRefundStatus,
     CorpType,
     InvoiceStatus,
+    RefundsPartialStatus,
     RefundsPartialType,
     Role,
     RoutingSlipStatus,
@@ -395,6 +396,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
                 payment_line_item_id=line.payment_line_item_id,
                 refund_amount=line.refund_amount,
                 refund_type=line.refund_type,
+                status=RefundsPartialStatus.REFUND_REQUESTED.value,
             )
             db.session.add(refund_line)
             PartnerDisbursements.handle_partial_refund(refund_line, invoice)

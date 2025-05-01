@@ -33,6 +33,7 @@ from pay_api.utils.enums import (
     InvoiceReferenceStatus,
     InvoiceStatus,
     PaymentMethod,
+    RefundsPartialStatus,
     RefundsPartialType,
 )
 
@@ -246,6 +247,7 @@ def test_ejv_partial_refund(session, monkeypatch, google_bucket_mock):
         payment_line_item_id=line_item.id,
         refund_amount=50.0,
         refund_type=RefundsPartialType.BASE_FEES.value,
+        status=RefundsPartialStatus.REFUND_REQUESTED.value,
     )
     db.session.flush()
     refund_partials = RefundsPartial.get_partial_refunds_for_invoice(invoice.id)
@@ -262,8 +264,8 @@ def test_ejv_partial_refund(session, monkeypatch, google_bucket_mock):
     all_ejv_links = db.session.query(EjvLink).all()
     print(f"All EjvLinks: {[(link.link_id, link.link_type) for link in all_ejv_links]}")
 
-    updated_invoice = Invoice.find_by_id(invoice.id)
-    assert updated_invoice.refund_date is not None
+    updated_refund_partial = RefundsPartial.find_by_id(refund_partial.id)
+    assert updated_refund_partial.status_code == RefundsPartialStatus.REFUND_PROCESSING.value
 
     ejv_link = db.session.query(EjvLink).filter(
         EjvLink.link_id == refund_partial.id,

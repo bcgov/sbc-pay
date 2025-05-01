@@ -15,7 +15,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import List
+from typing import List, Self
 
 from attrs import define
 from sql_versioning import Versioned
@@ -70,7 +70,7 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     gl_error = db.Column(db.String(250), nullable=True)
 
     @classmethod
-    def get_partial_refunds_for_invoice(cls, invoice_id: int) -> List["RefundsPartial"]:
+    def get_partial_refunds_for_invoice(cls, invoice_id: int) -> List[Self]:
         """Get all partial refunds for a specific invoice."""
         return cls.query.filter_by(invoice_id=invoice_id).all()
 

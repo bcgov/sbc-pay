@@ -49,6 +49,7 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     QueueSources,
+    RefundsPartialStatus,
     RoutingSlipStatus,
     TransactionStatus,
 )
@@ -191,22 +192,26 @@ class JVDetailsFeedback:
     is_partial_refund: bool = False
     invoice: Optional[InvoiceModel] = None
     invoice_link: Optional[EjvLinkModel] = None
+    partial_refund: Optional[RefundsPartialModel] = None
     partial_refund_links: Optional[List[EjvLinkModel]] = None
     partner_disbursement: Optional[PartnerDisbursementsModel] = None
 
 
 def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number) -> bool:
     """Process JV Details Feedback."""
-    details = _build_jv_details(line, receipt_number)
+    details = _build_jv_details(line, receipt_number, has_errors)
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
     current_app.logger.info("Is Credit or Debit %s - %s", line[104:105], ejv_file.file_type)
     credit_or_debit_line = details.line[104:105]
     if credit_or_debit_line == "C" and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
-        has_errors = _handle_jv_disbursement_feedback(details, has_errors)
+        if details.is_partial_refund:
+            has_errors = _handle_jv_partial_refund_partner_disbursement_feedback(details, has_errors)
+        else:
+            has_errors = _handle_jv_disbursement_feedback(details, has_errors)
     elif credit_or_debit_line == "D" and ejv_file.file_type == EjvFileType.PAYMENT.value:
         if details.is_partial_refund:
-            has_errors = _handle_partial_refund_feedback(details, has_errors)
+            has_errors = _handle_jv_partial_refund_payment_feedback(details, has_errors)
         else:
             has_errors = _handle_jv_payment_feedback(details, has_errors)
     return has_errors
@@ -224,25 +229,35 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
         invoice_return_message=line[319:469],
         receipt_number=receipt_number,
     )
-    if "-" in details.flowthrough:
+
+    # Check if this is a partial refund by looking for "-PR" suffix
+    flowthrough_parts = details.flowthrough
+    if "-PR" in flowthrough_parts:
+        details.is_partial_refund = True
+        parts = details.flowthrough.split("-PR-")
+        flowthrough_parts = int(parts[0])
+    if "-" in flowthrough_parts:
         invoice_id = int(details.flowthrough.split("-")[0])
         partner_disbursement_id = int(details.flowthrough.split("-")[1])
         details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
     else:
-        invoice_id = int(details.flowthrough)
-    current_app.logger.info("Invoice id - %s", invoice_id)
-    details.invoice = InvoiceModel.find_by_id(invoice_id)
-    details.is_partial_refund = details.invoice and details.invoice.invoice_status_code == InvoiceStatus.PAID.value
+        invoice_id = int(flowthrough_parts)
+
     if details.is_partial_refund:
+        current_app.logger.info("Partial refund id - %s", details.partial_refund_id)
+        details.partial_refund = RefundsPartialModel.find_by_id(details.partial_refund_id)
         details.partial_refund_links = (
             db.session.query(EjvLinkModel)
             .join(RefundsPartialModel, EjvLinkModel.link_id == RefundsPartialModel.id)
             .filter(EjvLinkModel.ejv_header_id == details.ejv_header_model_id)
             .filter(RefundsPartialModel.invoice_id == details.invoice.id)
+            .filter(RefundsPartialModel.status == RefundsPartialStatus.REFUND_PROCESSING.value)
             .filter(EjvLinkModel.link_type == EJVLinkType.PARTIAL_REFUND.value)
             .all()
         )
     else:
+        current_app.logger.info("Invoice id - %s", invoice_id)
+        details.invoice = InvoiceModel.find_by_id(invoice_id)
         details.invoice_link = (
             db.session.query(EjvLinkModel)
             .filter(EjvLinkModel.ejv_header_id == details.ejv_header_model_id)
@@ -275,6 +290,31 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
     else:
         effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
         _update_invoice_disbursement_status(details, effective_date)
+    return has_errors
+
+
+def _handle_jv_partial_refund_partner_disbursement_feedback(details: JVDetailsFeedback, has_errors: bool) -> bool:
+    disbursement_status = _get_disbursement_status(details.invoice_return_code)
+    current_app.logger.info("disbursement_status %s", disbursement_status)
+    if disbursement_status == DisbursementStatus.ERRORED.value:
+        has_errors = True
+        if details.partner_disbursement:
+            details.partner_disbursement.status_code = DisbursementStatus.ERRORED.value
+            details.partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
+        details.partial_refund.gl_error = details.invoice_return_message.strip()
+
+        line_item: PaymentLineItemModel = PaymentLineItemModel.find_by_id(details.partial_refund.payment_line_item_id)
+        # Line debit distribution
+        debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+        credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+            debit_distribution.disbursement_distribution_code_id
+        )
+        credit_distribution.stop_ejv = True
+    else:
+        effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
+        if details.partner_disbursement:
+            details.partner_disbursement.status_code = DisbursementStatus.COMPLETED.value
+            details.partner_disbursement.processed_on = effective_date
     return has_errors
 
 
@@ -328,22 +368,26 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) ->
     return has_errors
 
 
-def _handle_partial_refund_feedback(details: JVDetailsFeedback, has_errors: bool) -> bool:
-    """Handle feedback for partial refunds."""
-    for link in details.partial_refund_links:
-        link.disbursement_status_code = _get_disbursement_status(details.invoice_return_code)
-        link.message = details.invoice_return_message.strip()
+def _handle_jv_partial_refund_payment_feedback(details: JVDetailsFeedback, has_errors: bool) -> bool:
+    """Handle JV Partial Refund Payment Feedback."""
+    # This is for gov account payment JV.
+    disbursement_status = _get_disbursement_status(details.invoice_return_code)
+    current_app.logger.info(
+        "Partial Refund ID %s, Disbursement Status %s",
+        details.partial_refund.id,
+        disbursement_status,
+    )
 
-        if link.disbursement_status_code == DisbursementStatus.ERRORED.value:
-            has_errors = True
-            # Find the distribution code and set the stop_ejv flag to TRUE
-            dist_code = DistributionCodeModel.find_by_active_for_account(details.invoice.payment_account_id)
-            if dist_code:
-                dist_code.stop_ejv = True
-        elif link.disbursement_status_code == DisbursementStatus.COMPLETED.value:
-            partial_refund = RefundsPartialModel.find_by_id(link.link_id)
-            if partial_refund:
-                partial_refund.gl_posted = datetime.now(tz=timezone.utc)
+    if disbursement_status == DisbursementStatus.ERRORED.value:
+        has_errors = True
+        # Find the distribution code and set the stop_ejv flag to TRUE
+        line_item: PaymentLineItemModel = PaymentLineItemModel.find_by_id(details.partial_refund.payment_line_item_id)
+        dist_code: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+        dist_code.stop_ejv = True
+    elif disbursement_status == DisbursementStatus.COMPLETED.value:
+        effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
+        details.partial_refund.gl_posted = effective_date
+        details.partial_refund.status = RefundsPartialStatus.REFUND_PROCESSED.value
     return has_errors
 
 

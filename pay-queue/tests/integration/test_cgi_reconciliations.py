@@ -49,6 +49,7 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentStatus,
+    RefundsPartialStatus,
     RefundsPartialType,
     RoutingSlipStatus,
 )
@@ -1953,6 +1954,7 @@ def test_failure_ejv_partial_refund_reconciliations(session, app, client):
         payment_line_item_id=line_item.id,
         refund_amount=20.0,
         refund_type=RefundsPartialType.BASE_FEES.value,
+        status_code=RefundsPartialStatus.REFUND_PROCESSING.value,
     ).save()
 
     invoice.refund = 20.0
