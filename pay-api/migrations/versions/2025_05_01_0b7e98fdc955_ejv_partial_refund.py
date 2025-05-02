@@ -23,11 +23,11 @@ depends_on = None
 
 
 def upgrade():
-    op.execute(f"""
+    op.execute("""
         UPDATE payment_methods
         SET partial_refund = true
-        WHERE code IN ('{PaymentMethod.EJV.value}')
-    """)
+        WHERE code IN (:ejv_code)
+    """, {"ejv_code": PaymentMethod.EJV.value})
 
     op.add_column(
         "refunds_partial", sa.Column("status", sa.String(length=20), nullable=True)

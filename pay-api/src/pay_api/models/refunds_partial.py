@@ -105,8 +105,8 @@ class RefundsPartialSearchModel:
     refund_type: str
     gl_posted: datetime
     invoice_id: int
-    status: str = None
-    gl_error: str = None
+    status: Optional[str] = None
+    gl_error: Optional[str] = None
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
