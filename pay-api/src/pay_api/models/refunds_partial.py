@@ -105,7 +105,7 @@ class RefundsPartialSearchModel:
     refund_type: str
     gl_posted: datetime
     invoice_id: int
-    status: str = None
+    status: Optional[str] = None
     gl_error: str = None
 
     @classmethod
