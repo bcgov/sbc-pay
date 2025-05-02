@@ -44,6 +44,7 @@ class EFTShortnameHistory:  # pylint: disable=too-many-instance-attributes
     is_processing: Optional[bool] = False
     invoice_id: Optional[int] = None
     eft_refund_id: Optional[int] = None
+    transaction_date: Optional[datetime] = None
 
 
 @dataclass
@@ -69,7 +70,8 @@ class EFTShortnameHistorical:
             hidden=history.hidden,
             is_processing=history.is_processing,
             short_name_id=history.short_name_id,
-            transaction_date=EFTShortnameHistorical.transaction_date_now(),
+            transaction_date=history.transaction_date
+            if history.transaction_date else EFTShortnameHistorical.transaction_date_now(),
             transaction_type=EFTHistoricalTypes.FUNDS_RECEIVED.value,
         )
 

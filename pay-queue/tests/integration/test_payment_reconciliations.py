@@ -1100,15 +1100,13 @@ def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(
 
     # - Base invoice reference is CANCELLED
     factory_invoice_reference(
-        invoice_id=invoice.id,
-        invoice_number=base_invoice_number,
-        status_code=InvoiceReferenceStatus.CANCELLED.value
+        invoice_id=invoice.id, invoice_number=base_invoice_number, status_code=InvoiceReferenceStatus.CANCELLED.value
     )
     # - Consolidated invoice reference (-C) is COMPLETED (linking to the same invoice)
     factory_invoice_reference(
         invoice_id=invoice.id,
         invoice_number=consolidated_invoice_number,
-        status_code=InvoiceReferenceStatus.COMPLETED.value
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
     )
 
     file_name: str = "cas_settlement_consolidated_skip_test.csv"
@@ -1138,8 +1136,10 @@ def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(
         message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
     )
 
-    expected_warning = (f"Invoice {base_invoice_number} not found as COMPLETED, "
-                        f"but consolidated version {consolidated_invoice_number} found as COMPLETED")
+    expected_warning = (
+        f"Invoice {base_invoice_number} not found as COMPLETED, "
+        f"but consolidated version {consolidated_invoice_number} found as COMPLETED"
+    )
     assert any(expected_warning in record.message for record in caplog.records if record.levelname == "WARNING")
 
     updated_invoice = InvoiceModel.find_by_id(invoice_id)

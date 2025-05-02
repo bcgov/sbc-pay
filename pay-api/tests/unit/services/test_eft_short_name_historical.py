@@ -18,6 +18,7 @@ Test-Suite to ensure that the EFT short name historical service is working as ex
 """
 from datetime import datetime
 
+import pytest
 from freezegun import freeze_time
 
 from pay_api.models.eft_short_names_historical import EFTShortnamesHistorical as EFTShortnameHistory
@@ -44,12 +45,22 @@ def setup_test_data():
     return payment_account, eft_short_name
 
 
-def test_create_funds_received(session):
+@pytest.mark.parametrize(
+    "test_transaction_date",
+    [
+        None,
+        datetime(2025, 5, 1, 8, 0, 0)
+    ])
+def test_create_funds_received(session, test_transaction_date):
     """Test create short name funds received history."""
-    transaction_date = datetime(2024, 7, 31, 0, 0, 0)
-    with freeze_time(transaction_date):
+    freeze_transaction_date = datetime(2024, 7, 31, 0, 0, 0)
+    expected_transaction_date = test_transaction_date if test_transaction_date else freeze_transaction_date
+    with freeze_time(freeze_transaction_date):
         _, short_name = setup_test_data()
-        history = EFTShortnameHistory(short_name_id=short_name.id, amount=151.50, credit_balance=300)
+        history = EFTShortnameHistory(short_name_id=short_name.id,
+                                      amount=151.50,
+                                      credit_balance=300,
+                                      transaction_date=expected_transaction_date)
         historical_record = EFTShortnameHistoryService.create_funds_received(history)
         historical_record.save()
         assert historical_record.id is not None
@@ -64,7 +75,7 @@ def test_create_funds_received(session):
         assert historical_record.eft_refund_id is None
         assert historical_record.invoice_id is None
         assert historical_record.statement_number is None
-        assert historical_record.transaction_date.replace(microsecond=0) == transaction_date
+        assert historical_record.transaction_date.replace(microsecond=0) == expected_transaction_date
         assert historical_record.transaction_type == EFTHistoricalTypes.FUNDS_RECEIVED.value
 
 
