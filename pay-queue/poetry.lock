@@ -2088,9 +2088,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/ochiu/sbc-pay.git"
-reference = "27465-EFT-History-transaction-date"
-resolved_reference = "bd99c0098863cb0ad1ed6990e2d09c542267297d"
+url = "https://github.com/jxio/sbc-pay.git"
+reference = "19758_api"
+resolved_reference = "2d08e5f269a1e0b16d3fa323e6fdd8cc27d5ded8"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3293,4 +3293,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "578e4a1f0502c21b9a3be85d17e565f84a802ce575003101459ada62d59a24ba"
+content-hash = "253ec51ea9bff2a29ee4ab99c22828364087ff6982b3f17a2358979503c99d6a"

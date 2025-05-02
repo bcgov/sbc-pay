@@ -15,7 +15,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Self
+from typing import List, Optional, Self
 
 from attrs import define
 from sql_versioning import Versioned
