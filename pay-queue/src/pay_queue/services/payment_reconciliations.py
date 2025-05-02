@@ -155,8 +155,9 @@ def _create_payment_records(csv_content: str):
                     .one_or_none()
                 )
                 if payment is None and current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
-                    current_app.logger.warning("Payment not found for receipt number %s skipping creation",
-                                               source_txn_number)
+                    current_app.logger.warning(
+                        "Payment not found for receipt number %s skipping creation", source_txn_number
+                    )
                     continue
                 payment.payment_status_code = PaymentStatus.COMPLETED.value
             case _:
@@ -177,7 +178,7 @@ def _save_payment(  # pylint: disable=too-many-arguments
     # pylint: disable=import-outside-toplevel
     from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
-    current_app.logger.debug('Save payment invoice number: %s', inv_number)
+    current_app.logger.debug("Save payment invoice number: %s", inv_number)
     payment_account = _get_payment_account(row)
     pay_service = PaymentSystemFactory.create_from_payment_method(payment_method)
     # If status is failed, which means NSF. We already have a COMPLETED payment record, find and update iit.
@@ -407,7 +408,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                         "Invoice %s not found as COMPLETED, but consolidated version %s found as COMPLETED. "
                         "It's paid by credit card. Skipping.",
                         inv_number,
-                        consolidated_inv_number
+                        consolidated_inv_number,
                     )
                     # Skip raising error for this specific case, assuming the -C row handles the actual completion.
                     return has_errors

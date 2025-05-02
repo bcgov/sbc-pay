@@ -410,11 +410,12 @@ def test_eft_tdi17_all_patterns_process(session, app, client):
         assert history
         assert len(history) == 1
         history = history[0]
-        assert_funds_received_history(eft_credit, history)
+        assert_funds_received_history(eft_credit, transaction, history)
 
 
 def assert_funds_received_history(
     eft_credit: EFTCreditModel,
+    transaction: EFTTransactionModel,
     eft_history: EFTHistoryModel,
     assert_balance: bool = True,
 ):
@@ -422,6 +423,7 @@ def assert_funds_received_history(
     assert eft_history.short_name_id == eft_credit.short_name_id
     assert eft_history.amount == eft_credit.amount
     assert eft_history.transaction_type == EFTHistoricalTypes.FUNDS_RECEIVED.value
+    assert eft_history.transaction_date == transaction.deposit_date.replace(tzinfo=None)
     assert eft_history.hidden is False
     assert eft_history.is_processing is False
     assert eft_history.statement_number is None
@@ -507,10 +509,10 @@ def test_eft_tdi17_process(session, app, client):
 
     eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
     history: List[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
-    assert_funds_received_history(eft_credits[0], history[0])
-    assert_funds_received_history(eft_credits[1], history[1], False)
+    assert_funds_received_history(eft_credits[0], eft_transactions[0], history[0])
+    assert_funds_received_history(eft_credits[1], eft_transactions[1], history[1], False)
     assert history[1].credit_balance == eft_credits[0].amount + eft_credits[1].amount
-    assert_funds_received_history(eft_credits[2], history[2])
+    assert_funds_received_history(eft_credits[2], eft_transactions[2], history[2])
 
 
 def test_eft_tdi17_rerun(session, app, client):
