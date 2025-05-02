@@ -327,11 +327,13 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                 eft_credit_model.flush()
 
                 credit_balance = EFTCreditModel.get_eft_credit_balance(eft_credit_model.short_name_id)
+                history_transaction_date = eft_transaction.get("deposit_date", None)
                 EFTHistoryService.create_funds_received(
                     EFTHistory(
                         short_name_id=eft_credit_model.short_name_id,
                         amount=deposit_amount,
                         credit_balance=credit_balance,
+                        transaction_date=history_transaction_date,
                     )
                 ).flush()
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
@@ -508,7 +510,8 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
         short_name = eft_transaction.transaction_description
         shortname_type = eft_transaction.short_name_type
         deposit_amount = eft_transaction.deposit_amount_cad / 100
-        transaction = {"id": eft_transaction.id, "deposit_amount": deposit_amount}
+        deposit_date = eft_transaction.deposit_datetime
+        transaction = {"id": eft_transaction.id, "deposit_amount": deposit_amount, "deposit_date": deposit_date}
 
         shortname_balance.setdefault(short_name, {"balance": 0})
         shortname_balance[short_name]["short_name_type"] = shortname_type
