@@ -1749,13 +1749,13 @@ tests = ["codecov", "coverage", "flake8", "flake8-quotes", "flake8-typing-import
 
 [[package]]
 name = "jinja2"
-version = "3.1.5"
+version = "3.1.6"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "jinja2-3.1.5-py3-none-any.whl", hash = "sha256:aba0f4dc9ed8013c424088f68a5c226f7d6097ed89b246d7749c2ec4175c6adb"},
-    {file = "jinja2-3.1.5.tar.gz", hash = "sha256:8fefff8dc3034e27bb80d67c671eb8a9bc424c0ef4c0826edbff304cceff43bb"},
+    {file = "jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67"},
+    {file = "jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"},
 ]
 
 [package.dependencies]
@@ -2210,7 +2210,7 @@ holidays = "0.37"
 idna = "3.7"
 itsdangerous = "2.1.2"
 jaeger-client = "4.8.0"
-jinja2 = "3.1.5"
+jinja2 = "3.1.6"
 jsonschema = "4.17.3"
 launchdarkly-eventsource = "1.1.1"
 launchdarkly-server-sdk = "8.2.1"
@@ -2253,8 +2253,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/jxio/sbc-pay.git"
-reference = "26959"
-resolved_reference = "33251adebe332a7f3712fe7f070cef062b1f01a4"
+reference = "19758_api"
+resolved_reference = "317d416110c87279def34121b4067cd9d02815cd"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3501,4 +3501,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b23b6391b0819afd96086af43b77f2c6c5259484e84f11dbd447e004266f23e0"
+content-hash = "f2a4643fe682278223411dab446bd09acc4e1c4b38e1157185c9df8d0f1d813e"
