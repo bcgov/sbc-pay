@@ -14,6 +14,7 @@
 """Task to create Journal Voucher for gov account payments."""
 
 import time
+from dataclasses import dataclass
 from typing import List
 
 from flask import current_app
@@ -24,6 +25,8 @@ from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.utils.enums import (
     DisbursementStatus,
@@ -32,10 +35,27 @@ from pay_api.utils.enums import (
     InvoiceReferenceStatus,
     InvoiceStatus,
     PaymentMethod,
+    RefundsPartialStatus,
+    RefundsPartialType,
 )
 from pay_api.utils.util import generate_transaction_number
 
 from tasks.common.cgi_ejv import CgiEjv
+
+
+@dataclass
+class JVParams:
+    """Data class for JV parameters."""
+
+    batch_type: str
+    effective_date: str
+    journal_name: str
+    debit_distribution: str
+    account_jv: str
+    control_total: int
+    total: float
+    line_number: int
+    disbursement_desc: str
 
 
 class EjvPaymentTask(CgiEjv):
@@ -47,7 +67,7 @@ class EjvPaymentTask(CgiEjv):
 
         Steps:
         1. Find all accounts for GI or GA.
-        2. Find outstanding invoices for payment.
+        2. Find outstanding invoices and partial refunds for payment.
         3. Group by account and create JD for each service fee and filing fee.
         4. Upload the file to minio for future reference.
         5. Upload to sftp for processing. First upload JV file and then a TRG file.
@@ -79,8 +99,9 @@ class EjvPaymentTask(CgiEjv):
             account_jv: str = ""
             # Find all invoices for the gov account to pay.
             invoices = cls._get_invoices_for_payment(account_id)
+            partial_refund_invoices = cls.get_partial_refunds_invoices(account_id)
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
-            if not invoices or not pay_account.billable:
+            if not pay_account.billable or (not invoices and not partial_refund_invoices):
                 continue
 
             disbursement_desc = f"{pay_account.name[:100]:<100}"
@@ -197,6 +218,21 @@ class EjvPaymentTask(CgiEjv):
                             line_number,
                             "D" if not is_jv_reversal else "C",
                         )
+            jv_params = JVParams(
+                batch_type=batch_type,
+                effective_date=effective_date,
+                journal_name=journal_name,
+                debit_distribution=debit_distribution,
+                account_jv=account_jv,
+                control_total=control_total,
+                total=total,
+                line_number=line_number,
+                disbursement_desc=disbursement_desc
+            )
+            control_total, total, line_number = cls._process_partial_refunds(
+                partial_refund_invoices,
+                jv_params
+            )
             batch_total += total
 
             if total > 0:
@@ -234,6 +270,9 @@ class EjvPaymentTask(CgiEjv):
                     status_code=InvoiceReferenceStatus.ACTIVE.value,
                 )
                 db.session.add(inv_ref)
+
+            cls._create_ejv_link_for_partial_refunds(partial_refund_invoices, ejv_header_model.id, sequence)
+
             db.session.flush()  # Instead of flushing every entity, flush all at once.
 
         if not ejv_content:
@@ -288,3 +327,140 @@ class EjvPaymentTask(CgiEjv):
             .all()
         )
         return invoices
+
+    @classmethod
+    def get_partial_refunds_invoices(cls, account_id: int) -> List[InvoiceModel]:
+        """Get credit card partial refunds."""
+        invoices: List[InvoiceModel] = (
+            InvoiceModel.query.join(RefundsPartialModel, RefundsPartialModel.invoice_id == InvoiceModel.id)
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EJV.value)
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
+            .filter(RefundsPartialModel.status == RefundsPartialStatus.REFUND_REQUESTED.value)
+            .filter(InvoiceModel.payment_account_id == account_id)
+            .order_by(InvoiceModel.id, RefundsPartialModel.id)
+            .distinct(InvoiceModel.id)
+            .all()
+        )
+
+        current_app.logger.info(f"Found {len(invoices)} invoices to process for ejv partial refunds.")
+        return invoices
+
+    @classmethod
+    def _process_partial_refunds(cls,
+                                 partial_refund_invoices: List[InvoiceModel],
+                                 jv_params: JVParams):
+        """Process EJV partial refund entries."""
+        for pr_invoice in partial_refund_invoices:
+            for pr in RefundsPartialModel.get_partial_refunds_for_invoice(pr_invoice.id):
+                # Line can have 2 distribution, 1 for the total and another one for service fees.
+                line: PaymentLineItemModel = PaymentLineItemModel.find_by_id(pr.payment_line_item_id)
+                line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    line.fee_distribution_id
+                )
+
+                is_service_fee = pr.refund_type == RefundsPartialType.SERVICE_FEES.value
+                refund_amount = pr.refund_amount
+
+                if refund_amount <= 0:
+                    continue
+
+                invoice_number = f"#{pr_invoice.id}"
+                description = jv_params.disbursement_desc[: -len(invoice_number)] + invoice_number
+                description = f"{description[:100]:<100}"
+                flow_through = f"{pr_invoice.id:<110}-'PR'-{pr.id}"
+
+                if not is_service_fee:
+                    jv_params.total += refund_amount
+                    line_distribution = cls.get_distribution_string(line_distribution_code)
+                    # Credit to BCREG GL for a transaction (non-reversal)
+                    jv_params.line_number += 1
+                    jv_params.control_total += 1
+                    # If it's normal payment then the Line distribution goes as Credit,
+                    # else it goes as Debit as we need to debit the fund from BC registry GL.
+                    jv_params.account_jv = jv_params.account_jv + cls.get_jv_line(
+                        jv_params.batch_type,
+                        line_distribution,
+                        description,
+                        jv_params.effective_date,
+                        flow_through,
+                        jv_params.journal_name,
+                        refund_amount,
+                        jv_params.line_number,
+                        "D",
+                    )
+
+                    # Debit from GOV ACCOUNT GL for a transaction (non-reversal)
+                    jv_params.line_number += 1
+                    jv_params.control_total += 1
+                    # If it's normal payment then the Gov account GL goes as Debit,
+                    # else it goes as Credit as we need to credit the fund back to ministry.
+                    jv_params.account_jv = jv_params.account_jv + cls.get_jv_line(
+                        jv_params.batch_type,
+                        jv_params.debit_distribution,
+                        description,
+                        jv_params.effective_date,
+                        flow_through,
+                        jv_params.journal_name,
+                        refund_amount,
+                        jv_params.line_number,
+                        "C",
+                    )
+                if is_service_fee:
+                    service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                        line_distribution_code.service_fee_distribution_code_id
+                    )
+                    jv_params.total += refund_amount
+                    service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
+                    flow_through = f"{line.invoice_id:<110}"
+                    # Credit to BCREG GL for a transaction (non-reversal)
+                    jv_params.line_number += 1
+                    jv_params.control_total += 1
+                    jv_params.account_jv = jv_params.account_jv + cls.get_jv_line(
+                        jv_params.batch_type,
+                        service_fee_distribution,
+                        description,
+                        jv_params.effective_date,
+                        flow_through,
+                        jv_params.journal_name,
+                        refund_amount,
+                        jv_params.line_number,
+                        "D",
+                    )
+
+                    # Debit from GOV ACCOUNT GL for a transaction (non-reversal)
+                    jv_params.line_number += 1
+                    jv_params.control_total += 1
+                    jv_params.account_jv = jv_params.account_jv + cls.get_jv_line(
+                        jv_params.batch_type,
+                        jv_params.debit_distribution,
+                        description,
+                        jv_params.effective_date,
+                        flow_through,
+                        jv_params.journal_name,
+                        refund_amount,
+                        jv_params.line_number,
+                        "C",
+                    )
+        return jv_params.control_total, jv_params.total, jv_params.line_number
+
+    @classmethod
+    def _create_ejv_link_for_partial_refunds(cls,
+                                             partial_refund_invoices: List[InvoiceModel],
+                                             ejv_header_id: int,
+                                             sequence: int) -> int:
+        """Create EJV links for partial refunds and update their status."""
+        for pr_invoice in partial_refund_invoices:
+            partial_refunds = RefundsPartialModel.get_partial_refunds_for_invoice(pr_invoice.id)
+            for seq, pr in enumerate(partial_refunds, start=sequence):
+                db.session.add(EjvLinkModel(
+                    link_id=pr.id,
+                    link_type=EJVLinkType.PARTIAL_REFUND.value,
+                    ejv_header_id=ejv_header_id,
+                    disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                    sequence=seq,
+                ))
+                pr.status = RefundsPartialStatus.REFUND_PROCESSING.value
+            sequence += len(partial_refunds)
+            current_app.logger.debug(f"Created {len(partial_refunds)} EJV partial refund links.")
+
+        return sequence
