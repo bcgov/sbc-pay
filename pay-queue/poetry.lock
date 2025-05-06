@@ -2171,9 +2171,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "sync_payqueue_ob_hotfix"
-resolved_reference = "8cfd4439fd5f099496d86e6395f7703dc5a0eb4f"
+url = "https://github.com/jxio/sbc-pay.git"
+reference = "19758_api"
+resolved_reference = "cca151958f4c93a85bd51a9dffe610116fb8866b"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3432,4 +3432,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "869f394d3a8589ea8e62aaf4b10522e4cecdff4b4791fb1b0376a43dbf3dfe79"
+content-hash = "253ec51ea9bff2a29ee4ab99c22828364087ff6982b3f17a2358979503c99d6a"
