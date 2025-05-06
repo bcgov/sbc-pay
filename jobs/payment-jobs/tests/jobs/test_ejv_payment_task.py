@@ -202,17 +202,11 @@ def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
     )
     db.session.flush()
 
-    print(f"Creating partial refund test: invoice_id={partial_refund_invoice.id}, account_id={jv_account_1.id}")
-    print(f"Invoice status: {partial_refund_invoice.invoice_status_code}")
-    print(f"Payment method: {partial_refund_invoice.payment_method_code}")
-    print(f"RefundsPartial status: {refund_partial.status}")
-
     refund_partials = RefundsPartial.get_partial_refunds_for_invoice(partial_refund_invoice.id)
     assert len(refund_partials) == 1
     assert refund_partials[0].id == refund_partial.id
 
     partial_refund_invoices = EjvPaymentTask.get_partial_refunds_invoices(jv_account_1.id)
-    print(f"Partial refund invoices: {[inv.id for inv in partial_refund_invoices]}")
     assert len(partial_refund_invoices) == 1
     assert partial_refund_invoices[0].id == partial_refund_invoice.id
 
