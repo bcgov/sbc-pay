@@ -1829,8 +1829,8 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
 
     # GA
     jv_account_1 = factory_create_ejv_account(auth_account_id="1")
-    
-    #GI
+
+    # GI
     jv_account_2 = factory_create_ejv_account(auth_account_id="2", client="111")
 
     # Create EJV File
@@ -1875,7 +1875,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
             fee_dist_id=dist_code.distribution_code_id,
         )
         inv_ids.append(inv.id)
-        
+
         partial_refund = RefundsPartialModel(
             invoice_id=inv.id,
             status=RefundsPartialStatus.REFUND_PROCESSING.value,
@@ -1900,7 +1900,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
             ejv_header_id=ejv_header.id,
             disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).save()
-        
+
         flowthrough = f"{inv.id}-PR-{partial_refund.id}"
         refund_amount_str = f"{refund_amount:.2f}".zfill(15)
 
@@ -1924,7 +1924,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
             f"..................................CGI\n"
         )
         feedback_content = feedback_content + jh_and_jd
-        
+
     feedback_content = (
         feedback_content + f"..BT.......FI0000000{ejv_header.id}000000000000002{refund_amount_str}0000......."
         f"........................................................................."
@@ -1950,7 +1950,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
 
-    mocker.patch('pay_api.models.RefundsPartial.find_by_id', 
+    mocker.patch('pay_api.models.RefundsPartial.find_by_id',
                  side_effect=lambda id: next((r for r in RefundsPartialModel.query.all() if r.id == id), None))
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
