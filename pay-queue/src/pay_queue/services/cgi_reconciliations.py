@@ -30,6 +30,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
@@ -48,6 +49,7 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     QueueSources,
+    RefundsPartialStatus,
     RoutingSlipStatus,
     TransactionStatus,
 )
@@ -187,7 +189,9 @@ class JVDetailsFeedback:
     invoice_return_message: str
     line: str
     receipt_number: str
+    is_partial_refund: bool = False
     invoice: Optional[InvoiceModel] = None
+    partial_refund: Optional[RefundsPartialModel] = None
     invoice_link: Optional[EjvLinkModel] = None
     partner_disbursement: Optional[PartnerDisbursementsModel] = None
 
@@ -218,21 +222,46 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
         invoice_return_message=line[319:469],
         receipt_number=receipt_number,
     )
-    if "-" in details.flowthrough:
-        invoice_id = int(details.flowthrough.split("-")[0])
-        partner_disbursement_id = int(details.flowthrough.split("-")[1])
+    # Check if this is a partial refund by looking for "-PR" suffix
+    flowthrough = details.flowthrough
+    details.is_partial_refund = "-PR" in flowthrough
+
+    if details.is_partial_refund:
+        parts = flowthrough.split("-PR-")
+        flowthrough_to_parse = parts[0]
+        partial_refund_id = parts[1]
+    else:
+        flowthrough_to_parse = flowthrough
+
+    if "-" in flowthrough_to_parse:
+        invoice_id, partner_disbursement_id = map(int, flowthrough_to_parse.split("-", 1))
         details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
     else:
-        invoice_id = int(details.flowthrough)
+        invoice_id = int(flowthrough_to_parse)
+
     current_app.logger.info("Invoice id - %s", invoice_id)
     details.invoice = InvoiceModel.find_by_id(invoice_id)
-    details.invoice_link = (
-        db.session.query(EjvLinkModel)
-        .filter(EjvLinkModel.ejv_header_id == details.ejv_header_model_id)
-        .filter(EjvLinkModel.link_id == invoice_id)
-        .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value)
-        .one_or_none()
-    )
+    if details.is_partial_refund:
+        details.partial_refund = RefundsPartialModel.find_by_id(partial_refund_id)
+        current_app.logger.info("Partial refund id - %s", partial_refund_id)
+        details.partial_refund = RefundsPartialModel.find_by_id(partial_refund_id)
+        details.invoice_link = (
+            db.session.query(EjvLinkModel)
+            .join(RefundsPartialModel, EjvLinkModel.link_id == RefundsPartialModel.id)
+            .filter(EjvLinkModel.ejv_header_id == details.ejv_header_model_id)
+            .filter(RefundsPartialModel.invoice_id == details.invoice.id)
+            .filter(RefundsPartialModel.status == RefundsPartialStatus.REFUND_PROCESSING.value)
+            .filter(EjvLinkModel.link_type == EJVLinkType.PARTIAL_REFUND.value)
+            .one_or_none()
+        )
+    else:
+        details.invoice_link = (
+            db.session.query(EjvLinkModel)
+            .filter(EjvLinkModel.ejv_header_id == details.ejv_header_model_id)
+            .filter(EjvLinkModel.link_id == invoice_id)
+            .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value)
+            .one_or_none()
+        )
     return details
 
 
@@ -246,15 +275,32 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
         if details.partner_disbursement:
             details.partner_disbursement.status_code = DisbursementStatus.ERRORED.value
             details.partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
-        details.invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
-        line_items: List[PaymentLineItemModel] = details.invoice.payment_line_items
-        for line_item in line_items:
-            # Line debit distribution
-            debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
-            credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                debit_distribution.disbursement_distribution_code_id
+        if details.is_partial_refund:
+            details.partial_refund.gl_error = DisbursementStatus.ERRORED.value
+            line_items: List[PaymentLineItemModel] = PaymentLineItemModel.find_by_id(
+                details.partial_refund.payment_line_item_id
             )
-            credit_distribution.stop_ejv = True
+            for line_item in line_items:
+                # Line debit distribution
+                debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    line_item.fee_distribution_id
+                )
+                credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    debit_distribution.disbursement_distribution_code_id
+                )
+                credit_distribution.stop_ejv = True
+        else:
+            details.invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
+            line_items: List[PaymentLineItemModel] = details.invoice.payment_line_items
+            for line_item in line_items:
+                # Line debit distribution
+                debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    line_item.fee_distribution_id
+                )
+                credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    debit_distribution.disbursement_distribution_code_id
+                )
+                credit_distribution.stop_ejv = True
     else:
         effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
         _update_invoice_disbursement_status(details, effective_date)
@@ -276,7 +322,7 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) ->
     if details.invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
         has_errors = True
         # Cancel the invoice reference.
-        if inv_ref:
+        if inv_ref and not details.is_partial_refund:
             inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
         # Find the distribution code and set the stop_ejv flag to TRUE
         dist_code = DistributionCodeModel.find_by_active_for_account(details.invoice.payment_account_id)
@@ -289,10 +335,13 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) ->
             InvoiceStatus.REFUNDED.value,
             InvoiceStatus.REFUND_REQUESTED.value,
         )
-        _set_invoice_jv_reversal(details.invoice, effective_date, is_reversal)
+        if details.is_partial_refund:
+            _set_partial_refund_jv_reversal(details.partial_refund, effective_date)
+        else:
+            _set_invoice_jv_reversal(details.invoice, effective_date, is_reversal)
 
         # Mark the invoice reference as COMPLETED, create a receipt
-        if inv_ref:
+        if inv_ref and not details.is_partial_refund:
             inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
         # Find receipt and add total to it, as single invoice can be multiple rows in the file
         if not is_reversal:
@@ -320,6 +369,11 @@ def _set_invoice_jv_reversal(invoice: InvoiceModel, effective_date: datetime, is
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.payment_date = effective_date
         invoice.paid = invoice.total
+
+
+def _set_partial_refund_jv_reversal(partial_refund: RefundsPartialModel, effective_date: datetime):
+    partial_refund.status = RefundsPartialStatus.REFUND_PROCESSED.value
+    partial_refund.gl_posted = effective_date
 
 
 def _fix_invoice_line(line):
@@ -354,14 +408,16 @@ def _update_invoice_disbursement_status(
         _update_partner_disbursement(details.partner_disbursement, DisbursementStatus.REVERSED.value, effective_date)
         if details.invoice.disbursement_status_code == DisbursementStatus.REVERSED.value:
             current_app.logger.warning("Invoice disbursement_status_code / disbursement_reversal_date overridden.")
-        details.invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
-        details.invoice.disbursement_reversal_date = effective_date
+        if not details.is_partial_refund:
+            details.invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
+            details.invoice.disbursement_reversal_date = effective_date
     else:
         _update_partner_disbursement(details.partner_disbursement, DisbursementStatus.COMPLETED.value, effective_date)
         if details.invoice.disbursement_status_code == DisbursementStatus.COMPLETED.value:
             current_app.logger.warning("Invoice disbursement_status_code / disbursement_date overridden.")
-        details.invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
-        details.invoice.disbursement_date = effective_date
+        if not details.is_partial_refund:
+            details.invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+            details.invoice.disbursement_date = effective_date
 
 
 def _create_payment_record(amount, ejv_header, receipt_number):

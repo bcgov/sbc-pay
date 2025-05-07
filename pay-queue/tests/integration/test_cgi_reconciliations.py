@@ -34,6 +34,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
@@ -48,6 +49,7 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentStatus,
+    RefundsPartialStatus,
     RoutingSlipStatus,
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -1785,3 +1787,481 @@ def test_failure_ap_disbursement(session, app, client):
     assert invoice_2.disbursement_status_code == DisbursementStatus.ERRORED.value
     invoice_link = db.session.query(EjvLinkModel).filter(EjvLinkModel.link_id == invoice_ids[1]).one_or_none()
     assert invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value
+
+
+def test_successful_ejv_partial_refund_reconciliations(session, app, client, mocker):
+    """Test successful partial refund EJV reconciliations."""
+    set_partial_refund_mock = Mock()
+    mocker.patch('pay_queue.services.cgi_reconciliations._set_partial_refund_jv_reversal', set_partial_refund_mock)
+    
+    cfs_account_number = "1234"
+    partner_code = "VS"
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
+        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+    )
+
+    # 使用 factory_create_ejv_account 创建 EJV 账户，只传 auth_account_id 参数
+    pay_account = factory_create_ejv_account(auth_account_id="test_partial_refund")
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        corp_type_code="VS",
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    invoice_id = invoice.id
+    line_item = factory_payment_line_item(
+        invoice_id=invoice_id,
+        filing_fees=90.0,
+        service_fees=10.0,
+        total=90.0,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+    )
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    if not dist_code.disbursement_distribution_code_id:
+        disbursement_distribution_code = factory_distribution(name="Disbursement")
+        dist_code.disbursement_distribution_code_id = disbursement_distribution_code.distribution_code_id
+        dist_code.save()
+
+    invoice_number = "1234567890"
+    factory_invoice_reference(
+        invoice_id=invoice.id,
+        invoice_number=invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+    invoice = invoice.save()
+
+    from pay_api.models import RefundsPartial as RefundsPartialModel
+    partial_refund = RefundsPartialModel(
+        invoice_id=invoice.id,
+        status=RefundsPartialStatus.REFUND_PROCESSING.value,
+        payment_line_item_id=line_item.id,
+        refund_amount=10.0,
+        created_by='test',
+        created_name='test',
+        version=1
+    )
+    partial_refund.save()
+    partial_refund_id = partial_refund.id
+
+    mocker.patch('pay_api.models.RefundsPartial.find_by_id', return_value=partial_refund)
+
+    flowthrough = f"{invoice.id}-PR-{partial_refund_id}"
+
+    file_ref = f"INBOX.{datetime.now()}"
+    ejv_file = EjvFileModel(
+        file_ref=file_ref, 
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        file_type=EjvFileType.PAYMENT.value
+    ).save()
+    ejv_file_id = ejv_file.id
+
+    ejv_header = EjvHeaderModel(
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ejv_file_id=ejv_file.id,
+        partner_code=partner_code,
+        payment_account_id=pay_account.id,
+    ).save()
+    ejv_header_id = ejv_header.id
+
+    EjvLinkModel(
+        link_id=invoice.id,
+        link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+    ).save()
+
+    ack_file_name = f"ACK.{file_ref}"
+    with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write("")
+        jv_file.close()
+    upload_to_minio(str.encode(""), ack_file_name)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+
+    # 补全 feedback_content，加入 BG/BH/JH/JD/BT 行
+    feedback_content = (
+        f"GABG...........00000000{ejv_file_id}...\n"
+        f"..BH...0000................................................................................."
+        f".....................................................................CGI\n"
+        f"..JH...FI0000000{ejv_header_id}.........................000000000090.00....................."
+        f"............................................................................................"
+        f"............................................................................................"
+        f".........0000..............................................................................."
+        f".......................................................................CGI\n"
+        f"..JD...FI0000000{ejv_header_id}0000120230529112............................................."
+        f"...........000000000090.00D................................................................."
+        f"{flowthrough.ljust(110)}"
+        f"                                                 0000........................"
+        f"............................................................................................"
+        f"..................................CGI\n"
+        f"..JD...FI0000000{ejv_header_id}0000220230529105............................................."
+        f"...........000000000090.00C................................................................."
+        f"{flowthrough.ljust(110)}"
+        f"                                                 0000........................"
+        f"............................................................................................"
+        f"..................................CGI\n"
+        f"..BT.......FI0000000{ejv_header_id}000000000000002000000000180.000000......................."
+        f"............................................................................................"
+        f"...................................CGI"
+    )
+    feedback_file_name = f"FEEDBACK.{file_ref}"
+    with open(feedback_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+    with open(feedback_file_name, "rb") as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    set_partial_refund_mock.assert_called_once()
+    args, kwargs = set_partial_refund_mock.call_args
+    assert args[0].id == partial_refund.id
+    assert args[1] == datetime(2023, 5, 29)
+
+
+def test_failure_ejv_partial_refund_reconciliations(session, app, client, mocker):
+    """Test failed partial refund EJV reconciliations."""
+    cfs_account_number = "1234"
+    partner_code = "VS"
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
+        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+    )
+
+    # 使用 factory_create_ejv_account 创建 EJV 账户，只传 auth_account_id 参数
+    pay_account = factory_create_ejv_account(auth_account_id="test_partial_refund_failure")
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        corp_type_code="VS",
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    invoice_id = invoice.id
+    line_item = factory_payment_line_item(
+        invoice_id=invoice_id,
+        filing_fees=90.0,
+        service_fees=10.0,
+        total=90.0,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+    )
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    if not dist_code.disbursement_distribution_code_id:
+        disbursement_distribution_code = factory_distribution(name="Disbursement")
+        dist_code.disbursement_distribution_code_id = disbursement_distribution_code.distribution_code_id
+        dist_code.save()
+    disbursement_distribution_code_id = dist_code.disbursement_distribution_code_id
+
+    invoice_number = "1234567890"
+    factory_invoice_reference(
+        invoice_id=invoice.id,
+        invoice_number=invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+    invoice = invoice.save()
+
+    from pay_api.models import RefundsPartial as RefundsPartialModel
+    partial_refund = RefundsPartialModel(
+        invoice_id=invoice.id,
+        status=RefundsPartialStatus.REFUND_PROCESSING.value,
+        payment_line_item_id=line_item.id,
+        gl_error=None,
+        refund_amount=10.0,
+        created_by='test',
+        created_name='test',
+        version=1
+    )
+    partial_refund.save()
+    partial_refund_id = partial_refund.id
+
+    mocker.patch('pay_api.models.RefundsPartial.find_by_id', return_value=partial_refund)
+
+    flowthrough = f"{invoice.id}-PR-{partial_refund_id}"
+
+    file_ref = f"INBOX.{datetime.now()}"
+    ejv_file = EjvFileModel(
+        file_ref=file_ref, 
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        file_type=EjvFileType.PAYMENT.value
+    ).save()
+    ejv_file_id = ejv_file.id
+
+    ejv_header = EjvHeaderModel(
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ejv_file_id=ejv_file.id,
+        partner_code=partner_code,
+        payment_account_id=pay_account.id,
+    ).save()
+    ejv_header_id = ejv_header.id
+
+    EjvLinkModel(
+        link_id=invoice.id,
+        link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+    ).save()
+
+    # Mock PaymentLineItemModel.find_by_id
+    from pay_api.models import PaymentLineItem as PaymentLineItemModel
+    mocker.patch('pay_api.models.PaymentLineItem.find_by_id', return_value=[line_item])
+
+    # Mock DistributionCodeModel.find_by_id
+    from pay_api.models import DistributionCode as DistributionCodeModel
+    debit_distribution = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    credit_distribution = DistributionCodeModel.find_by_id(debit_distribution.disbursement_distribution_code_id)
+    credit_distribution.stop_ejv = False
+    mocker.patch('pay_api.models.DistributionCode.find_by_id', side_effect=[debit_distribution, credit_distribution])
+
+    ack_file_name = f"ACK.{file_ref}"
+    with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write("")
+        jv_file.close()
+    upload_to_minio(str.encode(""), ack_file_name)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+
+    feedback_content = (
+        f"GABG...........00000000{ejv_file_id}...\n"
+        f"..BH...0000................................................................................."
+        f".....................................................................CGI\n"
+        f"..JH...FI0000000{ejv_header_id}.........................000000000090.00....................."
+        f"............................................................................................"
+        f"............................................................................................"
+        f".........0000..............................................................................."
+        f".......................................................................CGI\n"
+        f"..JD...FI0000000{ejv_header_id}0000120230529112............................................."
+        f"...........000000000090.00D................................................................."
+        f"{flowthrough.ljust(110)}"
+        f"                                                 1111ERROR........................"
+        f"............................................................................................"
+        f"..................................CGI\n"
+        f"..JD...FI0000000{ejv_header_id}0000220230529105............................................."
+        f"...........000000000090.00C................................................................."
+        f"{flowthrough.ljust(110)}"
+        f"                                                 1111ERROR........................"
+        f"............................................................................................"
+        f"..................................CGI\n"
+        f"..BT.......FI0000000{ejv_header_id}000000000000002000000000180.000000......................."
+        f"............................................................................................"
+        f"...................................CGI"
+    )
+    feedback_file_name = f"FEEDBACK.{file_ref}"
+    with open(feedback_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+    with open(feedback_file_name, "rb") as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value
+    assert partial_refund.gl_error == DisbursementStatus.ERRORED.value
+    assert credit_distribution.stop_ejv is True
+
+
+def test_successful_partial_refund_ejv_reconciliations(session, app, client, mocker):
+    """Test successful partial refund EJV reconciliations with link_type=PARTIAL_REFUND."""
+    # 1. Create EJV payment accounts
+    # 2. Create invoice and related records
+    # 3. Create partial refund records
+    # 4. Create a feedback file and assert status
+    corp_type = "CP"
+    filing_type = "OTFDR"
+
+    InvoiceModel.query.delete()
+    # Reset the sequence, because the unit test is only dealing with 1 character for the invoice id.
+    # This becomes more apparent when running unit tests in parallel.
+    db.session.execute(text("ALTER SEQUENCE invoices_id_seq RESTART WITH 1"))
+    db.session.commit()
+
+    # Find fee schedule which have service fees.
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
+    # Create a service fee distribution code
+    service_fee_dist_code = factory_distribution(
+        name="service fee",
+        client="112",
+        reps_centre="99999",
+        service_line="99999",
+        stob="9999",
+        project_code="9999999",
+    )
+    service_fee_dist_code.save()
+
+    dist_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
+    # Update fee dist code to match the requirement.
+    dist_code.client = "112"
+    dist_code.responsibility_centre = "22222"
+    dist_code.service_line = "33333"
+    dist_code.stob = "4444"
+    dist_code.project_code = "5555557"
+    dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
+    dist_code.save()
+
+    # Create EJV accounts
+    jv_account_1 = factory_create_ejv_account(auth_account_id="1")
+    jv_account_2 = factory_create_ejv_account(auth_account_id="2", client="111")
+
+    # Create EJV File
+    file_ref = f"INBOX.{datetime.now(tz=timezone.utc)}"
+    ejv_file = EjvFileModel(
+        file_ref=file_ref,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        file_type=EjvFileType.PAYMENT.value,
+    ).save()
+    ejv_file_id = ejv_file.id
+
+    feedback_content = (
+        f"GABG...........00000000{ejv_file_id}...\n"
+        f"..BH...0000................................................................................."
+        f".....................................................................CGI\n"
+    )
+
+    jv_accounts = [jv_account_1, jv_account_2]
+    inv_ids = []
+    partial_refund_ids = []
+    jv_account_ids = []
+    inv_total_amount = 100.0
+    refund_amount = 40.0
+
+    # Setup partial refund mock
+    set_partial_refund_mock = Mock()
+    mocker.patch('pay_queue.services.cgi_reconciliations._set_partial_refund_jv_reversal', set_partial_refund_mock)
+
+    for jv_acc in jv_accounts:
+        jv_account_ids.append(jv_acc.id)
+        # Create invoice
+        inv = factory_invoice(
+            payment_account=jv_acc,
+            corp_type_code=corp_type,
+            total=inv_total_amount,
+            status_code=InvoiceStatus.PAID.value,
+            payment_method_code=PaymentMethod.EJV.value,
+        )
+        factory_invoice_reference(inv.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
+        
+        # Create line item
+        line = factory_payment_line_item(
+            invoice_id=inv.id,
+            fee_schedule_id=fee_schedule.fee_schedule_id,
+            filing_fees=100,
+            total=inv_total_amount,
+            service_fees=0.0,
+            fee_dist_id=dist_code.distribution_code_id,
+        )
+        inv_ids.append(inv.id)
+        
+        partial_refund = RefundsPartialModel(
+            invoice_id=inv.id,
+            status=RefundsPartialStatus.REFUND_PROCESSING.value,
+            payment_line_item_id=line.id,
+            refund_amount=refund_amount,
+            created_by='test',
+            created_name='test',
+            version=1
+        )
+        partial_refund.save()
+        partial_refund_ids.append(partial_refund.id)
+        
+        # Create EJV header
+        ejv_header = EjvHeaderModel(
+            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+            ejv_file_id=ejv_file.id,
+            payment_account_id=jv_acc.id,
+        ).save()
+
+        # Create EJV link with PARTIAL_REFUND type
+        EjvLinkModel(
+            link_id=inv.id,
+            link_type=EJVLinkType.PARTIAL_REFUND.value,
+            ejv_header_id=ejv_header.id,
+            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ).save()
+        
+        flowthrough = f"{inv.id}-PR-{partial_refund.id}"
+
+        refund_amount_str = f"{refund_amount:.2f}".zfill(15)
+
+        jh_and_jd = (
+            f"..JH...FI0000000{ejv_header.id}.........................{refund_amount_str}....................."
+            f"............................................................................................"
+            f"............................................................................................"
+            f".........0000..............................................................................."
+            f".......................................................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000120230529................................................"
+            f"...........{refund_amount_str}C..............................................................."
+            f"...................................{flowthrough}                                             "
+            f"                                                                0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000220230529................................................"
+            f"...........{refund_amount_str}D..............................................................."
+            f"...................................{flowthrough}                                             "
+            f"                                                                0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+        )
+        feedback_content = feedback_content + jh_and_jd
+        
+    feedback_content = (
+        feedback_content + f"..BT.......FI0000000{ejv_header.id}000000000000002{refund_amount_str}0000......."
+        f"........................................................................."
+        f"......................................................................CGI"
+    )
+    
+    # Create and process ACK file
+    ack_file_name = f"ACK.{file_ref}"
+    with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write("")
+        jv_file.close()
+    upload_to_minio(str.encode(""), ack_file_name)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+
+    # Create and process FEEDBACK file
+    feedback_file_name = f"FEEDBACK.{file_ref}"
+    with open(feedback_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+    with open(feedback_file_name, "rb") as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    mock_publish = Mock()
+    mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
+    
+    # Mock RefundsPartial.find_by_id to return our partial refund objects
+    mocker.patch('pay_api.models.RefundsPartial.find_by_id', 
+                 side_effect=lambda id: next((r for r in RefundsPartialModel.query.all() if r.id == id), None))
+    
+    # Process feedback file
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
+    
+    # Assertions
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    
+    # Verify partial refunds were processed
+    set_partial_refund_mock.assert_called()
+    assert set_partial_refund_mock.call_count == len(partial_refund_ids)
+    
+    # For each invoice, it should remain PAID but the partial refund should be processed
+    for i, inv_id in enumerate(inv_ids):
+        invoice = InvoiceModel.find_by_id(inv_id)
+        partial_refund = RefundsPartialModel.find_by_id(partial_refund_ids[i])
+        
+        # The invoice should remain PAID since it's a partial refund
+        assert invoice.invoice_status_code == InvoiceStatus.PAID.value
+        
+        # Verify _set_partial_refund_jv_reversal was called with correct args
+        call_args = set_partial_refund_mock.call_args_list[i][0]
+        assert call_args[0].id == partial_refund.id
+        assert call_args[1] == datetime(2023, 5, 29)

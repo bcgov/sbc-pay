@@ -2088,9 +2088,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/jxio/sbc-pay.git"
-reference = "19758_api"
-resolved_reference = "cca151958f4c93a85bd51a9dffe610116fb8866b"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "main"
+resolved_reference = "51c43bcd38a0121240dda686f218e6205ad94491"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3293,4 +3293,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "253ec51ea9bff2a29ee4ab99c22828364087ff6982b3f17a2358979503c99d6a"
+content-hash = "6c1a79b267ceaf69c00825240f6e5f58f3b93c0bb9fb61d9ae5735829f90518f"
