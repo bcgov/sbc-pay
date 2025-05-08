@@ -275,36 +275,33 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
         if details.partner_disbursement:
             details.partner_disbursement.status_code = DisbursementStatus.ERRORED.value
             details.partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
+
         if details.is_partial_refund:
             details.partial_refund.gl_error = DisbursementStatus.ERRORED.value
             line_items: List[PaymentLineItemModel] = PaymentLineItemModel.find_by_id(
                 details.partial_refund.payment_line_item_id
             )
-            for line_item in line_items:
-                # Line debit distribution
-                debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                    line_item.fee_distribution_id
-                )
-                credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                    debit_distribution.disbursement_distribution_code_id
-                )
-                credit_distribution.stop_ejv = True
         else:
             details.invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
             line_items: List[PaymentLineItemModel] = details.invoice.payment_line_items
-            for line_item in line_items:
-                # Line debit distribution
-                debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                    line_item.fee_distribution_id
-                )
-                credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                    debit_distribution.disbursement_distribution_code_id
-                )
-                credit_distribution.stop_ejv = True
+        _mark_distribution_codes_as_stopped(line_items)
     else:
         effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
         _update_invoice_disbursement_status(details, effective_date)
     return has_errors
+
+
+def _mark_distribution_codes_as_stopped(line_items):
+    """Mark distribution codes as stopped."""
+    for line_item in line_items:
+        # Line debit distribution
+        debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+            line_item.fee_distribution_id
+        )
+        credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+            debit_distribution.disbursement_distribution_code_id
+        )
+        credit_distribution.stop_ejv = True
 
 
 def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) -> bool:
