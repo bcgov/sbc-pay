@@ -19,7 +19,7 @@ itsdangerous = "^2.1.2"
 protobuf = "4.25.3"
 launchdarkly-server-sdk = "^8.2.1"
 cachecontrol = "^0.14.0"
-pay-api = {git = "https://github.com/jxio/sbc-pay.git", branch = "19758_api", subdirectory = "pay-api"}
+pay-api = {git = "https://github.com/bcgov/sbc-pay.git", branch = "main", subdirectory = "pay-api"}
 pg8000 = "^1.30.5"
 
 
