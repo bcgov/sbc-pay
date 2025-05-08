@@ -59,6 +59,7 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     PaymentSystem,
+    RefundsPartialStatus,
     RoutingSlipStatus,
 )
 
@@ -604,6 +605,7 @@ def factory_refund_partial(
     refund_type: str,
     created_by="test",
     created_on: datetime = datetime.now(tz=timezone.utc),
+    status: str = RefundsPartialStatus.REFUND_REQUESTED.value,
 ):
     """Return Factory."""
     return RefundsPartial(
@@ -613,6 +615,7 @@ def factory_refund_partial(
         refund_type=refund_type,
         created_by=created_by,
         created_on=created_on,
+        status=status,
     ).save()
 
 
