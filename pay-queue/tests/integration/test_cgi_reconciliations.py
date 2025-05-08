@@ -1895,6 +1895,13 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
         ).save()
 
         EjvLinkModel(
+            link_id=inv.id,
+            link_type=EJVLinkType.INVOICE.value,
+            ejv_header_id=ejv_header.id,
+            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ).save()
+
+        EjvLinkModel(
             link_id=partial_refund.id,
             link_type=EJVLinkType.PARTIAL_REFUND.value,
             ejv_header_id=ejv_header.id,
@@ -1936,7 +1943,8 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
         jv_file.write("")
         jv_file.close()
 
-    upload_to_minio(str.encode(""), ack_file_name)
+    with open(ack_file_name, "rb") as f:
+        upload_to_minio(f.read(), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
