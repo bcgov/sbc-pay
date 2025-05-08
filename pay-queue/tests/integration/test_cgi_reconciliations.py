@@ -1823,7 +1823,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
     dist_code.responsibility_centre = "22222"
     dist_code.service_line = "33333"
     dist_code.stob = "4444"
-    dist_code.project_code = "5555555"
+    dist_code.project_code = "5555558"
     dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
     dist_code.save()
 
@@ -1831,7 +1831,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
     jv_account_1 = factory_create_ejv_account(auth_account_id="1")
 
     # GI
-    jv_account_2 = factory_create_ejv_account(auth_account_id="2", client="111")
+    jv_account_4 = factory_create_ejv_account(auth_account_id="4", client="111")
 
     # Create EJV File
     file_ref = f"INBOX.{datetime.now(tz=timezone.utc)}"
@@ -1843,17 +1843,17 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
     ejv_file_id = ejv_file.id
 
     feedback_content = (
-        f"GABG...........00000000{ejv_file_id}...\n"
+        f"GABG...........0000000{ejv_file_id}...\n"
         f"..BH...0000................................................................................."
         f".....................................................................CGI\n"
     )
 
-    jv_accounts = [jv_account_1, jv_account_2]
+    jv_accounts = [jv_account_1, jv_account_4]
     inv_ids = []
     partial_refund_ids = []
     jv_account_ids = []
-    inv_total_amount = 100.0
-    refund_amount = 40.0
+    inv_total_amount = 100
+    refund_amount = 40
 
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
@@ -1895,13 +1895,6 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
         ).save()
 
         EjvLinkModel(
-            link_id=inv.id,
-            link_type=EJVLinkType.INVOICE.value,
-            ejv_header_id=ejv_header.id,
-            disbursement_status_code=DisbursementStatus.UPLOADED.value,
-        ).save()
-
-        EjvLinkModel(
             link_id=partial_refund.id,
             link_type=EJVLinkType.PARTIAL_REFUND.value,
             ejv_header_id=ejv_header.id,
@@ -1912,20 +1905,20 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
         refund_amount_str = f"{refund_amount:.2f}".zfill(15)
 
         jh_and_jd = (
-            f"..JH...FI0000000{ejv_header.id}.........................{refund_amount_str}....................."
+            f"..JH...FI000000{ejv_header.id}.........................{refund_amount_str}....................."
             f"............................................................................................"
             f"............................................................................................"
             f".........0000..............................................................................."
             f".......................................................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000120230529................................................"
-            f"...........{refund_amount_str}C..............................................................."
-            f".....................................{flowthrough}                                      "
+            f"..JD...FI000000{ejv_header.id}0000120230529................................................."
+            f"..........{refund_amount_str}C..............................................................."
+            f".....................................{flowthrough}                                       "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000220230529................................................"
-            f"...........{refund_amount_str}D..............................................................."
-            f".....................................{flowthrough}                                      "
+            f"..JD...FI000000{ejv_header.id}0000220230529................................................."
+            f"..........{refund_amount_str}D..............................................................."
+            f".....................................{flowthrough}                                       "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
@@ -1968,7 +1961,6 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
     for i, inv_id in enumerate(inv_ids):
         invoice = InvoiceModel.find_by_id(inv_id)
         partial_refund = RefundsPartialModel.find_by_id(partial_refund_ids[i])
-
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert partial_refund.status == RefundsPartialStatus.REFUND_PROCESSED.value
         assert partial_refund.gl_posted is not None
