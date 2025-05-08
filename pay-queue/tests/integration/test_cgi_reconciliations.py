@@ -1950,8 +1950,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
 
-    mocker.patch('pay_api.models.RefundsPartial.find_by_id',
-                 side_effect=lambda id: next((r for r in RefundsPartialModel.query.all() if r.id == id), None))
+    db.session.commit()
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
