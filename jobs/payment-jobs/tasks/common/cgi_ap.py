@@ -61,11 +61,7 @@ class CgiAP(CgiEjv):
             APFlow.ROUTING_SLIP_TO_CHEQUE: DisbursementMethod.CHEQUE.value,
             APFlow.EFT_TO_EFT: DisbursementMethod.EFT.value,
         }
-        term = (
-            f"{cls.EMPTY:<50}"
-            if ap_header.ap_flow in [APFlow.EFT_TO_CHEQUE, APFlow.ROUTING_SLIP_TO_CHEQUE]
-            else f"Immediate{cls.EMPTY:<41}"
-        )
+        term = f"Immediate{cls.EMPTY:<41}"
 
         ap_header = (
             f"{cls._feeder_number()}APIH{cls.DELIMITER}"
