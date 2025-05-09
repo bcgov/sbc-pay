@@ -351,6 +351,8 @@ def get_topic_for_corp_type(corp_type: str):
         return current_app.config.get("BUSINESS_PAY_TOPIC")
     if product_code == Product.STRR.value:
         return current_app.config.get("STRR_PAY_TOPIC")
+    if product_code == Product.PPR.value or product_code == Product.MHR.value:
+        return current_app.config.get("ASSETS_PAY_TOPIC")
     return None
 
 

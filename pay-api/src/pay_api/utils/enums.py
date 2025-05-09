@@ -251,6 +251,7 @@ class Product(Enum):
     BUSINESS_SEARCH = "BUSINESS_SEARCH"
     NRO = "NRO"
     STRR = "STRR"
+    MHR = "MHR"
 
 
 class RoutingSlipStatus(Enum):

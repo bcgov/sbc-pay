@@ -205,7 +205,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         if invoice.corp_type_code in [
             CorpType.CSO.value,
             CorpType.RPT.value,
-            CorpType.PPR.value,
             CorpType.VS.value,
         ]:
             return

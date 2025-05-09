@@ -125,6 +125,7 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     BUSINESS_PAY_TOPIC = os.getenv("BUSINESS_PAY_TOPIC", "business-pay-topic")
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
+    ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
 
     # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
     PAY_AUDIENCE_SUB = os.getenv("PAY_AUDIENCE_SUB", None)

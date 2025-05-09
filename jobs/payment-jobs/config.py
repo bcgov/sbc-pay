@@ -125,6 +125,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     BUSINESS_PAY_TOPIC = os.getenv("BUSINESS_PAY_TOPIC", "business-pay-topic")
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
+    ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
 
     CFS_ACCOUNT_DESCRIPTION = os.getenv("CFS_ACCOUNT_DESCRIPTION", "BCR")
     CFS_INVOICE_PREFIX = os.getenv("CFS_INVOICE_PREFIX", "REG")

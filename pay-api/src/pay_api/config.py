@@ -134,6 +134,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
+    ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
 
     # API Endpoints
     AUTH_API_URL = os.getenv("AUTH_API_URL", "")
