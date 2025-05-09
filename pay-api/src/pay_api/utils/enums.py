@@ -252,6 +252,7 @@ class Product(Enum):
     NRO = "NRO"
     STRR = "STRR"
     MHR = "MHR"
+    PPR = "PPR"
 
 
 class RoutingSlipStatus(Enum):
