@@ -118,9 +118,9 @@ class Code:
 
     @classmethod
     def is_payment_method_valid_for_corp_type (cls, corp_type: str, payment_method: str) -> bool:
-        """Check if the given corp_type has the specified payment_method."""                
-        corp_type_record = CorpType.query.with_entities(CorpType.code, CorpType.payment_methods).filter_by(code=corp_type).first()                
-        if not corp_type_record:           
-            return False                
-        is_valid = payment_method in (corp_type_record.payment_methods or [])                
-        return is_valid    
+        """Check if the given corp_type has the specified payment_method."""
+        corp_type_record = CorpType.query.with_entities(CorpType.code, CorpType.payment_methods).filter_by(code=corp_type).first()
+        if not corp_type_record:
+            return False
+        is_valid = payment_method in (corp_type_record.payment_methods or [])
+        return is_valid

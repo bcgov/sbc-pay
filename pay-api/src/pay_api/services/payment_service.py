@@ -28,6 +28,7 @@ from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemS
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number, get_str_by_path
+from pay_api.services.code import Code as CodeService
 
 from .base_payment_system import PaymentSystemService
 from .fee_schedule import FeeSchedule
@@ -37,7 +38,6 @@ from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .payment_transaction import PaymentTransaction
-from pay_api.services.code import Code as CodeService
 
 class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
@@ -74,8 +74,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_method = _get_payment_method(payment_request, payment_account)
 
         if not CodeService.is_payment_method_valid_for_corp_type(corp_type, payment_method):
-            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
-        
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)        
         user: UserContext = kwargs["user"]
         if user.is_api_user() and (
             not current_app.config.get("ENVIRONMENT_NAME") == "sandbox" and not user.is_system()
