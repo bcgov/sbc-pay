@@ -321,7 +321,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             if (user := member.get("user")) and (contacts := user.get("contacts")):
                 receiver_recipients.append(contacts[0].get("email"))
 
-        subject = f"{refund_amount} credit was added to your account "
+        subject = f"${refund_amount} {'credits' if refund_amount > 1 else 'credit'} was added to your account "
         html_body = _render_credit_add_notification_template(
             {
                 "amount": refund_amount,
