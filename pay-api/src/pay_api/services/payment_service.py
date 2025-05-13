@@ -74,7 +74,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_method = _get_payment_method(payment_request, payment_account)
 
         if not CodeService.is_payment_method_valid_for_corp_type(corp_type, payment_method):
-            raise BusinessException(Error.INVALID_PAYMENT_METHOD)        
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
         user: UserContext = kwargs["user"]
         if user.is_api_user() and (
             not current_app.config.get("ENVIRONMENT_NAME") == "sandbox" and not user.is_system()

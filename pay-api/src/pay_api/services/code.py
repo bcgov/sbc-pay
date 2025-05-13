@@ -124,3 +124,4 @@ class Code:
             return False
         is_valid = payment_method in (corp_type_record.payment_methods or [])
         return is_valid
+    
