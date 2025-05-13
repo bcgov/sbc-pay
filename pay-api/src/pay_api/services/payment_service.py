@@ -13,17 +13,14 @@
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
 
-# Standard library imports
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from threading import Thread
 from typing import Any, Dict, Tuple
 
-# Third-party imports
 from flask import copy_current_request_context, current_app
 
-# Local application imports
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models.receipt import Receipt

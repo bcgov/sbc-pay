@@ -17,6 +17,15 @@
 Test-Suite to ensure that the Code Service is working as expected.
 """
 
+import os
+
+import pytest
+from flask_migrate import Migrate, upgrade
+from sqlalchemy import event, text
+from sqlalchemy_utils import create_database, database_exists, drop_database
+
+from pay_api import create_app, jwt as _jwt, setup_jwt_manager
+from pay_api.models import db as _db, PaymentMethod, CorpType
 from pay_api.models.corp_type import CorpType
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.cache import cache
@@ -76,24 +85,17 @@ def test_find_valid_payment_methods_by_product_code(session):
     assert invalid_payment_methods == {"INVALID": []}
 
 
-def test_is_valid_corp_type_with_payment_method(session):
+def test_is_payment_method_valid_for_corp_type(session):
     """Assert that the function correctly validates payment methods for corp types."""
-    corp_type_code = "BEN"
-    valid_payment_method = "CREDIT_CARD"
-    invalid_payment_method = "INVALID_METHOD"
+    corp_type = session.query(CorpType).filter(CorpType.payment_methods.isnot(None)).first()
+    assert corp_type is not None, "No CorpType with payment methods found in the database for testing."
+    corp_type_code = corp_type.code
+    valid_payment_method = corp_type.payment_methods[0]
+    invalid_payment_method = f"{valid_payment_method}_INVALID"
 
-    corp_type = CorpType(
-        code=corp_type_code,
-        payment_methods=[valid_payment_method, "DIRECT_PAY"]
-    )
-    session.add(corp_type)
-    session.commit()
-
-    is_valid = CodeService.is_valid_corp_type_with_payment_method(corp_type_code, valid_payment_method)
-    assert is_valid is True, f"Expected {valid_payment_method} to be valid for {corp_type_code}"
-
-    is_valid = CodeService.is_valid_corp_type_with_payment_method(corp_type_code, invalid_payment_method)
+    is_valid = CodeService.is_payment_method_valid_for_corp_type(corp_type_code, valid_payment_method)
+    assert is_valid is True, f"Expected {valid_payment_method} to be valid for {corp_type_code}"    
+    is_valid = CodeService.is_payment_method_valid_for_corp_type(corp_type_code, invalid_payment_method)
     assert is_valid is False, f"Expected {invalid_payment_method} to be invalid for {corp_type_code}"
-
-    is_valid = CodeService.is_valid_corp_type_with_payment_method("INVALID_CORP", valid_payment_method)
+    is_valid = CodeService.is_payment_method_valid_for_corp_type("INVALID_CORP", valid_payment_method)
     assert is_valid is False, "Expected validation to fail for a non-existent corp type"
