@@ -17,15 +17,6 @@
 Test-Suite to ensure that the Code Service is working as expected.
 """
 
-import os
-
-import pytest
-from flask_migrate import Migrate, upgrade
-from sqlalchemy import event, text
-from sqlalchemy_utils import create_database, database_exists, drop_database
-
-from pay_api import create_app, jwt as _jwt, setup_jwt_manager
-from pay_api.models import db as _db, PaymentMethod, CorpType
 from pay_api.models.corp_type import CorpType
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.cache import cache
@@ -94,7 +85,7 @@ def test_is_payment_method_valid_for_corp_type(session):
     invalid_payment_method = f"{valid_payment_method}_INVALID"
 
     is_valid = CodeService.is_payment_method_valid_for_corp_type(corp_type_code, valid_payment_method)
-    assert is_valid is True, f"Expected {valid_payment_method} to be valid for {corp_type_code}"    
+    assert is_valid is True, f"Expected {valid_payment_method} to be valid for {corp_type_code}"
     is_valid = CodeService.is_payment_method_valid_for_corp_type(corp_type_code, invalid_payment_method)
     assert is_valid is False, f"Expected {invalid_payment_method} to be invalid for {corp_type_code}"
     is_valid = CodeService.is_payment_method_valid_for_corp_type("INVALID_CORP", valid_payment_method)

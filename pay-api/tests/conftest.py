@@ -354,7 +354,8 @@ def executor_mock(app):
 
     app.extensions["flask_executor"] = SimpleMockExecutor()
 
-@pytest.fixture()
+
+@pytest.fixture(autouse=True)
 def mock_is_payment_method_valid_for_corp_type(monkeypatch):
     """Mock Code.is_payment_method_valid_for_corp_type to always return True."""
     def mock_is_valid(corp_type, payment_method):
