@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
+
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -23,6 +24,7 @@ from flask import copy_current_request_context, current_app
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models.receipt import Receipt
+from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 from pay_api.utils.errors import Error
@@ -73,6 +75,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account = cls._find_payment_account(authorization)
         payment_method = _get_payment_method(payment_request, payment_account)
 
+        if not CodeService.is_payment_method_valid_for_corp_type(corp_type, payment_method):
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
         user: UserContext = kwargs["user"]
         if user.is_api_user() and (
             not current_app.config.get("ENVIRONMENT_NAME") == "sandbox" and not user.is_system()

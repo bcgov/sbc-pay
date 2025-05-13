@@ -115,3 +115,9 @@ class Code:
             .first()
         )
         return {corp_type.product: corp_type.payment_methods or []} if corp_type else {product_code: []}
+
+    @classmethod
+    def is_payment_method_valid_for_corp_type(cls, corp_type: str, payment_method: str) -> bool:
+        """Check if the given corp_type has the specified payment_method."""
+        record = CorpType.query.with_entities(CorpType.payment_methods).filter_by(code=corp_type).first()
+        return payment_method in (record.payment_methods if record else [])
