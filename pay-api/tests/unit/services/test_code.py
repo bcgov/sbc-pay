@@ -76,8 +76,9 @@ def test_find_valid_payment_methods_by_product_code(session):
     assert invalid_payment_methods == {"INVALID": []}
 
 
-def test_is_payment_method_valid_for_corp_type(session):
+def test_is_payment_method_valid_for_corp_type(session, monkeypatch):
     """Assert that the function correctly validates payment methods for corp types."""
+    monkeypatch.undo()
     corp_type = session.query(CorpType).filter(CorpType.payment_methods.isnot(None)).first()
     assert corp_type is not None, "No CorpType with payment methods found in the database for testing."
     corp_type_code = corp_type.code
