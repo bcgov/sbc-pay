@@ -331,8 +331,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                     if payment_account.branch_name and payment_account.branch_name not in payment_account.name
                     else payment_account.name
                 ),
-                "login_url": (f"{current_app.config.get('AUTH_WEB_URL')}/account/"
-                              f"{payment_account.auth_account_id}/settings/transactions"),
+                "login_url": (
+                    f"{current_app.config.get('AUTH_WEB_URL')}/account/"
+                    f"{payment_account.auth_account_id}/settings/transactions"
+                ),
             }
         )
         send_email(receiver_recipients, subject, html_body)

@@ -45,22 +45,16 @@ def setup_test_data():
     return payment_account, eft_short_name
 
 
-@pytest.mark.parametrize(
-    "test_transaction_date",
-    [
-        None,
-        datetime(2025, 5, 1, 8, 0, 0)
-    ])
+@pytest.mark.parametrize("test_transaction_date", [None, datetime(2025, 5, 1, 8, 0, 0)])
 def test_create_funds_received(session, test_transaction_date):
     """Test create short name funds received history."""
     freeze_transaction_date = datetime(2024, 7, 31, 0, 0, 0)
     expected_transaction_date = test_transaction_date if test_transaction_date else freeze_transaction_date
     with freeze_time(freeze_transaction_date):
         _, short_name = setup_test_data()
-        history = EFTShortnameHistory(short_name_id=short_name.id,
-                                      amount=151.50,
-                                      credit_balance=300,
-                                      transaction_date=expected_transaction_date)
+        history = EFTShortnameHistory(
+            short_name_id=short_name.id, amount=151.50, credit_balance=300, transaction_date=expected_transaction_date
+        )
         historical_record = EFTShortnameHistoryService.create_funds_received(history)
         historical_record.save()
         assert historical_record.id is not None

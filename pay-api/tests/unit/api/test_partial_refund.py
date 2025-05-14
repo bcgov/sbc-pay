@@ -245,8 +245,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
 
         partial_refund = refunds_partial[0]
         disbursements = PartnerDisbursementsModel.query.filter_by(
-            target_id=partial_refund.id,
-            target_type=EJVLinkType.PARTIAL_REFUND.value
+            target_id=partial_refund.id, target_type=EJVLinkType.PARTIAL_REFUND.value
         ).all()
 
         assert len(disbursements) == 1

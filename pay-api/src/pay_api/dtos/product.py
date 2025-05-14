@@ -6,6 +6,7 @@
 
 In the near future, will find a library that generates our API spec based off of these DTOs.
 """
+
 from typing import Optional
 
 from attrs import define
