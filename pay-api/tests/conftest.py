@@ -290,18 +290,8 @@ def admin_users_mock(monkeypatch):
 @pytest.fixture()
 def account_admin_mock(monkeypatch, mocker):
     """Mock get_account_admin_users."""
-    mock_get_account_admin_users = mocker.patch('pay_api.services.base_payment_system.get_account_admin_users')
-    mock_get_account_admin_users.return_value = {
-        'members': [
-            {
-                'user': {
-                    'contacts': [
-                        {'email': 'admin@example.com'}
-                    ]
-                }
-            }
-        ]
-    }
+    mock_get_account_admin_users = mocker.patch("pay_api.services.base_payment_system.get_account_admin_users")
+    mock_get_account_admin_users.return_value = {"members": [{"user": {"contacts": [{"email": "admin@example.com"}]}}]}
     return mock_get_account_admin_users
 
 
@@ -358,6 +348,7 @@ def executor_mock(app):
 @pytest.fixture(autouse=True)
 def mock_is_payment_method_valid_for_corp_type(monkeypatch):
     """Mock Code.is_payment_method_valid_for_corp_type to always return True."""
+
     def mock_is_valid(corp_type, payment_method):
         return True
 

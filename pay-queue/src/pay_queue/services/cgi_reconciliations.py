@@ -295,9 +295,7 @@ def _mark_distribution_codes_as_stopped(line_items):
     """Mark distribution codes as stopped."""
     for line_item in line_items:
         # Line debit distribution
-        debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
-            line_item.fee_distribution_id
-        )
+        debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
         credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
             debit_distribution.disbursement_distribution_code_id
         )
