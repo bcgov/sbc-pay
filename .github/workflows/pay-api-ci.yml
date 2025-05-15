@@ -65,7 +65,7 @@ jobs:
       JWT_OIDC_TEST_CLIENT_SECRET: "1111111111"
       JWT_OIDC_TEST_JWKS_CACHE_TIMEOUT: "6000"
 
-      SBC_PAY_CLIENT_ID: "sbc-auth-admin"
+      SBC_PAY_CLIENT_ID: "sbc-pay"
       SBC_PAY_CLIENT_SECRET: "2222222222"
 
     runs-on: ubuntu-24.04

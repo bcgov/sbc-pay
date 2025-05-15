@@ -10,7 +10,7 @@
     "vault": "keycloak",
     "application": [
         "jwt-base",
-        "sbc-auth-admin"
+        "sbc-pay"
     ]
   },
   {
