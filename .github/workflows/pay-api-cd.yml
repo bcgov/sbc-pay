@@ -19,7 +19,7 @@ on:
 
 jobs:
   pay-api-cd:
-    uses: bcgov/bcregistry-sre/.github/workflows/backend-cd-ocp.yaml@main
+    uses: bcgov/seeker25/.github/workflows/backend-cd-ocp.yaml@main
     with:
       target: ${{ inputs.target }}
       app_name: "pay-api"
