@@ -57,8 +57,8 @@ jobs:
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
       USE_DOCKER_MOCK: "YES"
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
-      SBC_AUTH_ADMIN_CLIENT_ID: "sbc-auth-admin"
-      SBC_AUTH_ADMIN_CLIENT_SECRET: "2222222222"
+      SBC_PAY_CLIENT_ID: "sbc-pay"
+      SBC_PAY_CLIENT_SECRET: "2222222222"
 
     runs-on: ubuntu-24.04
 

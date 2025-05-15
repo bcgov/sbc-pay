@@ -261,7 +261,7 @@
         }
       ],
       "sbc-auth-web": [],
-      "sbc-auth-admin": []
+      "sbc-pay": []
     }
   },
   "groups": [
@@ -560,7 +560,7 @@
       }
     },
     {
-      "clientId": "sbc-auth-admin",
+      "clientId": "sbc-pay",
       "surrogateAuthRequired": false,
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
@@ -625,7 +625,7 @@
           "protocolMapper": "oidc-hardcoded-claim-mapper",
           "consentRequired": false,
           "config": {
-            "claim.value": "sbc-auth-admin",
+            "claim.value": "sbc-pay",
             "userinfo.token.claim": "true",
             "id.token.claim": "true",
             "access.token.claim": "true",
@@ -802,12 +802,12 @@
       ]
     },
     {
-      "username": "service-account-sbc-auth-admin",
+      "username": "service-account-sbc-pay",
       "enabled": true,
       "totp": false,
       "emailVerified": false,
-      "email": "service-account-sbc-auth-admin@placeholder.org",
-      "serviceAccountClientId": "sbc-auth-admin",
+      "email": "service-account-sbc-pay@placeholder.org",
+      "serviceAccountClientId": "sbc-pay",
       "credentials": [],
       "disableableCredentialTypes": [],
       "requiredActions": [],

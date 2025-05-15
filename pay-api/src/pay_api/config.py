@@ -167,8 +167,8 @@ class _Config:  # pylint: disable=too-few-public-methods
     ]
 
     # Service account details
-    KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config("SBC_AUTH_ADMIN_CLIENT_ID")
-    KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config("SBC_AUTH_ADMIN_CLIENT_SECRET")
+    KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config("SBC_PAY_CLIENT_ID")
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config("SBC_PAY_CLIENT_SECRET")
 
     # Default number of transactions to be returned for transaction reporting
     TRANSACTION_REPORT_DEFAULT_TOTAL = int(_get_config("TRANSACTION_REPORT_DEFAULT_TOTAL", default=50))
