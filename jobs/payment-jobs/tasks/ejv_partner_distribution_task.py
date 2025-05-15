@@ -161,7 +161,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             payment_line_item,
             distribution_code,
         ) in partner_disbursements:
-            suffix = "PR" if partner_disbursement.target_type == EJVLinkType.PARTIAL_REFUND else ""
+            suffix = "PR" if partner_disbursement.target_type == EJVLinkType.PARTIAL_REFUND.value else ""
             flow_through = f"{payment_line_item.invoice_id}-{partner_disbursement.id}"
             if suffix != "":
                 flow_through += f"-{suffix}"
@@ -389,17 +389,21 @@ class EjvPartnerDistributionTask(CgiEjv):
                 DistributionCodeModel,
                 DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
             ).filter(
-                PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value,
-                PartnerDisbursementsModel.partner_code == partner.code,
+                PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value
+            ).filter(
+                PartnerDisbursementsModel.partner_code == partner.code
+            ).filter(
+                DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)
+            ).filter(
+                ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())
+            ).filter(
                 or_(
                     and_(
                         PartnerDisbursementsModel.is_reversal.is_(False),
                         InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
                     ),
                     PartnerDisbursementsModel.is_reversal.is_(True),
-                ),
-                ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()),
-                DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)
+                )
             )
         elif target_type == EJVLinkType.PARTIAL_REFUND.value:
             query = query.join(
@@ -417,11 +421,17 @@ class EjvPartnerDistributionTask(CgiEjv):
                 DistributionCodeModel,
                 DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
             ).filter(
-                PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value,
-                PartnerDisbursementsModel.partner_code == partner.code,
-                PartnerDisbursementsModel.is_reversal.is_(is_reversal),
-                InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
-                ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()),
+                PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value
+            ).filter(
+                PartnerDisbursementsModel.partner_code == partner.code
+            ).filter(
                 DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)
+            ).filter(
+                ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())
+            ).filter(
+                InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value
+            ).filter(
+                PartnerDisbursementsModel.is_reversal.is_(is_reversal)
             )
+
         return query.order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id).all()
