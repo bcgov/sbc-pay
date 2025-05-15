@@ -106,8 +106,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"
 
     # Service account details
-    KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv("SBC_AUTH_ADMIN_CLIENT_ID")
-    KEYCLOAK_SERVICE_ACCOUNT_SECRET = os.getenv("SBC_AUTH_ADMIN_CLIENT_SECRET")
+    KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv("SBC_PAY_CLIENT_ID")
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = os.getenv("SBC_PAY_CLIENT_SECRET")
 
     # JWT_OIDC Settings
     JWT_OIDC_ISSUER = os.getenv("JWT_OIDC_ISSUER")
