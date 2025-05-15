@@ -17,6 +17,10 @@ on:
         - test
         - prod
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   pay-api-cd:
     uses: seeker25/bcregistry-sre/.github/workflows/backend-cd-ocp.yaml@main
