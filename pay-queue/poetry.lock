@@ -2090,7 +2090,7 @@ werkzeug = "^3.0.3"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "hotfix-pay-queue-ob-pad"
-resolved_reference = "59a78985d0395277d248f45bdddb063ecb0c7b8c"
+resolved_reference = "ed417e7c86e9c57766862d77a9c4188a1802487f"
 subdirectory = "pay-api"
 
 [[package]]
