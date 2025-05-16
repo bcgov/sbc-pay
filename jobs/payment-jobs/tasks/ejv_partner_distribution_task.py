@@ -161,7 +161,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             payment_line_item,
             distribution_code,
         ) in partner_disbursements:
-            suffix = "PR" if partner_disbursement.target_type == EJVLinkType.PARTIAL_REFUND else ""
+            suffix = "PR" if partner_disbursement.target_type == EJVLinkType.PARTIAL_REFUND.value else ""
             flow_through = f"{payment_line_item.invoice_id}-{partner_disbursement.id}"
             if suffix != "":
                 flow_through += f"-{suffix}"
