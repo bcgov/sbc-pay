@@ -919,12 +919,12 @@ def test_credits(session, app, client, monkeypatch):
     credit_id = credit.id
 
     def mock_receipt(
-        cfs_account: CfsAccountModel, receipt_number: str
+        cfs_account: CfsAccountModel, receipt_number: str, return_none_if_404: bool = False
     ):  # pylint: disable=unused-argument; mocks of library methods
         return {"receipt_amount": onac_amount}
 
     def mock_cms(
-        cfs_account: CfsAccountModel, cms_number: str
+        cfs_account: CfsAccountModel, cms_number: str, return_none_if_404: bool = False
     ):  # pylint: disable=unused-argument; mocks of library methods
         return {"amount_due": cm_amount - cm_used_amount}
 
