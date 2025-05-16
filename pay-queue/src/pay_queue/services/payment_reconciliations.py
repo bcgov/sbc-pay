@@ -65,6 +65,14 @@ from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransac
 APP_CONFIG = config.get_named_config(os.getenv("DEPLOYMENT_ENV", "production"))
 
 
+class CasDataNotFoundError(Exception):
+    """Raised when a credit memo cannot be found in CFS."""
+
+    def __init__(self, message: str = None):
+        """Initialize the exception with a message."""
+        super().__init__(message)
+
+
 def _build_source_txns(csv_content: str):
     """Iterate the rows and create a dict with key as the source transaction number."""
     source_txns: Dict[str, List[Dict[str, str]]] = {}
@@ -746,21 +754,6 @@ def _create_credit_records(csv_content: str):
             _handle_credit_invoices_and_adjust_invoice_paid(row)
 
 
-def _check_cfs_accounts_for_pad_and_ob(credit):
-    """Ensure we don't have PAD and OB for the same account, because there is no association between CFS and CREDITS."""
-    has_pad = False
-    has_online_banking = False
-    for cfs_account in CfsAccountModel.find_by_account_id(credit.account_id):
-        if cfs_account.payment_method == PaymentMethod.PAD.value:
-            has_pad = True
-        if cfs_account.payment_method == PaymentMethod.ONLINE_BANKING.value:
-            has_online_banking = True
-    if has_pad and has_online_banking:
-        raise Exception(  # pylint: disable=broad-exception-raised
-            "Multiple payment methods for the same account for CREDITS credits has no link to CFS account."
-        )
-
-
 def _sync_credit_records_with_cfs():
     """Sync credit records with CFS."""
     # 1. Get all credit records with balance > 0
@@ -771,16 +764,16 @@ def _sync_credit_records_with_cfs():
     current_app.logger.info("Found %s credit records", len(active_credits))
     account_ids: List[int] = []
     for credit in active_credits:
-        _check_cfs_accounts_for_pad_and_ob(credit)
-        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(
+        cfs_account_pad = CfsAccountModel.find_effective_or_latest_by_payment_method(
             credit.account_id, PaymentMethod.PAD.value
-        ) or CfsAccountModel.find_effective_or_latest_by_payment_method(
+        )
+        cfs_account_ob = CfsAccountModel.find_effective_or_latest_by_payment_method(
             credit.account_id, PaymentMethod.ONLINE_BANKING.value
         )
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             try:
-                credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
+                credit_memo = _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
             except Exception as e:  # NOQA pylint: disable=broad-except
                 # For TEST, we can't reverse these
                 if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
@@ -790,7 +783,7 @@ def _sync_credit_records_with_cfs():
             credit.remaining_amount = abs(float(credit_memo.get("amount_due")))
         else:
             try:
-                receipt = CFSService.get_receipt(cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
+                receipt = _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
             except Exception as e:  # NOQA pylint: disable=broad-except
                 # For TEST, we can't reverse these
                 if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
@@ -804,8 +797,55 @@ def _sync_credit_records_with_cfs():
             credit.remaining_amount = receipt_amount - applied_amount
 
         credit.save()
+        _rollup_credits(account_ids)
 
-    # Roll up the credits and add up to credit in payment_account.
+
+def _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
+    """Fetch credit memo from CFS."""
+    credit_memo = None
+    if cfs_account_pad:
+        credit_memo = CFSService.get_cms(
+            cfs_account=cfs_account_pad,
+            cms_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if credit_memo is None and cfs_account_ob:
+        credit_memo = CFSService.get_cms(
+            cfs_account=cfs_account_ob,
+            cms_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if credit_memo is None:
+        raise CasDataNotFoundError(
+            f"Credit memo not found in CFS for PAD or OB - payment account id: {credit.account_id}"
+        )
+    return credit_memo
+
+
+def _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
+    """Fetch receipt from CFS."""
+    receipt = None
+    if cfs_account_pad:
+        receipt = CFSService.get_receipt(
+            cfs_account=cfs_account_pad,
+            receipt_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if receipt is None and cfs_account_ob:
+        receipt = CFSService.get_receipt(
+            cfs_account=cfs_account_ob,
+            receipt_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if receipt is None:
+        raise CasDataNotFoundError(
+            f"Receipt not found in CFS for PAD or OB - payment account id: {credit.account_id}"
+        )
+    return receipt
+
+
+def _rollup_credits(account_ids):
+    """Roll up the credits and add up to credit in payment_account."""
     for account_id in set(account_ids):
         account_credits: List[CreditModel] = (
             db.session.query(CreditModel)

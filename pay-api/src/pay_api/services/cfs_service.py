@@ -758,7 +758,7 @@ class CFSService(OAuthService):
         ).json()
 
     @classmethod
-    def get_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str) -> Dict[str, any]:
+    def get_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, return_none_if_404=False) -> Dict[str, any]:
         """Return receipt details from CFS."""
         current_app.logger.debug(">Getting receipt: %s", receipt_number)
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -774,14 +774,15 @@ class CFSService(OAuthService):
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
+            return_none_if_404=return_none_if_404,
             additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
         current_app.logger.debug(">Received receipt response")
-        return receipt_response.json()
+        return receipt_response.json() if receipt_response is not None else None
 
     @classmethod
-    def get_cms(cls, cfs_account: CfsAccountModel, cms_number: str) -> Dict[str, any]:
+    def get_cms(cls, cfs_account: CfsAccountModel, cms_number: str, return_none_if_404=False) -> Dict[str, any]:
         """Return CMS details from CFS."""
         current_app.logger.debug(">Getting CMS: %s", cms_number)
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -797,11 +798,12 @@ class CFSService(OAuthService):
             access_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
+            return_none_if_404=return_none_if_404,
             additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
 
         current_app.logger.debug(">Received CMS response")
-        return cms_response.json()
+        return cms_response.json() if cms_response is not None else None
 
     @classmethod
     def create_cms(cls, line_items: List[PaymentLineItemModel], cfs_account: CfsAccountModel) -> Dict[str, any]:

@@ -1881,9 +1881,9 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
             status=RefundsPartialStatus.REFUND_PROCESSING.value,
             payment_line_item_id=line.id,
             refund_amount=refund_amount,
-            created_by='test',
-            created_name='test',
-            version=1
+            created_by="test",
+            created_name="test",
+            version=1,
         )
         partial_refund.save()
         partial_refund_ids.append(partial_refund.id)
