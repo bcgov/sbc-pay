@@ -772,10 +772,22 @@ def _sync_credit_records_with_cfs():
         )
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
-            credit_memo = _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
+            try:
+                credit_memo = _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
+            except Exception as e:  # NOQA pylint: disable=broad-except
+                if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
+                    current_app.logger.warning(f"Error fetching credit memo {credit.cfs_identifier} : {str(e)}")
+                    continue
+                raise e
             credit.remaining_amount = abs(float(credit_memo.get("amount_due")))
         else:
-            receipt = _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
+            try:
+                receipt = _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
+            except Exception as e:  # NOQA pylint: disable=broad-except
+                if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
+                    current_app.logger.warning(f"Error fetching receipt {credit.cfs_identifier} : {str(e)}")
+                    continue
+                raise e
             receipt_amount = float(receipt.get("receipt_amount"))
             applied_amount: float = 0
             for invoice in receipt.get("invoices", []):
@@ -788,58 +800,46 @@ def _sync_credit_records_with_cfs():
 
 def _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
     """Fetch credit memo from CFS."""
-    try:
-        credit_memo = None
-        if cfs_account_pad:
-            credit_memo = CFSService.get_cms(
-                cfs_account=cfs_account_pad,
-                cms_number=credit.cfs_identifier,
-                return_none_if_404=True,
-            )
-        if credit_memo is None and cfs_account_ob:
-            credit_memo = CFSService.get_cms(
-                cfs_account=cfs_account_ob,
-                cms_number=credit.cfs_identifier,
-                return_none_if_404=True,
-            )
-        if credit_memo is None:
-            raise CasDataNotFoundError(
-                f"Credit memo not found in CFS for PAD or OB - payment account id: {credit.account_id}"
-            )
-        return credit_memo
-    except Exception as e:  # NOQA pylint: disable=broad-except
-        if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
-            current_app.logger.warning(f"Error fetching credit memo {credit.cfs_identifier} : {str(e)}")
-            return None  # You can also `continue` outside the function if looping
-        raise e
+    credit_memo = None
+    if cfs_account_pad:
+        credit_memo = CFSService.get_cms(
+            cfs_account=cfs_account_pad,
+            cms_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if credit_memo is None and cfs_account_ob:
+        credit_memo = CFSService.get_cms(
+            cfs_account=cfs_account_ob,
+            cms_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if credit_memo is None:
+        raise CasDataNotFoundError(
+            f"Credit memo not found in CFS for PAD or OB - payment account id: {credit.account_id}"
+        )
+    return credit_memo
 
 
 def _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
     """Fetch receipt from CFS."""
-    try:
-        receipt = None
-        if cfs_account_pad:
-            receipt = CFSService.get_receipt(
-                cfs_account=cfs_account_pad,
-                receipt_number=credit.cfs_identifier,
-                return_none_if_404=True,
-            )
-        if receipt is None and cfs_account_ob:
-            receipt = CFSService.get_receipt(
-                cfs_account=cfs_account_ob,
-                receipt_number=credit.cfs_identifier,
-                return_none_if_404=True,
-            )
-        if receipt is None:
-            raise CasDataNotFoundError(
-                f"Receipt not found in CFS for PAD or OB - payment account id: {credit.account_id}"
-            )
-        return receipt
-    except Exception as e:  # NOQA pylint: disable=broad-except
-        if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
-            current_app.logger.warning(f"Error fetching receipt {credit.cfs_identifier} : {str(e)}")
-            return None  # You can also `continue` outside the function if looping
-        raise e
+    receipt = None
+    if cfs_account_pad:
+        receipt = CFSService.get_receipt(
+            cfs_account=cfs_account_pad,
+            receipt_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if receipt is None and cfs_account_ob:
+        receipt = CFSService.get_receipt(
+            cfs_account=cfs_account_ob,
+            receipt_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if receipt is None:
+        raise CasDataNotFoundError(
+            f"Receipt not found in CFS for PAD or OB - payment account id: {credit.account_id}"
+        )
+    return receipt
 
 
 def _rollup_credits(account_ids):
