@@ -772,16 +772,19 @@ def _sync_credit_records_with_cfs():
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             try:
-                credit_memo = next(
-                    (
-                        CFSService.get_cms(
-                            cfs_account=account, cms_number=credit.cfs_identifier, return_none_if_404=True
-                        )
-                        for account in (cfs_account_pad, cfs_account_ob)
-                        if account
-                    ),
-                    None,
-                )
+                credit_memo = None
+                if cfs_account_pad:
+                    credit_memo = CFSService.get_cms(
+                        cfs_account=cfs_account_pad,
+                        cms_number=credit.cfs_identifier,
+                        return_none_if_404=True
+                    )
+                if credit_memo is None and cfs_account_ob:
+                    credit_memo = CFSService.get_cms(
+                        cfs_account=cfs_account_ob,
+                        cms_number=credit.cfs_identifier,
+                        return_none_if_404=True
+                    )
                 if credit_memo is None:
                     raise CasDataNotFoundError(  # pylint: disable=broad-exception-raised
                         f"Credit memo not found in CFS for PAD or OB - payment account id: {credit.account_id}"
@@ -795,16 +798,19 @@ def _sync_credit_records_with_cfs():
             credit.remaining_amount = abs(float(credit_memo.get("amount_due")))
         else:
             try:
-                receipt = next(
-                    (
-                        CFSService.get_receipt(
-                            cfs_account=account, receipt_number=credit.cfs_identifier, return_none_if_404=True
-                        )
-                        for account in (cfs_account_pad, cfs_account_ob)
-                        if account
-                    ),
-                    None,
-                )
+                receipt = None
+                if cfs_account_pad:
+                    receipt = CFSService.get_receipt(
+                        cfs_account=cfs_account_pad, 
+                        receipt_number=credit.cfs_identifier, 
+                        return_none_if_404=True
+                    )
+                if receipt is None and cfs_account_ob:
+                    receipt = CFSService.get_receipt(
+                        cfs_account=cfs_account_ob, 
+                        receipt_number=credit.cfs_identifier, 
+                        return_none_if_404=True
+                    )
                 if receipt is None:
                     raise CasDataNotFoundError(  # pylint: disable=broad-exception-raised
                         f"Receipt not found in CFS for PAD or OB - payment account id: {credit.account_id}"
