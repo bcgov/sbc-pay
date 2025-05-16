@@ -2088,9 +2088,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "main"
-resolved_reference = "dee81cba9d3a3b3ba55161bf340acb482cdc1de5"
+url = "https://github.com/jxio/sbc-pay.git"
+reference = "partner_disburse_bug_1"
+resolved_reference = "2021219e26555489127f956ab004c0cda93877b7"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3293,4 +3293,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "6c1a79b267ceaf69c00825240f6e5f58f3b93c0bb9fb61d9ae5735829f90518f"
+content-hash = "5cecc6759b72f37d464a77bddfe9d1d77cf728fbc49589505a311aff2d2f6da1"
