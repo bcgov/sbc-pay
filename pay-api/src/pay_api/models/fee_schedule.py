@@ -60,6 +60,7 @@ class FeeSchedule(db.Model):
             "priority_fee_code",
             "service_fee_code",
             "variable",
+            "show_on_price_list",
         ]
     }
 
@@ -78,7 +79,9 @@ class FeeSchedule(db.Model):
     priority_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     service_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     variable = db.Column(Boolean(), default=False, comment="Flag to indicate if the fee is variable")
-
+    show_on_price_list = db.Column(Boolean(), default=True,
+    comment="Flag to indicate if the fee schedule should be shown on the price list")
+    
     filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy="joined", innerjoin=True)
     corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy="joined", innerjoin=True)
 
