@@ -193,6 +193,8 @@ class FeeSchedule(db.Model):
             .filter(
                 (cls.fee_start_date <= current_date)
                 & ((cls.fee_end_date.is_(None)) | (cls.fee_end_date >= current_date))
+                & (CorpType.product.isnot(None))
+                & (cls.show_on_price_list.is_(True))
             )
         )
 
