@@ -775,6 +775,7 @@ def _sync_credit_records_with_cfs():
             try:
                 credit_memo = _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
             except Exception as e:  # NOQA pylint: disable=broad-except
+                # For TEST, we can't reverse these
                 if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
                     current_app.logger.warning(f"Error fetching credit memo {credit.cfs_identifier} : {str(e)}")
                     continue
@@ -784,6 +785,7 @@ def _sync_credit_records_with_cfs():
             try:
                 receipt = _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
             except Exception as e:  # NOQA pylint: disable=broad-except
+                # For TEST, we can't reverse these
                 if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
                     current_app.logger.warning(f"Error fetching receipt {credit.cfs_identifier} : {str(e)}")
                     continue
