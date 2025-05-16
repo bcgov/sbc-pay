@@ -776,15 +776,11 @@ def _sync_credit_records_with_cfs():
                 credit_memo = None
                 if cfs_account_pad:
                     credit_memo = CFSService.get_cms(
-                        cfs_account=cfs_account_pad,
-                        cms_number=credit.cfs_identifier,
-                        return_none_if_404=True
+                        cfs_account=cfs_account_pad, cms_number=credit.cfs_identifier, return_none_if_404=True
                     )
                 if credit_memo is None and cfs_account_ob:
                     credit_memo = CFSService.get_cms(
-                        cfs_account=cfs_account_ob,
-                        cms_number=credit.cfs_identifier,
-                        return_none_if_404=True
+                        cfs_account=cfs_account_ob, cms_number=credit.cfs_identifier, return_none_if_404=True
                     )
                 if credit_memo is None:
                     raise CasDataNotFoundError(  # pylint: disable=broad-exception-raised
@@ -802,15 +798,11 @@ def _sync_credit_records_with_cfs():
                 receipt = None
                 if cfs_account_pad:
                     receipt = CFSService.get_receipt(
-                        cfs_account=cfs_account_pad, 
-                        receipt_number=credit.cfs_identifier, 
-                        return_none_if_404=True
+                        cfs_account=cfs_account_pad, receipt_number=credit.cfs_identifier, return_none_if_404=True
                     )
                 if receipt is None and cfs_account_ob:
                     receipt = CFSService.get_receipt(
-                        cfs_account=cfs_account_ob, 
-                        receipt_number=credit.cfs_identifier, 
-                        return_none_if_404=True
+                        cfs_account=cfs_account_ob, receipt_number=credit.cfs_identifier, return_none_if_404=True
                     )
                 if receipt is None:
                     raise CasDataNotFoundError(  # pylint: disable=broad-exception-raised
