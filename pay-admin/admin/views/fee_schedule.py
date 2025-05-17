@@ -29,6 +29,7 @@ class FeeScheduleConfig(SecuredView):
         "priority_fee",
         "service_fee",
         "variable",
+        "show_on_price_list"
     ]
 
     column_labels = {
@@ -44,6 +45,7 @@ class FeeScheduleConfig(SecuredView):
         "service_fee": "Service Fee",
         "distribution_codes": "Distribution Code",
         "variable": "Variable Fee Flag",
+        "show_on_price_list": "Show on Price List",
     }
     column_searchable_list = ("corp_type_code", "filing_type_code")
     column_sortable_list = ("corp_type_code",)
@@ -63,6 +65,7 @@ class FeeScheduleConfig(SecuredView):
         "service_fee",
         "distribution_codes",
         "variable",
+        "show_on_price_list"
     ]
     edit_columns = [
         "corp_type",
@@ -72,6 +75,7 @@ class FeeScheduleConfig(SecuredView):
         "priority_fee",
         "service_fee",
         "distribution_codes",
+        "show_on_price_list"
     ]
 
     @staticmethod
@@ -81,6 +85,7 @@ class FeeScheduleConfig(SecuredView):
         form.priority_fee.label.text = "Priority Fee (Starts with 'PRI')"
         form.service_fee.label.text = "Service Fee (Starts with 'TRF')"
         form.distribution_codes.label.text = "Distribution Code (Mandatory for non-zero fees)"
+        form.show_on_price_list.label.text = "Show on Price List"
 
     def edit_form(self, obj=None):
         """Edit form overrides."""
