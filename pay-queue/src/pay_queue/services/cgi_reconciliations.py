@@ -87,7 +87,7 @@ def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, to
     minio_location: str = msg.get("location")
     file = get_object(minio_location, file_name)
     content = file.data.decode("utf-8-sig")
-    group_batches: List[str] = _group_batches(content)
+    group_batches: Dict[str, List[str]] = _group_batches(content)
 
     if _is_processed_or_processing(group_batches["EJV"], file_name):
         return
@@ -222,35 +222,33 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
         invoice_return_message=line[319:469],
         receipt_number=receipt_number,
     )
-    # Check if this is a partial refund by looking for "-PR" suffix
     flowthrough = details.flowthrough
-    details.is_partial_refund = "-PR" in flowthrough
+    details.is_partial_refund = False
+    partial_refund_id = None
+    partner_disbursement_id = None
 
-    if details.is_partial_refund:
-        parts = flowthrough.split("-PR-")
-        flowthrough_to_parse = parts[0]
-        partial_refund_id = parts[1]
-    else:
-        flowthrough_to_parse = flowthrough
+    invoice_id, partner_disbursement_id, partial_refund_id, details.is_partial_refund = parse_flowthrough(flowthrough)
 
-    if "-" in flowthrough_to_parse:
-        invoice_id, partner_disbursement_id = map(int, flowthrough_to_parse.split("-", 1))
+    if partner_disbursement_id:
         details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
-    else:
-        invoice_id = int(flowthrough_to_parse)
+
+        if details.is_partial_refund and details.partner_disbursement and not partial_refund_id:
+            partial_refund_id = details.partner_disbursement.target_id
 
     current_app.logger.info("Invoice id - %s", invoice_id)
     details.invoice = InvoiceModel.find_by_id(invoice_id)
-    if details.is_partial_refund:
-        details.partial_refund = RefundsPartialModel.find_by_id(partial_refund_id)
+
+    if partner_disbursement_id:
+        details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
+
+    # Determine the correct ejv link
+    if details.is_partial_refund and partial_refund_id:
         current_app.logger.info("Partial refund id - %s", partial_refund_id)
         details.partial_refund = RefundsPartialModel.find_by_id(partial_refund_id)
         details.invoice_link = (
             db.session.query(EjvLinkModel)
-            .join(RefundsPartialModel, EjvLinkModel.link_id == RefundsPartialModel.id)
             .filter(EjvLinkModel.ejv_header_id == details.ejv_header_model_id)
-            .filter(RefundsPartialModel.invoice_id == details.invoice.id)
-            .filter(RefundsPartialModel.status == RefundsPartialStatus.REFUND_PROCESSING.value)
+            .filter(EjvLinkModel.link_id == partial_refund_id)
             .filter(EjvLinkModel.link_type == EJVLinkType.PARTIAL_REFUND.value)
             .one_or_none()
         )
@@ -263,6 +261,43 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
             .one_or_none()
         )
     return details
+
+
+def parse_flowthrough(flowthrough: str) -> tuple[int, Optional[int], Optional[int], bool]:
+    """Parse flowthrough string into components.
+
+    Args:
+        flowthrough: String like "1111" or "1111-2222" or "1111-2222-PR" or "1111-PR-3333"
+
+    Returns:
+        Tuple of (invoice_id, partner_disbursement_id, partial_refund_id, is_partial_refund)
+    """
+    is_partial_refund = False
+    partial_refund_id = None
+    partner_disbursement_id = None
+
+    if flowthrough.endswith("-PR"):
+        # Format: "INVOICE_ID-PARTNER_ID-PR" eg. 1111-2222-PR
+        is_partial_refund = True
+        flowthrough_base = flowthrough[:-3]  # Remove "-PR"
+        if "-" in flowthrough_base:
+            invoice_id, partner_disbursement_id = map(int, flowthrough_base.split("-", 1))
+        else:
+            invoice_id = int(flowthrough_base)
+    elif "-PR-" in flowthrough:
+        # Format: "INVOICE_ID-PR-REFUND_ID" eg. 1111-PR-3333
+        is_partial_refund = True
+        parts = flowthrough.split("-PR-")
+        invoice_id = int(parts[0])
+        partial_refund_id = int(parts[1])
+    elif "-" in flowthrough:
+        # Format: "INVOICE_ID-PARTNER_ID" eg. 1111-2222
+        invoice_id, partner_disbursement_id = map(int, flowthrough.split("-", 1))
+    else:
+        # Format: "INVOICE_ID" eg. 1111
+        invoice_id = int(flowthrough)
+
+    return invoice_id, partner_disbursement_id, partial_refund_id, is_partial_refund
 
 
 def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: bool) -> bool:
