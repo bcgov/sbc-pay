@@ -55,7 +55,7 @@ class JVParams:
     control_total: int
     total: float
     line_number: int
-    disbursement_desc: str
+    payment_desc: str
 
 
 class EjvPaymentTask(CgiEjv):
@@ -227,9 +227,9 @@ class EjvPaymentTask(CgiEjv):
                 control_total=control_total,
                 total=total,
                 line_number=line_number,
-                disbursement_desc=disbursement_desc
+                payment_desc=payment_desc
             )
-            control_total, total, line_number = cls._process_partial_refunds(
+            control_total, total, line_number, account_jv = cls._process_partial_refunds(
                 partial_refund_invoices,
                 jv_params
             )
@@ -341,8 +341,6 @@ class EjvPaymentTask(CgiEjv):
             .distinct(InvoiceModel.id)
             .all()
         )
-
-        current_app.logger.info(f"Found {len(invoices)} invoices to process for ejv partial refunds.")
         return invoices
 
     @classmethod
@@ -365,9 +363,9 @@ class EjvPaymentTask(CgiEjv):
                     continue
 
                 invoice_number = f"#{pr_invoice.id}"
-                description = jv_params.disbursement_desc[: -len(invoice_number)] + invoice_number
+                description = jv_params.payment_desc[: -len(invoice_number)] + invoice_number
                 description = f"{description[:100]:<100}"
-                flow_through = f"{pr_invoice.id:<110}-'PR'-{pr.id}"
+                flow_through = f"{f'{pr_invoice.id}-PR-{pr.id}':<110}"
 
                 if not is_service_fee:
                     jv_params.total += refund_amount
@@ -411,7 +409,7 @@ class EjvPaymentTask(CgiEjv):
                     )
                     jv_params.total += refund_amount
                     service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
-                    flow_through = f"{line.invoice_id:<110}"
+                    flow_through = f"{f'{line.invoice_id}-PR-{pr.id}':<110}"
                     # Credit to BCREG GL for a transaction (non-reversal)
                     jv_params.line_number += 1
                     jv_params.control_total += 1
@@ -441,7 +439,7 @@ class EjvPaymentTask(CgiEjv):
                         jv_params.line_number,
                         "C",
                     )
-        return jv_params.control_total, jv_params.total, jv_params.line_number
+        return jv_params.control_total, jv_params.total, jv_params.line_number, jv_params.account_jv
 
     @classmethod
     def _create_ejv_link_for_partial_refunds(cls,

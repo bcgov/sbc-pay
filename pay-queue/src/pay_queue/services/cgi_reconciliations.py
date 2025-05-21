@@ -222,35 +222,33 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
         invoice_return_message=line[319:469],
         receipt_number=receipt_number,
     )
-    # Check if this is a partial refund by looking for "-PR" suffix
     flowthrough = details.flowthrough
-    details.is_partial_refund = "-PR" in flowthrough
+    details.is_partial_refund = False
+    partial_refund_id = None
+    partner_disbursement_id = None
 
-    if details.is_partial_refund:
-        parts = flowthrough.split("-PR-")
-        flowthrough_to_parse = parts[0]
-        partial_refund_id = parts[1]
-    else:
-        flowthrough_to_parse = flowthrough
+    invoice_id, partner_disbursement_id, partial_refund_id, details.is_partial_refund = parse_flowthrough(flowthrough)
 
-    if "-" in flowthrough_to_parse:
-        invoice_id, partner_disbursement_id = map(int, flowthrough_to_parse.split("-", 1))
+    if partner_disbursement_id:
         details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
-    else:
-        invoice_id = int(flowthrough_to_parse)
+
+        if details.is_partial_refund and details.partner_disbursement and not partial_refund_id:
+            partial_refund_id = details.partner_disbursement.target_id
 
     current_app.logger.info("Invoice id - %s", invoice_id)
     details.invoice = InvoiceModel.find_by_id(invoice_id)
-    if details.is_partial_refund:
-        details.partial_refund = RefundsPartialModel.find_by_id(partial_refund_id)
+
+    if partner_disbursement_id:
+        details.partner_disbursement = PartnerDisbursementsModel.find_by_id(partner_disbursement_id)
+
+    # Determine the correct ejv link
+    if details.is_partial_refund and partial_refund_id:
         current_app.logger.info("Partial refund id - %s", partial_refund_id)
         details.partial_refund = RefundsPartialModel.find_by_id(partial_refund_id)
         details.invoice_link = (
             db.session.query(EjvLinkModel)
-            .join(RefundsPartialModel, EjvLinkModel.link_id == RefundsPartialModel.id)
             .filter(EjvLinkModel.ejv_header_id == details.ejv_header_model_id)
-            .filter(RefundsPartialModel.invoice_id == details.invoice.id)
-            .filter(RefundsPartialModel.status == RefundsPartialStatus.REFUND_PROCESSING.value)
+            .filter(EjvLinkModel.link_id == partial_refund_id)
             .filter(EjvLinkModel.link_type == EJVLinkType.PARTIAL_REFUND.value)
             .one_or_none()
         )
