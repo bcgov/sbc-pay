@@ -779,7 +779,7 @@ class CFSService(OAuthService):
         )
 
         current_app.logger.debug(">Received receipt response")
-        return receipt_response.json()
+        return receipt_response.json() if receipt_response is not None else None
 
     @classmethod
     def get_cms(cls, cfs_account: CfsAccountModel, cms_number: str, return_none_if_404=False) -> Dict[str, any]:
@@ -803,7 +803,7 @@ class CFSService(OAuthService):
         )
 
         current_app.logger.debug(">Received CMS response")
-        return cms_response.json()
+        return cms_response.json() if cms_response is not None else None
 
     @classmethod
     def create_cms(cls, line_items: List[PaymentLineItemModel], cfs_account: CfsAccountModel) -> Dict[str, any]:

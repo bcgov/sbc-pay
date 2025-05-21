@@ -773,20 +773,7 @@ def _sync_credit_records_with_cfs():
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             try:
-                credit_memo = next(
-                    (
-                        CFSService.get_cms(
-                            cfs_account=account, cms_number=credit.cfs_identifier, return_none_if_404=True
-                        )
-                        for account in (cfs_account_pad, cfs_account_ob)
-                        if account
-                    ),
-                    None,
-                )
-                if credit_memo is None:
-                    raise CasDataNotFoundError(  # pylint: disable=broad-exception-raised
-                        f"Credit memo not found in CFS for PAD or OB - payment account id: {credit.account_id}"
-                    )
+                credit_memo = _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
             except Exception as e:  # NOQA pylint: disable=broad-except
                 # For TEST, we can't reverse these
                 if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
@@ -796,20 +783,7 @@ def _sync_credit_records_with_cfs():
             credit.remaining_amount = abs(float(credit_memo.get("amount_due")))
         else:
             try:
-                receipt = next(
-                    (
-                        CFSService.get_receipt(
-                            cfs_account=account, receipt_number=credit.cfs_identifier, return_none_if_404=True
-                        )
-                        for account in (cfs_account_pad, cfs_account_ob)
-                        if account
-                    ),
-                    None,
-                )
-                if receipt is None:
-                    raise CasDataNotFoundError(  # pylint: disable=broad-exception-raised
-                        f"Receipt not found in CFS for PAD or OB - payment account id: {credit.account_id}"
-                    )
+                receipt = _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
             except Exception as e:  # NOQA pylint: disable=broad-except
                 # For TEST, we can't reverse these
                 if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
@@ -824,6 +798,50 @@ def _sync_credit_records_with_cfs():
 
         credit.save()
         _rollup_credits(account_ids)
+
+
+def _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
+    """Fetch credit memo from CFS."""
+    credit_memo = None
+    if cfs_account_pad:
+        credit_memo = CFSService.get_cms(
+            cfs_account=cfs_account_pad,
+            cms_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if credit_memo is None and cfs_account_ob:
+        credit_memo = CFSService.get_cms(
+            cfs_account=cfs_account_ob,
+            cms_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if credit_memo is None:
+        raise CasDataNotFoundError(
+            f"Credit memo not found in CFS for PAD or OB - payment account id: {credit.account_id}"
+        )
+    return credit_memo
+
+
+def _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
+    """Fetch receipt from CFS."""
+    receipt = None
+    if cfs_account_pad:
+        receipt = CFSService.get_receipt(
+            cfs_account=cfs_account_pad,
+            receipt_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if receipt is None and cfs_account_ob:
+        receipt = CFSService.get_receipt(
+            cfs_account=cfs_account_ob,
+            receipt_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+    if receipt is None:
+        raise CasDataNotFoundError(
+            f"Receipt not found in CFS for PAD or OB - payment account id: {credit.account_id}"
+        )
+    return receipt
 
 
 def _rollup_credits(account_ids):
