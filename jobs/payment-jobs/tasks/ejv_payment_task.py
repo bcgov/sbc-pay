@@ -55,7 +55,7 @@ class JVParams:
     control_total: int
     total: float
     line_number: int
-    disbursement_desc: str
+    payment_desc: str
 
 
 class EjvPaymentTask(CgiEjv):
@@ -104,7 +104,7 @@ class EjvPaymentTask(CgiEjv):
             if not pay_account.billable or (not invoices and not partial_refund_invoices):
                 continue
 
-            disbursement_desc = f"{pay_account.name[:100]:<100}"
+            payment_desc = f"{pay_account.name[:100]:<100}"
             effective_date: str = cls.get_effective_date()
             ejv_header_model: EjvFileModel = EjvHeaderModel(
                 payment_account_id=account_id,
@@ -137,7 +137,7 @@ class EjvPaymentTask(CgiEjv):
 
                 line_items = inv.payment_line_items
                 invoice_number = f"#{inv.id}"
-                description = disbursement_desc[: -len(invoice_number)] + invoice_number
+                description = payment_desc[: -len(invoice_number)] + invoice_number
                 description = f"{description[:100]:<100}"
 
                 for line in line_items:
@@ -227,7 +227,7 @@ class EjvPaymentTask(CgiEjv):
                 control_total=control_total,
                 total=total,
                 line_number=line_number,
-                disbursement_desc=disbursement_desc
+                payment_desc=payment_desc
             )
             control_total, total, line_number, account_jv = cls._process_partial_refunds(
                 partial_refund_invoices,
@@ -363,7 +363,7 @@ class EjvPaymentTask(CgiEjv):
                     continue
 
                 invoice_number = f"#{pr_invoice.id}"
-                description = jv_params.disbursement_desc[: -len(invoice_number)] + invoice_number
+                description = jv_params.payment_desc[: -len(invoice_number)] + invoice_number
                 description = f"{description[:100]:<100}"
                 flow_through = f"{f'{pr_invoice.id}-PR-{pr.id}':<110}"
 
