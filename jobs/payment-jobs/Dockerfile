@@ -78,7 +78,7 @@ RUN apt-get update && apt-get upgrade -y \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements, to cache them in docker layer
-COPY --chown=web:web ./poetry.lock ./pyproject.toml ./
+COPY --chown=pay:pay ./poetry.lock ./pyproject.toml ./
 
 # Project initialization:
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
