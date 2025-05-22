@@ -24,6 +24,7 @@ from flask_caching import Cache
 from flask_session import Session
 from pay_api.models import FilingType, db, ma
 from pay_api.utils.logging import setup_logging
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from admin import config
 from admin.config import _Config
@@ -37,6 +38,7 @@ setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
 def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     app.logger.info("init db.")
