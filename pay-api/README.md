@@ -6,7 +6,6 @@
 
 BC Registries payment services.
 
-
 ## Development Environment
 
 Follow the instructions of the [Development Readme](https://github.com/bcgov/entity/blob/master/docs/development.md)
