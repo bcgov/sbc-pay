@@ -52,7 +52,7 @@ serialPipeline:
       verify: false
    deployParameters:
    - values:
-      deploy-env: "production"
+      deploy-env: "development"
       deploy-project-id: "gtksf3-tools"
       service-name: "pay-queue-sandbox"
       container-name: "pay-queue-sandbox"
