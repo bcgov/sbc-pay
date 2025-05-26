@@ -1,3 +1,2 @@
 # Every 5th minute PDT/PST from 7 am to 6 pm
 */5 7-18 * * *
-
