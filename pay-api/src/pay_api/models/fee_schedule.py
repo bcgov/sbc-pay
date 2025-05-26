@@ -59,6 +59,7 @@ class FeeSchedule(db.Model):
             "future_effective_fee_code",
             "priority_fee_code",
             "service_fee_code",
+            "show_on_pricelist",
             "variable",
         ]
     }
@@ -78,6 +79,7 @@ class FeeSchedule(db.Model):
     priority_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     service_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     variable = db.Column(Boolean(), default=False, comment="Flag to indicate if the fee is variable")
+    show_on_pricelist = db.Column(Boolean(), nullable=False, default=False)
 
     filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy="joined", innerjoin=True)
     corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy="joined", innerjoin=True)
@@ -181,16 +183,17 @@ class FeeSchedule(db.Model):
                 func.coalesce(main_fee_code.amount, 0).label("fee"),
                 func.coalesce(service_fee_code.amount, 0).label("service_charge"),
                 cast(0, Integer).label("gst"),  # Placeholder for GST, adjust as needed
+                cls.variable,
             )
             .select_from(cls)
             .join(CorpType, cls.corp_type_code == CorpType.code)
             .join(FilingType, cls.filing_type_code == FilingType.code)
             .outerjoin(main_fee_code, cls.fee_code == main_fee_code.code)
             .outerjoin(service_fee_code, cls.service_fee_code == service_fee_code.code)
-            .filter(
-                (cls.fee_start_date <= current_date)
-                & ((cls.fee_end_date.is_(None)) | (cls.fee_end_date >= current_date))
-            )
+            .filter(cls.fee_start_date <= current_date)
+            .filter(cls.fee_end_date.is_(None) | (cls.fee_end_date >= current_date))
+            .filter(CorpType.product.is_not(None))
+            .filter(cls.show_on_pricelist.is_(True))
         )
 
         if product_code:
@@ -243,3 +246,4 @@ class FeeDetailsSchema(Serializable):
     fee: Decimal
     service_charge: Decimal
     gst: int
+    variable: bool

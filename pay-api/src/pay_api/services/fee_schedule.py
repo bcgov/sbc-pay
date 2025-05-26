@@ -373,6 +373,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
                 fee=fee.fee,
                 service_charge=fee.service_charge,
                 gst=fee.gst,
+                variable=fee.variable,
             )
             data["items"].append(fee_details_schema.to_dict())
         current_app.logger.debug(">get_fee_details")

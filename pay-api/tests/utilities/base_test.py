@@ -17,7 +17,7 @@
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from random import randrange
 from typing import Dict, List, Tuple
@@ -27,6 +27,7 @@ from faker import Faker
 from pay_api.models import (
     CfsAccount,
     Comment,
+    CorpType,
     DistributionCode,
     DistributionCodeLink,
     EFTCredit,
@@ -36,6 +37,9 @@ from pay_api.models import (
     EFTShortnameLinks,
     EFTShortnames,
     EFTShortnamesHistorical,
+    FeeCode,
+    FeeSchedule,
+    FilingType,
     Invoice,
     InvoiceReference,
     NonSufficientFunds,
@@ -1051,3 +1055,50 @@ def factory_partner_disbursement(
         target_id=invoice.id,
         target_type=EJVLinkType.INVOICE.value,
     ).flush()
+
+
+def factory_filing_type_model(filing_type_code: str, filing_description: str = "TEST"):
+    """Return the filing type model."""
+    filing_type = FilingType(code=filing_type_code, description=filing_description)
+    filing_type.save()
+    return filing_type
+
+
+def factory_fee_model(fee_code: str, amount: float):
+    """Return the fee code model."""
+    fee_code_master = FeeCode(code=fee_code, amount=Decimal(str(amount)))
+    fee_code_master.save()
+    return fee_code_master
+
+
+def factory_corp_type_model(corp_type_code: str, corp_type_description: str, product_code: str = None):
+    """Return the corp type model."""
+    corp_type = CorpType(code=corp_type_code, description=corp_type_description, product=product_code)
+    corp_type.save()
+    return corp_type
+
+
+def factory_fee_schedule_model(
+    filing_type: FilingType,
+    corp_type: CorpType,
+    fee_code: FeeCode,
+    fee_start_date: date = datetime.now(tz=timezone.utc).date(),
+    fee_end_date: date = None,
+    service_fee: FeeCode = None,
+    variable=False,
+    show_on_pricelist=False,
+):
+    """Return the fee schedule model."""
+    fee_schedule = FeeSchedule(
+        filing_type_code=filing_type.code,
+        corp_type_code=corp_type.code,
+        fee_code=fee_code.code,
+        fee_start_date=fee_start_date,
+        fee_end_date=fee_end_date,
+        variable=variable,
+        show_on_pricelist=show_on_pricelist,
+    )
+    if service_fee:
+        fee_schedule.service_fee_code = service_fee.code
+    fee_schedule.save()
+    return fee_schedule

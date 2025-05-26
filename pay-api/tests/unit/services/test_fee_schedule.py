@@ -268,6 +268,7 @@ def test_get_fee_details(session):
     filing_type.save()
 
     corp_type = CorpType(code=corp_type_code, description="Test Corp Type")
+    corp_type.product = "PRODUCT_CODE1"
     corp_type.save()
 
     fee_schedule = FeesScheduleModel(
@@ -275,21 +276,17 @@ def test_get_fee_details(session):
         corp_type_code=corp_type_code,
         fee_code=fee_code,
         fee_start_date=datetime.now(tz=timezone.utc),
+        show_on_pricelist=True,
     )
     fee_schedule.save()
 
     result = services.FeeSchedule.get_fee_details()
 
-    assert len(result["items"]) >= 2, "Expected at least 2 items in the result."
+    assert len(result["items"]) == 1, "Expected one items in the result."
+    schedule = result["items"][0]
 
-    found_fee_code = False
-    for item in result["items"]:
-        print(f"Inspecting item: {item}")
-        if item["filingType"] == filing_type_code and item["corpType"] == corp_type_code:
-            found_fee_code = True
-            break
-
-    assert found_fee_code, f"Record with fee_code {fee_code} and amount 100 not found in result."
+    assert schedule["filingType"] == filing_type_code
+    assert schedule["corpType"] == corp_type_code
 
 
 def create_linked_data(

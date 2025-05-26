@@ -46,6 +46,7 @@ def factory_fee_schedule(
     priority_fee_code: str = None,
     future_effective_fee_code: str = None,
     service_fee_code: str = None,
+    show_on_pricelist: bool = True,
 ):
     """Return a valid FeeSchedule object."""
     return FeeSchedule(
@@ -57,6 +58,7 @@ def factory_fee_schedule(
         priority_fee_code=priority_fee_code,
         future_effective_fee_code=future_effective_fee_code,
         service_fee_code=service_fee_code,
+        show_on_pricelist=show_on_pricelist,
     )
 
 
