@@ -318,7 +318,6 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
 
 def test_product_fees_detail_query_all(session, client, jwt, app):
     """Assert enabled price list product fees are returned."""
-
     factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN1", "TEST"),
         corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
