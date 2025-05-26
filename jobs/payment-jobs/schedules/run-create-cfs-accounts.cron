@@ -1,1 +1,2 @@
-*/5 0-4,15-23 * * *
+# every 5 minutes between 8 am to 9 pm PDT/PST 
+*/5 8-21 * * *
