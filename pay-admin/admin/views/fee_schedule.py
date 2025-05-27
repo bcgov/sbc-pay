@@ -29,6 +29,7 @@ class FeeScheduleConfig(SecuredView):
         "priority_fee",
         "service_fee",
         "variable",
+        "show_on_pricelist",
     ]
 
     column_labels = {
@@ -44,6 +45,7 @@ class FeeScheduleConfig(SecuredView):
         "service_fee": "Service Fee",
         "distribution_codes": "Distribution Code",
         "variable": "Variable Fee Flag",
+        "show_on_pricelist": "Show on Price List",
     }
     column_searchable_list = ("corp_type_code", "filing_type_code")
     column_sortable_list = ("corp_type_code",)
@@ -63,6 +65,7 @@ class FeeScheduleConfig(SecuredView):
         "service_fee",
         "distribution_codes",
         "variable",
+        "show_on_pricelist",
     ]
     edit_columns = [
         "corp_type",
@@ -72,6 +75,7 @@ class FeeScheduleConfig(SecuredView):
         "priority_fee",
         "service_fee",
         "distribution_codes",
+        "show_on_pricelist",
     ]
 
     @staticmethod

@@ -23,7 +23,15 @@ from decimal import Decimal
 from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
-from tests.utilities.base_test import get_claims, get_gov_account_payload, token_header
+from tests.utilities.base_test import (
+    factory_corp_type_model,
+    factory_fee_model,
+    factory_fee_schedule_model,
+    factory_filing_type_model,
+    get_claims,
+    get_gov_account_payload,
+    token_header,
+)
 
 
 def test_fees_with_corp_type_and_filing_type(session, client, jwt, app):
@@ -308,22 +316,31 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
     assert rv.json.get("serviceFees") == 1.5
 
 
-def test_fees_detail_query_all(session, client, jwt, app):
-    """Assert that the endpoint returns 200."""
+def test_product_fees_detail_query_all(session, client, jwt, app):
+    """Assert enabled price list product fees are returned."""
     factory_fee_schedule_model(
-        factory_filing_type_model("XOTANN1", "TEST"),
-        factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
-        factory_fee_model("XXX1", 100),
+        filing_type=factory_filing_type_model("XOTANN1", "TEST"),
+        corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
+        fee_code=factory_fee_model("XXX1", 100),
+        show_on_pricelist=True,
     )
     factory_fee_schedule_model(
-        factory_filing_type_model("XOTANN2", "TEST"),
-        factory_corp_type_model("YY", "TEST", "PRODUCT_CODE_2"),
-        factory_fee_model("XXX2", 200),
+        filing_type=factory_filing_type_model("XOTANN2", "TEST"),
+        corp_type=factory_corp_type_model("YY", "TEST", "PRODUCT_CODE_2"),
+        fee_code=factory_fee_model("XXX2", 200),
+        show_on_pricelist=True,
     )
     factory_fee_schedule_model(
-        factory_filing_type_model("XOTANN3", "TEST"),
-        factory_corp_type_model("ZZ", "TEST", "PRODUCT_CODE_3"),
-        factory_fee_model("XXX3", 300),
+        filing_type=factory_filing_type_model("XOTANN3", "TEST"),
+        corp_type=factory_corp_type_model("ZZ", "TEST", "PRODUCT_CODE_3"),
+        fee_code=factory_fee_model("XXX3", 300),
+        show_on_pricelist=True,
+    )
+    factory_fee_schedule_model(
+        filing_type=factory_filing_type_model("HIDDENFEE", "HIDDENFEE"),
+        corp_type=factory_corp_type_model("AA", "TEST", "PRODUCT_CODE_4"),
+        fee_code=factory_fee_model("XXX4", 300),
+        show_on_pricelist=False,
     )
     rv = client.get("/api/v1/fees")
     assert rv.status_code == 200
@@ -343,9 +360,10 @@ def test_fees_detail_query_by_product_code(session, client, jwt, app):
     corp_type = "XX"
     filing_type_code = "XOTANN"
     factory_fee_schedule_model(
-        factory_filing_type_model("XOTANN", "TEST"),
-        factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
-        factory_fee_model("XXX", 100),
+        filing_type=factory_filing_type_model("XOTANN", "TEST"),
+        corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
+        fee_code=factory_fee_model("XXX", 100),
+        show_on_pricelist=True,
     )
     rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
     assert rv.status_code == 200
@@ -357,10 +375,11 @@ def test_fees_detail_query_by_product_code(session, client, jwt, app):
 def test_fees_detail_query_by_product_code_future_start_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     factory_fee_schedule_model(
-        factory_filing_type_model("XOTANN", "TEST"),
-        factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
-        factory_fee_model("XXX", 100),
+        filing_type=factory_filing_type_model("XOTANN", "TEST"),
+        corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
+        fee_code=factory_fee_model("XXX", 100),
         fee_start_date=datetime.now(tz=timezone.utc).date() + timedelta(days=1),
+        show_on_pricelist=True,
     )
     rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
     assert rv.status_code == 200
@@ -371,56 +390,14 @@ def test_fees_detail_query_by_product_code_future_start_date(session, client, jw
 def test_fees_detail_query_by_product_code_expired_end_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     factory_fee_schedule_model(
-        factory_filing_type_model("XOTANN", "TEST"),
-        factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
-        factory_fee_model("XXX", 100),
+        filing_type=factory_filing_type_model("XOTANN", "TEST"),
+        corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
+        fee_code=factory_fee_model("XXX", 100),
         fee_start_date=datetime.now(tz=timezone.utc).date() - timedelta(days=2),
         fee_end_date=datetime.now(tz=timezone.utc).date() - timedelta(days=1),
+        show_on_pricelist=True,
     )
     rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
     assert rv.status_code == 200
     assert "items" in rv.json, "Response does not contain 'items'."
     assert len(rv.json["items"]) == 0, "Expected 0 item in the response."
-
-
-def factory_filing_type_model(filing_type_code: str, filing_description: str = "TEST"):
-    """Return the filing type model."""
-    filing_type = FilingType(code=filing_type_code, description=filing_description)
-    filing_type.save()
-    return filing_type
-
-
-def factory_fee_model(fee_code: str, amount: float):
-    """Return the fee code model."""
-    fee_code_master = FeeCode(code=fee_code, amount=Decimal(str(amount)))
-    fee_code_master.save()
-    return fee_code_master
-
-
-def factory_corp_type_model(corp_type_code: str, corp_type_description: str, product_code: str = None):
-    """Return the corp type model."""
-    corp_type = CorpType(code=corp_type_code, description=corp_type_description, product=product_code)
-    corp_type.save()
-    return corp_type
-
-
-def factory_fee_schedule_model(
-    filing_type: FilingType,
-    corp_type: CorpType,
-    fee_code: FeeCode,
-    fee_start_date: date = datetime.now(tz=timezone.utc).date(),
-    fee_end_date: date = None,
-    service_fee: FeeCode = None,
-):
-    """Return the fee schedule model."""
-    fee_schedule = FeeSchedule(
-        filing_type_code=filing_type.code,
-        corp_type_code=corp_type.code,
-        fee_code=fee_code.code,
-        fee_start_date=fee_start_date,
-        fee_end_date=fee_end_date,
-    )
-    if service_fee:
-        fee_schedule.service_fee_code = service_fee.code
-    fee_schedule.save()
-    return fee_schedule
