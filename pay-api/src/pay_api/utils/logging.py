@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Centralized setup of logging for the service."""
-import logging.config
 import logging
-from structured_logging import StructuredLogging
+import logging.config
 import sys
 from os import path
+
+from structured_logging import StructuredLogging
 
 
 def setup_logging(conf):
@@ -29,11 +30,15 @@ def setup_logging(conf):
 
 
 class StructuredLogHandler(logging.Handler):
+    """StructuredLogHandler that wraps StructuredLogging."""
+
     def __init__(self, structured_logger=None):
+        """Initialize the StructuredLogHandler."""
         super().__init__()
         self.structured_logger = structured_logger or StructuredLogging.get_logger()
 
     def emit(self, record):
+        """Emit a record."""
         msg = self.format(record)
         level = record.levelname.lower()
 
