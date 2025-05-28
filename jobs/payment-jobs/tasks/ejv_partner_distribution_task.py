@@ -37,7 +37,6 @@ from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.services.email_service import send_email
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
-from sentry_sdk import capture_message
 from sqlalchemy import Date, and_, cast, or_
 
 from tasks.common.cgi_ejv import CgiEjv
