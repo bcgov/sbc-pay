@@ -39,7 +39,7 @@ class EmailParams:
 
 def send_error_email(params: EmailParams):
     """Send the email asynchronously, using the given details."""
-    recipient = current_app.config.get("IT_OPS_EMAIL")
+    recipients = current_app.config.get("IT_OPS_EMAIL")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
     templates_dir = os.path.join(project_root_dir, "templates")
@@ -57,7 +57,7 @@ def send_error_email(params: EmailParams):
 
     html_body = template.render(email_params)
 
-    send_email_service(recipients=[recipient], subject=params.subject, html_body=html_body)
+    send_email_service(recipients=recipients, subject=params.subject, html_body=html_body)
 
 
 def send_email_service(recipients: list, subject: str, html_body: str):

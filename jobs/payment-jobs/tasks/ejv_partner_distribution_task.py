@@ -13,12 +13,15 @@
 # limitations under the License.
 """Task to create Journal Voucher."""
 
+import os
 import time
+import traceback
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import List
+from typing import Dict, List
 
 from flask import current_app
+from jinja2 import Environment, FileSystemLoader
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
@@ -32,18 +35,33 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
+from pay_api.services.email_service import send_email
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
+from sentry_sdk import capture_message
 from sqlalchemy import Date, and_, cast, or_
 
 from tasks.common.cgi_ejv import CgiEjv
 from tasks.common.dataclasses import Disbursement, DisbursementLineItem
+from utils.enums import EmailParams
 
 # Just a warning for this code, there aren't decent unit tests that test this. If you're changing this job, you'll need
 # to do a side by side file comparison to previous versions to ensure that the changes are correct.
 
 
+def _process_error(row, error_msg: str, error_messages: List[Dict[str, any]], ex: Exception = None):
+    """Handle errors in EJV file processing."""
+    if ex:
+        formatted_traceback = "".join(traceback.TracebackException.from_exception(ex).format())
+        error_msg = f"{error_msg}\n{formatted_traceback}"
+    current_app.logger.info(error_msg)
+    error_messages.append({"error": error_msg, "row": row})
+
+
 class EjvPartnerDistributionTask(CgiEjv):
     """Task to create EJV Files."""
+
+    error_messages = []
+    has_errors = False
 
     @classmethod
     def create_ejv_file(cls):
@@ -58,6 +76,34 @@ class EjvPartnerDistributionTask(CgiEjv):
         """
         cls._create_ejv_file_for_partner(batch_type="GI")  # Internal ministry
         cls._create_ejv_file_for_partner(batch_type="GA")  # External ministry
+        if cls.has_errors and not current_app.config.get("DISABLE_EJV_ERROR_EMAIL"):
+            email_params = EmailParams(
+                subject="EJV Partner Distribution Job Failure",
+                file_name="ejv_partner_distribution",
+                error_messages=cls.error_messages,
+                table_name="ejv_file"
+            )
+            cls._send_error_email(email_params)
+
+    @classmethod
+    def _send_error_email(cls, params: EmailParams):
+        """Send the email asynchronously, using the given details."""
+        recipients = current_app.config.get("IT_OPS_EMAIL")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root_dir = os.path.dirname(current_dir)
+        templates_dir = os.path.join(project_root_dir, "templates")
+        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+
+        template = env.get_template("ejv_partner_distribution_failed_email.html")
+
+        email_params = {
+            "fileName": params.file_name,
+            "errorMessages": params.error_messages,
+            "tableName": params.table_name,
+        }
+
+        html_body = template.render(email_params)
+        send_email(recipients=recipients, subject=params.subject, body=html_body)
 
     @staticmethod
     def get_disbursement_by_distribution_for_partner(partner):
@@ -203,88 +249,102 @@ class EjvPartnerDistributionTask(CgiEjv):
         batch_number = cls.get_batch_number(ejv_file_model.id)
         batch_header = cls.get_batch_header(batch_number, batch_type)
         effective_date = cls.get_effective_date()
-        # Each of the partner will go as a JV Header and transactions as JV Details.
-        for partner in cls._get_partners_by_batch_type(batch_type):
-            current_app.logger.info(partner)
-            disbursements, distribution_code_totals = cls.get_disbursement_by_distribution_for_partner(partner)
-            if not disbursements:
-                continue
 
-            ejv_header_model = EjvHeaderModel(
-                partner_code=partner.code,
-                disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                ejv_file_id=ejv_file_model.id,
-            ).flush()
-            journal_name = cls.get_journal_name(ejv_header_model.id)
-            sequence = 1
+        try:
+            # Each of the partner will go as a JV Header and transactions as JV Details.
+            for partner in cls._get_partners_by_batch_type(batch_type):
+                current_app.logger.info(partner)
+                disbursements, distribution_code_totals = cls.get_disbursement_by_distribution_for_partner(partner)
+                if not disbursements:
+                    continue
 
-            last_distribution_code = None
-            line_number = 1
-            for disbursement in disbursements:
-                # debit_distribution and credit_distribution stays as is for invoices which are not PAID
-                if last_distribution_code != disbursement.bcreg_distribution_code.distribution_code_id:
-                    header_total = distribution_code_totals[disbursement.bcreg_distribution_code.distribution_code_id]
-                    ejv_content = "{}{}".format(
-                        ejv_content,  # pylint:disable=consider-using-f-string
-                        cls.get_jv_header(
+                ejv_header_model = EjvHeaderModel(
+                    partner_code=partner.code,
+                    disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                    ejv_file_id=ejv_file_model.id,
+                ).flush()
+                journal_name = cls.get_journal_name(ejv_header_model.id)
+                sequence = 1
+
+                last_distribution_code = None
+                line_number = 1
+                for disbursement in disbursements:
+                    # debit_distribution and credit_distribution stays as is for invoices which are not PAID
+                    if last_distribution_code != disbursement.bcreg_distribution_code.distribution_code_id:
+                        header_total = distribution_code_totals[
+                            disbursement.bcreg_distribution_code.distribution_code_id
+                        ]
+                        ejv_content = "{}{}".format(
+                            ejv_content,  # pylint:disable=consider-using-f-string
+                            cls.get_jv_header(
+                                batch_type,
+                                cls.get_journal_batch_name(batch_number),
+                                journal_name,
+                                header_total,
+                            ),
+                        )
+                        control_total += 1
+                        last_distribution_code = disbursement.bcreg_distribution_code.distribution_code_id
+                        line_number = 1
+
+                    batch_total += disbursement.line_item.amount
+                    dl = disbursement.line_item
+                    description = disbursement_desc[: -len(dl.description_identifier)] + dl.description_identifier
+                    description = f"{description[:100]:<100}"
+                    for credit_debit_row in range(1, 3):
+                        target_distribution = cls.get_distribution_string(
+                            disbursement.partner_distribution_code
+                            if credit_debit_row == 1
+                            else disbursement.bcreg_distribution_code
+                        )
+                        # For payment flow, credit the GL partner code, debit the BCREG GL code.
+                        # Reversal is the opposite debit the GL partner code, credit the BCREG GL Code.
+                        credit_debit = "C" if credit_debit_row == 1 else "D"
+                        if dl.is_reversal is True:
+                            credit_debit = "D" if credit_debit == "C" else "C"
+                        jv_line = cls.get_jv_line(
                             batch_type,
-                            cls.get_journal_batch_name(batch_number),
+                            target_distribution,
+                            description,
+                            effective_date,
+                            f"{dl.flow_through:<110}",
                             journal_name,
-                            header_total,
-                        ),
-                    )
-                    control_total += 1
-                    last_distribution_code = disbursement.bcreg_distribution_code.distribution_code_id
-                    line_number = 1
+                            dl.amount,
+                            line_number,
+                            credit_debit,
+                        )
+                        ejv_content = "{}{}".format(ejv_content, jv_line)  # pylint:disable=consider-using-f-string
+                        line_number += 1
+                        control_total += 1
 
-                batch_total += disbursement.line_item.amount
-                dl = disbursement.line_item
-                description = disbursement_desc[: -len(dl.description_identifier)] + dl.description_identifier
-                description = f"{description[:100]:<100}"
-                for credit_debit_row in range(1, 3):
-                    target_distribution = cls.get_distribution_string(
-                        disbursement.partner_distribution_code
-                        if credit_debit_row == 1
-                        else disbursement.bcreg_distribution_code
-                    )
-                    # For payment flow, credit the GL partner code, debit the BCREG GL code.
-                    # Reversal is the opposite debit the GL partner code, credit the BCREG GL Code.
-                    credit_debit = "C" if credit_debit_row == 1 else "D"
-                    if dl.is_reversal is True:
-                        credit_debit = "D" if credit_debit == "C" else "C"
-                    jv_line = cls.get_jv_line(
-                        batch_type,
-                        target_distribution,
-                        description,
-                        effective_date,
-                        f"{dl.flow_through:<110}",
-                        journal_name,
-                        dl.amount,
-                        line_number,
-                        credit_debit,
-                    )
-                    ejv_content = "{}{}".format(ejv_content, jv_line)  # pylint:disable=consider-using-f-string
-                    line_number += 1
-                    control_total += 1
+                    cls._update_disbursement_status_and_ejv_link(disbursement, ejv_header_model, sequence)
+                    sequence += 1
 
-                cls._update_disbursement_status_and_ejv_link(disbursement, ejv_header_model, sequence)
-                sequence += 1
+                db.session.flush()
 
-            db.session.flush()
+            if not ejv_content:
+                db.session.rollback()
+                return
 
-        if not ejv_content:
+            jv_batch_trailer = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
+            ejv_content = f"{batch_header}{ejv_content}{jv_batch_trailer}"
+            file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ejv_content)
+            cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
+
+            db.session.commit()
+
+            # To prevent collision on file name.
+            time.sleep(1)
+        except Exception as ex:
+            _process_error(
+                {"batch_type": batch_type},
+                f"Error processing EJV file for batch type {batch_type}",
+                cls.error_messages,
+                ex
+            )
+            cls.has_errors = True
             db.session.rollback()
             return
-
-        jv_batch_trailer = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
-        ejv_content = f"{batch_header}{ejv_content}{jv_batch_trailer}"
-        file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ejv_content)
-        cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
-
-        db.session.commit()
-
-        # To prevent collision on file name.
-        time.sleep(1)
 
     @classmethod
     def _update_disbursement_status_and_ejv_link(
@@ -424,4 +484,6 @@ class EjvPartnerDistributionTask(CgiEjv):
                 ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()),
                 DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)
             )
+        sql = str(query.statement.compile(compile_kwargs={"literal_binds": True}))
+        print("SQL:", sql)
         return query.order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id).all()
