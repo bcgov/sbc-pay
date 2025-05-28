@@ -153,6 +153,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_BCREG_CLIENT_CODE = os.getenv("CGI_BCREG_CLIENT_CODE", "112")
     CGI_EJV_SUPPLIER_NUMBER = os.getenv("CGI_EJV_SUPPLIER_NUMBER", "")
 
+    IT_OPS_EMAIL = os.getenv("IT_OPS_EMAIL", "SBC_ITOperationsSupport@gov.bc.ca").split(",")
+
     # Minio configuration values
     MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
     MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")

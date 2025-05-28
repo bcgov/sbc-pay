@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EJV Partner Distribution Failure</title>
+</head>
+<body>
+    <p>EJV Partner Distribution Job Failed</p>
+    <ul>
+        <li><strong>Table to update:</strong> {{ tableName }}</li>
+        <li><strong>Errors:</strong>
+            <ul style="line-height: 2em;">
+                {% for error in errorMessages %}
+                    <li>
+                        {% if error.row %}Row: {{ error.row }}<br >{% endif %}
+                        {% if error.error %}Error: {{ error.error }}<br >{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </li>
+    </ul>
+</body>
+</html>
