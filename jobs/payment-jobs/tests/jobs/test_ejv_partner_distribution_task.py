@@ -17,6 +17,7 @@
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
 from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock
 
 import pytest
 from flask import current_app
@@ -209,7 +210,8 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 def test_disbursement_error_handling(session, monkeypatch, client_code, batch_type, google_bucket_mock):
     """Test error handling in disbursement task."""
     monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
-    monkeypatch.setattr("tasks.ejv_partner_distribution_task.send_email", lambda *args, **kwargs: None)
+    mock_notification = MagicMock()
+    monkeypatch.setattr("pay_api.services.email_service.JobFailureNotification.send_notification", mock_notification)
 
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code("VS")
     corp_type.has_partner_disbursements = True
@@ -281,6 +283,8 @@ def test_disbursement_error_handling(session, monkeypatch, client_code, batch_ty
         error = EjvPartnerDistributionTask.error_messages[0]
         assert "Failed to create files" in str(error.get("error"))
         assert error["row"].get("batch_type") == batch_type
+
+        mock_notification.assert_called_once()
 
         invoice = Invoice.find_by_id(invoice.id)
         assert invoice.disbursement_status_code is None

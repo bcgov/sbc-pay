@@ -15,7 +15,7 @@
 """This manages all of the email notification service."""
 import os
 from decimal import Decimal
-from typing import Dict
+from typing import Dict, List
 
 from attr import define
 from flask import current_app
@@ -108,3 +108,34 @@ def _render_credit_add_notification_template(params: Dict) -> str:
     env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
     template = env.get_template("credit_add_notification.html")
     return template.render(params)
+
+
+@define
+class JobFailureNotification(Serializable):
+    """Email notification for job failures."""
+
+    subject: str
+    file_name: str
+    error_messages: List[Dict[str, any]]
+    table_name: str
+    job_name: str
+
+    def send_notification(self):
+        """Send job failure notification email."""
+        recipients = current_app.config.get("IT_OPS_EMAIL")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root_dir = os.path.dirname(current_dir)
+        templates_dir = os.path.join(project_root_dir, "templates")
+        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+
+        template = env.get_template("job_failed_email.html")
+
+        email_params = {
+            "jobName": self.job_name,
+            "fileName": self.file_name,
+            "errorMessages": self.error_messages,
+            "tableName": self.table_name,
+        }
+
+        html_body = template.render(email_params)
+        send_email(recipients=recipients, subject=self.subject, body=html_body)

@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the AP Refund Job is working as expected.
 """
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import RoutingSlip
@@ -179,3 +179,50 @@ def test_ap_disbursement(session, monkeypatch):
     with patch("tasks.common.cgi_ejv.upload_to_bucket") as mock_upload:
         ApTask.create_ap_files()
         mock_upload.assert_called()
+
+
+def test_routing_slip_refund_error_handling(session, monkeypatch):
+    """Test error handling in routing slip refund task."""
+    mock_notification = MagicMock()
+    monkeypatch.setattr("pay_api.services.email_service.JobFailureNotification.send_notification", mock_notification)
+    rs_1 = "RS0000001"
+    factory_routing_slip_account(
+        number=rs_1,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=100,
+        remaining_amount=0,
+        auth_account_id="1234",
+        routing_slip_status=RoutingSlipStatus.REFUND_AUTHORIZED.value,
+        refund_amount=100,
+    )
+
+    routing_slip = RoutingSlip.find_by_number(rs_1)
+    factory_refund(
+        routing_slip.id,
+        {
+            "name": "TEST",
+            "mailingAddress": {
+                "city": "Victoria",
+                "region": "BC",
+                "street": "655 Douglas St",
+                "country": "CA",
+                "postalCode": "V8V 0B6",
+                "streetAdditional": "",
+            },
+        },
+    )
+
+    def mock_upload_error(*args, **kwargs):
+        """Mock function to simulate upload error."""
+        raise Exception("Failed to upload file")
+
+    monkeypatch.setattr(
+        "tasks.common.cgi_ap.CgiAP.upload",
+        mock_upload_error
+    )
+
+    ApTask.create_ap_files()
+    mock_notification.assert_called_once()
+
+    routing_slip = RoutingSlip.find_by_number(rs_1)
+    assert routing_slip.status == RoutingSlipStatus.REFUND_AUTHORIZED.value

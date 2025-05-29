@@ -13,7 +13,6 @@
 # limitations under the License.
 """Task to create Journal Voucher."""
 
-import os
 import time
 import traceback
 from datetime import datetime, timedelta, timezone
@@ -21,7 +20,6 @@ from decimal import Decimal
 from typing import Dict, List
 
 from flask import current_app
-from jinja2 import Environment, FileSystemLoader
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
@@ -35,13 +33,12 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
-from pay_api.services.email_service import send_email
+from pay_api.services.email_service import JobFailureNotification
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
 from sqlalchemy import Date, and_, cast, or_
 
 from tasks.common.cgi_ejv import CgiEjv
 from tasks.common.dataclasses import Disbursement, DisbursementLineItem
-from utils.enums import EmailParams
 
 # Just a warning for this code, there aren't decent unit tests that test this. If you're changing this job, you'll need
 # to do a side by side file comparison to previous versions to ensure that the changes are correct.
@@ -76,33 +73,14 @@ class EjvPartnerDistributionTask(CgiEjv):
         cls._create_ejv_file_for_partner(batch_type="GI")  # Internal ministry
         cls._create_ejv_file_for_partner(batch_type="GA")  # External ministry
         if cls.has_errors and not current_app.config.get("DISABLE_EJV_ERROR_EMAIL"):
-            email_params = EmailParams(
+            notification = JobFailureNotification(
                 subject="EJV Partner Distribution Job Failure",
                 file_name="ejv_partner_distribution",
                 error_messages=cls.error_messages,
-                table_name="ejv_file"
+                table_name="ejv_file",
+                job_name="EJV Partner Distribution Job"
             )
-            cls._send_error_email(email_params)
-
-    @classmethod
-    def _send_error_email(cls, params: EmailParams):
-        """Send the email asynchronously, using the given details."""
-        recipients = current_app.config.get("IT_OPS_EMAIL")
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root_dir = os.path.dirname(current_dir)
-        templates_dir = os.path.join(project_root_dir, "templates")
-        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-
-        template = env.get_template("ejv_partner_distribution_failed_email.html")
-
-        email_params = {
-            "fileName": params.file_name,
-            "errorMessages": params.error_messages,
-            "tableName": params.table_name,
-        }
-
-        html_body = template.render(email_params)
-        send_email(recipients=recipients, subject=params.subject, body=html_body)
+            notification.send_notification()
 
     @staticmethod
     def get_disbursement_by_distribution_for_partner(partner):
