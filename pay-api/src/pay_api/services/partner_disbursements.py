@@ -17,6 +17,8 @@ class PartnerDisbursements:
     @staticmethod
     def _skip_partner_disbursement(invoice: InvoiceModel) -> bool:
         """Determine if partner disbursement should be skipped."""
+        if invoice.payment_method_code in [PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value]:
+          return
         return (
             invoice.total - invoice.service_fees <= 0
             or bool(CorpTypeModel.find_by_code(invoice.corp_type_code).has_partner_disbursements) is False
@@ -85,13 +87,6 @@ class PartnerDisbursements:
     def handle_partial_refund(partial_refund: RefundsPartialModel, invoice: InvoiceModel):
         """Insert a partner disbursement row if necessary with is_reversal as False."""
         if PartnerDisbursements._skip_partner_disbursement(invoice):
-            return
-
-        # Internal invoices aren't disbursed to partners, DRAWDOWN is handled by the mainframe.
-        if invoice.payment_method_code == PaymentMethod.INTERNAL.value:
-            partial_refund.status = RefundsPartialStatus.REFUND_PROCESSED.value
-            return
-        if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
             return
 
         latest_active_disbursement = PartnerDisbursementsModel.find_by_target_latest_exclude_cancelled(
