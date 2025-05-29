@@ -8,7 +8,7 @@ from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.partner_disbursements import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models.refunds_partial import RefundsPartial as RefundsPartialModel
-from pay_api.utils.enums import DisbursementStatus, EJVLinkType
+from pay_api.utils.enums import DisbursementStatus, EJVLinkType, PaymentMethod
 
 
 class PartnerDisbursements:
@@ -85,6 +85,10 @@ class PartnerDisbursements:
     def handle_partial_refund(partial_refund: RefundsPartialModel, invoice: InvoiceModel):
         """Insert a partner disbursement row if necessary with is_reversal as False."""
         if PartnerDisbursements._skip_partner_disbursement(invoice):
+            return
+
+        # Internal invoices aren't disbursed to partners, DRAWDOWN is handled by the mainframe.
+        if invoice.payment_method_code in [PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value]:
             return
 
         latest_active_disbursement = PartnerDisbursementsModel.find_by_target_latest_exclude_cancelled(
