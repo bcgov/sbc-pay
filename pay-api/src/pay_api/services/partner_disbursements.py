@@ -8,7 +8,7 @@ from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.partner_disbursements import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models.refunds_partial import RefundsPartial as RefundsPartialModel
-from pay_api.utils.enums import DisbursementStatus, EJVLinkType
+from pay_api.utils.enums import DisbursementStatus, EJVLinkType, PaymentMethod
 
 
 class PartnerDisbursements:
@@ -17,6 +17,8 @@ class PartnerDisbursements:
     @staticmethod
     def _skip_partner_disbursement(invoice: InvoiceModel) -> bool:
         """Determine if partner disbursement should be skipped."""
+        if invoice.payment_method_code in [PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value]:
+            return True
         return (
             invoice.total - invoice.service_fees <= 0
             or bool(CorpTypeModel.find_by_code(invoice.corp_type_code).has_partner_disbursements) is False
