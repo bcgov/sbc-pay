@@ -203,3 +203,90 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
     assert partner_disbursement.status_code == DisbursementStatus.UPLOADED.value
     assert partner_disbursement.processed_on
+
+
+@pytest.mark.parametrize("client_code, batch_type", [("112", "GA"), ("113", "GI")])
+def test_disbursement_error_handling(session, monkeypatch, client_code, batch_type, google_bucket_mock):
+    """Test error handling in disbursement task."""
+    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    monkeypatch.setattr("tasks.ejv_partner_distribution_task.send_email", lambda *args, **kwargs: None)
+
+    corp_type: CorpTypeModel = CorpTypeModel.find_by_code("VS")
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
+
+    pad_account = factory_create_pad_account(
+        auth_account_id="4321",
+        bank_number="002",
+        bank_branch="005",
+        bank_account="1234567890",
+        status=CfsAccountStatus.ACTIVE.value,
+        payment_method=PaymentMethod.PAD.value,
+    )
+
+    disbursement_distribution: DistributionCode = factory_distribution(name="VS Disbursement", client=client_code)
+    service_fee_distribution: DistributionCode = factory_distribution(name="VS Service Fee", client="112")
+    fee_distribution: DistributionCode = factory_distribution(
+        name="VS Fee distribution",
+        client="112",
+        service_fee_dist_id=service_fee_distribution.distribution_code_id,
+        disbursement_dist_id=disbursement_distribution.distribution_code_id,
+    )
+
+    fee_schedule: FeeSchedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type.code, "WILLNOTICE")
+    factory_distribution_link(fee_distribution.distribution_code_id, fee_schedule.fee_schedule_id)
+
+    invoice = factory_invoice(
+        payment_account=pad_account,
+        corp_type_code=corp_type.code,
+        total=11.5,
+        status_code=InvoiceStatus.PAID.value,
+    )
+
+    factory_payment_line_item(
+        invoice_id=invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        filing_fees=10,
+        total=10,
+        service_fees=1.5,
+        fee_dist_id=fee_distribution.distribution_code_id,
+    )
+
+    inv_ref = factory_invoice_reference(invoice_id=invoice.id)
+    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
+    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+        days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
+    )
+
+    def mock_create_inbox_and_trg_files_error(*args, **kwargs):
+        EjvPartnerDistributionTask.has_errors = True
+        EjvPartnerDistributionTask.error_messages.append({
+            "error": "Failed to create files",
+            "row": {"batch_type": batch_type}
+        })
+        return False
+
+    monkeypatch.setattr(
+        "tasks.ejv_partner_distribution_task.EjvPartnerDistributionTask.create_inbox_and_trg_files",
+        mock_create_inbox_and_trg_files_error
+    )
+
+    with freeze_time(day_after_time_delay):
+        EjvPartnerDistributionTask.create_ejv_file()
+
+        assert EjvPartnerDistributionTask.has_errors is True
+        assert len(EjvPartnerDistributionTask.error_messages) > 0
+        error = EjvPartnerDistributionTask.error_messages[0]
+        assert "Failed to create files" in str(error.get("error"))
+        assert error["row"].get("batch_type") == batch_type
+
+        invoice = Invoice.find_by_id(invoice.id)
+        assert invoice.disbursement_status_code is None
+
+        ejv_file = db.session.query(EjvFile).first()
+        assert ejv_file is None
+
+    EjvPartnerDistributionTask.has_errors = False
+    EjvPartnerDistributionTask.error_messages = []

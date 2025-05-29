@@ -1028,17 +1028,18 @@ resolved_reference = "494d49882537a6cbcfe3cb41c4df05ae8acf60ce"
 
 [[package]]
 name = "flask-cors"
-version = "5.0.0"
-description = "A Flask extension adding a decorator for CORS support"
+version = "6.0.0"
+description = "A Flask extension simplifying CORS support"
 optional = false
-python-versions = "*"
+python-versions = "<4.0,>=3.9"
 files = [
-    {file = "Flask_Cors-5.0.0-py2.py3-none-any.whl", hash = "sha256:b9e307d082a9261c100d8fb0ba909eec6a228ed1b60a8315fd85f783d61910bc"},
-    {file = "flask_cors-5.0.0.tar.gz", hash = "sha256:5aadb4b950c4e93745034594d9f3ea6591f734bb3662e16e255ffbf5e89c88ef"},
+    {file = "flask_cors-6.0.0-py3-none-any.whl", hash = "sha256:6332073356452343a8ccddbfec7befdc3fdd040141fe776ec9b94c262f058657"},
+    {file = "flask_cors-6.0.0.tar.gz", hash = "sha256:4592c1570246bf7beee96b74bc0adbbfcb1b0318f6ba05c412e8909eceec3393"},
 ]
 
 [package.dependencies]
-Flask = ">=0.9"
+flask = ">=0.9"
+Werkzeug = ">=0.7"
 
 [[package]]
 name = "flask-executor"
@@ -2195,7 +2196,7 @@ ecdsa = "0.18.0"
 expiringdict = "1.2.2"
 flask = "3.0.2"
 flask-caching = {git = "https://github.com/pallets-eco/flask-caching.git", branch = "master"}
-flask-cors = "5.0.0"
+flask-cors = "6.0.0"
 flask-executor = "^1.0.0"
 flask-jwt-oidc = {git = "https://github.com/seeker25/flask-jwt-oidc.git", branch = "main"}
 flask-marshmallow = "1.2.0"
@@ -2238,11 +2239,12 @@ rsa = "4.9"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 semver = "3.0.2"
 sentry-sdk = {version = "^2.8.0", extras = ["flask"]}
-setuptools = "^73.0.1"
+setuptools = "^78.1.1"
 six = "1.16.0"
 sql-versioning = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/sql-versioning"}
 sqlalchemy = "2.0.28"
 sqlalchemy-utils = "0.41.1"
+structured-logging = {git = "https://github.com/bcgov/sbc-connect-common.git", rev = "main", subdirectory = "python/structured-logging"}
 threadloop = "1.0.2"
 thrift = "0.16.0"
 tornado = "^6.4.2"
@@ -2252,9 +2254,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/jxio/sbc-pay.git"
-reference = "partner_disburse_bug_1"
-resolved_reference = "2021219e26555489127f956ab004c0cda93877b7"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "structured_logging"
+resolved_reference = "2ffd0ef193ee876db5ef5ecf1d4170e685bb5be1"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3099,19 +3101,23 @@ tornado = ["tornado (>=6)"]
 
 [[package]]
 name = "setuptools"
-version = "73.0.1"
+version = "78.1.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "setuptools-73.0.1-py3-none-any.whl", hash = "sha256:b208925fcb9f7af924ed2dc04708ea89791e24bde0d3020b27df0e116088b34e"},
-    {file = "setuptools-73.0.1.tar.gz", hash = "sha256:d59a3e788ab7e012ab2c4baed1b376da6366883ee20d7a5fc426816e3d7b1193"},
+    {file = "setuptools-78.1.1-py3-none-any.whl", hash = "sha256:c3a9c4211ff4c309edb8b8c4f1cbfa7ae324c4ba9f91ff254e3d305b9fd54561"},
+    {file = "setuptools-78.1.1.tar.gz", hash = "sha256:fcc17fd9cd898242f6b4adfaca46137a9edef687f43e6f78469692a5e70d851d"},
 ]
 
 [package.extras]
-core = ["importlib-metadata (>=6)", "importlib-resources (>=5.10.2)", "jaraco.text (>=3.7)", "more-itertools (>=8.8)", "packaging (>=24)", "platformdirs (>=2.6.2)", "tomli (>=2.0.1)", "wheel (>=0.43.0)"]
+check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1)", "ruff (>=0.8.0)"]
+core = ["importlib_metadata (>=6)", "jaraco.functools (>=4)", "jaraco.text (>=3.7)", "more_itertools", "more_itertools (>=8.8)", "packaging (>=24.2)", "platformdirs (>=4.2.2)", "tomli (>=2.0.1)", "wheel (>=0.43.0)"]
+cover = ["pytest-cov"]
 doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "pyproject-hooks (!=1.1)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier", "towncrier (<24.7)"]
-test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "importlib-metadata", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "jaraco.test", "mypy (==1.11.*)", "packaging (>=23.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-home (>=0.5)", "pytest-mypy", "pytest-perf", "pytest-ruff (<0.4)", "pytest-ruff (>=0.2.1)", "pytest-ruff (>=0.3.2)", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel (>=0.44.0)"]
+enabler = ["pytest-enabler (>=2.2)"]
+test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.7.2)", "jaraco.test (>=5.5)", "packaging (>=24.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-home (>=0.5)", "pytest-perf", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel (>=0.44.0)"]
+type = ["importlib_metadata (>=7.0.2)", "jaraco.develop (>=7.21)", "mypy (==1.14.*)", "pytest-mypy"]
 
 [[package]]
 name = "simple-cloudevent"
@@ -3293,6 +3299,43 @@ python-versions = "*"
 files = [
     {file = "strict-rfc3339-0.7.tar.gz", hash = "sha256:5cad17bedfc3af57b399db0fed32771f18fc54bbd917e85546088607ac5e1277"},
 ]
+
+[[package]]
+name = "structlog"
+version = "24.4.0"
+description = "Structured Logging for Python"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "structlog-24.4.0-py3-none-any.whl", hash = "sha256:597f61e80a91cc0749a9fd2a098ed76715a1c8a01f73e336b746504d1aad7610"},
+    {file = "structlog-24.4.0.tar.gz", hash = "sha256:b27bfecede327a6d2da5fbc96bd859f114ecc398a6389d664f62085ee7ae6fc4"},
+]
+
+[package.extras]
+dev = ["freezegun (>=0.2.8)", "mypy (>=1.4)", "pretend", "pytest (>=6.0)", "pytest-asyncio (>=0.17)", "rich", "simplejson", "twisted"]
+docs = ["cogapp", "furo", "myst-parser", "sphinx", "sphinx-notfound-page", "sphinxcontrib-mermaid", "sphinxext-opengraph", "twisted"]
+tests = ["freezegun (>=0.2.8)", "pretend", "pytest (>=6.0)", "pytest-asyncio (>=0.17)", "simplejson"]
+typing = ["mypy (>=1.4)", "rich", "twisted"]
+
+[[package]]
+name = "structured-logging"
+version = "0.4.0"
+description = ""
+optional = false
+python-versions = "^3.9"
+files = []
+develop = false
+
+[package.dependencies]
+flask = ">= 1"
+structlog = "^24.1.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/bcgov/sbc-connect-common.git"
+reference = "main"
+resolved_reference = "54315fc8d6d42b9f502dc7f31a57626c6bf27547"
+subdirectory = "python/structured-logging"
 
 [[package]]
 name = "threadloop"
@@ -3501,4 +3544,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "ccca10a48ba4fdc0c60737cce46acf3e738ef0ba2b7f4e7c061e3c13bf76f36c"
+content-hash = "9b2546983aa361f75f9b54496a3b64c26b1ca9e74179eacda4b769c60fc9fb6a"

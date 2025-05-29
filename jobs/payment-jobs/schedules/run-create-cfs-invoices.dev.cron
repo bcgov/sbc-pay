@@ -1,0 +1,2 @@
+# Every 10th minute
+*/10 * * * *
