@@ -16,7 +16,7 @@
 import time
 import traceback
 from datetime import date, datetime, timedelta, timezone
-from typing import List
+from typing import Dict, List
 
 from flask import current_app
 from more_itertools import batched
@@ -31,6 +31,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
+from pay_api.services.email_service import JobFailureNotification
 from pay_api.utils.enums import (
     APRefundMethod,
     DisbursementStatus,
@@ -48,6 +49,20 @@ from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APFlow, APHeader, APLine, APSupplier
 
 
+def _process_error(row, error_msg: str, error_messages: List[Dict[str, any]], ex: Exception = None):
+    """Handle errors in AP file processing."""
+    if ex:
+        formatted_traceback = "".join(traceback.TracebackException.from_exception(ex).format())
+        error_msg = f"{error_msg}\n{formatted_traceback}"
+    db.session.rollback()
+    capture_message(
+        f"{error_msg} ERROR : {str(ex)}",
+        level="error",
+    )
+    current_app.logger.error(f"{{error: {str(ex)}, stack_trace: {traceback.format_exc()}}}")
+    error_messages.append({"error": error_msg, "row": row})
+
+
 class ApTask(CgiAP):
     """Task to create AP (Accounts Payable) Feeder Files.
 
@@ -60,6 +75,9 @@ class ApTask(CgiAP):
     2. Distribution of funds to non government partners without a GL code (EFT).
 
     """
+
+    error_messages = []
+    has_errors = False
 
     @classmethod
     def create_ap_files(cls):
@@ -82,30 +100,51 @@ class ApTask(CgiAP):
         10. After some time, a feedback file will arrive and Payment-reconciliation queue will move these
             EFT refunds to REFUNDED. (filter out)
         """
+        cls.has_errors = False
+        cls.error_messages = []
+
         try:
             cls._create_routing_slip_refund_file()
         except Exception as e:
-            capture_message(
-                f"Error creating routing slip refund file ERROR : {str(e)}",
-                level="error",
+            _process_error(
+                {"task": "create_routing_slip_refund", "ejv_file_type": EjvFileType.REFUND.value},
+                "Error creating routing slip refund file",
+                cls.error_messages,
+                e
             )
-            current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
+            cls.has_errors = True
+
         try:
             cls._create_non_gov_disbursement_file()
         except Exception as e:
-            capture_message(
-                f"Error creating non gov disbursement file ERROR : {str(e)}",
-                level="error",
+            _process_error(
+                {"task": "create_non_gov_disbursement", "ejv_file_type": EjvFileType.NON_GOV_DISBURSEMENT.value},
+                "Error creating non gov disbursement file",
+                cls.error_messages,
+                e
             )
-            current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
+            cls.has_errors = True
+
         try:
             cls._create_eft_refund_file()
         except Exception as e:
-            capture_message(
-                f"Error creating eft refund file ERROR : {str(e)}",
-                level="error",
+            _process_error(
+                {"task": "create_eft_refund", "ejv_file_type": EjvFileType.EFT_REFUND.value},
+                "Error creating eft refund file",
+                cls.error_messages,
+                e
             )
-            current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
+            cls.has_errors = True
+
+        if cls.has_errors and not current_app.config.get("DISABLE_AP_ERROR_EMAIL"):
+            notification = JobFailureNotification(
+                subject="AP Task Job Failure",
+                file_name="ap_task",
+                error_messages=cls.error_messages,
+                table_name="ejv_file",
+                job_name="AP Task Job"
+            )
+            notification.send_notification()
 
     @classmethod
     def _create_eft_refund_file(cls):
