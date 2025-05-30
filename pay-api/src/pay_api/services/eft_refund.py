@@ -202,6 +202,7 @@ class EFTRefund:
 
         refund.comment = data.comment or refund.comment
         refund.status = data.status or refund.status
+        refund.decision_by = user.user_name
 
         short_name = EFTShortnamesModel.find_by_id(refund.short_name_id)
         match data.status:

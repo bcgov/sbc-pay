@@ -1392,6 +1392,7 @@ def test_patch_shortname_refund(
             assert rv.json["status"] == EFTShortnameRefundStatus.APPROVED.value
             assert rv.json["comment"] == "Test comment"
             assert rv.json.get("declineReason") is None
+            assert rv.json.get("decisionBy") == user_name
             assert eft_history.transaction_type == EFTHistoricalTypes.SN_REFUND_APPROVED.value
             history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]
             assert history
@@ -1404,6 +1405,7 @@ def test_patch_shortname_refund(
             assert rv.json["status"] == EFTShortnameRefundStatus.DECLINED.value
             assert rv.json["comment"] == "Test comment"
             assert rv.json["declineReason"] == "Test reason"
+            assert rv.json.get("decisionBy") == user_name
             assert eft_history.transaction_type == EFTHistoricalTypes.SN_REFUND_DECLINED.value
             history = EFTShortnamesHistoryModel.find_by_eft_refund_id(refund.id)[0]
             assert history
@@ -1416,6 +1418,7 @@ def test_patch_shortname_refund(
             assert rv.json["status"] == EFTShortnameRefundStatus.APPROVED.value
             assert rv.json["comment"] == "test comment"
             assert rv.json["chequeStatus"] == ChequeRefundStatus.CHEQUE_UNDELIVERABLE.value
+            assert rv.json.get("decisionBy") == user_name
         case "invalid_cheque_status":
             assert rv.status_code == 400
             assert rv.json["type"] == Error.EFT_REFUND_CHEQUE_STATUS_INVALID_ACTION.name

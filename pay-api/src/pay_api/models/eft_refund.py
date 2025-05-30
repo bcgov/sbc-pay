@@ -47,6 +47,7 @@ class EFTRefund(Audit):
             "created_by",
             "created_name",
             "created_on",
+            "decision_by",
             "delivery_instructions",
             "disbursement_date",
             "disbursement_status_code",
@@ -75,6 +76,7 @@ class EFTRefund(Audit):
     comment = db.Column(db.String(), nullable=False)
     decline_reason = db.Column(db.String(), nullable=True)
     created_on = db.Column("created_on", db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    decision_by = db.Column(db.String(50), nullable=True)
     disbursement_date = db.Column(
         "disbursement_date", db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc)
     )
