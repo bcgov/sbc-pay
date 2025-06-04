@@ -194,14 +194,22 @@ class EjvPaymentTask(CgiEjv):
                 sequence += 1
 
                 if transaction.line_item.target_type == EJVLinkType.INVOICE.value:
-                    current_app.logger.debug(f"Creating Invoice Reference for invoice id: {transaction.target.id}")
-                    inv_ref = InvoiceReferenceModel(
-                        invoice_id=transaction.target.id,
-                        invoice_number=generate_transaction_number(transaction.target.id),
-                        reference_number=None,
-                        status_code=InvoiceReferenceStatus.ACTIVE.value,
+                    # Check if reference already exists
+                    # might already be created by another transaction(when invoice has service fees)
+                    # This is to avoid duplicate invoice references.
+                    existing_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
+                        transaction.target.id,
+                        InvoiceReferenceStatus.ACTIVE.value
                     )
-                    db.session.add(inv_ref)
+                    if not existing_ref:
+                        current_app.logger.debug(f"Creating Invoice Reference for invoice id: {transaction.target.id}")
+                        inv_ref = InvoiceReferenceModel(
+                            invoice_id=transaction.target.id,
+                            invoice_number=generate_transaction_number(transaction.target.id),
+                            reference_number=None,
+                            status_code=InvoiceReferenceStatus.ACTIVE.value,
+                        )
+                        db.session.add(inv_ref)
                 elif transaction.line_item.target_type == EJVLinkType.PARTIAL_REFUND.value:
                     partial_refund = RefundsPartialModel.find_by_id(transaction.target.id)
                     partial_refund.status = RefundsPartialStatus.REFUND_PROCESSING.value
