@@ -285,14 +285,12 @@ class EjvPaymentTask(CgiEjv):
 
         current_app.logger.info(f"Processing invoices for account_id: {account_id}.")
 
-        # Get account name for description
         payment_desc = f"{PaymentAccountModel.find_by_id(account_id).name[:100]:<100}"
         # Find all invoices for the gov account to pay.
         for inv in cls._get_invoices_for_payment(account_id):
             # If it's a JV reversal credit and debit is reversed.
             is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
-            # Create description that combines account name and invoice number
             invoice_number = f"#{inv.id}"
             description = payment_desc[: -len(invoice_number)] + invoice_number
             description = f"{description[:100]:<100}"
