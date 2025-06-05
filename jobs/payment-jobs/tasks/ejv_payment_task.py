@@ -172,17 +172,6 @@ class EjvPaymentTask(CgiEjv):
             current_app.logger.info("Creating ejv invoice link records and setting invoice status.")
             sequence = 1
             for transaction in transactions:
-                # If it's reversal, If there is no COMPLETED invoice reference, then no need to reverse it.
-                # Else mark it as CANCELLED, as new invoice reference will be created
-                if transaction.line_item.is_reversal:
-                    if (
-                        inv_ref := InvoiceReferenceModel.find_by_invoice_id_and_status(
-                            transaction.target.id, InvoiceReferenceStatus.COMPLETED.value
-                        )
-                    ) is None:
-                        continue
-                    inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
-
                 ejv_link = EjvLinkModel(
                     link_id=transaction.target.id,
                     link_type=transaction.line_item.target_type,
@@ -194,9 +183,18 @@ class EjvPaymentTask(CgiEjv):
                 sequence += 1
 
                 if transaction.line_item.target_type == EJVLinkType.INVOICE.value:
-                    # Check if reference already exists
-                    # might already be created by another transaction(when invoice has service fees)
+                    # If it's reversal, If there is no COMPLETED invoice reference, then no need to reverse it.
+                    # Else mark it as CANCELLED, as new invoice reference will be created
+                    if transaction.line_item.is_reversal:
+                        if (
+                            inv_ref := InvoiceReferenceModel.find_by_invoice_id_and_status(
+                                transaction.target.id, InvoiceReferenceStatus.COMPLETED.value
+                            )
+                        ) is None:
+                            continue
+                        inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
                     # This is to avoid duplicate invoice references.
+                    # might already be created by another transaction(when invoice has service fees)
                     existing_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
                         transaction.target.id,
                         InvoiceReferenceStatus.ACTIVE.value
@@ -213,6 +211,7 @@ class EjvPaymentTask(CgiEjv):
                 elif transaction.line_item.target_type == EJVLinkType.PARTIAL_REFUND.value:
                     partial_refund = RefundsPartialModel.find_by_id(transaction.target.id)
                     partial_refund.status = RefundsPartialStatus.REFUND_PROCESSING.value
+                    db.session.add(partial_refund)
 
             db.session.flush()  # Instead of flushing every entity, flush all at once.
 
