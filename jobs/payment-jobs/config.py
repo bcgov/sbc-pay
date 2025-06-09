@@ -154,6 +154,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_EJV_SUPPLIER_NUMBER = os.getenv("CGI_EJV_SUPPLIER_NUMBER", "")
 
     IT_OPS_EMAIL = os.getenv("IT_OPS_EMAIL", "SBC_ITOperationsSupport@gov.bc.ca").split(",")
+    DISABLE_EJV_ERROR_EMAIL = os.getenv("DISABLE_EJV_ERROR_EMAIL", "true").lower() == "true"
+    DISABLE_CSV_ERROR_EMAIL = os.getenv("DISABLE_CSV_ERROR_EMAIL", "true").lower() == "true"
+    DISABLE_AP_ERROR_EMAIL = os.getenv("DISABLE_AP_ERROR_EMAIL", "true").lower() == "true"
 
     # Minio configuration values
     MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
