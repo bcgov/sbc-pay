@@ -154,6 +154,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_EJV_SUPPLIER_NUMBER = os.getenv("CGI_EJV_SUPPLIER_NUMBER", "")
 
     IT_OPS_EMAIL = os.getenv("IT_OPS_EMAIL", "SBC_ITOperationsSupport@gov.bc.ca").split(",")
+    DISABLE_EJV_ERROR_EMAIL = os.getenv("DISABLE_EJV_ERROR_EMAIL", "true").lower() == "true"
+    DISABLE_CSV_ERROR_EMAIL = os.getenv("DISABLE_CSV_ERROR_EMAIL", "true").lower() == "true"
+    DISABLE_AP_ERROR_EMAIL = os.getenv("DISABLE_AP_ERROR_EMAIL", "true").lower() == "true"
 
     # Minio configuration values
     MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
@@ -246,6 +249,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_SECRET = "123"
     PAYBC_DIRECT_PAY_BASE_URL = "http://localhost:8080/paybc-api"
     PAYBC_DIRECT_PAY_REF_NUMBER = "123"
+    
+    DISABLE_AP_ERROR_EMAIL = False
+    DISABLE_EJV_ERROR_EMAIL = False
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY", "1234")
