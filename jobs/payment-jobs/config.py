@@ -249,6 +249,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_SECRET = "123"
     PAYBC_DIRECT_PAY_BASE_URL = "http://localhost:8080/paybc-api"
     PAYBC_DIRECT_PAY_REF_NUMBER = "123"
+    
+    DISABLE_AP_ERROR_EMAIL = False
+    DISABLE_EJV_ERROR_EMAIL = False
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY", "1234")
