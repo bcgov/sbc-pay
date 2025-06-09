@@ -117,6 +117,7 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
 
     DISABLE_EJV_ERROR_EMAIL = os.getenv("DISABLE_EJV_ERROR_EMAIL", "true").lower() == "true"
     DISABLE_CSV_ERROR_EMAIL = os.getenv("DISABLE_CSV_ERROR_EMAIL", "true").lower() == "true"
+    DISABLE_AP_ERROR_EMAIL = os.getenv("DISABLE_AP_ERROR_EMAIL", "true").lower() == "true"
 
     # PUB/SUB - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev, business-events
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
@@ -191,6 +192,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     GCP_AUTH_KEY = None
     DISABLE_EJV_ERROR_EMAIL = False
     DISABLE_CSV_ERROR_EMAIL = False
+    DISABLE_AP_ERROR_EMAIL = False
     # Need a value for this, so we can mock the publish client.
     BUSINESS_PAY_TOPIC = "business-pay-topic"
 
