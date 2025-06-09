@@ -287,6 +287,11 @@ class EjvPaymentTask(CgiEjv):
     def _get_ejv_account_transactions(cls, account_id: int) -> List[EjvTransaction]:
         """Return unified payment transactions for both invoices and partial refunds."""
         transactions = []
+        invoices = cls._get_invoices_for_payment(account_id)
+        partial_refund_invoices = cls.get_partial_refunds_invoices(account_id)
+        if not invoices and not partial_refund_invoices:
+            return []
+
         # Debit from GOV account GL
         debit_distribution_code = DistributionCodeModel.find_by_active_for_account(account_id)
 
@@ -294,12 +299,11 @@ class EjvPaymentTask(CgiEjv):
 
         payment_desc = f"{PaymentAccountModel.find_by_id(account_id).name[:100]:<100}"
         # Find all invoices for the gov account to pay.
-        for inv in cls._get_invoices_for_payment(account_id):
+        for inv in invoices:
             # If it's a JV reversal credit and debit is reversed.
             is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
-            invoice_number = f"#{inv.id}"
-            description = payment_desc[: -len(invoice_number)] + invoice_number
+            description = payment_desc[: -len(f"#{inv.id}")] + f"#{inv.id}"
             description = f"{description[:100]:<100}"
 
             for line in inv.payment_line_items:
@@ -343,10 +347,9 @@ class EjvPaymentTask(CgiEjv):
 
         # Process partial refunds
         current_app.logger.info(f"Processing partial refunds for account_id: {account_id}.")
-        for pr_invoice in cls.get_partial_refunds_invoices(account_id):
+        for pr_invoice in partial_refund_invoices:
             # Create description that combines account name and invoice number for partial refund
-            invoice_number = f"#{pr_invoice.id}"
-            description = payment_desc[: -len(invoice_number)] + invoice_number
+            description = payment_desc[: -len(f"#{pr_invoice.id}")] + f"#{pr_invoice.id}"
             description = f"{description[:100]:<100}"
 
             for pr in RefundsPartialModel.get_partial_refunds_for_invoice(pr_invoice.id):
