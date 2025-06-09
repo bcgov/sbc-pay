@@ -66,8 +66,6 @@ jobs:
       ACCOUNT_SECRET_KEY: "abcdefg"
       DISABLE_AP_FEEDBACK: False
       DISABLE_CSV_ERROR_EMAIL: False
-      DISABLE_AP_ERROR_EMAIL: False
-      DISABLE_EJV_ERROR_EMAIL: False
       IT_OPS_EMAIL: 'ken.li@gov.bc.ca'
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
 
