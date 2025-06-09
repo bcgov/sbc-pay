@@ -231,6 +231,7 @@ class EFTShortnameHistorical:
                 history_model.transaction_date,
                 history_model.transaction_type,
                 history_model.is_processing,
+                history_model.created_on,
                 PaymentAccountModel.auth_account_id,
                 cls._get_account_name(),
                 PaymentAccountModel.branch_name.label("account_branch"),
@@ -247,7 +248,7 @@ class EFTShortnameHistorical:
             .filter(history_model.hidden == false())
         )
 
-        query = query.order_by(history_model.transaction_date.desc(), history_model.id.desc())
+        query = query.order_by(history_model.created_on.desc(), history_model.id.desc())
 
         pagination = query.paginate(per_page=search_criteria.limit, page=search_criteria.page)
         history_list = unstructure_schema_items(EFTShortnameHistorySchema, pagination.items)
