@@ -192,7 +192,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     GCP_AUTH_KEY = None
     DISABLE_EJV_ERROR_EMAIL = False
     DISABLE_CSV_ERROR_EMAIL = False
-    DISABLE_AP_ERROR_EMAIL = False
     # Need a value for this, so we can mock the publish client.
     BUSINESS_PAY_TOPIC = "business-pay-topic"
 
