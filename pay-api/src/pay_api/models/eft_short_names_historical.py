@@ -102,6 +102,7 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
     short_name_balance: Decimal
     transaction_date: datetime
     transaction_type: str
+    created_on: datetime
     is_processing: bool
     is_reversible: bool
 
@@ -126,6 +127,7 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
             statement_number=getattr(row, "statement_number", None),
             transaction_date=getattr(row, "transaction_date", None),
             transaction_type=getattr(row, "transaction_type", None),
+            created_on=getattr(row, "created_on", None),
             is_processing=bool(getattr(row, "is_processing", False)),
             is_reversible=bool(getattr(row, "is_reversible", False)),
         )
