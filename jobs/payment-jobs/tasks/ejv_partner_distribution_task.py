@@ -461,6 +461,4 @@ class EjvPartnerDistributionTask(CgiEjv):
                 ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()),
                 DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)
             )
-        sql = str(query.statement.compile(compile_kwargs={"literal_binds": True}))
-        print("SQL:", sql)
         return query.order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id).all()

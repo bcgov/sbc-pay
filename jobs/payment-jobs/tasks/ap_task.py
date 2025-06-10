@@ -61,8 +61,6 @@ def _process_error(row, error_msg: str, error_messages: List[Dict[str, any]], ex
     )
     current_app.logger.error(f"{{error: {str(ex)}, stack_trace: {traceback.format_exc()}}}")
     error_messages.append({"error": error_msg, "row": row})
-    current_app.logger.info("DISABLE_AP_ERROR_EMAIL: ",
-                            current_app.config.get("DISABLE_AP_ERROR_EMAIL"))
 
 
 class ApTask(CgiAP):
