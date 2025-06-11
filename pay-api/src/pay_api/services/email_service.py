@@ -31,7 +31,7 @@ def send_email(recipients: list[str], subject: str, body: str):
     """Send the email notification."""
     # Note if we send HTML in the body, we aren't sending through GCNotify, ideally we'd like to send through GCNotify.
     token = get_service_account_token()
-    current_app.logger.info(f">send_emails to recipients: {recipients}")
+    current_app.logger.info(f">send_email to recipients: {recipients}")
     notify_url = current_app.config.get("NOTIFY_API_ENDPOINT") + "notify/"
 
     success = False
