@@ -689,11 +689,11 @@ def test_get_invoice_totals_for_statements(session):
         {"items": []},
     )
     totals = PaymentService.get_invoices_totals(data["items"], {"to_date": statement.to_date})
-    assert totals["statutoryFees"] == 190
-    assert totals["serviceFees"] == 120
-    assert totals["fees"] == 310
-    assert totals["paid"] == 175
-    assert totals["due"] == 125
+    assert totals["statutoryFees"] == 190.00
+    assert totals["serviceFees"] == 120.00
+    assert totals["fees"] == 310.00
+    assert totals["paid"] == 175.00
+    assert totals["due"] == 125.00
 
     # EFT flow
     statement.from_date = datetime.now(tz=timezone.utc)
@@ -761,3 +761,87 @@ def test_get_invoice_totals_for_statements(session):
     assert totals["paid"] == 200
     # fees - paid - refund
     assert totals["due"] == 650 - 200 - 100
+
+
+def test_build_grouped_invoice_context_basic():
+    """Test grouped invoices."""
+    invoices = [
+        {"payment_method": PaymentMethod.EFT.value, "paid": 100, "total": 200,
+         "line_items": [], "details": [], "status_code": InvoiceStatus.PAID.value},
+        {"payment_method": PaymentMethod.CC.value, "paid": 50, "total": 50,
+         "line_items": [], "details": [], "status_code": InvoiceStatus.PAID.value},
+    ]
+    statement = {"amount_owing": 100, "to_date": "2024-06-01"}
+    summary = {"latestStatementPaymentDate": "2024-06-01", "dueDate": "2024-06-10"}
+    account = {}
+    grouped = PaymentService._build_grouped_invoice_context(invoices, statement, summary, account)
+    assert PaymentMethod.EFT.value in grouped
+    assert PaymentMethod.CC.value in grouped
+    assert grouped[PaymentMethod.EFT.value]["total_paid"] == 100.0
+    assert grouped[PaymentMethod.CC.value]["total_paid"] == 50.0
+    assert "transactions" in grouped[PaymentMethod.EFT.value]
+
+
+def test_calculate_invoice_summaries():
+    """Test invoice summaries."""
+    invoices = [
+        {"payment_method": PaymentMethod.EFT.value, "paid": 0,
+         "refund": 100, "total": 100, "refund_date": "2024-06-01"},
+        {"payment_method": PaymentMethod.EFT.value, "paid": 100,
+         "refund": 0, "total": 100, "refund_date": None},
+    ]
+    statement = {"to_date": "2024-06-01"}
+    summary = PaymentService._calculate_invoice_summaries(invoices, PaymentMethod.EFT.value, statement)
+    assert summary["paid"] == "100.00"
+    assert summary["due"] == "0.00"
+    assert summary["total"] == "200.00"
+
+
+def test_build_transaction_rows():
+    """Test transaction rows."""
+    invoices = [
+        {
+            "line_items": [{"description": "Service Fee"}],
+            "details": [{"label": "Folio", "value": "123"}],
+            "folio_number": "F123",
+            "created_on": datetime.now().isoformat(),
+            "total": 100,
+            "service_fees": 10,
+            "gst": 5,
+            "status_code": InvoiceStatus.PAID.value
+        }
+    ]
+    rows = PaymentService._build_transaction_rows(invoices)
+    assert rows[0]["products"] == ["Service Fee"]
+    assert rows[0]["details"][0].startswith("Folio")
+    assert rows[0]["fee"] == "90.00"
+
+
+def test_build_statement_context():
+    """Test statement."""
+    statement = {
+        "from_date": "2024-06-01",
+        "to_date": "2024-06-30",
+        "frequency": "MONTHLY",
+        "amount_owing": 123.45
+    }
+    ctx = PaymentService.build_statement_context(statement)
+    assert "duration" in ctx
+    assert ctx["amount_owing"] == 123.45
+
+
+def test_build_statement_summary_context():
+    """Test statement summary."""
+    summary = {
+        "lastStatementTotal": 100,
+        "lastStatementPaidAmount": 50,
+        "cancelledTransactions": 10,
+        "latestStatementPaymentDate": "2024-06-01",
+        "dueDate": "2024-06-10"
+    }
+    ctx = PaymentService.build_statement_summary_context(summary)
+    assert ctx["lastStatementTotal"] == 100.00
+    assert ctx["lastStatementPaidAmount"] == 50.00
+    assert ctx["cancelledTransactions"] == 10.00
+    assert "latestStatementPaymentDate" in ctx
+    assert "dueDate" in ctx

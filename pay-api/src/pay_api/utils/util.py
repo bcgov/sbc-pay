@@ -24,6 +24,7 @@ from typing import Dict
 from urllib.parse import parse_qsl, urlparse
 
 import pytz
+from dateutil import parser
 from dpath import get as dpath_get
 from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
@@ -360,3 +361,22 @@ def unstructure_schema_items(schema, items):
     """Return unstructured results by schema."""
     results = [schema.from_row(item) for item in items]
     return Converter().unstructure(results)
+
+
+def format_datetime(value, fmt="%B %d, %Y"):
+    """Return a datetime or datetime string into a formatted date string."""
+    if not value:
+        return ""
+    try:
+        dt = value if hasattr(value, 'strftime') else parser.parse(value)
+        return dt.strftime(fmt)
+    except (ValueError, TypeError):
+        return ""
+
+
+def format_currency(value):
+    """Return a string representation of a number formatted as 0.00."""
+    try:
+        return "{:,.2f}".format(float(value))
+    except (TypeError, ValueError):
+        return "0.00"
