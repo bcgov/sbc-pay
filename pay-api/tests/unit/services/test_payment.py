@@ -689,11 +689,11 @@ def test_get_invoice_totals_for_statements(session):
         {"items": []},
     )
     totals = PaymentService.get_invoices_totals(data["items"], {"to_date": statement.to_date})
-    assert totals["statutoryFees"] == 190.00
-    assert totals["serviceFees"] == 120.00
-    assert totals["fees"] == 310.00
-    assert totals["paid"] == 175.00
-    assert totals["due"] == 125.00
+    assert totals["statutoryFees"] == 190
+    assert totals["serviceFees"] == 120
+    assert totals["fees"] == 310
+    assert totals["paid"] == 175
+    assert totals["due"] == 125
 
     # EFT flow
     statement.from_date = datetime.now(tz=timezone.utc)
@@ -775,11 +775,16 @@ def test_build_grouped_invoice_context_basic():
     summary = {"latestStatementPaymentDate": "2024-06-01", "dueDate": "2024-06-10"}
     account = {}
     grouped = PaymentService._build_grouped_invoice_context(invoices, statement, summary, account)
-    assert PaymentMethod.EFT.value in grouped
-    assert PaymentMethod.CC.value in grouped
-    assert grouped[PaymentMethod.EFT.value]["total_paid"] == 100.0
-    assert grouped[PaymentMethod.CC.value]["total_paid"] == 50.0
-    assert "transactions" in grouped[PaymentMethod.EFT.value]
+
+    assert any(item["payment_method"] == PaymentMethod.EFT.value for item in grouped)
+    assert any(item["payment_method"] == PaymentMethod.CC.value for item in grouped)
+
+    eft_item = next(item for item in grouped if item["payment_method"] == PaymentMethod.EFT.value)
+    assert eft_item["total_paid"] == "100.00"
+    assert "transactions" in eft_item
+
+    cc_item = next(item for item in grouped if item["payment_method"] == PaymentMethod.CC.value)
+    assert cc_item["total_paid"] == "50.00"
 
 
 def test_calculate_invoice_summaries():
@@ -827,7 +832,7 @@ def test_build_statement_context():
     }
     ctx = PaymentService.build_statement_context(statement)
     assert "duration" in ctx
-    assert ctx["amount_owing"] == 123.45
+    assert ctx["amount_owing"] == '123.45'
 
 
 def test_build_statement_summary_context():
@@ -839,9 +844,9 @@ def test_build_statement_summary_context():
         "latestStatementPaymentDate": "2024-06-01",
         "dueDate": "2024-06-10"
     }
-    ctx = PaymentService.build_statement_summary_context(summary)
-    assert ctx["lastStatementTotal"] == 100.00
-    assert ctx["lastStatementPaidAmount"] == 50.00
-    assert ctx["cancelledTransactions"] == 10.00
+    ctx = PaymentService._build_statement_summary_context(summary)
+    assert ctx["lastStatementTotal"] == '100.00'
+    assert ctx["lastStatementPaidAmount"] == '50.00'
+    assert ctx["cancelledTransactions"] == '10.00'
     assert "latestStatementPaymentDate" in ctx
     assert "dueDate" in ctx

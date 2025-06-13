@@ -120,6 +120,7 @@ class PaymentMethod(Enum):
     CASH = "CASH"
     CHEQUE = "CHEQUE"
 
+
 PaymentMethod.Order = [
     PaymentMethod.EFT,
     PaymentMethod.PAD,

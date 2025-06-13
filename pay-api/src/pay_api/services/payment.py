@@ -460,11 +460,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 ):
                     totals["due"] -= refund
 
-        formatted_totals = {}
-        for key, value in totals.items():
-            formatted_totals[key] = format_currency(value)
-
-        return formatted_totals
+        return totals
 
     @staticmethod
     @user_context
@@ -524,17 +520,26 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
             invoices = results.get("items", [])
             statement_summary = report_inputs.statement_summary
-            grouped_invoices = Payment._build_grouped_invoice_context(invoices, statement,
-                                                                      statement_summary, account_info)
-            has_payment_instructions = any(item['payment_method'] == 'EFT' for item in grouped_invoices)
+            grouped_invoices: list[dict] = Payment._build_grouped_invoice_context(invoices, statement,
+                                                                                  statement_summary, account_info)
+
+            has_payment_instructions = any(item.get('payment_method') == 'EFT' for item in grouped_invoices)
+
+            formatted_totals = {}
+            for key, value in totals.items():
+                formatted_totals[key] = format_currency(value)
+
             template_vars = {
                 "statementSummary": Payment._build_statement_summary_context(statement_summary),
                 "grouped_invoices": grouped_invoices,
-                "total": totals,
+                "total": formatted_totals,
                 "account": account_info,
                 "statement": Payment.build_statement_context(kwargs.get("statement")),
-                "has_payment_instructions": has_payment_instructions
             }
+
+            if has_payment_instructions:
+                template_vars["has_payment_instructions"] = True
+
         report_response = ReportService.get_report_response(
             ReportRequest(
                 report_name=report_name,
@@ -548,7 +553,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
     @staticmethod
     def _build_grouped_invoice_context(invoices: List[dict], statement: dict,
-                                       statement_summary: dict, account: dict) -> dict:
+                                       statement_summary: dict, account: dict) -> list[dict]:
         """Build grouped invoice context, with fixed payment method order."""
         grouped = defaultdict(list)
         for inv in invoices:
@@ -566,11 +571,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 "is_index_0": first_group
             }
             if method == PaymentMethod.EFT.value:
-                method_context["amount_owing"] = statement.get("amount_owing", 0.00)
+                method_context["amount_owing"] = format_currency(statement.get("amount_owing", 0.00))
                 if statement.get("is_interim_statement") and statement_summary:
                     method_context["latest_payment_date"] = statement_summary.get("latestStatementPaymentDate")
                 elif not statement.get("is_interim_statement") and statement_summary:
-                    method_context["due_date"] = statement_summary.get("dueDate")
+                    method_context["due_date"] = format_datetime(statement_summary.get("dueDate"))
             if method == PaymentMethod.INTERNAL.value:
                 has_staff_payment = any("routing_slip" not in inv or inv["routing_slip"] is None for inv in items)
                 method_context["is_staff_payment"] = has_staff_payment
@@ -650,17 +655,21 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             service_fee = round(inv.get("service_fees", 0), 2)
             gst = round(inv.get("gst", 0), 2)
             total = round(inv.get("total", 0), 2)
-            rows.append({
+            row = {
                 "products": product_lines,
                 "details": detail_lines,
                 "folio": inv.get("folio_number") or "-",
-                "created_on": (datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y")
-                               if inv.get("created_on") else "-"),
-                "fee": "%.2f" % fee,
-                "service_fee": "%.2f" % service_fee,
-                "gst": "%.2f" % gst,
-                "total": "%.2f" % total,
-            })
+                "created_on": format_datetime(datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y")
+                                              if inv.get("created_on") else "-"),
+                "fee": format_currency(fee),
+                "service_fee": format_currency(service_fee),
+                "gst": format_currency(gst),
+                "total": format_currency(total),
+            }
+            skip_keys = {"details", "folio_number", "created_on", "fee", "gst", "total", "service_fees"}
+            row.update((k, v) for k, v in inv.items() if k not in skip_keys)
+            rows.append(row)
+
         return rows
 
     @staticmethod
@@ -668,27 +677,37 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         """Build and enhance statement context with formatted fields."""
         if not statement:
             return statement
-        from_date = statement.get('from_date')
-        to_date = statement.get('to_date')
-        frequency = statement.get('frequency', '')
+
         enhanced_statement = statement.copy()
-        duration = ''
+
+        from_date = format_datetime(statement.get('from_date'))
+        to_date = format_datetime(statement.get('to_date'))
+        created_on = format_datetime(statement.get('created_on'))
+        frequency = statement.get('frequency', '')
+
         if frequency == 'DAILY' and from_date:
-            duration = format_datetime(from_date, "%B %d, %Y")
+            enhanced_statement['duration'] = from_date
         elif from_date and to_date:
-            duration = f"{format_datetime(from_date, "%B %d, %Y")} - {format_datetime(to_date, "%B %d, %Y")}"
+            enhanced_statement['duration'] = f"{from_date} - {to_date}"
         elif from_date:
-            duration = format_datetime(from_date, "%B %d, %Y")
-        enhanced_statement['duration'] = duration
+            enhanced_statement['duration'] = from_date
+
         amount_owing = statement.get('amount_owing')
-        if amount_owing:
-            enhanced_statement['amount_owing'] = format_currency(amount_owing)
-        else:
-            enhanced_statement['amount_owing'] = format_currency(0)
+        enhanced_statement['amount_owing'] = format_currency(amount_owing) if amount_owing else format_currency(0)
+
+        if from_date:
+            enhanced_statement['from_date'] = from_date
+        if to_date:
+            enhanced_statement['to_date'] = to_date
+        if created_on:
+            enhanced_statement['created_on'] = created_on
+
         return enhanced_statement
 
     @staticmethod
     def _build_statement_summary_context(statement_summary: dict) -> dict:
+        if not statement_summary:
+            return None
         enhanced_statement_summary = statement_summary.copy()
         last_statement_total = statement_summary.get('lastStatementTotal')
         last_statement_paid_amount = statement_summary.get('lastStatementPaidAmount')
@@ -699,8 +718,12 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         enhanced_statement_summary['lastStatementPaidAmount'] = format_currency(last_statement_paid_amount)
         if cancelled_transactions not in [None, 0, '0', '0.00']:
             enhanced_statement_summary['cancelledTransactions'] = format_currency(cancelled_transactions)
-        enhanced_statement_summary['latestStatementPaymentDate'] = format_datetime(latest_statement_sayment_date,
-                                                                                   "%B %d, %Y")
+        if not latest_statement_sayment_date:
+            enhanced_statement_summary['latestStatementPaymentDate'] = None
+        else:
+            enhanced_statement_summary['latestStatementPaymentDate'] = format_datetime(latest_statement_sayment_date,
+                                                                                       "%B %d, %Y")
+
         enhanced_statement_summary['dueDate'] = format_datetime(due_date, "%B %d, %Y")
         return enhanced_statement_summary
 

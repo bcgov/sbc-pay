@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
+import pprint
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
@@ -31,7 +32,7 @@ from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
-from pay_api.utils.util import get_local_formatted_date, get_local_formatted_date_time
+from pay_api.utils.util import format_datetime
 from tests.utilities.base_test import (
     factory_eft_shortname,
     factory_eft_shortname_link,
@@ -572,34 +573,35 @@ def test_get_eft_statement_for_empty_invoices(session):
                     "methodOfPayment": "DRAWDOWN",
                 },
             },
-            "invoices": [],
+            "grouped_invoices": [],
             "statement": {
-                "amount_owing": 0,
-                "created_on": date_string_now,
+                "amount_owing": '0.00',
+                "created_on": format_datetime(date_string_now),
                 "frequency": "MONTHLY",
-                "from_date": get_statement_date_string(statement_from_date),
-                "to_date": get_statement_date_string(statement_to_date),
+                "from_date": format_datetime(statement_from_date),
+                "to_date": format_datetime(statement_to_date),
                 "id": statement_model.id,
                 "is_interim_statement": False,
                 "is_overdue": False,
                 "notification_date": None,
                 "overdue_notification_date": None,
                 "payment_methods": ["EFT"],
+                "duration": f"{format_datetime(statement_from_date)} - {format_datetime(statement_to_date)}"
             },
             "statementSummary": {
-                "dueDate": StatementService.calculate_due_date(
-                    statement_to_date.date()
+                "dueDate": format_datetime(StatementService.calculate_due_date(
+                    statement_to_date.date())
                 ),  # pylint: disable=protected-access
-                "lastStatementTotal": 0,
-                "lastStatementPaidAmount": 0,
+                "lastStatementTotal": '0.00',
+                "lastStatementPaidAmount": '0.00',
                 "latestStatementPaymentDate": None,
             },
             "total": {
-                "due": 0,
-                "fees": 0,
-                "paid": 0,
-                "serviceFees": 0,
-                "statutoryFees": 0,
+                "due": '0.00',
+                "fees": '0.00',
+                "paid": '0.00',
+                "serviceFees": '0.00',
+                "statutoryFees": '0.00',
             },
         }
         expected_report_inputs = ReportRequest(
@@ -717,168 +719,175 @@ def test_get_eft_statement_with_invoices(session):
                     "methodOfPayment": "DRAWDOWN",
                 },
             },
-            "invoices": [
+            "grouped_invoices": [
                 {
-                    "bcol_account": "TEST",
-                    "business_identifier": "CP0001234",
-                    "corp_type_code": "CP",
-                    "created_by": "test",
-                    "created_name": "test name",
-                    "created_on": get_local_formatted_date(invoice_1.created_on),
-                    "details": [
-                        {
-                            "label": "label",
-                            "value": "value",
-                        },
-                    ],
-                    "folio_number": "1234567890",
-                    "id": invoice_1.id,
-                    "invoice_number": "10021",
-                    "line_items": [
-                        {
-                            "description": None,
-                            "filing_type_code": "OTANN",
-                            "gst": 0.0,
-                            "pst": 0.0,
-                            "service_fees": 0.0,
-                            "total": 10.0,
-                        },
-                    ],
-                    "paid": 0.0,
-                    "payment_account": {
-                        "account_id": "1234",
-                        "billable": True,
-                    },
+                    "amount_owing": "250.00",
+                    "due_date": "August 31, 2025",
+                    "due_summary": "250.00",
+                    "is_index_0": True,
+                    "paid_summary": "100.00",
                     "payment_method": "EFT",
-                    "product": "BUSINESS",
-                    "refund": 0.0,
-                    "service_fees": 0.0,
-                    "status_code": "Invoice Approved",
-                    "total": 200.0,
-                },
-                {
-                    "bcol_account": "TEST",
-                    "business_identifier": "CP0001234",
-                    "corp_type_code": "CP",
-                    "created_by": "test",
-                    "created_name": "test name",
-                    "created_on": get_local_formatted_date(invoice_2.created_on),
-                    "details": [
+                    "statement_header_text": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
+                    "total_paid": "100.00",
+                    "totals_summary": "350.00",
+                    "transactions": [
                         {
-                            "label": "label",
-                            "value": "value",
+                            "bcol_account": "TEST",
+                            "business_identifier": "CP0001234",
+                            "corp_type_code": "CP",
+                            "created_by": "test",
+                            "created_name": "test name",
+                            "created_on": format_datetime(invoice_1.created_on),
+                            "details": ["label value"],
+                            "fee": "0.00",
+                            "folio": "1234567890",
+                            "gst": "0.00",
+                            "id": invoice_1.id,
+                            "invoice_number": "10021",
+                            "line_items": [
+                                {
+                                    "description": None,
+                                    "filing_type_code": "OTANN",
+                                    "gst": 0.0,
+                                    "pst": 0.0,
+                                    "service_fees": 0.0,
+                                    "total": 10.0,
+                                },
+                            ],
+                            "paid": 0.0,
+                            "payment_account": {
+                                "account_id": "1234",
+                                "billable": True,
+                            },
+
+                            "payment_method": "EFT",
+                            "product": "BUSINESS",
+                            "products": ["None"],
+                            "refund": 0.0,
+                            "service_fee": "0.00",
+                            "status_code": "Invoice Approved",
+                            "total": "200.00"
                         },
-                    ],
-                    "folio_number": "1234567890",
-                    "id": invoice_2.id,
-                    "invoice_number": "10021",
-                    "line_items": [
                         {
-                            "description": None,
-                            "filing_type_code": "OTANN",
-                            "gst": 0.0,
-                            "pst": 0.0,
-                            "service_fees": 0.0,
-                            "total": 10.0,
+                            "bcol_account": "TEST",
+                            "business_identifier": "CP0001234",
+                            "corp_type_code": "CP",
+                            "created_by": "test",
+                            "created_name": "test name",
+                            "created_on": format_datetime(invoice_2.created_on),
+                            "details": ["label value"],
+                            "fee": "0.00",
+                            "folio": "1234567890",
+                            "gst": "0.00",
+                            "id": invoice_2.id,
+                            "invoice_number": "10021",
+                            "line_items": [
+                                {
+                                    "description": None,
+                                    "filing_type_code": "OTANN",
+                                    "gst": 0.0,
+                                    "pst": 0.0,
+                                    "service_fees": 0.0,
+                                    "total": 10.0,
+                                },
+                            ],
+                            "paid": 0.0,
+                            "payment_account": {
+                                "account_id": "1234",
+                                "billable": True
+                            },
+                            "payment_method": "EFT",
+                            "product": "BUSINESS",
+                            "products": ["None"],
+                            "refund": 0.0,
+                            "service_fee": "0.00",
+                            "status_code": "Invoice Approved",
+                            "total": "50.00"
                         },
-                    ],
-                    "paid": 0.0,
-                    "payment_account": {
-                        "account_id": "1234",
-                        "billable": True,
-                    },
-                    "payment_method": "EFT",
-                    "product": "BUSINESS",
-                    "refund": 0.0,
-                    "service_fees": 0.0,
-                    "status_code": "Invoice Approved",
-                    "total": 50.0,
-                },
-                {
-                    "bcol_account": "TEST",
-                    "business_identifier": "CP0001234",
-                    "corp_type_code": "CP",
-                    "created_by": "test",
-                    "created_name": "test name",
-                    "created_on": get_local_formatted_date(invoice_3.created_on),
-                    "details": [
                         {
-                            "label": "label",
-                            "value": "value",
+                            "bcol_account": "TEST",
+                            "business_identifier": "CP0001234",
+                            "corp_type_code": "CP",
+                            "created_by": "test",
+                            "created_name": "test name",
+                            "created_on": format_datetime(invoice_3.created_on),
+                            "details": ["label value"],
+                            "fee": "0.00",
+                            "folio": "1234567890",
+                            "gst": "0.00",
+                            "id": invoice_3.id,
+                            "invoice_number": "10021",
+                            "line_items": [
+                                {
+                                    "description": None,
+                                    "filing_type_code": "OTANN",
+                                    "gst": 0.0,
+                                    "pst": 0.0,
+                                    "service_fees": 0.0,
+                                    "total": 10.0,
+                                },
+                            ],
+                            "paid": 50.0,
+                            "payment_account": {
+                                "account_id": "1234",
+                                "billable": True
+                            },
+                            "payment_date": datetime.strftime(invoice_3.payment_date, "%Y-%m-%dT%H:%M:%S.%f"),
+                            "payment_method": "EFT",
+                            "product": "BUSINESS",
+                            "products": ["None"],
+                            "refund": 0.0,
+                            "service_fee": "0.00",
+                            "status_code": "COMPLETED",
+                            "total": "50.00"
                         },
-                    ],
-                    "folio_number": "1234567890",
-                    "id": invoice_3.id,
-                    "invoice_number": "10021",
-                    "line_items": [
                         {
-                            "description": None,
-                            "filing_type_code": "OTANN",
-                            "gst": 0.0,
-                            "pst": 0.0,
-                            "service_fees": 0.0,
-                            "total": 10.0,
-                        },
-                    ],
-                    "paid": 50.0,
-                    "payment_account": {
-                        "account_id": "1234",
-                        "billable": True,
-                    },
-                    "payment_date": datetime.strftime(invoice_3.payment_date, "%Y-%m-%dT%H:%M:%S.%f"),
-                    "payment_method": "EFT",
-                    "product": "BUSINESS",
-                    "refund": 0.0,
-                    "service_fees": 0.0,
-                    "status_code": "COMPLETED",
-                    "total": 50.0,
-                },
-                {
-                    "bcol_account": "TEST",
-                    "business_identifier": "CP0001234",
-                    "corp_type_code": "CP",
-                    "created_by": "test",
-                    "created_name": "test name",
-                    "created_on": get_local_formatted_date(invoice_4.created_on),
-                    "details": [
-                        {
-                            "label": "label",
-                            "value": "value",
-                        },
-                    ],
-                    "folio_number": "1234567890",
-                    "id": invoice_4.id,
-                    "invoice_number": "10021",
-                    "line_items": [
-                        {
-                            "description": None,
-                            "filing_type_code": "OTANN",
-                            "gst": 0.0,
-                            "pst": 0.0,
-                            "service_fees": 0.0,
-                            "total": 10.0,
-                        },
-                    ],
-                    "paid": 50.0,
-                    "payment_account": {
-                        "account_id": "1234",
-                        "billable": True,
-                    },
-                    "payment_date": datetime.strftime(invoice_4.payment_date, "%Y-%m-%dT%H:%M:%S"),
-                    "payment_method": "EFT",
-                    "product": "BUSINESS",
-                    "refund": 0.0,
-                    "service_fees": 0.0,
-                    "status_code": "COMPLETED",
-                    "total": 50.0,
-                },
+                            "bcol_account": "TEST",
+                            "business_identifier": "CP0001234",
+                            "corp_type_code": "CP",
+                            "created_by": "test",
+                            "created_name": "test name",
+                            "created_on": format_datetime(invoice_4.created_on),
+                            "details": ["label value"],
+                            "fee": "0.00",
+                            "folio": "1234567890",
+                            "gst": "0.00",
+                            "id": invoice_4.id,
+                            "invoice_number": "10021",
+                            "line_items": [
+                                {
+                                    "description": None,
+                                    "filing_type_code": "OTANN",
+                                    "gst": 0.0,
+                                    "pst": 0.0,
+                                    "service_fees": 0.0,
+                                    "total": 10.0,
+                                },
+                            ],
+                            "paid": 50.0,
+                            "payment_account": {
+                                "account_id": "1234",
+                                "billable": True
+                            },
+                            "payment_date": datetime.strftime(invoice_4.payment_date, "%Y-%m-%dT%H:%M:%S"),
+                            "payment_method": "EFT",
+                            "product": "BUSINESS",
+                            "products": ["None"],
+                            "refund": 0.0,
+                            "service_fee": "0.00",
+                            "status_code": "COMPLETED",
+                            "total": "50.00"
+                        }
+                    ]
+                }
             ],
             "statement": {
-                "amount_owing": 250.0,
-                "created_on": date_string_now,
+                "amount_owing": "250.00",
+                "created_on": format_datetime(date_string_now),
+                "duration": "July 01, 2025 - July 31, 2025",
                 "frequency": "MONTHLY",
-                "from_date": get_statement_date_string(statement_from_date),
-                "to_date": get_statement_date_string(statement_to_date),
+                "from_date": format_datetime(statement_from_date),
+                "to_date": format_datetime(statement_to_date),
                 "id": statement_model.id,
                 "is_interim_statement": False,
                 "is_overdue": False,
@@ -887,21 +896,22 @@ def test_get_eft_statement_with_invoices(session):
                 "payment_methods": ["EFT"],
             },
             "statementSummary": {
-                "dueDate": StatementService.calculate_due_date(
+                "dueDate": format_datetime(StatementService.calculate_due_date(
                     statement_to_date.date()
-                ),  # pylint: disable=protected-access
-                "lastStatementTotal": 0,
-                "lastStatementPaidAmount": 0,
-                "latestStatementPaymentDate": invoice_3.payment_date.strftime("%Y-%m-%d"),
+                )),  # pylint: disable=protected-access
+                "lastStatementTotal": "0.00",
+                "lastStatementPaidAmount": "0.00",
+                "latestStatementPaymentDate": format_datetime(invoice_3.payment_date.strftime("%Y-%m-%d"))
             },
             # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {
-                "due": 300.0,
-                "fees": 350.0,
-                "paid": 50.0,
-                "serviceFees": 0.0,
-                "statutoryFees": 350.0,
+                "due": "300.00",
+                "fees": "350.00",
+                "paid": "50.00",
+                "serviceFees": "0.00",
+                "statutoryFees": "350.00"
             },
+            "has_payment_instructions": True
         }
         expected_report_inputs = ReportRequest(
             report_name=report_name,
@@ -910,6 +920,7 @@ def test_get_eft_statement_with_invoices(session):
             populate_page_number=True,
             content_type=ContentType.PDF.value,
         )
+
         mock_report.assert_called_with(expected_report_inputs)
 
 
