@@ -32,7 +32,7 @@ from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
-from pay_api.utils.util import format_datetime
+from pay_api.utils.util import get_statement_date_string
 from tests.utilities.base_test import (
     factory_eft_shortname,
     factory_eft_shortname_link,
@@ -510,12 +510,6 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
     assert all_settings[1].to_date == update_date.date()
 
 
-def get_statement_date_string(datetime_value: datetime) -> str:
-    """Get formatted date string for report input."""
-    date_format = "%Y-%m-%d"
-    return datetime_value.strftime(date_format)
-
-
 def test_get_eft_statement_for_empty_invoices(session):
     """Assert that the get statement report works for eft statement with no invoices."""
     statement_from_date = datetime.now(timezone.utc) + relativedelta(months=1, day=1)
@@ -576,20 +570,23 @@ def test_get_eft_statement_for_empty_invoices(session):
             "grouped_invoices": [],
             "statement": {
                 "amount_owing": '0.00',
-                "created_on": format_datetime(date_string_now),
+                "created_on": date_string_now,
                 "frequency": "MONTHLY",
-                "from_date": format_datetime(statement_from_date),
-                "to_date": format_datetime(statement_to_date),
+                "from_date": get_statement_date_string(statement_from_date),
+                "to_date": get_statement_date_string(statement_to_date),
                 "id": statement_model.id,
                 "is_interim_statement": False,
                 "is_overdue": False,
                 "notification_date": None,
                 "overdue_notification_date": None,
                 "payment_methods": ["EFT"],
-                "duration": f"{format_datetime(statement_from_date)} - {format_datetime(statement_to_date)}"
+                "duration": (
+                    f"{get_statement_date_string(statement_from_date)} - "
+                    f"{get_statement_date_string(statement_to_date)}"
+                )
             },
             "statementSummary": {
-                "dueDate": format_datetime(StatementService.calculate_due_date(
+                "dueDate": get_statement_date_string(StatementService.calculate_due_date(
                     statement_to_date.date())
                 ),  # pylint: disable=protected-access
                 "lastStatementTotal": '0.00',
@@ -737,7 +734,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": format_datetime(invoice_1.created_on),
+                            "created_on": get_statement_date_string(invoice_1.created_on),
                             "details": ["label value"],
                             "fee": "0.00",
                             "folio": "1234567890",
@@ -774,7 +771,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": format_datetime(invoice_2.created_on),
+                            "created_on": get_statement_date_string(invoice_2.created_on),
                             "details": ["label value"],
                             "fee": "0.00",
                             "folio": "1234567890",
@@ -810,7 +807,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": format_datetime(invoice_3.created_on),
+                            "created_on": get_statement_date_string(invoice_3.created_on),
                             "details": ["label value"],
                             "fee": "0.00",
                             "folio": "1234567890",
@@ -847,7 +844,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": format_datetime(invoice_4.created_on),
+                            "created_on": get_statement_date_string(invoice_4.created_on),
                             "details": ["label value"],
                             "fee": "0.00",
                             "folio": "1234567890",
@@ -883,11 +880,11 @@ def test_get_eft_statement_with_invoices(session):
             ],
             "statement": {
                 "amount_owing": "250.00",
-                "created_on": format_datetime(date_string_now),
+                "created_on": date_string_now,
                 "duration": "July 01, 2025 - July 31, 2025",
                 "frequency": "MONTHLY",
-                "from_date": format_datetime(statement_from_date),
-                "to_date": format_datetime(statement_to_date),
+                "from_date": get_statement_date_string(statement_from_date),
+                "to_date": get_statement_date_string(statement_to_date),
                 "id": statement_model.id,
                 "is_interim_statement": False,
                 "is_overdue": False,
@@ -896,12 +893,12 @@ def test_get_eft_statement_with_invoices(session):
                 "payment_methods": ["EFT"],
             },
             "statementSummary": {
-                "dueDate": format_datetime(StatementService.calculate_due_date(
+                "dueDate": get_statement_date_string(StatementService.calculate_due_date(
                     statement_to_date.date()
                 )),  # pylint: disable=protected-access
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": format_datetime(invoice_3.payment_date.strftime("%Y-%m-%d"))
+                "latestStatementPaymentDate": get_statement_date_string(invoice_3.payment_date.strftime("%Y-%m-%d"))
             },
             # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {

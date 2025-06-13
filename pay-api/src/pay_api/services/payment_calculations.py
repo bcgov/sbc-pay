@@ -20,7 +20,7 @@ from typing import List
 from dateutil import parser
 
 from pay_api.utils.enums import PaymentMethod, StatementTitles
-from pay_api.utils.util import format_currency, format_datetime
+from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
 
 def build_grouped_invoice_context(invoices: List[dict], statement: dict,
@@ -40,17 +40,17 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
 
         items = grouped[method]
         method_context = {
-            "total_paid": format_currency(sum(Decimal(inv.get("paid", 0)) for inv in items)),
+            "total_paid": get_statement_currency_string(sum(Decimal(inv.get("paid", 0)) for inv in items)),
             "transactions": build_transaction_rows(items),
             "is_index_0": first_group
         }
 
         if method == PaymentMethod.EFT.value:
-            method_context["amount_owing"] = format_currency(statement.get("amount_owing", 0.00))
+            method_context["amount_owing"] = get_statement_currency_string(statement.get("amount_owing", 0.00))
             if statement.get("is_interim_statement") and statement_summary:
                 method_context["latest_payment_date"] = statement_summary.get("latestStatementPaymentDate")
             elif not statement.get("is_interim_statement") and statement_summary:
-                method_context["due_date"] = format_datetime(statement_summary.get("dueDate"))
+                method_context["due_date"] = get_statement_date_string(statement_summary.get("dueDate"))
 
         if method == PaymentMethod.INTERNAL.value:
             has_staff_payment = any("routing_slip" not in inv or inv["routing_slip"] is None for inv in items)
@@ -115,9 +115,9 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
         due_total += due_amount
 
     return {
-        "paid": format_currency(paid_total),
-        "due": format_currency(due_total),
-        "total": format_currency(total_total),
+        "paid": get_statement_currency_string(paid_total),
+        "due": get_statement_currency_string(due_total),
+        "total": get_statement_currency_string(total_total),
     }
 
 
@@ -147,12 +147,12 @@ def build_transaction_rows(invoices: List[dict]) -> List[dict]:
             "products": product_lines,
             "details": detail_lines,
             "folio": inv.get("folio_number") or "-",
-            "created_on": format_datetime(datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y")
-                                          if inv.get("created_on") else "-"),
-            "fee": format_currency(fee),
-            "service_fee": format_currency(service_fee),
-            "gst": format_currency(gst),
-            "total": format_currency(total),
+            "created_on": get_statement_date_string(datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y")
+                                                    if inv.get("created_on") else "-"),
+            "fee": get_statement_currency_string(fee),
+            "service_fee": get_statement_currency_string(service_fee),
+            "gst": get_statement_currency_string(gst),
+            "total": get_statement_currency_string(total),
         }
 
         skip_keys = {"details", "folio_number", "created_on", "fee", "gst", "total", "service_fees"}
@@ -169,9 +169,9 @@ def build_statement_context(statement: dict) -> dict:
 
     enhanced_statement = statement.copy()
 
-    from_date = format_datetime(statement.get('from_date'))
-    to_date = format_datetime(statement.get('to_date'))
-    created_on = format_datetime(statement.get('created_on'))
+    from_date = get_statement_date_string(statement.get('from_date'))
+    to_date = get_statement_date_string(statement.get('to_date'))
+    created_on = get_statement_date_string(statement.get('created_on'))
     frequency = statement.get('frequency', '')
 
     if frequency == 'DAILY' and from_date:
@@ -182,7 +182,8 @@ def build_statement_context(statement: dict) -> dict:
         enhanced_statement['duration'] = from_date
 
     amount_owing = statement.get('amount_owing')
-    enhanced_statement['amount_owing'] = format_currency(amount_owing) if amount_owing else format_currency(0)
+    enhanced_statement['amount_owing'] = (get_statement_currency_string(amount_owing)
+                                          if amount_owing else get_statement_currency_string(0))
 
     if from_date:
         enhanced_statement['from_date'] = from_date
@@ -207,18 +208,18 @@ def build_statement_summary_context(statement_summary: dict) -> dict:
     latest_statement_payment_date = statement_summary.get('latestStatementPaymentDate')
     due_date = statement_summary.get('dueDate')
 
-    enhanced_statement_summary['lastStatementTotal'] = format_currency(last_statement_total)
-    enhanced_statement_summary['lastStatementPaidAmount'] = format_currency(last_statement_paid_amount)
+    enhanced_statement_summary['lastStatementTotal'] = get_statement_currency_string(last_statement_total)
+    enhanced_statement_summary['lastStatementPaidAmount'] = get_statement_currency_string(last_statement_paid_amount)
 
     if cancelled_transactions not in [None, 0, '0', '0.00']:
-        enhanced_statement_summary['cancelledTransactions'] = format_currency(cancelled_transactions)
+        enhanced_statement_summary['cancelledTransactions'] = get_statement_currency_string(cancelled_transactions)
 
     if latest_statement_payment_date:
-        enhanced_statement_summary['latestStatementPaymentDate'] = format_datetime(latest_statement_payment_date,
-                                                                                   "%B %d, %Y")
+        enhanced_statement_summary['latestStatementPaymentDate'] = get_statement_date_string(
+            latest_statement_payment_date, "%B %d, %Y")
     else:
         enhanced_statement_summary['latestStatementPaymentDate'] = None
 
-    enhanced_statement_summary['dueDate'] = format_datetime(due_date, "%B %d, %Y")
+    enhanced_statement_summary['dueDate'] = get_statement_date_string(due_date, "%B %d, %Y")
 
     return enhanced_statement_summary

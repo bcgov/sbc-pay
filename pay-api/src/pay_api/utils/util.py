@@ -363,7 +363,7 @@ def unstructure_schema_items(schema, items):
     return Converter().unstructure(results)
 
 
-def format_datetime(value, fmt="%B %d, %Y"):
+def get_statement_date_string(value, fmt="%B %d, %Y"):
     """Return a datetime or datetime string into a formatted date string."""
     if not value:
         return ""
@@ -374,7 +374,7 @@ def format_datetime(value, fmt="%B %d, %Y"):
         return ""
 
 
-def format_currency(value):
+def get_statement_currency_string(value):
     """Return a string representation of a number formatted as 0.00."""
     try:
         return "{:,.2f}".format(float(value))

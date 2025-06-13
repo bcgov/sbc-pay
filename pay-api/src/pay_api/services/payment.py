@@ -46,11 +46,11 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import (
-    format_currency,
     generate_receipt_number,
     generate_transaction_number,
     get_local_formatted_date,
     get_local_formatted_date_time,
+    get_statement_currency_string,
 )
 
 from ..exceptions import BusinessException
@@ -528,7 +528,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
             formatted_totals = {}
             for key, value in totals.items():
-                formatted_totals[key] = format_currency(value)
+                formatted_totals[key] = get_statement_currency_string(value)
 
             template_vars = {
                 "statementSummary": build_statement_summary_context(statement_summary),
