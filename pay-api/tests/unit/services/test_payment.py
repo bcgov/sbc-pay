@@ -780,8 +780,8 @@ def test_build_grouped_invoice_context_basic():
     ]
     statement = {"amount_owing": 100, "to_date": "2024-06-01"}
     summary = {"latestStatementPaymentDate": "2024-06-01", "dueDate": "2024-06-10"}
-    account = {}
-    grouped = build_grouped_invoice_context(invoices, statement, summary, account)
+
+    grouped = build_grouped_invoice_context(invoices, statement, summary)
 
     assert any(item["payment_method"] == PaymentMethod.EFT.value for item in grouped)
     assert any(item["payment_method"] == PaymentMethod.CC.value for item in grouped)
