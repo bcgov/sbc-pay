@@ -214,7 +214,8 @@ def build_statement_summary_context(statement_summary: dict) -> dict:
         enhanced_statement_summary['cancelledTransactions'] = format_currency(cancelled_transactions)
 
     if latest_statement_payment_date:
-        enhanced_statement_summary['latestStatementPaymentDate'] = format_datetime(latest_statement_payment_date, "%B %d, %Y")
+        enhanced_statement_summary['latestStatementPaymentDate'] = format_datetime(latest_statement_payment_date,
+                                                                                   "%B %d, %Y")
     else:
         enhanced_statement_summary['latestStatementPaymentDate'] = None
 

@@ -23,6 +23,13 @@ import pytz
 
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as PaymentService
+from pay_api.services.payment_calculations import (
+    build_grouped_invoice_context,
+    build_statement_context,
+    build_statement_summary_context,
+    build_transaction_rows,
+    calculate_invoice_summaries,
+)
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import (
@@ -774,7 +781,7 @@ def test_build_grouped_invoice_context_basic():
     statement = {"amount_owing": 100, "to_date": "2024-06-01"}
     summary = {"latestStatementPaymentDate": "2024-06-01", "dueDate": "2024-06-10"}
     account = {}
-    grouped = PaymentService._build_grouped_invoice_context(invoices, statement, summary, account)
+    grouped = build_grouped_invoice_context(invoices, statement, summary, account)
 
     assert any(item["payment_method"] == PaymentMethod.EFT.value for item in grouped)
     assert any(item["payment_method"] == PaymentMethod.CC.value for item in grouped)
@@ -796,7 +803,7 @@ def test_calculate_invoice_summaries():
          "refund": 0, "total": 100, "refund_date": None},
     ]
     statement = {"to_date": "2024-06-01"}
-    summary = PaymentService._calculate_invoice_summaries(invoices, PaymentMethod.EFT.value, statement)
+    summary = calculate_invoice_summaries(invoices, PaymentMethod.EFT.value, statement)
     assert summary["paid"] == "100.00"
     assert summary["due"] == "0.00"
     assert summary["total"] == "200.00"
@@ -816,7 +823,7 @@ def test_build_transaction_rows():
             "status_code": InvoiceStatus.PAID.value
         }
     ]
-    rows = PaymentService._build_transaction_rows(invoices)
+    rows = build_transaction_rows(invoices)
     assert rows[0]["products"] == ["Service Fee"]
     assert rows[0]["details"][0].startswith("Folio")
     assert rows[0]["fee"] == "90.00"
@@ -830,7 +837,7 @@ def test_build_statement_context():
         "frequency": "MONTHLY",
         "amount_owing": 123.45
     }
-    ctx = PaymentService.build_statement_context(statement)
+    ctx = build_statement_context(statement)
     assert "duration" in ctx
     assert ctx["amount_owing"] == '123.45'
 
@@ -844,7 +851,7 @@ def test_build_statement_summary_context():
         "latestStatementPaymentDate": "2024-06-01",
         "dueDate": "2024-06-10"
     }
-    ctx = PaymentService._build_statement_summary_context(summary)
+    ctx = build_statement_summary_context(summary)
     assert ctx["lastStatementTotal"] == '100.00'
     assert ctx["lastStatementPaidAmount"] == '50.00'
     assert ctx["cancelledTransactions"] == '10.00'
