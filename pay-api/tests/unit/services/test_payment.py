@@ -777,6 +777,9 @@ def test_build_grouped_invoice_context_basic():
          "line_items": [], "details": [], "status_code": InvoiceStatus.PAID.value},
         {"payment_method": PaymentMethod.CC.value, "paid": 50, "total": 50,
          "line_items": [], "details": [], "status_code": InvoiceStatus.PAID.value},
+        # FUTURE - Partial refunds
+        {"payment_method": PaymentMethod.CC.value, "paid": 20, "refund": 10, "total": 50,
+         "line_items": [], "details": [], "status_code": InvoiceStatus.PAID.value},
     ]
     statement = {"amount_owing": 100, "to_date": "2024-06-01"}
     summary = {"latestStatementPaymentDate": "2024-06-01", "dueDate": "2024-06-10"}
@@ -791,7 +794,15 @@ def test_build_grouped_invoice_context_basic():
     assert "transactions" in eft_item
 
     cc_item = next(item for item in grouped if item["payment_method"] == PaymentMethod.CC.value)
-    assert cc_item["total_paid"] == "50.00"
+    # 50 + 20 paid, 10 refund, total 2 invoices
+    assert cc_item["total_paid"] == "70.00"
+    # FUTURE - Partial refunds: check due/paid/total summary
+    assert "paid_summary" in cc_item
+    assert "due_summary" in cc_item
+    assert "totals_summary" in cc_item
+    # Partial refund: paid_summary/due_summary/total_summary basic check
+    assert float(cc_item["paid_summary"]) >= 0
+    assert float(cc_item["totals_summary"]) >= 0
 
 
 def test_calculate_invoice_summaries():
