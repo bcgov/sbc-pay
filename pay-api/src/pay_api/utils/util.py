@@ -39,7 +39,7 @@ def cors_preflight(methods: str = "GET"):
 
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
-            allow_headers = "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name"
+            allow_headers = "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey"
             return (
                 {"Allow": methods},
                 200,
