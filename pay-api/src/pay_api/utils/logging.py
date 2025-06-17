@@ -21,7 +21,7 @@ from os import path
 from structured_logging import StructuredLogging
 
 
-def setup_logging(conf, logging_override_content):
+def setup_logging(conf, logging_override_content=None):
     """Create the services logger."""
     if logging_override_content:
         logging.config.dictConfig(json.loads(logging_override_content))
