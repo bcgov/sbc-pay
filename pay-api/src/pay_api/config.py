@@ -74,7 +74,7 @@ class _Config:  # pylint: disable=too-few-public-methods
         try:
             LOGGING_OVERRIDE_CONFIG = base64.b64decode(logging_config_value).decode("utf-8")
         except Exception:
-            LOGGING_OVERRIDE_CONFIG = logging_config_value
+            LOGGING_OVERRIDE_CONFIG = None
 
     SECRET_KEY = "a secret"
 
