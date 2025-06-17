@@ -38,7 +38,7 @@ from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 from pay_api.utils.user_context import _get_context
 
-setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
+setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
 
 
 def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
@@ -58,7 +58,7 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
             with app.app_context():
                 execute_migrations(app)
             # Alembic has it's own logging config, we'll need to restore our logging here.
-            setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
+            setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
             app.logger.info("Finished migration upgrade.")
         else:
             app.logger.info("Migrations were executed on prehook.")

@@ -17,6 +17,8 @@
 Test-Suite to ensure that the logging setup is working as expected.
 """
 
+import json
+import logging.config
 import os
 
 from pay_api.utils.logging import setup_logging
@@ -40,3 +42,41 @@ def test_logging_with_missing_file(capsys):
     captured = capsys.readouterr()
 
     assert captured.err.startswith("Unable to configure logging")
+
+
+def test_logging_with_override_config(capsys):
+    """Assert that logging is setup with the configuration from LOGGING_OVERRIDE_CONFIG environment variable."""
+    test_config = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "standard": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "standard",
+                "stream": "ext://sys.stdout",
+            }
+        },
+        "root": {"level": "INFO", "handlers": ["console"]},
+    }
+
+    os.environ["LOGGING_OVERRIDE_CONFIG"] = json.dumps(test_config)
+
+    try:
+        setup_logging(None, os.environ["LOGGING_OVERRIDE_CONFIG"])
+
+        root_logger = logging.getLogger()
+        assert root_logger.level == logging.INFO
+        assert len(root_logger.handlers) > 0
+
+        test_logger = logging.getLogger("test_logger")
+        test_logger.info("Test message")
+
+        captured = capsys.readouterr()
+        assert "Test message" in captured.out
+    finally:
+        del os.environ["LOGGING_OVERRIDE_CONFIG"]
+        logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})
