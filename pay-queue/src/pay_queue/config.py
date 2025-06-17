@@ -65,9 +65,6 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     PAY_LD_SDK_KEY = os.getenv("PAY_LD_SDK_KEY", None)
     LEGISLATIVE_TIMEZONE = os.getenv("LEGISLATIVE_TIMEZONE", "America/Vancouver")
 
-    SENTRY_ENABLE = os.getenv("SENTRY_ENABLE", "False")
-    SENTRY_DSN = os.getenv("SENTRY_DSN", None)
-
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # POSTGRESQL

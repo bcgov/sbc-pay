@@ -54,7 +54,6 @@ from pay_api.utils.enums import (
     TransactionStatus,
 )
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 from sqlalchemy import inspect
 
 from pay_queue import config
@@ -510,7 +509,6 @@ def _publish_mailer_events(file_name: str, minio_location: str):
         )
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
-        capture_message("EJV Failed message error", level="error")
 
 
 def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
@@ -560,9 +558,8 @@ def _process_ap_header_routing_slips(line) -> bool:
     if _get_disbursement_status(ap_header_return_code) == DisbursementStatus.ERRORED.value:
         has_errors = True
         routing_slip.status = RoutingSlipStatus.REFUND_REJECTED.value
-        capture_message(
-            f"Refund failed for {routing_slip_number}, reason : {ap_header_error_message}",
-            level="error",
+        current_app.logger.error(
+            f"Refund failed for {routing_slip_number}, reason : {ap_header_error_message}"
         )
     else:
         routing_slip.status = RoutingSlipStatus.REFUND_PROCESSED.value
@@ -583,7 +580,7 @@ def _process_ap_header_eft(line) -> bool:
         has_errors = True
         eft_refund.status = EFTShortnameRefundStatus.ERRORED.value
         eft_refund.disbursement_status_code = DisbursementStatus.ERRORED.value
-        capture_message(
+        current_app.logger.error(
             f"EFT Refund failed for {eft_refund_id}, reason : {ap_header_error_message}",
             level="error",
         )
@@ -618,9 +615,8 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
     if disbursement_status == DisbursementStatus.ERRORED.value:
         invoice.disbursement_status_code = disbursement_status
         has_errors = True
-        capture_message(
-            f"AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}",
-            level="error",
+        current_app.logger.error(
+            f"AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}"
         )
     else:
         # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.
