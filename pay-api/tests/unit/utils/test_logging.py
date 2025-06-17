@@ -31,7 +31,7 @@ def test_logging_with_file(capsys):
 
     captured = capsys.readouterr()
 
-    assert captured.out.startswith("Configure logging, from conf")
+    assert captured.out.startswith("Configure logging, from file")
 
 
 def test_logging_with_missing_file(capsys):
