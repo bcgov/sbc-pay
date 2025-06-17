@@ -26,7 +26,6 @@ from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EF
 from pay_api.services.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
 from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus, EFTShortnameType
-from sentry_sdk import capture_message
 
 from pay_queue.minio import get_object
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
@@ -48,7 +47,6 @@ class EFTReconciliation:  # pylint: disable=too-few-public-methods
         """Handle EFT errors by logging, capturing messages, and optionally sending an email."""
         if capture_error:
             current_app.logger.error(error_msg, exc_info=True)
-            capture_message(error_msg, level="error")
         self.error_messages.append({"error": error_msg, "row": row})
         if table_name is not None:
             email_service_params = EmailParams(
@@ -339,7 +337,6 @@ def _process_eft_credits(shortname_balance, eft_file_id):
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_credit_errors = True
             current_app.logger.error(e, exc_info=True)
-            capture_message("EFT Failed to set EFT balance.", level="error")
     return has_credit_errors
 
 

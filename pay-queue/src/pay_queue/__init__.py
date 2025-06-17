@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import os
 
-import sentry_sdk
 from flask import Flask
 from pay_api.models import db
 from pay_api.services.flags import flags
@@ -27,7 +26,6 @@ from pay_api.services.gcp_queue import queue
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
-from sentry_sdk.integrations.flask import FlaskIntegration
 
 from pay_queue import config
 from pay_queue.version import __version__
@@ -42,15 +40,6 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")) -> Flask:
     app = Flask(__name__)
     app.env = run_mode
     app.config.from_object(config.CONFIGURATION[run_mode])
-
-    # Configure Sentry
-    if dsn := app.config.get("SENTRY_DSN", None):
-        sentry_sdk.init(
-            dsn=dsn,
-            integrations=[FlaskIntegration()],
-            release=f"pay-queue@{get_run_version()}",
-            send_default_pii=False,
-        )
 
     queue.init_app(app)
     flags.init_app(app)
