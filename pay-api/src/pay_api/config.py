@@ -19,6 +19,7 @@ All modules and lookups get their configuration from the Flask config,
 rather than reading environment variables directly or by accessing this configuration directly.
 """
 
+import base64
 import os
 import sys
 
@@ -68,7 +69,12 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
     CLOUD_PLATFORM = os.getenv("CLOUD_PLATFORM", "OCP")
-    LOGGING_OVERRIDE_CONFIG = os.getenv("LOGGING_OVERRIDE_CONFIG")
+    LOGGING_OVERRIDE_CONFIG = None
+    if logging_config_value := os.getenv("LOGGING_OVERRIDE_CONFIG"):
+        try:
+            LOGGING_OVERRIDE_CONFIG = base64.b64decode(logging_config_value).decode("utf-8")
+        except Exception:
+            LOGGING_OVERRIDE_CONFIG = None
 
     SECRET_KEY = "a secret"
 
