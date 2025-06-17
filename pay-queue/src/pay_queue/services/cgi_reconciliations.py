@@ -581,8 +581,7 @@ def _process_ap_header_eft(line) -> bool:
         eft_refund.status = EFTShortnameRefundStatus.ERRORED.value
         eft_refund.disbursement_status_code = DisbursementStatus.ERRORED.value
         current_app.logger.error(
-            f"EFT Refund failed for {eft_refund_id}, reason : {ap_header_error_message}",
-            level="error",
+            f"EFT Refund failed for {eft_refund_id}, reason : {ap_header_error_message}"
         )
     else:
         eft_refund.status = EFTShortnameRefundStatus.COMPLETED.value
