@@ -44,7 +44,7 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")) -> Flask:
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     # Configure Sentry
-    if app.config.get("SENTRY_ENABLE") and (dsn := app.config.get("SENTRY_DSN", None)):
+    if app.config.get("SENTRY_ENABLE").lower() == "true" and (dsn := app.config.get("SENTRY_DSN", None)):
         sentry_sdk.init(
             dsn=dsn,
             integrations=[FlaskIntegration()],
