@@ -19,6 +19,13 @@ on:
         - test
         - sandbox
         - prod
+      redeploy:
+        description: "Redeploy Application"
+        required: true
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   pay-queue-cd:
@@ -27,6 +34,7 @@ jobs:
       target: ${{ inputs.target }}
       app_name: "pay-queue"
       working_directory: "./pay-queue"
+      redeploy: ${{ inputs.redeploy }}
     secrets:
       WORKLOAD_IDENTIFY_POOLS_PROVIDER: ${{ secrets.WORKLOAD_IDENTIFY_POOLS_PROVIDER }}
       GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
