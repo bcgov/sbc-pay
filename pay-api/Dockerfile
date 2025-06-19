@@ -61,11 +61,11 @@ RUN cp ./certs/root.cer /usr/local/share/ca-certificates/root.crt \
   && cp ./certs/inter.cer /usr/local/share/ca-certificates/inter.crt \
   && update-ca-certificates \
   && for cert in /usr/local/share/ca-certificates/root.crt /usr/local/share/ca-certificates/inter.crt; do \
-      echo "🔐 Checking: $cert"; \
-      echo -n "📅 Expires: "; \
+      echo "Checking certificate: $cert"; \
+      echo -n "Certificate expiration date: "; \
       openssl x509 -in "$cert" -noout -enddate | cut -d= -f2; \
       if ! openssl x509 -in "$cert" -noout -checkend 0 > /dev/null; then \
-        echo "❌ Certificate expired: $cert"; \
+        echo "Certificate expired: $cert"; \
         exit 1; \
       fi; \
     done \
