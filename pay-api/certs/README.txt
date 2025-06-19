@@ -1,4 +1,5 @@
-These are for WAM/IDIM pay.gov.bc.ca they solve the local cert issue that pops up.
+These are for WAM/IDIM pay.gov.bc.ca they solve the local cert issue that pops up. 
+Contact PAYBC/CAS if this has expired.
 These are public certs without private keys.
 EG. openssl s_client -connect pay.gov.bc.ca:443 -showcerts
 ends up verify error:num=20:unable to get local issuer certificate
