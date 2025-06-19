@@ -1,4 +1,4 @@
-FROM python:3.12.2-bullseye as development_build
+FROM python:3.12.2-slim-bullseye AS development_build
 
 ARG VCS_REF="missing"
 ARG BUILD_DATE="missing"
@@ -32,11 +32,12 @@ ENV APP_ENV=${APP_ENV} \
   PIP_DEFAULT_TIMEOUT=100 \
   PIP_ROOT_USER_ACTION=ignore \
   # poetry:
-  POETRY_VERSION=1.8.3 \
+  POETRY_VERSION=2.1.3 \
   POETRY_NO_INTERACTION=1 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_CACHE_DIR='/var/cache/pypoetry' \
-  POETRY_HOME='/usr/local'
+  POETRY_HOME='/usr/local' \
+  REQUESTS_CA_BUNDLE='/etc/ssl/certs/ca-certificates.crt'
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
@@ -50,8 +51,25 @@ RUN apt-get update && apt-get upgrade -y \
     git \
     libpq-dev \
     wait-for-it \
+    ca-certificates \
+    openssl \
   && curl -sSL 'https://install.python-poetry.org' | python - \
-  && poetry --version \
+  && poetry --version
+
+# Install SSL certificates for paybc.gov.bc.ca
+COPY ./certs/root.cer /usr/local/share/ca-certificates/root.crt
+COPY ./certs/inter.cer /usr/local/share/ca-certificates/inter.crt
+
+RUN update-ca-certificates \
+  && for cert in /usr/local/share/ca-certificates/root.crt /usr/local/share/ca-certificates/inter.crt; do \
+      echo "Checking certificate: $cert"; \
+      echo -n "Certificate expiration date: "; \
+      openssl x509 -in "$cert" -noout -enddate | cut -d= -f2; \
+      if ! openssl x509 -in "$cert" -noout -checkend 0 > /dev/null; then \
+        echo "Certificate expired: $cert"; \
+        exit 1; \
+      fi; \
+    done \
   # Cleaning cache:
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
@@ -70,6 +88,7 @@ COPY --chown=web:web ./README.md /code
 
 # Project initialization:
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
+    --mount=type=cache,target=/root/.cache/pip \
   echo "$APP_ENV" \
   && poetry version \
   && poetry config installer.max-workers 1 \
