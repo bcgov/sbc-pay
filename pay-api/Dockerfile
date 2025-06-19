@@ -56,11 +56,10 @@ RUN apt-get update && apt-get upgrade -y \
   && curl -sSL 'https://install.python-poetry.org' | python - \
   && poetry --version
 
-# Install SSL certificates for paybc.gov.bc.ca
-COPY ./certs/root.cer /usr/local/share/ca-certificates/root.crt
-COPY ./certs/inter.cer /usr/local/share/ca-certificates/inter.crt
-
-RUN update-ca-certificates \
+# Install SSL certificates for paybc.gov.bc.ca and perform related tasks
+RUN cp ./certs/root.cer /usr/local/share/ca-certificates/root.crt \
+  && cp ./certs/inter.cer /usr/local/share/ca-certificates/inter.crt \
+  && update-ca-certificates \
   && for cert in /usr/local/share/ca-certificates/root.crt /usr/local/share/ca-certificates/inter.crt; do \
       echo "🔐 Checking: $cert"; \
       echo -n "📅 Expires: "; \
