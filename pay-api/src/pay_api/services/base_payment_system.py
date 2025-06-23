@@ -303,7 +303,12 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         )
         payment_account.flush()
 
-        PaymentSystemService._send_credit_notification(payment_account, refund_amount)
+        try:
+            PaymentSystemService._send_credit_notification(payment_account, refund_amount)
+        except Exception as e:
+            current_app.logger.error(
+                f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
+            )
 
         if is_partial and refund_amount != invoice.total:
             return InvoiceStatus.PAID.value
