@@ -42,7 +42,6 @@ from pay_api.utils.enums import (
     ReverseOperation,
     RoutingSlipStatus,
 )
-from sentry_sdk import capture_message
 
 
 class RoutingSlipTask:  # pylint:disable=too-few-public-methods
@@ -105,12 +104,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.save()
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on Linking Routing Slip number:={routing_slip.number}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True
                 )
-                current_app.logger.error(e)
                 continue
 
     @classmethod
@@ -167,11 +165,10 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
                 rs.save()
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on Processing CORRECTION for :={rs.number}, " f"routing slip : {rs.id}, ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True
                 )
-                current_app.logger.error(e)
                 continue
 
     @classmethod
@@ -211,12 +208,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.cas_version_suffix += 1
                 routing_slip.save()
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on Processing VOID for :={routing_slip.number}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True
                 )
-                current_app.logger.error(e)
                 continue
 
     @classmethod
@@ -262,12 +258,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.save()
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on Processing NSF for :={routing_slip.number}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True
                 )
-                current_app.logger.error(e)
                 continue
 
     @classmethod
@@ -521,12 +516,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     break
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on creating Routing Slip invoice: account id={routing_slip_payment_account.id}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True
                 )
-                current_app.logger.error(e)
                 has_errors = True
                 continue
         return has_errors

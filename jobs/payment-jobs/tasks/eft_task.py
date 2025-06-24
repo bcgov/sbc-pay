@@ -41,7 +41,6 @@ from pay_api.utils.enums import (
     ReverseOperation,
     TransactionStatus,
 )
-from sentry_sdk import capture_message
 from sqlalchemy import func
 from sqlalchemy.orm import lazyload, registry
 
@@ -170,13 +169,6 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 db.session.commit()
                 EftService().complete_post_invoice(invoice, None)
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
-                    f"Error on linking EFT invoice links in CFS "
-                    f"Account id={invoice.payment_account_id} "
-                    f"EFT Credit invoice Link : {cil_rollup.id}"
-                    f"ERROR : {str(e)}",
-                    level="error",
-                )
                 current_app.logger.error(
                     f"Error Account id={invoice.payment_account_id} - " f"EFT Credit invoice Link : {cil_rollup.id}",
                     exc_info=True,

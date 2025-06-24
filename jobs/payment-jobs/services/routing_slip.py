@@ -21,7 +21,6 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem
-from sentry_sdk import capture_message
 
 
 def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccountModel):
@@ -51,12 +50,7 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
         return
 
     except Exception as e:  # NOQA # pylint: disable=broad-except
-
-        capture_message(
-            f"Error on creating Routing Slip CFS Account: account id={pay_account.id}, "
-            f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}",
-            level="error",
-        )
-        current_app.logger.error(e)
+        current_app.logger.error(f"Error on creating Routing Slip CFS Account: account id={pay_account.id}, "
+            f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}", exc_info=True)
         cfs_account.rollback()
         return

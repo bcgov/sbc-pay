@@ -25,7 +25,6 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import CFS_RCPT_EFT_WIRE, RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 
 from services import routing_slip
 from utils import mailer
@@ -88,11 +87,10 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 else:
                     cls._create_cfs_account(pending_account, pay_account, auth_token)
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on creating cfs_account={pending_account.account_id}, " f"ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True
                 )
-                current_app.logger.error(e)
                 continue
 
     @classmethod
@@ -185,19 +183,18 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
             is_user_error = False
             if pay_account.payment_method == PaymentMethod.PAD.value:
                 is_user_error = CreateAccountTask._check_user_error(e.response)  # pylint: disable=no-member
-            capture_message(
+            current_app.logger.error(
                 f"Error on creating CFS Account: account id={pay_account.id}, "
                 f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}",
-                level="error",
+                exc_info=True
             )
-            current_app.logger.error(e)
             pending_account.rollback()
 
             if is_user_error:
-                capture_message(
+                current_app.logger.error(
                     f"User Input needed for creating CFS Account: account id={pay_account.id}, "
                     f"auth account : {pay_account.auth_account_id}, ERROR : Invalid Bank Details",
-                    level="error",
+                    exc_info=True
                 )
                 mailer.publish_mailer_events(QueueMessageTypes.PAD_SETUP_FAILED.value, pay_account)
                 pending_account.status = CfsAccountStatus.INACTIVE.value

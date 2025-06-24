@@ -22,7 +22,6 @@ from flask import current_app
 from pay_api.models import Invoice, InvoiceReference, Payment, db
 from pay_api.services.bcol_service import BcolService
 from pay_api.utils.enums import InvoiceStatus, PaymentSystem, TransactionStatus
-from sentry_sdk import capture_message
 from sqlalchemy import text
 
 from services import data_warehouse
@@ -41,7 +40,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         3. compare the invoices in pay-db vs bcol records in colin-db
           - update invoices to REFUNDED in pay-db that have the correct refund value in colin-db
           - skip invoices that do not have a refund value in colin-db
-          - send a sentry message containing all refunds with mismatch values between pay-db and colin-db
+          - log error message containing all refunds with mismatch values between pay-db and colin-db
         """
         invoice_refs = cls._get_paydb_invoice_refs_for_update()
         if invoice_refs:
@@ -110,13 +109,11 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
             # refund was processed. Check total is correct.
             invoice = Invoice.find_by_id(invoice_ref.invoice_id)
             if invoice.total + bcol_records[invoice_ref.invoice_number] != 0:
-                # send sentry error and skip
-                capture_message(
+                current_app.logger.error(
                     f"Invoice refund total mismatch for {invoice_ref.invoice_number}."
                     f"PAY-DB: {invoice.total} COLIN-DB: {bcol_records[invoice_ref.invoice_number]}",
-                    level="error",
+                    exc_info=True
                 )
-                current_app.logger.error("Invoice refund total mismatch for %s", invoice_ref.invoice_number)
                 continue
 
             # refund was processed and value is correct. Update invoice state and refund date

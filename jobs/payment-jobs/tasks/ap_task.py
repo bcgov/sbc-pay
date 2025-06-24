@@ -42,7 +42,6 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RoutingSlipStatus,
 )
-from sentry_sdk import capture_message
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ap import CgiAP
@@ -55,10 +54,6 @@ def _process_error(row, error_msg: str, error_messages: List[Dict[str, any]], ex
         formatted_traceback = "".join(traceback.TracebackException.from_exception(ex).format())
         error_msg = f"{error_msg}\n{formatted_traceback}"
     db.session.rollback()
-    capture_message(
-        f"{error_msg} ERROR : {str(ex)}",
-        level="error",
-    )
     current_app.logger.error(f"{{error: {str(ex)}, stack_trace: {traceback.format_exc()}}}")
     error_messages.append({"error": error_msg, "row": row})
 

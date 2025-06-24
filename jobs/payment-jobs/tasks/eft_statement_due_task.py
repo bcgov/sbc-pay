@@ -33,7 +33,6 @@ from pay_api.services.statement_settings import StatementSettings as StatementSe
 from pay_api.utils.auth_event import AuthEvent, LockAccountDetails
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources, StatementFrequency, SuspensionReasonCodes
 from pay_api.utils.util import current_local_time
-from sentry_sdk import capture_message
 from sqlalchemy import select
 
 from utils.enums import StatementNotificationAction
@@ -255,11 +254,6 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
                             )
                         )
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
-                    f"Error on unpaid statement notification auth_account_id={payment_account.auth_account_id}, "
-                    f"ERROR : {str(e)}",
-                    level="error",
-                )
                 current_app.logger.error(
                     f"Error on unpaid statement notification auth_account_id={payment_account.auth_account_id}",
                     exc_info=True,
