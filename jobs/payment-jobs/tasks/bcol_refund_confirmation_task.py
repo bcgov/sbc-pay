@@ -112,7 +112,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(
                     f"Invoice refund total mismatch for {invoice_ref.invoice_number}."
                     f"PAY-DB: {invoice.total} COLIN-DB: {bcol_records[invoice_ref.invoice_number]}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 continue
 

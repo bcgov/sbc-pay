@@ -65,7 +65,7 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, a
             "Notification to Queue failed for the Account Mailer %s - %s",
             pay_account.auth_account_id,
             payload,
-            exc_info=True
+            exc_info=True,
         )
 
 
@@ -100,7 +100,7 @@ def publish_statement_notification(
             "Notification to Queue failed for the Account Mailer %s - %s",
             pay_account.auth_account_id,
             payload,
-            exc_info=True
+            exc_info=True,
         )
 
         return False
@@ -138,10 +138,7 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
     except Exception as e:  # pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning(
-            "Notification to Queue failed for the Account Mailer %s - %s",
-            info.auth_account_id,
-            payload,
-            exc_info=True
+            "Notification to Queue failed for the Account Mailer %s - %s", info.auth_account_id, payload, exc_info=True
         )
 
         return False

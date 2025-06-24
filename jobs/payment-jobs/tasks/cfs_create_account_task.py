@@ -88,8 +88,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                     cls._create_cfs_account(pending_account, pay_account, auth_token)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(
-                    f"Error on creating cfs_account={pending_account.account_id}, " f"ERROR : {str(e)}",
-                    exc_info=True
+                    f"Error on creating cfs_account={pending_account.account_id}, " f"ERROR : {str(e)}", exc_info=True
                 )
                 continue
 
@@ -186,7 +185,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
             current_app.logger.error(
                 f"Error on creating CFS Account: account id={pay_account.id}, "
                 f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}",
-                exc_info=True
+                exc_info=True,
             )
             pending_account.rollback()
 
@@ -194,7 +193,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 current_app.logger.error(
                     f"User Input needed for creating CFS Account: account id={pay_account.id}, "
                     f"auth account : {pay_account.auth_account_id}, ERROR : Invalid Bank Details",
-                    exc_info=True
+                    exc_info=True,
                 )
                 mailer.publish_mailer_events(QueueMessageTypes.PAD_SETUP_FAILED.value, pay_account)
                 pending_account.status = CfsAccountStatus.INACTIVE.value

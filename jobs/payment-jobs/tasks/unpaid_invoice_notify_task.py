@@ -104,5 +104,5 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(
                     f"Error on notifying mailer  OB Pending invoice: account id={pay_account.id}, "
                     f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}",
-                    exc_info=True
+                    exc_info=True,
                 )

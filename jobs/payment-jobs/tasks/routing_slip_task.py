@@ -107,7 +107,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(
                     f"Error on Linking Routing Slip number:={routing_slip.number}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 continue
 
@@ -167,7 +167,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(
                     f"Error on Processing CORRECTION for :={rs.number}, " f"routing slip : {rs.id}, ERROR : {str(e)}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 continue
 
@@ -211,7 +211,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(
                     f"Error on Processing VOID for :={routing_slip.number}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 continue
 
@@ -261,7 +261,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(
                     f"Error on Processing NSF for :={routing_slip.number}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 continue
 
@@ -315,7 +315,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(
                     f"Error on Adjusting Routing Slip for :={routing_slip.number}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 continue
 
@@ -518,7 +518,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(
                     f"Error on creating Routing Slip invoice: account id={routing_slip_payment_account.id}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 has_errors = True
                 continue

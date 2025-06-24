@@ -126,7 +126,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(
                         f"Error on cancelling Routing Slip invoice: invoice id={invoice.id}, "
                         f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                        exc_info=True
+                        exc_info=True,
                     )
                     continue
 
@@ -207,7 +207,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(
                         f"Error on creating routing slip invoice {invoice.id}: account id={invoice.payment_account.id},"
                         f"auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}",
-                        exc_info=True
+                        exc_info=True,
                     )
                     continue
 
@@ -334,9 +334,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     pass
                 # If no invoice is created raise an error
                 if not has_invoice_created:
-                    current_app.logger.error(f"Error on creating PAD invoice: account id={payment_account.id}, "
+                    current_app.logger.error(
+                        f"Error on creating PAD invoice: account id={payment_account.id}, "
                         f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}",
-                        exc_info=True
+                        exc_info=True,
                     )
                     continue
                 if not invoice_total_matches:
@@ -344,7 +345,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                         f"Error on creating PAD invoice: account id={payment_account.id}, "
                         f"auth account : {payment_account.auth_account_id}, Invoice exists: "
                         f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}',
-                        exc_info=True
+                        exc_info=True,
                     )
                     continue
             # This is synced after receiving a CSV file at 9:30 AM each day.
@@ -467,7 +468,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                         current_app.logger.error(
                             f"Error on creating EFT invoice: account id={invoice.payment_account.id}, "
                             f"auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}",
-                            exc_info=True
+                            exc_info=True,
                         )
                         continue
                     if not invoice_total_matches:
@@ -476,7 +477,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                             f"auth account : {payment_account.auth_account_id}, Invoice exists: "
                             f' CAS total: {invoice_response.get("total", 0)}, '
                             f"PAY-BC total: {invoice.total}",
-                            exc_info=True
+                            exc_info=True,
                         )
                         continue
 
@@ -529,7 +530,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(
                     f"Error on creating Online Banking invoice: account id={payment_account.id}, "
                     f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 continue
 

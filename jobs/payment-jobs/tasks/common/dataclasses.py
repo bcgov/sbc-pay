@@ -155,5 +155,5 @@ class APLine:
                 InvoiceStatus.CREDITED.value,
             ],
             distribution=distribution,
-            ap_flow=''
+            ap_flow="",
         )

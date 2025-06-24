@@ -50,7 +50,10 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
         return
 
     except Exception as e:  # NOQA # pylint: disable=broad-except
-        current_app.logger.error(f"Error on creating Routing Slip CFS Account: account id={pay_account.id}, "
-            f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}", exc_info=True)
+        current_app.logger.error(
+            f"Error on creating Routing Slip CFS Account: account id={pay_account.id}, "
+            f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}",
+            exc_info=True,
+        )
         cfs_account.rollback()
         return
