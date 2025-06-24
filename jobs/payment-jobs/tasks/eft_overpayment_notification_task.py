@@ -122,7 +122,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
             cls._update_short_name_dict(unlinked_short_names)
             current_app.logger.info(f"Sending over payment notifications for {len(cls.short_names)} short names.")
             cls._send_notifications()
-        except Exception as e:  # NOQA # pylint: disable=broad-except
+        except Exception:  # NOQA # pylint: disable=broad-except
             current_app.logger.error("Error on processing over payment notifications", exc_info=True)
 
     @classmethod

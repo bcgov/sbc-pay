@@ -253,7 +253,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
                                 short_name_links_count=links_count,
                             )
                         )
-            except Exception as e:  # NOQA # pylint: disable=broad-except
+            except Exception:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(
                     f"Error on unpaid statement notification auth_account_id={payment_account.auth_account_id}",
                     exc_info=True,
