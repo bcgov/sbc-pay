@@ -312,12 +312,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.save()
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on Adjusting Routing Slip for :={routing_slip.number}, "
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True
                 )
-                current_app.logger.error(e)
                 continue
 
     @classmethod
