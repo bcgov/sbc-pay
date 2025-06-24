@@ -71,3 +71,4 @@ serialPipeline:
       cloudsql-instances: "gtksf3-prod:northamerica-northeast1:pay-db-prod"
       run-command: "./run.sh"
       service-account: "sa-job@gtksf3-prod.iam.gserviceaccount.com"
+      task-timeout: "5500"
