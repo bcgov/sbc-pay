@@ -21,7 +21,6 @@ from typing import Any, Dict, List
 
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -229,10 +228,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
             current_app.logger.error("Notification to Queue failed for the Payment Event %s", payload)
-            capture_message(
-                f"Notification to Queue failed for the Payment Event : {payload}.",
-                level="error",
-            )
 
     @staticmethod
     def validate_refund_amount(refund_amount, max_amount):

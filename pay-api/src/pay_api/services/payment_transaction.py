@@ -24,7 +24,6 @@ import humps
 from flask import current_app
 from sbc_common_components.utils.dataclasses import PaymentToken
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -467,11 +466,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 "ALERT : Paid Amount is less than owed amount.  Paid : %s, Owed- %s",
                 payment.paid_amount,
                 payment.invoice_amount,
-            )
-            capture_message(
-                f"ALERT : Paid Amount is less than owed amount.  Paid : {payment.paid_amount}, "
-                f"Owed: {payment.invoice_amount}",
-                level="error",
             )
         else:
             payment.receipt_number = receipt_details[0]

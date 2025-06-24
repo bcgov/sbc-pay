@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Tuple
 from cattr import Converter
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 from sqlalchemy import and_, desc, or_
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
@@ -626,10 +625,6 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                 self.auth_account_id,
                 self.name,
             )
-            capture_message(
-                f"Notification to Queue failed for the Account Mailer : {payload}.",
-                level="error",
-            )
 
     def create_account_event_payload(self, event_type: str, receipt_info: dict = None, include_pay_info: bool = False):
         """Return event payload for account."""
@@ -712,10 +707,6 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                 "Notification to Queue failed for the Unlock Account %s - %s",
                 pay_account.auth_account_id,
                 pay_account.name,
-            )
-            capture_message(
-                f"Notification to Queue failed for the Unlock Account : {payload}.",
-                level="error",
             )
 
     @classmethod
