@@ -16,11 +16,5 @@
         "application": [            
             "jwt"
         ]
-    },
-	{
-        "vault": "sentry",
-        "application": [
-            "relationship-api"
-        ]
     }
 ]
