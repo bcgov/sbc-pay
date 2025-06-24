@@ -42,7 +42,6 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.util import generate_transaction_number
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 from sqlalchemy import select
 
 from utils import mailer
@@ -124,12 +123,11 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     CFSService.reverse_invoice(invoice_reference.invoice_number)
 
                 except Exception as e:  # NOQA # pylint: disable=broad-except
-                    capture_message(
+                    current_app.logger.error(
                         f"Error on cancelling Routing Slip invoice: invoice id={invoice.id}, "
                         f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
-                        level="error",
+                        exc_info=True,
                     )
-                    current_app.logger.error(e)
                     continue
 
                 invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
@@ -191,7 +189,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 # There is a chance that the error is a timeout from CAS side,
                 # so to make sure we are not missing any data, make a GET call for the invoice we tried to create
                 # and use it if it got created.
-                current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
+                current_app.logger.info(e)
                 has_invoice_created: bool = False
                 try:
                     # add a 10 seconds delay here as safe bet, as CFS takes time to create the invoice and
@@ -204,14 +202,13 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
                     pass
 
-                # If no invoice is created raise an error for sentry
+                # If no invoice is created raise an error
                 if not has_invoice_created:
-                    capture_message(
+                    current_app.logger.error(
                         f"Error on creating routing slip invoice {invoice.id}: account id={invoice.payment_account.id},"
                         f"auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}",
-                        level="error",
+                        exc_info=True,
                     )
-                    current_app.logger.error(f'Error on invoice: {invoice.id} error: {e}')
                     continue
 
             invoice_number = invoice_response.get("invoice_number", None)
@@ -323,7 +320,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 # There is a chance that the error is a timeout from CAS side,
                 # so to make sure we are not missing any data, make a GET call for the invoice we tried to create
                 # and use it if it got created.
-                current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
+                current_app.logger.info(e)  # INFO is intentional
                 has_invoice_created: bool = False
                 try:
                     # add a 10 seconds delay here as safe bet, as CFS takes time to create the invoice
@@ -335,23 +332,21 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
                     pass
-                # If no invoice is created raise an error for sentry
+                # If no invoice is created raise an error
                 if not has_invoice_created:
-                    capture_message(
+                    current_app.logger.error(
                         f"Error on creating PAD invoice: account id={payment_account.id}, "
                         f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}",
-                        level="error",
+                        exc_info=True,
                     )
-                    current_app.logger.error(e)
                     continue
                 if not invoice_total_matches:
-                    capture_message(
+                    current_app.logger.error(
                         f"Error on creating PAD invoice: account id={payment_account.id}, "
                         f"auth account : {payment_account.auth_account_id}, Invoice exists: "
                         f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}',
-                        level="error",
+                        exc_info=True,
                     )
-                    current_app.logger.error(e)
                     continue
             # This is synced after receiving a CSV file at 9:30 AM each day.
             credit_remaining_total = CreditModel.find_remaining_by_account_id(account.id)
@@ -470,22 +465,20 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                         pass
 
                     if not has_invoice_created:
-                        capture_message(
+                        current_app.logger.error(
                             f"Error on creating EFT invoice: account id={invoice.payment_account.id}, "
                             f"auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}",
-                            level="error",
+                            exc_info=True,
                         )
-                        current_app.logger.error(e)
                         continue
                     if not invoice_total_matches:
-                        capture_message(
+                        current_app.logger.error(
                             f"Error on creating EFT invoice: account id={payment_account.id}, "
                             f"auth account : {payment_account.auth_account_id}, Invoice exists: "
                             f' CAS total: {invoice_response.get("total", 0)}, '
                             f"PAY-BC total: {invoice.total}",
-                            level="error",
+                            exc_info=True,
                         )
-                        current_app.logger.error(e)
                         continue
 
                 invoice.cfs_account_id = cfs_account.id
@@ -534,12 +527,11 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     cfs_account=cfs_account,
                 )
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on creating Online Banking invoice: account id={payment_account.id}, "
                     f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True,
                 )
-                current_app.logger.error(e)
                 continue
 
             # Create invoice reference, payment record and a payment transaction

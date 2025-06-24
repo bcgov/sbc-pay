@@ -42,7 +42,6 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RoutingSlipStatus,
 )
-from sentry_sdk import capture_message
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ap import CgiAP
@@ -55,10 +54,6 @@ def _process_error(row, error_msg: str, error_messages: List[Dict[str, any]], ex
         formatted_traceback = "".join(traceback.TracebackException.from_exception(ex).format())
         error_msg = f"{error_msg}\n{formatted_traceback}"
     db.session.rollback()
-    capture_message(
-        f"{error_msg} ERROR : {str(ex)}",
-        level="error",
-    )
     current_app.logger.error(f"{{error: {str(ex)}, stack_trace: {traceback.format_exc()}}}")
     error_messages.append({"error": error_msg, "row": row})
 
@@ -110,7 +105,7 @@ class ApTask(CgiAP):
                 {"task": "create_routing_slip_refund", "ejv_file_type": EjvFileType.REFUND.value},
                 "Error creating routing slip refund file",
                 cls.error_messages,
-                e
+                e,
             )
             cls.has_errors = True
 
@@ -121,7 +116,7 @@ class ApTask(CgiAP):
                 {"task": "create_non_gov_disbursement", "ejv_file_type": EjvFileType.NON_GOV_DISBURSEMENT.value},
                 "Error creating non gov disbursement file",
                 cls.error_messages,
-                e
+                e,
             )
             cls.has_errors = True
 
@@ -132,7 +127,7 @@ class ApTask(CgiAP):
                 {"task": "create_eft_refund", "ejv_file_type": EjvFileType.EFT_REFUND.value},
                 "Error creating eft refund file",
                 cls.error_messages,
-                e
+                e,
             )
             cls.has_errors = True
 
@@ -142,7 +137,7 @@ class ApTask(CgiAP):
                 file_name="ap_task",
                 error_messages=cls.error_messages,
                 table_name="ejv_file",
-                job_name="AP Task Job"
+                job_name="AP Task Job",
             )
             notification.send_notification()
 

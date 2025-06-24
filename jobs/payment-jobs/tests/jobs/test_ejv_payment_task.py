@@ -215,10 +215,11 @@ def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
     updated_refund_partial = RefundsPartial.find_by_id(refund_partial.id)
     assert updated_refund_partial.status == RefundsPartialStatus.REFUND_PROCESSING.value
 
-    ejv_link = db.session.query(EjvLink).filter(
-        EjvLink.link_id == refund_partial.id,
-        EjvLink.link_type == 'partial_refund'
-    ).first()
+    ejv_link = (
+        db.session.query(EjvLink)
+        .filter(EjvLink.link_id == refund_partial.id, EjvLink.link_type == "partial_refund")
+        .first()
+    )
     assert ejv_link is not None
     assert ejv_link.disbursement_status_code == DisbursementStatus.UPLOADED.value
 

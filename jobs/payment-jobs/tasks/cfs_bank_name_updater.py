@@ -20,7 +20,6 @@ import re
 import sys
 from typing import Dict, List
 
-import sentry_sdk
 from flask import Flask, current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -29,7 +28,6 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_CURRENCY
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
-from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
 from utils.logger import setup_logging
@@ -42,10 +40,6 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "production")):
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
-    # Configure Sentry
-    if str(app.config.get("SENTRY_ENABLE")).lower() == "true":
-        if app.config.get("SENTRY_DSN", None):
-            sentry_sdk.init(dsn=app.config.get("SENTRY_DSN"), integrations=[FlaskIntegration()])
     db.init_app(app)
     ma.init_app(app)
 

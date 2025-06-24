@@ -41,7 +41,6 @@ from pay_api.utils.enums import (
     ReverseOperation,
     TransactionStatus,
 )
-from sentry_sdk import capture_message
 from sqlalchemy import func
 from sqlalchemy.orm import lazyload, registry
 
@@ -169,14 +168,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 cls._update_cil_and_shortname_history(cil_rollup, receipt_number=receipt_number)
                 db.session.commit()
                 EftService().complete_post_invoice(invoice, None)
-            except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
-                    f"Error on linking EFT invoice links in CFS "
-                    f"Account id={invoice.payment_account_id} "
-                    f"EFT Credit invoice Link : {cil_rollup.id}"
-                    f"ERROR : {str(e)}",
-                    level="error",
-                )
+            except Exception:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(
                     f"Error Account id={invoice.payment_account_id} - " f"EFT Credit invoice Link : {cil_rollup.id}",
                     exc_info=True,
@@ -207,15 +199,11 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 if refund_invoice:
                     EftService().release_payment_or_reversal(refund_invoice, TransactionStatus.REVERSED.value)
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on reversing EFT invoice links in CFS "
                     f"Account id={invoice.payment_account_id} "
                     f"EFT Credit invoice Link : {cil_rollup.id}"
                     f"ERROR : {str(e)}",
-                    level="error",
-                )
-                current_app.logger.error(
-                    f"Error Account id={invoice.payment_account_id} - " f"EFT Credit invoice Link : {cil_rollup.id}",
                     exc_info=True,
                 )
                 db.session.rollback()
@@ -250,15 +238,11 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 db.session.commit()
                 EftService().release_payment_or_reversal(refund_invoice, TransactionStatus.REVERSED.value)
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on reversing unlinked REFUND_REQUESTED EFT invoice in CFS "
                     f"Account id={invoice.payment_account_id} "
                     f"Invoice id : {invoice.id}"
                     f"ERROR : {str(e)}",
-                    level="error",
-                )
-                current_app.logger.error(
-                    f"Error Account id={invoice.payment_account_id} - " f"Invoice id : {invoice.id}",
                     exc_info=True,
                 )
                 db.session.rollback()

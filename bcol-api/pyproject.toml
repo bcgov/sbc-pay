@@ -19,7 +19,6 @@ jsonschema = "4.17.3"
 requests = "^2.32.4"
 zeep = "^4.2.1"
 python-ldap = "^3.4.4"
-sentry-sdk = {extras = ["flask"], version = "^2.8.0"}
 attrs = "^23.2.0"
 werkzeug = "^3.0.1"
 jaeger-client = "^4.8.0"

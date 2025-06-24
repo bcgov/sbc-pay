@@ -196,8 +196,7 @@ class EjvPaymentTask(CgiEjv):
                     # This is to avoid duplicate invoice references.
                     # might already be created by another transaction(when invoice has service fees)
                     existing_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
-                        transaction.target.id,
-                        InvoiceReferenceStatus.ACTIVE.value
+                        transaction.target.id, InvoiceReferenceStatus.ACTIVE.value
                     )
                     if not existing_ref:
                         current_app.logger.debug(f"Creating Invoice Reference for invoice id: {transaction.target.id}")
@@ -321,9 +320,9 @@ class EjvPaymentTask(CgiEjv):
                                 flow_through=f"{inv.id:<110}",
                                 description=description,
                                 is_reversal=is_jv_reversal,
-                                target_type=EJVLinkType.INVOICE.value
+                                target_type=EJVLinkType.INVOICE.value,
                             ),
-                            target=inv
+                            target=inv,
                         )
                     )
                 if line.service_fees > 0:
@@ -339,9 +338,9 @@ class EjvPaymentTask(CgiEjv):
                                 flow_through=f"{inv.id:<110}",
                                 description=description,
                                 is_reversal=is_jv_reversal,
-                                target_type=EJVLinkType.INVOICE.value
+                                target_type=EJVLinkType.INVOICE.value,
                             ),
-                            target=inv
+                            target=inv,
                         )
                     )
 
@@ -371,9 +370,9 @@ class EjvPaymentTask(CgiEjv):
                             flow_through=f"{f'{pr_invoice.id}-PR-{pr.id}':<110}",
                             description=description,
                             is_reversal=True,  # Partial refunds are always reversals
-                            target_type=EJVLinkType.PARTIAL_REFUND.value
+                            target_type=EJVLinkType.PARTIAL_REFUND.value,
                         ),
-                        target=pr
+                        target=pr,
                     )
                 )
         return transactions

@@ -264,15 +264,14 @@ def test_disbursement_error_handling(session, monkeypatch, client_code, batch_ty
 
     def mock_create_inbox_and_trg_files_error(*args, **kwargs):
         EjvPartnerDistributionTask.has_errors = True
-        EjvPartnerDistributionTask.error_messages.append({
-            "error": "Failed to create files",
-            "row": {"batch_type": batch_type}
-        })
+        EjvPartnerDistributionTask.error_messages.append(
+            {"error": "Failed to create files", "row": {"batch_type": batch_type}}
+        )
         return False
 
     monkeypatch.setattr(
         "tasks.ejv_partner_distribution_task.EjvPartnerDistributionTask.create_inbox_and_trg_files",
-        mock_create_inbox_and_trg_files_error
+        mock_create_inbox_and_trg_files_error,
     )
 
     with freeze_time(day_after_time_delay):

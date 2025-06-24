@@ -462,7 +462,7 @@ def factory_create_eft_refund(
     region: str = "BC",
     street: str = "655 Douglas St",
     country: str = "CA",
-    postal_code: str = "V8V 0B6"
+    postal_code: str = "V8V 0B6",
 ):
     """Return Factory."""
     eft_refund = EFTRefund(

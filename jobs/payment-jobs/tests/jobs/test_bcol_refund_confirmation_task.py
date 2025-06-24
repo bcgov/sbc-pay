@@ -89,13 +89,11 @@ def test_bcol_refund_confirmation(
     # setup mocks
 
     colin_bcol_records_mock = Mock(return_value=({invoice_number: Decimal(refund_total)} if refund_total != 0 else {}))
-    sentry_mock = Mock()
 
     monkeypatch.setattr(
         "tasks.bcol_refund_confirmation_task.BcolRefundConfirmationTask._get_data_warehouse_bcol_records_for_invoices",
         colin_bcol_records_mock,
     )
-    monkeypatch.setattr("tasks.bcol_refund_confirmation_task.capture_message", sentry_mock)
     # setup invoice / invoice reference / payment
     pay_account = None
     if payment_method == PaymentMethod.PAD.value:
@@ -130,7 +128,3 @@ def test_bcol_refund_confirmation(
 
     # check things out
     assert (Invoice.find_by_id(invoice.id)).invoice_status_code == expected
-    if mismatch:
-        sentry_mock.assert_called_once()
-    else:
-        sentry_mock.assert_not_called()

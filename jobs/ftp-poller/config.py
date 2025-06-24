@@ -139,9 +139,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     MINIO_EFT_BUCKET_NAME = os.getenv("MINIO_EFT_BUCKET_NAME", "eft-sftp")
     MINIO_SECURE = True
 
-    SENTRY_ENABLE = os.getenv("SENTRY_ENABLE", "False")
-    SENTRY_DSN = os.getenv("SENTRY_DSN", None)
-
     # PUB/SUB - PUB: ftp-poller-payment-reconciliation-dev
     FTP_POLLER_TOPIC = os.getenv("FTP_POLLER_TOPIC", "ftp-poller-payment-reconciliation-dev")
     GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)

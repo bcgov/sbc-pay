@@ -162,10 +162,6 @@ class _Config:  # pylint: disable=too-few-public-methods
     NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"
     IT_OPS_EMAIL = os.getenv("IT_OPS_EMAIL", "SBC_ITOperationsSupport@gov.bc.ca").split(",")
 
-    # Sentry Config
-    SENTRY_ENABLE = _get_config("SENTRY_ENABLE", default=False)
-    SENTRY_DSN = _get_config("SENTRY_DSN", default=None)
-
     # Disable valid redirect URLs - for DEV only
     DISABLE_VALID_REDIRECT_URLS = _get_config("DISABLE_VALID_REDIRECT_URLS", default="False").lower() == "true"
 
