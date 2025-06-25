@@ -44,8 +44,10 @@ class Config(object):
     PAY_DB_NAME = os.getenv("PAY_DB_NAME", "")
     PAY_HOST = os.getenv("PAY_HOST", "")
     PAY_PORT = os.getenv("PAY_PORT", "5432")
-    if DB_UNIX_SOCKET := os.getenv('PAY_DB_UNIX_SOCKET', None):
-        SQLALCHEMY_DATABASE_URI = f'postgresql+pg8000://{PAY_USER}:{PAY_PASSWORD}@/{PAY_DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432'                                      
+    if DB_UNIX_SOCKET := os.getenv("PAY_DB_UNIX_SOCKET", None):
+        SQLALCHEMY_DATABASE_URI = (
+            f"postgresql+pg8000://{PAY_USER}:{PAY_PASSWORD}@/{PAY_DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432"
+        )
     else:
-        SQLALCHEMY_DATABASE_URI = f'postgresql+pg8000://{PAY_USER}:{PAY_PASSWORD}@{PAY_HOST}:{PAY_PORT}/{PAY_DB_NAME}'
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{PAY_USER}:{PAY_PASSWORD}@{PAY_HOST}:{PAY_PORT}/{PAY_DB_NAME}"
     OVERRIDE_CURRENT_DATE = os.getenv("OVERRIDE_CURRENT_DATE", "")

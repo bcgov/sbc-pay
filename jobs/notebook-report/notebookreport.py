@@ -78,44 +78,39 @@ def build_and_send_email(report: ReportData):
     subject = build_subject(report)
     recipients = build_recipients(report)
     filenames = build_filenames(report)
-    
+
     email = {
-        'recipients': recipients,
-        'content': {
-            'subject': subject,
-            'body': 'Please see the attachment(s).',
-            'attachments': []
-        }
+        "recipients": recipients,
+        "content": {"subject": subject, "body": "Please see the attachment(s).", "attachments": []},
     }
-    
+
     if report.error_message:
-        email['content']['body'] = 'ERROR!!! \n' + report.error_message
+        email["content"]["body"] = "ERROR!!! \n" + report.error_message
     else:
         try:
             for filename in filenames:
                 file_path = os.path.join(os.getcwd(), "data", filename)
                 with open(file_path, "rb") as f:
                     file_encoded = base64.b64encode(f.read())
-                    email['content']['attachments'].append({
-                        'fileName': filename,
-                        'fileBytes': file_encoded.decode(),
-                        'fileUrl': '',
-                        'attachOrder': len(email['content']['attachments']) + 1
-                    })
+                    email["content"]["attachments"].append(
+                        {
+                            "fileName": filename,
+                            "fileBytes": file_encoded.decode(),
+                            "fileUrl": "",
+                            "attachOrder": len(email["content"]["attachments"]) + 1,
+                        }
+                    )
         except Exception:  # noqa: B902
-            logging.error('Error processing attachments')
+            logging.error("Error processing attachments")
             email = {
-                'recipients': Config.ERROR_EMAIL_RECIPIENTS,
-                'content': {
-                    'subject': 'Error Notification ' + subject,
-                    'body': 'Failed to generate report: ' + traceback.format_exc(),
-                    'attachments': []
-                }
+                "recipients": Config.ERROR_EMAIL_RECIPIENTS,
+                "content": {
+                    "subject": "Error Notification " + subject,
+                    "body": "Failed to generate report: " + traceback.format_exc(),
+                    "attachments": [],
+                },
             }
-    
-    
 
-        
     send_email(email, token)
 
 
@@ -123,8 +118,9 @@ def send_email(email: dict, token):
     """Send the email."""
     if Config.DISABLE_EMAIL is True:
         return
-        
-    response = requests.request("POST",
+
+    response = requests.request(
+        "POST",
         Config.NOTIFY_API_URL,
         json=email,
         headers={
@@ -134,10 +130,10 @@ def send_email(email: dict, token):
     )
 
     if response.status_code == 200:
-        logging.info('The email was sent successfully')
-    else:    
-        logging.error(f'response:{response}')
-        raise Exception('Unsuccessful response when sending email.')
+        logging.info("The email was sent successfully")
+    else:
+        logging.error(f"response:{response}")
+        raise Exception("Unsuccessful response when sending email.")
 
 
 def process_partner_notebooks(data_dir: str):

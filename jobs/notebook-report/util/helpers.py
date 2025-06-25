@@ -128,17 +128,19 @@ def process_email_attachments(filenames, message):
 def get_auth_token():
     """Get authentication token from Keycloak."""
     from config import Config
-    
+
     client = Config.NOTEBOOK_SERVICE_ACCOUNT_ID
     secret = Config.NOTEBOOK_SERVICE_ACCOUNT_SECRET
     kc_url = Config.JWT_OIDC_ISSUER + "/protocol/openid-connect/token"
 
-    response = requests.post(url=kc_url,
-        data='grant_type=client_credentials',
-        headers={'content-type': 'application/x-www-form-urlencoded'},
-        auth=(client, secret))
-    
+    response = requests.post(
+        url=kc_url,
+        data="grant_type=client_credentials",
+        headers={"content-type": "application/x-www-form-urlencoded"},
+        auth=(client, secret),
+    )
+
     if response.status_code == 200:
-        return response.json().get('access_token')
+        return response.json().get("access_token")
     else:
-        raise Exception('Failed to get authentication token')
+        raise Exception("Failed to get authentication token")
