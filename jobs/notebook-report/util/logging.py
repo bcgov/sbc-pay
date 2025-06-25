@@ -1,4 +1,3 @@
-# setup logging - important to set it up first
 import logging.config
 import sys
 from os import path
