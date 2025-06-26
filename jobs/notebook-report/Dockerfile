@@ -1,4 +1,4 @@
-FROM python:3.12.2-bullseye
+FROM python:3.13.2-bookworm
 
 ARG VCS_REF="missing"
 ARG BUILD_DATE="missing"
@@ -67,7 +67,6 @@ COPY ./pyproject.toml .
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     echo "$APP_ENV" \
     && poetry version \
-    && poetry config installer.max-workers 1 \
     && poetry run pip install -U pip \
     && poetry install \
         $(if [ -z ${APP_ENV+x} ] | [ "$APP_ENV" = 'production' ]; then echo '--only main'; fi) \
