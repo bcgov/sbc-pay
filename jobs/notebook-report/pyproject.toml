@@ -44,6 +44,7 @@ pg8000 = "^1.31.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
+pytest-cov = "^6.0.0"
 flake8 = "^7.1.1"
 flake8-blind-except = "^0.2.1"
 flake8-debugger = "^4.1.2"
@@ -140,7 +141,7 @@ minversion = "2.0"
 testpaths = [
    "tests",
 ]
-addopts = "--verbose --strict -p no:warnings --cov=src --cov-report html:htmlcov --cov-report xml:coverage.xml"
+addopts = ""
 python_files = [
    "test*.py"
 ]
