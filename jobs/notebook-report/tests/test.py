@@ -1,14 +1,10 @@
-"""
-Test file for notebook-report project.
-"""
+"""Test file for notebook-report project."""
 
 import pytest
 
 
 def test_example():
-    """
-    Example test function.
-    """
+    """Example test function."""
     assert True
 
 
