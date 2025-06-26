@@ -73,7 +73,6 @@ def build_filenames(report: ReportData):
 
 def build_and_send_email(report: ReportData):
     """Send email for results."""
-
     token = get_auth_token()
     subject = build_subject(report)
     recipients = build_recipients(report)
@@ -133,7 +132,7 @@ def send_email(email: dict, token):
         logging.info("The email was sent successfully")
     else:
         logging.error(f"response:{response}")
-        raise Exception("Unsuccessful response when sending email.")
+        raise Exception("Unsuccessful response when sending email.")  # pylint: disable=broad-exception-raised
 
 
 def process_partner_notebooks(data_dir: str):

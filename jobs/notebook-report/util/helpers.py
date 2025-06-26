@@ -1,6 +1,5 @@
 """Utility functions for email attachment processing."""
 
-import base64
 import fnmatch
 import os
 from dataclasses import dataclass
@@ -12,7 +11,8 @@ from enum import Enum
 import pytz
 import requests
 from dateutil.relativedelta import relativedelta
-from flask import current_app
+
+from config import Config
 
 
 @dataclass
@@ -127,8 +127,6 @@ def process_email_attachments(filenames, message):
 
 def get_auth_token():
     """Get authentication token from Keycloak."""
-    from config import Config
-
     client = Config.NOTEBOOK_SERVICE_ACCOUNT_ID
     secret = Config.NOTEBOOK_SERVICE_ACCOUNT_SECRET
     kc_url = Config.JWT_OIDC_ISSUER + "/protocol/openid-connect/token"
@@ -143,4 +141,4 @@ def get_auth_token():
     if response.status_code == 200:
         return response.json().get("access_token")
     else:
-        raise Exception("Failed to get authentication token")
+        raise Exception("Failed to get authentication token")  # pylint: disable=broad-exception-raised

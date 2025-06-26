@@ -1,3 +1,4 @@
+"""Logging configuration for the application."""
 import logging.config
 import sys
 from os import path
@@ -6,6 +7,7 @@ from config import Config
 
 
 def setup_logging(conf="logging.conf"):
+    """Read logging configuration from file."""
     log_file_path = path.join(Config.PROJECT_ROOT, conf)
 
     if path.isfile(log_file_path):
