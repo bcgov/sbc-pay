@@ -1,4 +1,5 @@
 """Config file for the application."""
+
 import ast
 import os
 
@@ -7,7 +8,7 @@ from dotenv import find_dotenv, load_dotenv
 load_dotenv(find_dotenv())
 
 
-class Config():
+class Config:
     """Class configuring our environment variables in one defined place."""
 
     PROJECT_ROOT = os.getcwd()

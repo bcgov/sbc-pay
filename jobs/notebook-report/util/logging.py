@@ -1,4 +1,5 @@
 """Logging configuration for the application."""
+
 import logging.config
 import sys
 from os import path
