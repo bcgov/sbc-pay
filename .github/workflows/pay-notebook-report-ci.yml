@@ -1,0 +1,19 @@
+name: Pay Notebook Report CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "jobs/notebook-report/**"
+defaults:
+  run:
+    shell: bash
+    working-directory: ./jobs/notebook-report
+
+jobs:
+  pay-notebook-report-ci:
+    uses: bcgov/bcregistry-sre/.github/workflows/backend-ci.yaml@main
+    with:
+      app_name: "pay-notebook-report"
+      working_directory: "./jobs/notebook-report"

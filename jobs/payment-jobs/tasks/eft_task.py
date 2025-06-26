@@ -167,7 +167,6 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 cls._create_receipt_and_invoice(cfs_account, cil_rollup, invoice, receipt_number)
                 cls._update_cil_and_shortname_history(cil_rollup, receipt_number=receipt_number)
                 db.session.commit()
-                EftService().complete_post_invoice(invoice, None)
             except Exception:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(
                     f"Error Account id={invoice.payment_account_id} - " f"EFT Credit invoice Link : {cil_rollup.id}",

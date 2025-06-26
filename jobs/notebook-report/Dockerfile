@@ -1,4 +1,4 @@
-FROM python:3.12.2-bullseye
+FROM python:3.13.2-bookworm
 
 ARG VCS_REF="missing"
 ARG BUILD_DATE="missing"
@@ -32,7 +32,7 @@ ENV APP_ENV=${APP_ENV} \
   PIP_DEFAULT_TIMEOUT=100 \
   PIP_ROOT_USER_ACTION=ignore \
   # poetry:
-  POETRY_VERSION=1.8.3 \
+  POETRY_VERSION=2.1.3 \
   POETRY_NO_INTERACTION=1 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_CACHE_DIR='/var/cache/pypoetry' \
@@ -61,16 +61,12 @@ RUN mkdir /opt/app-root && chmod 755 /opt/app-root
 RUN mkdir /opt/app-root/data && chmod 777 /opt/app-root/data
 WORKDIR /opt/app-root
 
-# Install the requirements
 COPY ./poetry.lock .
 COPY ./pyproject.toml .
 
-# Project initialization:
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     echo "$APP_ENV" \
     && poetry version \
-    && poetry config installer.max-workers 1 \
-    # Install deps:
     && poetry run pip install -U pip \
     && poetry install \
         $(if [ -z ${APP_ENV+x} ] | [ "$APP_ENV" = 'production' ]; then echo '--only main'; fi) \
@@ -80,7 +76,6 @@ COPY . .
 
 USER 1001
 
-# Set Python path
 ENV PYTHONPATH=/opt/app-root/src
 
 EXPOSE 8080
