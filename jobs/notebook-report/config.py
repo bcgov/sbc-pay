@@ -13,7 +13,6 @@ class Config:
 
     PROJECT_ROOT = os.getcwd()
     APP_FILE = "notebookreport.py"
-    SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
     ERROR_EMAIL_RECIPIENTS = os.getenv("ERROR_EMAIL_RECIPIENTS", "")
     WEEKLY_PAY_RECIPIENTS = os.getenv("WEEKLY_PAY_RECIPIENTS", "")
 
