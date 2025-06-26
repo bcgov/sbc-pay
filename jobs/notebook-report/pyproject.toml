@@ -7,14 +7,13 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.13"
 jupyter = "^1.1.1"
 sqlalchemy = "^2.0.36"
 ipython-sql = "^0.5.0"
 simplejson = "^3.19.3"
 pandas = "^2.2.3"
 matplotlib = "^3.9.3"
-spacy = "^3.8.2"
 papermill = "^2.6.0"
 schedule = "^1.2.2"
 attrs = "^24.2.0"
