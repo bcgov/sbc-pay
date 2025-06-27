@@ -30,7 +30,7 @@ serialPipeline:
       deploy-project-id: "gtksf3-dev"
       job-name: "payment-notebook-dev"
       cloudsql-instances: "gtksf3-dev:northamerica-northeast1:pay-db-dev"
-      run-command: "./run.sh"
+      run-command: ""
       service-account: "sa-job@gtksf3-dev.iam.gserviceaccount.com"
  - targetId: gtksf3-test
    profiles: [test]
@@ -43,7 +43,7 @@ serialPipeline:
       deploy-project-id: "gtksf3-test"
       job-name: "payment-notebook-test"
       cloudsql-instances: "gtksf3-test:northamerica-northeast1:pay-db-test"
-      run-command: "./run.sh"
+      run-command: ""
       service-account: "sa-job@gtksf3-test.iam.gserviceaccount.com"
  - targetId: gtksf3-sandbox
    profiles: [sandbox]
@@ -56,7 +56,7 @@ serialPipeline:
       deploy-project-id: "gtksf3-tools"
       job-name: "payment-notebook-sandbox"
       cloudsql-instances: "gtksf3-tools:northamerica-northeast1:pay-db-sandbox"
-      run-command: "./run.sh"
+      run-command: ""
       service-account: "sa-job@gtksf3-tools.iam.gserviceaccount.com"
  - targetId: gtksf3-prod
    profiles: [prod]
@@ -69,6 +69,6 @@ serialPipeline:
       deploy-project-id: "gtksf3-prod"
       job-name: "payment-notebook-prod"
       cloudsql-instances: "gtksf3-prod:northamerica-northeast1:pay-db-prod"
-      run-command: "./run.sh"
+      run-command: ""
       service-account: "sa-job@gtksf3-prod.iam.gserviceaccount.com"
       task-timeout: "5500"
