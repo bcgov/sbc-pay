@@ -57,12 +57,17 @@ RUN apt-get update && apt-get upgrade -y \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Create working directory
-RUN mkdir /opt/app-root && chmod 755 /opt/app-root
-RUN mkdir /opt/app-root/data && chmod 777 /opt/app-root/data
-WORKDIR /opt/app-root
+WORKDIR /code
+RUN groupadd -g "${GID}" -r web \
+    && useradd -d '/code' -g web -l -r -u "${UID}" web \
+    && chown web:web -R '/code'
+RUN mkdir /code/data && chmod 777 /code/data
 
-COPY ./poetry.lock .
-COPY ./pyproject.toml .
+COPY --chown=web:web . /code
+RUN chmod 755 /code/run.sh
+
+RUN echo "Checking Poetry configurations..." \
+    && poetry config --list
 
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     echo "$APP_ENV" \
@@ -71,13 +76,9 @@ RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     && poetry install \
         $(if [ -z ${APP_ENV+x} ] | [ "$APP_ENV" = 'production' ]; then echo '--only main'; fi) \
         --no-interaction --no-ansi
-  
-COPY . .
 
-RUN chmod +x /opt/app-root/run.sh
-
-USER 1001
+USER web
 
 EXPOSE 8080
 
-CMD [ "python", "/opt/app-root/notebookreport.py" ]
+CMD [ "/bin/sh", "/code/run.sh" ]
