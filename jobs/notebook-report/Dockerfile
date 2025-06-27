@@ -74,8 +74,9 @@ RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
   
 COPY . .
 
-USER 1001
+RUN chmod +x /opt/app-root/run.sh
 
+USER 1001
 
 EXPOSE 8080
 
