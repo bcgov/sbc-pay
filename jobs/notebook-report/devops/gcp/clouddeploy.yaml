@@ -15,7 +15,7 @@
 apiVersion: deploy.cloud.google.com/v1
 kind: DeliveryPipeline
 metadata:
- name: payment-notebook-pipeline
+ name: pay-notebook-report-pipeline
 description: Deployment pipeline
 serialPipeline:
  stages:
@@ -28,7 +28,7 @@ serialPipeline:
    - values:
       deploy-env: "development"
       deploy-project-id: "gtksf3-dev"
-      job-name: "payment-notebook-dev"
+      job-name: "pay-notebook-report-dev"
       cloudsql-instances: "gtksf3-dev:northamerica-northeast1:pay-db-dev"
       run-command: ""
       service-account: "sa-job@gtksf3-dev.iam.gserviceaccount.com"
@@ -41,7 +41,7 @@ serialPipeline:
    - values:
       deploy-env: "development"
       deploy-project-id: "gtksf3-test"
-      job-name: "payment-notebook-test"
+      job-name: "pay-notebook-report-test"
       cloudsql-instances: "gtksf3-test:northamerica-northeast1:pay-db-test"
       run-command: ""
       service-account: "sa-job@gtksf3-test.iam.gserviceaccount.com"
@@ -54,7 +54,7 @@ serialPipeline:
    - values:
       deploy-env: "sandbox"
       deploy-project-id: "gtksf3-tools"
-      job-name: "payment-notebook-sandbox"
+      job-name: "pay-notebook-report-sandbox"
       cloudsql-instances: "gtksf3-tools:northamerica-northeast1:pay-db-sandbox"
       run-command: ""
       service-account: "sa-job@gtksf3-tools.iam.gserviceaccount.com"
@@ -67,7 +67,7 @@ serialPipeline:
    - values:
       deploy-env: "production"
       deploy-project-id: "gtksf3-prod"
-      job-name: "payment-notebook-prod"
+      job-name: "pay-notebook-report-prod"
       cloudsql-instances: "gtksf3-prod:northamerica-northeast1:pay-db-prod"
       run-command: ""
       service-account: "sa-job@gtksf3-prod.iam.gserviceaccount.com"
