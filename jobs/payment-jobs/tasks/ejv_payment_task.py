@@ -172,15 +172,7 @@ class EjvPaymentTask(CgiEjv):
             current_app.logger.info("Creating ejv invoice link records and setting invoice status.")
             sequence = 1
             for transaction in transactions:
-                ejv_link = EjvLinkModel(
-                    link_id=transaction.target.id,
-                    link_type=transaction.line_item.target_type,
-                    ejv_header_id=ejv_header_model.id,
-                    disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                    sequence=sequence,
-                )
-                db.session.add(ejv_link)
-                sequence += 1
+                sequence = cls._create_ejv_link_record(transaction, ejv_header_model, sequence)
 
                 if transaction.line_item.target_type == EJVLinkType.INVOICE.value:
                     # If it's reversal, If there is no COMPLETED invoice reference, then no need to reverse it.
@@ -227,6 +219,33 @@ class EjvPaymentTask(CgiEjv):
 
         # Sleep to prevent collision on file name.
         time.sleep(1)
+
+    @classmethod
+    def _create_ejv_link_record(cls, transaction, ejv_header_model, sequence):
+        """Create EJV link record if it doesn't already exist."""
+        # Possible this could already be created, eg two PLI.
+        existing_ejv_link = (
+            db.session.query(EjvLinkModel)
+            .filter(
+                EjvLinkModel.link_id == transaction.target.id,
+                EjvLinkModel.link_type == transaction.line_item.target_type,
+                EjvLinkModel.ejv_header_id == ejv_header_model.id,
+            )
+            .first()
+        )
+
+        if not existing_ejv_link:
+            ejv_link = EjvLinkModel(
+                link_id=transaction.target.id,
+                link_type=transaction.line_item.target_type,
+                ejv_header_id=ejv_header_model.id,
+                disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                sequence=sequence,
+            )
+            db.session.add(ejv_link)
+            sequence += 1
+
+        return sequence
 
     @classmethod
     def _get_account_ids_for_payment(cls, batch_type) -> List[int]:
