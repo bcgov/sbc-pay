@@ -33,7 +33,7 @@ class Config:
     PARTNER_CODES = os.getenv("PARTNER_CODES", "CSO,VS,RPT,ESRA,STRR")
     PARTNER_CODES_DISBURSEMENT = os.getenv("PARTNER_CODES_DISBURSEMENT", "CSO,VS,STRR,ESRA")
     REPORT_API_URL = os.getenv("REPORT_API_URL", "") + os.getenv("REPORT_API_VERSION", "/api/v1")
-    NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "") + os.getenv("NOTIFY_API_VERSION", "/api/v1")
+    NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "") + os.getenv("NOTIFY_API_VERSION", "/api/v1") + '/notify/'
     NOTEBOOK_SERVICE_ACCOUNT_ID = os.getenv("NOTEBOOK_SERVICE_ACCOUNT_ID", "")
     NOTEBOOK_SERVICE_ACCOUNT_SECRET = os.getenv("NOTEBOOK_SERVICE_ACCOUNT_SECRET", "")
     JWT_OIDC_ISSUER = os.getenv("JWT_OIDC_ISSUER", "")

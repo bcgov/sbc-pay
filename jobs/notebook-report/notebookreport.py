@@ -79,7 +79,7 @@ def build_and_send_email(report: ReportData):
     filenames = build_filenames(report)
 
     email = {
-        "recipients": recipients,
+        "recipients": recipients.replace('[', '').replace(']', ''),
         "content": {"subject": subject, "body": "Please see the attachment(s).", "attachments": []},
     }
 
