@@ -72,3 +72,4 @@ serialPipeline:
       run-command: ""
       service-account: "sa-job@gtksf3-prod.iam.gserviceaccount.com"
       task-timeout: "5500"
+      resources-memory: "2Gi"
