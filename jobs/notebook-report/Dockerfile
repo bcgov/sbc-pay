@@ -76,7 +76,6 @@ COPY . .
 
 USER 1001
 
-ENV PYTHONPATH=/opt/app-root/src
 
 EXPOSE 8080
 

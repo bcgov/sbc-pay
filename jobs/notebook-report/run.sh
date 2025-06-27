@@ -1,3 +1,3 @@
 #!/bin/bash
-echo 'run notebookreport'
+echo 'running notebookreport'
 python notebookreport.py
