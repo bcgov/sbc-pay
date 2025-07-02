@@ -80,7 +80,11 @@ def build_and_send_email(report: ReportData):
 
     email = {
         "recipients": recipients.replace("[", "").replace("]", ""),
-        "content": {"subject": subject, "body": "Please see the attachment(s).", "attachments": []},
+        "content": {
+            "subject": subject,
+            "body": "<html><body>Please see the attachment(s).</body></html>",
+            "attachments": [],
+        },
     }
 
     if report.error_message:
@@ -129,10 +133,12 @@ def send_email(email: dict, token):
     )
 
     if response.status_code == 200:
-        logging.info("The email was sent successfully")
+        logging.info("The email was sent successfully to %s", email["recipients"])
     else:
         logging.error(f"response:{response}")
-        raise Exception("Unsuccessful response when sending email.")  # pylint: disable=broad-exception-raised
+        raise Exception(
+            f"Unsuccessful response when sending email to {email['recipients']}."
+        )  # pylint: disable=broad-exception-raised
 
 
 def process_partner_notebooks(data_dir: str):
