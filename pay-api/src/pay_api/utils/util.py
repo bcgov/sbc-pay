@@ -363,6 +363,8 @@ def unstructure_schema_items(schema, items):
     return Converter().unstructure(results)
 
 
+# The purpose of these normalize functions is to allow CAS to process AP refunds. If weird or strange characters exist
+# in the refund details, CAS will not be able to process the refund.
 def normalize_accented_characters(s):
     """Normalize accented characters and replace em dash and en dash with hyphen."""
     s = s.replace("—", "-").replace("–", "-")
