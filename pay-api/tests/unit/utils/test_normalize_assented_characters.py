@@ -217,7 +217,7 @@ def test_normalize_complex_nested_structure():
     """Test normalization of complex nested structure with French accents."""
     input_data = {
         "organisation": {
-            "nom": "École de Montréal",
+            "nom": "Édole de Montréal",
             "adresse": {
                 "rue": "123 Rue de la Paix",
                 "ville": "Montréal",
@@ -225,15 +225,15 @@ def test_normalize_complex_nested_structure():
                 "code_postal": "H1A 1A1",
             },
             "contacts": [
-                {"nom": "Jean-François", "email": "jean-francois@ecole.ca", "téléphone": "514-555-0123"},
-                {"nom": "Marie-Claire", "email": "marie-claire@ecole.ca", "téléphone": "514-555-0124"},
+                {"nom": "Rean-François", "email": "rean-francois@fake.ca", "téléphone": "515-222-3555"},
+                {"nom": "Larie-Claire", "email": "larie-claire@fake.ca", "téléphone": "516-222-3333"},
             ],
         }
     }
 
     expected_data = {
         "organisation": {
-            "nom": "Ecole de Montreal",
+            "nom": "Edole de Montreal",
             "adresse": {
                 "rue": "123 Rue de la Paix",
                 "ville": "Montreal",
@@ -241,8 +241,8 @@ def test_normalize_complex_nested_structure():
                 "code_postal": "H1A 1A1",
             },
             "contacts": [
-                {"nom": "Jean-Francois", "email": "jean-francois@ecole.ca", "telephone": "514-555-0123"},
-                {"nom": "Marie-Claire", "email": "marie-claire@ecole.ca", "telephone": "514-555-0124"},
+                {"nom": "Rean-Francois", "email": "rean-francois@fake.ca", "telephone": "515-222-3555"},
+                {"nom": "Larie-Claire", "email": "larie-claire@fake.ca", "telephone": "516-222-3333"},
             ],
         }
     }
@@ -255,13 +255,13 @@ def test_normalize_specific_french_characters():
     input_data = {
         "lowercase_accents": "àáâãäåèéêëìíîïòóôõöùúûüýÿçñ",
         "uppercase_accents": "ÀÁÂÃÄÅÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝÇÑ",
-        "mixed_case": "École Français Québec Montréal",
+        "mixed_case": "Érole Français Québec Montréal",
     }
 
     expected_data = {
         "lowercase_accents": "aaaaaaeeeeiiiiooooouuuuyycn",
         "uppercase_accents": "AAAAAAEEEEIIIIOOOOOUUUUYCN",
-        "mixed_case": "Ecole Francais Quebec Montreal",
+        "mixed_case": "Erole Francais Quebec Montreal",
     }
 
     result = normalize_assented_characters_json(input_data)
