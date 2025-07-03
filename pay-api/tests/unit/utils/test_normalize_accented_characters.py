@@ -58,6 +58,7 @@ def test_french_accented_characters_in_dict():
     result = normalize_accented_characters_json(input_data)
     assert result == expected
 
+
 def test_weird_dashes():
     """Test normalization of em dash and en dash to regular hyphen."""
     input_data = {"title": "Business—Name", "description": "Company–Info", "address": "123—Main St–Suite 100"}
@@ -67,6 +68,7 @@ def test_weird_dashes():
     result = normalize_accented_characters_json(input_data)
     assert result == expected
 
+
 def test_french_city_names():
     """Test normalization of French city names."""
     input_data = {"cities": ["Québec", "Trois-Rivières", "Saint-Jérôme", "Montréal"]}
@@ -75,6 +77,7 @@ def test_french_city_names():
 
     result = normalize_accented_characters_json(input_data)
     assert result == expected
+
 
 def test_mixed_content():
     """Test normalization with mixed content types."""
@@ -99,6 +102,7 @@ def test_mixed_content():
     result = normalize_accented_characters_json(input_data)
     assert result == expected
 
+
 def test_string_input():
     """Test normalization of string input."""
     input_str = "Montréal—Québec"
@@ -106,6 +110,7 @@ def test_string_input():
 
     result = normalize_accented_characters_json(input_str)
     assert result == expected
+
 
 def test_list_input():
     """Test normalization of list input."""
@@ -115,12 +120,14 @@ def test_list_input():
     result = normalize_accented_characters_json(input_list)
     assert result == expected
 
+
 def test_non_string_input():
     """Test that non-string inputs are returned unchanged."""
     input_data = {"number": 123, "boolean": True, "none_value": None, "float_value": 45.67}
 
     result = normalize_accented_characters_json(input_data)
     assert result == input_data
+
 
 def test_empty_structures():
     """Test normalization of empty structures."""
@@ -132,18 +139,16 @@ def test_empty_structures():
     assert normalize_accented_characters_json(empty_list) == []
     assert normalize_accented_characters_json(empty_string) == ""
 
+
 def test_nested_structures():
     """Test normalization of deeply nested structures."""
-    input_data = {
-        "level1": {"level2": {"level3": {"city": "Québec", "streets": ["Rue—Saint-Jean", "Avenue—du Parc"]}}}
-    }
+    input_data = {"level1": {"level2": {"level3": {"city": "Québec", "streets": ["Rue—Saint-Jean", "Avenue—du Parc"]}}}}
 
-    expected = {
-        "level1": {"level2": {"level3": {"city": "Quebec", "streets": ["Rue-Saint-Jean", "Avenue-du Parc"]}}}
-    }
+    expected = {"level1": {"level2": {"level3": {"city": "Quebec", "streets": ["Rue-Saint-Jean", "Avenue-du Parc"]}}}}
 
     result = normalize_accented_characters_json(input_data)
     assert result == expected
+
 
 def test_normalize_simple_string_with_accents():
     """Test normalization of simple string with French accents."""
@@ -153,6 +158,7 @@ def test_normalize_simple_string_with_accents():
     result = normalize_accented_characters_json(input_string)
     assert result == expected_string
 
+
 def test_normalize_list_with_accents():
     """Test normalization of list containing strings with French accents."""
     input_list = ["Montréal", "Québec", "Français", "École"]
@@ -160,6 +166,7 @@ def test_normalize_list_with_accents():
 
     result = normalize_accented_characters_json(input_list)
     assert result == expected_list
+
 
 def test_normalize_nested_dict_with_accents():
     """Test normalization of nested dictionary with French accents."""
@@ -180,6 +187,7 @@ def test_normalize_nested_dict_with_accents():
     result = normalize_accented_characters_json(input_data)
     assert result == expected_data
 
+
 def test_normalize_dict_keys_with_accents():
     """Test normalization of dictionary keys with French accents."""
     input_data = {"adresse": "123 Main St", "ville": "Montréal", "pays": "Canada"}
@@ -188,6 +196,7 @@ def test_normalize_dict_keys_with_accents():
 
     result = normalize_accented_characters_json(input_data)
     assert result == expected_data
+
 
 def test_normalize_mixed_data_types():
     """Test normalization with mixed data types including non-string values."""
@@ -211,6 +220,7 @@ def test_normalize_mixed_data_types():
 
     result = normalize_accented_characters_json(input_data)
     assert result == expected_data
+
 
 def test_normalize_complex_nested_structure():
     """Test normalization of complex nested structure with French accents."""
@@ -249,6 +259,7 @@ def test_normalize_complex_nested_structure():
     result = normalize_accented_characters_json(input_data)
     assert result == expected_data
 
+
 def test_normalize_specific_french_characters():
     """Test normalization of specific French accented characters."""
     input_data = {
@@ -265,6 +276,7 @@ def test_normalize_specific_french_characters():
 
     result = normalize_accented_characters_json(input_data)
     assert result == expected_data
+
 
 def test_special_characters_oe_ae():
     """Test normalization of special characters ø, æ, œ and their uppercase versions."""
