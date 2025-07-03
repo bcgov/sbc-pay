@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for normalize_assented_characters_json function."""
+"""Tests for normalize_accented_characters_json function."""
 
 import pytest
 
-from pay_api.utils.util import normalize_assented_characters_json
-
+from pay_api.utils.util import normalize_accented_characters_json
 
 
 def test_french_accented_characters_in_dict():
@@ -32,8 +31,8 @@ def test_french_accented_characters_in_dict():
             "country": "CA",
             "postalCode": "H3B 4W8",
             "streetAdditional": (
-                "à á â ã ä å è é ê ë ì í î ï ò ó ô õ ö ù ú û ü ý ÿ ç ñ "
-                "À Á Â Ã Ä Å È É Ê Ë Ì Í Î Ï Ò Ó Ô Õ Ö Ù Ú Û Ü Ý Ç Ñ"
+                "à á â ã ä å è é ê ë ì í î ï ò ó ô õ ö ù ú û ü ý ÿ ç ñ ø æ œ "
+                "À Á Â Ã Ä Å È É Ê Ë Ì Í Î Ï Ò Ó Ô Õ Ö Ù Ú Û Ü Ý Ç Ñ Ø Æ Œ"
             ),
             "deliveryInstructions": "",
         },
@@ -49,14 +48,14 @@ def test_french_accented_characters_in_dict():
             "country": "CA",
             "postalCode": "H3B 4W8",
             "streetAdditional": (
-                "a a a a a a e e e e i i i i o o o o o u u u u y y c n "
-                "A A A A A A E E E E I I I I O O O O O U U U U Y C N"
+                "a a a a a a e e e e i i i i o o o o o u u u u y y c n o ae oe "
+                "A A A A A A E E E E I I I I O O O O O U U U U Y C N O AE OE"
             ),
             "deliveryInstructions": "",
         },
     }
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected
 
 def test_weird_dashes():
@@ -65,7 +64,7 @@ def test_weird_dashes():
 
     expected = {"title": "Business-Name", "description": "Company-Info", "address": "123-Main St-Suite 100"}
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected
 
 def test_french_city_names():
@@ -74,7 +73,7 @@ def test_french_city_names():
 
     expected = {"cities": ["Quebec", "Trois-Rivieres", "Saint-Jerome", "Montreal"]}
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected
 
 def test_mixed_content():
@@ -97,7 +96,7 @@ def test_mixed_content():
         "notes": "Client prefere-contact par telephone",
     }
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected
 
 def test_string_input():
@@ -105,7 +104,7 @@ def test_string_input():
     input_str = "Montréal—Québec"
     expected = "Montreal-Quebec"
 
-    result = normalize_assented_characters_json(input_str)
+    result = normalize_accented_characters_json(input_str)
     assert result == expected
 
 def test_list_input():
@@ -113,14 +112,14 @@ def test_list_input():
     input_list = ["Montréal", "Québec", "Trois-Rivières"]
     expected = ["Montreal", "Quebec", "Trois-Rivieres"]
 
-    result = normalize_assented_characters_json(input_list)
+    result = normalize_accented_characters_json(input_list)
     assert result == expected
 
 def test_non_string_input():
     """Test that non-string inputs are returned unchanged."""
     input_data = {"number": 123, "boolean": True, "none_value": None, "float_value": 45.67}
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == input_data
 
 def test_empty_structures():
@@ -129,9 +128,9 @@ def test_empty_structures():
     empty_list = []
     empty_string = ""
 
-    assert normalize_assented_characters_json(empty_dict) == {}
-    assert normalize_assented_characters_json(empty_list) == []
-    assert normalize_assented_characters_json(empty_string) == ""
+    assert normalize_accented_characters_json(empty_dict) == {}
+    assert normalize_accented_characters_json(empty_list) == []
+    assert normalize_accented_characters_json(empty_string) == ""
 
 def test_nested_structures():
     """Test normalization of deeply nested structures."""
@@ -143,7 +142,7 @@ def test_nested_structures():
         "level1": {"level2": {"level3": {"city": "Quebec", "streets": ["Rue-Saint-Jean", "Avenue-du Parc"]}}}
     }
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected
 
 def test_normalize_simple_string_with_accents():
@@ -151,7 +150,7 @@ def test_normalize_simple_string_with_accents():
     input_string = "Montréal Québec Français"
     expected_string = "Montreal Quebec Francais"
 
-    result = normalize_assented_characters_json(input_string)
+    result = normalize_accented_characters_json(input_string)
     assert result == expected_string
 
 def test_normalize_list_with_accents():
@@ -159,7 +158,7 @@ def test_normalize_list_with_accents():
     input_list = ["Montréal", "Québec", "Français", "École"]
     expected_list = ["Montreal", "Quebec", "Francais", "Ecole"]
 
-    result = normalize_assented_characters_json(input_list)
+    result = normalize_accented_characters_json(input_list)
     assert result == expected_list
 
 def test_normalize_nested_dict_with_accents():
@@ -178,7 +177,7 @@ def test_normalize_nested_dict_with_accents():
         ]
     }
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected_data
 
 def test_normalize_dict_keys_with_accents():
@@ -187,7 +186,7 @@ def test_normalize_dict_keys_with_accents():
 
     expected_data = {"adresse": "123 Main St", "ville": "Montreal", "pays": "Canada"}
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected_data
 
 def test_normalize_mixed_data_types():
@@ -210,7 +209,7 @@ def test_normalize_mixed_data_types():
         "cities": ["Montreal", "Quebec", "Ottawa"],
     }
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected_data
 
 def test_normalize_complex_nested_structure():
@@ -247,7 +246,7 @@ def test_normalize_complex_nested_structure():
         }
     }
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected_data
 
 def test_normalize_specific_french_characters():
@@ -264,7 +263,7 @@ def test_normalize_specific_french_characters():
         "mixed_case": "Erole Francais Quebec Montreal",
     }
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected_data
 
 def test_special_characters_oe_ae():
@@ -283,5 +282,5 @@ def test_special_characters_oe_ae():
         "with_dashes": "Cafe-Soren-AEsop-OEuvre",
     }
 
-    result = normalize_assented_characters_json(input_data)
+    result = normalize_accented_characters_json(input_data)
     assert result == expected_data

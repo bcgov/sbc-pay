@@ -47,7 +47,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_quantized, get_str_by_path, normalize_assented_characters_json
+from pay_api.utils.util import get_quantized, get_str_by_path, normalize_accented_characters_json
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -250,7 +250,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         refund.reason = reason
         if details := request.get("details"):
-            refund.details = normalize_assented_characters_json(details)
+            refund.details = normalize_accented_characters_json(details)
 
         refund.save()
         message = REFUND_SUCCESS_MESSAGES.get(f"ROUTINGSLIP.{rs_model.status}")

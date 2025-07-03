@@ -363,7 +363,7 @@ def unstructure_schema_items(schema, items):
     return Converter().unstructure(results)
 
 
-def normalize_assented_characters(s):
+def normalize_accented_characters(s):
     """Normalize accented characters and replace em dash and en dash with hyphen."""
     s = s.replace("—", "-").replace("–", "-")
     # Normalize accented characters
@@ -375,13 +375,13 @@ def normalize_assented_characters(s):
     return s
 
 
-def normalize_assented_characters_json(obj):
+def normalize_accented_characters_json(obj):
     """Normalize accented characters and replace em dash and en dash with hyphen in JSON."""
     if isinstance(obj, dict):
-        return {normalize_assented_characters_json(k): normalize_assented_characters_json(v) for k, v in obj.items()}
+        return {normalize_accented_characters_json(k): normalize_accented_characters_json(v) for k, v in obj.items()}
     elif isinstance(obj, list):
-        return [normalize_assented_characters_json(item) for item in obj]
+        return [normalize_accented_characters_json(item) for item in obj]
     elif isinstance(obj, str):
-        return normalize_assented_characters(obj)
+        return normalize_accented_characters(obj)
     else:
         return obj
