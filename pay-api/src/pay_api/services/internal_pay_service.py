@@ -126,8 +126,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         ]:
             raise BusinessException(Error.ROUTING_SLIP_REFUND)
         current_app.logger.info(f"Processing refund for {invoice.id}, on routing slip {routing_slip.number}")
-        payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-        if payment:
+        if payment := PaymentModel.find_payment_for_invoice(invoice.id):
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
         routing_slip.remaining_amount += get_quantized(invoice.total)
