@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Receipt."""
-
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -48,7 +47,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_quantized, get_str_by_path
+from pay_api.utils.util import get_quantized, get_str_by_path, normalize_assented_characters_json
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -251,7 +250,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         refund.reason = reason
         if details := request.get("details"):
-            refund.details = details
+            refund.details = normalize_assented_characters_json(details)
 
         refund.save()
         message = REFUND_SUCCESS_MESSAGES.get(f"ROUTINGSLIP.{rs_model.status}")
