@@ -574,7 +574,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             },
             "invoices": [],
             "statement": {
-                "amount_owing": 0,
+                "amount_owing": 0.0,
                 "created_on": date_string_now,
                 "frequency": "MONTHLY",
                 "from_date": get_statement_date_string(statement_from_date),
@@ -585,6 +585,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "notification_date": None,
                 "overdue_notification_date": None,
                 "payment_methods": ["EFT"],
+                "statement_total": 0.0,
             },
             "statementSummary": {
                 "dueDate": StatementService.calculate_due_date(
@@ -885,6 +886,7 @@ def test_get_eft_statement_with_invoices(session):
                 "notification_date": None,
                 "overdue_notification_date": None,
                 "payment_methods": ["EFT"],
+                "statement_total": 350.0,
             },
             "statementSummary": {
                 "dueDate": StatementService.calculate_due_date(

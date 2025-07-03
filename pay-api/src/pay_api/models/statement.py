@@ -119,6 +119,7 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     is_overdue = fields.Boolean()
     payment_methods = fields.Method(serialize="payment_methods_to_list")
     amount_owing = fields.Float(load_default=0)
+    statement_total = fields.Float(load_default=0)
 
     def payment_methods_to_list(self, target):
         """Convert comma separated string to list."""

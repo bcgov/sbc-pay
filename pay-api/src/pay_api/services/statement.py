@@ -20,6 +20,7 @@ from dateutil.relativedelta import relativedelta
 from flask import current_app
 from sqlalchemy import Integer, and_, case, cast, distinct, exists, func, literal, literal_column, select
 from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
+from sqlalchemy.sql.functions import coalesce
 
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -171,6 +172,22 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
     @staticmethod
+    def get_statement_total(statement_id: int):
+        """Get statement query used for statement total."""
+        result = (
+            db.session.query(
+                func.sum(InvoiceModel.total - coalesce(InvoiceModel.refund, 0)).label("statement_total"),
+            )
+            .join(
+                StatementInvoicesModel,
+                StatementInvoicesModel.invoice_id == InvoiceModel.id,
+            )
+            .filter(StatementInvoicesModel.statement_id == cast(statement_id, Integer))
+            .scalar()
+        )
+        return result or 0
+
+    @staticmethod
     def find_by_id(statement_id: int):
         """Get statement by id and populate payment methods and amount owing."""
         owing_subquery = Statement.get_statement_owing_query().subquery()
@@ -191,6 +208,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         statement = result[0]
         amount_owing = result[1] if result[1] else 0
         statement.amount_owing = amount_owing
+        statement.statement_total = Statement.get_statement_total(statement_id)
         return statement
 
     @staticmethod
@@ -238,6 +256,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
         for i, (statement, amount_owing) in enumerate(pagination.items):
             statement.amount_owing = amount_owing if amount_owing else 0
+            statement.statement_total = Statement.get_statement_total(statement.id)
             pagination.items[i] = statement
 
         return pagination.items, pagination.total
