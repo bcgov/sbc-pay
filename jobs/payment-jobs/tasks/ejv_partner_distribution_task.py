@@ -221,11 +221,13 @@ class EjvPartnerDistributionTask(CgiEjv):
             today.strftime("%B").upper(), f"{today.day:0>2}"
         )[:100]
         disbursement_desc = f"{disbursement_desc:<100}"
+        file_name = cls.get_file_name()
         ejv_file_model = EjvFileModel(
             file_type=EjvFileType.DISBURSEMENT.value,
-            file_ref=cls.get_file_name(),
+            file_ref=file_name,
             disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).flush()
+        current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
         batch_number = cls.get_batch_number(ejv_file_model.id)
         batch_header = cls.get_batch_header(batch_number, batch_type)
         effective_date = cls.get_effective_date()
@@ -308,7 +310,7 @@ class EjvPartnerDistributionTask(CgiEjv):
 
             jv_batch_trailer = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
             ejv_content = f"{batch_header}{ejv_content}{jv_batch_trailer}"
-            file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ejv_content)
+            file_path_with_name, trg_file_path, _ = cls.create_inbox_and_trg_files(ejv_content, file_name)
             cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
 
             db.session.commit()
