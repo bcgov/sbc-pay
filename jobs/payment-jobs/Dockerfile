@@ -5,9 +5,6 @@ FROM python:3.12.2-bullseye
 #  - Adds some additional logging enhancements on top of the upstream project;
 #    https://github.com/webdevops/go-crond
 #
-# CRON Jobs in OpenShift:
-# - https://blog.danman.eu/cron-jobs-in-openshift/
-#
 # --------------------------------------------------------------------------------------------------------
 ARG SOURCE_REPO=BCDevOps
 ARG GOCROND_VERSION=0.6.2
