@@ -253,12 +253,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.paid = (invoice.paid or 0) + available_credit
             invoice.save()
 
-        credit_used = available_credit - credit_balance
         match cfs_account.payment_method:
             case PaymentMethod.PAD.value:
-                payment_account.pad_credit = max(0, (payment_account.pad_credit or 0) - credit_used)
+                payment_account.pad_credit = credit_balance
             case PaymentMethod.ONLINE_BANKING.value:
-                payment_account.ob_credit = max(0, (payment_account.ob_credit or 0) - credit_used)
+                payment_account.ob_credit = credit_balance
             case _:
                 raise NotImplementedError(f"Payment method {cfs_account.payment_method} not implemented for credits.")
         payment_account.save()

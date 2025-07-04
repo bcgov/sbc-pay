@@ -297,7 +297,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             case PaymentMethod.ONLINE_BANKING.value:
                 payment_account.ob_credit = (payment_account.ob_credit or 0) + refund_amount
             case _:
-                # I don't believe there are CC (DirectPay flow not DirectSale) refunds
+                # I don't believe there are CC (DirectPay flow not DirectSale) refunds, wouldn't want a credit back
                 raise NotImplementedError(f"Payment method {invoice.payment_method_code} not implemented for credits.")
 
         current_app.logger.info(
