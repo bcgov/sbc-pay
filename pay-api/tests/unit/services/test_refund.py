@@ -25,6 +25,7 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
+from pay_api.models.cfs_account import CfsAccount
 from pay_api.services import RefundService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
@@ -109,11 +110,13 @@ def test_create_refund_for_paid_invoice(
     if payment_method in [PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value]:
         send_email_mock = mocker.patch("pay_api.services.base_payment_system.send_email")
 
-    payment_account, cfs_account = factory_payment_account(payment_method_code=payment_method)
+    payment_account = factory_payment_account(payment_method_code=payment_method)
     payment_account.auth_account_id = "test_account_123"
     payment_account.name = "Test Account"
     payment_account.branch_name = "Test Account Branch"
     payment_account.save()
+
+    cfs_account = CfsAccount.find_latest_account_by_account_id(payment_account.id)
 
     i = factory_invoice(
         payment_account=payment_account, payment_method_code=payment_method, cfs_account_id=cfs_account.id
