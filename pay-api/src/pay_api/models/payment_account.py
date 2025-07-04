@@ -48,10 +48,11 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
             "has_nsf_invoices",
             "has_overdue_invoices",
             "branch_name",
-            "credit",
             "eft_enable",
             "name",
+            "ob_credit",
             "pad_activation_date",
+            "pad_credit",
             "pad_tos_accepted_by",
             "pad_tos_accepted_date",
             "payment_method",
@@ -80,7 +81,8 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
     # when this is enabled , send out the  notifications
     statement_notification_enabled = db.Column("statement_notification_enabled", Boolean(), default=False)
 
-    credit = db.Column(db.Numeric(19, 2), nullable=True)
+    ob_credit = db.Column(db.Numeric(19, 2), nullable=True)
+    pad_credit = db.Column(db.Numeric(19, 2), nullable=True)
     billable = db.Column(Boolean(), default=True)
     eft_enable = db.Column(Boolean(), nullable=False, default=False)
 
@@ -108,7 +110,8 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         model = PaymentAccount
         exclude = ["pad_activation_date"]
 
-    credit = fields.Float(data_key="credit")
+    ob_credit = fields.Float(data_key="ob_credit")
+    pad_credit = fields.Float(data_key="pad_credit")
     payment_method = fields.String(data_key="payment_method")
     auth_account_id = fields.String(data_key="account_id")
     name = fields.String(data_key="account_name")

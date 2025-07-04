@@ -125,10 +125,12 @@ class PadService(PaymentSystemService, CFSService):
 
         # Do nothing here as the invoice references are created later.
         # If the account have credit, deduct the credit amount which will be synced when reconciliation runs.
-        account_credit = payment_account.credit or 0
-        if account_credit > 0:
-            current_app.logger.info(f"Account credit {account_credit}, found for {payment_account.auth_account_id}")
-        payment_account.credit = 0 if account_credit < invoice.total else account_credit - invoice.total
+        pad_account_credit = payment_account.pad_credit or 0
+        if pad_account_credit > 0:
+            current_app.logger.info(
+                f"Account PAD credit {pad_account_credit}, found for {payment_account.auth_account_id}"
+            )
+        payment_account.pad_credit = 0 if pad_account_credit < invoice.total else pad_account_credit - invoice.total
         payment_account.flush()
 
     @user_context

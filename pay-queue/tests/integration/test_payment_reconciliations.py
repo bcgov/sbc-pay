@@ -989,7 +989,7 @@ def test_credits(session, app, client, monkeypatch):
 
     # Look up credit file and make sure the credits are recorded.
     pay_account = PaymentAccountModel.find_by_id(pay_account_id)
-    assert pay_account.credit == onac_amount + cm_amount - cm_used_amount
+    assert pay_account.ob_credit == onac_amount + cm_amount - cm_used_amount
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
 

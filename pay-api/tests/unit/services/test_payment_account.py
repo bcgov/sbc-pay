@@ -252,7 +252,16 @@ def test_delete_account_failures(session):
     # Mark the account as NSF and assert account cannot be deleted.
     payload = get_linked_pad_account_payload()
     pay_account: PaymentAccountService = PaymentAccountService.create(payload)
-    pay_account.credit = 100
+    pay_account.ob_credit = 100
+    pay_account.pad_credit = 0
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentAccountService.delete_account(payload.get("accountId"))
+
+    assert excinfo.value.code == Error.OUTSTANDING_CREDIT.code
+
+    pay_account.ob_credit = 0
+    pay_account.pad_credit = 100
     pay_account.save()
 
     with pytest.raises(BusinessException) as excinfo:
@@ -261,7 +270,8 @@ def test_delete_account_failures(session):
     assert excinfo.value.code == Error.OUTSTANDING_CREDIT.code
 
     # Now mark the credit as zero and mark teh CFS account status as FREEZE.
-    pay_account.credit = 0
+    pay_account.ob_credit = 0
+    pay_account.pad_credit = 0
     pay_account.save()
 
     cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, PaymentMethod.PAD.value)

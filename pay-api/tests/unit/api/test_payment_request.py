@@ -1033,7 +1033,8 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
 
     # Update the payment account as ACTIVE
     payment_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-    payment_account.credit = 51
+    payment_account.ob_credit = 51
+    payment_account.pad_credit = 0
     payment_account.save()
 
     token = jwt.create_jwt(get_claims(), token_header)
@@ -1054,10 +1055,13 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
     )
 
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-    assert payment_account.credit == 1
+    assert payment_account.ob_credit == 1
+    assert payment_account.pad_credit == 0
 
     # Now set the credit less than the total of invoice.
-    payment_account.credit = 49
+    payment_account.ob_credit = 49
+    payment_account.pad_credit = 0
+    payment_account.save()
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/payment-requests",
@@ -1075,7 +1079,8 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
     )
     # Credit won't be applied as the invoice total is 50 and the credit should remain as 0.
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-    assert payment_account.credit == 0
+    assert payment_account.ob_credit == 0
+    assert payment_account.pad_credit == 0
 
 
 def test_create_ejv_payment_request(session, client, jwt, app):
