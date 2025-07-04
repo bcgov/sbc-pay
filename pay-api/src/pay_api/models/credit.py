@@ -41,6 +41,7 @@ class Credit(BaseModel):
             "account_id",
             "amount",
             "cfs_identifier",
+            "cfs_site",
             "created_on",
             "details",
             "is_credit_memo",
@@ -51,6 +52,8 @@ class Credit(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     cfs_identifier = db.Column(db.String(50), nullable=True, index=True)
+    # Indicates which payment method the credit is associated with, so we know to put it in ob_credit or pad_credit
+    cfs_site = db.Column(db.String(50), ForeignKey("cfs_accounts.cfs_site"), nullable=True)
     is_credit_memo = db.Column(Boolean(), default=False)
     amount = db.Column(db.Float, nullable=False)
     remaining_amount = db.Column(db.Float, nullable=False)

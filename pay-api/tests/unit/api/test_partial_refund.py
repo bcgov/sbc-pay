@@ -186,6 +186,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
     inv.payment_date = datetime.now(tz=timezone.utc)
+    inv.cfs_account_id = cfs_account.id
     inv.save()
 
     corp_type = CorpTypeModel.find_by_code(inv.corp_type_code)
@@ -241,7 +242,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
         assert credit.is_credit_memo is True
 
         pay_account = PaymentAccountModel.find_by_id(inv.payment_account_id)
-        assert pay_account.credit == Decimal(str(refund_amount))
+        assert pay_account.pad_credit == Decimal(str(refund_amount))
 
         partial_refund = refunds_partial[0]
         disbursements = PartnerDisbursementsModel.query.filter_by(

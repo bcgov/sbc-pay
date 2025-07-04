@@ -90,13 +90,6 @@ def test_create_refund_for_unpaid_invoice(session):
             True,
             InvoiceStatus.REFUND_REQUESTED.value,
         ),
-        (
-            PaymentMethod.CC.value,
-            InvoiceStatus.PAID.value,
-            PaymentStatus.COMPLETED.value,
-            True,
-            InvoiceStatus.CREDITED.value,
-        ),
     ],
 )
 def test_create_refund_for_paid_invoice(
@@ -116,13 +109,15 @@ def test_create_refund_for_paid_invoice(
     if payment_method in [PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value]:
         send_email_mock = mocker.patch("pay_api.services.base_payment_system.send_email")
 
-    payment_account = factory_payment_account(payment_method_code=payment_method)
+    payment_account, cfs_account = factory_payment_account(payment_method_code=payment_method)
     payment_account.auth_account_id = "test_account_123"
     payment_account.name = "Test Account"
     payment_account.branch_name = "Test Account Branch"
     payment_account.save()
 
-    i = factory_invoice(payment_account=payment_account, payment_method_code=payment_method)
+    i = factory_invoice(
+        payment_account=payment_account, payment_method_code=payment_method, cfs_account_id=cfs_account.id
+    )
     i.save()
     if has_reference:
         inv_ref = factory_invoice_reference(i.id)

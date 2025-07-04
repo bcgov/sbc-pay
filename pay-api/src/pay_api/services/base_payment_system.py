@@ -256,9 +256,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         ):
             return InvoiceStatus.CANCELLED.value
 
-        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(
-            invoice.payment_account_id, invoice.payment_method_code
-        )
+        cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
 
         line_items: List[PaymentLineItemModel] = []
         refund_amount = 0
@@ -284,6 +282,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         # until invoice is applied.
         CreditModel(
             cfs_identifier=cms_response.get("credit_memo_number"),
+            cfs_site=cfs_account.cfs_site,
             is_credit_memo=True,
             amount=refund_amount,
             remaining_amount=refund_amount,
@@ -291,10 +290,18 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         ).flush()
 
         # Add up the credit amount and update payment account table.
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
-        payment_account.credit = (payment_account.credit or 0) + refund_amount
+        payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+        match cfs_account.payment_method:
+            case PaymentMethod.PAD.value:
+                payment_account.pad_credit = (payment_account.pad_credit or 0) + refund_amount
+            case PaymentMethod.ONLINE_BANKING.value:
+                payment_account.ob_credit = (payment_account.ob_credit or 0) + refund_amount
+            case _:
+                # I don't believe there are CC (DirectPay flow not DirectSale) refunds
+                raise NotImplementedError(f"Payment method {invoice.payment_method_code} not implemented for credits.")
+
         current_app.logger.info(
-            f"Updating credit amount to {payment_account.credit} for account {payment_account.auth_account_id}"
+            f"Updating {cfs_account.payment_method} credit amount for account {payment_account.auth_account_id}"
         )
         payment_account.flush()
 

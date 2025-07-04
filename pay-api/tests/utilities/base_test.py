@@ -372,7 +372,7 @@ def factory_payment_account(
         has_overdue_invoices=has_overdue_invoices,
     ).save()
 
-    CfsAccount(
+    cfs_account = CfsAccount(
         cfs_party="11111",
         cfs_account=account_number,
         cfs_site="29921",
@@ -386,7 +386,7 @@ def factory_payment_account(
     elif payment_system_code == PaymentSystem.PAYBC.value:
         account.payment_method = payment_method_code
 
-    return account
+    return account, cfs_account
 
 
 def factory_premium_payment_account(bcol_user_id="PB25020", bcol_account_id="1234567890", auth_account_id="1234"):
@@ -537,6 +537,7 @@ def factory_invoice(
     payment_date=None,
     refund=None,
     refund_date=None,
+    cfs_account_id=None,
 ):
     """Return Factory."""
     return Invoice(
@@ -558,6 +559,7 @@ def factory_invoice(
         payment_date=payment_date,
         refund=refund,
         refund_date=refund_date,
+        cfs_account_id=cfs_account_id,
     )
 
 
