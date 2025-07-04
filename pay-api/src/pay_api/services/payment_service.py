@@ -264,8 +264,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account.save()
 
     @classmethod
-    def _transition_invoice_to_credit_card(cls, invoice: Invoice, payment_request: Tuple[Dict[str, Any]]):
-        """Handle transition of invoice to credit card payment method."""
+    def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: Tuple[Dict[str, Any]]):
+        """Handle conversion of invoice to credit card payment method."""
         payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
 
         is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
@@ -312,7 +312,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if is_apply_credit:
             cls._apply_credit(invoice)
         else:
-            cls._transition_invoice_to_credit_card(invoice, payment_request)
+            cls._convert_invoice_to_credit_card(invoice, payment_request)
         current_app.logger.debug(">update_invoice")
         return invoice.asdict()
 
