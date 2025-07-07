@@ -21,7 +21,6 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 from sqlalchemy import Date, and_, cast, func
 
 from utils import mailer
@@ -102,9 +101,8 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
                     addition_params_to_mailer,
                 )
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
+                current_app.logger.error(
                     f"Error on notifying mailer  OB Pending invoice: account id={pay_account.id}, "
                     f"auth account : {pay_account.auth_account_id}, ERROR : {str(e)}",
-                    level="error",
+                    exc_info=True,
                 )
-                current_app.logger.error(e)

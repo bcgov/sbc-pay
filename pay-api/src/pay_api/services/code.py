@@ -24,6 +24,7 @@ from pay_api.models.invoice_status_code import InvoiceStatusCode, InvoiceStatusC
 from pay_api.models.routing_slip_status_code import RoutingSlipStatusCode, RoutingSlipStatusCodeSchema
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code as CodeValue
+from pay_api.utils.enums import PaymentMethod
 
 
 class Code:
@@ -120,4 +121,14 @@ class Code:
     def is_payment_method_valid_for_corp_type(cls, corp_type: str, payment_method: str) -> bool:
         """Check if the given corp_type has the specified payment_method."""
         record = CorpType.query.with_entities(CorpType.payment_methods).filter_by(code=corp_type).first()
-        return payment_method in (record.payment_methods if record else [])
+        available_payment_methods = record.payment_methods if record else []
+        # Online banking can switch to CC payments
+        # PAD can pay NSF invoice with CC
+        # EFT can pay overdue invoice with CC (potentially)
+        if (
+            PaymentMethod.ONLINE_BANKING.value in available_payment_methods
+            or PaymentMethod.PAD.value in available_payment_methods
+            or PaymentMethod.EFT.value in available_payment_methods
+        ):
+            available_payment_methods.append(PaymentMethod.CC.value)
+        return payment_method in available_payment_methods

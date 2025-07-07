@@ -54,7 +54,6 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.util import generate_consolidated_transaction_number, get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 
 from pay_queue import config
 from pay_queue.minio import get_object
@@ -532,7 +531,6 @@ def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]
         formatted_traceback = "".join(traceback.TracebackException.from_exception(ex).format())
         error_msg = f"{error_msg}\n{formatted_traceback}"
     current_app.logger.error(error_msg)
-    capture_message(error_msg, level="error")
     error_messages.append({"error": error_msg, "row": row})
 
 
@@ -893,10 +891,6 @@ def _validate_account(inv: InvoiceModel, row: Dict[str, str]):
             account_number,
             cfs_account.cfs_account,
         )
-        capture_message(
-            f"Customer Account received as {account_number}, but expected {cfs_account.cfs_account}.",
-            level="error",
-        )
 
         raise Exception("Invalid Account Number")  # pylint: disable=broad-exception-raised
 
@@ -916,10 +910,6 @@ def _publish_payment_event(inv: InvoiceModel):
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning("Notification to Queue failed for the Payment Event - %s", payload)
-        capture_message(
-            f"Notification to Queue failed for the Payment Event {payload}.",
-            level="error",
-        )
 
 
 def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amount: float):
@@ -972,11 +962,6 @@ def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amoun
             "Notification to Queue failed for the Account Mailer %s - %s",
             pay_account.auth_account_id,
             payload,
-        )
-        capture_message(
-            "Notification to Queue failed for the Account Mailer "
-            "{auth_account_id}, {msg}.".format(auth_account_id=pay_account.auth_account_id, msg=payload),
-            level="error",
         )
 
 

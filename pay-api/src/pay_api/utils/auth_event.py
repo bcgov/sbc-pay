@@ -5,7 +5,6 @@ from typing import Any, Optional
 
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import gcp_queue_publisher
@@ -57,11 +56,6 @@ class AuthEvent:
                 f"Notification to Queue failed for the Account {
                     params.pay_account.auth_account_id} - {params.pay_account.name}"
             )
-            capture_message(
-                f"Notification to Queue failed for the Account {
-                    params.pay_account.auth_account_id}, {lock_payload}.",
-                level="error",
-            )
 
     @staticmethod
     def publish_unlock_account_event(payment_account: PaymentAccountModel):
@@ -84,9 +78,4 @@ class AuthEvent:
             current_app.logger.warning(
                 f"Notification to Queue failed for the Account {
                     payment_account.auth_account_id} - {payment_account.name}"
-            )
-            capture_message(
-                f"Notification to Queue failed for the Account {
-                    payment_account.auth_account_id}, {unlock_payload}.",
-                level="error",
             )

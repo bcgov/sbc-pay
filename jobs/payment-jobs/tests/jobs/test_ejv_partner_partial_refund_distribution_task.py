@@ -107,7 +107,7 @@ def test_partial_refund_disbursement_with_payment_method(
         target_id=refund_partial.id,
         target_type=EJVLinkType.PARTIAL_REFUND.value,
         partner_code=corp_type.code,
-        status_code=DisbursementStatus.WAITING_FOR_JOB.value
+        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
     ).save()
 
     assert partner_disbursement.status_code == DisbursementStatus.WAITING_FOR_JOB.value

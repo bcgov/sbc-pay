@@ -18,13 +18,11 @@ This module is the API for the Payment system.
 
 import os
 
-import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask, request
 from flask_executor import Executor
 from flask_migrate import Migrate, upgrade
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
-from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
 from pay_api import config
 from pay_api.config import _Config
@@ -38,7 +36,7 @@ from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 from pay_api.utils.user_context import _get_context
 
-setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
+setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
 
 
 def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
@@ -58,19 +56,12 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
             with app.app_context():
                 execute_migrations(app)
             # Alembic has it's own logging config, we'll need to restore our logging here.
-            setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))
+            setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
             app.logger.info("Finished migration upgrade.")
         else:
             app.logger.info("Migrations were executed on prehook.")
     ma.init_app(app)
     endpoints.init_app(app)
-
-    # Configure Sentry
-    if str(app.config.get("SENTRY_ENABLE")).lower() == "true":
-        if app.config.get("SENTRY_DSN", None):  # pragma: no cover
-            sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
-                dsn=app.config.get("SENTRY_DSN"), integrations=[FlaskIntegration()]
-            )
 
     app.after_request(convert_to_camel)
 
@@ -88,7 +79,7 @@ def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
     def set_access_control_header(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Headers"] = (
-            "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name"
+            "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey"
         )
 
     def add_version(response):  # pylint: disable=unused-variable

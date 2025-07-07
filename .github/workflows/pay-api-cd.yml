@@ -1,4 +1,4 @@
-name: PAY API CD OCP
+name: Pay API CD GCP
 
 on:
   push:
@@ -15,20 +15,23 @@ on:
         options:
         - dev
         - test
+        - sandbox
         - prod
-
+      redeploy:
+        description: "Redeploy Application"
+        required: true
+        type: choice
+        options:
+          - "false"
+          - "true"
 jobs:
   pay-api-cd:
-    uses: bcgov/bcregistry-sre/.github/workflows/backend-cd-ocp.yaml@main
+    uses: bcgov/bcregistry-sre/.github/workflows/backend-cd.yaml@main
     with:
       target: ${{ inputs.target }}
       app_name: "pay-api"
       working_directory: "./pay-api"
+      redeploy: ${{ inputs.redeploy }}
     secrets:
-      OP_CONNECT_URL: ${{ secrets.OP_CONNECT_URL }}
-      OP_CONNECT_TOKEN: ${{ secrets.OP_CONNECT_TOKEN }}
-      OPENSHIFT_DOCKER_REGISTRY: ${{ secrets.OPENSHIFT4_DOCKER_REGISTRY }}
-      OPENSHIFT_LOGIN_REGISTRY: ${{secrets.OPENSHIFT4_LOGIN_REGISTRY}}
-      OPENSHIFT_SA_NAME: ${{ secrets.OPENSHIFT4_SA_NAME }}
-      OPENSHIFT_SA_TOKEN: ${{ secrets.OPENSHIFT4_SA_TOKEN }}
-      OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPOSITORY }}
+      WORKLOAD_IDENTIFY_POOLS_PROVIDER: ${{ secrets.WORKLOAD_IDENTIFY_POOLS_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}

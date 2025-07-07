@@ -18,6 +18,7 @@ A simple decorator to add the options method to a Request Class.
 """
 import ast
 import calendar
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict
@@ -40,7 +41,7 @@ def cors_preflight(methods: str = "GET"):
 
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
-            allow_headers = "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name"
+            allow_headers = "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey"
             return (
                 {"Allow": methods},
                 200,
@@ -361,6 +362,32 @@ def unstructure_schema_items(schema, items):
     """Return unstructured results by schema."""
     results = [schema.from_row(item) for item in items]
     return Converter().unstructure(results)
+
+
+# The purpose of these normalize functions is to allow CAS to process AP refunds. If weird or strange characters exist
+# in the refund details, CAS will not be able to process the refund.
+def normalize_accented_characters(s):
+    """Normalize accented characters and replace em dash and en dash with hyphen."""
+    s = s.replace("—", "-").replace("–", "-")
+    # Normalize accented characters
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    # Handle special characters that aren't combining characters
+    s = s.replace("ø", "o").replace("æ", "ae").replace("œ", "oe")
+    s = s.replace("Ø", "O").replace("Æ", "AE").replace("Œ", "OE")
+    return s
+
+
+def normalize_accented_characters_json(obj):
+    """Normalize accented characters and replace em dash and en dash with hyphen in JSON."""
+    if isinstance(obj, dict):
+        return {normalize_accented_characters_json(k): normalize_accented_characters_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [normalize_accented_characters_json(item) for item in obj]
+    elif isinstance(obj, str):
+        return normalize_accented_characters(obj)
+    else:
+        return obj
 
 
 def get_statement_date_string(value, fmt="%B %d, %Y"):

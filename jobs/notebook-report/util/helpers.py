@@ -9,7 +9,10 @@ from email.mime.base import MIMEBase
 from enum import Enum
 
 import pytz
+import requests
 from dateutil.relativedelta import relativedelta
+
+from config import Config
 
 
 @dataclass
@@ -120,3 +123,22 @@ def process_email_attachments(filenames, message):
             part.set_payload(attachment.read())
         encoders.encode_base64(part)
         message.attach(part)
+
+
+def get_auth_token():
+    """Get authentication token from Keycloak."""
+    client = Config.NOTEBOOK_SERVICE_ACCOUNT_ID
+    secret = Config.NOTEBOOK_SERVICE_ACCOUNT_SECRET
+    kc_url = Config.JWT_OIDC_ISSUER + "/protocol/openid-connect/token"
+
+    response = requests.post(
+        url=kc_url,
+        data="grant_type=client_credentials",
+        headers={"content-type": "application/x-www-form-urlencoded"},
+        auth=(client, secret),
+    )
+
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    else:
+        raise Exception("Failed to get authentication token")  # pylint: disable=broad-exception-raised

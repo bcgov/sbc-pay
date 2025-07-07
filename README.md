@@ -15,10 +15,6 @@ For more information on the web component refer to:
 
 [bcol-api\Readme](bcol-api/README.md)
 
-For more information on the Notify API component refer to:
-
-[report-api\Readme](report-api/README.md)
-
 ## How to Contribute
 
 If you would like to contribute, please see our [contributing](CONTRIBUTING.md)

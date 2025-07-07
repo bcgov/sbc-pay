@@ -150,34 +150,44 @@ def test_search_funds_received_history(session, client, jwt, app):
     """Assert that EFT short names funds received history can be searched."""
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    transaction_date = datetime(2024, 7, 31, 0, 0, 0)
-    with freeze_time(transaction_date):
-        payment_account, short_name = setup_test_data()
-        rv = client.get(f"/api/v1/eft-shortnames/{short_name.id}/history", headers=headers)
-        assert rv.status_code == 200
+    transaction_date = datetime(2024, 7, 29, 0, 0, 0)
+    freeze_date = datetime(2024, 7, 31, 0, 0, 0)
+    payment_account, short_name = setup_test_data(exclude_history=True)
 
-        result_dict = rv.json
-        assert result_dict is not None
-        assert result_dict["page"] == 1
-        assert result_dict["total"] == 3
-        assert result_dict["limit"] == 10
-        assert result_dict["items"] is not None
-        assert len(result_dict["items"]) == 3
+    with freeze_time(freeze_date):
+        # Manually set transaction date here for realistic test where a TDI17 deposit date would be several days
+        # before the creation of this record
+        EFTHistoryService.create_funds_received(
+            EFTHistory(
+                short_name_id=short_name.id, amount=351.5, credit_balance=351.5, transaction_date=transaction_date
+            )
+        ).save()
 
-        transaction_date = EFTHistoryService.transaction_date_now().strftime("%Y-%m-%dT%H:%M:%S")
-        funds_received = result_dict["items"][2]
-        assert funds_received["historicalId"] is not None
-        assert funds_received["isReversible"] is False
-        assert funds_received["accountBranch"] is None
-        assert funds_received["accountId"] is None
-        assert funds_received["accountName"] is None
-        assert funds_received["amount"] == 351.50
-        assert funds_received["shortNameBalance"] == 351.50
-        assert funds_received["shortNameId"] == short_name.id
-        assert funds_received["statementNumber"] is None
-        assert funds_received["invoiceId"] is None
-        assert funds_received["transactionType"] == EFTHistoricalTypes.FUNDS_RECEIVED.value
-        assert funds_received["transactionDate"] == transaction_date
+    rv = client.get(f"/api/v1/eft-shortnames/{short_name.id}/history", headers=headers)
+    assert rv.status_code == 200
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict["page"] == 1
+    assert result_dict["total"] == 1
+    assert result_dict["limit"] == 10
+    assert result_dict["items"] is not None
+    assert len(result_dict["items"]) == 1
+    transaction_date_str = transaction_date.strftime("%Y-%m-%dT%H:%M:%S")
+    created_date_str = freeze_date.strftime("%Y-%m-%dT%H:%M:%S")
+    funds_received = result_dict["items"][0]
+    assert funds_received["historicalId"] is not None
+    assert funds_received["isReversible"] is False
+    assert funds_received["accountBranch"] is None
+    assert funds_received["accountId"] is None
+    assert funds_received["accountName"] is None
+    assert funds_received["amount"] == 351.50
+    assert funds_received["shortNameBalance"] == 351.50
+    assert funds_received["shortNameId"] == short_name.id
+    assert funds_received["statementNumber"] is None
+    assert funds_received["invoiceId"] is None
+    assert funds_received["transactionType"] == EFTHistoricalTypes.FUNDS_RECEIVED.value
+    assert funds_received["transactionDate"] == transaction_date_str
+    assert funds_received["createdOn"] == created_date_str
 
 
 def test_search_invoice_refund_history(session, client, jwt, app):
@@ -230,6 +240,7 @@ def test_search_invoice_refund_history(session, client, jwt, app):
         assert invoice_refund["statementNumber"] == 1234
         assert invoice_refund["transactionType"] == EFTHistoricalTypes.INVOICE_REFUND.value
         assert invoice_refund["transactionDate"] == transaction_date
+        assert invoice_refund["createdOn"] == transaction_date
 
 
 def test_search_shortname_refund_history(session, client, jwt, app):
@@ -279,6 +290,7 @@ def test_search_shortname_refund_history(session, client, jwt, app):
         assert shortname_refund["statementNumber"] is None
         assert shortname_refund["transactionType"] == EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value
         assert shortname_refund["transactionDate"] == transaction_date
+        assert shortname_refund["createdOn"] == transaction_date
         assert shortname_refund["eftRefundId"] == eft_refund.id
         assert shortname_refund["eftRefundMethod"] == eft_refund.refund_method
         assert shortname_refund["eftRefundChequeStatus"] == eft_refund.cheque_status

@@ -1,15 +1,14 @@
 """The Notebook Report - This module is the API for the Pay Notebook Report."""
 
+import base64
 import logging
 import os
-import smtplib
 import sys
 import traceback
 from datetime import date, datetime, timedelta, timezone
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import papermill as pm
+import requests
 from flask import Flask, current_app
 
 from config import Config
@@ -18,9 +17,9 @@ from util.helpers import (
     ReportFiles,
     convert_utc_date_to_inclusion_dates,
     create_temporary_directory,
+    get_auth_token,
     get_first_last_month_dates_in_utc,
     get_first_last_week_dates_in_utc,
-    process_email_attachments,
 )
 from util.logging import setup_logging
 
@@ -74,29 +73,72 @@ def build_filenames(report: ReportData):
 
 def build_and_send_email(report: ReportData):
     """Send email for results."""
-    message = MIMEMultipart()
-    if report.error_message:
-        message.attach(MIMEText("ERROR!!! \n" + report.error_message, "plain"))
-    else:
-        message.attach(MIMEText("Please see the attachment(s).", "plain"))
+    token = get_auth_token()
     subject = build_subject(report)
     recipients = build_recipients(report)
     filenames = build_filenames(report)
-    process_email_attachments(filenames, message)
-    send_email(message, subject, recipients)
+
+    email = {
+        "recipients": recipients.replace("[", "").replace("]", ""),
+        "content": {
+            "subject": subject,
+            "body": "<html><body>Please see the attachment(s).</body></html>",
+            "attachments": [],
+        },
+    }
+
+    if report.error_message:
+        email["content"]["body"] = "ERROR!!! \n" + report.error_message
+    else:
+        try:
+            for filename in filenames:
+                file_path = os.path.join(os.getcwd(), "data", filename)
+                with open(file_path, "rb") as f:
+                    file_encoded = base64.b64encode(f.read())
+                    email["content"]["attachments"].append(
+                        {
+                            "fileName": filename,
+                            "fileBytes": file_encoded.decode(),
+                            "fileUrl": "",
+                            "attachOrder": len(email["content"]["attachments"]) + 1,
+                        }
+                    )
+        except Exception:  # noqa: B902
+            logging.error("Error processing attachments")
+            email = {
+                "recipients": Config.ERROR_EMAIL_RECIPIENTS,
+                "content": {
+                    "subject": "Error Notification " + subject,
+                    "body": "Failed to generate report: " + traceback.format_exc(),
+                    "attachments": [],
+                },
+            }
+
+    send_email(email, token)
 
 
-def send_email(message, subject, recipients):
-    """Send email."""
+def send_email(email: dict, token):
+    """Send the email."""
     if Config.DISABLE_EMAIL is True:
         return
-    message["Subject"] = subject
-    server = smtplib.SMTP(Config.EMAIL_SMTP)
-    email_list = recipients.strip("][").split(", ")
-    logging.info("Email recipients list is: %s", email_list)
-    server.sendmail(Config.SENDER_EMAIL, email_list, message.as_string())
-    logging.info("Email with subject '%s' has been sent successfully!", subject)
-    server.quit()
+
+    response = requests.request(
+        "POST",
+        Config.NOTIFY_API_URL,
+        json=email,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    if response.status_code == 200:
+        logging.info("The email was sent successfully to %s", email["recipients"])
+    else:
+        logging.error(f"response:{response}")
+        raise Exception(
+            f"Unsuccessful response when sending email to {email['recipients']}."
+        )  # pylint: disable=broad-exception-raised
 
 
 def process_partner_notebooks(data_dir: str):

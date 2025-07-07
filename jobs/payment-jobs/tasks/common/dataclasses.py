@@ -23,6 +23,7 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementModel
 from pay_api.models import PaymentLineItem as LineItemModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.utils.enums import InvoiceStatus
 
 from tasks.common.enums import PaymentDetailsGlStatus
@@ -35,6 +36,27 @@ class APFlow(Enum):
     EFT_TO_EFT = "EFT_TO_EFT"
     NON_GOV_TO_EFT = "NON_GOV_TO_EFT"  # reserved for BCA only they are crown corp, can't pay via GL only EFT
     ROUTING_SLIP_TO_CHEQUE = "ROUTING_SLIP_TO_CHEQUE"
+
+
+@dataclass
+class TransactionLineItem:
+    """DTO mapping for transaction line item (payment or refund)."""
+
+    amount: Decimal
+    flow_through: str  # invoice_id or invoice_id-PR-partial_refund_id
+    description: str
+    is_reversal: bool
+    target_type: str  # invoice or partial_refund
+
+
+@dataclass
+class EjvTransaction:
+    """DTO mapping for EJV transaction."""
+
+    gov_account_distribution: DistributionCodeModel
+    line_distribution: DistributionCodeModel  # line_distribution or service_fee_distribution
+    line_item: TransactionLineItem
+    target: InvoiceModel | RefundsPartialModel
 
 
 @dataclass
@@ -133,5 +155,5 @@ class APLine:
                 InvoiceStatus.CREDITED.value,
             ],
             distribution=distribution,
-            ap_flow=''
+            ap_flow="",
         )

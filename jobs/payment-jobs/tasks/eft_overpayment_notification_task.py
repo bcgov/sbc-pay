@@ -23,7 +23,6 @@ from pay_api.models.eft_short_names import EFTShortnames as EFTShortnameModel
 from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.email_service import send_email
 from pay_api.utils.enums import EFTShortnameStatus, Role
-from sentry_sdk import capture_message
 from sqlalchemy import and_, func
 
 from services.email_service import _render_eft_overpayment_template
@@ -123,11 +122,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
             cls._update_short_name_dict(unlinked_short_names)
             current_app.logger.info(f"Sending over payment notifications for {len(cls.short_names)} short names.")
             cls._send_notifications()
-        except Exception as e:  # NOQA # pylint: disable=broad-except
-            capture_message(
-                "Error on processing over payment notifications" f"ERROR : {str(e)}",
-                level="error",
-            )
+        except Exception:  # NOQA # pylint: disable=broad-except
             current_app.logger.error("Error on processing over payment notifications", exc_info=True)
 
     @classmethod

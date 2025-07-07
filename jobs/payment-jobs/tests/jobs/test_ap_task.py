@@ -92,7 +92,7 @@ def test_eft_refunds(session, monkeypatch):
         street="655 Douglas St",
         country="CA",
         postal_code="V8V 0B6",
-        entity_name="TEST"
+        entity_name="TEST",
     )
     eft_refund_cheque.save()
     factory_create_eft_credit_invoice_link(invoice_id=invoice.id, eft_credit_id=eft_credit.id)
@@ -216,10 +216,7 @@ def test_routing_slip_refund_error_handling(session, monkeypatch):
         """Mock function to simulate upload error."""
         raise Exception("Failed to upload file")
 
-    monkeypatch.setattr(
-        "tasks.common.cgi_ap.CgiAP.upload",
-        mock_upload_error
-    )
+    monkeypatch.setattr("tasks.common.cgi_ap.CgiAP.upload", mock_upload_error)
 
     ApTask.create_ap_files()
     mock_notification.assert_called_once()

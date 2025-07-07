@@ -22,7 +22,6 @@ from pay_api.models import Statement as StatementModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.utils.enums import QueueSources
 from sbc_common_components.utils.enums import QueueMessageTypes
-from sentry_sdk import capture_message
 
 from .enums import StatementNotificationAction
 
@@ -62,17 +61,11 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, a
             )
         )
     except Exception as e:  # pylint: disable=broad-except
-        current_app.logger.error(e)
-        current_app.logger.warning(
+        current_app.logger.error(
             "Notification to Queue failed for the Account Mailer %s - %s",
             pay_account.auth_account_id,
             payload,
-        )
-        capture_message(
-            "Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.".format(
-                auth_account_id=pay_account.auth_account_id, msg=payload
-            ),
-            level="error",
+            exc_info=True,
         )
 
 
@@ -107,12 +100,7 @@ def publish_statement_notification(
             "Notification to Queue failed for the Account Mailer %s - %s",
             pay_account.auth_account_id,
             payload,
-        )
-        capture_message(
-            "Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.".format(
-                auth_account_id=pay_account.auth_account_id, msg=payload
-            ),
-            level="error",
+            exc_info=True,
         )
 
         return False
@@ -150,15 +138,7 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
     except Exception as e:  # pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning(
-            "Notification to Queue failed for the Account Mailer %s - %s",
-            info.auth_account_id,
-            payload,
-        )
-        capture_message(
-            "Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.".format(
-                auth_account_id=info.auth_account_id, msg=payload
-            ),
-            level="error",
+            "Notification to Queue failed for the Account Mailer %s - %s", info.auth_account_id, payload, exc_info=True
         )
 
         return False

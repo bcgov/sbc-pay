@@ -18,12 +18,10 @@ This module will create statement records for each account.
 import os
 import sys
 
-import sentry_sdk
 from flask import Flask
 from pay_api import build_cache
 from pay_api.services import Flags
 from pay_api.services.gcp_queue import queue
-from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
 from services import data_warehouse
@@ -48,14 +46,6 @@ def create_app(
     app.env = run_mode
 
     app.config.from_object(config.CONFIGURATION[run_mode])
-    # Configure Sentry
-    if str(app.config.get("SENTRY_ENABLE")).lower() == "true":
-        if app.config.get("SENTRY_DSN", None):
-            sentry_sdk.init(
-                dsn=app.config.get("SENTRY_DSN"),
-                integrations=[FlaskIntegration()],
-                release=f"payment-jobs-{job_name}@-",
-            )
     app.logger.info("<<<< Starting Payment Jobs >>>>")
     queue.init_app(app)
     db.init_app(app)

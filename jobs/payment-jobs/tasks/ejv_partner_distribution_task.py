@@ -78,7 +78,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 file_name="ejv_partner_distribution",
                 error_messages=cls.error_messages,
                 table_name="ejv_file",
-                job_name="EJV Partner Distribution Job"
+                job_name="EJV Partner Distribution Job",
             )
             notification.send_notification()
 
@@ -166,7 +166,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         # Partner disbursements - New
         # NRO (NRO is internal, meaning no disbursement needed.)
         disbursement_rows, distribution_code_totals = EjvPartnerDistributionTask._add_partner_disbursements(
-            partner, disbursement_date, disbursement_rows, distribution_code_totals)
+            partner, disbursement_date, disbursement_rows, distribution_code_totals
+        )
 
         return disbursement_rows, distribution_code_totals
 
@@ -174,9 +175,11 @@ class EjvPartnerDistributionTask(CgiEjv):
     def _add_partner_disbursements(partner, disbursement_date, disbursement_rows, distribution_code_totals):
         """Add partner disbursements to the results."""
         partner_disbursements = EjvPartnerDistributionTask.get_partner_disbursements(
-            partner, disbursement_date, EJVLinkType.INVOICE.value, is_reversal=None)
+            partner, disbursement_date, EJVLinkType.INVOICE.value, is_reversal=None
+        )
         partial_refund_disbursements = EjvPartnerDistributionTask.get_partner_disbursements(
-            partner, disbursement_date, EJVLinkType.PARTIAL_REFUND.value, is_reversal=True)
+            partner, disbursement_date, EJVLinkType.PARTIAL_REFUND.value, is_reversal=True
+        )
         partner_disbursements.extend(partial_refund_disbursements)
 
         for (
@@ -317,7 +320,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 {"batch_type": batch_type},
                 f"Error processing EJV file for batch type {batch_type}",
                 cls.error_messages,
-                ex
+                ex,
             )
             cls.has_errors = True
             db.session.rollback()
@@ -403,64 +406,63 @@ class EjvPartnerDistributionTask(CgiEjv):
         return result
 
     @classmethod
-    def get_partner_disbursements(
-        cls,
-        partner,
-        disbursement_date,
-        target_type,
-        is_reversal
-    ):
+    def get_partner_disbursements(cls, partner, disbursement_date, target_type, is_reversal):
         """Get partner disbursements."""
         query = db.session.query(PartnerDisbursementsModel, PaymentLineItemModel, DistributionCodeModel)
 
         if target_type == EJVLinkType.INVOICE.value:
-            query = query.join(
-                PaymentLineItemModel,
-                and_(
-                    PaymentLineItemModel.invoice_id == PartnerDisbursementsModel.target_id,
-                    PartnerDisbursementsModel.target_type == EJVLinkType.INVOICE.value,
-                ),
-            ).join(
-                InvoiceModel, InvoiceModel.id == PaymentLineItemModel.invoice_id
-            ).join(
-                DistributionCodeModel,
-                DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
-            ).filter(
-                PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value,
-                PartnerDisbursementsModel.partner_code == partner.code,
-                or_(
+            query = (
+                query.join(
+                    PaymentLineItemModel,
                     and_(
-                        PartnerDisbursementsModel.is_reversal.is_(False),
-                        InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
+                        PaymentLineItemModel.invoice_id == PartnerDisbursementsModel.target_id,
+                        PartnerDisbursementsModel.target_type == EJVLinkType.INVOICE.value,
                     ),
-                    PartnerDisbursementsModel.is_reversal.is_(True),
-                ),
-                ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()),
-                DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)
+                )
+                .join(InvoiceModel, InvoiceModel.id == PaymentLineItemModel.invoice_id)
+                .join(
+                    DistributionCodeModel,
+                    DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
+                )
+                .filter(
+                    PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value,
+                    PartnerDisbursementsModel.partner_code == partner.code,
+                    or_(
+                        and_(
+                            PartnerDisbursementsModel.is_reversal.is_(False),
+                            InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
+                        ),
+                        PartnerDisbursementsModel.is_reversal.is_(True),
+                    ),
+                    ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()),
+                    DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None),
+                )
             )
         elif target_type == EJVLinkType.PARTIAL_REFUND.value:
-            query = query.join(
-                RefundsPartialModel,
-                and_(
-                    RefundsPartialModel.id == PartnerDisbursementsModel.target_id,
-                    PartnerDisbursementsModel.target_type == EJVLinkType.PARTIAL_REFUND.value
-                ),
-            ).join(
-                PaymentLineItemModel,
-                PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id,
-            ).join(
-                InvoiceModel, InvoiceModel.id == RefundsPartialModel.invoice_id
-            ).join(
-                DistributionCodeModel,
-                DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
-            ).filter(
-                PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value,
-                PartnerDisbursementsModel.partner_code == partner.code,
-                PartnerDisbursementsModel.is_reversal.is_(is_reversal),
-                InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
-                ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()),
-                DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)
+            query = (
+                query.join(
+                    RefundsPartialModel,
+                    and_(
+                        RefundsPartialModel.id == PartnerDisbursementsModel.target_id,
+                        PartnerDisbursementsModel.target_type == EJVLinkType.PARTIAL_REFUND.value,
+                    ),
+                )
+                .join(
+                    PaymentLineItemModel,
+                    PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id,
+                )
+                .join(InvoiceModel, InvoiceModel.id == RefundsPartialModel.invoice_id)
+                .join(
+                    DistributionCodeModel,
+                    DistributionCodeModel.distribution_code_id == PaymentLineItemModel.fee_distribution_id,
+                )
+                .filter(
+                    PartnerDisbursementsModel.status_code == DisbursementStatus.WAITING_FOR_JOB.value,
+                    PartnerDisbursementsModel.partner_code == partner.code,
+                    PartnerDisbursementsModel.is_reversal.is_(is_reversal),
+                    InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
+                    ~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date()),
+                    DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None),
+                )
             )
-        sql = str(query.statement.compile(compile_kwargs={"literal_binds": True}))
-        print("SQL:", sql)
         return query.order_by(DistributionCodeModel.distribution_code_id, PaymentLineItemModel.id).all()

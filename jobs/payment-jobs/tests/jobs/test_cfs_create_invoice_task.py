@@ -115,7 +115,7 @@ def test_create_pad_invoice_mixed_pli_values(session):
         "credit_total": 1,
         "invoice_total": 1.5,
         "invoice_process_date": f"{now}",
-        "invoice_number": ANY
+        "invoice_number": ANY,
     }
     with freeze_time(now):
         with patch("utils.mailer.publish_mailer_events") as mock_publish_mailer_events:
