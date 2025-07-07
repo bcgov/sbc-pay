@@ -29,7 +29,7 @@ from tasks.eft_overpayment_notification_task import EFTOverpaymentNotificationTa
 from tasks.eft_statement_due_task import EFTStatementDueTask
 from tasks.eft_task import EFTTask
 from tasks.routing_slip_task import RoutingSlipTask
-from utils.logger import setup_logging
+from pay_api.utils.logging import setup_logging
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.conf"))  # important to do this first
 
