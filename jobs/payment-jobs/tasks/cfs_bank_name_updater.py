@@ -28,9 +28,9 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_CURRENCY
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
+from pay_api.utils.logging import setup_logging
 
 import config
-from utils.logger import setup_logging
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.conf"))  # important to do this first
 

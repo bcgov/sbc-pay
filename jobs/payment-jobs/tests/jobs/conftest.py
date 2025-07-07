@@ -21,11 +21,11 @@ from unittest.mock import Mock
 import pytest
 from flask_migrate import Migrate, upgrade
 from pay_api.models import db as _db
+from pay_api.utils.logging import setup_logging
 from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from invoke_jobs import create_app
-from utils.logger import setup_logging
 
 
 @pytest.fixture(autouse=True)
