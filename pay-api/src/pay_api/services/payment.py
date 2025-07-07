@@ -532,14 +532,14 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
             template_vars = {
                 "statementSummary": build_statement_summary_context(statement_summary),
-                "grouped_invoices": grouped_invoices,
+                "groupedInvoices": grouped_invoices,
                 "total": formatted_totals,
                 "account": account_info,
                 "statement": build_statement_context(kwargs.get("statement")),
             }
 
             if has_payment_instructions:
-                template_vars["has_payment_instructions"] = True
+                template_vars["hasPaymentInstructions"] = True
 
         report_response = ReportService.get_report_response(
             ReportRequest(

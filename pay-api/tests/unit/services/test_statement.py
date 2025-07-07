@@ -567,7 +567,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                     "methodOfPayment": "DRAWDOWN",
                 },
             },
-            "grouped_invoices": [],
+            "groupedInvoices": [],
             "statement": {
                 "amount_owing": 0.0,
                 "created_on": date_string_now,
@@ -717,7 +717,7 @@ def test_get_eft_statement_with_invoices(session):
                     "methodOfPayment": "DRAWDOWN",
                 },
             },
-            "grouped_invoices": [
+            "groupedInvoices": [
                 {
                     "amount_owing": "250.00",
                     "due_date": "August 31, 2025",
