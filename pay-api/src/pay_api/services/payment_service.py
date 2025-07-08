@@ -73,7 +73,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         business_identifier = business_info.get("businessIdentifier")
 
         payment_account = cls._find_payment_account(authorization)
-        # Note this can change after PaymentSystemFactory.create
+        # Note this can change after PaymentSystemFactory.create depending on role.
         initial_payment_method = _get_payment_method(payment_request, payment_account)
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
