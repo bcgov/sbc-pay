@@ -73,36 +73,36 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         business_identifier = business_info.get("businessIdentifier")
 
         payment_account = cls._find_payment_account(authorization)
-        payment_method = _get_payment_method(payment_request, payment_account)
-
-        if not CodeService.is_payment_method_valid_for_corp_type(corp_type, payment_method):
-            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
-        user: UserContext = kwargs["user"]
-        if user.is_api_user() and (
-            not current_app.config.get("ENVIRONMENT_NAME") == "sandbox" and not user.is_system()
-        ):
-            if payment_method in [PaymentMethod.DIRECT_PAY.value, PaymentMethod.ONLINE_BANKING.value]:
-                raise BusinessException(Error.INVALID_PAYMENT_METHOD)
-
-        current_app.logger.info(
-            f"Creating Payment Request : "
-            f"{payment_method}, {corp_type}, {business_identifier}, "
-            f"{payment_account.auth_account_id}"
-        )
-
+        # Note this can change after PaymentSystemFactory.create depending on role.
+        initial_payment_method = _get_payment_method(payment_request, payment_account)
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
-        # Calculate the fees
         fees = _calculate_fees(corp_type, filing_info)
 
         # Create payment system instance from factory
         pay_service: PaymentSystemService = PaymentSystemFactory.create(
-            payment_method=payment_method,
+            payment_method=initial_payment_method,
             corp_type=corp_type,
             fees=sum(fee.total for fee in fees),
             account_info=account_info,
             payment_account=payment_account,
         )
+        payment_method_code = pay_service.get_payment_method_code()
+        if not CodeService.is_payment_method_valid_for_corp_type(corp_type, payment_method_code):
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+        user: UserContext = kwargs["user"]
+        if user.is_api_user() and (
+            not current_app.config.get("ENVIRONMENT_NAME") == "sandbox" and not user.is_system()
+        ):
+            if payment_method_code in [PaymentMethod.DIRECT_PAY.value, PaymentMethod.ONLINE_BANKING.value]:
+                raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
+        current_app.logger.info(
+            f"Creating Payment Request : "
+            f"{initial_payment_method} -> {payment_method_code}, {corp_type}, {business_identifier}, "
+            f"{payment_account.auth_account_id}"
+        )
+
         current_app.logger.info(f"Created Pay System Instance : {pay_service}")
 
         pay_system_invoice: Dict[str, any] = None
@@ -123,7 +123,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.dat_number = get_str_by_path(account_info, "datNumber")
             invoice.folio_number = filing_info.get("folioNumber", None)
             invoice.business_identifier = business_identifier
-            invoice.payment_method_code = pay_service.get_payment_method_code()
+            invoice.payment_method_code = payment_method_code
             invoice.corp_type_code = corp_type
             details = payment_request.get("details")
             if not details or details == "null":
