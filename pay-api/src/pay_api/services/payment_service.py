@@ -77,7 +77,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         initial_payment_method = _get_payment_method(payment_request, payment_account)
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
-        # Calculate the fees
         fees = _calculate_fees(corp_type, filing_info)
 
         # Create payment system instance from factory
