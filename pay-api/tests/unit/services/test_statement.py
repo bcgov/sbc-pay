@@ -910,7 +910,7 @@ def test_get_eft_statement_with_invoices(session):
                 "serviceFees": "0.00",
                 "statutoryFees": "350.00"
             },
-            "has_payment_instructions": True
+            "hasPaymentInstructions": True
         }
         expected_report_inputs = ReportRequest(
             report_name=report_name,

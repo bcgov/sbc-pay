@@ -16,7 +16,6 @@ from collections import OrderedDict, defaultdict
 from datetime import datetime
 from decimal import Decimal
 from typing import List
-
 from dateutil import parser
 
 from pay_api.utils.enums import PaymentMethod, StatementTitles
@@ -59,6 +58,7 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
             has_staff_payment = False
 
         summary = calculate_invoice_summaries(items, method, statement)
+
         statement_header_text = StatementTitles['DEFAULT'].value
 
         if method == PaymentMethod.INTERNAL.value and has_staff_payment:
@@ -86,38 +86,24 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
 
 def calculate_invoice_summaries(invoices: List[dict], payment_method: str, statement: dict) -> dict:
     """Calculate paid, due, and totals summary for a specific payment method."""
-    paid_total, due_total, total_total = 0, 0, 0
-    for invoice in invoices:
-        if invoice.get("payment_method") != payment_method:
-            continue
+    # Extract invoice IDs for the specific payment method
+    from pay_api.services.statement import Statement
+    invoice_ids = [
+        inv.get("id") for inv in invoices
+        if inv.get("payment_method") == payment_method and inv.get("id")
+    ]
 
-        paid = Decimal(invoice.get("paid", 0))
-        refund = Decimal(invoice.get("refund", 0))
-        total = Decimal(invoice.get("total", 0))
-        refund_date = invoice.get("refund_date")
-        paid_total += paid
-        total_total += total
-        due_amount = total
-
-        if payment_method != PaymentMethod.EFT.value:
-            due_amount -= paid
-            if paid == 0 and refund > 0:
-                due_amount -= refund
-        else:
-            due_amount -= paid
-            if (
-                paid == 0
-                and refund > 0
-                and refund_date
-                and parser.parse(refund_date) <= parser.parse(statement.get("to_date"))
-            ):
-                due_amount -= refund
-        due_total += due_amount
+    # Use database query for calculation
+    summaries = Statement.calculate_invoice_summaries_by_payment_method(
+        invoice_ids=invoice_ids,
+        payment_method=payment_method,
+        statement_to_date=statement.get("to_date")
+    )
 
     return {
-        "paid": get_statement_currency_string(paid_total),
-        "due": get_statement_currency_string(due_total),
-        "total": get_statement_currency_string(total_total),
+        "paid": get_statement_currency_string(summaries["paid_total"]),
+        "due": get_statement_currency_string(summaries["due_total"]),
+        "total": get_statement_currency_string(summaries["total_total"]),
     }
 
 
@@ -134,14 +120,14 @@ def build_transaction_rows(invoices: List[dict]) -> List[dict]:
         for detail in inv.get("details", []):
             detail_lines.append(f"{detail.get('label', '')} {detail.get('value', '')}")
         fee = (
-            round(inv.get("total", 0) - inv.get("service_fees", 0), 2)
+            inv.get("total", 0) - inv.get("service_fees", 0)
             if inv.get("total") and inv.get("service_fees")
             else 0.00
         )
 
-        service_fee = round(inv.get("service_fees", 0), 2)
-        gst = round(inv.get("gst", 0), 2)
-        total = round(inv.get("total", 0), 2)
+        service_fee = inv.get("service_fees", 0)
+        gst = inv.get("gst", 0)
+        total = inv.get("total", 0)
 
         row = {
             "products": product_lines,
