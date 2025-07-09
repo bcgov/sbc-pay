@@ -158,7 +158,7 @@ def build_transaction_rows(invoices: List[dict]) -> List[dict]:
             extra={
                 k: v for k, v in inv.items()
                 if k not in {
-                    "line_items", "details", "folio_number", "created_on",
+                    "details", "folio_number", "created_on",
                     "fee", "gst", "total", "service_fees"
                 }
             }
