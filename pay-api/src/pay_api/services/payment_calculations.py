@@ -16,7 +16,6 @@ from collections import OrderedDict, defaultdict
 from datetime import datetime
 from decimal import Decimal
 from typing import List
-from dateutil import parser
 
 from pay_api.utils.enums import PaymentMethod, StatementTitles
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
@@ -86,8 +85,9 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
 
 def calculate_invoice_summaries(invoices: List[dict], payment_method: str, statement: dict) -> dict:
     """Calculate paid, due, and totals summary for a specific payment method."""
-    # Extract invoice IDs for the specific payment method
-    from pay_api.services.statement import Statement
+    # Import from here as the statement invoice already imports statement and causes circular import.
+    from pay_api.services.statement import Statement  # pylint: disable=import-outside-toplevel
+
     invoice_ids = [
         inv.get("id") for inv in invoices
         if inv.get("payment_method") == payment_method and inv.get("id")
