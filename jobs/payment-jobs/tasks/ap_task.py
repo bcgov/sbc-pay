@@ -97,10 +97,6 @@ class ApTask(CgiAP):
         """
         cls.has_errors = False
         cls.error_messages = []
-        cls.refund_to_ap_flow = {
-            APRefundMethod.CHEQUE.value: APFlow.EFT_TO_CHEQUE,
-            APRefundMethod.EFT.value: APFlow.EFT_TO_EFT,
-        }
 
         try:
             cls._create_routing_slip_refund_file()
@@ -172,7 +168,10 @@ class ApTask(CgiAP):
             line_count_total = 0
             for eft_refund in refunds:
                 ap_supplier = APSupplier(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)
-                ap_flow = cls.refund_to_ap_flow[eft_refund.refund_method]
+                ap_flow = {
+                    APRefundMethod.CHEQUE.value: APFlow.EFT_TO_CHEQUE,
+                    APRefundMethod.EFT.value: APFlow.EFT_TO_EFT,
+                }[eft_refund.refund_method]
                 current_app.logger.info(
                     f"Creating refund for EFT Refund {eft_refund.id}, {ap_flow.value} Amount {eft_refund.refund_amount}"
                 )
