@@ -569,7 +569,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             },
             "groupedInvoices": [],
             "statement": {
-                "amount_owing": 0.0,
+                "amount_owing": '0.00',
                 "created_on": date_string_now,
                 "frequency": "MONTHLY",
                 "from_date": get_statement_date_string(statement_from_date),
@@ -720,7 +720,9 @@ def test_get_eft_statement_with_invoices(session):
             "groupedInvoices": [
                 {
                     "amount_owing": "250.00",
-                    "due_date": "August 31, 2025",
+                    "due_date": get_statement_date_string(StatementService.calculate_due_date(
+                        statement_to_date.date()
+                    )),  # pylint: disable=protected-access
                     "due_summary": "250.00",
                     "is_index_0": True,
                     "paid_summary": "100.00",

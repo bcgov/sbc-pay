@@ -13,11 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from collections import OrderedDict, defaultdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from typing import List
 
-from pay_api.utils.enums import PaymentMethod, StatementTitles
+import cattrs
+
+from pay_api.utils.enums import PaymentMethod, StatementFrequency, StatementTitles
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
 
@@ -107,6 +110,21 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
     }
 
 
+@dataclass
+class TransactionRow:
+    """transactions details."""
+
+    products: List[str]
+    details: List[str]
+    folio: str
+    created_on: str
+    fee: str
+    service_fee: str
+    gst: str
+    total: str
+    extra: dict = field(default_factory=dict)
+
+
 def build_transaction_rows(invoices: List[dict]) -> List[dict]:
     """Build transactions for grouped_invoices."""
     rows = []
@@ -125,25 +143,30 @@ def build_transaction_rows(invoices: List[dict]) -> List[dict]:
             else 0.00
         )
 
-        service_fee = inv.get("service_fees", 0)
-        gst = inv.get("gst", 0)
-        total = inv.get("total", 0)
+        row = TransactionRow(
+            products=product_lines,
+            details=detail_lines,
+            folio=inv.get("folio_number") or "-",
+            created_on=get_statement_date_string(
+                datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y")
+                if inv.get("created_on") else "-"
+            ),
+            fee=get_statement_currency_string(fee),
+            service_fee=get_statement_currency_string(inv.get("service_fees", 0)),
+            gst=get_statement_currency_string(inv.get("gst", 0)),
+            total=get_statement_currency_string(inv.get("total", 0)),
+            extra={
+                k: v for k, v in inv.items()
+                if k not in {
+                    "line_items", "details", "folio_number", "created_on",
+                    "fee", "gst", "total", "service_fees"
+                }
+            }
+        )
 
-        row = {
-            "products": product_lines,
-            "details": detail_lines,
-            "folio": inv.get("folio_number") or "-",
-            "created_on": get_statement_date_string(datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y")
-                                                    if inv.get("created_on") else "-"),
-            "fee": get_statement_currency_string(fee),
-            "service_fee": get_statement_currency_string(service_fee),
-            "gst": get_statement_currency_string(gst),
-            "total": get_statement_currency_string(total),
-        }
-
-        skip_keys = {"details", "folio_number", "created_on", "fee", "gst", "total", "service_fees"}
-        row.update((k, v) for k, v in inv.items() if k not in skip_keys)
-        rows.append(row)
+        row_dict = cattrs.unstructure(row)
+        row_dict.update(row_dict.pop("extra"))
+        rows.append(row_dict)
 
     return rows
 
@@ -160,7 +183,7 @@ def build_statement_context(statement: dict) -> dict:
     created_on = get_statement_date_string(statement.get('created_on'))
     frequency = statement.get('frequency', '')
 
-    if frequency == 'DAILY' and from_date:
+    if frequency == StatementFrequency.DAILY.value and from_date:
         enhanced_statement['duration'] = from_date
     elif from_date and to_date:
         enhanced_statement['duration'] = f"{from_date} - {to_date}"

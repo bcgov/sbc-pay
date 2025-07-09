@@ -343,7 +343,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             )
         ).first()
 
-        return dict(result._mapping)
+        return result._asdict()
 
     @staticmethod
     def is_eft_statement(statement: StatementModel, ordered_invoices: List[InvoiceModel]) -> bool:
