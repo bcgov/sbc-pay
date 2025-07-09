@@ -153,23 +153,25 @@ class ApTask(CgiAP):
         )
 
         current_app.logger.info(f"Found {len(eft_refunds_dao)} to refund.")
-        refund_to_ap_flow = {
-            APRefundMethod.CHEQUE.value: APFlow.EFT_TO_CHEQUE,
-            APRefundMethod.EFT.value: APFlow.EFT_TO_EFT,
-        }
+
         for refunds in list(batched(eft_refunds_dao, 250)):
+            file_name = cls.get_file_name()
             ejv_file_model = EjvFileModel(
                 file_type=EjvFileType.EFT_REFUND.value,
-                file_ref=cls.get_file_name(),
+                file_ref=file_name,
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
             ).flush()
+            current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
             content: str = cls.get_batch_header(batch_number)
             batch_total = 0
             line_count_total = 0
             for eft_refund in refunds:
                 ap_supplier = APSupplier(eft_refund.cas_supplier_number, eft_refund.cas_supplier_site)
-                ap_flow = refund_to_ap_flow[eft_refund.refund_method]
+                ap_flow = {
+                    APRefundMethod.CHEQUE.value: APFlow.EFT_TO_CHEQUE,
+                    APRefundMethod.EFT.value: APFlow.EFT_TO_EFT,
+                }[eft_refund.refund_method]
                 current_app.logger.info(
                     f"Creating refund for EFT Refund {eft_refund.id}, {ap_flow.value} Amount {eft_refund.refund_amount}"
                 )
@@ -199,7 +201,7 @@ class ApTask(CgiAP):
                 eft_refund.disbursement_status_code = DisbursementStatus.UPLOADED.value
 
             content = f"{content}{cls.get_batch_trailer(batch_number, batch_total, control_total=line_count_total)}"
-            cls._create_file_and_upload(content)
+            cls._create_file_and_upload(content, file_name)
 
     @classmethod
     def _create_routing_slip_refund_file(
@@ -218,12 +220,14 @@ class ApTask(CgiAP):
             return
 
         for routing_slips in list(batched(routing_slips_dao, 250)):
+            file_name = cls.get_file_name()
             ejv_file_model: EjvFileModel = EjvFileModel(
                 file_type=EjvFileType.REFUND.value,
-                file_ref=cls.get_file_name(),
+                file_ref=file_name,
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
             ).flush()
 
+            current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
             content: str = cls.get_batch_header(batch_number)
             batch_total = 0
@@ -254,7 +258,7 @@ class ApTask(CgiAP):
                 rs.status = RoutingSlipStatus.REFUND_UPLOADED.value
             batch_trailer = cls.get_batch_trailer(batch_number, float(batch_total), control_total=total_line_count)
             content = f"{content}{batch_trailer}"
-            cls._create_file_and_upload(content)
+            cls._create_file_and_upload(content, file_name)
 
     @classmethod
     def get_invoices_for_disbursement(cls, partner):
@@ -331,11 +335,13 @@ class ApTask(CgiAP):
         # 250 MAX is all the transactions the feeder can take per batch.
         for invoices in list(batched(total_invoices, 250)):
             bca_distribution = cls._get_bca_distribution_string()
+            file_name = cls.get_file_name()
             ejv_file_model: EjvFileModel = EjvFileModel(
                 file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
-                file_ref=cls.get_file_name(),
+                file_ref=file_name,
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
             ).flush()
+            current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
             # Create a single header record for this file, provides query ejv_file -> ejv_header -> ejv_invoice_links
             # Note the inbox file doesn't include ejv_header when submitting.
             ejv_header_model: EjvFileModel = EjvHeaderModel(
@@ -385,11 +391,12 @@ class ApTask(CgiAP):
                 inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
             db.session.flush()
 
-            cls._create_file_and_upload(content)
+            cls._create_file_and_upload(content, file_name)
 
     @classmethod
-    def _create_file_and_upload(cls, ap_content):
-        file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ap_content)
+    def _create_file_and_upload(cls, ap_content, file_name):
+        """Create file and upload."""
+        file_path_with_name, trg_file_path, _ = cls.create_inbox_and_trg_files(ap_content, file_name)
         cls.upload(ap_content, file_name, file_path_with_name, trg_file_path)
         db.session.commit()
         # Sleep to prevent collision on file name.

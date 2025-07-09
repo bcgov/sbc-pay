@@ -166,10 +166,9 @@ class CgiEjv:
         return current_app.config.get("CGI_TRIGGER_FILE_SUFFIX")
 
     @classmethod
-    def create_inbox_and_trg_files(cls, ejv_content):
+    def create_inbox_and_trg_files(cls, ejv_content, file_name):
         """Create inbox and trigger files."""
         file_path: str = tempfile.gettempdir()
-        file_name = cls.get_file_name()
         file_path_with_name = f"{file_path}/{file_name}"
         trg_file_path = f"{file_path_with_name}.{cls.get_trg_suffix()}"
         with open(file_path_with_name, "a+", encoding="utf-8") as jv_file:

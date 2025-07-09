@@ -84,11 +84,13 @@ class EjvPaymentTask(CgiEjv):
         batch_total: float = 0
         control_total: int = 0
 
+        file_name = cls.get_file_name()
         ejv_file_model: EjvFileModel = EjvFileModel(
             file_type=EjvFileType.PAYMENT.value,
-            file_ref=cls.get_file_name(),
+            file_ref=file_name,
             disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).flush()
+        current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
         batch_number = cls.get_batch_number(ejv_file_model.id)
 
         account_ids = cls._get_account_ids_for_payment(batch_type)
@@ -117,7 +119,6 @@ class EjvPaymentTask(CgiEjv):
             line_number: int = 0
             total: float = 0
             current_app.logger.info(f"Processing invoices and partial refunds for account_id: {account_id}.")
-
             for transaction in transactions:
                 total += transaction.line_item.amount
                 line_number += 1
@@ -212,7 +213,7 @@ class EjvPaymentTask(CgiEjv):
 
         batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
         ejv_content = f"{batch_header}{ejv_content}{batch_trailer}"
-        file_path_with_name, trg_file_path, file_name = cls.create_inbox_and_trg_files(ejv_content)
+        file_path_with_name, trg_file_path, _ = cls.create_inbox_and_trg_files(ejv_content, file_name)
         current_app.logger.info("Uploading to sftp.")
         cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
         db.session.commit()
