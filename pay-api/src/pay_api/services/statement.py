@@ -298,7 +298,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             return {
                 "paid_total": 0.0,
                 "due_total": 0.0,
-                "total_total": 0.0
+                "total_summary": 0.0
             }
 
         if payment_method != PaymentMethod.EFT.value:
@@ -330,7 +330,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         result = (
             db.session.query(
                 func.coalesce(func.sum(InvoiceModel.paid), 0).label("paid_total"),
-                func.coalesce(func.sum(InvoiceModel.total), 0).label("total_total"),
+                func.coalesce(func.sum(InvoiceModel.total), 0).label("total_summary"),
                 func.coalesce(
                     func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0
                 ).label("due_total")
@@ -343,11 +343,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             )
         ).first()
 
-        return {
-            "paid_total": float(result.paid_total or 0),
-            "due_total": float(result.due_total or 0),
-            "total_total": float(result.total_total or 0)
-        }
+        return dict(result._mapping)
 
     @staticmethod
     def is_eft_statement(statement: StatementModel, ordered_invoices: List[InvoiceModel]) -> bool:

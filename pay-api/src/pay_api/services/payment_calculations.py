@@ -103,7 +103,7 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
     return {
         "paid": get_statement_currency_string(summaries["paid_total"]),
         "due": get_statement_currency_string(summaries["due_total"]),
-        "total": get_statement_currency_string(summaries["total_total"]),
+        "total": get_statement_currency_string(summaries["total_summary"]),
     }
 
 
@@ -188,24 +188,22 @@ def build_statement_summary_context(statement_summary: dict) -> dict:
 
     enhanced_statement_summary = statement_summary.copy()
 
-    last_statement_total = statement_summary.get('lastStatementTotal')
-    last_statement_paid_amount = statement_summary.get('lastStatementPaidAmount')
+    enhanced_statement_summary['lastStatementTotal'] = get_statement_currency_string(
+        statement_summary.get('lastStatementTotal'))
+    enhanced_statement_summary['lastStatementPaidAmount'] = get_statement_currency_string(
+        statement_summary.get('lastStatementPaidAmount'))
+
     cancelled_transactions = statement_summary.get('cancelledTransactions')
-    latest_statement_payment_date = statement_summary.get('latestStatementPaymentDate')
-    due_date = statement_summary.get('dueDate')
-
-    enhanced_statement_summary['lastStatementTotal'] = get_statement_currency_string(last_statement_total)
-    enhanced_statement_summary['lastStatementPaidAmount'] = get_statement_currency_string(last_statement_paid_amount)
-
     if cancelled_transactions not in [None, 0, '0', '0.00']:
         enhanced_statement_summary['cancelledTransactions'] = get_statement_currency_string(cancelled_transactions)
 
-    if latest_statement_payment_date:
-        enhanced_statement_summary['latestStatementPaymentDate'] = get_statement_date_string(
-            latest_statement_payment_date, "%B %d, %Y")
-    else:
-        enhanced_statement_summary['latestStatementPaymentDate'] = None
+    latest_statement_payment_date = statement_summary.get('latestStatementPaymentDate')
+    enhanced_statement_summary['latestStatementPaymentDate'] = (
+        get_statement_date_string(latest_statement_payment_date, "%B %d, %Y")
+        if latest_statement_payment_date else None
+    )
 
-    enhanced_statement_summary['dueDate'] = get_statement_date_string(due_date, "%B %d, %Y")
+    enhanced_statement_summary['dueDate'] = get_statement_date_string(
+        statement_summary.get('dueDate'), "%B %d, %Y")
 
     return enhanced_statement_summary
