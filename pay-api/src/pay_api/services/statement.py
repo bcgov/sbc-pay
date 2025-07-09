@@ -315,7 +315,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                         InvoiceModel.paid == 0,
                         InvoiceModel.refund > 0,
                         InvoiceModel.refund_date.isnot(None),
-                        InvoiceModel.refund_date <= statement_to_date
+                        InvoiceModel.refund_date <= func.cast(statement_to_date, db.Date)
                     ), InvoiceModel.refund),
                     else_=0
                 )

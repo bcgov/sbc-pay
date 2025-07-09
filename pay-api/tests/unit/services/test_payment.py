@@ -805,12 +805,34 @@ def test_build_grouped_invoice_context_basic():
     assert float(cc_item["totals_summary"]) >= 0
 
 
-def test_calculate_invoice_summaries():
+def test_calculate_invoice_summaries(session):
     """Test invoice summaries."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    invoice1 = factory_invoice(
+        payment_account,
+        paid=0.00,
+        refund=100.00,
+        total=100.00,
+        payment_method_code=PaymentMethod.EFT.value,
+        refund_date="2024-06-01"
+    )
+    invoice1.save()
+
+    invoice2 = factory_invoice(
+        payment_account,
+        paid=100.00,
+        refund=0.00,
+        total=100.00,
+        payment_method_code=PaymentMethod.EFT.value
+    )
+    invoice2.save()
+
     invoices = [
-        {"payment_method": PaymentMethod.EFT.value, "paid": 0,
+        {"id": invoice1.id, "payment_method": PaymentMethod.EFT.value, "paid": 0,
          "refund": 100, "total": 100, "refund_date": "2024-06-01"},
-        {"payment_method": PaymentMethod.EFT.value, "paid": 100,
+        {"id": invoice2.id, "payment_method": PaymentMethod.EFT.value, "paid": 100,
          "refund": 0, "total": 100, "refund_date": None},
     ]
     statement = {"to_date": "2024-06-01"}
