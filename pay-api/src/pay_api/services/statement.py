@@ -290,9 +290,10 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
     @staticmethod
-    def calculate_invoice_summaries_by_payment_method(invoice_ids: List[int], payment_method: str, statement_to_date: str = None):
+    def calculate_invoice_summaries_by_payment_method(invoice_ids: List[int],
+                                                      payment_method: str,
+                                                      statement_to_date: str = None):
         """Calculate invoice summaries for a specific payment method using database aggregation."""
-
         if not invoice_ids:
             return {
                 "paid_total": 0.0,
