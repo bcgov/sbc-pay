@@ -884,7 +884,7 @@ def test_get_eft_statement_with_invoices(session):
             "statement": {
                 "amount_owing": "250.00",
                 "created_on": date_string_now,
-                "duration": "July 01, 2025 - July 31, 2025",
+                "duration": f"{get_statement_date_string(statement_from_date)} - {get_statement_date_string(statement_to_date)}",
                 "frequency": "MONTHLY",
                 "from_date": get_statement_date_string(statement_from_date),
                 "to_date": get_statement_date_string(statement_to_date),
