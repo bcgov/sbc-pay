@@ -537,6 +537,7 @@ def factory_invoice(
     payment_date=None,
     refund=None,
     refund_date=None,
+    cfs_account_id=None,
 ):
     """Return Factory."""
     return Invoice(
@@ -558,6 +559,7 @@ def factory_invoice(
         payment_date=payment_date,
         refund=refund,
         refund_date=refund_date,
+        cfs_account_id=cfs_account_id,
     )
 
 

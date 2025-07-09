@@ -25,6 +25,7 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
+from pay_api.models.cfs_account import CfsAccount
 from pay_api.services import RefundService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
@@ -90,13 +91,6 @@ def test_create_refund_for_unpaid_invoice(session):
             True,
             InvoiceStatus.REFUND_REQUESTED.value,
         ),
-        (
-            PaymentMethod.CC.value,
-            InvoiceStatus.PAID.value,
-            PaymentStatus.COMPLETED.value,
-            True,
-            InvoiceStatus.CREDITED.value,
-        ),
     ],
 )
 def test_create_refund_for_paid_invoice(
@@ -122,7 +116,11 @@ def test_create_refund_for_paid_invoice(
     payment_account.branch_name = "Test Account Branch"
     payment_account.save()
 
-    i = factory_invoice(payment_account=payment_account, payment_method_code=payment_method)
+    cfs_account = CfsAccount.find_latest_account_by_account_id(payment_account.id)
+
+    i = factory_invoice(
+        payment_account=payment_account, payment_method_code=payment_method, cfs_account_id=cfs_account.id
+    )
     i.save()
     if has_reference:
         inv_ref = factory_invoice_reference(i.id)

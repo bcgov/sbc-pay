@@ -716,7 +716,8 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         # 1 - Check if account have any credits
         # 2 - Check if account have any PAD/EFT transactions done in last N (10) days.
-        if pay_account.credit and pay_account.credit > 0:
+        total_credits = (pay_account.ob_credit or 0) + (pay_account.pad_credit or 0)
+        if total_credits > 0:
             raise BusinessException(Error.OUTSTANDING_CREDIT)
         cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, PaymentMethod.PAD.value)
         # Check if PAD account is frozen.

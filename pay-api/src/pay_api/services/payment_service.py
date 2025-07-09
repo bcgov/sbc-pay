@@ -23,6 +23,7 @@ from flask import copy_current_request_context, current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
@@ -224,6 +225,79 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return bcol_account
 
     @classmethod
+    def _apply_credit(cls, invoice: Invoice):
+        """Apply credit to invoice and update payment account."""
+        credit_balance = Decimal("0")
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        invoice_balance = invoice.total - (invoice.paid or 0)
+
+        cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
+        match cfs_account.payment_method:
+            case PaymentMethod.PAD.value:
+                available_credit = payment_account.pad_credit or 0
+            case PaymentMethod.ONLINE_BANKING.value:
+                available_credit = payment_account.ob_credit or 0
+            case _:
+                raise NotImplementedError(f"Payment method {cfs_account.payment_method} not implemented for credits.")
+
+        if available_credit >= invoice_balance:
+            pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+                invoice.payment_method_code
+            )
+            # Only release records, as the actual status change should happen during reconciliation in pay-queue.
+            pay_service.apply_credit(invoice)
+            credit_balance = available_credit - invoice_balance
+            invoice.paid = invoice.total
+            invoice.save()
+        elif available_credit <= invoice_balance:
+            invoice.paid = (invoice.paid or 0) + available_credit
+            invoice.save()
+
+        match cfs_account.payment_method:
+            case PaymentMethod.PAD.value:
+                payment_account.pad_credit = credit_balance
+            case PaymentMethod.ONLINE_BANKING.value:
+                payment_account.ob_credit = credit_balance
+            case _:
+                raise NotImplementedError(f"Payment method {cfs_account.payment_method} not implemented for credits.")
+        payment_account.save()
+
+    @classmethod
+    def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: Tuple[Dict[str, Any]]):
+        """Handle conversion of invoice to credit card payment method."""
+        payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
+
+        is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
+        is_not_changing_to_cc = payment_method not in (
+            PaymentMethod.CC.value,
+            PaymentMethod.DIRECT_PAY.value,
+        )
+        # can patch only if the current payment method is OB
+        if is_not_currently_on_ob or is_not_changing_to_cc:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        # check if it has any invoice references already created
+        # if there is any invoice ref , send them to the invoiced credit card flow
+
+        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+        if invoice_reference:
+            invoice.payment_method_code = PaymentMethod.CC.value
+        else:
+            pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+                PaymentMethod.DIRECT_PAY.value
+            )
+            payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+            pay_service.create_invoice(
+                payment_account,
+                invoice.payment_line_items,
+                invoice,
+                corp_type_code=invoice.corp_type_code,
+            )
+
+            invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
+        invoice.save()
+
+    @classmethod
     def update_invoice(
         cls,
         invoice_id: int,
@@ -233,59 +307,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         """Update invoice related records."""
         current_app.logger.debug("<update_invoice")
 
-        invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=False)
-        # If the call is to apply credit, apply credit and release records.
+        invoice = Invoice.find_by_id(invoice_id, skip_auth_check=False)
         if is_apply_credit:
-            credit_balance = Decimal("0")
-            payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
-            invoice_balance = invoice.total - (invoice.paid or 0)
-            if (payment_account.credit or 0) >= invoice_balance:
-                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                    invoice.payment_method_code
-                )
-                # Only release records, as the actual status change should happen during reconciliation.
-                pay_service.apply_credit(invoice)
-                credit_balance = payment_account.credit - invoice_balance
-                invoice.paid = invoice.total
-                invoice.save()
-            elif (payment_account.credit or 0) <= invoice_balance:
-                invoice.paid = (invoice.paid or 0) + (payment_account.credit or 0)
-                invoice.save()
-
-            payment_account.credit = credit_balance
-            payment_account.save()
+            cls._apply_credit(invoice)
         else:
-            payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
-
-            is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
-            is_not_changing_to_cc = payment_method not in (
-                PaymentMethod.CC.value,
-                PaymentMethod.DIRECT_PAY.value,
-            )
-            # can patch only if the current payment method is OB
-            if is_not_currently_on_ob or is_not_changing_to_cc:
-                raise BusinessException(Error.INVALID_REQUEST)
-
-            # check if it has any invoice references already created
-            # if there is any invoice ref , send them to the invoiced credit card flow
-
-            invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-            if invoice_reference:
-                invoice.payment_method_code = PaymentMethod.CC.value
-            else:
-                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                    PaymentMethod.DIRECT_PAY.value
-                )
-                payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-                pay_service.create_invoice(
-                    payment_account,
-                    invoice.payment_line_items,
-                    invoice,
-                    corp_type_code=invoice.corp_type_code,
-                )
-
-                invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
-            invoice.save()
+            cls._convert_invoice_to_credit_card(invoice, payment_request)
         current_app.logger.debug(">update_invoice")
         return invoice.asdict()
 
@@ -301,7 +327,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         # update transaction function will update the status from PayBC
         _update_active_transactions(invoice_id)
 
-        invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
+        invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
         current_app.logger.debug(f"<Delete Invoice {invoice_id}, {invoice.invoice_status_code}")
 
         # Create the payment system implementation
@@ -341,7 +367,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     def accept_delete(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
         """Mark payment related records to be deleted."""
         current_app.logger.debug("<accept_delete")
-        invoice: Invoice = Invoice.find_by_id(invoice_id, one_of_roles=[EDIT_ROLE])
+        invoice = Invoice.find_by_id(invoice_id, one_of_roles=[EDIT_ROLE])
 
         _check_if_invoice_can_be_deleted(invoice)
         invoice.payment_status_code = InvoiceStatus.DELETE_ACCEPTED.value
@@ -393,7 +419,7 @@ def _calculate_fees(corp_type, filing_info):
 def _update_active_transactions(invoice_id: int):
     # update active transactions
     current_app.logger.debug("<_update_active_transactions")
-    transaction: PaymentTransaction = PaymentTransaction.find_active_by_invoice_id(invoice_id)
+    transaction = PaymentTransaction.find_active_by_invoice_id(invoice_id)
     if transaction:
         # check existing payment status in PayBC;
         PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
