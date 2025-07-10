@@ -226,19 +226,17 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def _apply_credit(cls, invoice: Invoice):
-        """Apply credit to invoice and update payment account."""
+        """Apply credit to invoice and update payment account for online banking only."""
         credit_balance = Decimal("0")
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         invoice_balance = invoice.total - (invoice.paid or 0)
 
         cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
         match cfs_account.payment_method:
-            case PaymentMethod.PAD.value:
-                available_credit = payment_account.pad_credit or 0
             case PaymentMethod.ONLINE_BANKING.value:
                 available_credit = payment_account.ob_credit or 0
             case _:
-                raise NotImplementedError(f"Payment method {cfs_account.payment_method} not implemented for credits.")
+                raise NotImplementedError(f"Payment method {cfs_account.payment_method} invalid Online Banking only.")
 
         if available_credit >= invoice_balance:
             pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
@@ -254,12 +252,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.save()
 
         match cfs_account.payment_method:
-            case PaymentMethod.PAD.value:
-                payment_account.pad_credit = credit_balance
             case PaymentMethod.ONLINE_BANKING.value:
                 payment_account.ob_credit = credit_balance
             case _:
-                raise NotImplementedError(f"Payment method {cfs_account.payment_method} not implemented for credits.")
+                raise NotImplementedError(f"Payment method {cfs_account.payment_method} invalid Online Banking only.")
         payment_account.save()
 
     @classmethod
