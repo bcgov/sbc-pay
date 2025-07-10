@@ -33,9 +33,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
-from pay_api.services import gcp_queue_publisher
 from pay_api.services.ejv_pay_service import EjvPayService
-from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
     APRefundMethod,
     ChequeRefundStatus,
@@ -48,28 +46,28 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     PaymentSystem,
-    QueueSources,
     RefundsPartialStatus,
     RoutingSlipStatus,
     TransactionStatus,
 )
-from sbc_common_components.utils.enums import QueueMessageTypes
 from sqlalchemy import inspect
 
 from pay_queue import config
 from pay_queue.minio import get_object
+from pay_queue.services.email_service import EmailParams, send_error_email
 
 APP_CONFIG = config.get_named_config(os.getenv("DEPLOYMENT_ENV", "production"))
 
 
-def reconcile_distributions(msg: Dict[str, any], is_feedback: bool = False):
+def reconcile_distributions(cloud_event, is_feedback: bool = False):
     """Read the file and update distribution details.
 
     1: Lookup the invoice details based on the file content.
     2: Update the statuses
     """
+    msg = cloud_event.data
     if is_feedback:
-        _update_feedback(msg)
+        _update_feedback(msg, cloud_event)
     else:
         _update_acknowledgement(msg)
 
@@ -79,7 +77,7 @@ def _update_acknowledgement(msg: Dict[str, any]):
     current_app.logger.info("Ack file received: %s", msg.get("fileName"))
 
 
-def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
+def _update_feedback(msg: Dict[str, any], cloud_event):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
 
     file_name: str = msg.get("fileName")
@@ -95,7 +93,18 @@ def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, to
     has_errors = _process_ap_feedback(group_batches["AP"]) or has_errors
 
     if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
-        _publish_mailer_events(file_name, minio_location)
+        email_service_params = EmailParams(
+            subject="Payment Reconciliation Failure - GL disbursement failure for EJV",
+            file_name=file_name,
+            minio_location=minio_location,
+            error_messages="The GL disbursement failed for the electronic journal voucher batch. "
+            "It maybe necessary to contact the ministry to get the correct GL and update in the BC Registries application."
+            "Unless this is an unrelated error to the GL correctness."
+            "The error report is attached with further details.",
+            ce=cloud_event,
+            table_name=EjvFileModel.__tablename__,
+        )
+        send_error_email(email_service_params)
     current_app.logger.info("Feedback file processing completed.")
 
 
@@ -493,22 +502,6 @@ def _get_disbursement_status(return_code: str) -> str:
     if return_code == "0000":
         return DisbursementStatus.COMPLETED.value
     return DisbursementStatus.ERRORED.value
-
-
-def _publish_mailer_events(file_name: str, minio_location: str):
-    """Publish payment message to the mailer queue."""
-    payload = {"fileName": file_name, "minioLocation": minio_location}
-    try:
-        gcp_queue_publisher.publish_to_queue(
-            QueueMessage(
-                source=QueueSources.PAY_QUEUE.value,
-                message_type=QueueMessageTypes.EJV_FAILED.value,
-                payload=payload,
-                topic=current_app.config.get("ACCOUNT_MAILER_TOPIC"),
-            )
-        )
-    except Exception as e:  # NOQA pylint: disable=broad-except
-        current_app.logger.error(e)
 
 
 def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
