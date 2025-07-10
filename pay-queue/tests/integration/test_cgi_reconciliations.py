@@ -2008,6 +2008,31 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
     invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
     invoice = invoice.save()
 
+    eft_invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        corp_type_code="VS",
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_invoice_reference(
+        invoice_id=eft_invoice.id,
+        invoice_number="1234567899",
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+
+    partner_disbursement = PartnerDisbursementsModel(
+        amount=10,
+        is_reversal=False,
+        partner_code=eft_invoice.corp_type_code,
+        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+        target_id=eft_invoice.id,
+        target_type=EJVLinkType.INVOICE.value,
+    ).save()
+
+    eft_flowthrough = f"{eft_invoice.id}-{partner_disbursement.id}"
+
     file_ref = f"INBOX{datetime.now()}"
     ejv_file = EjvFileModel(file_ref=file_ref, disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
@@ -2021,6 +2046,13 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
     ejv_header_id = ejv_header.id
     EjvLinkModel(
         link_id=invoice.id,
+        link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+    ).save()
+
+    EjvLinkModel(
+        link_id=eft_invoice.id,
         link_type=EJVLinkType.INVOICE.value,
         ejv_header_id=ejv_header.id,
         disbursement_status_code=DisbursementStatus.UPLOADED.value,
@@ -2049,6 +2081,24 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
         f"                                                                   1111TESTERRORMESSAGE...."
         f"..........................................................................................."
         f".......................................CGI\n"
+        f"..JD...FI{str(ejv_header_id).zfill(8)}00002......................................................."
+        f"............000000000090.00C..............................................................."
+        f"....................................#{invoice_id}                                          "
+        f"                                                                   1111TESTERRORMESSAGE...."
+        f"..........................................................................................."
+        f".......................................CGI\n"
+        f"..JD...FI{str(ejv_header_id).zfill(8)}00001......................................................."
+        f"............000000000090.00D..............................................................."
+        f"....................................#{eft_flowthrough}                                     "
+        f"                                                                      1111TESTERRORMESSAGE."
+        f"..........................................................................................."
+        f"..........................................CGI\n"
+        f"..JD...FI{str(ejv_header_id).zfill(8)}00002......................................................."
+        f"............000000000090.00C..............................................................."
+        f"....................................#{eft_flowthrough}                                     "
+        f"                                                                      1111TESTERRORMESSAGE."
+        f"..........................................................................................."
+        f"..........................................CGI\n"
         f"..BT...........FI{str(ejv_header_id).zfill(8)}000000000000002000000000180.001111TESTERRORMESSAGE.."
         f"..........................................................................................."
         f".........................................CGI\n"
