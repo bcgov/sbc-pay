@@ -44,9 +44,9 @@ def worker():
         if ce.type == QueueMessageTypes.CAS_MESSAGE_TYPE.value:
             reconcile_payments(ce)
         elif ce.type == QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value:
-            reconcile_distributions(ce.data)
+            reconcile_distributions(ce)
         elif ce.type == QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value:
-            reconcile_distributions(ce.data, is_feedback=True)
+            reconcile_distributions(ce, is_feedback=True)
         elif ce.type == QueueMessageTypes.EFT_FILE_UPLOADED.value:
             reconcile_eft_payments(ce)
         elif ce.type in [

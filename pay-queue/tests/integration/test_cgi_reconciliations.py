@@ -1964,3 +1964,166 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert partial_refund.status == RefundsPartialStatus.REFUND_PROCESSED.value
         assert partial_refund.gl_posted is not None
+
+
+def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
+    """Test that send_error_email is called when EJV batch fails."""
+    mock_send_error_email = mocker.patch("pay_queue.services.cgi_reconciliations.send_error_email")
+
+    cfs_account_number = "1234"
+    partner_code = "VS"
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
+        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+    )
+
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        corp_type_code="VS",
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    invoice_id = invoice.id
+    line_item = factory_payment_line_item(
+        invoice_id=invoice.id,
+        filing_fees=90.0,
+        service_fees=10.0,
+        total=90.0,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+    )
+    dist_code = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+    if not dist_code.disbursement_distribution_code_id:
+        disbursement_distribution_code = factory_distribution(name="Disbursement")
+        dist_code.disbursement_distribution_code_id = disbursement_distribution_code.distribution_code_id
+        dist_code.save()
+
+    invoice_number = "1234567890"
+    factory_invoice_reference(
+        invoice_id=invoice.id,
+        invoice_number=invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+    invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    invoice = invoice.save()
+
+    eft_invoice = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        corp_type_code="VS",
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_invoice_reference(
+        invoice_id=eft_invoice.id,
+        invoice_number="1234567899",
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+
+    partner_disbursement = PartnerDisbursementsModel(
+        amount=10,
+        is_reversal=False,
+        partner_code=eft_invoice.corp_type_code,
+        status_code=DisbursementStatus.WAITING_FOR_JOB.value,
+        target_id=eft_invoice.id,
+        target_type=EJVLinkType.INVOICE.value,
+    ).save()
+
+    eft_flowthrough = f"{eft_invoice.id}-{partner_disbursement.id}"
+
+    file_ref = f"INBOX{datetime.now()}"
+    ejv_file = EjvFileModel(file_ref=file_ref, disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file_id = ejv_file.id
+
+    ejv_header = EjvHeaderModel(
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ejv_file_id=ejv_file.id,
+        partner_code=partner_code,
+        payment_account_id=pay_account.id,
+    ).save()
+    ejv_header_id = ejv_header.id
+    EjvLinkModel(
+        link_id=invoice.id,
+        link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+    ).save()
+
+    EjvLinkModel(
+        link_id=eft_invoice.id,
+        link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value,
+    ).save()
+
+    ack_file_name = f"ACK.{file_ref}"
+    with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write("")
+        jv_file.close()
+    upload_to_minio(str.encode(""), ack_file_name)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+
+    feedback_content = (
+        f"GABG...........{str(ejv_file_id).zfill(9)}...\n"
+        f"..BH...1111TESTERRORMESSAGE................................................................"
+        f"......................................................................CGI\n"
+        f"..JH...FI{str(ejv_header_id).zfill(8)}.........................000000000090.00...................."
+        f"..........................................................................................."
+        f"..........................................................................................."
+        f"............1111TESTERRORMESSAGE..........................................................."
+        f"...........................................................................CGI\n"
+        f"..JD...FI{str(ejv_header_id).zfill(8)}00001......................................................."
+        f"............000000000090.00D..............................................................."
+        f"....................................#{invoice_id}                                          "
+        f"                                                                   1111TESTERRORMESSAGE...."
+        f"..........................................................................................."
+        f".......................................CGI\n"
+        f"..JD...FI{str(ejv_header_id).zfill(8)}00002......................................................."
+        f"............000000000090.00C..............................................................."
+        f"....................................#{invoice_id}                                          "
+        f"                                                                   1111TESTERRORMESSAGE...."
+        f"..........................................................................................."
+        f".......................................CGI\n"
+        f"..JD...FI{str(ejv_header_id).zfill(8)}00001......................................................."
+        f"............000000000090.00D..............................................................."
+        f"....................................#{eft_flowthrough}                                     "
+        f"                                                                      1111TESTERRORMESSAGE."
+        f"..........................................................................................."
+        f"..........................................CGI\n"
+        f"..JD...FI{str(ejv_header_id).zfill(8)}00002......................................................."
+        f"............000000000090.00C..............................................................."
+        f"....................................#{eft_flowthrough}                                     "
+        f"                                                                      1111TESTERRORMESSAGE."
+        f"..........................................................................................."
+        f"..........................................CGI\n"
+        f"..BT...........FI{str(ejv_header_id).zfill(8)}000000000000002000000000180.001111TESTERRORMESSAGE.."
+        f"..........................................................................................."
+        f".........................................CGI\n"
+    )
+
+    feedback_file_name = f"FEEDBACK.{file_ref}"
+    with open(feedback_file_name, "a+", encoding="utf-8") as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+    with open(feedback_file_name, "rb") as f:
+        upload_to_minio(f.read(), feedback_file_name)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
+
+    mock_send_error_email.assert_called_once()
+    call_args = mock_send_error_email.call_args
+    email_params = call_args[0][0]
+    assert email_params.subject == "Payment Reconciliation Failure - GL disbursement failure for EJV"
+    assert email_params.file_name == feedback_file_name
+    assert email_params.minio_location == "payment-sftp"
+    assert email_params.table_name == EjvFileModel.__tablename__
+    assert "The GL disbursement failed for the electronic journal voucher batch" in email_params.error_messages
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value
+    invoice = InvoiceModel.find_by_id(invoice_id)
+    assert invoice.disbursement_status_code == DisbursementStatus.ERRORED.value
+    disbursement_distribution_code = DistributionCodeModel.find_by_id(dist_code.disbursement_distribution_code_id)
+    assert disbursement_distribution_code.stop_ejv
