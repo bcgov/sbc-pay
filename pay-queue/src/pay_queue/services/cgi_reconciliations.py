@@ -98,8 +98,8 @@ def _update_feedback(msg: Dict[str, any], cloud_event):  # pylint:disable=too-ma
             file_name=file_name,
             minio_location=minio_location,
             error_messages="The GL disbursement failed for the electronic journal voucher batch. "
-            "It maybe necessary to contact the ministry to get the correct GL and update in the BC Registries application."
-            "Unless this is an unrelated error to the GL correctness."
+            "It maybe necessary to contact the ministry to get the correct GL and update in the "
+            "BC Registries application. Unless this is an error is unrelated to the GL correctness."
             "The error report is attached with further details.",
             ce=cloud_event,
             table_name=EjvFileModel.__tablename__,
