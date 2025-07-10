@@ -32,7 +32,7 @@ def upgrade():
         sa.Column("updated_by", sa.String(length=100), nullable=True),
         sa.Column("updated_by_name", sa.String(length=100), nullable=True),
         sa.Column("updated_on", sa.DateTime(), nullable=True),
-        sa.Column("version", sa.Integer(), nullable=False),
+        sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
         sa.ForeignKeyConstraint(
             ["eft_short_name_id"],
             ["eft_short_names.id"],
