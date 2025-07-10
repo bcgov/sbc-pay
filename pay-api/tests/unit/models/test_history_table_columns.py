@@ -52,6 +52,7 @@ def get_all_model_classes(base_class):
 
 @pytest.fixture
 def versioned_models():
+    """Discover versioned models and their corresponding history tables."""
     all_models = get_all_model_classes(db.Model)
     versioned_models = []
     for model_class in all_models:
@@ -173,7 +174,8 @@ def test_history_table_column_types_match_base_tables(session, inspector, versio
                 base_type_without_auto = base_type.replace("autoincrement=True", "").strip()
                 assert (
                     base_type_without_auto == history_type
-                ), f"Column {column_name} type mismatch in {history_table}: expected {base_type_without_auto}, got {history_type}"
+                ), f"Column {column_name} type mismatch in {history_table}: expected {base_type_without_auto},"
+                f"got {history_type}"
             else:
                 assert (
                     base_type == history_type
