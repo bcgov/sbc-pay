@@ -657,7 +657,7 @@ def test_get_eft_statement_with_invoices(session):
         status_code=InvoiceStatus.PAID.value,
         total=50,
         paid=50,
-        payment_date=datetime.now(tz=timezone.utc) + timedelta(days=9000),
+        payment_date=statement_model.from_date + timedelta(days=2),
     ).save()
     factory_payment_line_item(invoice_id=invoice_3.id, fee_schedule_id=1).save()
 

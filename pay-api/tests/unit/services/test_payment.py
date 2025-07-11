@@ -825,7 +825,8 @@ def test_calculate_invoice_summaries(session):
         paid=100.00,
         refund=0.00,
         total=100.00,
-        payment_method_code=PaymentMethod.EFT.value
+        payment_method_code=PaymentMethod.EFT.value,
+        payment_date="2024-05-31"
     )
     invoice2.save()
 
