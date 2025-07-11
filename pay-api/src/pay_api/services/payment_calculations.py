@@ -209,24 +209,21 @@ def build_statement_summary_context(statement_summary: dict) -> dict:
     if not statement_summary:
         return None
 
-    enhanced_statement_summary = statement_summary.copy()
+    def currency(val):
+        return get_statement_currency_string(val)
 
-    enhanced_statement_summary['lastStatementTotal'] = get_statement_currency_string(
-        statement_summary.get('lastStatementTotal'))
-    enhanced_statement_summary['lastStatementPaidAmount'] = get_statement_currency_string(
-        statement_summary.get('lastStatementPaidAmount'))
+    def date(val):
+        return get_statement_date_string(val, "%B %d, %Y") if val else None
 
-    cancelled_transactions = statement_summary.get('cancelledTransactions')
-    if cancelled_transactions not in [None, 0, '0', '0.00']:
-        enhanced_statement_summary['cancelledTransactions'] = get_statement_currency_string(cancelled_transactions)
-
-    latest_statement_payment_date = statement_summary.get('latestStatementPaymentDate')
-    enhanced_statement_summary['latestStatementPaymentDate'] = (
-        get_statement_date_string(latest_statement_payment_date, "%B %d, %Y")
-        if latest_statement_payment_date else None
-    )
-
-    enhanced_statement_summary['dueDate'] = get_statement_date_string(
-        statement_summary.get('dueDate'), "%B %d, %Y")
-
-    return enhanced_statement_summary
+    return {
+        **statement_summary,
+        'lastStatementTotal': currency(statement_summary.get('lastStatementTotal')),
+        'lastStatementPaidAmount': currency(statement_summary.get('lastStatementPaidAmount')),
+        'cancelledTransactions': (
+            currency(statement_summary['cancelledTransactions'])
+            if str(statement_summary.get('cancelledTransactions')) not in {'0', '0.00', '', 'None', 'null'}
+            else statement_summary.get('cancelledTransactions')
+        ),
+        'latestStatementPaymentDate': date(statement_summary.get('latestStatementPaymentDate')),
+        'dueDate': date(statement_summary.get('dueDate')),
+    }

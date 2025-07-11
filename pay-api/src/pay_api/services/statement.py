@@ -307,9 +307,20 @@ class Statement:  # pylint:disable=too-many-public-methods
                 (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
                 else_=0
             )
+            paid_condition = InvoiceModel.paid
         else:
-            # For EFT: refund applies if paid == 0 and refund > 0 and refund_date <= statement.to_date
+            # For EFT: consider both payment_date and refund_date with statement_to_date
             if statement_to_date:
+                # Only count payments made before or on the statement date
+                paid_condition = case(
+                    (and_(
+                        InvoiceModel.paid > 0,
+                        InvoiceModel.payment_date.isnot(None),
+                        InvoiceModel.payment_date <= func.cast(statement_to_date, db.Date)
+                    ), InvoiceModel.paid),
+                    else_=0
+                )
+                # Only count refunds processed before or on the statement date
                 refund_condition = case(
                     (and_(
                         InvoiceModel.paid == 0,
@@ -321,6 +332,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                 )
             else:
                 # Fallback if no statement_to_date provided
+                paid_condition = InvoiceModel.paid
                 refund_condition = case(
                     (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
                     else_=0
@@ -329,10 +341,10 @@ class Statement:  # pylint:disable=too-many-public-methods
         # Query to get aggregated values for the specific payment method and invoice IDs
         result = (
             db.session.query(
-                func.coalesce(func.sum(InvoiceModel.paid), 0).label("paid_total"),
+                func.coalesce(func.sum(paid_condition), 0).label("paid_total"),
                 func.coalesce(func.sum(InvoiceModel.total), 0).label("total_summary"),
                 func.coalesce(
-                    func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0
+                    func.sum(InvoiceModel.total - paid_condition - refund_condition), 0
                 ).label("due_total")
             )
             .filter(
