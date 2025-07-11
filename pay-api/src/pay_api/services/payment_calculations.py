@@ -218,12 +218,10 @@ def build_statement_summary_context(statement_summary: dict) -> dict:
         **statement_summary,
         'lastStatementTotal': currency(statement_summary.get('lastStatementTotal')),
         'lastStatementPaidAmount': currency(statement_summary.get('lastStatementPaidAmount')),
-        'cancelledTransactions': (
-            currency(statement_summary['cancelledTransactions'])
-            if statement_summary.get('cancelledTransactions') not in [
-                None, 0, '0', '0.00'
-            ]
-            else statement_summary.get('cancelledTransactions')
+        **(
+            {'cancelledTransactions': currency(statement_summary['cancelledTransactions'])}
+            if statement_summary.get('cancelledTransactions') not in [None, 0, '0', '0.00']
+            else {}
         ),
         'latestStatementPaymentDate': date(
             statement_summary.get('latestStatementPaymentDate')
