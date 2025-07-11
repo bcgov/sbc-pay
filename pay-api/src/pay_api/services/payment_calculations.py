@@ -88,7 +88,6 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
 
 def calculate_invoice_summaries(invoices: List[dict], payment_method: str, statement: dict) -> dict:
     """Calculate paid, due, and totals summary for a specific payment method."""
-    # Import from here as the statement invoice already imports statement and causes circular import.
     from pay_api.services.statement import Statement  # pylint: disable=import-outside-toplevel
 
     invoice_ids = [
@@ -221,9 +220,13 @@ def build_statement_summary_context(statement_summary: dict) -> dict:
         'lastStatementPaidAmount': currency(statement_summary.get('lastStatementPaidAmount')),
         'cancelledTransactions': (
             currency(statement_summary['cancelledTransactions'])
-            if str(statement_summary.get('cancelledTransactions')) not in {'0', '0.00', '', 'None', 'null'}
+            if str(statement_summary.get('cancelledTransactions')) not in {
+                '0', '0.00', '', 'None', 'null'
+            }
             else statement_summary.get('cancelledTransactions')
         ),
-        'latestStatementPaymentDate': date(statement_summary.get('latestStatementPaymentDate')),
+        'latestStatementPaymentDate': date(
+            statement_summary.get('latestStatementPaymentDate')
+        ),
         'dueDate': date(statement_summary.get('dueDate')),
     }
