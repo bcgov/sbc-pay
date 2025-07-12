@@ -307,13 +307,9 @@ class Statement:  # pylint:disable=too-many-public-methods
                 (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
                 else_=0
             )
-            paid_condition = InvoiceModel.paid
         else:
-            # For EFT: validate refund_date for refunds
-            paid_condition = InvoiceModel.paid
-
+            # For EFT: refund applies if paid == 0 and refund > 0 and refund_date <= statement.to_date
             if statement_to_date:
-                # Only count refunds processed before or on the statement date
                 refund_condition = case(
                     (and_(
                         InvoiceModel.paid == 0,
@@ -329,14 +325,13 @@ class Statement:  # pylint:disable=too-many-public-methods
                     (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
                     else_=0
                 )
-
         # Query to get aggregated values for the specific payment method and invoice IDs
         result = (
             db.session.query(
-                func.coalesce(func.sum(paid_condition), 0).label("paid_total"),
+                func.coalesce(func.sum(InvoiceModel.paid), 0).label("paid_total"),
                 func.coalesce(func.sum(InvoiceModel.total), 0).label("total_summary"),
                 func.coalesce(
-                    func.sum(InvoiceModel.total - paid_condition - refund_condition), 0
+                    func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0
                 ).label("due_total")
             )
             .filter(
