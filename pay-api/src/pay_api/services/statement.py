@@ -309,17 +309,10 @@ class Statement:  # pylint:disable=too-many-public-methods
             )
             paid_condition = InvoiceModel.paid
         else:
-            # For EFT: consider both payment_date and refund_date with statement_to_date
+            # For EFT: validate refund_date for refunds
+            paid_condition = InvoiceModel.paid
+
             if statement_to_date:
-                # Only count payments made before or on the statement date
-                paid_condition = case(
-                    (and_(
-                        InvoiceModel.paid > 0,
-                        InvoiceModel.payment_date.isnot(None),
-                        InvoiceModel.payment_date <= func.cast(statement_to_date, db.Date)
-                    ), InvoiceModel.paid),
-                    else_=0
-                )
                 # Only count refunds processed before or on the statement date
                 refund_condition = case(
                     (and_(
@@ -332,7 +325,6 @@ class Statement:  # pylint:disable=too-many-public-methods
                 )
             else:
                 # Fallback if no statement_to_date provided
-                paid_condition = InvoiceModel.paid
                 refund_condition = case(
                     (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
                     else_=0
