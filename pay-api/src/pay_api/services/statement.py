@@ -325,7 +325,6 @@ class Statement:  # pylint:disable=too-many-public-methods
                     (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
                     else_=0
                 )
-
         # Query to get aggregated values for the specific payment method and invoice IDs
         result = (
             db.session.query(

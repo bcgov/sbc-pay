@@ -88,7 +88,6 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
 
 def calculate_invoice_summaries(invoices: List[dict], payment_method: str, statement: dict) -> dict:
     """Calculate paid, due, and totals summary for a specific payment method."""
-    # Import from here as the statement invoice already imports statement and causes circular import.
     from pay_api.services.statement import Statement  # pylint: disable=import-outside-toplevel
 
     invoice_ids = [
