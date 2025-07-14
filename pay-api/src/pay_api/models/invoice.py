@@ -141,7 +141,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     receipts = relationship("Receipt", lazy="joined")
     payment_account = relationship("PaymentAccount", lazy="joined")
     references = relationship("InvoiceReference", lazy="joined")
-    refunds = relationship("RefundsPartial", lazy="joined")  # Refactor this to generic refunds table
+    partial_refunds = relationship("RefundsPartial", lazy="joined")
     applied_credits = relationship("AppliedCredits", lazy="joined")
     corp_type = relationship("CorpType", foreign_keys=[corp_type_code], lazy="select", innerjoin=True)
 

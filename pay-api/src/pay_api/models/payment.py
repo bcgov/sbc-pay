@@ -299,7 +299,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         ]
 
         if include_credits_and_refunds:
-            options.extend([contains_eager(Invoice.applied_credits), contains_eager(Invoice.refunds)])
+            options.extend([contains_eager(Invoice.applied_credits), contains_eager(Invoice.partial_refunds)])
 
         return (
             db.session.query(Invoice)
