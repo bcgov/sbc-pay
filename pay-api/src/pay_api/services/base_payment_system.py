@@ -287,6 +287,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             amount=refund_amount,
             remaining_amount=refund_amount,
             account_id=invoice.payment_account_id,
+            created_invoice_id=invoice.id,
         ).flush()
 
         # Add up the credit amount and update payment account table.

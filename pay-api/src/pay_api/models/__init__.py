@@ -18,10 +18,10 @@ from sqlalchemy import event  # noqa: I001
 from sqlalchemy.engine import Engine  # noqa: I001, I003, I004
 
 from .account_fee import AccountFee, AccountFeeSchema
+from .applied_credits import AppliedCredits
 from .cas_settlement import CasSettlement
 from .cfs_account import CfsAccount, CfsAccountSchema
 from .cfs_account_status_code import CfsAccountStatusCode, CfsAccountStatusCodeSchema
-from .cfs_credit_invoices import CfsCreditInvoices
 from .corp_type import CorpType, CorpTypeSchema  # noqa: I001
 from .credit import Credit
 from .custom_query import CustomQuery

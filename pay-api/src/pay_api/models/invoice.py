@@ -26,7 +26,9 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
+from pay_api.models.applied_credits import AppliedCreditsSearchModel
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
+from pay_api.models.refunds_partial import RefundsPartialSearchModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 from .audit import Audit, AuditSchema
@@ -139,6 +141,8 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     receipts = relationship("Receipt", lazy="joined")
     payment_account = relationship("PaymentAccount", lazy="joined")
     references = relationship("InvoiceReference", lazy="joined")
+    refunds = relationship("RefundsPartial", lazy="joined")  # Refactor this to generic refunds table
+    applied_credits = relationship("AppliedCredits", lazy="joined")
     corp_type = relationship("CorpType", foreign_keys=[corp_type_code], lazy="select", innerjoin=True)
 
     __table_args__ = (
@@ -331,6 +335,8 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     refund_date: datetime
     disbursement_date: datetime
     disbursement_reversal_date: datetime
+    partial_refunds: Optional[List[RefundsPartialSearchModel]]
+    applied_credits: Optional[List[AppliedCreditsSearchModel]]
 
     @classmethod
     def from_row(
@@ -343,21 +349,12 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
         """
         # Similar to _clean_up in InvoiceSchema.
 
-        status_code = (
-            PaymentStatus.COMPLETED.value
-            if row.invoice_status_code == InvoiceStatus.PAID.value
-            else row.invoice_status_code
-        )
-        business_identifier = (
-            None if row.business_identifier and row.business_identifier.startswith("T") else row.business_identifier
-        )
-        line_items = [PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items]
-        invoice_number = row.references[0].invoice_number if len(row.references) > 0 else None
-
         return cls(
             id=row.id,
             bcol_account=row.bcol_account,
-            business_identifier=business_identifier,
+            business_identifier=(
+                None if row.business_identifier and row.business_identifier.startswith("T") else row.business_identifier
+            ),
             corp_type_code=row.corp_type.code,
             created_by=row.created_by,
             created_on=row.created_on,
@@ -365,18 +362,24 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             refund=row.refund,
             service_fees=row.service_fees,
             total=row.total,
-            status_code=status_code,
+            status_code=(
+                PaymentStatus.COMPLETED.value
+                if row.invoice_status_code == InvoiceStatus.PAID.value
+                else row.invoice_status_code
+            ),
             filing_id=row.filing_id,
             folio_number=row.folio_number,
             payment_method=row.payment_method_code,
             created_name=row.created_name,
             details=row.details,
             payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
-            line_items=line_items,
+            line_items=[PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items],
             product=row.corp_type.product,
             payment_date=row.payment_date,
             refund_date=row.refund_date,
             disbursement_date=row.disbursement_date,
             disbursement_reversal_date=row.disbursement_reversal_date,
-            invoice_number=invoice_number,
+            invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None,
+            partial_refunds=[RefundsPartialSearchModel.from_row(x) for x in row.refunds],
+            applied_credits=[AppliedCreditsSearchModel.from_row(x) for x in row.applied_credits],
         )
