@@ -380,6 +380,6 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             disbursement_date=row.disbursement_date,
             disbursement_reversal_date=row.disbursement_reversal_date,
             invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None,
-            partial_refunds=[RefundsPartialSearchModel.from_row(x) for x in row.refunds],
+            partial_refunds=[RefundsPartialSearchModel.from_row(x) for x in row.partial_refunds],
             applied_credits=[AppliedCreditsSearchModel.from_row(x) for x in row.applied_credits],
         )
