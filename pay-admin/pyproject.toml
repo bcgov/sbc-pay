@@ -2,7 +2,7 @@
 name = "pay-admin"
 version = "0.1.0"
 description = ""
-authors = ["Travis Semple <travis8814@gmail.com>"]
+authors = ["Pay Team"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
