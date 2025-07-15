@@ -37,8 +37,7 @@ clean-test: ## clean test files
 	rm -fr htmlcov/
 
 install: clean 
-	pip install poetry ;\
-	poetry config installer.max-workers 1
+	pip install poetry==2.1.3;\
 	poetry install
 
 #################################################################################

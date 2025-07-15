@@ -101,7 +101,6 @@ class AppliedCreditsSearchModel:
     invoice_number: str
     invoice_id: int
 
-
     @classmethod
     def from_row(cls, row: AppliedCredits):
         """From row is used so we don't tightly couple to our database class.

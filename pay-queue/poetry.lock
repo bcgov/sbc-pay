@@ -2108,7 +2108,7 @@ files = []
 develop = false
 
 [package.dependencies]
-aiohttp = "^3.10.11"
+aiohttp = "^3.12.14"
 alembic = "1.13.1"
 attrs = "23.2.0"
 blinker = "1.7.0"
@@ -2183,9 +2183,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "main"
-resolved_reference = "cd2b82f37279501d4e320270863299ca9091f806"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "28456"
+resolved_reference = "2cecfbe2933aa07f41b170b3f19247a5e17b4508"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3430,4 +3430,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "8a8392548c2aed2ca9aa61818e1dc4da637901fd6443d27ec1bea57d7f7f2a81"
+content-hash = "f2b579604f92dc461d3b340b7418b06e1ad007e4c010ae5c086c69b2177150e8"
