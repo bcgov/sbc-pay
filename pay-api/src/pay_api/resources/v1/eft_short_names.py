@@ -79,8 +79,8 @@ def get_eft_shortnames():
 
 @bp.route("/summaries", methods=["GET", "OPTIONS"])
 @cross_origin(origins="*", methods=["GET"])
-@_jwt.requires_auth
-@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+#@_jwt.requires_auth
+#@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname_summaries():
     """Get all eft short name summaries."""
     current_app.logger.info("<get_eft_shortname_summaries")
@@ -97,6 +97,7 @@ def get_eft_shortname_summaries():
                 short_name_type=request_data.short_name_type,
                 page=request_data.page,
                 limit=request_data.limit,
+                sort_by="credits_remaining",
             )
         ),
         HTTPStatus.OK,

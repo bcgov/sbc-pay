@@ -186,5 +186,9 @@ class EFTShortnameSummaries:
         else:
             query = query.filter_conditionally(search_criteria.linked_accounts_count, linked_account_subquery.c.count)
 
-        query = query.order_by(last_payment_subquery.c.deposit_date.asc())
+        if search_criteria.sort_by == "credits_remaining":
+            query = query.order_by(func.coalesce(credit_remaining_subquery.c.total, 0).desc()).order_by(EFTShortnameModel.id.asc())
+        else:
+            query = query.order_by(last_payment_subquery.c.deposit_date.asc())
+        
         return query
