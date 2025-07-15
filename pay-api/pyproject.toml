@@ -73,7 +73,7 @@ urllib3 = "2.5.0"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 pg8000 = "^1.30.5"
 sql-versioning = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/sql-versioning", branch = "main" }
-aiohttp = "^3.10.11"
+aiohttp = "^3.12.14"
 setuptools = "^78.1.1"
 flask-executor = "^1.0.0"
 cachelib = "^0.13.0"
