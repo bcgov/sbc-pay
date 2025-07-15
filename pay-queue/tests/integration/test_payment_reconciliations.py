@@ -20,9 +20,9 @@ import logging
 from datetime import datetime, timezone
 
 import pytest
+from pay_api.models import AppliedCredits as AppliedCreditsModel
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import AppliedCredits as AppliedCreditsModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
