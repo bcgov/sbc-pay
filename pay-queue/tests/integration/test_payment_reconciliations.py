@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 import pytest
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import CfsCreditInvoices as CfsCreditInvoicesModel
+from pay_api.models import AppliedCredits as AppliedCreditsModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
@@ -993,7 +993,7 @@ def test_credits(session, app, client, monkeypatch):
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
 
-    credit_invoices = CfsCreditInvoicesModel.query.all()
+    credit_invoices = AppliedCreditsModel.query.all()
     assert len(credit_invoices) == 2
     assert credit_invoices[0].account_id == pay_account.id
     assert credit_invoices[0].amount_applied == 2.5
