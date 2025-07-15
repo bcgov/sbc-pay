@@ -892,7 +892,15 @@ def test_credits(session, app, client, monkeypatch):
     )
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
     invoice_number = "1234567890"
+    invoice2 = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=90.0, service_fees=10.0, total=90.0)
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
+    factory_invoice_reference(invoice_id=invoice2.id, invoice_number=invoice_number)
 
     receipt_number = "RCPT0012345"
     onac_amount = 100
@@ -960,7 +968,7 @@ def test_credits(session, app, client, monkeypatch):
         cfs_account_number,
         TargetTransaction.INV.value,
         invoice_number,
-        100,
+        150,
         0,
         Status.PAID.value,
     ]
@@ -994,9 +1002,9 @@ def test_credits(session, app, client, monkeypatch):
     assert credit.remaining_amount == cm_amount - cm_used_amount
 
     credit_invoices = AppliedCreditsModel.query.all()
-    assert len(credit_invoices) == 2
+    assert len(credit_invoices) == 3
     assert credit_invoices[0].account_id == pay_account.id
-    assert credit_invoices[0].amount_applied == 2.5
+    assert credit_invoices[0].amount_applied == 100
     assert credit_invoices[0].application_id == 100003
     assert credit_invoices[0].cfs_account == cfs_account_number
     assert credit_invoices[0].cfs_identifier == str(cm_identifier)
@@ -1004,10 +1012,23 @@ def test_credits(session, app, client, monkeypatch):
     assert credit_invoices[0].credit_id == credit_id
     assert credit_invoices[0].invoice_number == invoice_number
     assert credit_invoices[0].invoice_amount == 100
-    assert credit_invoices[1].amount_applied == 5.5
+    assert credit_invoices[0].invoice_id == invoice2.id
+
+
+    assert credit_invoices[1].amount_applied == 50
     assert credit_invoices[1].application_id == 100004
     assert credit_invoices[1].cfs_identifier == str(cm_identifier)
     assert credit_invoices[1].invoice_number == invoice_number
+    # Should be applied to the top invoice id in the invoice_references.
+    assert credit_invoices[1].invoice_id == invoice.id
+
+    assert credit_invoices[2].amount_applied == 5.5
+    assert credit_invoices[2].application_id == 100004
+    assert credit_invoices[2].cfs_identifier == str(cm_identifier)
+    assert credit_invoices[2].invoice_number == invoice_number
+    assert credit_invoices[2].invoice_id == invoice.id
+
+
     invoice = InvoiceModel.find_by_id(invoice.id)
     assert invoice.paid
     assert invoice.paid == 100

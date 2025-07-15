@@ -538,6 +538,7 @@ def _handle_credit_invoices_and_adjust_invoice_paid(row):
     """Create AppliedCredits and adjust the invoice paid amount."""
     application_id = int(_get_row_value(row, Column.APP_ID))
     cfs_identifier = _get_row_value(row, Column.SOURCE_TXN_NO)
+    # TODO some sort of duplication check here. Maybe cfs_identifier?
     # Check for invoice number in applied credits
     if not (credit := CreditModel.find_by_cfs_identifier(cfs_identifier=cfs_identifier, credit_memo=True)):
         current_app.logger.warning(f"Credit with cfs_identifier {cfs_identifier} not found.")
@@ -566,7 +567,7 @@ def _handle_credit_invoices_and_adjust_invoice_paid(row):
             credit_id=credit.id,
             invoice_amount=applied_amount,
             invoice_number=invoice_number,
-            applied_invoice_id=invoice.invoice_id,
+            invoice_id=invoice.id,
         ).save()
         applied_credits -= applied_amount
 
