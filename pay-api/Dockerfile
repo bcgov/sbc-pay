@@ -91,7 +91,6 @@ RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     --mount=type=cache,target=/root/.cache/pip \
   echo "$APP_ENV" \
   && poetry version \
-  && poetry config installer.max-workers 1 \
   # Install deps:
   && poetry run pip install -U pip \
   && poetry install \

@@ -57,6 +57,8 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         """Return a static invoice number for online banking."""
         self.ensure_no_payment_blockers(payment_account)
         # Do nothing here as the roll up happens later after creation of invoice.
+        # We don't update the credits here like PAD, because we need the dialog to show the user we're using
+        # a credit to pay for this invoice. So they don't send extra unnecessary money.
 
     def get_receipt(
         self,
