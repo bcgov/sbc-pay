@@ -247,7 +247,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
-    def generate_base_transaction_query(cls, include_credits_and_refunds: bool):
+    def generate_base_transaction_query(cls, include_credits_and_partial_refunds: bool):
         """Generate a base query."""
         options = [
             lazyload("*"),
@@ -298,7 +298,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             ),
         ]
 
-        if include_credits_and_refunds:
+        if include_credits_and_partial_refunds:
             options.extend([contains_eager(Invoice.applied_credits), contains_eager(Invoice.partial_refunds)])
 
         return (
@@ -316,7 +316,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def search_without_counts(cls, auth_account_id: str, search_filter: Dict, page: int, limit: int):
         """Search without using counts, ideally this will become our baseline."""
-        query = cls.generate_base_transaction_query(include_credits_and_refunds=True)
+        query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=True)
         query = cls.filter(query, auth_account_id, search_filter)
         sub_query = cls.generate_subquery(auth_account_id, search_filter, limit + 1, page).subquery()
         results = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
@@ -329,7 +329,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     ):
         """Search for purchase history."""
         executor = current_app.extensions["flask_executor"]
-        query = cls.generate_base_transaction_query(include_credits_and_refunds=False)
+        query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=False)
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
             count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
