@@ -290,61 +290,6 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
     @staticmethod
-    def calculate_invoice_summaries_by_payment_method(invoice_ids: List[int],
-                                                      payment_method: str,
-                                                      statement_to_date: str = None):
-        """Calculate invoice summaries for a specific payment method using database aggregation."""
-        if not invoice_ids:
-            return {
-                "paid_total": 0.0,
-                "due_total": 0.0,
-                "total_summary": 0.0
-            }
-
-        if payment_method != PaymentMethod.EFT.value:
-            # For non-EFT: refund applies if paid == 0 and refund > 0
-            refund_condition = case(
-                (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
-                else_=0
-            )
-        else:
-            # For EFT: refund applies if paid == 0 and refund > 0 and refund_date <= statement.to_date
-            if statement_to_date:
-                refund_condition = case(
-                    (and_(
-                        InvoiceModel.paid == 0,
-                        InvoiceModel.refund > 0,
-                        InvoiceModel.refund_date.isnot(None),
-                        InvoiceModel.refund_date <= func.cast(statement_to_date, db.Date)
-                    ), InvoiceModel.refund),
-                    else_=0
-                )
-            else:
-                # Fallback if no statement_to_date provided
-                refund_condition = case(
-                    (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
-                    else_=0
-                )
-        # Query to get aggregated values for the specific payment method and invoice IDs
-        result = (
-            db.session.query(
-                func.coalesce(func.sum(InvoiceModel.paid), 0).label("paid_total"),
-                func.coalesce(func.sum(InvoiceModel.total), 0).label("total_summary"),
-                func.coalesce(
-                    func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0
-                ).label("due_total")
-            )
-            .filter(
-                and_(
-                    InvoiceModel.id.in_(invoice_ids),
-                    InvoiceModel.payment_method_code == payment_method
-                )
-            )
-        ).first()
-
-        return result._asdict()
-
-    @staticmethod
     def is_eft_statement(statement: StatementModel, ordered_invoices: List[InvoiceModel]) -> bool:
         """Return the statement template name."""
         # Check invoice payment method for statement template

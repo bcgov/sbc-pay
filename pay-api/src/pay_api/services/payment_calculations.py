@@ -19,7 +19,10 @@ from decimal import Decimal
 from typing import List
 
 import cattrs
+from sqlalchemy import and_, case, func
 
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import db
 from pay_api.utils.enums import PaymentMethod, StatementFrequency, StatementTitles
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
@@ -86,17 +89,71 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
     return grouped_invoices
 
 
+def calculate_invoice_summaries_by_payment_method(
+        invoice_ids: List[int],
+        payment_method: str,
+        statement_to_date: str = None):
+    """Calculate invoice summaries for a payment method using database aggregation."""
+    if not invoice_ids:
+        return {
+            "paid_total": 0.0,
+            "due_total": 0.0,
+            "total_summary": 0.0
+        }
+
+    if payment_method != PaymentMethod.EFT.value:
+        # For non-EFT: refund applies if paid == 0 and refund > 0
+        refund_condition = case(
+            (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
+            else_=0
+        )
+    else:
+        # For EFT: refund applies if paid == 0 and refund > 0 and refund_date <= statement.to_date
+        if statement_to_date:
+            refund_condition = case(
+                (and_(
+                    InvoiceModel.paid == 0,
+                    InvoiceModel.refund > 0,
+                    InvoiceModel.refund_date.isnot(None),
+                    InvoiceModel.refund_date <= func.cast(statement_to_date, db.Date)
+                ), InvoiceModel.refund),
+                else_=0
+            )
+        else:
+            # Fallback if no statement_to_date provided
+            refund_condition = case(
+                (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
+                else_=0
+            )
+    # Query to get aggregated values for the specific payment method and invoice IDs
+    result = (
+        db.session.query(
+            func.coalesce(func.sum(InvoiceModel.paid), 0).label("paid_total"),
+            func.coalesce(func.sum(InvoiceModel.total), 0).label("total_summary"),
+            func.coalesce(
+                func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0
+            ).label("due_total")
+        )
+        .filter(
+            and_(
+                InvoiceModel.id.in_(invoice_ids),
+                InvoiceModel.payment_method_code == payment_method
+            )
+        )
+    ).first()
+
+    return result._asdict()
+
+
 def calculate_invoice_summaries(invoices: List[dict], payment_method: str, statement: dict) -> dict:
     """Calculate paid, due, and totals summary for a specific payment method."""
-    from pay_api.services.statement import Statement  # pylint: disable=import-outside-toplevel
-
     invoice_ids = [
         inv.get("id") for inv in invoices
         if inv.get("payment_method") == payment_method and inv.get("id")
     ]
 
     # Use database query for calculation
-    summaries = Statement.calculate_invoice_summaries_by_payment_method(
+    summaries = calculate_invoice_summaries_by_payment_method(
         invoice_ids=invoice_ids,
         payment_method=payment_method,
         statement_to_date=statement.get("to_date")
