@@ -136,9 +136,9 @@ def send_email(email: dict, token):
         logging.info("The email was sent successfully to %s", email["recipients"])
     else:
         logging.error(f"response:{response}")
-        raise Exception(
+        raise Exception(  # pylint: disable=broad-exception-raised
             f"Unsuccessful response when sending email to {email['recipients']}."
-        )  # pylint: disable=broad-exception-raised
+        )
 
 
 def process_partner_notebooks(data_dir: str):
