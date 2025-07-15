@@ -451,14 +451,8 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 2
-    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
-    assert_short_name_summary(
-        result_dict["items"][1],
-        short_name_2,
-        s2_transaction1,
-        302.5,
-        1,
-    )
+    assert_short_name_summary(result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1)
+    assert_short_name_summary(result_dict["items"][1], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
     # Assert short name search brings back first short name
     rv = client.get("/api/v1/eft-shortnames/summaries?shortName=name1", headers=headers)
@@ -548,7 +542,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
+    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204, 0, s1_refund)
 
     # Assert search query by no state will return all records
     rv = client.get("/api/v1/eft-shortnames/summaries", headers=headers)
@@ -562,8 +556,8 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 10
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 2
-    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
-    assert_short_name_summary(result_dict["items"][1], short_name_2, s2_transaction1, 302.5, 1)
+    assert_short_name_summary(result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1)
+    assert_short_name_summary(result_dict["items"][1], short_name_1, s1_transaction1, 204, 0, s1_refund)
 
     # Assert search pagination - page 1 works
     rv = client.get("/api/v1/eft-shortnames/summaries?page=1&limit=1", headers=headers)
@@ -577,7 +571,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 1
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
+    assert_short_name_summary(result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1)
 
     # Assert search pagination - page 2 works
     rv = client.get("/api/v1/eft-shortnames/summaries?page=2&limit=1", headers=headers)
@@ -591,7 +585,7 @@ def test_eft_short_name_summaries(session, client, jwt, app):
     assert result_dict["limit"] == 1
     assert result_dict["items"] is not None
     assert len(result_dict["items"]) == 1
-    assert_short_name_summary(result_dict["items"][0], short_name_2, s2_transaction1, 302.5, 1)
+    assert_short_name_summary(result_dict["items"][0], short_name_1, s1_transaction1, 204.0, 0, s1_refund)
 
 
 def create_eft_summary_search_data():
