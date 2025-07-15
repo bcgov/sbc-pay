@@ -97,6 +97,7 @@ def get_eft_shortname_summaries():
                 short_name_type=request_data.short_name_type,
                 page=request_data.page,
                 limit=request_data.limit,
+                sort_by="credits_remaining",
             )
         ),
         HTTPStatus.OK,
