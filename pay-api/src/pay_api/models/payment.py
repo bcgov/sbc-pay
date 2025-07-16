@@ -21,7 +21,7 @@ from flask import current_app
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
-from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
+from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship, joinedload
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -299,7 +299,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         ]
 
         if include_credits_and_partial_refunds:
-            options.extend([contains_eager(Invoice.applied_credits), contains_eager(Invoice.partial_refunds)])
+            options.extend([joinedload(Invoice.applied_credits), joinedload(Invoice.partial_refunds)])
 
         return (
             db.session.query(Invoice)
