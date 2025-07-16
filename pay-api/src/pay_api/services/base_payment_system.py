@@ -208,9 +208,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         ]:
             return
 
-        if transaction_status == TransactionStatus.REVERSED.value and not flags.is_on(
-            "queue-message-for-reversals", default=False
-        ):
+        if transaction_status in [
+            TransactionStatus.REVERSED.value,
+            TransactionStatus.PARTIALLY_REVERSED.value,
+        ] and not flags.is_on("queue-message-for-reversals", default=False):
             return
 
         payload = PaymentTransaction.create_event_payload(invoice, transaction_status)

@@ -384,6 +384,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             InvoiceStatus.CREDITED.value,
         ):
             pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
+        elif invoice.invoice_status_code == InvoiceStatus.PAID.value:
+            pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.PARTIALLY_REVERSED.value)
         current_app.logger.debug(f"Completed refund : {invoice_id}")
         return {"message": message}
 

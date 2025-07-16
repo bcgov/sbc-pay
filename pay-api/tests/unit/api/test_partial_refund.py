@@ -19,7 +19,7 @@ Test-Suite to ensure that the refunds endpoint for partials is working as expect
 import json
 from datetime import datetime, timezone
 from typing import List
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from _decimal import Decimal
@@ -56,7 +56,7 @@ from tests.utilities.base_test import (
 )
 
 
-def test_create_refund(session, client, jwt, app, monkeypatch):
+def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
     """Assert that the endpoint  returns 202."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -120,6 +120,9 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
         assert payload["refundRevenue"][0]["lineNumber"] == "1"
         assert payload["refundRevenue"][0]["refundAmount"] == refund_partial[0].refund_amount
 
+        mock_publish = Mock()
+        mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
+
         rv = client.post(
             f"/api/v1/payment-requests/{inv_id}/refunds",
             data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
@@ -128,6 +131,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
         assert rv.status_code == 202
         assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["DIRECT_PAY.PAID"]
         assert RefundModel.find_by_invoice_id(inv_id) is not None
+        mock_publish.assert_called()
 
         refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
         assert refunds_partial
