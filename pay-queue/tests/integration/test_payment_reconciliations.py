@@ -964,11 +964,11 @@ def test_credits(session, app, client, monkeypatch):
         cm_identifier,
         "100003",
         date_str,
-        2.5,
+        150,
         cfs_account_number,
         TargetTransaction.INV.value,
         invoice_number,
-        150,
+        2.5,
         0,
         Status.PAID.value,
     ]
@@ -1011,20 +1011,22 @@ def test_credits(session, app, client, monkeypatch):
     assert credit_invoices[0].created_on == date
     assert credit_invoices[0].credit_id == credit_id
     assert credit_invoices[0].invoice_number == invoice_number
-    assert credit_invoices[0].invoice_amount == 100
+    assert credit_invoices[0].invoice_amount == invoice2.total
+    # Higher invoice id gets the credit first
     assert credit_invoices[0].invoice_id == invoice2.id
 
     assert credit_invoices[1].amount_applied == 50
-    assert credit_invoices[1].application_id == 100004
+    assert credit_invoices[1].application_id == 100003
     assert credit_invoices[1].cfs_identifier == str(cm_identifier)
     assert credit_invoices[1].invoice_number == invoice_number
-    # Should be applied to the top invoice id in the invoice_references.
+    # Credit was already applied fully to invoice2, now spill over to invoice1
     assert credit_invoices[1].invoice_id == invoice.id
 
     assert credit_invoices[2].amount_applied == 5.5
     assert credit_invoices[2].application_id == 100004
     assert credit_invoices[2].cfs_identifier == str(cm_identifier)
     assert credit_invoices[2].invoice_number == invoice_number
+    # Keep putting money on invoice1, invoice2 is full
     assert credit_invoices[2].invoice_id == invoice.id
 
     invoice = InvoiceModel.find_by_id(invoice.id)
