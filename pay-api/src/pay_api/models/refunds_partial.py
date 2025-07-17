@@ -14,7 +14,7 @@
 """Model to handle all operations related to Payment Line Item partial refunds."""
 
 from decimal import Decimal
-from typing import List, Self
+from typing import List, Optional, Self
 
 from attrs import define
 from sql_versioning import Versioned
@@ -76,12 +76,12 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
 
 @define
 class RefundPartialLine:
-    """Used to feed for partial refunds."""
+    """Used to feed for partial refunds also used as part of the response for partial refunds."""
 
     payment_line_item_id: int
     refund_amount: Decimal
     refund_type: RefundsPartialType | str
-    invoice_id: int
+    invoice_id: Optional[int] = None
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
