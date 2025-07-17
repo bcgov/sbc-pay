@@ -380,7 +380,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             disbursement_date=row.disbursement_date,
             disbursement_reversal_date=row.disbursement_reversal_date,
             invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None,
-            # Remove these for CSO, as we don't pull back this information for non CSO route.
+            # Remove these for CSO, as we don't pull back this information for CSO route.
             partial_refunds=(
                 [RefundsPartialSearchModel.from_row(x) for x in row.partial_refunds] if row.partial_refunds else None
             ),
