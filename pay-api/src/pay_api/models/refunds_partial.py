@@ -81,7 +81,6 @@ class RefundPartialLine:
     payment_line_item_id: int
     refund_amount: Decimal
     refund_type: RefundsPartialType | str
-    invoice_id: Optional[int] = None
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -92,6 +91,5 @@ class RefundPartialLine:
         return cls(
             payment_line_item_id=row.payment_line_item_id,
             refund_amount=row.refund_amount,
-            refund_type=row.refund_type,
-            invoice_id=row.invoice_id,
+            refund_type=row.refund_type
         )
