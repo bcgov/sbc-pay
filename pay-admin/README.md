@@ -35,7 +35,3 @@ To prepare your local database:
 ## CI
 
 1. Run `make ci` for running all lint and tests.
-
-## Openshift Environment
-
-View the [document](https://github.com/bcgov/sbc-auth/blob/main/docs/build-deploy.md).
