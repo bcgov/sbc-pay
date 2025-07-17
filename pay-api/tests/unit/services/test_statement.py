@@ -756,8 +756,6 @@ def test_get_eft_statement_with_invoices(session):
                     "service_fees": 0.0,
                     "status_code": "Invoice Approved",
                     "total": 200.0,
-                    "applied_credits": [],
-                    "partial_refunds": [],
                 },
                 {
                     "bcol_account": "TEST",
@@ -796,8 +794,6 @@ def test_get_eft_statement_with_invoices(session):
                     "service_fees": 0.0,
                     "status_code": "Invoice Approved",
                     "total": 50.0,
-                    "applied_credits": [],
-                    "partial_refunds": [],
                 },
                 {
                     "bcol_account": "TEST",
@@ -837,8 +833,6 @@ def test_get_eft_statement_with_invoices(session):
                     "service_fees": 0.0,
                     "status_code": "COMPLETED",
                     "total": 50.0,
-                    "applied_credits": [],
-                    "partial_refunds": [],
                 },
                 {
                     "bcol_account": "TEST",
@@ -878,8 +872,6 @@ def test_get_eft_statement_with_invoices(session):
                     "service_fees": 0.0,
                     "status_code": "COMPLETED",
                     "total": 50.0,
-                    "applied_credits": [],
-                    "partial_refunds": [],
                 },
             ],
             "statement": {

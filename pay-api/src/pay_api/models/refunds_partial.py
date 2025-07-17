@@ -13,9 +13,8 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Line Item partial refunds."""
 
-from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, Self
+from typing import List, Self
 
 from attrs import define
 from sql_versioning import Versioned
@@ -81,32 +80,8 @@ class RefundPartialLine:
 
     payment_line_item_id: int
     refund_amount: Decimal
-    refund_type: RefundsPartialType
-
-    @classmethod
-    def from_row(cls, row: RefundsPartial):
-        """From row is used so we don't tightly couple to our database class.
-
-        https://www.attrs.org/en/stable/init.html
-        """
-        return cls(
-            payment_line_item_id=row.payment_line_item_id,
-            refund_amount=row.refund_amount,
-            refund_type=row.refund_type,
-        )
-
-
-@define
-class RefundsPartialSearchModel:
-    """Refunds Partial Search Model."""
-
-    refund_amount: Decimal
-    payment_line_item_id: int
-    refund_type: str
-    gl_posted: datetime
+    refund_type: RefundsPartialType | str
     invoice_id: int
-    status: Optional[str] = None
-    gl_error: Optional[str] = None
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -115,11 +90,8 @@ class RefundsPartialSearchModel:
         https://www.attrs.org/en/stable/init.html
         """
         return cls(
-            refund_amount=row.refund_amount,
             payment_line_item_id=row.payment_line_item_id,
+            refund_amount=row.refund_amount,
             refund_type=row.refund_type,
-            gl_posted=row.gl_posted,
             invoice_id=row.invoice_id,
-            status=row.status,
-            gl_error=row.gl_error,
         )

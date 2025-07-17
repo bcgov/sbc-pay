@@ -15,6 +15,7 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 
+from attrs import define
 from sqlalchemy import ForeignKey, func
 
 from .base_model import BaseModel
@@ -88,12 +89,11 @@ class AppliedCredits(BaseModel):
         return cls.query.filter_by(application_id=application_id).first()
 
 
+@define
 class AppliedCreditsSearchModel:
     """Applied Credits Search Model."""
 
     amount_applied: Decimal
-    application_id: int
-    cfs_account: str
     cfs_identifier: str
     created_on: datetime
     credit_id: int
@@ -109,8 +109,6 @@ class AppliedCreditsSearchModel:
         """
         return cls(
             amount_applied=row.amount_applied,
-            application_id=row.application_id,
-            cfs_account=row.cfs_account,
             cfs_identifier=row.cfs_identifier,
             created_on=row.created_on,
             credit_id=row.credit_id,
