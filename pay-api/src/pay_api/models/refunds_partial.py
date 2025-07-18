@@ -108,7 +108,5 @@ class RefundPartialSearch:
         https://www.attrs.org/en/stable/init.html
         """
         return cls(
-            payment_line_item_id=row.payment_line_item_id,
-            refund_type=row.refund_type,
-            refund_amount=row.refund_amount
+            payment_line_item_id=row.payment_line_item_id, refund_type=row.refund_type, refund_amount=row.refund_amount
         )

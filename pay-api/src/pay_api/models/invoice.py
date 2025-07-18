@@ -28,7 +28,6 @@ from sqlalchemy.orm import relationship
 
 from pay_api.models.applied_credits import AppliedCreditsSearchModel
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
-from pay_api.models.refunds_partial import RefundPartialSearch
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 from .audit import Audit, AuditSchema
@@ -38,6 +37,7 @@ from .invoice_reference import InvoiceReferenceSchema
 from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
+from .refunds_partial import RefundPartialSearch
 
 
 def determine_overdue_date(context):
