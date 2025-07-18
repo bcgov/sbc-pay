@@ -111,8 +111,5 @@ class RefundPartialSearch:
             invoice_id=row.invoice_id,
             payment_line_item_id=row.payment_line_item_id,
             refund_type=row.refund_type,
-            refund_amount=row.refund_amount,
-            status=row.status,
-            gl_posted=row.gl_posted,
-            gl_error=row.gl_error,
+            refund_amount=row.refund_amount
         )

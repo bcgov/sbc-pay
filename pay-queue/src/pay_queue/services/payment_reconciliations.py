@@ -561,7 +561,7 @@ def _handle_applied_credit(row):
             return
         total_applied_credits = sum(applied_credit.amount_applied for applied_credit in invoice.applied_credits)
         applied_credit_max = invoice.total - total_applied_credits
-        if applied_credit_max == 0:
+        if applied_credit_max <= 0:
             continue
         applied_amount = min(applied_credits, applied_credit_max)
         AppliedCredits(
