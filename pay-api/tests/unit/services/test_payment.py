@@ -23,6 +23,13 @@ import pytz
 
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as PaymentService
+from pay_api.services.payment_calculations import (
+    build_grouped_invoice_context,
+    build_statement_context,
+    build_statement_summary_context,
+    build_transaction_rows,
+    calculate_invoice_summaries,
+)
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import (
@@ -761,3 +768,126 @@ def test_get_invoice_totals_for_statements(session):
     assert totals["paid"] == 200
     # fees - paid - refund
     assert totals["due"] == 650 - 200 - 100
+
+
+def test_build_grouped_invoice_context_basic():
+    """Test grouped invoices."""
+    invoices = [
+        {"payment_method": PaymentMethod.EFT.value, "paid": 100, "total": 200,
+         "line_items": [], "details": [], "status_code": InvoiceStatus.PAID.value},
+        {"payment_method": PaymentMethod.CC.value, "paid": 50, "total": 50,
+         "line_items": [], "details": [], "status_code": InvoiceStatus.PAID.value},
+        # FUTURE - Partial refunds
+        {"payment_method": PaymentMethod.CC.value, "paid": 20, "refund": 10, "total": 50,
+         "line_items": [], "details": [], "status_code": InvoiceStatus.PAID.value},
+    ]
+    statement = {"amount_owing": 100, "to_date": "2024-06-01"}
+    summary = {"latestStatementPaymentDate": "2024-06-01", "dueDate": "2024-06-10"}
+
+    grouped = build_grouped_invoice_context(invoices, statement, summary)
+
+    assert any(item["payment_method"] == PaymentMethod.EFT.value for item in grouped)
+    assert any(item["payment_method"] == PaymentMethod.CC.value for item in grouped)
+
+    eft_item = next(item for item in grouped if item["payment_method"] == PaymentMethod.EFT.value)
+    assert eft_item["total_paid"] == "100.00"
+    assert "transactions" in eft_item
+
+    cc_item = next(item for item in grouped if item["payment_method"] == PaymentMethod.CC.value)
+    # 50 + 20 paid, 10 refund, total 2 invoices
+    assert cc_item["total_paid"] == "70.00"
+    # FUTURE - Partial refunds: check due/paid/total summary
+    assert "paid_summary" in cc_item
+    assert "due_summary" in cc_item
+    assert "totals_summary" in cc_item
+    # Partial refund: paid_summary/due_summary/total_summary basic check
+    assert float(cc_item["paid_summary"]) >= 0
+    assert float(cc_item["totals_summary"]) >= 0
+
+
+def test_calculate_invoice_summaries(session):
+    """Test invoice summaries."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    invoice1 = factory_invoice(
+        payment_account,
+        paid=0.00,
+        refund=100.00,
+        total=100.00,
+        payment_method_code=PaymentMethod.EFT.value,
+        refund_date="2024-06-01"
+    )
+    invoice1.save()
+
+    invoice2 = factory_invoice(
+        payment_account,
+        paid=100.00,
+        refund=0.00,
+        total=100.00,
+        payment_method_code=PaymentMethod.EFT.value,
+        payment_date="2024-05-31"
+    )
+    invoice2.save()
+
+    invoices = [
+        {"id": invoice1.id, "payment_method": PaymentMethod.EFT.value, "paid": 0,
+         "refund": 100, "total": 100, "refund_date": "2024-06-01"},
+        {"id": invoice2.id, "payment_method": PaymentMethod.EFT.value, "paid": 100,
+         "refund": 0, "total": 100, "refund_date": None},
+    ]
+    statement = {"to_date": "2024-06-01"}
+    summary = calculate_invoice_summaries(invoices, PaymentMethod.EFT.value, statement)
+    assert summary["paid"] == "100.00"
+    assert summary["due"] == "0.00"
+    assert summary["total"] == "200.00"
+
+
+def test_build_transaction_rows():
+    """Test transaction rows."""
+    invoices = [
+        {
+            "line_items": [{"description": "Service Fee"}],
+            "details": [{"label": "Folio", "value": "123"}],
+            "folio_number": "F123",
+            "created_on": datetime.now().isoformat(),
+            "total": 100,
+            "service_fees": 10,
+            "gst": 5,
+            "status_code": InvoiceStatus.PAID.value
+        }
+    ]
+    rows = build_transaction_rows(invoices)
+    assert rows[0]["products"] == ["Service Fee"]
+    assert rows[0]["details"][0].startswith("Folio")
+    assert rows[0]["fee"] == "90.00"
+
+
+def test_build_statement_context():
+    """Test statement."""
+    statement = {
+        "from_date": "2024-06-01",
+        "to_date": "2024-06-30",
+        "frequency": "MONTHLY",
+        "amount_owing": 123.45
+    }
+    ctx = build_statement_context(statement)
+    assert "duration" in ctx
+    assert ctx["amount_owing"] == '123.45'
+
+
+def test_build_statement_summary_context():
+    """Test statement summary."""
+    summary = {
+        "lastStatementTotal": 100,
+        "lastStatementPaidAmount": 50,
+        "cancelledTransactions": 10,
+        "latestStatementPaymentDate": "2024-06-01",
+        "dueDate": "2024-06-10"
+    }
+    ctx = build_statement_summary_context(summary)
+    assert ctx["lastStatementTotal"] == '100.00'
+    assert ctx["lastStatementPaidAmount"] == '50.00'
+    assert ctx["cancelledTransactions"] == '10.00'
+    assert "latestStatementPaymentDate" in ctx
+    assert "dueDate" in ctx
