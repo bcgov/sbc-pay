@@ -17,7 +17,7 @@ import os
 from decimal import Decimal
 from typing import Dict, List
 
-from attr import define
+from attrs import define
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 

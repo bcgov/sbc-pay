@@ -46,6 +46,7 @@ class Credit(BaseModel):
             "details",
             "is_credit_memo",
             "remaining_amount",
+            "created_invoice_id",
         ]
     }
 
@@ -64,7 +65,7 @@ class Credit(BaseModel):
         nullable=True,
         default=lambda: datetime.now(tz=timezone.utc),
     )
-
+    created_invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=True, index=True)
     account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
 
     @classmethod

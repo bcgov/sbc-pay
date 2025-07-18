@@ -72,12 +72,14 @@ def factory_invoice(
     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
     created_on: datetime = datetime.now(),
     disbursement_status_code=None,
+    paid=0,
 ):
     """Return Factory."""
     return Invoice(
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
         total=total,
+        paid=paid,
         created_by="test",
         created_on=created_on,
         business_identifier=business_identifier,

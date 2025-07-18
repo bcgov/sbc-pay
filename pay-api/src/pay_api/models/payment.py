@@ -21,7 +21,7 @@ from flask import current_app
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
-from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
+from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, relationship
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -247,8 +247,60 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
-    def generate_base_transaction_query(cls):
+    def generate_base_transaction_query(cls, include_credits_and_partial_refunds: bool):
         """Generate a base query."""
+        options = [
+            lazyload("*"),
+            load_only(
+                Invoice.id,
+                Invoice.corp_type_code,
+                Invoice.created_on,
+                Invoice.payment_date,
+                Invoice.refund_date,
+                Invoice.invoice_status_code,
+                Invoice.total,
+                Invoice.service_fees,
+                Invoice.paid,
+                Invoice.refund,
+                Invoice.folio_number,
+                Invoice.created_name,
+                Invoice.invoice_status_code,
+                Invoice.payment_method_code,
+                Invoice.details,
+                Invoice.business_identifier,
+                Invoice.created_by,
+                Invoice.filing_id,
+                Invoice.bcol_account,
+                Invoice.disbursement_date,
+                Invoice.disbursement_reversal_date,
+                Invoice.overdue_date,
+            ),
+            contains_eager(Invoice.payment_line_items)
+            .load_only(
+                PaymentLineItem.description,
+                PaymentLineItem.gst,
+                PaymentLineItem.pst,
+                PaymentLineItem.service_fees,
+                PaymentLineItem.total,
+            )
+            .contains_eager(PaymentLineItem.fee_schedule)
+            .load_only(FeeSchedule.filing_type_code),
+            contains_eager(Invoice.payment_account).load_only(
+                PaymentAccount.auth_account_id,
+                PaymentAccount.name,
+                PaymentAccount.billable,
+                PaymentAccount.branch_name,
+            ),
+            contains_eager(Invoice.references).load_only(
+                InvoiceReference.invoice_number,
+                InvoiceReference.reference_number,
+                InvoiceReference.status_code,
+            ),
+        ]
+
+        if include_credits_and_partial_refunds:
+            options.extend([joinedload(Invoice.applied_credits), joinedload(Invoice.partial_refunds)])
+
         return (
             db.session.query(Invoice)
             .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
@@ -258,60 +310,13 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
             )
             .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-            .options(
-                lazyload("*"),
-                load_only(
-                    Invoice.id,
-                    Invoice.corp_type_code,
-                    Invoice.created_on,
-                    Invoice.payment_date,
-                    Invoice.refund_date,
-                    Invoice.invoice_status_code,
-                    Invoice.total,
-                    Invoice.service_fees,
-                    Invoice.paid,
-                    Invoice.refund,
-                    Invoice.folio_number,
-                    Invoice.created_name,
-                    Invoice.invoice_status_code,
-                    Invoice.payment_method_code,
-                    Invoice.details,
-                    Invoice.business_identifier,
-                    Invoice.created_by,
-                    Invoice.filing_id,
-                    Invoice.bcol_account,
-                    Invoice.disbursement_date,
-                    Invoice.disbursement_reversal_date,
-                    Invoice.overdue_date,
-                ),
-                contains_eager(Invoice.payment_line_items)
-                .load_only(
-                    PaymentLineItem.description,
-                    PaymentLineItem.gst,
-                    PaymentLineItem.pst,
-                    PaymentLineItem.service_fees,
-                    PaymentLineItem.total,
-                )
-                .contains_eager(PaymentLineItem.fee_schedule)
-                .load_only(FeeSchedule.filing_type_code),
-                contains_eager(Invoice.payment_account).load_only(
-                    PaymentAccount.auth_account_id,
-                    PaymentAccount.name,
-                    PaymentAccount.billable,
-                    PaymentAccount.branch_name,
-                ),
-                contains_eager(Invoice.references).load_only(
-                    InvoiceReference.invoice_number,
-                    InvoiceReference.reference_number,
-                    InvoiceReference.status_code,
-                ),
-            )
+            .options(*options)
         )
 
     @classmethod
     def search_without_counts(cls, auth_account_id: str, search_filter: Dict, page: int, limit: int):
         """Search without using counts, ideally this will become our baseline."""
-        query = cls.generate_base_transaction_query()
+        query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=True)
         query = cls.filter(query, auth_account_id, search_filter)
         sub_query = cls.generate_subquery(auth_account_id, search_filter, limit + 1, page).subquery()
         results = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
@@ -324,7 +329,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     ):
         """Search for purchase history."""
         executor = current_app.extensions["flask_executor"]
-        query = cls.generate_base_transaction_query()
+        query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=False)
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
             count_future = executor.submit(cls.get_count, auth_account_id, search_filter)

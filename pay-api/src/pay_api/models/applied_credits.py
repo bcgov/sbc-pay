@@ -13,7 +13,9 @@
 # limitations under the License.
 """Model that is populated from feedback files."""
 from datetime import datetime, timezone
+from decimal import Decimal
 
+from attrs import define
 from sqlalchemy import ForeignKey, func
 
 from .base_model import BaseModel
@@ -22,10 +24,10 @@ from .db import db
 
 # NOTE THIS IS SPECIFIC ONLY FOR PAD / ONLINE BANKING CREDIT MEMOS.
 # This can also be seen in the ar_applied_receivables table in the CAS datawarehouse.
-class CfsCreditInvoices(BaseModel):
+class AppliedCredits(BaseModel):
     """This class manages the mapping from cfs account credit memos to invoices."""
 
-    __tablename__ = "cfs_credit_invoices"
+    __tablename__ = "applied_credits"
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -48,6 +50,7 @@ class CfsCreditInvoices(BaseModel):
             "credit_id",
             "invoice_amount",
             "invoice_number",
+            "invoice_id",
         ]
     }
 
@@ -56,7 +59,7 @@ class CfsCreditInvoices(BaseModel):
     account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
     amount_applied = db.Column(db.Numeric, nullable=False)
     # External application_id that comes straight from the CSV, looks like an identifier in an external system.
-    application_id = db.Column(db.Integer, nullable=True, index=True, unique=True)
+    application_id = db.Column(db.Integer, nullable=True, index=True)
     cfs_account = db.Column(db.String(50), nullable=False, index=True)
     cfs_identifier = db.Column(db.String(50), nullable=False, index=True)
     created_on = db.Column(
@@ -68,12 +71,14 @@ class CfsCreditInvoices(BaseModel):
     credit_id = db.Column(db.Integer, ForeignKey("credits.id"), nullable=True, index=True)
     invoice_amount = db.Column(db.Numeric, nullable=False)
     invoice_number = db.Column(db.String(50), nullable=False)
+    # We don't know the exact invoice id for PAD since it's rolled up. For ONLINE BANKING there is only one invoice.
+    invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=False, index=True)
 
     @classmethod
     def credit_for_invoice_number(cls, invoice_number: str):
         """Return the credit associated with the invoice number."""
         return (
-            cls.query.with_entities(func.sum(CfsCreditInvoices.amount_applied).label("credit_invoice_total"))
+            cls.query.with_entities(func.sum(AppliedCredits.amount_applied).label("credit_invoice_total"))
             .filter_by(invoice_number=invoice_number)
             .scalar()
         )
@@ -82,3 +87,32 @@ class CfsCreditInvoices(BaseModel):
     def find_by_application_id(cls, application_id: int):
         """Return the credit associated with the application id."""
         return cls.query.filter_by(application_id=application_id).first()
+
+
+@define
+class AppliedCreditsSearchModel:
+    """Applied Credits Search Model."""
+
+    amount_applied: Decimal
+    cfs_identifier: str
+    created_on: datetime
+    credit_id: int
+    invoice_amount: Decimal
+    invoice_number: str
+    invoice_id: int
+
+    @classmethod
+    def from_row(cls, row: AppliedCredits):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(
+            amount_applied=row.amount_applied,
+            cfs_identifier=row.cfs_identifier,
+            created_on=row.created_on,
+            credit_id=row.credit_id,
+            invoice_amount=row.invoice_amount,
+            invoice_number=row.invoice_number,
+            invoice_id=row.invoice_id,
+        )

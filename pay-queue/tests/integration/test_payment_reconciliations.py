@@ -20,9 +20,9 @@ import logging
 from datetime import datetime, timezone
 
 import pytest
+from pay_api.models import AppliedCredits as AppliedCreditsModel
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import CfsCreditInvoices as CfsCreditInvoicesModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
@@ -892,7 +892,15 @@ def test_credits(session, app, client, monkeypatch):
     )
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0, service_fees=10.0, total=90.0)
     invoice_number = "1234567890"
+    invoice2 = factory_invoice(
+        payment_account=pay_account,
+        total=100,
+        service_fees=10.0,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=90.0, service_fees=10.0, total=90.0)
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
+    factory_invoice_reference(invoice_id=invoice2.id, invoice_number=invoice_number)
 
     receipt_number = "RCPT0012345"
     onac_amount = 100
@@ -956,11 +964,11 @@ def test_credits(session, app, client, monkeypatch):
         cm_identifier,
         "100003",
         date_str,
-        2.5,
+        150,
         cfs_account_number,
         TargetTransaction.INV.value,
         invoice_number,
-        100,
+        2.5,
         0,
         Status.PAID.value,
     ]
@@ -993,21 +1001,34 @@ def test_credits(session, app, client, monkeypatch):
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
 
-    credit_invoices = CfsCreditInvoicesModel.query.all()
-    assert len(credit_invoices) == 2
+    credit_invoices = AppliedCreditsModel.query.all()
+    assert len(credit_invoices) == 3
     assert credit_invoices[0].account_id == pay_account.id
-    assert credit_invoices[0].amount_applied == 2.5
+    assert credit_invoices[0].amount_applied == 100
     assert credit_invoices[0].application_id == 100003
     assert credit_invoices[0].cfs_account == cfs_account_number
     assert credit_invoices[0].cfs_identifier == str(cm_identifier)
     assert credit_invoices[0].created_on == date
     assert credit_invoices[0].credit_id == credit_id
     assert credit_invoices[0].invoice_number == invoice_number
-    assert credit_invoices[0].invoice_amount == 100
-    assert credit_invoices[1].amount_applied == 5.5
-    assert credit_invoices[1].application_id == 100004
+    assert credit_invoices[0].invoice_amount == invoice2.total
+    # Higher invoice id gets the credit first
+    assert credit_invoices[0].invoice_id == invoice2.id
+
+    assert credit_invoices[1].amount_applied == 50
+    assert credit_invoices[1].application_id == 100003
     assert credit_invoices[1].cfs_identifier == str(cm_identifier)
     assert credit_invoices[1].invoice_number == invoice_number
+    # Credit was already applied fully to invoice2, now spill over to invoice1
+    assert credit_invoices[1].invoice_id == invoice.id
+
+    assert credit_invoices[2].amount_applied == 5.5
+    assert credit_invoices[2].application_id == 100004
+    assert credit_invoices[2].cfs_identifier == str(cm_identifier)
+    assert credit_invoices[2].invoice_number == invoice_number
+    # Keep putting money on invoice1, invoice2 is full
+    assert credit_invoices[2].invoice_id == invoice.id
+
     invoice = InvoiceModel.find_by_id(invoice.id)
     assert invoice.paid
     assert invoice.paid == 100

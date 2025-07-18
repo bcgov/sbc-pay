@@ -20,6 +20,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 import json
 import os
 from datetime import datetime, timezone
+from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
@@ -27,11 +28,15 @@ from faker import Faker
 from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
+from pay_api.models.applied_credits import AppliedCredits
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
+from pay_api.models.credit import Credit
 from pay_api.models.distribution_code import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
+from pay_api.models.payment_line_item import PaymentLineItem
+from pay_api.models.refunds_partial import RefundsPartial
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
@@ -1056,3 +1061,178 @@ def test_switch_eft_account_when_outstanding_balance(session, client, jwt, app, 
 
     assert rv.status_code == 400
     assert rv.json["type"] == "EFT_SHORT_NAME_OUTSTANDING_BALANCE"
+
+
+def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, client, jwt, app):
+    """Test InvoiceSearchModel with excludeCounts and validate applied_credits and partial_refunds fields."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    line_item = PaymentLineItem(
+        invoice_id=invoice.id,
+        fee_schedule_id=1,
+        filing_fees=Decimal("100.00"),
+        total=Decimal("100.00"),
+        description="Test Line Item",
+        line_item_status_code="ACTIVE",
+    )
+    line_item.save()
+
+    credit1 = Credit(
+        cfs_identifier="TEST_CREDIT_001",
+        amount=Decimal("25.00"),
+        remaining_amount=Decimal("25.00"),
+        account_id=pay_account.id,
+        created_on=datetime.now(tz=timezone.utc),
+    )
+    credit1.save()
+
+    credit2 = Credit(
+        cfs_identifier="TEST_CREDIT_002",
+        amount=Decimal("15.00"),
+        remaining_amount=Decimal("15.00"),
+        account_id=pay_account.id,
+        created_on=datetime.now(tz=timezone.utc),
+    )
+    credit2.save()
+
+    applied_credit1 = AppliedCredits(
+        invoice_id=invoice.id,
+        invoice_number="INV123456",
+        amount_applied=Decimal("25.00"),
+        invoice_amount=Decimal("100.00"),
+        cfs_identifier="TEST_CREDIT_001",
+        credit_id=credit1.id,
+        cfs_account="TEST_ACCOUNT",
+        created_on=datetime.now(tz=timezone.utc),
+    )
+    applied_credit1.save()
+
+    applied_credit2 = AppliedCredits(
+        invoice_id=invoice.id,
+        invoice_number="INV123456",
+        amount_applied=Decimal("15.00"),
+        invoice_amount=Decimal("100.00"),
+        cfs_identifier="TEST_CREDIT_002",
+        credit_id=credit2.id,
+        cfs_account="TEST_ACCOUNT",
+        created_on=datetime.now(tz=timezone.utc),
+    )
+    applied_credit2.save()
+
+    partial_refund1 = RefundsPartial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=Decimal("10.00"),
+        refund_type="PARTIAL_REFUND",
+        status="COMPLETED",
+        created_by="TEST_USER",
+        created_name="Test User",
+        created_on=datetime.now(tz=timezone.utc),
+    )
+    partial_refund1.save()
+
+    partial_refund2 = RefundsPartial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=Decimal("5.00"),
+        refund_type="ADJUSTMENT",
+        status="COMPLETED",
+        created_by="TEST_USER",
+        created_name="Test User",
+        created_on=datetime.now(tz=timezone.utc),
+    )
+    partial_refund2.save()
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    items = rv.json.get("items")
+    assert len(items) == 1
+    invoice_data = items[0]
+
+    assert "appliedCredits" in invoice_data, "appliedCredits field is missing"
+    applied_credits = invoice_data["appliedCredits"]
+    assert isinstance(applied_credits, list), "appliedCredits should be a list"
+    assert len(applied_credits) == 2, "Should have 2 applied credits"
+
+    credit1 = applied_credits[0]
+    assert "amountApplied" in credit1, "amountApplied field is missing"
+    assert "cfsIdentifier" in credit1, "cfsIdentifier field is missing"
+    assert "creditId" in credit1, "creditId field is missing"
+    assert "invoiceAmount" in credit1, "invoiceAmount field is missing"
+    assert "invoiceNumber" in credit1, "invoiceNumber field is missing"
+    assert "invoiceId" in credit1, "invoiceId field is missing"
+    assert credit1["amountApplied"] == 25.0, "First credit amount should be 25.0"
+    assert credit1["cfsIdentifier"] == "TEST_CREDIT_001", "First credit identifier should match"
+    assert credit1["creditId"] == 1, "First credit ID should be 1"
+
+    credit2 = applied_credits[1]
+    assert credit2["amountApplied"] == 15.0, "Second credit amount should be 15.0"
+    assert credit2["cfsIdentifier"] == "TEST_CREDIT_002", "Second credit identifier should match"
+    assert credit2["creditId"] == 2, "Second credit ID should be 2"
+
+    assert "partialRefunds" in invoice_data, "partialRefunds field is missing"
+    partial_refunds = invoice_data["partialRefunds"]
+    assert isinstance(partial_refunds, list), "partialRefunds should be a list"
+    assert len(partial_refunds) == 2, "Should have 2 partial refunds"
+
+    refund1 = partial_refunds[0]
+    assert "paymentLineItemId" in refund1, "paymentLineItemId field is missing"
+    assert "refundType" in refund1, "refundType field is missing"
+    assert "refundAmount" in refund1, "refundAmount field is missing"
+    assert refund1["refundAmount"] == 10.0, "First refund amount should be 10.0"
+    assert refund1["refundType"] == "PARTIAL_REFUND", "First refund type should be PARTIAL_REFUND"
+    assert refund1["paymentLineItemId"] == line_item.id, "First refund line item ID should match"
+
+    refund2 = partial_refunds[1]
+    assert refund2["refundAmount"] == 5.0, "Second refund amount should be 5.0"
+    assert refund2["refundType"] == "ADJUSTMENT", "Second refund type should be ADJUSTMENT"
+    assert refund2["paymentLineItemId"] == line_item.id, "Second refund line item ID should match"
+
+
+def test_invoice_search_model_without_exclude_counts_validation(session, client, jwt, app):
+    """Test InvoiceSearchModel without excludeCounts to ensure applied_credits and partial_refunds are NOT present."""
+    # This is important for CSO.
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    items = rv.json.get("items")
+    assert len(items) == 1
+    invoice_data = items[0]
+
+    assert (
+        "appliedCredits" not in invoice_data
+    ), "appliedCredits field should NOT be present when excludeCounts is not used"
+    assert (
+        "partialRefunds" not in invoice_data
+    ), "partialRefunds field should NOT be present when excludeCounts is not used"

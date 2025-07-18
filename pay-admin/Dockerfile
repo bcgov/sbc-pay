@@ -1,4 +1,4 @@
-FROM python:3.12.2-bullseye as development_build
+FROM python:3.12.2-bullseye AS development_build
 
 ARG VCS_REF="missing"
 ARG BUILD_DATE="missing"
@@ -32,7 +32,7 @@ ENV APP_ENV=${APP_ENV} \
   PIP_DEFAULT_TIMEOUT=100 \
   PIP_ROOT_USER_ACTION=ignore \
   # poetry:
-  POETRY_VERSION=1.8.3 \
+  POETRY_VERSION=2.1.3 \
   POETRY_NO_INTERACTION=1 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_CACHE_DIR='/var/cache/pypoetry' \
@@ -71,7 +71,6 @@ COPY --chown=web:web ./README.md /code
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
   echo "$APP_ENV" \
   && poetry version \
-  && poetry config installer.max-workers 1 \
   # Install deps:
   && poetry run pip install -U pip \
   && poetry install \

@@ -22,9 +22,9 @@ from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from flask import current_app
+from pay_api.models import AppliedCredits
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import CfsCreditInvoices
 from pay_api.models import Credit as CreditModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -534,28 +534,51 @@ def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]
     error_messages.append({"error": error_msg, "row": row})
 
 
-def _handle_credit_invoices_and_adjust_invoice_paid(row):
-    """Create CfsCreditInvoices and adjust the invoice paid amount."""
+def _handle_applied_credit(row):
+    """Create AppliedCredits and adjust the invoice paid amount."""
     application_id = int(_get_row_value(row, Column.APP_ID))
     cfs_identifier = _get_row_value(row, Column.SOURCE_TXN_NO)
-    if CfsCreditInvoices.find_by_application_id(application_id):
-        current_app.logger.warning(f"Credit invoices exists with application_id {application_id}.")
+    if AppliedCredits.find_by_application_id(application_id):
+        current_app.logger.warning(f"Applied Credit exists with application_id {application_id}.")
         return
+    # Check for invoice number in applied credits
     if not (credit := CreditModel.find_by_cfs_identifier(cfs_identifier=cfs_identifier, credit_memo=True)):
         current_app.logger.warning(f"Credit with cfs_identifier {cfs_identifier} not found.")
         return
     invoice_number = _get_row_value(row, Column.TARGET_TXN_NO)
-    CfsCreditInvoices(
-        account_id=_get_payment_account(row).id,
-        amount_applied=Decimal(_get_row_value(row, Column.APP_AMOUNT)),
-        application_id=application_id,
-        cfs_account=_get_row_value(row, Column.CUSTOMER_ACC),
-        cfs_identifier=cfs_identifier,
-        created_on=datetime.strptime(_get_row_value(row, Column.APP_DATE), "%d-%b-%y"),
-        credit_id=credit.id,
-        invoice_amount=Decimal(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
-        invoice_number=invoice_number,
-    ).save()
+    applied_credits = Decimal(_get_row_value(row, Column.APP_AMOUNT))
+    # Iterate over invoice reference highest number to lowest number, that way credit is shown on the earliest pages
+    # For online banking this will only ever be one invoice.
+    invoices = (
+        db.session.query(InvoiceModel)
+        .join(InvoiceReferenceModel)
+        .filter(InvoiceReferenceModel.invoice_number == invoice_number)
+        .order_by(InvoiceModel.id.desc())
+        .all()
+    )
+    for invoice in invoices:
+        if applied_credits <= 0:
+            return
+        total_applied_credits = sum(applied_credit.amount_applied for applied_credit in invoice.applied_credits)
+        applied_credit_max = invoice.total - total_applied_credits
+        if applied_credit_max <= 0:
+            continue
+        applied_amount = min(applied_credits, applied_credit_max)
+        AppliedCredits(
+            account_id=_get_payment_account(row).id,
+            amount_applied=applied_amount,
+            application_id=application_id,
+            cfs_account=_get_row_value(row, Column.CUSTOMER_ACC),
+            cfs_identifier=cfs_identifier,
+            created_on=datetime.strptime(_get_row_value(row, Column.APP_DATE), "%d-%b-%y"),
+            credit_id=credit.id,
+            invoice_amount=invoice.total,
+            invoice_number=invoice_number,
+            invoice_id=invoice.id,
+        ).save()
+        applied_credits -= applied_amount
+        # Invoice paid is already updated in apply credit endpoint
+        # Invoice status gets updated in _process_paid_invoices
 
 
 def _process_credit_on_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
@@ -749,7 +772,7 @@ def _create_credit_records(csv_content: str):
         record_type = _get_row_value(row, Column.RECORD_TYPE)
         target_txn = _get_row_value(row, Column.TARGET_TXN)
         if record_type == RecordType.CMAP.value and target_txn == TargetTransaction.INV.value:
-            _handle_credit_invoices_and_adjust_invoice_paid(row)
+            _handle_applied_credit(row)
 
 
 def _sync_credit_records_with_cfs():

@@ -134,3 +134,5 @@ ACK.INBOX*
 FEEDBACK.INBOX*
 *.env
 pay-admin/flask_session/
+BCR_PAYMENT_APPL*
+cas_settlement_consolidated_skip_test.csv
