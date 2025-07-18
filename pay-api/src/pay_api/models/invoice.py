@@ -28,7 +28,7 @@ from sqlalchemy.orm import relationship
 
 from pay_api.models.applied_credits import AppliedCreditsSearchModel
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
-from pay_api.models.refunds_partial import RefundPartialLine
+from pay_api.models.refunds_partial import RefundPartialSearch
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 from .audit import Audit, AuditSchema
@@ -335,7 +335,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     refund_date: datetime
     disbursement_date: datetime
     disbursement_reversal_date: datetime
-    partial_refunds: Optional[List[RefundPartialLine]]
+    partial_refunds: Optional[List[RefundPartialSearch]]
     applied_credits: Optional[List[AppliedCreditsSearchModel]]
 
     @classmethod
@@ -382,7 +382,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None,
             # Remove these for CSO, as we don't pull back this information for CSO route.
             partial_refunds=(
-                [RefundPartialLine.from_row(x) for x in row.partial_refunds] if row.partial_refunds else None
+                [RefundPartialSearch.from_row(x) for x in row.partial_refunds] if row.partial_refunds else None
             ),
             applied_credits=(
                 [AppliedCreditsSearchModel.from_row(x) for x in row.applied_credits] if row.applied_credits else None

@@ -14,7 +14,7 @@
 """Model to handle all operations related to Payment Line Item partial refunds."""
 
 from decimal import Decimal
-from typing import List, Optional, Self
+from typing import List, Self
 
 from attrs import define
 from sql_versioning import Versioned
@@ -76,11 +76,11 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
 
 @define
 class RefundPartialLine:
-    """Used to feed for partial refunds also used as part of the response for partial refunds."""
+    """Used to feed for partial refunds."""
 
     payment_line_item_id: int
     refund_amount: Decimal
-    refund_type: RefundsPartialType | str
+    refund_type: RefundsPartialType
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -89,7 +89,30 @@ class RefundPartialLine:
         https://www.attrs.org/en/stable/init.html
         """
         return cls(
+            payment_line_item_id=row.payment_line_item_id, refund_amount=row.refund_amount, refund_type=row.refund_type
+        )
+
+
+@define
+class RefundPartialSearch:
+    """Used to search for partial refunds."""
+
+    payment_line_item_id: int
+    refund_type: str
+    refund_amount: Decimal
+
+    @classmethod
+    def from_row(cls, row: RefundsPartial):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(
+            invoice_id=row.invoice_id,
             payment_line_item_id=row.payment_line_item_id,
+            refund_type=row.refund_type,
             refund_amount=row.refund_amount,
-            refund_type=row.refund_type
+            status=row.status,
+            gl_posted=row.gl_posted,
+            gl_error=row.gl_error,
         )
