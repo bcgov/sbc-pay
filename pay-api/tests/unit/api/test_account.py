@@ -199,6 +199,29 @@ def test_account_purchase_history_exclude_counts(session, client, jwt, app):
     assert "total" not in rv.json
     assert len(rv.json.get("items")) == 11
 
+    # Test pagination here.
+    for page in range(1, 12):
+        rv = client.post(
+            f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page={page}&limit=1",
+            data=json.dumps({"excludeCounts": "true"}),
+            headers=headers,
+        )
+
+        assert rv.status_code == 200
+        assert len(rv.json.get("items")) == 1
+        
+        if page < 11:
+            assert rv.json.get("hasMore") is True
+        else:
+            assert rv.json.get("hasMore") is False
+        
+        if page > 1:
+            previous_invoice_id = previous_response.json.get("items")[0]["id"]
+            current_invoice_id = rv.json.get("items")[0]["id"]
+            assert previous_invoice_id != current_invoice_id
+        
+        previous_response = rv
+
 
 def test_account_purchase_history_with_service_account(session, client, jwt, app, executor_mock):
     """Assert that purchase history returns only invoices for that product."""
