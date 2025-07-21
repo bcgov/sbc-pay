@@ -318,7 +318,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search without using counts, ideally this will become our baseline."""
         query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=True)
         query = cls.filter(query, auth_account_id, search_filter)
-        sub_query = cls.generate_subquery(auth_account_id, search_filter, limit + 1, page).subquery()
+        sub_query = cls.generate_subquery(auth_account_id, search_filter, limit + 1, page, use_has_more=True).subquery()
         results = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
         has_more = len(results) > limit
         return results[:limit], has_more
@@ -534,7 +534,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query
 
     @classmethod
-    def generate_subquery(cls, auth_account_id, search_filter, limit, page):
+    def generate_subquery(cls, auth_account_id, search_filter, limit, page, use_has_more=False):
         """Generate subquery for invoices, used for pagination."""
         subquery = db.session.query(Invoice.id)
         subquery = (
@@ -545,6 +545,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if limit:
             subquery = subquery.limit(limit)
         if limit and page:
+            if use_has_more:
+                limit -= 1
             subquery = subquery.offset((page - 1) * limit)
         return subquery
 
