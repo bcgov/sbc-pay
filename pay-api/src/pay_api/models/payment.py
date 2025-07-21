@@ -321,7 +321,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """Search without using counts, ideally this will become our baseline."""
         query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=True)
         query = cls.filter(query, params.auth_account_id, params.search_filter)
+        # Grab +1, so we can check if there are more records.
+        params.limit += 1
         sub_query = cls.generate_subquery(params).subquery()
+        params.limit -= 1
         results = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
         has_more = len(results) > params.limit
         return results[: params.limit], has_more
