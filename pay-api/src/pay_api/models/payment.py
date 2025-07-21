@@ -534,7 +534,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query
 
     @classmethod
-    def generate_subquery(cls, auth_account_id, search_filter, limit, page, use_has_more=False):
+    def generate_subquery(cls, auth_account_id, search_filter, limit, page, no_counts=False):
         """Generate subquery for invoices, used for pagination."""
         subquery = db.session.query(Invoice.id)
         subquery = (
@@ -545,7 +545,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if limit:
             subquery = subquery.limit(limit)
         if limit and page:
-            if use_has_more:
+            if no_counts:
                 limit -= 1
             subquery = subquery.offset((page - 1) * limit)
         return subquery
