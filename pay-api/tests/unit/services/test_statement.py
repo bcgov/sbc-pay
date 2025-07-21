@@ -724,6 +724,7 @@ def test_get_eft_statement_with_invoices(session):
                         statement_to_date.date()
                     )),  # pylint: disable=protected-access
                     "due_summary": "250.00",
+                    "include_service_provided": True,
                     "is_index_0": True,
                     "paid_summary": "100.00",
                     "payment_method": "EFT",
@@ -765,6 +766,7 @@ def test_get_eft_statement_with_invoices(session):
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
+                            'service_provided': False,
                             "status_code": "Invoice Approved",
                             "total": "200.00"
                         },
@@ -801,6 +803,7 @@ def test_get_eft_statement_with_invoices(session):
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
+                            'service_provided': False,
                             "status_code": "Invoice Approved",
                             "total": "50.00"
                         },
@@ -838,6 +841,7 @@ def test_get_eft_statement_with_invoices(session):
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
+                            'service_provided': True,
                             "status_code": "COMPLETED",
                             "total": "50.00"
                         },
@@ -875,6 +879,7 @@ def test_get_eft_statement_with_invoices(session):
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
+                            'service_provided': True,
                             "status_code": "COMPLETED",
                             "total": "50.00"
                         }

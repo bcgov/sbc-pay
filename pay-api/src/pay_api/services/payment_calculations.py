@@ -238,7 +238,7 @@ class TransactionRow:
     extra: dict = field(default_factory=dict)
 
 
-def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod) -> List[dict]:
+def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod = None) -> List[dict]:
     """Build transactions for grouped_invoices."""
     rows = []
     for inv in invoices:

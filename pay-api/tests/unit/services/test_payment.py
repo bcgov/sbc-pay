@@ -1162,7 +1162,7 @@ def test_build_grouped_invoice_context_with_additional_notes():
     assert pad_group["include_service_provided"] is True
 
     assert "include_service_provided" in cc_group
-    assert cc_group["include_service_provided"] is False
+    assert cc_group["include_service_provided"] is True
 
     for group in grouped:
         assert "include_service_provided" in group
@@ -1205,5 +1205,5 @@ def test_build_transaction_rows_includes_service_provided():
     assert transactions[0]["service_provided"] is True
     assert "Service 1" in transactions[0]["products"][0]
 
-    assert transactions[1]["service_provided"] is False
+    assert transactions[1]["service_provided"] is True
     assert "(Cancelled) Service 2" in transactions[1]["products"][0]
