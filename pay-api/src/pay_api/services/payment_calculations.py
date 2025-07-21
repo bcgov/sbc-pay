@@ -23,8 +23,61 @@ from sqlalchemy import and_, case, func
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import db
-from pay_api.utils.enums import PaymentMethod, StatementFrequency, StatementTitles
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
+
+
+def determine_service_provision_status(status_code: str, payment_method: str) -> bool:
+    """Determine if service was provided based on invoice status code and payment method."""
+    status_code = status_code.upper().replace(" ", "_")
+    if status_code in InvoiceStatus.__members__:
+        status_enum = InvoiceStatus[status_code]
+    else:
+        status_enum = next((s for s in InvoiceStatus if s.value == status_code), status_code)
+
+    if status_enum is None:
+        return False
+
+    default_statuses = {
+        InvoiceStatus.PAID,
+        InvoiceStatus.CANCELLED,
+        InvoiceStatus.COMPLETED,
+        InvoiceStatus.CREATED,
+        InvoiceStatus.CREDITED,
+        InvoiceStatus.PENDING,
+        InvoiceStatus.PROCESSING,
+        InvoiceStatus.REFUND_REQUESTED,
+        InvoiceStatus.REFUNDED,
+    }
+
+    if status_enum in default_statuses:
+        return True
+
+    match payment_method:
+        case PaymentMethod.PAD.value:
+            return status_enum in {
+                InvoiceStatus.APPROVED,
+                InvoiceStatus.SETTLEMENT_SCHEDULED,
+            }
+
+        case PaymentMethod.EFT.value:
+            return status_enum in {
+                InvoiceStatus.APPROVED,
+                InvoiceStatus.OVERDUE,
+            }
+
+        case PaymentMethod.EJV.value:
+            return status_enum in {
+                InvoiceStatus.APPROVED,
+            }
+
+        case PaymentMethod.INTERNAL.value:
+            return status_enum in {
+                InvoiceStatus.APPROVED,
+            }
+
+        case _:
+            return False
 
 
 def build_grouped_invoice_context(invoices: List[dict], statement: dict,
@@ -43,9 +96,12 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
             continue
 
         items = grouped[method]
+
+        transactions = build_transaction_rows(items, method)
+
         method_context = {
             "total_paid": get_statement_currency_string(sum(Decimal(inv.get("paid", 0)) for inv in items)),
-            "transactions": build_transaction_rows(items),
+            "transactions": transactions,
             "is_index_0": first_group
         }
 
@@ -75,7 +131,8 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
             "paid_summary": summary["paid"],
             "due_summary": summary["due"],
             "totals_summary": summary["total"],
-            "statement_header_text": statement_header_text
+            "statement_header_text": statement_header_text,
+            "include_service_provided": any(t.get("service_provided", False) for t in transactions)
         })
 
         result[method] = method_context
@@ -181,13 +238,13 @@ class TransactionRow:
     extra: dict = field(default_factory=dict)
 
 
-def build_transaction_rows(invoices: List[dict]) -> List[dict]:
+def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod) -> List[dict]:
     """Build transactions for grouped_invoices."""
     rows = []
     for inv in invoices:
         product_lines = []
         for item in inv.get("line_items", []):
-            label = "(Cancelled) " if inv.get("status_code") == "CANCELLED" else ""
+            label = "(Cancelled) " if inv.get("status_code") == InvoiceStatus.CANCELLED.value else ""
             product_lines.append(f"{label}{item.get('description', '')}")
 
         detail_lines = []
@@ -219,6 +276,13 @@ def build_transaction_rows(invoices: List[dict]) -> List[dict]:
                 }
             }
         )
+        service_provided = False
+        if payment_method:
+            service_provided = determine_service_provision_status(
+                inv.get('status_code', ''), payment_method
+            )
+
+        row.extra["service_provided"] = service_provided
 
         row_dict = cattrs.unstructure(row)
         row_dict.update(row_dict.pop("extra"))
