@@ -341,8 +341,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     auth_account_id=auth_account_id,
                     search_filter=search_filter,
                     page=page,
-                    limit=limit,
-                    no_counts=False,
+                    limit=limit
                 )
             )
             query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
