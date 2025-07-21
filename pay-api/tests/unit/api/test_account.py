@@ -199,6 +199,7 @@ def test_account_purchase_history_exclude_counts(session, client, jwt, app):
     assert "total" not in rv.json
     assert len(rv.json.get("items")) == 11
 
+    previous_response = None
     # Test pagination here.
     for page in range(1, 12):
         rv = client.post(
@@ -209,17 +210,17 @@ def test_account_purchase_history_exclude_counts(session, client, jwt, app):
 
         assert rv.status_code == 200
         assert len(rv.json.get("items")) == 1
-        
+
         if page < 11:
             assert rv.json.get("hasMore") is True
         else:
             assert rv.json.get("hasMore") is False
-        
-        if page > 1:
+
+        if page > 1 and previous_response:
             previous_invoice_id = previous_response.json.get("items")[0]["id"]
             current_invoice_id = rv.json.get("items")[0]["id"]
             assert previous_invoice_id != current_invoice_id
-        
+
         previous_response = rv
 
 

@@ -31,7 +31,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.base_model import BaseModel
 from pay_api.models.invoice import InvoiceSchema, InvoiceSearchModel
 from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
-from pay_api.models.payment import PaymentSchema
+from pay_api.models.payment import PaymentSchema, TransactionSearchParams
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
@@ -369,7 +369,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         data = {"page": page, "limit": limit, "items": []}
         if bool(search_filter.get("excludeCounts")):
             # Ideally our data tables will be using this call from now on much better performance.
-            purchases, data["hasMore"] = PaymentModel.search_without_counts(auth_account_id, search_filter, page, limit)
+            purchases, data["hasMore"] = PaymentModel.search_without_counts(
+                TransactionSearchParams(
+                    auth_account_id=auth_account_id, search_filter=search_filter, page=page, limit=limit, no_counts=True
+                )
+            )
         else:
             # This is to maintain backwards compat for CSO, also for other functions like exporting to CSV etc.
             purchases, data["total"] = PaymentModel.search_purchase_history(

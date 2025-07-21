@@ -13,10 +13,13 @@
 # limitations under the License.
 """Model to handle all operations related to Payment data."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Dict
 
 import pytz
+from attrs import define
 from flask import current_app
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select
@@ -314,14 +317,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         )
 
     @classmethod
-    def search_without_counts(cls, auth_account_id: str, search_filter: Dict, page: int, limit: int):
+    def search_without_counts(cls, params: TransactionSearchParams):
         """Search without using counts, ideally this will become our baseline."""
         query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=True)
-        query = cls.filter(query, auth_account_id, search_filter)
-        sub_query = cls.generate_subquery(auth_account_id, search_filter, limit + 1, page, no_counts=True).subquery()
+        query = cls.filter(query, params.auth_account_id, params.search_filter)
+        sub_query = cls.generate_subquery(params).subquery()
         results = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
-        has_more = len(results) > limit
-        return results[:limit], has_more
+        has_more = len(results) > params.limit
+        return results[: params.limit], has_more
 
     @classmethod
     def search_purchase_history(  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
@@ -333,7 +336,15 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
             count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
-            sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
+            sub_query = cls.generate_subquery(
+                TransactionSearchParams(
+                    auth_account_id=auth_account_id,
+                    search_filter=search_filter,
+                    page=page,
+                    limit=limit,
+                    no_counts=False,
+                )
+            )
             query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
             result_future = executor.submit(query.all)
             count = count_future.result()
@@ -343,7 +354,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 count = max_no_records if max_no_records < count else count
         elif max_no_records > 0:
             # If maximum number of records is provided, set the page with that number
-            sub_query = cls.generate_subquery(auth_account_id, search_filter, max_no_records, page=None)
+            sub_query = cls.generate_subquery(
+                TransactionSearchParams(auth_account_id, search_filter, limit=max_no_records, page=None)
+            )
             result, count = (
                 query.filter(Invoice.id.in_(sub_query.subquery().select())).all(),
                 sub_query.count(),
@@ -534,20 +547,20 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query
 
     @classmethod
-    def generate_subquery(cls, auth_account_id, search_filter, limit, page, no_counts=False):
+    def generate_subquery(cls, params: TransactionSearchParams):
         """Generate subquery for invoices, used for pagination."""
         subquery = db.session.query(Invoice.id)
         subquery = (
-            cls.filter(subquery, auth_account_id, search_filter, include_joins=True)
+            cls.filter(subquery, params.auth_account_id, params.search_filter, include_joins=True)
             .distinct()
             .order_by(Invoice.id.desc())
         )
-        if limit:
-            subquery = subquery.limit(limit)
-        if limit and page:
-            if no_counts:
-                limit -= 1
-            subquery = subquery.offset((page - 1) * limit)
+        if params.limit:
+            subquery = subquery.limit(params.limit)
+        if params.limit and params.page:
+            if params.no_counts:
+                params.limit -= 1
+            subquery = subquery.offset((params.page - 1) * params.limit)
         return subquery
 
 
@@ -572,3 +585,14 @@ class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     paid_amount = fields.Float(data_key="paid_amount")
     cheque_receipt_number = fields.String(data_key="cheque_receipt_number")
     paid_usd_amount = fields.Float(data_key="paid_usd_amount")
+
+
+@define
+class TransactionSearchParams:
+    """Parameters for search operations."""
+
+    auth_account_id: str
+    search_filter: Dict
+    page: int
+    limit: int
+    no_counts: bool = False
