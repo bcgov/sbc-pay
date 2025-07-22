@@ -288,6 +288,20 @@ def test_search_payment_history(
         if expected_key:
             for item in results.get("items"):
                 assert item[expected_key] == expected_value
+        if return_all:
+            return
+        results = PaymentService.search_purchase_history(
+            auth_account_id=auth_account_id,
+            search_filter=search_filter,
+            limit=limit,
+            page=2,
+            return_all=return_all,
+        )
+        assert results is not None
+        assert len(results.get("items")) == max(expected_total - limit, 0)
+        if expected_key:
+            for item in results.get("items"):
+                assert item[expected_key] == expected_value
 
 
 def test_search_payment_history_for_all(session):
