@@ -324,7 +324,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         # Grab +1, so we can check if there are more records.
         params.limit += 1
         sub_query = cls.generate_subquery(params).subquery()
-        params.limit -= 1
         results = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
         has_more = len(results) > params.limit
         return results[: params.limit], has_more
@@ -341,10 +340,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
             sub_query = cls.generate_subquery(
                 TransactionSearchParams(
-                    auth_account_id=auth_account_id,
-                    search_filter=search_filter,
-                    page=page,
-                    limit=limit
+                    auth_account_id=auth_account_id, search_filter=search_filter, page=page, limit=limit
                 )
             )
             query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
