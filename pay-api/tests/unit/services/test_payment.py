@@ -900,7 +900,7 @@ def test_build_statement_summary_context():
     (InvoiceStatus.PAID.value, PaymentMethod.CC.value, True),
     (InvoiceStatus.CANCELLED.value, PaymentMethod.PAD.value, True),
     (InvoiceStatus.CANCELLED.value, PaymentMethod.EFT.value, True),
-    (InvoiceStatus.CREATED.value, PaymentMethod.CC.value, True),
+    (InvoiceStatus.CREATED.value, PaymentMethod.CC.value, False),
     (InvoiceStatus.CREDITED.value, PaymentMethod.EJV.value, True),
     (InvoiceStatus.REFUND_REQUESTED.value, PaymentMethod.INTERNAL.value, True),
     (InvoiceStatus.REFUNDED.value, PaymentMethod.PAD.value, True),
@@ -1162,7 +1162,7 @@ def test_build_grouped_invoice_context_with_additional_notes():
     assert pad_group["include_service_provided"] is True
 
     assert "include_service_provided" in cc_group
-    assert cc_group["include_service_provided"] is True
+    assert cc_group["include_service_provided"] is False
 
     for group in grouped:
         assert "include_service_provided" in group

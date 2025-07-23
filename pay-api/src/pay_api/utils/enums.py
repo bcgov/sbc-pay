@@ -58,9 +58,6 @@ class InvoiceStatus(Enum):
     CANCELLED = "CANCELLED"
     CREDITED = "CREDITED"
     OVERDUE = "OVERDUE"
-    COMPLETED = "COMPLETED"
-    PENDING = "PENDING"
-    PROCESSING = "PROCESSING"
 
 
 class TransactionStatus(Enum):
