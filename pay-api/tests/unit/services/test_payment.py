@@ -840,9 +840,9 @@ def test_calculate_invoice_summaries(session):
     ]
     statement = {"to_date": "2024-06-01"}
     summary = calculate_invoice_summaries(invoices, PaymentMethod.EFT.value, statement)
-    assert summary["paid"] == "100.00"
-    assert summary["due"] == "0.00"
-    assert summary["total"] == "200.00"
+    assert summary["paid_summary"] == 100.00
+    assert summary["due_summary"] == 0.00
+    assert summary["totals_summary"] == 200.00
 
 
 def test_build_transaction_rows():
