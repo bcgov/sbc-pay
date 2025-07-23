@@ -22,19 +22,20 @@ import pytz
 from attrs import define
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, or_, select
+from sqlalchemy import Boolean, ForeignKey, String, and_, cast, exists, func, or_, select
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, relationship
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import InvoiceReferenceStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
+from .applied_credits import AppliedCredits
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .corp_type import CorpType
@@ -47,6 +48,7 @@ from .payment_line_item import PaymentLineItem
 from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
+from .refunds_partial import RefundsPartial
 
 
 class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -413,10 +415,11 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         """For filtering queries."""
         query = cls.filter_payment_account(query, auth_account_id, search_filter, include_joins)
         if status_code := search_filter.get("statusCode", None):
-            query = query.filter(Invoice.invoice_status_code == status_code)
-        if search_filter.get("status", None):
-            # depreciating (replacing with statusCode)
-            query = query.filter(Invoice.invoice_status_code == search_filter.get("status"))
+            query = cls._apply_status_filter(query, status_code)
+
+        # Handle deprecated status filtering
+        if status := search_filter.get("status", None):
+            query = cls._apply_status_filter(query, status)
         if search_filter.get("folioNumber", None):
             query = query.filter(Invoice.folio_number == search_filter.get("folioNumber"))
         if business_identifier := search_filter.get("businessIdentifier", None):
@@ -438,6 +441,25 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         query = cls.filter_details(query, search_filter, include_joins)
         query = cls.filter_date(query, search_filter)
         return query
+
+    @classmethod
+    def _apply_status_filter(cls, query, status_code: str):
+        """Apply status filter to query."""
+        partial_statuses = [InvoiceStatus.PARTIALLY_REFUNDED.value, InvoiceStatus.PARTIALLY_CREDITED.value]
+        if status_code in partial_statuses:
+            return query.filter(exists().where(RefundsPartial.invoice_id == Invoice.id))
+        else:
+            return query.filter(Invoice.invoice_status_code == status_code)
+
+    @classmethod
+    def _apply_payment_method_filter(cls, query, payment_type: str):
+        """Apply payment method filter to query."""
+        if payment_type == "NO_FEE":
+            return query.filter(Invoice.total == 0)
+        elif payment_type == PaymentMethodEnum.CREDIT.value:
+            return query.filter(exists().where(AppliedCredits.invoice_id == Invoice.id))
+        else:
+            return query.filter(Invoice.total != 0).filter(Invoice.payment_method_code == payment_type)
 
     @classmethod
     def filter_payment_account(cls, query, auth_account_id, search_filter: dict, include_joins=False):
@@ -467,13 +489,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     def filter_payment(cls, query, search_filter: dict):
         """Filter for payment."""
         if payment_type := search_filter.get("paymentMethod", None):
-            if payment_type == "NO_FEE":
-                # only include no fee transactions
-                query = query.filter(Invoice.total == 0)
-            else:
-                # don't include no fee transactions
-                query = query.filter(Invoice.total != 0)
-                query = query.filter(Invoice.payment_method_code == payment_type)
+            query = cls._apply_payment_method_filter(query, payment_type)
         return query
 
     @classmethod

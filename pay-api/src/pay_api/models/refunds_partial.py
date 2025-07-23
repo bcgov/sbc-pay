@@ -118,5 +118,5 @@ class RefundPartialSearch:
             refund_amount=row.refund_amount,
             created_by=row.created_by,
             created_name=row.created_name,
-            created_on=row.created_on,
+            created_on=str(row.created_on) if row.created_on else "",
         )

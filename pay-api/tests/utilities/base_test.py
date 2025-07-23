@@ -24,36 +24,36 @@ from typing import Dict, List, Tuple
 
 from faker import Faker
 
-from pay_api.models import (
-    CfsAccount,
-    Comment,
-    CorpType,
-    DistributionCode,
-    DistributionCodeLink,
-    EFTCredit,
-    EFTCreditInvoiceLink,
-    EFTFile,
-    EFTRefund,
-    EFTShortnameLinks,
-    EFTShortnames,
-    EFTShortnamesHistorical,
-    FeeCode,
-    FeeSchedule,
-    FilingType,
-    Invoice,
-    InvoiceReference,
-    NonSufficientFunds,
-    Payment,
-    PaymentAccount,
-    PaymentLineItem,
-    PaymentTransaction,
-    Receipt,
-    RoutingSlip,
-    Statement,
-    StatementInvoices,
-    StatementSettings,
-)
+from pay_api.models.applied_credits import AppliedCredits
+from pay_api.models.cfs_account import CfsAccount
+from pay_api.models.comment import Comment
+from pay_api.models.corp_type import CorpType
+from pay_api.models.credit import Credit
+from pay_api.models.distribution_code import DistributionCode, DistributionCodeLink
+from pay_api.models.eft_credit import EFTCredit
+from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink
+from pay_api.models.eft_file import EFTFile
+from pay_api.models.eft_refund import EFTRefund
+from pay_api.models.eft_short_name_links import EFTShortnameLinks
+from pay_api.models.eft_short_names import EFTShortnames
+from pay_api.models.eft_short_names_historical import EFTShortnamesHistorical
+from pay_api.models.fee_code import FeeCode
+from pay_api.models.fee_schedule import FeeSchedule
+from pay_api.models.filing_type import FilingType
+from pay_api.models.invoice import Invoice
+from pay_api.models.invoice_reference import InvoiceReference
+from pay_api.models.non_sufficient_funds import NonSufficientFunds
 from pay_api.models.partner_disbursements import PartnerDisbursements
+from pay_api.models.payment import Payment
+from pay_api.models.payment_account import PaymentAccount
+from pay_api.models.payment_line_item import PaymentLineItem
+from pay_api.models.payment_transaction import PaymentTransaction
+from pay_api.models.receipt import Receipt
+from pay_api.models.refunds_partial import RefundsPartial
+from pay_api.models.routing_slip import RoutingSlip
+from pay_api.models.statement import Statement
+from pay_api.models.statement_invoices import StatementInvoices
+from pay_api.models.statement_settings import StatementSettings
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     APRefundMethod,
@@ -70,6 +70,7 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     PaymentSystem,
+    RefundsPartialType,
     Role,
     RoutingSlipStatus,
 )
@@ -1104,3 +1105,82 @@ def factory_fee_schedule_model(
         fee_schedule.service_fee_code = service_fee.code
     fee_schedule.save()
     return fee_schedule
+
+
+def factory_credit(
+    account_id: int,
+    cfs_identifier: str = "TEST_CREDIT_001",
+    amount: float = 50.00,
+    remaining_amount: float = 50.00,
+    cfs_site: str = "TEST_SITE",
+    is_credit_memo: bool = False,
+    details: str = None,
+    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_invoice_id: int = None,
+):
+    """Return a Credit model."""
+    credit = Credit(
+        account_id=account_id,
+        cfs_identifier=cfs_identifier,
+        amount=amount,
+        remaining_amount=remaining_amount,
+        cfs_site=cfs_site,
+        is_credit_memo=is_credit_memo,
+        details=details,
+        created_on=created_on,
+        created_invoice_id=created_invoice_id,
+    )
+    credit.save()
+    return credit
+
+
+def factory_applied_credits(
+    invoice_id: int,
+    credit_id: int,
+    invoice_number: str = "INV123456",
+    amount_applied: float = 25.00,
+    invoice_amount: float = 100.00,
+    cfs_identifier: str = "TEST_CREDIT_001",
+    cfs_account: str = "TEST_ACCOUNT",
+    application_id: int = None,
+    created_on: datetime = datetime.now(tz=timezone.utc),
+):
+    """Return an AppliedCredits model."""
+    applied_credit = AppliedCredits(
+        invoice_id=invoice_id,
+        credit_id=credit_id,
+        invoice_number=invoice_number,
+        amount_applied=amount_applied,
+        invoice_amount=invoice_amount,
+        cfs_identifier=cfs_identifier,
+        cfs_account=cfs_account,
+        application_id=application_id,
+        created_on=created_on,
+    )
+    applied_credit.save()
+    return applied_credit
+
+
+def factory_refunds_partial(
+    invoice_id: int,
+    payment_line_item_id: int,
+    refund_amount: float = 25.00,
+    refund_type: str = RefundsPartialType.BASE_FEES.value,
+    status: str = "COMPLETED",
+    created_by: str = "TEST_USER",
+    created_name: str = "Test User",
+    created_on: datetime = datetime.now(tz=timezone.utc),
+):
+    """Return a RefundsPartial model."""
+    refund_partial = RefundsPartial(
+        invoice_id=invoice_id,
+        payment_line_item_id=payment_line_item_id,
+        refund_amount=refund_amount,
+        refund_type=refund_type,
+        status=status,
+        created_by=created_by,
+        created_name=created_name,
+        created_on=created_on,
+    )
+    refund_partial.save()
+    return refund_partial
