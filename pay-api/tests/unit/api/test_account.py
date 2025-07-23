@@ -1200,14 +1200,21 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
     assert "invoiceAmount" in credit1, "invoiceAmount field is missing"
     assert "invoiceNumber" in credit1, "invoiceNumber field is missing"
     assert "invoiceId" in credit1, "invoiceId field is missing"
+    assert "createdOn" in credit1, "createdOn field is missing"
     assert credit1["amountApplied"] == 25.0, "First credit amount should be 25.0"
     assert credit1["cfsIdentifier"] == "TEST_CREDIT_001", "First credit identifier should match"
     assert credit1["creditId"] == 1, "First credit ID should be 1"
+    assert credit1["invoiceAmount"] == 100.0, "First credit invoice amount should be 100.0"
+    assert credit1["invoiceNumber"] == "INV123456", "First credit invoice number should match"
+    assert credit1["invoiceId"] == invoice.id, "First credit invoice ID should match"
 
     credit2 = applied_credits[1]
     assert credit2["amountApplied"] == 15.0, "Second credit amount should be 15.0"
     assert credit2["cfsIdentifier"] == "TEST_CREDIT_002", "Second credit identifier should match"
     assert credit2["creditId"] == 2, "Second credit ID should be 2"
+    assert credit2["invoiceAmount"] == 100.0, "Second credit invoice amount should be 100.0"
+    assert credit2["invoiceNumber"] == "INV123456", "Second credit invoice number should match"
+    assert credit2["invoiceId"] == invoice.id, "Second credit invoice ID should match"
 
     assert "partialRefunds" in invoice_data, "partialRefunds field is missing"
     partial_refunds = invoice_data["partialRefunds"]
@@ -1215,17 +1222,27 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
     assert len(partial_refunds) == 2, "Should have 2 partial refunds"
 
     refund1 = partial_refunds[0]
+    assert "id" in refund1, "id field is missing"
     assert "paymentLineItemId" in refund1, "paymentLineItemId field is missing"
     assert "refundType" in refund1, "refundType field is missing"
     assert "refundAmount" in refund1, "refundAmount field is missing"
+    assert "createdBy" in refund1, "createdBy field is missing"
+    assert "createdName" in refund1, "createdName field is missing"
+    assert "createdOn" in refund1, "createdOn field is missing"
+    assert refund1["id"] == partial_refund1.id, "First refund ID should match"
     assert refund1["refundAmount"] == 10.0, "First refund amount should be 10.0"
     assert refund1["refundType"] == "PARTIAL_REFUND", "First refund type should be PARTIAL_REFUND"
     assert refund1["paymentLineItemId"] == line_item.id, "First refund line item ID should match"
+    assert refund1["createdBy"] == "TEST_USER", "First refund created by should match"
+    assert refund1["createdName"] == "Test User", "First refund created name should match"
 
     refund2 = partial_refunds[1]
+    assert refund2["id"] == partial_refund2.id, "Second refund ID should match"
     assert refund2["refundAmount"] == 5.0, "Second refund amount should be 5.0"
     assert refund2["refundType"] == "ADJUSTMENT", "Second refund type should be ADJUSTMENT"
     assert refund2["paymentLineItemId"] == line_item.id, "Second refund line item ID should match"
+    assert refund2["createdBy"] == "TEST_USER", "Second refund created by should match"
+    assert refund2["createdName"] == "Test User", "Second refund created name should match"
 
 
 def test_invoice_search_model_without_exclude_counts_validation(session, client, jwt, app):

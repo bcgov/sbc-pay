@@ -93,6 +93,7 @@ class AppliedCredits(BaseModel):
 class AppliedCreditsSearchModel:
     """Applied Credits Search Model."""
 
+    id: int
     amount_applied: Decimal
     cfs_identifier: str
     created_on: datetime
@@ -108,6 +109,7 @@ class AppliedCreditsSearchModel:
         https://www.attrs.org/en/stable/init.html
         """
         return cls(
+            id=row.id,
             amount_applied=row.amount_applied,
             cfs_identifier=row.cfs_identifier,
             created_on=row.created_on,
