@@ -28,7 +28,6 @@ from faker import Faker
 from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
-from pay_api.models.applied_credits import AppliedCredits
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.models.credit import Credit
 from pay_api.models.distribution_code import DistributionCodeLink as DistributionCodeLinkModel
@@ -39,9 +38,21 @@ from pay_api.models.payment_line_item import PaymentLineItem
 from pay_api.models.refunds_partial import RefundsPartial
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
+from pay_api.utils.enums import (
+    CfsAccountStatus,
+    InvoiceStatus,
+    LineItemStatus,
+    PaymentMethod,
+    PaymentStatus,
+    RefundsPartialType,
+    Role,
+)
 from tests.utilities.base_test import (
+    factory_applied_credits,
+    factory_credit,
     factory_invoice,
+    factory_payment_line_item,
+    factory_refunds_partial,
     get_auth_basic_user,
     get_basic_account_payload,
     get_claims,
@@ -200,7 +211,6 @@ def test_account_purchase_history_exclude_counts(session, client, jwt, app):
     assert len(rv.json.get("items")) == 11
 
     previous_response = None
-    # Test pagination here.
     for page in range(1, 12):
         rv = client.post(
             f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page={page}&limit=1",
@@ -234,8 +244,6 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
     fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type("PPR", "FSDIS").fee_schedule_id
     DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
 
-    # Create one invoice for CSO and one fpr BUSINESS.
-    # Then query without any filter and make sure only CSO invoice is returned for service account with CSO product_code
     for corp_filing_type in (["CSO", "CSBVFEE"], ["PPR", "FSDIS"]):
         token = jwt.create_jwt(
             get_claims(roles=[Role.SYSTEM.value], product_code=corp_filing_type[0]),
@@ -431,7 +439,6 @@ def test_account_purchase_history_default_list(session, client, jwt, app, execut
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    # Create 11 payments
     for i in range(11):
         rv = client.post(
             "/api/v1/payment-requests",
@@ -654,7 +661,6 @@ def test_create_pad_update_when_cfs_down(session, client, jwt, app):
     """Assert that the payment records are created with 202."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    # Create account first
     rv = client.post(
         "/api/v1/accounts",
         data=json.dumps(get_unlinked_pad_account_payload()),
@@ -834,7 +840,6 @@ def test_create_and_delete_gov_accounts_with_account_fee(session, client, jwt, a
 
     account_id = rv.json.get("accountId")
 
-    # Create account fee details.
     token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
@@ -880,7 +885,6 @@ def test_update_gov_accounts_with_account_fee(session, client, jwt, app):
 
     account_id = rv.json.get("accountId")
 
-    # Create account fee details.
     token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
@@ -1107,58 +1111,48 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         filing_fees=Decimal("100.00"),
         total=Decimal("100.00"),
         description="Test Line Item",
-        line_item_status_code="ACTIVE",
+        line_item_status_code=LineItemStatus.ACTIVE.value,
     )
     line_item.save()
 
-    credit1 = Credit(
-        cfs_identifier="TEST_CREDIT_001",
-        amount=Decimal("25.00"),
-        remaining_amount=Decimal("25.00"),
+    credit1 = factory_credit(
         account_id=pay_account.id,
-        created_on=datetime.now(tz=timezone.utc),
+        cfs_identifier="TEST_CREDIT_001",
+        amount=25.00,
+        remaining_amount=25.00,
     )
-    credit1.save()
 
-    credit2 = Credit(
+    credit2 = factory_credit(
+        account_id=pay_account.id,
         cfs_identifier="TEST_CREDIT_002",
-        amount=Decimal("15.00"),
-        remaining_amount=Decimal("15.00"),
-        account_id=pay_account.id,
-        created_on=datetime.now(tz=timezone.utc),
+        amount=15.00,
+        remaining_amount=15.00,
     )
-    credit2.save()
 
-    applied_credit1 = AppliedCredits(
+    applied_credit1 = factory_applied_credits(
         invoice_id=invoice.id,
-        invoice_number="INV123456",
-        amount_applied=Decimal("25.00"),
-        invoice_amount=Decimal("100.00"),
-        cfs_identifier="TEST_CREDIT_001",
         credit_id=credit1.id,
-        cfs_account="TEST_ACCOUNT",
-        created_on=datetime.now(tz=timezone.utc),
-    )
-    applied_credit1.save()
-
-    applied_credit2 = AppliedCredits(
-        invoice_id=invoice.id,
         invoice_number="INV123456",
-        amount_applied=Decimal("15.00"),
-        invoice_amount=Decimal("100.00"),
-        cfs_identifier="TEST_CREDIT_002",
-        credit_id=credit2.id,
-        cfs_account="TEST_ACCOUNT",
-        created_on=datetime.now(tz=timezone.utc),
+        amount_applied=25.00,
+        invoice_amount=100.00,
+        cfs_identifier="TEST_CREDIT_001",
     )
-    applied_credit2.save()
+
+    applied_credit2 = factory_applied_credits(
+        invoice_id=invoice.id,
+        credit_id=credit2.id,
+        invoice_number="INV123456",
+        amount_applied=15.00,
+        invoice_amount=100.00,
+        cfs_identifier="TEST_CREDIT_002",
+    )
 
     partial_refund1 = RefundsPartial(
         invoice_id=invoice.id,
         payment_line_item_id=line_item.id,
         refund_amount=Decimal("10.00"),
         refund_type="PARTIAL_REFUND",
-        status="COMPLETED",
+        status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
         created_on=datetime.now(tz=timezone.utc),
@@ -1170,7 +1164,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         payment_line_item_id=line_item.id,
         refund_amount=Decimal("5.00"),
         refund_type="ADJUSTMENT",
-        status="COMPLETED",
+        status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
         created_on=datetime.now(tz=timezone.utc),
@@ -1194,20 +1188,30 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
     assert len(applied_credits) == 2, "Should have 2 applied credits"
 
     credit1 = applied_credits[0]
+    assert "id" in credit1, "id field is missing"
     assert "amountApplied" in credit1, "amountApplied field is missing"
     assert "cfsIdentifier" in credit1, "cfsIdentifier field is missing"
     assert "creditId" in credit1, "creditId field is missing"
     assert "invoiceAmount" in credit1, "invoiceAmount field is missing"
     assert "invoiceNumber" in credit1, "invoiceNumber field is missing"
     assert "invoiceId" in credit1, "invoiceId field is missing"
+    assert "createdOn" in credit1, "createdOn field is missing"
+    assert credit1["id"] == applied_credit1.id, "First credit ID should match"
     assert credit1["amountApplied"] == 25.0, "First credit amount should be 25.0"
     assert credit1["cfsIdentifier"] == "TEST_CREDIT_001", "First credit identifier should match"
     assert credit1["creditId"] == 1, "First credit ID should be 1"
+    assert credit1["invoiceAmount"] == 100.0, "First credit invoice amount should be 100.0"
+    assert credit1["invoiceNumber"] == "INV123456", "First credit invoice number should match"
+    assert credit1["invoiceId"] == invoice.id, "First credit invoice ID should match"
 
     credit2 = applied_credits[1]
+    assert credit2["id"] == applied_credit2.id, "Second credit ID should match"
     assert credit2["amountApplied"] == 15.0, "Second credit amount should be 15.0"
     assert credit2["cfsIdentifier"] == "TEST_CREDIT_002", "Second credit identifier should match"
     assert credit2["creditId"] == 2, "Second credit ID should be 2"
+    assert credit2["invoiceAmount"] == 100.0, "Second credit invoice amount should be 100.0"
+    assert credit2["invoiceNumber"] == "INV123456", "Second credit invoice number should match"
+    assert credit2["invoiceId"] == invoice.id, "Second credit invoice ID should match"
 
     assert "partialRefunds" in invoice_data, "partialRefunds field is missing"
     partial_refunds = invoice_data["partialRefunds"]
@@ -1215,17 +1219,27 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
     assert len(partial_refunds) == 2, "Should have 2 partial refunds"
 
     refund1 = partial_refunds[0]
+    assert "id" in refund1, "id field is missing"
     assert "paymentLineItemId" in refund1, "paymentLineItemId field is missing"
     assert "refundType" in refund1, "refundType field is missing"
     assert "refundAmount" in refund1, "refundAmount field is missing"
+    assert "createdBy" in refund1, "createdBy field is missing"
+    assert "createdName" in refund1, "createdName field is missing"
+    assert "createdOn" in refund1, "createdOn field is missing"
+    assert refund1["id"] == partial_refund1.id, "First refund ID should match"
     assert refund1["refundAmount"] == 10.0, "First refund amount should be 10.0"
     assert refund1["refundType"] == "PARTIAL_REFUND", "First refund type should be PARTIAL_REFUND"
     assert refund1["paymentLineItemId"] == line_item.id, "First refund line item ID should match"
+    assert refund1["createdBy"] == "TEST_USER", "First refund created by should match"
+    assert refund1["createdName"] == "Test User", "First refund created name should match"
 
     refund2 = partial_refunds[1]
+    assert refund2["id"] == partial_refund2.id, "Second refund ID should match"
     assert refund2["refundAmount"] == 5.0, "Second refund amount should be 5.0"
     assert refund2["refundType"] == "ADJUSTMENT", "Second refund type should be ADJUSTMENT"
     assert refund2["paymentLineItemId"] == line_item.id, "Second refund line item ID should match"
+    assert refund2["createdBy"] == "TEST_USER", "Second refund created by should match"
+    assert refund2["createdName"] == "Test User", "Second refund created name should match"
 
 
 def test_invoice_search_model_without_exclude_counts_validation(session, client, jwt, app):
@@ -1260,3 +1274,374 @@ def test_invoice_search_model_without_exclude_counts_validation(session, client,
     assert (
         "partialRefunds" not in invoice_data
     ), "partialRefunds field should NOT be present when excludeCounts is not used"
+
+
+def test_search_partially_refunded_invoices(session, client, jwt, app):
+    """Test searching for invoices with PARTIALLY_REFUNDED status."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    line_item = PaymentLineItem(
+        invoice_id=invoice.id,
+        fee_schedule_id=1,
+        filing_fees=Decimal("100.00"),
+        total=Decimal("100.00"),
+        description="Test Line Item",
+        line_item_status_code=LineItemStatus.ACTIVE.value,
+    )
+    line_item.save()
+
+    partial_refund = RefundsPartial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=Decimal("25.00"),
+        refund_type=RefundsPartialType.BASE_FEES.value,
+        status=PaymentStatus.COMPLETED.value,
+        created_by="TEST_USER",
+        created_name="Test User",
+        created_on=datetime.now(tz=timezone.utc),
+    )
+    partial_refund.save()
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"statusCode": InvoiceStatus.PARTIALLY_REFUNDED.value}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    items = rv.json.get("items")
+    assert len(items) == 1
+    assert items[0]["id"] == invoice.id
+
+
+def test_search_partially_credited_invoices(session, client, jwt, app):
+    """Test searching for invoices with PARTIALLY_CREDITED status."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    line_item = PaymentLineItem(
+        invoice_id=invoice.id,
+        fee_schedule_id=1,
+        filing_fees=Decimal("100.00"),
+        total=Decimal("100.00"),
+        description="Test Line Item",
+        line_item_status_code=LineItemStatus.ACTIVE.value,
+    )
+    line_item.save()
+
+    partial_refund = RefundsPartial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=Decimal("25.00"),
+        refund_type=RefundsPartialType.BASE_FEES.value,
+        status=PaymentStatus.COMPLETED.value,
+        created_by="TEST_USER",
+        created_name="Test User",
+        created_on=datetime.now(tz=timezone.utc),
+    )
+    partial_refund.save()
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"statusCode": InvoiceStatus.PARTIALLY_CREDITED.value}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    items = rv.json.get("items")
+    assert len(items) == 1
+    assert items[0]["id"] == invoice.id
+
+
+def test_search_credit_payment_method(session, client, jwt, app):
+    """Test searching for invoices with CREDIT payment method at API route level."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+
+    invoice1 = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice1.payment_account_id)
+
+    credit1 = factory_credit(
+        account_id=pay_account.id,
+        cfs_identifier="TEST_CREDIT_001",
+        amount=50.00,
+        remaining_amount=50.00,
+    )
+
+    factory_applied_credits(
+        invoice_id=invoice1.id,
+        credit_id=credit1.id,
+        invoice_number="INV123456",
+        amount_applied=25.00,
+        invoice_amount=100.00,
+        cfs_identifier="TEST_CREDIT_001",
+    )
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+
+    invoice2 = Invoice.find_by_id(rv.json.get("id"))
+
+    credit2 = factory_credit(
+        account_id=pay_account.id,
+        cfs_identifier="TEST_CREDIT_002",
+        amount=75.00,
+        remaining_amount=75.00,
+    )
+
+    factory_applied_credits(
+        invoice_id=invoice2.id,
+        credit_id=credit2.id,
+        invoice_number="INV789012",
+        amount_applied=50.00,
+        invoice_amount=150.00,
+        cfs_identifier="TEST_CREDIT_002",
+    )
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+
+    invoice3 = Invoice.find_by_id(rv.json.get("id"))
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.CREDIT.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    assert "items" in response_data
+    assert "hasMore" in response_data
+    assert "total" not in response_data
+
+    items = response_data["items"]
+    invoice_ids = [item["id"] for item in items]
+    assert invoice1.id in invoice_ids, f"Expected invoice1 ({invoice1.id}) to be in results: {invoice_ids}"
+    assert invoice2.id in invoice_ids, f"Expected invoice2 ({invoice2.id}) to be in results: {invoice_ids}"
+    assert invoice3.id not in invoice_ids, f"Expected invoice3 ({invoice3.id}) to NOT be in results: {invoice_ids}"
+    assert len(items) >= 2, f"Expected at least 2 items, got {len(items)}: {invoice_ids}"
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=1",
+        data=json.dumps({"paymentMethod": PaymentMethod.CREDIT.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    assert len(items) == 1
+    assert "total" not in response_data
+    assert "hasMore" in response_data
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.DIRECT_PAY.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    invoice_ids = [item["id"] for item in items]
+    assert invoice1.id in invoice_ids, f"Expected invoice1 ({invoice1.id}) to be in DIRECT_PAY results: {invoice_ids}"
+    assert invoice2.id in invoice_ids, f"Expected invoice2 ({invoice2.id}) to be in DIRECT_PAY results: {invoice_ids}"
+    assert invoice3.id in invoice_ids, f"Expected invoice3 ({invoice3.id}) to be in DIRECT_PAY results: {invoice_ids}"
+
+
+def test_credit_payment_method_with_status_combinations(session, client, jwt, app):
+    """Test CREDIT payment method combined with different status filters."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    credit = factory_credit(
+        account_id=pay_account.id,
+        cfs_identifier="TEST_CREDIT_001",
+        amount=50.00,
+        remaining_amount=50.00,
+    )
+
+    factory_applied_credits(
+        invoice_id=invoice.id,
+        credit_id=credit.id,
+        invoice_number="INV123456",
+        amount_applied=25.00,
+        invoice_amount=100.00,
+        cfs_identifier="TEST_CREDIT_001",
+    )
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.CREDIT.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    assert len(items) >= 1, f"Expected at least 1 item, got {len(items)}"
+
+    invoice_ids = [item["id"] for item in items]
+    assert invoice.id in invoice_ids, f"Expected invoice ({invoice.id}) to be in results: {invoice_ids}"
+
+    line_item = factory_payment_line_item(invoice.id, 1).save()
+    factory_refunds_partial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=10.00,
+        refund_type=RefundsPartialType.BASE_FEES.value,
+        created_by="test_user",
+        created_name="Test User",
+    )
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps(
+            {
+                "paymentMethod": PaymentMethod.CREDIT.value,
+                "statusCode": InvoiceStatus.PARTIALLY_CREDITED.value,
+                "excludeCounts": True,
+            }
+        ),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    assert len(items) >= 1, f"Expected at least 1 item for PARTIALLY_CREDITED, got {len(items)}"
+
+    invoice_ids = [item["id"] for item in items]
+    assert (
+        invoice.id in invoice_ids
+    ), f"Expected invoice ({invoice.id}) to be in PARTIALLY_CREDITED results: {invoice_ids}"
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps(
+            {
+                "paymentMethod": PaymentMethod.CREDIT.value,
+                "statusCode": InvoiceStatus.PARTIALLY_REFUNDED.value,
+                "excludeCounts": True,
+            }
+        ),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    assert len(items) == 1
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps(
+            {"paymentMethod": PaymentMethod.CREDIT.value, "businessIdentifier": "CP0001234", "excludeCounts": True}
+        ),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    assert len(items) == 1
+    assert items[0]["id"] == invoice.id
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps(
+            {"paymentMethod": PaymentMethod.CREDIT.value, "businessIdentifier": "NONEXISTENT", "excludeCounts": True}
+        ),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    assert len(items) == 0
+
+
+def test_credit_payment_method_edge_cases(session, client, jwt, app):
+    """Test CREDIT payment method with edge cases and error conditions."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/accounts/undefined/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": "INVALID_METHOD", "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 400
+    assert rv.json.get("invalidParams") == "account_number"
+
+    rv = client.post(
+        "/api/v1/accounts/123456/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": "INVALID_METHOD", "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    assert len(items) == 0
+
+    rv = client.post(
+        "/api/v1/accounts/123456/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.CREDIT.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    assert len(items) == 0
+
+    rv = client.post(
+        "/api/v1/accounts/123456/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": None, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 400

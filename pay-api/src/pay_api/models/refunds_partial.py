@@ -97,9 +97,13 @@ class RefundPartialLine:
 class RefundPartialSearch:
     """Used to search for partial refunds."""
 
+    id: int
     payment_line_item_id: int
     refund_type: str
     refund_amount: Decimal
+    created_by: str
+    created_name: str
+    created_on: str
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -108,5 +112,11 @@ class RefundPartialSearch:
         https://www.attrs.org/en/stable/init.html
         """
         return cls(
-            payment_line_item_id=row.payment_line_item_id, refund_type=row.refund_type, refund_amount=row.refund_amount
+            id=row.id,
+            payment_line_item_id=row.payment_line_item_id,
+            refund_type=row.refund_type,
+            refund_amount=row.refund_amount,
+            created_by=row.created_by,
+            created_name=row.created_name,
+            created_on=str(row.created_on) if row.created_on else "",
         )

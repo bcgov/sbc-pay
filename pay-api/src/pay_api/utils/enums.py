@@ -58,6 +58,10 @@ class InvoiceStatus(Enum):
     CANCELLED = "CANCELLED"
     CREDITED = "CREDITED"
     OVERDUE = "OVERDUE"
+    # Below are frontend only, they are technically PAID on the backend.
+    # We left these as PAID otherwise we'd need to have partners make changes.
+    PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED"
+    PARTIALLY_CREDITED = "PARTIALLY_CREDITED"
 
 
 class TransactionStatus(Enum):
@@ -120,6 +124,9 @@ class PaymentMethod(Enum):
     EJV = "EJV"
     CASH = "CASH"
     CHEQUE = "CHEQUE"
+    # Below are frontend only, they are technically PAID on the backend.
+    # We left these as PAID otherwise we'd need to have partners make changes.
+    CREDIT = "CREDIT"
 
 
 class Role(Enum):
