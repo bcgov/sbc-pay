@@ -292,6 +292,7 @@ class StatementContext:
     from_date: Optional[str] = None
     to_date: Optional[str] = None
     created_on: Optional[str] = None
+    frequency: Optional[StatementFrequency] = None
     extra: dict = field(default_factory=dict)
 
 
@@ -326,6 +327,7 @@ def build_statement_context(statement: dict) -> dict:
         from_date=from_date,
         to_date=to_date,
         created_on=created_on,
+        frequency=frequency,
         extra={k: v for k, v in statement_.items() if k not in {
             "from_date", "to_date", "amount_owing", "created_on", "frequency"
         }}
@@ -378,4 +380,6 @@ def build_statement_summary_context(statement_summary: dict) -> List[dict]:
         for k, v in cattrs.unstructure(summary_row).items()
     }
     summary_row_dict.update(summary_row_dict.pop("extra"))
+    if summary_row_dict.get("cancelledTransactions") is None:
+        summary_row_dict.pop("cancelledTransactions")
     return summary_row_dict

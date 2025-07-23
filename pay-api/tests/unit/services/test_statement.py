@@ -723,14 +723,14 @@ def test_get_eft_statement_with_invoices(session):
                     "due_date": get_statement_date_string(StatementService.calculate_due_date(
                         statement_to_date.date()
                     )),  # pylint: disable=protected-access
-                    "due_summary": "250.0",
+                    "due_summary": 250.0,
                     "include_service_provided": False,
                     "is_index_0": True,
-                    "paid_summary": "100.0",
+                    "paid_summary": 100.0,
                     "payment_method": "EFT",
                     "statement_header_text": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
                     "total_paid": "100.00",
-                    "totals_summary": "350.0",
+                    "totals_summary": 350.0,
                     "transactions": [
                         {
                             "bcol_account": "TEST",
