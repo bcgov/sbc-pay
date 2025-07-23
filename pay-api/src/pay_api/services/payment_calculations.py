@@ -292,7 +292,7 @@ class StatementContext:
     from_date: Optional[str] = None
     to_date: Optional[str] = None
     created_on: Optional[str] = None
-    frequency: Optional[StatementFrequency] = None
+    frequency: Optional[str] = None
     extra: dict = field(default_factory=dict)
 
 
