@@ -1495,7 +1495,7 @@ def test_search_credit_payment_method(session, client, jwt, app):
     )
 
     pad_invoice = Invoice.find_by_id(rv.json.get("id"))
-    
+
     credit_for_pad = factory_credit(
         account_id=pay_account.id,
         cfs_identifier="TEST_CREDIT_PAD",
@@ -1522,7 +1522,9 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert pad_invoice.id not in invoice_ids, f"PAD invoice fully covered by credits should NOT appear in PAD search: {invoice_ids}"
+    assert (
+        pad_invoice.id not in invoice_ids
+    ), f"PAD invoice fully covered by credits should NOT appear in PAD search: {invoice_ids}"
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
@@ -1534,7 +1536,9 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert pad_invoice.id in invoice_ids, f"PAD invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
+    assert (
+        pad_invoice.id in invoice_ids
+    ), f"PAD invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
 
     rv = client.post(
         "/api/v1/payment-requests",
@@ -1543,7 +1547,7 @@ def test_search_credit_payment_method(session, client, jwt, app):
     )
 
     pad_invoice_partial = Invoice.find_by_id(rv.json.get("id"))
-    
+
     factory_applied_credits(
         invoice_id=pad_invoice_partial.id,
         credit_id=credit_for_pad.id,
@@ -1563,8 +1567,12 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert pad_invoice_partial.id in invoice_ids, f"PAD invoice partially covered by credits SHOULD appear in PAD search: {invoice_ids}"
-    assert pad_invoice.id not in invoice_ids, f"PAD invoice fully covered by credits should still NOT appear in PAD search: {invoice_ids}"
+    assert (
+        pad_invoice_partial.id in invoice_ids
+    ), f"PAD invoice partially covered by credits SHOULD appear in PAD search: {invoice_ids}"
+    assert (
+        pad_invoice.id not in invoice_ids
+    ), f"PAD invoice fully covered by credits should still NOT appear in PAD search: {invoice_ids}"
 
     rv = client.post(
         "/api/v1/payment-requests",
@@ -1573,7 +1581,7 @@ def test_search_credit_payment_method(session, client, jwt, app):
     )
 
     online_banking_invoice = Invoice.find_by_id(rv.json.get("id"))
-    
+
     credit_for_online_banking = factory_credit(
         account_id=pay_account.id,
         cfs_identifier="TEST_CREDIT_OB",
@@ -1600,7 +1608,9 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert online_banking_invoice.id not in invoice_ids, f"ONLINE_BANKING invoice fully covered by credits should NOT appear in ONLINE_BANKING search: {invoice_ids}"
+    assert (
+        online_banking_invoice.id not in invoice_ids
+    ), f"ONLINE_BANKING invoice fully covered by credits should NOT appear in ONLINE_BANKING search: {invoice_ids}"
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
@@ -1612,7 +1622,9 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert online_banking_invoice.id in invoice_ids, f"ONLINE_BANKING invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
+    assert (
+        online_banking_invoice.id in invoice_ids
+    ), f"ONLINE_BANKING invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
 
     rv = client.post(
         "/api/v1/payment-requests",
@@ -1621,7 +1633,7 @@ def test_search_credit_payment_method(session, client, jwt, app):
     )
 
     online_banking_invoice_partial = Invoice.find_by_id(rv.json.get("id"))
-    
+
     factory_applied_credits(
         invoice_id=online_banking_invoice_partial.id,
         credit_id=credit_for_online_banking.id,
@@ -1641,8 +1653,12 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert online_banking_invoice_partial.id in invoice_ids, f"ONLINE_BANKING invoice partially covered by credits SHOULD appear in ONLINE_BANKING search: {invoice_ids}"
-    assert online_banking_invoice.id not in invoice_ids, f"ONLINE_BANKING invoice fully covered by credits should still NOT appear in ONLINE_BANKING search: {invoice_ids}"
+    assert (
+        online_banking_invoice_partial.id in invoice_ids
+    ), f"ONLINE_BANKING invoice partially covered by credits SHOULD be in ONLINE_BANKING search: {invoice_ids}"
+    assert (
+        online_banking_invoice.id not in invoice_ids
+    ), f"ONLINE_BANKING invoice fully covered by credits should still NOT be in ONLINE_BANKING search: {invoice_ids}"
 
 
 def test_credit_payment_method_with_status_combinations(session, client, jwt, app):
