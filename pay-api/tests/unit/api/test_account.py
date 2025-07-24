@@ -1713,6 +1713,7 @@ def test_credit_payment_method_with_status_combinations(session, client, jwt, ap
         refund_type=RefundsPartialType.BASE_FEES.value,
         created_by="test_user",
         created_name="Test User",
+        is_credit=True,
     )
 
     rv = client.post(

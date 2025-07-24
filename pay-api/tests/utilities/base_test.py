@@ -1170,8 +1170,19 @@ def factory_refunds_partial(
     created_by: str = "TEST_USER",
     created_name: str = "Test User",
     created_on: datetime = datetime.now(tz=timezone.utc),
+    is_credit: bool = None,
 ):
     """Return a RefundsPartial model."""
+    # If is_credit is not explicitly set, determine it from the invoice's payment method
+    if is_credit is None:
+        invoice = Invoice.find_by_id(invoice_id)
+        is_credit = invoice.payment_method_code in (
+            PaymentMethod.PAD.value,
+            PaymentMethod.ONLINE_BANKING.value,
+            PaymentMethod.INTERNAL.value,
+            PaymentMethod.EFT.value,
+        )
+
     refund_partial = RefundsPartial(
         invoice_id=invoice_id,
         payment_line_item_id=payment_line_item_id,
@@ -1181,6 +1192,7 @@ def factory_refunds_partial(
         created_by=created_by,
         created_name=created_name,
         created_on=created_on,
+        is_credit=is_credit,
     )
     refund_partial.save()
     return refund_partial
