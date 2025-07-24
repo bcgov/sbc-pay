@@ -462,7 +462,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if payment_type == "NO_FEE":
             return query.filter(Invoice.total == 0)
         elif payment_type == PaymentMethodEnum.CREDIT.value:
-            # For CREDIT, include invoices that have any applied credits
             return query.filter(exists().where(AppliedCredits.invoice_id == Invoice.id))
         elif payment_type in [PaymentMethodEnum.PAD.value, PaymentMethodEnum.ONLINE_BANKING.value]:
             # For PAD and ONLINE_BANKING, exclude invoices where sum of AppliedCredits equals invoice total
