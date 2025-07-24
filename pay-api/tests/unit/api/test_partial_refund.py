@@ -142,6 +142,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
         assert refund.payment_line_item_id == payment_line_items[0].id
         assert refund.refund_amount == refund_amount
         assert refund.refund_type == RefundsPartialType.BASE_FEES.value
+        assert refund.is_credit is False
 
         invoice = InvoiceModel.find_by_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
@@ -233,6 +234,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
         assert refund.payment_line_item_id == payment_line_items[0].id
         assert refund.refund_amount == refund_amount
         assert refund.refund_type == RefundsPartialType.BASE_FEES.value
+        assert refund.is_credit is True
 
         inv = InvoiceModel.find_by_id(inv.id)
         assert inv.invoice_status_code == InvoiceStatus.PAID.value

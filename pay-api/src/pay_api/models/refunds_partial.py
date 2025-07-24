@@ -106,6 +106,7 @@ class RefundPartialSearch:
     created_by: str
     created_name: str
     created_on: str
+    is_credit: bool
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -121,4 +122,5 @@ class RefundPartialSearch:
             created_by=row.created_by,
             created_name=row.created_name,
             created_on=str(row.created_on) if row.created_on else "",
+            is_credit=row.is_credit,
         )

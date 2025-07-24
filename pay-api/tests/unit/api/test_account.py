@@ -62,6 +62,7 @@ from tests.utilities.base_test import (
     get_payment_request,
     get_payment_request_for_cso,
     get_payment_request_with_folio_number,
+    get_payment_request_with_payment_method,
     get_payment_request_with_service_fees,
     get_premium_account_payload,
     get_unlinked_pad_account_payload,
@@ -1156,6 +1157,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         created_by="TEST_USER",
         created_name="Test User",
         created_on=datetime.now(tz=timezone.utc),
+        is_credit=False,
     )
     partial_refund1.save()
 
@@ -1168,6 +1170,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         created_by="TEST_USER",
         created_name="Test User",
         created_on=datetime.now(tz=timezone.utc),
+        is_credit=True,
     )
     partial_refund2.save()
 
@@ -1226,12 +1229,14 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
     assert "createdBy" in refund1, "createdBy field is missing"
     assert "createdName" in refund1, "createdName field is missing"
     assert "createdOn" in refund1, "createdOn field is missing"
+    assert "isCredit" in refund1, "isCredit field is missing"
     assert refund1["id"] == partial_refund1.id, "First refund ID should match"
     assert refund1["refundAmount"] == 10.0, "First refund amount should be 10.0"
     assert refund1["refundType"] == "PARTIAL_REFUND", "First refund type should be PARTIAL_REFUND"
     assert refund1["paymentLineItemId"] == line_item.id, "First refund line item ID should match"
     assert refund1["createdBy"] == "TEST_USER", "First refund created by should match"
     assert refund1["createdName"] == "Test User", "First refund created name should match"
+    assert refund1["isCredit"] is False, "First refund isCredit should be False"
 
     refund2 = partial_refunds[1]
     assert refund2["id"] == partial_refund2.id, "Second refund ID should match"
@@ -1240,6 +1245,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
     assert refund2["paymentLineItemId"] == line_item.id, "Second refund line item ID should match"
     assert refund2["createdBy"] == "TEST_USER", "Second refund created by should match"
     assert refund2["createdName"] == "Test User", "Second refund created name should match"
+    assert refund2["isCredit"] is True, "Second refund isCredit should be True"
 
 
 def test_invoice_search_model_without_exclude_counts_validation(session, client, jwt, app):
@@ -1309,6 +1315,7 @@ def test_search_partially_refunded_invoices(session, client, jwt, app):
         created_by="TEST_USER",
         created_name="Test User",
         created_on=datetime.now(tz=timezone.utc),
+        is_credit=False,
     )
     partial_refund.save()
 
@@ -1357,6 +1364,7 @@ def test_search_partially_credited_invoices(session, client, jwt, app):
         created_by="TEST_USER",
         created_name="Test User",
         created_on=datetime.now(tz=timezone.utc),
+        is_credit=True,
     )
     partial_refund.save()
 
@@ -1479,6 +1487,162 @@ def test_search_credit_payment_method(session, client, jwt, app):
     assert invoice1.id in invoice_ids, f"Expected invoice1 ({invoice1.id}) to be in DIRECT_PAY results: {invoice_ids}"
     assert invoice2.id in invoice_ids, f"Expected invoice2 ({invoice2.id}) to be in DIRECT_PAY results: {invoice_ids}"
     assert invoice3.id in invoice_ids, f"Expected invoice3 ({invoice3.id}) to be in DIRECT_PAY results: {invoice_ids}"
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.PAD.value)),
+        headers=headers,
+    )
+
+    pad_invoice = Invoice.find_by_id(rv.json.get("id"))
+    
+    credit_for_pad = factory_credit(
+        account_id=pay_account.id,
+        cfs_identifier="TEST_CREDIT_PAD",
+        amount=pad_invoice.total,
+        remaining_amount=pad_invoice.total,
+    )
+
+    factory_applied_credits(
+        invoice_id=pad_invoice.id,
+        credit_id=credit_for_pad.id,
+        invoice_number="INV_PAD_FULL",
+        amount_applied=pad_invoice.total,
+        invoice_amount=pad_invoice.total,
+        cfs_identifier="TEST_CREDIT_PAD",
+    )
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.PAD.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    invoice_ids = [item["id"] for item in items]
+    assert pad_invoice.id not in invoice_ids, f"PAD invoice fully covered by credits should NOT appear in PAD search: {invoice_ids}"
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.CREDIT.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    invoice_ids = [item["id"] for item in items]
+    assert pad_invoice.id in invoice_ids, f"PAD invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.PAD.value)),
+        headers=headers,
+    )
+
+    pad_invoice_partial = Invoice.find_by_id(rv.json.get("id"))
+    
+    factory_applied_credits(
+        invoice_id=pad_invoice_partial.id,
+        credit_id=credit_for_pad.id,
+        invoice_number="INV_PAD_PARTIAL",
+        amount_applied=pad_invoice_partial.total / 2,
+        invoice_amount=pad_invoice_partial.total,
+        cfs_identifier="TEST_CREDIT_PAD",
+    )
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.PAD.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    invoice_ids = [item["id"] for item in items]
+    assert pad_invoice_partial.id in invoice_ids, f"PAD invoice partially covered by credits SHOULD appear in PAD search: {invoice_ids}"
+    assert pad_invoice.id not in invoice_ids, f"PAD invoice fully covered by credits should still NOT appear in PAD search: {invoice_ids}"
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+        headers=headers,
+    )
+
+    online_banking_invoice = Invoice.find_by_id(rv.json.get("id"))
+    
+    credit_for_online_banking = factory_credit(
+        account_id=pay_account.id,
+        cfs_identifier="TEST_CREDIT_OB",
+        amount=online_banking_invoice.total,
+        remaining_amount=online_banking_invoice.total,
+    )
+
+    factory_applied_credits(
+        invoice_id=online_banking_invoice.id,
+        credit_id=credit_for_online_banking.id,
+        invoice_number="INV_OB_FULL",
+        amount_applied=online_banking_invoice.total,
+        invoice_amount=online_banking_invoice.total,
+        cfs_identifier="TEST_CREDIT_OB",
+    )
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.ONLINE_BANKING.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    invoice_ids = [item["id"] for item in items]
+    assert online_banking_invoice.id not in invoice_ids, f"ONLINE_BANKING invoice fully covered by credits should NOT appear in ONLINE_BANKING search: {invoice_ids}"
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.CREDIT.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    invoice_ids = [item["id"] for item in items]
+    assert online_banking_invoice.id in invoice_ids, f"ONLINE_BANKING invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+        headers=headers,
+    )
+
+    online_banking_invoice_partial = Invoice.find_by_id(rv.json.get("id"))
+    
+    factory_applied_credits(
+        invoice_id=online_banking_invoice_partial.id,
+        credit_id=credit_for_online_banking.id,
+        invoice_number="INV_OB_PARTIAL",
+        amount_applied=online_banking_invoice_partial.total / 2,
+        invoice_amount=online_banking_invoice_partial.total,
+        cfs_identifier="TEST_CREDIT_OB",
+    )
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps({"paymentMethod": PaymentMethod.ONLINE_BANKING.value, "excludeCounts": True}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    items = response_data["items"]
+    invoice_ids = [item["id"] for item in items]
+    assert online_banking_invoice_partial.id in invoice_ids, f"ONLINE_BANKING invoice partially covered by credits SHOULD appear in ONLINE_BANKING search: {invoice_ids}"
+    assert online_banking_invoice.id not in invoice_ids, f"ONLINE_BANKING invoice fully covered by credits should still NOT appear in ONLINE_BANKING search: {invoice_ids}"
 
 
 def test_credit_payment_method_with_status_combinations(session, client, jwt, app):
