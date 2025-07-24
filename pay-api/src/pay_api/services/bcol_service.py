@@ -140,6 +140,7 @@ class BcolService(PaymentSystemService, OAuthService):
         else:
             error = Error.BCOL_ERROR
             current_app.logger.error(bol_err)
+            current_app.logger.error(f"Json Response: {response_json}")
         raise BusinessException(error) from bol_err
 
     def get_receipt(
