@@ -1716,6 +1716,17 @@ def test_credit_payment_method_with_status_combinations(session, client, jwt, ap
         is_credit=True,
     )
 
+    line_item2 = factory_payment_line_item(invoice.id, 1).save()
+    factory_refunds_partial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item2.id,
+        refund_amount=5.00,
+        refund_type=RefundsPartialType.SERVICE_FEES.value,
+        created_by="test_user",
+        created_name="Test User",
+        is_credit=False,
+    )
+
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
         data=json.dumps(
