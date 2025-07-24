@@ -201,6 +201,7 @@ def test_refund_partial_search_model_attributes():
         created_by="test_user",
         created_name="Test User",
         created_on="2024-01-01T00:00:00Z",
+        is_credit=False,
     )
 
     assert hasattr(search_model, "id")
@@ -210,6 +211,7 @@ def test_refund_partial_search_model_attributes():
     assert hasattr(search_model, "created_by")
     assert hasattr(search_model, "created_name")
     assert hasattr(search_model, "created_on")
+    assert hasattr(search_model, "is_credit")
 
     assert search_model.id == 1
     assert search_model.payment_line_item_id == 100
@@ -218,3 +220,4 @@ def test_refund_partial_search_model_attributes():
     assert search_model.created_by == "test_user"
     assert search_model.created_name == "Test User"
     assert search_model.created_on == "2024-01-01T00:00:00Z"
+    assert search_model.is_credit is False
