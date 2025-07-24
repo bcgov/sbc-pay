@@ -196,7 +196,8 @@ norecursedirs = [
 log_cli = true
 log_cli_level = "1"
 filterwarnings = [
-   "ignore::UserWarning"
+   "ignore::UserWarning",
+   "ignore::pytest.PytestUnhandledThreadExceptionWarning"
 ]
 markers = [
    "slow",

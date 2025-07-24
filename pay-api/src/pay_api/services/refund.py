@@ -398,12 +398,20 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
                 payment_line_item_id=line.payment_line_item_id,
                 refund_amount=line.refund_amount,
                 refund_type=line.refund_type,
-                status=RefundsPartialStatus.REFUND_REQUESTED.value,
+                status=(
+                    RefundsPartialStatus.REFUND_REQUESTED.value
+                    if invoice.payment_method_code in (PaymentMethod.INTERNAL.value)
+                    else RefundsPartialStatus.REFUND_PROCESSED.value
+                ),
+                # Anything in AR module is a credit
+                is_credit=invoice.payment_method_code
+                in (
+                    PaymentMethod.PAD.value,
+                    PaymentMethod.ONLINE_BANKING.value,
+                    PaymentMethod.INTERNAL.value,
+                    PaymentMethod.EFT.value,
+                ),
             )
-
-            if invoice.payment_method_code in (PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value):
-                refund_line.status = RefundsPartialStatus.REFUND_PROCESSED.value
-
             db.session.add(refund_line)
 
             PartnerDisbursements.handle_partial_refund(refund_line, invoice)

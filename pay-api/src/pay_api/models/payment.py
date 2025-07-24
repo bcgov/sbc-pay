@@ -445,9 +445,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _apply_status_filter(cls, query, status_code: str):
         """Apply status filter to query."""
-        partial_statuses = [InvoiceStatus.PARTIALLY_REFUNDED.value, InvoiceStatus.PARTIALLY_CREDITED.value]
-        if status_code in partial_statuses:
-            return query.filter(exists().where(RefundsPartial.invoice_id == Invoice.id))
+        if status_code == InvoiceStatus.PARTIALLY_CREDITED.value:
+            return query.filter(
+                exists().where(and_(RefundsPartial.invoice_id == Invoice.id, RefundsPartial.is_credit.is_(True)))
+            )
+        elif status_code == InvoiceStatus.PARTIALLY_REFUNDED.value:
+            return query.filter(
+                exists().where(and_(RefundsPartial.invoice_id == Invoice.id, RefundsPartial.is_credit.is_(False)))
+            )
         else:
             return query.filter(Invoice.invoice_status_code == status_code)
 
@@ -458,6 +463,24 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             return query.filter(Invoice.total == 0)
         elif payment_type == PaymentMethodEnum.CREDIT.value:
             return query.filter(exists().where(AppliedCredits.invoice_id == Invoice.id))
+        elif payment_type in [PaymentMethodEnum.PAD.value, PaymentMethodEnum.ONLINE_BANKING.value]:
+            # For PAD and ONLINE_BANKING, exclude invoices where sum of AppliedCredits equals invoice total
+            credit_total_subquery = (
+                select(AppliedCredits.invoice_id, func.sum(AppliedCredits.amount_applied).label("total_applied"))
+                .group_by(AppliedCredits.invoice_id)
+                .subquery()
+            )
+
+            return query.outerjoin(credit_total_subquery, credit_total_subquery.c.invoice_id == Invoice.id).filter(
+                and_(
+                    Invoice.total != 0,
+                    Invoice.payment_method_code == payment_type,
+                    or_(
+                        credit_total_subquery.c.total_applied.is_(None),
+                        credit_total_subquery.c.total_applied != Invoice.total,
+                    ),
+                )
+            )
         else:
             return query.filter(Invoice.total != 0).filter(Invoice.payment_method_code == payment_type)
 
