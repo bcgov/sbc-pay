@@ -1173,7 +1173,6 @@ def factory_refunds_partial(
     is_credit: bool = None,
 ):
     """Return a RefundsPartial model."""
-    # If is_credit is not explicitly set, determine it from the invoice's payment method
     if is_credit is None:
         invoice = Invoice.find_by_id(invoice_id)
         is_credit = invoice.payment_method_code in (
