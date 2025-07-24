@@ -50,12 +50,18 @@ from pay_api.utils.util import (
     generate_transaction_number,
     get_local_formatted_date,
     get_local_formatted_date_time,
+    get_statement_currency_string,
 )
 
 from ..exceptions import BusinessException
 from ..utils.errors import Error
 from .code import Code as CodeService
 from .oauth_service import OAuthService
+from .payment_calculations import (
+    build_grouped_invoice_context,
+    build_statement_context,
+    build_statement_summary_context,
+)
 from .report_service import ReportRequest, ReportService
 
 
@@ -518,13 +524,26 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 account_info = kwargs.get("auth").get("account")
                 account_info["contact"] = contact["contacts"][0]  # Get the first one from the list
 
+            invoices = results.get("items", [])
+            statement_summary = report_inputs.statement_summary
+            grouped_invoices: list[dict] = build_grouped_invoice_context(invoices, statement, statement_summary)
+
+            has_payment_instructions = any(item.get('payment_method') == 'EFT' for item in grouped_invoices)
+
+            formatted_totals = {}
+            for key, value in totals.items():
+                formatted_totals[key] = get_statement_currency_string(value)
+
             template_vars = {
-                "statementSummary": report_inputs.statement_summary,
-                "invoices": results.get("items", None),
-                "total": totals,
+                "statementSummary": build_statement_summary_context(statement_summary),
+                "groupedInvoices": grouped_invoices,
+                "total": formatted_totals,
                 "account": account_info,
-                "statement": kwargs.get("statement"),
+                "statement": build_statement_context(kwargs.get("statement")),
             }
+
+            if has_payment_instructions:
+                template_vars["hasPaymentInstructions"] = True
 
         report_response = ReportService.get_report_response(
             ReportRequest(
@@ -535,7 +554,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 content_type=content_type,
             )
         )
-
         return report_response
 
     @staticmethod
