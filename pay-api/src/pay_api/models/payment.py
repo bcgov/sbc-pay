@@ -445,24 +445,13 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _apply_status_filter(cls, query, status_code: str):
         """Apply status filter to query."""
-        # Handle partial status filtering with is_credit flag
         if status_code == InvoiceStatus.PARTIALLY_CREDITED.value:
             return query.filter(
-                exists().where(
-                    and_(
-                        RefundsPartial.invoice_id == Invoice.id,
-                        RefundsPartial.is_credit.is_(True)
-                    )
-                )
+                exists().where(and_(RefundsPartial.invoice_id == Invoice.id, RefundsPartial.is_credit.is_(True)))
             )
         elif status_code == InvoiceStatus.PARTIALLY_REFUNDED.value:
             return query.filter(
-                exists().where(
-                    and_(
-                        RefundsPartial.invoice_id == Invoice.id,
-                        RefundsPartial.is_credit.is_(False)
-                    )
-                )
+                exists().where(and_(RefundsPartial.invoice_id == Invoice.id, RefundsPartial.is_credit.is_(False)))
             )
         else:
             return query.filter(Invoice.invoice_status_code == status_code)

@@ -33,8 +33,8 @@ def upgrade():
             WHEN invoice_id IN (
                 SELECT id FROM invoices 
                 WHERE payment_method_code IN ('PAD', 'ONLINE_BANKING', 'INTERNAL', 'EFT')
-            ) THEN 't'
-            ELSE 'f'
+            ) THEN TRUE
+            ELSE FALSE
         END
     """)
     
@@ -44,8 +44,8 @@ def upgrade():
             WHEN invoice_id IN (
                 SELECT id FROM invoices 
                 WHERE payment_method_code IN ('PAD', 'ONLINE_BANKING', 'INTERNAL', 'EFT')
-            ) THEN 't'
-            ELSE 'f'
+            ) THEN TRUE
+            ELSE FALSE
         END
     """)
 
