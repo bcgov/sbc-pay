@@ -149,8 +149,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
 
         except Exception as e:  # NOQA pylint: disable=broad-except
-            current_app.logger.error("Rolling back as error occured!")
-            current_app.logger.error(e)
+            if payment_method_code != PaymentMethod.DRAWDOWN.value and not isinstance(e, BusinessException):
+                current_app.logger.error("Rolling back as error occured!")
+                current_app.logger.error(e)
             if invoice:
                 invoice.rollback()
             if pay_system_invoice:
