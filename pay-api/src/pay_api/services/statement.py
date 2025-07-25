@@ -372,7 +372,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         previous_statement = Statement.get_previous_statement(statement)
         previous_totals = None
         if previous_statement:
-            previous_invoices = StatementModel.find_all_payments_and_invoices_for_statement(previous_statement.id)
+            previous_invoices = Statement.find_all_payments_and_invoices_for_statement(previous_statement.id)
             previous_items = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
             # Skip passing statement, we need the totals independent of the statement/payment date.
             previous_totals = PaymentService.get_invoices_totals(previous_items.get("items", None), None)
@@ -415,7 +415,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         else:
             report_name = f"{report_name}-{from_date_string}-to-{to_date_string}.{extension}"
 
-        statement_purchases = StatementModel.find_all_payments_and_invoices_for_statement(statement_id)
+        statement_purchases = Statement.find_all_payments_and_invoices_for_statement(statement_id)
 
         result_items = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
         statement = statement_svc.asdict()
@@ -657,3 +657,16 @@ class Statement:  # pylint:disable=too-many-public-methods
         latest_settings.save()
 
         return statement
+
+
+    @staticmethod
+    def find_all_payments_and_invoices_for_statement(statement_id: str) -> List[InvoiceModel]:
+        """Find all payment and invoices specific to a statement."""
+        query = (
+            db.session.query(InvoiceModel)
+            .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
+            .filter(StatementInvoicesModel.statement_id == cast(statement_id, Integer))
+            .order_by(InvoiceModel.id.asc())
+        )
+
+        return query.all()

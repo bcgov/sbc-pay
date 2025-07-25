@@ -30,8 +30,7 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import PartnerDisbursements
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import Statement as StatementModel
-from pay_api.services import EftService, EFTShortNameLinkService
+from pay_api.services import EftService, EFTShortNameLinkService, Statement as StatementService
 from pay_api.utils.enums import (
     DisbursementStatus,
     EFTCreditInvoiceStatus,
@@ -355,7 +354,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     assert rv.status_code == 400
     assert rv.json["type"] == Error.EFT_PAYMENT_ACTION_UNPAID_STATEMENT.name
 
-    invoices = StatementModel.find_all_payments_and_invoices_for_statement(statement.id)
+    invoices = StatementService.find_all_payments_and_invoices_for_statement(statement.id)
     invoices[0].invoice_status_code = InvoiceStatus.PAID.value
     invoices[0].payment_date = datetime.now(tz=timezone.utc) - relativedelta(days=61)
     invoices[0].save()
