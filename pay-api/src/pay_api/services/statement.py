@@ -658,7 +658,6 @@ class Statement:  # pylint:disable=too-many-public-methods
 
         return statement
 
-
     @staticmethod
     def find_all_payments_and_invoices_for_statement(statement_id: str) -> List[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""

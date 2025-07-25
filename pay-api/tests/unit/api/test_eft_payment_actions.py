@@ -30,7 +30,8 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import PartnerDisbursements
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.services import EftService, EFTShortNameLinkService, Statement as StatementService
+from pay_api.services import EftService, EFTShortNameLinkService
+from pay_api.services import Statement as StatementService
 from pay_api.utils.enums import (
     DisbursementStatus,
     EFTCreditInvoiceStatus,
