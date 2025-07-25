@@ -20,14 +20,13 @@ import pytz
 from attr import define
 from dateutil.relativedelta import relativedelta
 from marshmallow import fields
-from sqlalchemy import ForeignKey, Integer, cast
+from sqlalchemy import ForeignKey
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from pay_api.utils.converter import Converter
 
 from .base_model import BaseModel
 from .db import db, ma
-from .invoice import Invoice
 
 
 class Statement(BaseModel):
@@ -79,21 +78,6 @@ class Statement(BaseModel):
     def find_all_statements_by_notification_status(cls, statuses):
         """Return all statements for a status.Used in cron jobs."""
         return cls.query.filter(Statement.notification_status_code.in_(statuses)).all()
-
-    @classmethod
-    def find_all_payments_and_invoices_for_statement(cls, statement_id: str) -> List[Invoice]:
-        """Find all payment and invoices specific to a statement."""
-        # Import from here as the statement invoice already imports statement and causes circular import.
-        from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
-
-        query = (
-            db.session.query(Invoice)
-            .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id)
-            .filter(StatementInvoices.statement_id == cast(statement_id, Integer))
-            .order_by(Invoice.id.asc())
-        )
-
-        return query.all()
 
     @classmethod
     def find_statement_by_account(cls, payment_account_id: int, statement_id: int):
