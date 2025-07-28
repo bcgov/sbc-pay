@@ -223,12 +223,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
         current_app.logger.debug(
             "<process_cfs_refund creating automated refund for invoice: " f"{invoice.id}, {invoice.invoice_status_code}"
         )
-        # No APPROVED invoices allowed for refund. Invoices typically land on PAID right away.
-        if invoice.invoice_status_code not in (
-            InvoiceStatus.PAID.value,
-            InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value,
-        ):
-            raise BusinessException(Error.INVALID_REQUEST)
 
         refund_url = current_app.config.get("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL") + "/paybc-service/api/refund"
         access_token: str = self._get_refund_token().json().get("access_token")

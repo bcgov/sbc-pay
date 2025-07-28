@@ -240,7 +240,13 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.INVALID_REQUEST)
 
     @staticmethod
-    def _refund_and_create_credit_memo(invoice: InvoiceModel, refund_partial: List[RefundPartialLine] = None):
+    def get_total_partial_refund_amount(refund_revenue: List[RefundPartialLine]):
+        """Sum refund revenue refund amounts."""
+        return sum(revenue.refund_amount for revenue in refund_revenue)
+
+    @staticmethod
+    def _refund_and_create_credit_memo(invoice: InvoiceModel, refund_partial: List[RefundPartialLine] = None,
+                                       send_credit_notification: bool = True):
         # Create credit memo in CFS if the invoice status is PAID.
         # Don't do anything is the status is APPROVED.
         is_partial = bool(refund_partial)
@@ -265,12 +271,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         if is_partial:
             for refund_line in refund_partial:
                 pli = PaymentLineItemModel.find_by_id(refund_line.payment_line_item_id)
-                if not pli or refund_line.refund_amount < 0:
-                    raise BusinessException(Error.INVALID_REQUEST)
-                max_refundable = (
-                    pli.service_fees if refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value else pli.total
-                )
-                PaymentSystemService.validate_refund_amount(refund_line.refund_amount, max_refundable)
                 line_items.append(pli)
                 refund_amount += refund_line.refund_amount
         else:
@@ -298,6 +298,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                 payment_account.pad_credit = (payment_account.pad_credit or 0) + refund_amount
             case PaymentMethod.ONLINE_BANKING.value:
                 payment_account.ob_credit = (payment_account.ob_credit or 0) + refund_amount
+            case PaymentMethod.EFT.value:
+                current_app.logger.info(
+                    f"EFT refund for {payment_account.auth_account_id}, "
+                    f"credit handled separately as unsettled EFT Credits."
+                )
             case _:
                 # I don't believe there are CC (DirectPay flow not DirectSale) refunds, wouldn't want a credit back
                 raise NotImplementedError(f"Payment method {invoice.payment_method_code} not implemented for credits.")
@@ -308,7 +313,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         payment_account.flush()
 
         try:
-            PaymentSystemService._send_credit_notification(payment_account, refund_amount)
+            if send_credit_notification:
+                PaymentSystemService._send_credit_notification(payment_account, refund_amount)
         except Exception as e:
             current_app.logger.error(
                 f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"

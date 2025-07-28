@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Base class for code model."""
+from typing import Self
 
 
 class CodeTable:  # pylint: disable=too-few-public-methods
     """This class provides base methods for Code Table."""
 
     @classmethod
-    def find_by_code(cls, code):
+    def find_by_code(cls, code) -> Self:
         """Given a code, this will return code master details."""
         code_table = cls.query.filter_by(code=code).one_or_none()  # pylint: disable=no-member
         return code_table

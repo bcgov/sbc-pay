@@ -16,6 +16,8 @@
 
 from decimal import Decimal
 
+from typing import Self
+
 from .db import db
 
 
@@ -75,7 +77,7 @@ class BaseModel(db.Model):
         db.session.rollback()
 
     @classmethod
-    def find_by_id(cls, identifier: int):
+    def find_by_id(cls, identifier: int) -> Self:
         """Return model by id."""
         if identifier:
             return db.session.get(cls, identifier)
