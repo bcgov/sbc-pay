@@ -59,7 +59,7 @@ REFUND_SUCCESS_MESSAGES = {
     "transactions / statements.",
     "DIRECT_PAY.PAID": "Your transaction has been cancelled and a refund has been requested.",
     "EFT.PAID": "Your transaction has been cancelled and a refund has been requested. "
-                "Funds have returned to the originating EFT short name.",
+    "Funds have returned to the originating EFT short name.",
     "CC.PAID": "Your transaction has been cancelled and a credit will be applied to your BC Registries account. There "
     "is a one day delay before the credit will show on your transactions / statements.",
     "DRAWDOWN.PAID": "Your transaction has been cancelled and a refund has been requested.",

@@ -50,10 +50,11 @@ class PaymentMethod(db.Model, CodeTable):
         return payment_method.partial_refund if payment_method else False
 
     @classmethod
-    def is_full_refund_allowed(cls, payment_method_code:str, invoice_status: str):
+    def is_full_refund_allowed(cls, payment_method_code: str, invoice_status: str):
         """Check if the payment method has the specified refundable status."""
-        payment_method = (cls.query.filter_by(code=payment_method_code)
-                          .filter(cls.full_refund_statuses.any(invoice_status)).first())
+        payment_method = (
+            cls.query.filter_by(code=payment_method_code).filter(cls.full_refund_statuses.any(invoice_status)).first()
+        )
         return bool(payment_method)
 
 

@@ -229,9 +229,11 @@ class EftService(DepositService):
         )
         link_group_ids = set()
         for credit_link in credit_links:
-            eft_credit = EFTRefundService.return_eft_credit(eft_credit_link=credit_link,
-                                                            refund_amount=credit_link.amount,
-                                                            update_status=EFTCreditInvoiceStatus.CANCELLED.value)
+            eft_credit = EFTRefundService.return_eft_credit(
+                eft_credit_link=credit_link,
+                refund_amount=credit_link.amount,
+                update_status=EFTCreditInvoiceStatus.CANCELLED.value,
+            )
             if credit_link.link_group_id:
                 link_group_ids.add(credit_link.link_group_id)
             db.session.add(eft_credit)
@@ -278,8 +280,9 @@ class EftService(DepositService):
                 )
                 raise BusinessException(Error.EFT_PAYMENT_INVOICE_REVERSE_UNEXPECTED_STATUS)
 
-            eft_credit = EFTRefundService.return_eft_credit(eft_credit_link=current_link,
-                                                            refund_amount=current_link.amount)
+            eft_credit = EFTRefundService.return_eft_credit(
+                eft_credit_link=current_link, refund_amount=current_link.amount
+            )
             eft_credit.flush()
             reversed_credits += current_link.amount
 

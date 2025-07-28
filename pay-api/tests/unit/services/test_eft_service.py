@@ -216,7 +216,7 @@ def test_refund_eft_credits_exceed_balance(session):
         ("2_no_eft_credit_link"),
         ("3_pending_credit_link"),
         ("4_completed_credit_link"),
-        ("5_consolidated_invoice_block")
+        ("5_consolidated_invoice_block"),
     ],
 )
 def test_eft_invoice_refund(session, test_name):
@@ -338,9 +338,7 @@ def test_eft_invoice_refund(session, test_name):
         with pytest.raises(BusinessException) as excinfo:
             invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
             invoice.save()
-        error = (
-            Error.INVALID_CONSOLIDATED_REFUND.value
-        )
+        error = Error.INVALID_CONSOLIDATED_REFUND.value
         assert excinfo.value.code == error[0]
         return
 

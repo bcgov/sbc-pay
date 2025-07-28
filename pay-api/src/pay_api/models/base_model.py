@@ -15,7 +15,6 @@
 
 
 from decimal import Decimal
-
 from typing import Self
 
 from .db import db

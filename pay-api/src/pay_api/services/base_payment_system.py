@@ -244,8 +244,9 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         return sum(revenue.refund_amount for revenue in refund_revenue)
 
     @staticmethod
-    def _refund_and_create_credit_memo(invoice: InvoiceModel, refund_partial: List[RefundPartialLine] = None,
-                                       send_credit_notification: bool = True):
+    def _refund_and_create_credit_memo(
+        invoice: InvoiceModel, refund_partial: List[RefundPartialLine] = None, send_credit_notification: bool = True
+    ):
         # Create credit memo in CFS if the invoice status is PAID.
         # Don't do anything is the status is APPROVED.
         is_partial = bool(refund_partial)

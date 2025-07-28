@@ -333,8 +333,10 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             cls._validate_allow_full_refund(invoice)
 
         if invoice.refund_date is not None:
-            current_app.logger.info(f"Cannot process refund as status of {invoice.id} is {invoice.invoice_status_code}."
-                                    "Refund date already set.")
+            current_app.logger.info(
+                f"Cannot process refund as status of {invoice.id} is {invoice.invoice_status_code}."
+                "Refund date already set."
+            )
             raise BusinessException(Error.INVALID_REQUEST)
 
     @classmethod
@@ -410,9 +412,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         return {
             "message": message,
-            "refundId":refund.id,
+            "refundId": refund.id,
             "refundAmount": invoice.refund,
-            "isPartialRefund": is_partial_refund
+            "isPartialRefund": is_partial_refund,
         }
 
     @staticmethod

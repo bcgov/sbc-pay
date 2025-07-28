@@ -539,7 +539,7 @@ def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
     assert len(refunds_partial) == 1
 
 
-def set_payment_method_partial_refund(payment_method_code: str, enabled:  bool):
+def set_payment_method_partial_refund(payment_method_code: str, enabled: bool):
     """Set partial refund flag on payment method."""
     payment_method = PaymentMethodModel.find_by_code(payment_method_code)
     payment_method.partial_refund = enabled
