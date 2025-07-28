@@ -88,7 +88,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                     raise BusinessException(Error.EFT_PAYMENT_ACTION_UNSUPPORTED)
 
             db.session.commit()
-        except Exception as exception:  # NOQA pylint:disable=broad-except
+        except Exception:  # NOQA pylint:disable=broad-except
             current_app.logger.error(f"Error processing EFT payment action: {action}", exc_info=True)
             db.session.rollback()
             raise

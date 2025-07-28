@@ -408,7 +408,12 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.PARTIALLY_REVERSED.value)
         current_app.logger.debug(f"Completed refund : {invoice_id}")
 
-        return dict(message=message, refundId=refund.id, refundAmount=invoice.refund, isPartialRefund=is_partial_refund)
+        return {
+            "message": message,
+            "refundId":refund.id,
+            "refundAmount": invoice.refund,
+            "isPartialRefund": is_partial_refund
+        }
 
     @staticmethod
     def _save_partial_refund_lines(partial_refund_lines: List[RefundPartialLine], invoice: InvoiceModel):

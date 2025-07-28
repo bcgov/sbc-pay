@@ -48,7 +48,6 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     QueueSources,
-    RefundsPartialType,
     TransactionStatus,
 )
 from pay_api.utils.errors import Error
@@ -58,7 +57,7 @@ from .payment_line_item import PaymentLineItem
 from .receipt import Receipt
 
 
-class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
+class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Abstract base class for payment system.
 
     This class will list the operations implemented for any payment system.
