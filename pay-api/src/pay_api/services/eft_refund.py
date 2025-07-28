@@ -89,7 +89,7 @@ class EFTRefund:
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
         cils: List[EFTCreditInvoiceLinkModel],
-        is_partial_refund: bool = False
+        is_partial_refund: bool = False,
     ) -> InvoiceStatus:
         """Create EFT Short name funds received historical record."""
         # 2. No EFT Credit Link - Job needs to reverse invoice in CFS
@@ -108,9 +108,11 @@ class EFTRefund:
                 # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
                 # (Invoice needs to be reversed, receipt doesn't exist.)
                 for cil in sibling_cils:
-                    EFTRefund.return_eft_credit(eft_credit_link=cil,
-                                                refund_amount=cil.amount,
-                                                update_status=EFTCreditInvoiceStatus.CANCELLED.value)
+                    EFTRefund.return_eft_credit(
+                        eft_credit_link=cil,
+                        refund_amount=cil.amount,
+                        update_status=EFTCreditInvoiceStatus.CANCELLED.value,
+                    )
                     cil.link_group_id = link_group_id
                     cil.flush()
             case EFTCreditInvoiceStatus.COMPLETED.value:
@@ -144,7 +146,8 @@ class EFTRefund:
                         invoice_id=invoice.id,
                         is_processing=True,
                         hidden=False,
-                    ), is_partial_refund
+                    ),
+                    is_partial_refund,
                 ).flush()
             else:
                 EFTHistoryService.create_invoice_refund(
@@ -314,8 +317,9 @@ class EFTRefund:
         return refund
 
     @staticmethod
-    def return_eft_credit(eft_credit_link: EFTCreditInvoiceLinkModel, refund_amount: Decimal,
-                          update_status: str = None) -> EFTCreditModel:
+    def return_eft_credit(
+        eft_credit_link: EFTCreditInvoiceLinkModel, refund_amount: Decimal, update_status: str = None
+    ) -> EFTCreditModel:
         """Return EFT Credit Invoice Link amount to EFT Credit."""
         eft_credit = EFTCreditModel.find_by_id(eft_credit_link.eft_credit_id)
         eft_credit.remaining_amount += refund_amount
