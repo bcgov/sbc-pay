@@ -536,7 +536,7 @@ class CFSService(OAuthService):
         index: int = 0
 
         for line_item in payment_line_items:
-            amount_total, amount_service_fee = cls._fee_calculator(line_item, refund_lines)
+            amount_total, amount_service_fee = cls._fee_calculator(line_item, refund_lines=refund_lines, negate=negate)
             # Find the distribution from the above list
             distribution_code = (
                 [dist for dist in distribution_codes if dist.distribution_code_id == line_item.fee_distribution_id][0]
