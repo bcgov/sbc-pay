@@ -31,6 +31,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.auth import get_account_admin_users
@@ -260,6 +261,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
 
         line_items: List[PaymentLineItemModel] = []
+        refund_lines: List[RefundsPartialModel] = []
         refund_amount = 0
 
         if is_partial:
@@ -272,12 +274,14 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                 )
                 PaymentSystemService.validate_refund_amount(refund_line.refund_amount, max_refundable)
                 line_items.append(pli)
+                refund_lines.append(refund_line)
                 refund_amount += refund_line.refund_amount
         else:
             line_items = [PaymentLineItemModel.find_by_id(li.id) for li in invoice.payment_line_items]
             refund_amount = invoice.total
 
-        cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
+        cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account,
+                                             refund_lines=refund_lines)
         # TODO Create a payment record for this to show up on transactions, when the ticket comes.
         # Create a credit with CM identifier as CMs are not reported in payment interface file
         # until invoice is applied.

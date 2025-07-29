@@ -25,6 +25,7 @@ from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models.refunds_partial import RefundsPartial as RefundsPartialModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
     CFS_ADJ_ACTIVITY_NAME,
@@ -48,7 +49,14 @@ from pay_api.utils.constants import (
     DEFAULT_JURISDICTION,
     DEFAULT_POSTAL_CODE,
 )
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentSystem, ReverseOperation
+from pay_api.utils.enums import (
+    AuthHeaderType,
+    ContentType,
+    PaymentMethod,
+    PaymentSystem,
+    RefundsPartialType,
+    ReverseOperation,
+)
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
 
@@ -519,13 +527,16 @@ class CFSService(OAuthService):
         }.get(operation)
 
     @classmethod
-    def build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
+    def build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False,
+                    refund_lines: List[RefundsPartialModel] = None):
         """Build lines for the invoice."""
         # Fetch all distribution codes to reduce DB hits. Introduce caching if needed later
         distribution_codes: List[DistributionCodeModel] = DistributionCodeModel.find_all()
         lines_map = defaultdict(dict)  # To group all the lines with same GL code together.
         index: int = 0
+
         for line_item in payment_line_items:
+            amount_total, amount_service_fee = cls._fee_calculator(line_item, refund_lines)
             # Find the distribution from the above list
             distribution_code = (
                 [dist for dist in distribution_codes if dist.distribution_code_id == line_item.fee_distribution_id][0]
@@ -533,7 +544,7 @@ class CFSService(OAuthService):
                 else None
             )
 
-            if line_item.total > 0:
+            if amount_total > 0:
                 # Check if a line with same GL code exists, if YES just add up the amount. if NO, create a new line.
                 line = lines_map[distribution_code.distribution_code_id]
 
@@ -543,7 +554,7 @@ class CFSService(OAuthService):
                         [
                             {
                                 "dist_line_number": index,
-                                "amount": cls._get_amount(line_item.total, negate),
+                                "amount": amount_total,
                                 "account": f"{distribution_code.client}.{distribution_code.responsibility_centre}."
                                 f"{distribution_code.service_line}.{distribution_code.stob}."
                                 f"{distribution_code.project_code}.000000.0000",
@@ -557,20 +568,18 @@ class CFSService(OAuthService):
                         "line_number": index,
                         "line_type": CFS_LINE_TYPE,
                         "description": line_item.description,
-                        "unit_price": cls._get_amount(line_item.total, negate),
+                        "unit_price": amount_total,
                         "quantity": 1,
                         "distribution": distribution,
                     }
                 else:
                     # Add up the price and distribution
-                    line["unit_price"] = line["unit_price"] + cls._get_amount(line_item.total, negate)
-                    line["distribution"][0]["amount"] = line["distribution"][0]["amount"] + cls._get_amount(
-                        line_item.total, negate
-                    )
+                    line["unit_price"] = line["unit_price"] + amount_total
+                    line["distribution"][0]["amount"] = line["distribution"][0]["amount"] + amount_total
 
                 lines_map[distribution_code.distribution_code_id] = line
 
-            if line_item.service_fees > 0:
+            if amount_service_fee > 0:
                 service_fee_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
                     distribution_code.service_fee_distribution_code_id
                 )
@@ -582,12 +591,12 @@ class CFSService(OAuthService):
                         "line_number": index,
                         "line_type": CFS_LINE_TYPE,
                         "description": "Service Fee",
-                        "unit_price": cls._get_amount(line_item.service_fees, negate),
+                        "unit_price": amount_service_fee,
                         "quantity": 1,
                         "distribution": [
                             {
                                 "dist_line_number": index,
-                                "amount": cls._get_amount(line_item.service_fees, negate),
+                                "amount": amount_service_fee,
                                 "account": f"{service_fee_distribution.client}."
                                 f"{service_fee_distribution.responsibility_centre}."
                                 f"{service_fee_distribution.service_line}."
@@ -599,14 +608,34 @@ class CFSService(OAuthService):
 
                 else:
                     # Add up the price and distribution
-                    service_line["unit_price"] = service_line["unit_price"] + cls._get_amount(
-                        line_item.service_fees, negate
-                    )
+                    service_line["unit_price"] = service_line["unit_price"] + amount_service_fee
                     service_line["distribution"][0]["amount"] = service_line["distribution"][0][
                         "amount"
-                    ] + cls._get_amount(line_item.service_fees, negate)
+                    ] + amount_service_fee
                 lines_map[service_fee_distribution.distribution_code_id] = service_line
         return list(lines_map.values())
+
+    @classmethod
+    def _fee_calculator(cls, line_item: PaymentLineItemModel,
+                        refund_lines: List[RefundsPartialModel] = None, negate: bool = False):
+        """Return (amount_total, amount_service_fee) for a line item considering partial refund."""
+        partial_refund_map = {r.payment_line_item_id: r for r in refund_lines} if refund_lines else {}
+
+        partial_refund = partial_refund_map.get(line_item.id)
+
+        amount_total = (
+            cls._get_amount(partial_refund.refund_amount, negate)
+            if partial_refund and partial_refund.refund_type != RefundsPartialType.SERVICE_FEES.value
+            else cls._get_amount(line_item.total, negate)
+        )
+
+        amount_service_fee = (
+            cls._get_amount(partial_refund.refund_amount, negate)
+            if partial_refund and partial_refund.refund_type == RefundsPartialType.SERVICE_FEES.value
+            else cls._get_amount(line_item.service_fees, negate)
+        )
+
+        return amount_total, amount_service_fee
 
     @classmethod
     def _get_amount(cls, amount, negate):
@@ -806,7 +835,8 @@ class CFSService(OAuthService):
         return cms_response.json() if cms_response is not None else None
 
     @classmethod
-    def create_cms(cls, line_items: List[PaymentLineItemModel], cfs_account: CfsAccountModel) -> Dict[str, any]:
+    def create_cms(cls, line_items: List[PaymentLineItemModel], cfs_account: CfsAccountModel,
+                   refund_lines: List[RefundsPartialModel] = None) -> Dict[str, any]:
         """Create CM record in CFS."""
         current_app.logger.debug(">Creating CMS")
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -826,7 +856,7 @@ class CFSService(OAuthService):
             "transaction_date": curr_time,
             "gl_date": curr_time,
             "comments": "",
-            "lines": cls.build_lines(line_items, negate=True),
+            "lines": cls.build_lines(line_items, negate=True, refund_lines=refund_lines),
         }
 
         cms_response = CFSService.post(
