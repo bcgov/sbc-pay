@@ -89,6 +89,7 @@ class EFTRefund:
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
         cils: List[EFTCreditInvoiceLinkModel],
+        is_partial_refund: bool = False,
     ) -> InvoiceStatus:
         """Create EFT Short name funds received historical record."""
         # 2. No EFT Credit Link - Job needs to reverse invoice in CFS
@@ -107,44 +108,61 @@ class EFTRefund:
                 # 3. EFT Credit Link - PENDING, CANCEL that link - restore balance to EFT credit existing call
                 # (Invoice needs to be reversed, receipt doesn't exist.)
                 for cil in sibling_cils:
-                    EFTRefund.return_eft_credit(cil, EFTCreditInvoiceStatus.CANCELLED.value)
+                    EFTRefund.return_eft_credit(
+                        eft_credit_link=cil,
+                        refund_amount=cil.amount,
+                        update_status=EFTCreditInvoiceStatus.CANCELLED.value,
+                    )
                     cil.link_group_id = link_group_id
                     cil.flush()
             case EFTCreditInvoiceStatus.COMPLETED.value:
                 # 4. EFT Credit Link - COMPLETED
                 # (Invoice needs to be reversed and receipt needs to be reversed.)
-                reversal_total = Decimal("0")
+                remaining_refund_amount = invoice.refund
                 for cil in sibling_cils:
-                    EFTRefund.return_eft_credit(cil)
+                    refund_amount = cil.amount if remaining_refund_amount >= cil.amount else remaining_refund_amount
+                    EFTRefund.return_eft_credit(eft_credit_link=cil, refund_amount=refund_amount)
                     EFTCreditInvoiceLinkModel(
                         eft_credit_id=cil.eft_credit_id,
                         status_code=EFTCreditInvoiceStatus.PENDING_REFUND.value,
-                        amount=cil.amount,
+                        amount=refund_amount,
                         receipt_number=cil.receipt_number,
                         invoice_id=invoice.id,
                         link_group_id=link_group_id,
                     ).flush()
-                    reversal_total += cil.amount
-
-                if reversal_total != invoice.total:
-                    raise BusinessException(Error.EFT_PARTIAL_REFUND)
 
         current_balance = EFTCreditModel.get_eft_credit_balance(latest_eft_credit.short_name_id)
         if existing_balance != current_balance:
             short_name_history = EFTHistoryModel.find_by_related_group_link_id(latest_link.link_group_id)
-            EFTHistoryService.create_invoice_refund(
-                EFTHistoryModel(
-                    short_name_id=latest_eft_credit.short_name_id,
-                    amount=invoice.total,
-                    credit_balance=current_balance,
-                    payment_account_id=payment_account.id,
-                    related_group_link_id=link_group_id,
-                    statement_number=(short_name_history.statement_number if short_name_history else None),
-                    invoice_id=invoice.id,
-                    is_processing=True,
-                    hidden=False,
-                )
-            ).flush()
+            if is_partial_refund:
+                EFTHistoryService.create_invoice_refund(
+                    EFTHistoryModel(
+                        short_name_id=latest_eft_credit.short_name_id,
+                        amount=invoice.refund,
+                        credit_balance=current_balance,
+                        payment_account_id=payment_account.id,
+                        related_group_link_id=link_group_id,
+                        statement_number=(short_name_history.statement_number if short_name_history else None),
+                        invoice_id=invoice.id,
+                        is_processing=True,
+                        hidden=False,
+                    ),
+                    is_partial_refund,
+                ).flush()
+            else:
+                EFTHistoryService.create_invoice_refund(
+                    EFTHistoryModel(
+                        short_name_id=latest_eft_credit.short_name_id,
+                        amount=invoice.total,
+                        credit_balance=current_balance,
+                        payment_account_id=payment_account.id,
+                        related_group_link_id=link_group_id,
+                        statement_number=(short_name_history.statement_number if short_name_history else None),
+                        invoice_id=invoice.id,
+                        is_processing=True,
+                        hidden=False,
+                    )
+                ).flush()
 
         return InvoiceStatus.REFUND_REQUESTED.value
 
@@ -299,10 +317,12 @@ class EFTRefund:
         return refund
 
     @staticmethod
-    def return_eft_credit(eft_credit_link: EFTCreditInvoiceLinkModel, update_status: str = None) -> EFTCreditModel:
+    def return_eft_credit(
+        eft_credit_link: EFTCreditInvoiceLinkModel, refund_amount: Decimal, update_status: str = None
+    ) -> EFTCreditModel:
         """Return EFT Credit Invoice Link amount to EFT Credit."""
         eft_credit = EFTCreditModel.find_by_id(eft_credit_link.eft_credit_id)
-        eft_credit.remaining_amount += eft_credit_link.amount
+        eft_credit.remaining_amount += refund_amount
 
         if eft_credit.remaining_amount > eft_credit.amount:
             raise BusinessException(Error.EFT_CREDIT_AMOUNT_UNEXPECTED)

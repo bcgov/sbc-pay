@@ -217,7 +217,6 @@ def test_refund_eft_credits_exceed_balance(session):
         ("3_pending_credit_link"),
         ("4_completed_credit_link"),
         ("5_consolidated_invoice_block"),
-        ("6_partial_refund_block"),
     ],
 )
 def test_eft_invoice_refund(session, test_name):
@@ -276,6 +275,8 @@ def test_eft_invoice_refund(session, test_name):
                 link_group_id=3,
             ).save()
         case "4_completed_credit_link" | "5_consolidated_invoice_block" | "6_partial_refund_block":
+            invoice.refund = invoice.total
+            invoice.save()
             invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number="1234").save()
             if test_name == "5_consolidated_invoice_block":
                 invoice_reference.is_consolidated = True
@@ -333,15 +334,11 @@ def test_eft_invoice_refund(session, test_name):
         case _:
             raise NotImplementedError
 
-    if test_name in ("5_consolidated_invoice_block", "6_partial_refund_block"):
+    if test_name == "5_consolidated_invoice_block":
         with pytest.raises(BusinessException) as excinfo:
             invoice.invoice_status_code = eft_service.process_cfs_refund(invoice, payment_account, None)
             invoice.save()
-        error = (
-            Error.INVALID_CONSOLIDATED_REFUND.value
-            if test_name == "5_consolidated_invoice_block"
-            else Error.EFT_PARTIAL_REFUND.value
-        )
+        error = Error.INVALID_CONSOLIDATED_REFUND.value
         assert excinfo.value.code == error[0]
         return
 

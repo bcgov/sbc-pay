@@ -135,9 +135,12 @@ class EftService(DepositService):
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
         refund_partial: List[RefundPartialLine],
-    ):  # pylint:disable=unused-argument
+    ):
         """Process refund in CFS."""
-        PartnerDisbursements.handle_reversal(invoice)
+        is_partial = bool(refund_partial)
+        if not is_partial:
+            PartnerDisbursements.handle_reversal(invoice)
+
         cils = EFTCreditInvoiceLinkModel.find_by_invoice_id(invoice.id)
         # 1. Possible to have no CILs and no invoice_reference, nothing to reverse.
         if (
@@ -155,7 +158,7 @@ class EftService(DepositService):
             # Also untested with EFT. We want to be able to refund back to the original payment method.
             raise BusinessException(Error.INVALID_CONSOLIDATED_REFUND)
 
-        return EFTRefundService.handle_invoice_refund(invoice, payment_account, cils)
+        return EFTRefundService.handle_invoice_refund(invoice, payment_account, cils, is_partial)
 
     @staticmethod
     def create_invoice_reference(
@@ -226,7 +229,11 @@ class EftService(DepositService):
         )
         link_group_ids = set()
         for credit_link in credit_links:
-            eft_credit = EFTRefundService.return_eft_credit(credit_link, EFTCreditInvoiceStatus.CANCELLED.value)
+            eft_credit = EFTRefundService.return_eft_credit(
+                eft_credit_link=credit_link,
+                refund_amount=credit_link.amount,
+                update_status=EFTCreditInvoiceStatus.CANCELLED.value,
+            )
             if credit_link.link_group_id:
                 link_group_ids.add(credit_link.link_group_id)
             db.session.add(eft_credit)
@@ -273,7 +280,9 @@ class EftService(DepositService):
                 )
                 raise BusinessException(Error.EFT_PAYMENT_INVOICE_REVERSE_UNEXPECTED_STATUS)
 
-            eft_credit = EFTRefundService.return_eft_credit(current_link)
+            eft_credit = EFTRefundService.return_eft_credit(
+                eft_credit_link=current_link, refund_amount=current_link.amount
+            )
             eft_credit.flush()
             reversed_credits += current_link.amount
 

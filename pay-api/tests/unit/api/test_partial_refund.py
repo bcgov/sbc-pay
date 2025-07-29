@@ -31,6 +31,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundPartialLine
 from pay_api.models import RefundsPartial as RefundPartialModel
@@ -262,7 +263,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
         assert disbursements[0].status_code == DisbursementStatus.WAITING_FOR_JOB.value
 
 
-def test_create_refund_fails(session, client, jwt, app, monkeypatch):
+def test_create_partial_refund_fails(session, client, jwt, app, monkeypatch):
     """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -313,59 +314,12 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
         headers=headers,
     )
     assert rv.status_code == 400
-    assert rv.json.get("type") == Error.INVALID_REQUEST.name
+    assert rv.json.get("type") == Error.PARTIAL_REFUND_INVOICE_NOT_PAID.name
     assert RefundModel.find_by_invoice_id(inv_id) is None
 
     refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
     assert not refunds_partial
     assert len(refunds_partial) == 0
-
-
-def test_refund_validation_for_payment_method(session, client, jwt, app, monkeypatch):
-    """Assert that the partial refund amount validation returns 400 when the invoice is not DIRECT_PAY."""
-    token = jwt.create_jwt(get_claims(app_request=app), token_header)
-    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-
-    rv = client.post(
-        "/api/v1/payment-requests",
-        data=json.dumps(get_payment_request()),
-        headers=headers,
-    )
-    inv_id = rv.json.get("id")
-    invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
-    invoice.invoice_status_code = InvoiceStatus.PAID.value
-    invoice.corp_type_code = "VS"
-    invoice.payment_method_code = "EFT"
-    invoice.save()
-
-    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
-    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-
-    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
-    refund_revenue = [
-        {
-            "paymentLineItemId": payment_line_items[0].id,
-            "refundAmount": float(payment_line_items[0].filing_fees),
-            "refundType": RefundsPartialType.BASE_FEES.value,
-        }
-    ]
-
-    def mock_process_cfs_refund(self, invoice, payment_account, refund_partial):
-        return "REFUNDED"
-
-    monkeypatch.setattr(
-        "pay_api.services.direct_pay_service.DirectPayService.process_cfs_refund",
-        mock_process_cfs_refund,
-    )
-
-    rv = client.post(
-        f"/api/v1/payment-requests/{inv_id}/refunds",
-        data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
-        headers=headers,
-    )
-    assert rv.status_code == 400
-    assert rv.json.get("type") == Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED.name
-    assert RefundModel.find_by_invoice_id(inv_id) is None
 
 
 @pytest.mark.parametrize(
@@ -498,3 +452,95 @@ def _get_base_paybc_response():
         "postedrefundamount": None,
         "refundedamount": None,
     }
+
+
+def test_invalid_payment_method_partial_refund(session, client, jwt, app, monkeypatch):
+    """Assert that the partial refund unsupported payment method returns 400."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+    inv_id = rv.json.get("id")
+    invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.payment_method_code = PaymentMethod.EFT.value
+    invoice.save()
+    set_payment_method_partial_refund(invoice.payment_method_code, False)
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    refund_revenue = [
+        {
+            "paymentLineItemId": payment_line_items[0].id,
+            "refundAmount": float(1),
+            "refundType": RefundsPartialType.BASE_FEES.value,
+        }
+    ]
+
+    rv = client.post(
+        f"/api/v1/payment-requests/{inv_id}/refunds",
+        data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 400
+    assert rv.json.get("type") == Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED.name
+    assert RefundModel.find_by_invoice_id(inv_id) is None
+    assert not RefundPartialModel.get_partial_refunds_for_invoice(inv_id)
+
+
+def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
+    """Assert that the partial refund unsupported payment method returns 400."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+    inv_id = rv.json.get("id")
+    invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.payment_method_code = PaymentMethod.EFT.value
+    invoice.save()
+    set_payment_method_partial_refund(invoice.payment_method_code, True)
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    refund_revenue = [
+        {
+            "paymentLineItemId": payment_line_items[0].id,
+            "refundAmount": float(1),
+            "refundType": RefundsPartialType.BASE_FEES.value,
+        }
+    ]
+
+    rv = client.post(
+        f"/api/v1/payment-requests/{inv_id}/refunds",
+        data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
+        headers=headers,
+    )
+
+    assert rv.status_code == 202
+    assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["EFT.PAID"]
+    assert RefundModel.find_by_invoice_id(inv_id) is not None
+
+    refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
+    assert refunds_partial
+    assert len(refunds_partial) == 1
+
+
+def set_payment_method_partial_refund(payment_method_code: str, enabled: bool):
+    """Set partial refund flag on payment method."""
+    payment_method = PaymentMethodModel.find_by_code(payment_method_code)
+    payment_method.partial_refund = enabled
+    payment_method.save()
