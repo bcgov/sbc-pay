@@ -129,6 +129,33 @@ class PaymentMethod(Enum):
     CREDIT = "CREDIT"
 
 
+PaymentMethod.Order = [
+    PaymentMethod.EFT,
+    PaymentMethod.PAD,
+    PaymentMethod.CC,
+    PaymentMethod.DRAWDOWN,
+    PaymentMethod.INTERNAL,
+    PaymentMethod.DIRECT_PAY,
+    PaymentMethod.ONLINE_BANKING,
+    PaymentMethod.EJV
+]
+
+
+class StatementTitles(Enum):
+    """Statement Titles by Payment Method."""
+
+    EFT = "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER"
+    PAD = "ACCOUNT STATEMENT - PRE-AUTHORIZED DEBIT"
+    ONLINE_BANKING = "ACCOUNT STATEMENT - ONLINE BANKING"
+    CC = "ACCOUNT STATEMENT - CREDIT CARD"
+    EJV = "ACCOUNT STATEMENT - ELECTRONIC JOURNAL VOUCHER"
+    DRAWDOWN = "ACCOUNT STATEMENT - BC ONLINE"
+    DIRECT_PAY = "ACCOUNT STATEMENT - DIRECT PAY"
+    INTERNAL = "ACCOUNT STATEMENT - ROUTING SLIP"
+    INTERNAL_STAFF = "ACCOUNT STATEMENT - STAFF PAYMENT"
+    DEFAULT = "ACCOUNT STATEMENT"
+
+
 class Role(Enum):
     """User Role."""
 
