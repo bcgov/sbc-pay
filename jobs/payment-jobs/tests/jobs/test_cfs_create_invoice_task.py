@@ -515,6 +515,7 @@ def test_create_eft_invoice_before_cutoff(session):
     assert inv_ref is not None  # As EFT will be summed up for all outstanding invoices
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
+
 def test_create_pad_invoice_exception_handling(session):
     """Test that exceptions during PAD invoice creation are properly handled."""
     # Create an account and an invoice for the account
@@ -535,28 +536,20 @@ def test_create_pad_invoice_exception_handling(session):
 
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
-    # Mock the CFS service to raise an exception and mock send_notification
     test_exception = Exception("Test CFS service failure")
-    
+
     with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
         with patch("tasks.cfs_create_invoice_task.send_notification") as mock_send_notification:
             mock_create_invoice.side_effect = test_exception
-
-            # Try to create invoice
             CreateInvoiceTask.create_invoices()
-
-            # Verify that the exception was caught and handled properly
             mock_send_notification.assert_called_once()
 
-    # Verify the invoice status remains unchanged (not processed due to exception)
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
-    
-    # Verify no invoice reference was created due to the exception
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        invoice.id, InvoiceReferenceStatus.ACTIVE.value
-    )
+
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
     assert inv_ref is None
+
 
 def test_create_eft_invoice_exception_handling(session):
     """Test that exceptions during EFT invoice creation are properly handled."""
@@ -576,35 +569,27 @@ def test_create_eft_invoice_exception_handling(session):
     line.save()
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
-    # Mock the CFS service to raise an exception and mock send_notification
     test_exception = Exception("Test CFS service failure")
-    
+
     with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
         with patch("tasks.cfs_create_invoice_task.send_notification") as mock_send_notification:
             mock_create_invoice.side_effect = test_exception
-
-            # Try to create invoice
             CreateInvoiceTask.create_invoices()
-
-            # Verify that the exception was caught and handled properly
             mock_send_notification.assert_called_once()
 
-    # Verify the invoice status remains unchanged (not processed due to exception)
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
-    
-    # Verify no invoice reference was created due to the exception
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        invoice.id, InvoiceReferenceStatus.ACTIVE.value
-    )
+
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
     assert inv_ref is None
+
 
 def test_create_online_banking_invoice_exception_handling(session):
     """Test that exceptions during online banking invoice creation are properly handled."""
     # Create an account and an invoice for the account
     account = factory_create_online_banking_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    
+
     # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
@@ -619,25 +604,16 @@ def test_create_online_banking_invoice_exception_handling(session):
 
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    # Mock the CFS service to raise an exception and mock send_notification
     test_exception = Exception("Test CFS service failure")
-    
+
     with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
         with patch("tasks.cfs_create_invoice_task.send_notification") as mock_send_notification:
             mock_create_invoice.side_effect = test_exception
-
-            # Try to create invoice
             CreateInvoiceTask.create_invoices()
-
-            # Verify that the exception was caught and handled properly
             mock_send_notification.assert_called_once()
 
-    # Verify the invoice status remains unchanged (not processed due to exception)
-    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
-    
-    # Verify no invoice reference was created due to the exception
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        invoice.id, InvoiceReferenceStatus.ACTIVE.value
-    )
+
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
     assert inv_ref is None

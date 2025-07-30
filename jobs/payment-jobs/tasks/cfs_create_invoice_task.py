@@ -576,6 +576,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
 
 def send_notification(error_message: str):
+    """Send notification for job failure."""
     notification = JobFailureNotification(
         subject="CFS Create Invoice Job Failure",
         file_name="ejv_partner_distribution",
