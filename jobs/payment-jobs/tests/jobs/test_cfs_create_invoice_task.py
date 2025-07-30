@@ -54,10 +54,8 @@ def test_create_invoice(session):
 
 def test_create_pad_invoice_single_transaction(session):
     """Assert PAD invoices are created."""
-    # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -83,10 +81,8 @@ def test_create_pad_invoice_single_transaction(session):
 
 def test_create_pad_invoice_mixed_pli_values(session):
     """Assert PAD invoices are created with total = 0, service fees > 0."""
-    # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -133,11 +129,9 @@ def test_create_pad_invoice_mixed_pli_values(session):
 
 def test_create_rs_invoice_single_transaction(session):
     """Assert PAD invoices are created."""
-    # Create an account and an invoice for the account
     rs_number = "123"
     account = factory_routing_slip_account(number=rs_number, status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -190,10 +184,9 @@ def test_create_rs_invoice_single_transaction(session):
 
 def test_create_pad_invoice_single_transaction_run_again(session):
     """Assert PAD invoices are created."""
-    # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
+
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -230,10 +223,9 @@ def test_create_pad_invoice_single_transaction_run_again(session):
 
 def test_create_pad_invoice_for_frozen_accounts(session):
     """Assert PAD invoices are created."""
-    # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.FREEZE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
+
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -259,10 +251,8 @@ def test_create_pad_invoice_for_frozen_accounts(session):
 
 def test_create_pad_invoice_multiple_transactions(session):
     """Assert PAD invoices are created."""
-    # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -274,7 +264,6 @@ def test_create_pad_invoice_multiple_transactions(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    # Create another invoice for this account
     invoice2 = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -294,10 +283,8 @@ def test_create_pad_invoice_multiple_transactions(session):
 
 def test_create_pad_invoice_before_cutoff(session):
     """Assert PAD invoices are created."""
-    # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=2)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -325,10 +312,8 @@ def test_create_pad_invoice_before_cutoff(session):
 
 def test_create_online_banking_transaction(session):
     """Assert Online Banking invoices are created."""
-    # Create an account and an invoice for the account
     account = factory_create_online_banking_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -357,7 +342,6 @@ def test_create_eft_invoice(session):
     """Assert EFT invoice is created."""
     account = factory_create_eft_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -386,7 +370,6 @@ def test_create_eft_invoice_rerun(session):
     """Assert EFT invoice is created."""
     account = factory_create_eft_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -427,7 +410,6 @@ def test_create_eft_invoice_on_frozen_account(session):
     """Assert EFT invoice is created."""
     account = factory_create_eft_account(auth_account_id="1", status=CfsAccountStatus.FREEZE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -457,7 +439,6 @@ def test_create_eft_invoices(session):
     """Assert EFT invoices are created."""
     account = factory_create_eft_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -491,7 +472,6 @@ def test_create_eft_invoice_before_cutoff(session):
     """Assert EFT invoices are created."""
     account = factory_create_eft_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=2)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -518,10 +498,8 @@ def test_create_eft_invoice_before_cutoff(session):
 
 def test_create_pad_invoice_exception_handling(session):
     """Test that exceptions during PAD invoice creation are properly handled."""
-    # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -555,7 +533,6 @@ def test_create_eft_invoice_exception_handling(session):
     """Test that exceptions during EFT invoice creation are properly handled."""
     account = factory_create_eft_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
@@ -586,11 +563,9 @@ def test_create_eft_invoice_exception_handling(session):
 
 def test_create_online_banking_invoice_exception_handling(session):
     """Test that exceptions during online banking invoice creation are properly handled."""
-    # Create an account and an invoice for the account
     account = factory_create_online_banking_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
 
-    # Create an invoice for this account
     invoice = factory_invoice(
         payment_account=account,
         created_on=previous_day,
