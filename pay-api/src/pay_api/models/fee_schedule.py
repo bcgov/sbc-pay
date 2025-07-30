@@ -51,6 +51,7 @@ class FeeSchedule(db.Model):
     __mapper_args__ = {
         "include_properties": [
             "corp_type_code",
+            "enable_gst",
             "fee_code",
             "fee_end_date",
             "fee_schedule_id",
@@ -80,6 +81,9 @@ class FeeSchedule(db.Model):
     service_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     variable = db.Column(Boolean(), default=False, comment="Flag to indicate if the fee is variable")
     show_on_pricelist = db.Column(Boolean(), nullable=False, default=False)
+    enable_gst = db.Column(
+        Boolean(), default=False, comment="Flag to indicate if GST should be calculated for this fee schedule"
+    )
 
     filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy="joined", innerjoin=True)
     corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy="joined", innerjoin=True)

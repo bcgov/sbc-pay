@@ -82,6 +82,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             "disbursement_date",
             "filing_id",
             "folio_number",
+            "gst",
             "invoice_status_code",
             "payment_account_id",
             "payment_date",
@@ -132,6 +133,9 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     routing_slip = db.Column(db.String(50), nullable=True, index=True)
     filing_id = db.Column(db.String(50), nullable=True)
     folio_number = db.Column(db.String(50), nullable=True, index=True)
+    gst = db.Column(
+        db.Numeric(19, 2), nullable=True, comment="Total GST amount including statutory and service fees GST"
+    )
     dat_number = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)
     service_fees = db.Column(db.Numeric(19, 2), nullable=True)

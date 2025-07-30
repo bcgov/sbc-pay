@@ -104,6 +104,18 @@ class DistributionCode(Audit, Versioned, BaseModel):
     disbursement_distribution_code_id = db.Column(
         db.Integer, ForeignKey("distribution_codes.distribution_code_id"), nullable=True
     )
+    statutory_fees_gst_distribution_code_id = db.Column(
+        db.Integer,
+        ForeignKey("distribution_codes.distribution_code_id"),
+        nullable=True,
+        comment="Distribution code for GST on statutory fees",
+    )
+    service_fee_gst_distribution_code_id = db.Column(
+        db.Integer,
+        ForeignKey("distribution_codes.distribution_code_id"),
+        nullable=True,
+        comment="Distribution code for GST on service fees",
+    )
     # account id for distribution codes for gov account. None for distribution codes for filing types
     account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
 
@@ -116,6 +128,18 @@ class DistributionCode(Audit, Versioned, BaseModel):
     disbursement_distribution_code = relationship(
         "DistributionCode",
         foreign_keys=[disbursement_distribution_code_id],
+        remote_side=[distribution_code_id],
+        lazy="select",
+    )
+    statutory_fees_gst_distribution_code = relationship(
+        "DistributionCode",
+        foreign_keys=[statutory_fees_gst_distribution_code_id],
+        remote_side=[distribution_code_id],
+        lazy="select",
+    )
+    service_fee_gst_distribution_code = relationship(
+        "DistributionCode",
+        foreign_keys=[service_fee_gst_distribution_code_id],
         remote_side=[distribution_code_id],
         lazy="select",
     )
@@ -204,4 +228,6 @@ class DistributionCodeSchema(AuditSchema, BaseSchema):  # pylint: disable=too-ma
 
     service_fee_distribution_code_id = fields.String(data_key="service_fee_distribution_code_id")
     disbursement_distribution_code_id = fields.String(data_key="disbursement_distribution_code_id")
+    statutory_fees_gst_distribution_code_id = fields.String(data_key="statutory_fees_gst_distribution_code_id")
+    service_fee_gst_distribution_code_id = fields.String(data_key="service_fee_gst_distribution_code_id")
     account_id = fields.String(data_key="account_id")
