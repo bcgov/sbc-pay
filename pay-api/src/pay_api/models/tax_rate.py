@@ -13,13 +13,14 @@
 # limitations under the License.
 """Model to handle all operations related to Tax Rate data."""
 
+from sql_versioning import Versioned
 from sqlalchemy import DateTime
+from pay_api.models.base_model import BaseModel
 
-from .audit import Audit
 from .db import db
 
 
-class TaxRate(Audit):
+class TaxRate(Versioned, BaseModel):
     """This class manages all tax rate related data."""
 
     __tablename__ = "tax_rates"
@@ -36,17 +37,13 @@ class TaxRate(Audit):
     __mapper_args__ = {
         "include_properties": [
             "id",
-            "created_by",
-            "created_name",
-            "created_on",
             "description",
             "effective_end_date",
             "rate",
             "start_date",
             "tax_type",
             "updated_by",
-            "updated_name",
-            "updated_on",
+            "updated_name"
         ]
     }
 
@@ -56,6 +53,8 @@ class TaxRate(Audit):
     start_date = db.Column(DateTime(timezone=True), nullable=False, comment="When this tax rate becomes effective")
     effective_end_date = db.Column(DateTime(timezone=True), nullable=True, comment="When this tax rate expires")
     description = db.Column(db.String(200), nullable=True, comment="Description of the tax rate")
+    updated_by = db.Column(db.String(50), nullable=False)
+    updated_name = db.Column(db.String(50), nullable=False)
 
     def __repr__(self):
         """Return a string representation of the object."""

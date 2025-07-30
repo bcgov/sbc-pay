@@ -28,14 +28,26 @@ def upgrade():
     sa.Column('start_date', sa.DateTime(timezone=True), nullable=False, comment='When this tax rate becomes effective'),
     sa.Column('effective_end_date', sa.DateTime(timezone=True), nullable=True, comment='When this tax rate expires'),
     sa.Column('description', sa.String(length=200), nullable=True, comment='Description of the tax rate'),
-    sa.Column('created_on', sa.DateTime(), nullable=False),
-    sa.Column('updated_on', sa.DateTime(), nullable=True),
-    sa.Column('created_by', sa.String(length=50), nullable=False),
-    sa.Column('created_name', sa.String(length=100), nullable=True),
-    sa.Column('updated_by', sa.String(length=50), nullable=True),
-    sa.Column('updated_name', sa.String(length=50), nullable=True),
+    sa.Column('updated_by', sa.String(length=50), nullable=False),
+    sa.Column('updated_name', sa.String(length=50), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
+
+    op.create_table('tax_rates_history',
+    sa.Column('id', sa.Integer(), autoincrement=False, nullable=False),
+    sa.Column('tax_type', sa.String(length=10), autoincrement=False, nullable=False, comment="Tax type such as 'gst', 'pst'"),
+    sa.Column('rate', sa.Numeric(precision=6, scale=4), autoincrement=False, nullable=False, comment='Tax rate as decimal, e.g. 0.0500 for 5%'),
+    sa.Column('start_date', sa.DateTime(timezone=True), autoincrement=False, nullable=False, comment='When this tax rate becomes effective'),
+    sa.Column('effective_end_date', sa.DateTime(timezone=True), autoincrement=False, nullable=True, comment='When this tax rate expires'),
+    sa.Column('description', sa.String(length=200), autoincrement=False, nullable=True, comment='Description of the tax rate'),
+    sa.Column('updated_by', sa.String(length=50), nullable=False),
+    sa.Column('updated_name', sa.String(length=50), nullable=False),
+    sa.Column('version', sa.Integer(), autoincrement=False, nullable=False),
+    sa.Column('changed', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id', 'version'),
+    sqlite_autoincrement=True
+    )
+
     with op.batch_alter_table('distribution_codes', schema=None) as batch_op:
         batch_op.add_column(sa.Column('statutory_fees_gst_distribution_code_id', sa.Integer(), nullable=True, comment='Distribution code for GST on statutory fees'))
         batch_op.add_column(sa.Column('service_fee_gst_distribution_code_id', sa.Integer(), nullable=True, comment='Distribution code for GST on service fees'))
@@ -78,4 +90,5 @@ def downgrade():
         batch_op.drop_column('service_fee_gst_distribution_code_id')
         batch_op.drop_column('statutory_fees_gst_distribution_code_id')
 
+    op.drop_table('tax_rates_history')
     op.drop_table('tax_rates')
