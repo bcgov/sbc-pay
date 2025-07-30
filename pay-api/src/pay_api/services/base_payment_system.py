@@ -13,6 +13,7 @@
 # limitations under the License.
 """Abstract class for payment system implementation."""
 
+import copy
 import functools
 import traceback
 from abc import ABC, abstractmethod
@@ -271,7 +272,15 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                     pli.service_fees if refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value else pli.total
                 )
                 PaymentSystemService.validate_refund_amount(refund_line.refund_amount, max_refundable)
-                line_items.append(pli)
+                
+                pli_clone = copy.copy(pli)
+                pli_clone.total = (
+                    refund_line.refund_amount if refund_line.refund_type != RefundsPartialType.SERVICE_FEES.value else 0
+                )
+                pli_clone.service_fees = (
+                    refund_line.refund_amount if refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value else 0
+                )
+                line_items.append(pli_clone)
                 refund_amount += refund_line.refund_amount
         else:
             line_items = [PaymentLineItemModel.find_by_id(li.id) for li in invoice.payment_line_items]
