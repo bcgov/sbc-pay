@@ -104,7 +104,7 @@ class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-man
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentLineItem
-        exclude = ["fee_schedule_id", "fee_schedule"]
+        exclude = ["fee_schedule_id", "fee_schedule", "statutory_fees_gst", "service_fees_gst"]
         load_instance = True
 
     line_item_status_code = fields.String(data_key="status_code")
@@ -126,10 +126,10 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
 
     total: Decimal
     gst: Decimal
-    statutory_fees_gst: Decimal
+    # statutory_fees_gst: Decimal
     pst: Decimal
     service_fees: Decimal
-    service_fees_gst: Decimal
+    # service_fees_gst: Decimal
     description: str
     filing_type_code: str
 
@@ -142,10 +142,10 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
         return cls(
             total=row.total,
             gst=row.gst,
-            statutory_fees_gst=row.statutory_fees_gst,
+            # statutory_fees_gst=row.statutory_fees_gst,
             pst=row.pst,
             service_fees=row.service_fees,
-            service_fees_gst=row.service_fees_gst,
+            # service_fees_gst=row.service_fees_gst,
             description=row.description,
             filing_type_code=row.fee_schedule.filing_type_code,
         )
