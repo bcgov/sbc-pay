@@ -29,6 +29,7 @@ from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services import EftService
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.email_service import JobFailureNotification
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
@@ -123,11 +124,15 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     CFSService.reverse_invoice(invoice_reference.invoice_number)
 
                 except Exception as e:  # NOQA # pylint: disable=broad-except
-                    current_app.logger.error(
+                    msg = (
                         f"Error on cancelling Routing Slip invoice: invoice id={invoice.id}, "
-                        f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
+                        f"routing slip : {routing_slip.id}, ERROR : {str(e)}"
+                    )
+                    current_app.logger.error(
+                        msg,
                         exc_info=True,
                     )
+                    send_notification(msg)
                     continue
 
                 invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
@@ -204,11 +209,15 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
                 # If no invoice is created raise an error
                 if not has_invoice_created:
-                    current_app.logger.error(
+                    msg = (
                         f"Error on creating routing slip invoice {invoice.id}: account id={invoice.payment_account.id},"
-                        f"auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}",
+                        f"auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}"
+                    )
+                    current_app.logger.error(
+                        msg,
                         exc_info=True,
                     )
+                    send_notification(msg)
                     continue
 
             invoice_number = invoice_response.get("invoice_number", None)
@@ -334,19 +343,27 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     pass
                 # If no invoice is created raise an error
                 if not has_invoice_created:
-                    current_app.logger.error(
+                    msg = (
                         f"Error on creating PAD invoice: account id={payment_account.id}, "
-                        f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}",
+                        f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}"
+                    )
+                    current_app.logger.error(
+                        msg,
                         exc_info=True,
                     )
+                    send_notification(msg)
                     continue
                 if not invoice_total_matches:
-                    current_app.logger.error(
+                    msg = (
                         f"Error on creating PAD invoice: account id={payment_account.id}, "
                         f"auth account : {payment_account.auth_account_id}, Invoice exists: "
-                        f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}',
+                        f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}'
+                    )
+                    current_app.logger.error(
+                        msg,
                         exc_info=True,
                     )
+                    send_notification(msg)
                     continue
             # This is synced after receiving a CSV file at 9:30 AM each day.
             credit_remaining_total = CreditModel.find_remaining_by_account_id(account.id)
@@ -465,20 +482,28 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                         pass
 
                     if not has_invoice_created:
+                        msg = (
+                            f"Error on creating EFT invoice: account id={payment_account.id}, "
+                            f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}"
+                        )
                         current_app.logger.error(
-                            f"Error on creating EFT invoice: account id={invoice.payment_account.id}, "
-                            f"auth account : {invoice.payment_account.auth_account_id}, ERROR : {str(e)}",
+                            msg,
                             exc_info=True,
                         )
+                        send_notification(msg)
                         continue
                     if not invoice_total_matches:
-                        current_app.logger.error(
+                        msg = (
                             f"Error on creating EFT invoice: account id={payment_account.id}, "
                             f"auth account : {payment_account.auth_account_id}, Invoice exists: "
                             f' CAS total: {invoice_response.get("total", 0)}, '
-                            f"PAY-BC total: {invoice.total}",
+                            f"PAY-BC total: {invoice.total}, ERROR : {str(e)}"
+                        )
+                        current_app.logger.error(
+                            msg,
                             exc_info=True,
                         )
+                        send_notification(msg)
                         continue
 
                 invoice.cfs_account_id = cfs_account.id
@@ -527,11 +552,15 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     cfs_account=cfs_account,
                 )
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error(
+                msg = (
                     f"Error on creating Online Banking invoice: account id={payment_account.id}, "
-                    f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}",
+                    f"auth account : {payment_account.auth_account_id}, ERROR : {str(e)}"
+                )
+                current_app.logger.error(
+                    msg,
                     exc_info=True,
                 )
+                send_notification(msg)
                 continue
 
             # Create invoice reference, payment record and a payment transaction
@@ -544,3 +573,15 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             invoice.cfs_account_id = payment_account.cfs_account_id
             invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
             invoice.save()
+
+
+def send_notification(error_message: str):
+    """Send notification for job failure."""
+    notification = JobFailureNotification(
+        subject="CFS Create Invoice Job Failure",
+        file_name="ejv_partner_distribution",
+        error_messages=[{"error": error_message}],
+        table_name=None,
+        job_name="CFS Create Invoice Job",
+    )
+    notification.send_notification()

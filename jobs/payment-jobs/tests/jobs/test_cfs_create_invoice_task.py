@@ -169,10 +169,12 @@ def test_create_rs_invoice_single_transaction(session):
         return_value=invoice_failed_res,
         side_effect=HTTPError(),
     ) as mock_create_invoice:
-        with patch.object(CFSService, "get_invoice", return_value=invoice_data) as mock_get_invoice:
-            CreateInvoiceTask.create_invoices()
-            mock_create_invoice.assert_called()
-            mock_get_invoice.assert_called()
+        with patch("tasks.cfs_create_invoice_task.send_notification") as mock_send_notification:
+            with patch.object(CFSService, "get_invoice", return_value=invoice_data) as mock_get_invoice:
+                CreateInvoiceTask.create_invoices()
+                mock_create_invoice.assert_called()
+                mock_get_invoice.assert_called()
+                mock_send_notification.assert_called()
 
     # Regular flow where create_account_invoice succeeds.
     with patch.object(CFSService, "create_account_invoice", return_value=invoice_data) as mock_create_invoice:
@@ -512,3 +514,106 @@ def test_create_eft_invoice_before_cutoff(session):
 
     assert inv_ref is not None  # As EFT will be summed up for all outstanding invoices
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+def test_create_pad_invoice_exception_handling(session):
+    """Test that exceptions during PAD invoice creation are properly handled."""
+    # Create an account and an invoice for the account
+    account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(
+        payment_account=account,
+        created_on=previous_day,
+        total=10,
+        status_code=InvoiceStatus.APPROVED.value,
+        payment_method_code=None,
+    )
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    test_exception = Exception("Test CFS service failure")
+
+    with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
+        with patch("tasks.cfs_create_invoice_task.send_notification") as mock_send_notification:
+            mock_create_invoice.side_effect = test_exception
+            CreateInvoiceTask.create_invoices()
+            mock_send_notification.assert_called_once()
+
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+    assert inv_ref is None
+
+
+def test_create_eft_invoice_exception_handling(session):
+    """Test that exceptions during EFT invoice creation are properly handled."""
+    account = factory_create_eft_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(
+        payment_account=account,
+        created_on=previous_day,
+        total=10,
+        status_code=InvoiceStatus.APPROVED.value,
+        payment_method_code=PaymentMethod.EFT.value,
+    )
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    test_exception = Exception("Test CFS service failure")
+
+    with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
+        with patch("tasks.cfs_create_invoice_task.send_notification") as mock_send_notification:
+            mock_create_invoice.side_effect = test_exception
+            CreateInvoiceTask.create_invoices()
+            mock_send_notification.assert_called_once()
+
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+    assert inv_ref is None
+
+
+def test_create_online_banking_invoice_exception_handling(session):
+    """Test that exceptions during online banking invoice creation are properly handled."""
+    # Create an account and an invoice for the account
+    account = factory_create_online_banking_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
+
+    # Create an invoice for this account
+    invoice = factory_invoice(
+        payment_account=account,
+        created_on=previous_day,
+        total=10,
+        payment_method_code=None,
+    )
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+
+    test_exception = Exception("Test CFS service failure")
+
+    with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
+        with patch("tasks.cfs_create_invoice_task.send_notification") as mock_send_notification:
+            mock_create_invoice.side_effect = test_exception
+            CreateInvoiceTask.create_invoices()
+            mock_send_notification.assert_called_once()
+
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
+
+    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+    assert inv_ref is None
