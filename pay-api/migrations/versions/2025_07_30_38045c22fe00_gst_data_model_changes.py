@@ -30,6 +30,7 @@ def upgrade():
     sa.Column('description', sa.String(length=200), nullable=True, comment='Description of the tax rate'),
     sa.Column('updated_by', sa.String(length=50), nullable=False),
     sa.Column('updated_name', sa.String(length=50), nullable=False),
+    sa.Column('version', sa.Integer(), autoincrement=False, nullable=False, server_default='1'),
     sa.PrimaryKeyConstraint('id')
     )
 
