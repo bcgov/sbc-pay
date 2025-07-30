@@ -6,7 +6,9 @@
 <body>
     <p>{{ jobName }} Failed</p>
     <ul>
-        <li><strong>Table to update:</strong> {{ tableName }}</li>
+        {% if tableName %}
+            <li><strong>Table to update:</strong> {{ tableName }}</li>
+        {% endif %}
         <li><strong>Errors:</strong>
             <ul style="line-height: 2em;">
                 {% for error in errorMessages %}
