@@ -112,12 +112,12 @@ class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-man
     priority_fees = fields.Float(data_key="priority_fees")
     future_effective_fees = fields.Float(data_key="future_effective_fees")
     gst = fields.Float(data_key="gst")
-    statutory_fees_gst = fields.Float(data_key="statutory_fees_gst")
+    # statutory_fees_gst = fields.Float(data_key="statutory_fees_gst") Uncomment when ready.
     pst = fields.Float(data_key="pst")
     total = fields.Float(data_key="total")
     waived_fees = fields.Float(data_key="waived_fees")
     service_fees = fields.Float(data_key="service_fees")
-    service_fees_gst = fields.Float(data_key="service_fees_gst")
+    # service_fees_gst = fields.Float(data_key="service_fees_gst") Uncomment when ready.
 
 
 @define

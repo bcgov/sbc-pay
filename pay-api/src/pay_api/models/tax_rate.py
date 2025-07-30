@@ -15,6 +15,7 @@
 
 from sql_versioning import Versioned
 from sqlalchemy import DateTime
+
 from pay_api.models.base_model import BaseModel
 
 from .db import db
@@ -43,7 +44,7 @@ class TaxRate(Versioned, BaseModel):
             "start_date",
             "tax_type",
             "updated_by",
-            "updated_name"
+            "updated_name",
         ]
     }
 
