@@ -67,6 +67,7 @@ from .statement import Statement, StatementDTO, StatementSchema
 from .statement_invoices import StatementInvoices, StatementInvoicesSchema  # noqa: I005
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
+from .tax_rate import TaxRate
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
 
 from .comment import Comment, CommentSchema  # isort: skip - This has to be at the bottom otherwise FeeSchedule errors

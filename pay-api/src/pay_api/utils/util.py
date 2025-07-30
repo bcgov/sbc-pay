@@ -395,7 +395,7 @@ def get_statement_date_string(value, fmt="%B %d, %Y"):
     if not value:
         return ""
     try:
-        dt = value if hasattr(value, 'strftime') else parser.parse(value)
+        dt = value if hasattr(value, "strftime") else parser.parse(value)
         return dt.strftime(fmt)
     except (ValueError, TypeError):
         return ""

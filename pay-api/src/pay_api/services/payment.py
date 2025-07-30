@@ -528,7 +528,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             statement_summary = report_inputs.statement_summary
             grouped_invoices: list[dict] = build_grouped_invoice_context(invoices, statement, statement_summary)
 
-            has_payment_instructions = any(item.get('payment_method') == 'EFT' for item in grouped_invoices)
+            has_payment_instructions = any(item.get("payment_method") == "EFT" for item in grouped_invoices)
 
             formatted_totals = {}
             for key, value in totals.items():

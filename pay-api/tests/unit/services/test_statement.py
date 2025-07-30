@@ -569,7 +569,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             },
             "groupedInvoices": [],
             "statement": {
-                "amount_owing": '0.00',
+                "amount_owing": "0.00",
                 "created_on": date_string_now,
                 "frequency": "MONTHLY",
                 "from_date": get_statement_date_string(statement_from_date),
@@ -584,22 +584,22 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "duration": (
                     f"{get_statement_date_string(statement_from_date)} - "
                     f"{get_statement_date_string(statement_to_date)}"
-                )
+                ),
             },
             "statementSummary": {
-                "dueDate": get_statement_date_string(StatementService.calculate_due_date(
-                    statement_to_date.date())
+                "dueDate": get_statement_date_string(
+                    StatementService.calculate_due_date(statement_to_date.date())
                 ),  # pylint: disable=protected-access
-                "lastStatementTotal": '0.00',
-                "lastStatementPaidAmount": '0.00',
+                "lastStatementTotal": "0.00",
+                "lastStatementPaidAmount": "0.00",
                 "latestStatementPaymentDate": None,
             },
             "total": {
-                "due": '0.00',
-                "fees": '0.00',
-                "paid": '0.00',
-                "serviceFees": '0.00',
-                "statutoryFees": '0.00',
+                "due": "0.00",
+                "fees": "0.00",
+                "paid": "0.00",
+                "serviceFees": "0.00",
+                "statutoryFees": "0.00",
             },
         }
         expected_report_inputs = ReportRequest(
@@ -720,9 +720,9 @@ def test_get_eft_statement_with_invoices(session):
             "groupedInvoices": [
                 {
                     "amount_owing": "250.00",
-                    "due_date": get_statement_date_string(StatementService.calculate_due_date(
-                        statement_to_date.date()
-                    )),  # pylint: disable=protected-access
+                    "due_date": get_statement_date_string(
+                        StatementService.calculate_due_date(statement_to_date.date())
+                    ),  # pylint: disable=protected-access
                     "due_summary": 250.0,
                     "include_service_provided": False,
                     "is_index_0": True,
@@ -760,15 +760,14 @@ def test_get_eft_statement_with_invoices(session):
                                 "account_id": "1234",
                                 "billable": True,
                             },
-
                             "payment_method": "EFT",
                             "product": "BUSINESS",
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
-                            'service_provided': False,
+                            "service_provided": False,
                             "status_code": "Invoice Approved",
-                            "total": "200.00"
+                            "total": "200.00",
                         },
                         {
                             "bcol_account": "TEST",
@@ -794,18 +793,15 @@ def test_get_eft_statement_with_invoices(session):
                                 },
                             ],
                             "paid": 0.0,
-                            "payment_account": {
-                                "account_id": "1234",
-                                "billable": True
-                            },
+                            "payment_account": {"account_id": "1234", "billable": True},
                             "payment_method": "EFT",
                             "product": "BUSINESS",
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
-                            'service_provided': False,
+                            "service_provided": False,
                             "status_code": "Invoice Approved",
-                            "total": "50.00"
+                            "total": "50.00",
                         },
                         {
                             "bcol_account": "TEST",
@@ -831,19 +827,16 @@ def test_get_eft_statement_with_invoices(session):
                                 },
                             ],
                             "paid": 50.0,
-                            "payment_account": {
-                                "account_id": "1234",
-                                "billable": True
-                            },
+                            "payment_account": {"account_id": "1234", "billable": True},
                             "payment_date": datetime.strftime(invoice_3.payment_date, "%Y-%m-%dT%H:%M:%S.%f"),
                             "payment_method": "EFT",
                             "product": "BUSINESS",
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
-                            'service_provided': False,
+                            "service_provided": False,
                             "status_code": "COMPLETED",
-                            "total": "50.00"
+                            "total": "50.00",
                         },
                         {
                             "bcol_account": "TEST",
@@ -869,21 +862,18 @@ def test_get_eft_statement_with_invoices(session):
                                 },
                             ],
                             "paid": 50.0,
-                            "payment_account": {
-                                "account_id": "1234",
-                                "billable": True
-                            },
+                            "payment_account": {"account_id": "1234", "billable": True},
                             "payment_date": datetime.strftime(invoice_4.payment_date, "%Y-%m-%dT%H:%M:%S"),
                             "payment_method": "EFT",
                             "product": "BUSINESS",
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
-                            'service_provided': False,
+                            "service_provided": False,
                             "status_code": "COMPLETED",
-                            "total": "50.00"
-                        }
-                    ]
+                            "total": "50.00",
+                        },
+                    ],
                 }
             ],
             "statement": {
@@ -905,12 +895,12 @@ def test_get_eft_statement_with_invoices(session):
                 "statement_total": 350.0,
             },
             "statementSummary": {
-                "dueDate": get_statement_date_string(StatementService.calculate_due_date(
-                    statement_to_date.date()
-                )),  # pylint: disable=protected-access
+                "dueDate": get_statement_date_string(
+                    StatementService.calculate_due_date(statement_to_date.date())
+                ),  # pylint: disable=protected-access
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": get_statement_date_string(invoice_3.payment_date.strftime("%Y-%m-%d"))
+                "latestStatementPaymentDate": get_statement_date_string(invoice_3.payment_date.strftime("%Y-%m-%d")),
             },
             # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {
@@ -918,9 +908,9 @@ def test_get_eft_statement_with_invoices(session):
                 "fees": "350.00",
                 "paid": "50.00",
                 "serviceFees": "0.00",
-                "statutoryFees": "350.00"
+                "statutoryFees": "350.00",
             },
-            "hasPaymentInstructions": True
+            "hasPaymentInstructions": True,
         }
         expected_report_inputs = ReportRequest(
             report_name=report_name,

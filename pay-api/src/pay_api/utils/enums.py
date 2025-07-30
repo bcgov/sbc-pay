@@ -137,7 +137,7 @@ PaymentMethod.Order = [
     PaymentMethod.INTERNAL,
     PaymentMethod.DIRECT_PAY,
     PaymentMethod.ONLINE_BANKING,
-    PaymentMethod.EJV
+    PaymentMethod.EJV,
 ]
 
 

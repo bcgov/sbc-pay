@@ -55,6 +55,8 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
             "pst",
             "quantity",
             "service_fees",
+            "service_fees_gst",
+            "statutory_fees_gst",
             "total",
             "waived_fees",
             "waived_by",
@@ -69,13 +71,15 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     priority_fees = db.Column(db.Numeric(19, 2), nullable=True)
     future_effective_fees = db.Column(db.Numeric(19, 2), nullable=True)
     description = db.Column(db.String(200), nullable=True)
-    gst = db.Column(db.Numeric(19, 2), nullable=True)
+    gst = db.Column(db.Numeric(19, 2), nullable=True)  # Keep for backward compatibility during migration
+    statutory_fees_gst = db.Column(db.Numeric(19, 2), comment="GST for statutory fees (filing_fees)")
     pst = db.Column(db.Numeric(19, 2), nullable=True)
     total = db.Column(db.Numeric(19, 2), nullable=False)
     line_item_status_code = db.Column(db.String(20), ForeignKey("line_item_status_codes.code"), nullable=False)
     waived_fees = db.Column(db.Numeric(19, 2), nullable=True)
     waived_by = db.Column(db.String(50), nullable=True, default=None)
     service_fees = db.Column(db.Numeric(19, 2), nullable=True)
+    service_fees_gst = db.Column(db.Numeric(19, 2), comment="GST for service fees")
 
     fee_distribution_id = db.Column(db.Integer, ForeignKey("distribution_codes.distribution_code_id"), nullable=True)
 
@@ -100,7 +104,7 @@ class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-man
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentLineItem
-        exclude = ["fee_schedule_id", "fee_schedule"]
+        exclude = ["fee_schedule_id", "fee_schedule", "statutory_fees_gst", "service_fees_gst"]
         load_instance = True
 
     line_item_status_code = fields.String(data_key="status_code")
@@ -108,10 +112,12 @@ class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-man
     priority_fees = fields.Float(data_key="priority_fees")
     future_effective_fees = fields.Float(data_key="future_effective_fees")
     gst = fields.Float(data_key="gst")
+    # statutory_fees_gst = fields.Float(data_key="statutory_fees_gst") Uncomment when ready.
     pst = fields.Float(data_key="pst")
     total = fields.Float(data_key="total")
     waived_fees = fields.Float(data_key="waived_fees")
     service_fees = fields.Float(data_key="service_fees")
+    # service_fees_gst = fields.Float(data_key="service_fees_gst") Uncomment when ready.
 
 
 @define
@@ -120,8 +126,10 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
 
     total: Decimal
     gst: Decimal
+    # statutory_fees_gst: Decimal
     pst: Decimal
     service_fees: Decimal
+    # service_fees_gst: Decimal
     description: str
     filing_type_code: str
 
@@ -134,8 +142,10 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
         return cls(
             total=row.total,
             gst=row.gst,
+            # statutory_fees_gst=row.statutory_fees_gst,
             pst=row.pst,
             service_fees=row.service_fees,
+            # service_fees_gst=row.service_fees_gst,
             description=row.description,
             filing_type_code=row.fee_schedule.filing_type_code,
         )
