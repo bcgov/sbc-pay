@@ -329,7 +329,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def _send_credit_notification(payment_account: PaymentAccountModel, refund_amount: float):
         """Send credit notification email to account admins."""
         receiver_recipients = []
-        org_admins_response = get_account_admin_users(payment_account.auth_account_id)
+        org_admins_response = get_account_admin_users(payment_account.auth_account_id, use_service_account=True)
 
         members = org_admins_response.get("members") if org_admins_response.get("members", None) else []
         for member in members:
