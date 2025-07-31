@@ -149,7 +149,7 @@ def get_account_admin_users(auth_account_id, use_service_account=False, **kwargs
     token = kwargs["user"].bearer_token
     if use_service_account:
         token = get_service_account_token()
-    # Only works for STAFF and ADMINS of the org.
+    # User Token only works for STAFF and ADMINS of the org
     return RestService.get(
         current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{auth_account_id}/members?status=ACTIVE&roles=ADMIN",
         token,
