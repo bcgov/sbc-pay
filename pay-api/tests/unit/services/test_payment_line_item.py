@@ -83,7 +83,8 @@ def test_line_invalid_lookup(session):
 
 
 @pytest.mark.parametrize(
-    "gst_added,has_service_fees,expected_filing_fees,expected_service_fees,expected_statutory_gst,expected_service_gst,test_id",
+    "gst_added,has_service_fees,expected_filing_fees,expected_service_fees,expected_statutory_gst,expected_service_gst,"
+    "test_id",
     [
         (True, False, 100.00, 0.00, 5.00, 0.00, "gst_enabled_no_service"),
         (False, False, 100.00, 0.00, 0.00, 0.00, "gst_disabled_no_service"),
