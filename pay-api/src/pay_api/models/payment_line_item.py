@@ -72,14 +72,14 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     future_effective_fees = db.Column(db.Numeric(19, 2), nullable=True)
     description = db.Column(db.String(200), nullable=True)
     gst = db.Column(db.Numeric(19, 2), nullable=True)  # Keep for backward compatibility during migration
-    statutory_fees_gst = db.Column(db.Numeric(19, 2), comment="GST for statutory fees")
+    statutory_fees_gst = db.Column(db.Numeric(19, 2), nullable=False, default=0, comment="GST for statutory fees")
     pst = db.Column(db.Numeric(19, 2), nullable=True)
     total = db.Column(db.Numeric(19, 2), nullable=False)
     line_item_status_code = db.Column(db.String(20), ForeignKey("line_item_status_codes.code"), nullable=False)
     waived_fees = db.Column(db.Numeric(19, 2), nullable=True)
     waived_by = db.Column(db.String(50), nullable=True, default=None)
     service_fees = db.Column(db.Numeric(19, 2), nullable=True)
-    service_fees_gst = db.Column(db.Numeric(19, 2), comment="GST for service fees")
+    service_fees_gst = db.Column(db.Numeric(19, 2), nullable=False, default=0, comment="GST for service fees")
 
     fee_distribution_id = db.Column(db.Integer, ForeignKey("distribution_codes.distribution_code_id"), nullable=True)
 
