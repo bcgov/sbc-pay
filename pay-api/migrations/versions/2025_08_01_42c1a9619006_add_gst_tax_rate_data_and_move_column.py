@@ -1,7 +1,7 @@
 """Add GST tax rate data also rename column enable_gst to gst_added
 
 Revision ID: 42c1a9619006
-Revises: b5245a85a4e6
+Revises: 38045c22fe00
 Create Date: 2025-08-01 09:29:53.939705
 
 """
@@ -18,7 +18,7 @@ from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 # Please ignore those lines and don't include in migration.
 
 revision = '42c1a9619006'
-down_revision = 'b5245a85a4e6'
+down_revision = '38045c22fe00'
 branch_labels = None
 depends_on = None
 
