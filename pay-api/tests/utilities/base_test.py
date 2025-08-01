@@ -572,6 +572,8 @@ def factory_payment_line_item(
     service_fees: int = 0,
     status: str = LineItemStatus.ACTIVE.value,
     description: str = None,
+    service_fees_gst: float = 0,
+    statutory_fees_gst: float = 0,
 ):
     """Return Factory."""
     return PaymentLineItem(
@@ -583,6 +585,8 @@ def factory_payment_line_item(
         line_item_status_code=status,
         fee_distribution_id=DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id,
         description=description,
+        service_fees_gst=service_fees_gst,
+        statutory_fees_gst=statutory_fees_gst,
     )
 
 
