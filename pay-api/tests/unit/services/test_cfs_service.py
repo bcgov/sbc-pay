@@ -24,6 +24,7 @@ from requests import ConnectTimeout
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.cfs_service import CFSService
+from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 from tests.utilities.base_test import factory_distribution_code
 
 cfs_service = CFSService()
@@ -148,7 +149,7 @@ def _verify_line_structure(line, expected_price, expected_description=None, is_g
         assert line["description"] == expected_description
 
     if is_gst:
-        assert line["tax_classification"] == "gst"
+        assert line["tax_classification"] == TAX_CLASSIFICATION_GST
 
     if line.get("distribution"):
         account = line["distribution"][0]["account"]
@@ -309,7 +310,7 @@ def test_build_lines_with_gst_fees(session):
         if ("Filing Fee" in line["description"] or "Same GL GST" in line["description"])
         and not line.get("tax_classification")
     ]
-    gst_lines = [line for line in lines if line.get("tax_classification") == "gst"]
+    gst_lines = [line for line in lines if line.get("tax_classification") == TAX_CLASSIFICATION_GST]
 
     assert (
         len(filing_lines) == 3
