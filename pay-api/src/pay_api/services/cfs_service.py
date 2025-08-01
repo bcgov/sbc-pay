@@ -48,9 +48,10 @@ from pay_api.utils.constants import (
     DEFAULT_CURRENCY,
     DEFAULT_JURISDICTION,
     DEFAULT_POSTAL_CODE,
+    TAX_CLASSIFICATION_GST,
 )
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentSystem, ReverseOperation
-from pay_api.utils.util import current_local_time, generate_transaction_number, TAX_CLASSIFICATION_GST
+from pay_api.utils.util import current_local_time, generate_transaction_number
 
 
 @dataclass
