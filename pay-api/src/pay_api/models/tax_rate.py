@@ -19,6 +19,7 @@ from sql_versioning import Versioned
 from sqlalchemy import DateTime, and_
 
 from pay_api.models.base_model import BaseModel
+from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 
 from .db import db
 
@@ -74,7 +75,7 @@ class TaxRate(Versioned, BaseModel):
         return (
             cls.query.filter(
                 and_(
-                    cls.tax_type == "gst",
+                    cls.tax_type == TAX_CLASSIFICATION_GST,
                     cls.start_date <= now,
                     cls.effective_end_date.is_(None) | (cls.effective_end_date > now),
                 )

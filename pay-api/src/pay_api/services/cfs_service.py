@@ -646,6 +646,11 @@ class CFSService(OAuthService):
         else:
             existing_line["unit_price"] += amount_value
             existing_line["distribution"][0]["amount"] += amount_value
+            
+            if (line_data.has_gst and 
+                existing_line.get("tax_classification") == TAX_CLASSIFICATION_GST and
+                existing_line["description"] != line_data.description):
+                existing_line["description"] = "Statutory & Service Fees GST"
 
         return context.index
 
