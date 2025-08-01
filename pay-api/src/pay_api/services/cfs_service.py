@@ -50,7 +50,7 @@ from pay_api.utils.constants import (
     DEFAULT_POSTAL_CODE,
 )
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentSystem, ReverseOperation
-from pay_api.utils.util import current_local_time, generate_transaction_number
+from pay_api.utils.util import current_local_time, generate_transaction_number, TAX_CLASSIFICATION_GST
 
 
 @dataclass
@@ -59,7 +59,7 @@ class LineItemData:
 
     amount: float
     description: str
-    tax_classification: str = None
+    has_gst: bool = False
 
 
 @dataclass
@@ -586,7 +586,7 @@ class CFSService(OAuthService):
                 context.index = cls._process_line_item(
                     context,
                     statutory_gst_distribution,
-                    LineItemData(line_item.statutory_fees_gst, "Statutory Fees GST", "gst"),
+                    LineItemData(line_item.statutory_fees_gst, "Statutory Fees GST", True),
                 )
 
             if (
@@ -601,7 +601,7 @@ class CFSService(OAuthService):
                 context.index = cls._process_line_item(
                     context,
                     service_gst_distribution,
-                    LineItemData(line_item.service_fees_gst, "Service Fees GST", "gst"),
+                    LineItemData(line_item.service_fees_gst, "Service Fees GST", True),
                 )
 
         return list(context.lines_map.values())
@@ -638,8 +638,8 @@ class CFSService(OAuthService):
                 ],
             }
 
-            if line_data.tax_classification:
-                line_dict["tax_classification"] = line_data.tax_classification
+            if line_data.has_gst:
+                line_dict["tax_classification"] = TAX_CLASSIFICATION_GST
 
             context.lines_map[dist_id] = line_dict
         else:
