@@ -134,7 +134,7 @@ def test_build_lines_with_gst_fees(session):
     """Test build_lines with statutory and service fees GST."""
     base_distribution = DistributionCodeModel.find_by_id(1)
     base_distribution.service_fee_distribution_code_id = 1
-    base_distribution.statutory_fees_gst_distribution_code_id = 2  
+    base_distribution.statutory_fees_gst_distribution_code_id = 2
     base_distribution.service_fee_gst_distribution_code_id = 3
     base_distribution.save()
 
@@ -161,26 +161,26 @@ def test_build_lines_with_gst_fees(session):
         project_code="1111114",
         service_fee_distribution_code_id=1,
         statutory_fees_gst_distribution_code_id=2,  # Same as service_fee_gst
-        service_fee_gst_distribution_code_id=2,     # Same as statutory_fees_gst
+        service_fee_gst_distribution_code_id=2,  # Same as statutory_fees_gst
     )
     same_gst_distribution.save()
 
     gst_statutory_distribution = DistributionCodeModel(
         name="GST Statutory Distribution",
-        client="112", 
+        client="112",
         responsibility_centre="22222",
         service_line="35302",
         stob="1235",
         project_code="1111112",
     )
     gst_statutory_distribution.save()
-    
+
     gst_service_distribution = DistributionCodeModel(
-        name="GST Service Distribution", 
+        name="GST Service Distribution",
         client="112",
         responsibility_centre="22222",
         service_line="35303",
-        stob="1236", 
+        stob="1236",
         project_code="1111113",
     )
     gst_service_distribution.save()
@@ -189,36 +189,26 @@ def test_build_lines_with_gst_fees(session):
     payment_line_items = [
         # Items without GST
         PaymentLineItemModel(
-            total=Decimal("100.00"),
-            service_fees=Decimal("10.00"), 
-            fee_distribution_id=1,
-            description="Filing Fee 1"
+            total=Decimal("100.00"), service_fees=Decimal("10.00"), fee_distribution_id=1, description="Filing Fee 1"
         ),
         PaymentLineItemModel(
-            total=Decimal("150.00"),
-            service_fees=Decimal("15.00"),
-            fee_distribution_id=1, 
-            description="Filing Fee 2"
+            total=Decimal("150.00"), service_fees=Decimal("15.00"), fee_distribution_id=1, description="Filing Fee 2"
         ),
         PaymentLineItemModel(
             total=Decimal("200.00"),
             service_fees=Decimal("20.00"),
             fee_distribution_id=secondary_distribution.distribution_code_id,
-            description="Filing Fee 3"
+            description="Filing Fee 3",
         ),
         PaymentLineItemModel(
-            total=Decimal("75.00"),
-            service_fees=Decimal("7.50"),
-            fee_distribution_id=1,
-            description="Filing Fee 4"
+            total=Decimal("75.00"), service_fees=Decimal("7.50"), fee_distribution_id=1, description="Filing Fee 4"
         ),
         PaymentLineItemModel(
             total=Decimal("125.00"),
-            service_fees=Decimal("12.50"), 
+            service_fees=Decimal("12.50"),
             fee_distribution_id=secondary_distribution.distribution_code_id,
-            description="Filing Fee 5"
+            description="Filing Fee 5",
         ),
-        
         # Items with both statutory_fees_gst and service_fees_gst
         PaymentLineItemModel(
             total=Decimal("300.00"),
@@ -226,7 +216,7 @@ def test_build_lines_with_gst_fees(session):
             statutory_fees_gst=Decimal("15.00"),
             service_fees_gst=Decimal("1.50"),
             fee_distribution_id=1,
-            description="Filing Fee with GST 1"
+            description="Filing Fee with GST 1",
         ),
         PaymentLineItemModel(
             total=Decimal("400.00"),
@@ -234,7 +224,7 @@ def test_build_lines_with_gst_fees(session):
             statutory_fees_gst=Decimal("20.00"),
             service_fees_gst=Decimal("2.00"),
             fee_distribution_id=1,
-            description="Filing Fee with GST 2"
+            description="Filing Fee with GST 2",
         ),
         PaymentLineItemModel(
             total=Decimal("250.00"),
@@ -242,7 +232,7 @@ def test_build_lines_with_gst_fees(session):
             statutory_fees_gst=Decimal("12.50"),
             service_fees_gst=Decimal("1.25"),
             fee_distribution_id=secondary_distribution.distribution_code_id,
-            description="Filing Fee with GST 3"
+            description="Filing Fee with GST 3",
         ),
         PaymentLineItemModel(
             total=Decimal("350.00"),
@@ -250,7 +240,7 @@ def test_build_lines_with_gst_fees(session):
             statutory_fees_gst=Decimal("17.50"),
             service_fees_gst=Decimal("1.75"),
             fee_distribution_id=1,
-            description="Filing Fee with GST 4"
+            description="Filing Fee with GST 4",
         ),
         PaymentLineItemModel(
             total=Decimal("500.00"),
@@ -258,25 +248,24 @@ def test_build_lines_with_gst_fees(session):
             statutory_fees_gst=Decimal("25.00"),
             service_fees_gst=Decimal("2.50"),
             fee_distribution_id=secondary_distribution.distribution_code_id,
-            description="Filing Fee with GST 5"
+            description="Filing Fee with GST 5",
         ),
-        
         # Items where both GST types use the same GL code (should be aggregated)
         PaymentLineItemModel(
             total=Decimal("180.00"),
             service_fees=Decimal("18.00"),
-            statutory_fees_gst=Decimal("9.00"),    # Will aggregate with service_fees_gst
-            service_fees_gst=Decimal("0.90"),     # Will aggregate with statutory_fees_gst
+            statutory_fees_gst=Decimal("9.00"),  # Will aggregate with service_fees_gst
+            service_fees_gst=Decimal("0.90"),  # Will aggregate with statutory_fees_gst
             fee_distribution_id=same_gst_distribution.distribution_code_id,
-            description="Same GL GST 1"
+            description="Same GL GST 1",
         ),
         PaymentLineItemModel(
             total=Decimal("220.00"),
             service_fees=Decimal("22.00"),
-            statutory_fees_gst=Decimal("11.00"),   # Will aggregate with service_fees_gst
-            service_fees_gst=Decimal("1.10"),     # Will aggregate with statutory_fees_gst
+            statutory_fees_gst=Decimal("11.00"),  # Will aggregate with service_fees_gst
+            service_fees_gst=Decimal("1.10"),  # Will aggregate with statutory_fees_gst
             fee_distribution_id=same_gst_distribution.distribution_code_id,
-            description="Same GL GST 2"
+            description="Same GL GST 2",
         ),
     ]
 
@@ -291,39 +280,66 @@ def test_build_lines_with_gst_fees(session):
     service_gst_line = next(line for line in lines if line["description"] == "Service Fees GST")
 
     # Verify filing fees total: all 12 line items should be aggregated
-    expected_filing_total = float(Decimal("100") + Decimal("150") + Decimal("75") + 
-                                 Decimal("300") + Decimal("400") + Decimal("350") +
-                                 Decimal("200") + Decimal("125") + Decimal("250") + Decimal("500") +
-                                 Decimal("180") + Decimal("220"))  # New items
+    expected_filing_total = float(
+        Decimal("100")
+        + Decimal("150")
+        + Decimal("75")
+        + Decimal("300")
+        + Decimal("400")
+        + Decimal("350")
+        + Decimal("200")
+        + Decimal("125")
+        + Decimal("250")
+        + Decimal("500")
+        + Decimal("180")
+        + Decimal("220")
+    )
     assert float(filing_line["unit_price"]) == expected_filing_total
 
     # Verify service fees total: all 12 line items should be aggregated
-    expected_service_total = float(Decimal("10") + Decimal("15") + Decimal("7.50") +
-                                  Decimal("30") + Decimal("40") + Decimal("35") +
-                                  Decimal("20") + Decimal("12.50") + Decimal("25") + Decimal("50") +
-                                  Decimal("18") + Decimal("22"))  # New items
+    expected_service_total = float(
+        Decimal("10")
+        + Decimal("15")
+        + Decimal("7.50")
+        + Decimal("30")
+        + Decimal("40")
+        + Decimal("35")
+        + Decimal("20")
+        + Decimal("12.50")
+        + Decimal("25")
+        + Decimal("50")
+        + Decimal("18")
+        + Decimal("22")
+    )
     assert float(service_line["unit_price"]) == expected_service_total
 
     # Verify statutory GST total: includes original 5 items + aggregated GST from 2 same-GL items
     # Original: 15+20+12.5+17.5+25 = 90
     # Same GL items (both statutory and service GST): (9+0.9) + (11+1.1) = 22
-    expected_statutory_gst = float(Decimal("15") + Decimal("20") + Decimal("12.50") + 
-                                  Decimal("17.50") + Decimal("25") +
-                                  Decimal("9.00") + Decimal("0.90") + Decimal("11.00") + Decimal("1.10"))
+    expected_statutory_gst = float(
+        Decimal("15")
+        + Decimal("20")
+        + Decimal("12.50")
+        + Decimal("17.50")
+        + Decimal("25")
+        + Decimal("9.00")
+        + Decimal("0.90")
+        + Decimal("11.00")
+        + Decimal("1.10")
+    )
     assert float(statutory_gst_line["unit_price"]) == expected_statutory_gst
     assert statutory_gst_line["tax_classification"] == "gst"
 
     # Verify service GST total: only original 5 items (same-GL items aggregated into statutory)
-    expected_service_gst = float(Decimal("1.50") + Decimal("2.00") + Decimal("1.25") + 
-                                Decimal("1.75") + Decimal("2.50"))
+    expected_service_gst = float(
+        Decimal("1.50") + Decimal("2.00") + Decimal("1.25") + Decimal("1.75") + Decimal("2.50")
+    )
     assert float(service_gst_line["unit_price"]) == expected_service_gst
     assert service_gst_line["tax_classification"] == "gst"
 
-    # Verify GST lines have correct line type
     assert statutory_gst_line["line_type"] == "LINE"
     assert service_gst_line["line_type"] == "LINE"
 
-    # Verify distribution accounts are properly formatted
     for line in lines:
         if line.get("distribution"):
             account = line["distribution"][0]["account"]
