@@ -552,7 +552,7 @@ class CFSService(OAuthService):
 
             if not distribution_code:
                 current_app.logger.warning(
-                    f"No distribution code found for line item with fee_distribution_id: {line_item.fee_distribution_id}"
+                    f"No distribution code found for line item fee_distribution_id: {line_item.fee_distribution_id}"
                 )
                 continue
 
