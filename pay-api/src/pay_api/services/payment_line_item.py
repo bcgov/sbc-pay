@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to manage Payment Line Items."""
 
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from flask import current_app
@@ -322,7 +323,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         p.statutory_fees_gst = 0
 
         if fee.gst_added:
-            gst_rate = TaxRate.get_current_gst_rate()
+            gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
             p.statutory_fees_gst = round(p.total * gst_rate, 2)
             p.service_fees_gst = round(p.service_fees * gst_rate, 2)
 

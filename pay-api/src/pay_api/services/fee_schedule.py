@@ -248,6 +248,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def service_fee_code(self, value: int):
         """Set the service_fee_code."""
         self._service_fee_code = value
+        self._dao.service_fee_code = value
 
     @property
     def gst_added(self):
