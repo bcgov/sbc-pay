@@ -276,13 +276,17 @@ def test_build_lines_with_gst_fees(session):
 
     filing_line = next(line for line in lines if "Filing Fee" in line["description"])
     service_line = next(line for line in lines if line["description"] == "Service Fee")
-    
+
     gst_lines = [line for line in lines if line.get("tax_classification") == "gst"]
     assert len(gst_lines) == 2
-    
-    combined_gst_line = next((line for line in gst_lines if line["description"] == "Statutory & Service Fees GST"), None)
-    separate_gst_line = next((line for line in gst_lines if line["description"] != "Statutory & Service Fees GST"), None)
-    
+
+    combined_gst_line = next(
+        (line for line in gst_lines if line["description"] == "Statutory & Service Fees GST"), None
+    )
+    separate_gst_line = next(
+        (line for line in gst_lines if line["description"] != "Statutory & Service Fees GST"), None
+    )
+
     assert combined_gst_line is not None, "Should have a combined GST line"
     assert separate_gst_line is not None, "Should have a separate GST line"
 
@@ -322,12 +326,7 @@ def test_build_lines_with_gst_fees(session):
 
     # Verify combined GST total: aggregated GST from 2 same-GL items
     # Same GL items (both statutory and service GST): (9+0.9) + (11+1.1) = 22
-    expected_combined_gst = float(
-        Decimal("9.00")
-        + Decimal("0.90")
-        + Decimal("11.00")
-        + Decimal("1.10")
-    )
+    expected_combined_gst = float(Decimal("9.00") + Decimal("0.90") + Decimal("11.00") + Decimal("1.10"))
     assert float(combined_gst_line["unit_price"]) == expected_combined_gst
     assert combined_gst_line["tax_classification"] == "gst"
 
