@@ -1,4 +1,4 @@
-"""Add GST tax rate data
+"""Add GST tax rate data also rename column enable_gst to gst_added
 
 Revision ID: 42c1a9619006
 Revises: b5245a85a4e6
@@ -28,9 +28,13 @@ def upgrade():
         INSERT INTO tax_rates (tax_type, rate, start_date, effective_end_date, description, updated_by, updated_name)
         VALUES ('{TAX_CLASSIFICATION_GST}', 0.05, '{datetime.now(tz=timezone.utc).isoformat()}', NULL, 'Canadian Goods and Services Tax', 'migration', 'System Migration')
     """)
+    op.alter_column('fee_schedules', 'enable_gst', new_column_name='gst_added')
 
+
+    
 
 def downgrade():
+    op.alter_column('fee_schedules', 'gst_added', new_column_name='enable_gst')
     op.execute(f"""
         DELETE FROM tax_rates 
         WHERE tax_type = '{TAX_CLASSIFICATION_GST}' 
