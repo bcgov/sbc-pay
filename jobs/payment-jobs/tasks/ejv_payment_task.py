@@ -363,6 +363,42 @@ class EjvPaymentTask(CgiEjv):
                             target=inv,
                         )
                     )
+                if line.service_fees_gst > 0:
+                    service_fee_gst_distribution_code = DistributionCodeModel.find_by_id(
+                        line_distribution_code.service_fee_gst_distribution_code_id
+                    )
+                    transactions.append(
+                        EjvTransaction(
+                            gov_account_distribution=debit_distribution_code,
+                            line_distribution=service_fee_gst_distribution_code,
+                            line_item=TransactionLineItem(
+                                amount=line.service_fees_gst,
+                                flow_through=f"{inv.id:<110}",
+                                description=description,
+                                is_reversal=is_jv_reversal,
+                                target_type=EJVLinkType.INVOICE.value,
+                            ),
+                            target=inv,
+                        )
+                    )
+                if line.statutory_fees_gst > 0:
+                    statutory_fees_gst_distribution_code = DistributionCodeModel.find_by_id(
+                        line_distribution_code.statutory_fees_gst_distribution_code_id
+                    )
+                    transactions.append(
+                        EjvTransaction(
+                            gov_account_distribution=debit_distribution_code,
+                            line_distribution=statutory_fees_gst_distribution_code,
+                            line_item=TransactionLineItem(
+                                amount=line.statutory_fees_gst,
+                                flow_through=f"{inv.id:<110}",
+                                description=description,
+                                is_reversal=is_jv_reversal,
+                                target_type=EJVLinkType.INVOICE.value,
+                            ),
+                            target=inv,
+                        )
+                    )
 
         # Process partial refunds
         current_app.logger.info(f"Processing partial refunds for account_id: {account_id}.")
