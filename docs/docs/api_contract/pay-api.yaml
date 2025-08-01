@@ -5,7 +5,7 @@ info:
     <p>BC Registries Pay system is used by the BC Registries account services and integrated systems to create payment transactions to pay for the products purchased. This abstracts the integrated systems from the underlying payment integrations and payment methods. <br/>
     With this API you can submit the following transactions:<ul><li>Create payment transactions</li><li>Get payment status</li><li>Delete unpaid payment transactions</li><li>Generate PDF receipt</li><li>Retrieve account statements</li><li>Generate account transactions reports</li></ul>
     <p>All requests must include an Account ID.</p>
-  version: 1.0.7
+  version: 1.0.8
   contact:
     name: BC Registries
 servers:
@@ -258,6 +258,7 @@ paths:
                         receiptNumber: '2'
                     refund: 0
                     serviceFees: 1.5
+                    gst: 0
                     statusCode: PAID
                     total: 451.5
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
@@ -379,6 +380,7 @@ paths:
                         statusCode: COMPLETED
                     refund: 0
                     serviceFees: 1.5
+                    gst: 0
                     statusCode: PAID
                     total: 451.5
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
@@ -407,6 +409,7 @@ paths:
                         statusCode: COMPLETED
                     refund: 0
                     serviceFees: 1.5
+                    gst: 0
                     statusCode: PAID
                     total: 451.5
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
@@ -752,6 +755,7 @@ paths:
                             statusCode: COMPLETED
                         refund: 0
                         serviceFees: 1.5
+                        gst: 0
                         statusCode: PAID
                         total: 451.5
                         updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
@@ -1640,6 +1644,9 @@ components:
         serviceFees:
           type: number
           description: service fees
+        gst:
+          type: number
+          description: Total GST amount including statutory and service fees GST
         total:
           type: number
         statusCode:
