@@ -52,6 +52,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._service_fees = Decimal("0")
         self._service_fee_code: str = None
         self._variable: bool = False
+        self._gst_added: bool = False
 
     @property
     def _dao(self):
@@ -72,6 +73,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._filing_type: str = self._dao.filing_type.description
         self._service_fee_code: str = self._dao.service_fee_code
         self._variable: bool = self._dao.variable
+        self._gst_added: bool = self._dao.gst_added
 
     @property
     def fee_schedule_id(self):
@@ -246,7 +248,17 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def service_fee_code(self, value: int):
         """Set the service_fee_code."""
         self._service_fee_code = value
-        self._dao.service_fee_code = value
+
+    @property
+    def gst_added(self):
+        """Return the gst_added flag."""
+        return self._gst_added
+
+    @gst_added.setter
+    def gst_added(self, value: bool):
+        """Set the gst_added flag."""
+        self._gst_added = value
+        self._dao.gst_added = value
 
     @property
     def variable(self) -> bool:
