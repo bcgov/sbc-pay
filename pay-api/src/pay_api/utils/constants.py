@@ -67,3 +67,5 @@ REFUND_SUCCESS_MESSAGES = {
     "INTERNAL.REFUND_REQUESTED": "Your transaction has been cancelled and a refund has been requested.",
     "INTERNAL.REFUNDED": "Your transaction has been cancelled and a refund has been done.",
 }
+
+TAX_CLASSIFICATION_GST = "GST"
