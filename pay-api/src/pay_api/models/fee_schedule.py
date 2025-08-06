@@ -177,7 +177,7 @@ class FeeSchedule(db.Model):
         return func.coalesce(
             case(
                 (
-                    cls.enable_gst is True,
+                    cls.enable_gst.is_(True),
                     func.round(
                         TaxRate.rate
                         * (func.coalesce(main_fee_code.amount, 0) + func.coalesce(service_fee_code.amount, 0)),
@@ -218,7 +218,7 @@ class FeeSchedule(db.Model):
             .outerjoin(
                 TaxRate,
                 and_(
-                    cls.enable_gst is True,
+                    cls.enable_gst.is_(True),
                     TaxRate.tax_type == TAX_CLASSIFICATION_GST,
                     TaxRate.start_date <= func.coalesce(cls.fee_end_date, infinity_date),
                     cls.fee_start_date <= func.coalesce(TaxRate.effective_end_date, infinity_date),
