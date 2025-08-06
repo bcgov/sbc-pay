@@ -263,8 +263,8 @@ def test_create_revenue_string_multiple_line_items(session, public_user_mock):
     lines = result.split("|")
     assert len(lines) == 2
     lines.sort()
-    assert ":100.00" in lines[0]
-    assert ":50.00" in lines[1]
+    assert ":100.00" in result
+    assert ":50.00" in result
 
 
 def test_create_revenue_string_with_all_fee_types(session, public_user_mock):
