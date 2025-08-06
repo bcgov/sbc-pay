@@ -89,6 +89,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
             db.session.commit()
         except Exception:  # NOQA pylint:disable=broad-except
+            current_app.logger.error(f"Error processing EFT payment action: {action}", exc_info=True)
             db.session.rollback()
             raise
         current_app.logger.debug(">process_payment_action")

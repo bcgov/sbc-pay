@@ -463,7 +463,7 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
         headers=headers,
     )
     assert rv.status_code == 400
-    assert rv.json.get("type") == Error.INVALID_REQUEST.name
+    assert rv.json.get("type") == Error.FULL_REFUND_INVOICE_INVALID_STATE.name
     assert RefundModel.find_by_invoice_id(inv_id) is None
 
 
@@ -481,7 +481,7 @@ def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):
     )
     inv_id = rv.json.get("id")
     invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
-    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
     invoice.save()
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
