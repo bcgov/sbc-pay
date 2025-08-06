@@ -18,16 +18,20 @@ from decimal import Decimal
 from operator import or_
 
 from attr import define
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, cast, func
+from sqlalchemy import Boolean, Date, ForeignKey, cast, func
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import aliased, relationship
+from sqlalchemy.sql.elements import literal
+from sqlalchemy.sql.expression import and_, case
 
 from pay_api.utils.serializable import Serializable
 
+from ..utils.constants import TAX_CLASSIFICATION_GST
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode
 from .filing_type import FilingType, FilingTypeSchema
+from .tax_rate import TaxRate
 
 
 class FeeSchedule(db.Model):
@@ -168,12 +172,31 @@ class FeeSchedule(db.Model):
         return query.all()
 
     @classmethod
+    def get_gst_expression(cls, main_fee_code, service_fee_code):
+        """Retrieve calculation expression for GST."""
+        return func.coalesce(
+            case(
+                (
+                    cls.enable_gst is True,
+                    func.round(
+                        TaxRate.rate
+                        * (func.coalesce(main_fee_code.amount, 0) + func.coalesce(service_fee_code.amount, 0)),
+                        2,
+                    ),
+                ),
+                else_=0,
+            ),
+            0,
+        ).label("gst")
+
+    @classmethod
     def get_fee_details(cls, product_code: str = None):
         """Get detailed fee information including corp type, filing type, and fees."""
         main_fee_code = aliased(FeeCode)
         service_fee_code = aliased(FeeCode)
 
         current_date = datetime.now(tz=timezone.utc).date()
+        infinity_date = literal("infinity").cast(Date)
 
         query = (
             db.session.query(
@@ -184,7 +207,7 @@ class FeeSchedule(db.Model):
                 FilingType.description.label("service"),
                 func.coalesce(main_fee_code.amount, 0).label("fee"),
                 func.coalesce(service_fee_code.amount, 0).label("service_charge"),
-                cast(0, Integer).label("gst"),  # Placeholder for GST, adjust as needed
+                cls.get_gst_expression(main_fee_code, service_fee_code),
                 cls.variable,
             )
             .select_from(cls)
@@ -192,6 +215,15 @@ class FeeSchedule(db.Model):
             .join(FilingType, cls.filing_type_code == FilingType.code)
             .outerjoin(main_fee_code, cls.fee_code == main_fee_code.code)
             .outerjoin(service_fee_code, cls.service_fee_code == service_fee_code.code)
+            .outerjoin(
+                TaxRate,
+                and_(
+                    cls.enable_gst is True,
+                    TaxRate.tax_type == TAX_CLASSIFICATION_GST,
+                    TaxRate.start_date <= func.coalesce(cls.fee_end_date, infinity_date),
+                    cls.fee_start_date <= func.coalesce(TaxRate.effective_end_date, infinity_date),
+                ),
+            )
             .filter(cls.fee_start_date <= current_date)
             .filter(cls.fee_end_date.is_(None) | (cls.fee_end_date >= current_date))
             .filter(CorpType.product.is_not(None))
@@ -247,5 +279,5 @@ class FeeDetailsSchema(Serializable):
     service: str
     fee: Decimal
     service_charge: Decimal
-    gst: int
+    gst: Decimal
     variable: bool

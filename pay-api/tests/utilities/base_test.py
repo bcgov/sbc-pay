@@ -1094,7 +1094,8 @@ def factory_fee_schedule_model(
     service_fee: FeeCode = None,
     variable=False,
     show_on_pricelist=False,
-):
+    enable_gst=False,
+) -> FeeSchedule:
     """Return the fee schedule model."""
     fee_schedule = FeeSchedule(
         filing_type_code=filing_type.code,
@@ -1104,6 +1105,7 @@ def factory_fee_schedule_model(
         fee_end_date=fee_end_date,
         variable=variable,
         show_on_pricelist=show_on_pricelist,
+        enable_gst=enable_gst,
     )
     if service_fee:
         fee_schedule.service_fee_code = service_fee.code
