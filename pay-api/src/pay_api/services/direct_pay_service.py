@@ -137,22 +137,38 @@ class DirectPayService(PaymentSystemService, OAuthService):
             )
 
             if payment_line_item.total > 0:
-                index = index + 1
+                index += 1
                 revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
-
                 revenue_item.append(f"{index}:{revenue_string}")
 
-            if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
-                index = index + 1
-                service_fee: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                    distribution_code.service_fee_distribution_code_id
-                )
-                revenue_service_fee_string = DirectPayService._get_gl_coding(
-                    service_fee, payment_line_item.service_fees
-                )
-                revenue_item.append(f"{index}:{revenue_service_fee_string}")
+            index = DirectPayService._append_revenue_item(
+                index, distribution_code.service_fee_distribution_code_id, payment_line_item.service_fees, revenue_item
+            )
+
+            index = DirectPayService._append_revenue_item(
+                index,
+                distribution_code.service_fee_gst_distribution_code_id,
+                payment_line_item.service_fees_gst,
+                revenue_item,
+            )
+
+            index = DirectPayService._append_revenue_item(
+                index,
+                distribution_code.statutory_fees_gst_distribution_code_id,
+                payment_line_item.statutory_fees_gst,
+                revenue_item,
+            )
 
         return PAYBC_REVENUE_SEPARATOR.join(revenue_item)
+
+    @staticmethod
+    def _append_revenue_item(index, code_id, amount, revenue_item):
+        if amount is not None and amount > 0 and code_id is not None:
+            index += 1
+            code = DistributionCodeModel.find_by_id(code_id)
+            revenue_string = DirectPayService._get_gl_coding(code, amount)
+            revenue_item.append(f"{index}:{revenue_string}")
+        return index
 
     @staticmethod
     def _get_gl_coding(distribution_code: DistributionCodeModel, total, exclude_total=False):
