@@ -321,13 +321,14 @@ def setup_tax():
     """Check if there is existing tax, if not set one up."""
     tax_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
     if tax_rate is None:
-        tax_rate = TaxRate(
+        tax_rate_model = TaxRate(
             tax_type=TAX_CLASSIFICATION_GST,
             rate=0.05,
             start_date=datetime.now(tz=timezone.utc),
             updated_name="TEST",
             updated_by="TEST",
         ).save()
+        tax_rate = tax_rate_model.rate
 
     return tax_rate
 
@@ -340,7 +341,7 @@ def test_product_fees_detail_query_all(session, client, jwt, app):
         corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
         fee_code=factory_fee_model("XXX1", 100),
         show_on_pricelist=True,
-        enable_gst=True,
+        gst_added=True,
     )
     fee_schedule2 = factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN2", "TEST"),
@@ -348,7 +349,7 @@ def test_product_fees_detail_query_all(session, client, jwt, app):
         fee_code=factory_fee_model("XXX2", 200),
         service_fee=factory_fee_model("SFEE1", 1.5),
         show_on_pricelist=True,
-        enable_gst=True,
+        gst_added=True,
     )
     fee_schedule3 = factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN3", "TEST"),
@@ -377,18 +378,18 @@ def test_product_fees_detail_query_all(session, client, jwt, app):
     schedule1_response: FeeSchedule = next(item for item in items if item["filingType"] == "XOTANN1")
     assert schedule1_response["fee"] == fee_schedule1.fee.amount
     assert schedule1_response["serviceCharge"] == 0
-    assert schedule1_response["gst"] == float(round(tax_rate.rate * fee_schedule1.fee.amount, 2))
-    assert schedule1_response["feeGst"] == float(round(tax_rate.rate * fee_schedule1.fee.amount, 2))
+    assert schedule1_response["gst"] == float(round(tax_rate * fee_schedule1.fee.amount, 2))
+    assert schedule1_response["feeGst"] == float(round(tax_rate * fee_schedule1.fee.amount, 2))
     assert schedule1_response["serviceChargeGst"] == 0
 
     schedule2_response: FeeSchedule = next(item for item in items if item["filingType"] == "XOTANN2")
     assert schedule2_response["fee"] == fee_schedule2.fee.amount
     assert schedule2_response["serviceCharge"] == fee_schedule2.service_fee.amount
     assert schedule2_response["gst"] == float(
-        round(tax_rate.rate * (fee_schedule2.fee.amount + fee_schedule2.service_fee.amount), 2)
+        round(tax_rate * (fee_schedule2.fee.amount + fee_schedule2.service_fee.amount), 2)
     )
-    assert schedule2_response["feeGst"] == float(round(tax_rate.rate * fee_schedule2.fee.amount, 2))
-    assert schedule2_response["serviceChargeGst"] == float(round(tax_rate.rate * fee_schedule2.service_fee.amount, 2))
+    assert schedule2_response["feeGst"] == float(round(tax_rate * fee_schedule2.fee.amount, 2))
+    assert schedule2_response["serviceChargeGst"] == float(round(tax_rate * fee_schedule2.service_fee.amount, 2))
 
     schedule3_response: FeeSchedule = next(item for item in items if item["filingType"] == "XOTANN3")
     assert schedule3_response["fee"] == fee_schedule3.fee.amount
