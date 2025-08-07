@@ -194,7 +194,6 @@ def get_or_create_corp_type(corp_type_code: str, corp_description: str, session)
 
 def test_get_fee_details_all_products(session):
     """Test the get_fee_details method without providing specific product code -> found all the record."""
-    print(session.query(FeeSchedule).count())
     fee_code = factory_feecode("EN000X", 100)
     service_fee_code = factory_feecode("SRV001", 10)
     corp_type = get_or_create_corp_type("BEN", "Benefit Company", session=session)
@@ -227,7 +226,7 @@ def test_get_fee_details_all_products(session):
             and result.service == "Notice of Change"
             and result.fee == 100
             and result.service_charge == 10
-            and result.gst == 0  # Placeholder GST value
+            and result.total_gst == 0
         ):
             target_result = result
             break
@@ -239,7 +238,7 @@ def test_get_fee_details_all_products(session):
     assert target_result.service == "Notice of Change"
     assert target_result.fee == 100
     assert target_result.service_charge == 10
-    assert target_result.gst == 0  # Placeholder GST value
+    assert target_result.total_gst == 0
 
 
 def test_get_fee_details_specific_product_code(session):
@@ -277,7 +276,7 @@ def test_get_fee_details_specific_product_code(session):
             and result.service == "Notice of Change"
             and result.fee == 100
             and result.service_charge == 10
-            and result.gst == 0  # Placeholder GST value
+            and result.total_gst == 0
             and result.product_code == product_code
         ):
             target_result = result
@@ -290,4 +289,4 @@ def test_get_fee_details_specific_product_code(session):
     assert target_result.service == "Notice of Change"
     assert target_result.fee == 100
     assert target_result.service_charge == 10
-    assert target_result.gst == 0  # Placeholder GST value
+    assert target_result.total_gst == 0
