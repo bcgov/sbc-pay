@@ -173,7 +173,7 @@ class FeeSchedule(db.Model):
 
     @classmethod
     def get_gst_amount_expression(cls, amount_expr):
-        """Returns GST amount."""
+        """Return calculated GST amount."""
         return func.coalesce(
             case(
                 (
@@ -187,7 +187,7 @@ class FeeSchedule(db.Model):
 
     @classmethod
     def get_gst_expressions(cls, main_fee_code, service_fee_code):
-        """Returns GST break down amounts."""
+        """Return GST break down amounts."""
         main_fee_gst = cls.get_gst_amount_expression(main_fee_code.amount).label("main_fee_gst")
         service_fee_gst = cls.get_gst_amount_expression(service_fee_code.amount).label("service_fee_gst")
         total_gst = cls.get_gst_amount_expression(
