@@ -21,6 +21,8 @@ from pay_api.models.corp_type import CorpType, CorpTypeSchema
 from pay_api.models.error_code import ErrorCode, ErrorCodeSchema
 from pay_api.models.fee_code import FeeCode, FeeCodeSchema
 from pay_api.models.invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
+from pay_api.models.payment_method import PaymentMethod as PaymentMethodModel
+from pay_api.models.payment_method import PaymentMethodSchema
 from pay_api.models.routing_slip_status_code import RoutingSlipStatusCode, RoutingSlipStatusCodeSchema
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code as CodeValue
@@ -64,6 +66,9 @@ class Code:
             elif code_type == CodeValue.ROUTING_SLIP_STATUS.value:
                 codes_models = RoutingSlipStatusCode.find_all()
                 schema = RoutingSlipStatusCodeSchema()
+            elif code_type == CodeValue.PAYMENT_METHODS.value:
+                codes_models = PaymentMethodModel.find_all()
+                schema = PaymentMethodSchema()
             if schema and codes_models:
                 codes_response = schema.dump(codes_models, many=True)
                 cache.set(code_type, codes_response)

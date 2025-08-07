@@ -139,7 +139,7 @@ PaymentMethod.Order = [
     PaymentMethod.INTERNAL,
     PaymentMethod.DIRECT_PAY,
     PaymentMethod.ONLINE_BANKING,
-    PaymentMethod.EJV
+    PaymentMethod.EJV,
 ]
 
 
@@ -203,6 +203,7 @@ class Code(Enum):
     CORP_TYPE = "corp_types"
     FEE_CODE = "fee_codes"
     ROUTING_SLIP_STATUS = "routing_slip_statuses"
+    PAYMENT_METHODS = "payment_methods"
 
 
 class AccountType(Enum):
@@ -459,6 +460,7 @@ class EFTHistoricalTypes(Enum):
 
     FUNDS_RECEIVED = "FUNDS_RECEIVED"
     INVOICE_REFUND = "INVOICE_REFUND"
+    INVOICE_PARTIAL_REFUND = "INVOICE_PARTIAL_REFUND"
     STATEMENT_PAID = "STATEMENT_PAID"
     STATEMENT_REVERSE = "STATEMENT_REVERSE"
 

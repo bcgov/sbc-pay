@@ -82,6 +82,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             "disbursement_date",
             "filing_id",
             "folio_number",
+            "gst",
             "invoice_status_code",
             "payment_account_id",
             "payment_date",
@@ -132,6 +133,9 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     routing_slip = db.Column(db.String(50), nullable=True, index=True)
     filing_id = db.Column(db.String(50), nullable=True)
     folio_number = db.Column(db.String(50), nullable=True, index=True)
+    gst = db.Column(
+        db.Numeric(19, 2), nullable=True, comment="Total GST amount including statutory and service fees GST"
+    )
     dat_number = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)
     service_fees = db.Column(db.Numeric(19, 2), nullable=True)
@@ -141,8 +145,8 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     receipts = relationship("Receipt", lazy="joined")
     payment_account = relationship("PaymentAccount", lazy="joined")
     references = relationship("InvoiceReference", lazy="joined")
-    partial_refunds = relationship("RefundsPartial", lazy="joined")
-    applied_credits = relationship("AppliedCredits", lazy="joined")
+    partial_refunds = relationship("RefundsPartial", lazy="joined", order_by="RefundsPartial.id")
+    applied_credits = relationship("AppliedCredits", lazy="joined", order_by="AppliedCredits.id")
     corp_type = relationship("CorpType", foreign_keys=[corp_type_code], lazy="select", innerjoin=True)
 
     __table_args__ = (
@@ -254,7 +258,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
-        exclude = ["corp_type"]
+        exclude = ["corp_type", "gst"]
 
     invoice_status_code = fields.String(data_key="status_code")
     corp_type_code = fields.String(data_key="corp_type_code")

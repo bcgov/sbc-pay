@@ -181,6 +181,127 @@ def test_get_payment_system_url_service_fees(session, public_user_mock, base_fee
     assert expected_hash_str == url_param_dict["hashValue"]
 
 
+def test_create_revenue_string_single_line_item(session, public_user_mock):
+    """Test _create_revenue_string with single payment line item."""
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account)
+    invoice.save()
+
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+
+    line = factory_payment_line_item(
+        invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        total=Decimal("100.00"),
+        service_fees=Decimal("0"),
+        statutory_fees_gst=Decimal("0"),
+        service_fees_gst=Decimal("0"),
+    )
+    line.save()
+    result = DirectPayService._create_revenue_string(invoice)
+
+    assert "1:" in result
+    assert ":100.00" in result
+    assert "|" not in result
+
+
+def test_create_revenue_string_with_service_fees(session, public_user_mock):
+    """Test _create_revenue_string with service fees included."""
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account, total=Decimal("125.00"), service_fees=Decimal("25.00"))
+    invoice.save()
+
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
+    distribution_code_svc = DistributionCode()
+    distribution_code_payload = get_distribution_code_payload()
+    distribution_code_payload.update({"serviceFeeDistributionCodeId": distribution_code.distribution_code_id})
+    distribution_code_svc.save_or_update(distribution_code_payload, distribution_code.distribution_code_id)
+
+    line = factory_payment_line_item(
+        invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        total=Decimal("100.00"),
+        service_fees=Decimal("25.00"),
+        statutory_fees_gst=Decimal("0"),
+        service_fees_gst=Decimal("0"),
+    )
+    line.save()
+
+    result = DirectPayService._create_revenue_string(invoice)
+    lines = result.split("|")
+
+    assert len(lines) == 2
+    assert lines[0] == "1:100.22222.20244.9000.1111111.000000.0000:100.00"
+    assert lines[1] == "2:100.22222.20244.9000.1111111.000000.0000:25.00"
+
+
+def test_create_revenue_string_multiple_line_items(session, public_user_mock):
+    """Test _create_revenue_string with multiple payment line items."""
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account, total=Decimal("150.00"))
+    invoice.save()
+
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
+    distribution_code_svc = DistributionCode()
+    distribution_code_payload = get_distribution_code_payload()
+    distribution_code_payload.update({"serviceFeeDistributionCodeId": distribution_code.distribution_code_id})
+    distribution_code_svc.save_or_update(distribution_code_payload, distribution_code.distribution_code_id)
+
+    line1 = factory_payment_line_item(
+        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=Decimal("100.00"), service_fees=Decimal("0")
+    )
+    line1.save()
+    line2 = factory_payment_line_item(
+        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=Decimal("50.00"), service_fees=Decimal("0")
+    )
+    line2.save()
+
+    result = DirectPayService._create_revenue_string(invoice)
+
+    lines = result.split("|")
+    assert len(lines) == 2
+    lines.sort()
+    assert ":100.00" in result
+    assert ":50.00" in result
+
+
+def test_create_revenue_string_with_all_fee_types(session, public_user_mock):
+    """Test _create_revenue_string with all types of fees."""
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account, total=Decimal("133.75"))
+    invoice.save()
+
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
+    distribution_code_svc = DistributionCode()
+    distribution_code_payload = get_distribution_code_payload()
+    distribution_code_payload.update({"serviceFeeDistributionCodeId": distribution_code.distribution_code_id})
+    distribution_code_payload.update({"serviceFeeGstDistributionCodeId": distribution_code.distribution_code_id})
+    distribution_code_payload.update({"statutoryFeesGstDistributionCodeId": distribution_code.distribution_code_id})
+    distribution_code_svc.save_or_update(distribution_code_payload, distribution_code.distribution_code_id)
+
+    line = factory_payment_line_item(
+        invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        total=Decimal("100.00"),
+        service_fees=Decimal("25.00"),
+        service_fees_gst=Decimal("3.75"),
+        statutory_fees_gst=Decimal("5.00"),
+    )
+    line.save()
+
+    result = DirectPayService._create_revenue_string(invoice)
+
+    lines = result.split("|")
+    assert len(lines) == 4
+    assert lines[0] == "1:100.22222.20244.9000.1111111.000000.0000:100.00"
+    assert lines[1] == "2:100.22222.20244.9000.1111111.000000.0000:25.00"
+    assert lines[2] == "3:100.22222.20244.9000.1111111.000000.0000:3.75"
+    assert lines[3] == "4:100.22222.20244.9000.1111111.000000.0000:5.00"
+
+
 def test_get_receipt(session, public_user_mock):
     """Assert that get receipt is working."""
     response_url = (
@@ -233,22 +354,6 @@ def test_process_cfs_refund_success(session, monkeypatch):
 
     direct_pay_service.process_cfs_refund(invoice, payment_account, None)
     assert True
-
-
-def test_process_cfs_refund_bad_request(session):
-    """
-    Assert refund is rejected, only PAID and UPDATE_REVENUE_ACCOUNT are allowed.
-
-    Users may only transition from PAID -> UPDATE_REVENUE_ACCOUNT.
-    """
-    payment_account = factory_payment_account()
-    invoice = factory_invoice(payment_account)
-    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
-    invoice.save()
-    direct_pay_service = DirectPayService()
-    with pytest.raises(BusinessException) as excinfo:
-        direct_pay_service.process_cfs_refund(invoice, payment_account, None)
-        assert excinfo.value.code == Error.INVALID_REQUEST.name
 
 
 def test_process_cfs_refund_duplicate_refund(session, monkeypatch):

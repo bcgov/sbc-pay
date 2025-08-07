@@ -1,4 +1,5 @@
 """Service Helper to payment statement related calculations."""
+
 # Copyright © 2025 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
@@ -78,8 +79,7 @@ def determine_service_provision_status(status_code: str, payment_method: str) ->
             return False
 
 
-def build_grouped_invoice_context(invoices: List[dict], statement: dict,
-                                  statement_summary: dict) -> list[dict]:
+def build_grouped_invoice_context(invoices: List[dict], statement: dict, statement_summary: dict) -> list[dict]:
     """Build grouped invoice context, with fixed payment method order."""
     grouped = defaultdict(list)
     for inv in invoices:
@@ -100,7 +100,7 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
         method_context = {
             "total_paid": get_statement_currency_string(sum(Decimal(inv.get("paid", 0)) for inv in items)),
             "transactions": transactions,
-            "is_index_0": first_group
+            "is_index_0": first_group,
         }
 
         if method == PaymentMethod.EFT.value:
@@ -118,28 +118,27 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict,
 
         summary = calculate_invoice_summaries(items, method, statement)
 
-        statement_header_text = StatementTitles['DEFAULT'].value
+        statement_header_text = StatementTitles["DEFAULT"].value
 
         if method == PaymentMethod.INTERNAL.value and has_staff_payment:
-            statement_header_text = StatementTitles['INTERNAL_STAFF'].value
+            statement_header_text = StatementTitles["INTERNAL_STAFF"].value
         else:
             statement_header_text = StatementTitles[method].value
 
-        method_context.update({
-            "paid_summary": summary["paid_summary"],
-            "due_summary": summary["due_summary"],
-            "totals_summary": summary["totals_summary"],
-            "statement_header_text": statement_header_text,
-            "include_service_provided": any(t.get("service_provided", False) for t in transactions)
-        })
+        method_context.update(
+            {
+                "paid_summary": summary["paid_summary"],
+                "due_summary": summary["due_summary"],
+                "totals_summary": summary["totals_summary"],
+                "statement_header_text": statement_header_text,
+                "include_service_provided": any(t.get("service_provided", False) for t in transactions),
+            }
+        )
 
         result[method] = method_context
         first_group = False
 
-    grouped_invoices = [
-        {"payment_method": method, **context}
-        for method, context in result.items()
-    ]
+    grouped_invoices = [{"payment_method": method, **context} for method, context in result.items()]
 
     return grouped_invoices
 
@@ -155,65 +154,51 @@ class InvoicesSummaries:
 
 def calculate_invoice_summaries(invoices: List[dict], payment_method: str, statement: dict) -> dict:
     """Calculate invoice summaries for a payment method using database aggregation."""
-    invoice_ids = [
-        inv.get("id") for inv in invoices
-        if inv.get("payment_method") == payment_method and inv.get("id")
-    ]
+    invoice_ids = [inv.get("id") for inv in invoices if inv.get("payment_method") == payment_method and inv.get("id")]
     statement_to_date = statement.get("to_date")
 
     if not invoice_ids:
-        return cattrs.unstructure(InvoicesSummaries(
-            paid_summary=0.0,
-            due_summary=0.0,
-            totals_summary=0.0
-        ))
+        return cattrs.unstructure(InvoicesSummaries(paid_summary=0.0, due_summary=0.0, totals_summary=0.0))
 
     if payment_method != PaymentMethod.EFT.value:
         # For non-EFT: refund applies if paid == 0 and refund > 0
-        refund_condition = case(
-            (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
-            else_=0
-        )
+        refund_condition = case((and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund), else_=0)
     else:
         # For EFT: refund applies if paid == 0 and refund > 0 and refund_date <= statement.to_date
         if statement_to_date:
             refund_condition = case(
-                (and_(
-                    InvoiceModel.paid == 0,
-                    InvoiceModel.refund > 0,
-                    InvoiceModel.refund_date.isnot(None),
-                    InvoiceModel.refund_date <= func.cast(statement_to_date, db.Date)
-                ), InvoiceModel.refund),
-                else_=0
+                (
+                    and_(
+                        InvoiceModel.paid == 0,
+                        InvoiceModel.refund > 0,
+                        InvoiceModel.refund_date.isnot(None),
+                        InvoiceModel.refund_date <= func.cast(statement_to_date, db.Date),
+                    ),
+                    InvoiceModel.refund,
+                ),
+                else_=0,
             )
         else:
             # Fallback if no statement_to_date provided
             refund_condition = case(
-                (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund),
-                else_=0
+                (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund), else_=0
             )
     # Query to get aggregated values for the specific payment method and invoice IDs
     result = (
         db.session.query(
             func.coalesce(func.sum(InvoiceModel.paid), 0).label("paid_summary"),
             func.coalesce(func.sum(InvoiceModel.total), 0).label("totals_summary"),
-            func.coalesce(
-                func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0
-            ).label("due_summary")
-        )
-        .filter(
-            and_(
-                InvoiceModel.id.in_(invoice_ids),
-                InvoiceModel.payment_method_code == payment_method
-            )
-        )
+            func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0).label("due_summary"),
+        ).filter(and_(InvoiceModel.id.in_(invoice_ids), InvoiceModel.payment_method_code == payment_method))
     ).first()
 
-    return cattrs.unstructure(InvoicesSummaries(
-        paid_summary=float(result.paid_summary),
-        due_summary=float(result.due_summary),
-        totals_summary=float(result.totals_summary)
-    ))
+    return cattrs.unstructure(
+        InvoicesSummaries(
+            paid_summary=float(result.paid_summary),
+            due_summary=float(result.due_summary),
+            totals_summary=float(result.totals_summary),
+        )
+    )
 
 
 @dataclass
@@ -243,37 +228,28 @@ def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod =
         detail_lines = []
         for detail in inv.get("details", []):
             detail_lines.append(f"{detail.get('label', '')} {detail.get('value', '')}")
-        fee = (
-            inv.get("total", 0) - inv.get("service_fees", 0)
-            if inv.get("total") and inv.get("service_fees")
-            else 0.00
-        )
+        fee = inv.get("total", 0) - inv.get("service_fees", 0) if inv.get("total") and inv.get("service_fees") else 0.00
 
         row = TransactionRow(
             products=product_lines,
             details=detail_lines,
             folio=inv.get("folio_number") or "-",
             created_on=get_statement_date_string(
-                datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y")
-                if inv.get("created_on") else "-"
+                datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y") if inv.get("created_on") else "-"
             ),
             fee=get_statement_currency_string(fee),
             service_fee=get_statement_currency_string(inv.get("service_fees", 0)),
             gst=get_statement_currency_string(inv.get("gst", 0)),
             total=get_statement_currency_string(inv.get("total", 0)),
             extra={
-                k: v for k, v in inv.items()
-                if k not in {
-                    "details", "folio_number", "created_on",
-                    "fee", "gst", "total", "service_fees"
-                }
-            }
+                k: v
+                for k, v in inv.items()
+                if k not in {"details", "folio_number", "created_on", "fee", "gst", "total", "service_fees"}
+            },
         )
         service_provided = False
         if payment_method:
-            service_provided = determine_service_provision_status(
-                inv.get('status_code', ''), payment_method
-            )
+            service_provided = determine_service_provision_status(inv.get("status_code", ""), payment_method)
 
         row.extra["service_provided"] = service_provided
 
@@ -304,10 +280,10 @@ def build_statement_context(statement: dict) -> dict:
 
     statement_ = statement.copy()
 
-    from_date = get_statement_date_string(statement.get('from_date'))
-    to_date = get_statement_date_string(statement.get('to_date'))
-    created_on = get_statement_date_string(statement.get('created_on'))
-    frequency = statement.get('frequency', '')
+    from_date = get_statement_date_string(statement.get("from_date"))
+    to_date = get_statement_date_string(statement.get("to_date"))
+    created_on = get_statement_date_string(statement.get("created_on"))
+    frequency = statement.get("frequency", "")
 
     if frequency == StatementFrequency.DAILY.value and from_date:
         duration = from_date
@@ -318,9 +294,8 @@ def build_statement_context(statement: dict) -> dict:
     else:
         duration = None
 
-    amount_owing = statement.get('amount_owing')
-    amount_owing_str = (get_statement_currency_string(amount_owing)
-                        if amount_owing else get_statement_currency_string(0))
+    amount_owing = statement.get("amount_owing")
+    amount_owing_str = get_statement_currency_string(amount_owing) if amount_owing else get_statement_currency_string(0)
 
     enhanced_statement = StatementContext(
         duration=duration,
@@ -329,9 +304,11 @@ def build_statement_context(statement: dict) -> dict:
         to_date=to_date,
         created_on=created_on,
         frequency=frequency,
-        extra={k: v for k, v in statement_.items() if k not in {
-            "from_date", "to_date", "amount_owing", "created_on", "frequency"
-        }}
+        extra={
+            k: v
+            for k, v in statement_.items()
+            if k not in {"from_date", "to_date", "amount_owing", "created_on", "frequency"}
+        },
     )
     enhanced_statement_dict = cattrs.unstructure(enhanced_statement)
     enhanced_statement_dict.update(enhanced_statement_dict.pop("extra"))
@@ -364,22 +341,19 @@ def build_statement_summary_context(statement_summary: dict) -> List[dict]:
     handled_keys = {humps.camelize(f.name) for f in fields(StatementSummary)}
 
     summary_row = StatementSummary(
-        last_statement_total=currency(statement_summary.get('lastStatementTotal')),
-        last_statement_paid_amount=currency(statement_summary.get('lastStatementPaidAmount')),
+        last_statement_total=currency(statement_summary.get("lastStatementTotal")),
+        last_statement_paid_amount=currency(statement_summary.get("lastStatementPaidAmount")),
         cancelled_transactions=(
-            currency(statement_summary['cancelledTransactions'])
-            if statement_summary.get('cancelledTransactions') not in [None, 0, '0', '0.00']
+            currency(statement_summary["cancelledTransactions"])
+            if statement_summary.get("cancelledTransactions") not in [None, 0, "0", "0.00"]
             else None
         ),
-        latest_statement_payment_date=date(statement_summary.get('latestStatementPaymentDate')),
-        due_date=date(statement_summary.get('dueDate')),
-        extra={k: v for k, v in statement_summary.items() if k not in handled_keys}
+        latest_statement_payment_date=date(statement_summary.get("latestStatementPaymentDate")),
+        due_date=date(statement_summary.get("dueDate")),
+        extra={k: v for k, v in statement_summary.items() if k not in handled_keys},
     )
 
-    summary_row_dict = {
-        humps.camelize(k): v
-        for k, v in cattrs.unstructure(summary_row).items()
-    }
+    summary_row_dict = {humps.camelize(k): v for k, v in cattrs.unstructure(summary_row).items()}
     summary_row_dict.update(summary_row_dict.pop("extra"))
     if summary_row_dict.get("cancelledTransactions") is None:
         summary_row_dict.pop("cancelledTransactions")

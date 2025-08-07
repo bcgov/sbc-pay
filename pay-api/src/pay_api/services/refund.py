@@ -265,11 +265,6 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.INVALID_REQUEST)
 
     @staticmethod
-    def _get_total_partial_refund_amount(refund_revenue: List[RefundPartialLine]):
-        """Sum refund revenue refund amounts."""
-        return sum(revenue.refund_amount for revenue in refund_revenue)
-
-    @staticmethod
     def _get_line_item_amount_by_refund_type(refund_type: str, payment_line_item: PaymentLineItemModel):
         """Return payment line item fee amount by refund type."""
         match refund_type:
@@ -312,63 +307,89 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             RefundService._validate_refund_amount(refund_line, payment_line)
 
     @classmethod
-    def _validate_allow_partial_refund(cls, refund_revenue, invoice: InvoiceModel):
-        if refund_revenue:
-            if not PaymentMethodModel.is_payment_method_allowed_for_partial_refund(invoice.payment_method_code):
-                raise BusinessException(Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED)
+    def _validate_allow_partial_refund(cls, invoice: InvoiceModel):
+        if not PaymentMethodModel.is_partial_refund_allowed(invoice.payment_method_code):
+            raise BusinessException(Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED)
+
+        if invoice.invoice_status_code != InvoiceStatus.PAID.value:
+            raise BusinessException(Error.PARTIAL_REFUND_INVOICE_NOT_PAID)
+
+    @classmethod
+    def _validate_allow_full_refund(cls, invoice: InvoiceModel):
+        if not PaymentMethodModel.is_full_refund_allowed(invoice.payment_method_code, invoice.invoice_status_code):
+            raise BusinessException(Error.FULL_REFUND_INVOICE_INVALID_STATE)
+
+    @classmethod
+    def _validate_corp_type_role(cls, invoice: InvoiceModel, roles: list):
+        if roles and Role.CSO_REFUNDS.value in roles:
+            if invoice.corp_type_code != CorpType.CSO.value:
+                raise BusinessException(Error.INVALID_REQUEST)
+
+    @classmethod
+    def _validate_refundable_state(cls, invoice: InvoiceModel, is_partial: bool):
+        if is_partial:
+            cls._validate_allow_partial_refund(invoice)
+        else:
+            cls._validate_allow_full_refund(invoice)
+
+        if invoice.refund_date is not None:
+            current_app.logger.info(
+                f"Cannot process refund as status of {invoice.id} is {invoice.invoice_status_code}."
+                "Refund date already set."
+            )
+            raise BusinessException(Error.INVALID_REQUEST)
+
+    @classmethod
+    def _initialize_refund(cls, invoice_id: int, request: Dict[str, str], user: UserContext) -> RefundService:
+        """Initialize refund."""
+        refund: RefundService = RefundService()
+        refund.invoice_id = invoice_id
+        refund.reason = get_str_by_path(request, "reason")
+        refund.requested_by = user.user_name
+        refund.requested_date = datetime.now(tz=timezone.utc)
+        refund.flush()
+
+        return refund
 
     @classmethod
     @user_context
     def create_refund(cls, invoice_id: int, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create refund."""
         current_app.logger.debug(f"Starting refund : {invoice_id}")
-        # Do validation by looking up the invoice
-        invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
         user: UserContext = kwargs["user"]
-        if user.roles and Role.CSO_REFUNDS.value in user.roles:
-            if invoice.corp_type_code != CorpType.CSO.value:
-                raise BusinessException(Error.INVALID_REQUEST)
+        refund_revenue = (request or {}).get("refundRevenue", None)
+        is_partial_refund = bool(refund_revenue)
+        refund_partial_lines = []
 
-        paid_statuses = (
-            InvoiceStatus.PAID.value,
-            InvoiceStatus.APPROVED.value,
-            InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value,
-        )
+        invoice = InvoiceModel.find_by_id(invoice_id)
+        cls._validate_corp_type_role(invoice, user.roles)
+        cls._validate_refundable_state(invoice, is_partial_refund)
 
-        if invoice.invoice_status_code not in paid_statuses or (
-            invoice.invoice_status_code == InvoiceStatus.PAID.value and invoice.refund_date is not None
-        ):
-            current_app.logger.info(f"Cannot process refund as status of {invoice_id} is {invoice.invoice_status_code}")
-            raise BusinessException(Error.INVALID_REQUEST)
-
-        refund: RefundService = RefundService()
-        refund.invoice_id = invoice_id
-        refund.reason = get_str_by_path(request, "reason")
-        refund.requested_by = kwargs["user"].user_name
-        refund.requested_date = datetime.now(tz=timezone.utc)
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=invoice.payment_method_code
         )
-        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-        refund_revenue = (request or {}).get("refundRevenue", None)
-        cls._validate_allow_partial_refund(refund_revenue, invoice)
 
-        refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
-        cls._validate_partial_refund_lines(refund_partial_lines, invoice)
+        if is_partial_refund:
+            refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
+            cls._validate_partial_refund_lines(refund_partial_lines, invoice)
+
+        invoice.refund = (
+            pay_system_service.get_total_partial_refund_amount(refund_partial_lines)
+            if is_partial_refund
+            else invoice.total
+        )
         invoice_status = pay_system_service.process_cfs_refund(
             invoice,
             payment_account=payment_account,
             refund_partial=refund_partial_lines,
         )
-        refund.flush()
+
+        refund = cls._initialize_refund(invoice_id, request, user)
         cls._save_partial_refund_lines(refund_partial_lines, invoice)
         message = REFUND_SUCCESS_MESSAGES.get(f"{invoice.payment_method_code}.{invoice.invoice_status_code}")
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
-        invoice.refund = (
-            RefundService._get_total_partial_refund_amount(refund_partial_lines)
-            if refund_partial_lines
-            else invoice.total
-        )
+
         if invoice.invoice_status_code in (
             InvoiceStatus.REFUNDED.value,
             InvoiceStatus.CANCELLED.value,
@@ -377,6 +398,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         ):
             invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.save()
+
         # Exclude PAID because it's for partial refunds.
         if invoice.invoice_status_code in (
             InvoiceStatus.REFUNDED.value,
@@ -387,7 +409,13 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         elif invoice.invoice_status_code == InvoiceStatus.PAID.value:
             pay_system_service.release_payment_or_reversal(invoice, TransactionStatus.PARTIALLY_REVERSED.value)
         current_app.logger.debug(f"Completed refund : {invoice_id}")
-        return {"message": message}
+
+        return {
+            "message": message,
+            "refundId": refund._dao.id,
+            "refundAmount": invoice.refund,
+            "isPartialRefund": is_partial_refund,
+        }
 
     @staticmethod
     def _save_partial_refund_lines(partial_refund_lines: List[RefundPartialLine], invoice: InvoiceModel):
