@@ -114,7 +114,9 @@ class EFTShortnameHistorical:
 
     @staticmethod
     @user_context
-    def create_invoice_refund(history: EFTShortnameHistory, **kwargs) -> EFTShortnamesHistoricalModel:
+    def create_invoice_refund(
+        history: EFTShortnameHistory, is_partial_refund: bool = False, **kwargs
+    ) -> EFTShortnamesHistoricalModel:
         """Create EFT Short name invoice refund historical record."""
         return EFTShortnamesHistoricalModel(
             amount=history.amount,
@@ -128,7 +130,11 @@ class EFTShortnameHistorical:
             statement_number=history.statement_number,
             invoice_id=history.invoice_id,
             transaction_date=EFTShortnameHistorical.transaction_date_now(),
-            transaction_type=EFTHistoricalTypes.INVOICE_REFUND.value,
+            transaction_type=(
+                EFTHistoricalTypes.INVOICE_PARTIAL_REFUND.value
+                if is_partial_refund
+                else EFTHistoricalTypes.INVOICE_REFUND.value
+            ),
         )
 
     @staticmethod

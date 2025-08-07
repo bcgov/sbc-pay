@@ -356,22 +356,6 @@ def test_process_cfs_refund_success(session, monkeypatch):
     assert True
 
 
-def test_process_cfs_refund_bad_request(session):
-    """
-    Assert refund is rejected, only PAID and UPDATE_REVENUE_ACCOUNT are allowed.
-
-    Users may only transition from PAID -> UPDATE_REVENUE_ACCOUNT.
-    """
-    payment_account = factory_payment_account()
-    invoice = factory_invoice(payment_account)
-    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
-    invoice.save()
-    direct_pay_service = DirectPayService()
-    with pytest.raises(BusinessException) as excinfo:
-        direct_pay_service.process_cfs_refund(invoice, payment_account, None)
-        assert excinfo.value.code == Error.INVALID_REQUEST.name
-
-
 def test_process_cfs_refund_duplicate_refund(session, monkeypatch):
     """
     Assert duplicate refund throws an exception.
