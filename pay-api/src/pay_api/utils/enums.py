@@ -62,6 +62,8 @@ class InvoiceStatus(Enum):
     # We left these as PAID otherwise we'd need to have partners make changes.
     PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED"
     PARTIALLY_CREDITED = "PARTIALLY_CREDITED"
+    # This status is not stored in the database but used in models/invoice.py
+    COMPLETED = "COMPLETED"
 
 
 class TransactionStatus(Enum):
@@ -201,6 +203,7 @@ class Code(Enum):
     CORP_TYPE = "corp_types"
     FEE_CODE = "fee_codes"
     ROUTING_SLIP_STATUS = "routing_slip_statuses"
+    PAYMENT_METHODS = "payment_methods"
 
 
 class AccountType(Enum):
@@ -457,6 +460,7 @@ class EFTHistoricalTypes(Enum):
 
     FUNDS_RECEIVED = "FUNDS_RECEIVED"
     INVOICE_REFUND = "INVOICE_REFUND"
+    INVOICE_PARTIAL_REFUND = "INVOICE_PARTIAL_REFUND"
     STATEMENT_PAID = "STATEMENT_PAID"
     STATEMENT_REVERSE = "STATEMENT_REVERSE"
 
