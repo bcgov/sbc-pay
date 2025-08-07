@@ -14,9 +14,10 @@
 """Model to handle all operations related to Tax Rate data."""
 
 from sql_versioning import Versioned
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, and_
 
 from pay_api.models.base_model import BaseModel
+from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 
 from .db import db
 
@@ -64,3 +65,19 @@ class TaxRate(Versioned, BaseModel):
     def __str__(self):
         """Return a string representation for display."""
         return f"{self.tax_type}: {self.rate}"
+
+    @classmethod
+    def get_gst_effective_rate(cls, effective_date):
+        """Get the current effective tax rate for GST."""
+        return (
+            cls.query.filter(
+                and_(
+                    cls.tax_type == TAX_CLASSIFICATION_GST,
+                    cls.start_date <= effective_date,
+                    cls.effective_end_date.is_(None) | (cls.effective_end_date > effective_date),
+                )
+            )
+            .order_by(cls.start_date.desc())
+            .one()
+            .rate
+        )

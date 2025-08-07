@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to manage Payment Line Items."""
 
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from flask import current_app
@@ -20,6 +21,7 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models.tax_rate import TaxRate
 from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.utils.enums import LineItemStatus, Role
 from pay_api.utils.errors import Error
@@ -49,6 +51,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self._fee_distribution_id: int = None
         self._fee_distribution: DistributionCodeModel = None
         self._service_fees = None
+        self._statutory_fees_gst = None
+        self._service_fees_gst = None
 
     @property
     def _dao(self):
@@ -75,6 +79,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self.waived_by: str = self._dao.waived_by
         self.fee_distribution_id: int = self._dao.fee_distribution_id
         self.service_fees: Decimal = self._dao.service_fees
+        self.statutory_fees_gst: Decimal = self._dao.statutory_fees_gst
+        self.service_fees_gst: Decimal = self._dao.service_fees_gst
 
     @property
     def id(self):
@@ -267,6 +273,28 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self._service_fees = value
         self._dao.service_fees = value
 
+    @property
+    def statutory_fees_gst(self):
+        """Return the statutory_fees_gst."""
+        return self._statutory_fees_gst
+
+    @statutory_fees_gst.setter
+    def statutory_fees_gst(self, value: Decimal):
+        """Set the statutory_fees_gst."""
+        self._statutory_fees_gst = value
+        self._dao.statutory_fees_gst = value
+
+    @property
+    def service_fees_gst(self):
+        """Return the service_fees_gst."""
+        return self._service_fees_gst
+
+    @service_fees_gst.setter
+    def service_fees_gst(self, value: Decimal):
+        """Set the service_fees_gst."""
+        self._service_fees_gst = value
+        self._dao.service_fees_gst = value
+
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
@@ -291,6 +319,13 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         p.line_item_status_code = LineItemStatus.ACTIVE.value
         p.waived_fees = fee.waived_fee_amount
         p.service_fees = fee.service_fees
+        p.service_fees_gst = 0
+        p.statutory_fees_gst = 0
+
+        if fee.gst_added:
+            gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+            p.statutory_fees_gst = round(p.total * gst_rate, 2)
+            p.service_fees_gst = round(p.service_fees * gst_rate, 2)
 
         # Set distribution details to line item
         distribution_code = None

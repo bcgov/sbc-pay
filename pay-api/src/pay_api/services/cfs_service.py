@@ -15,6 +15,7 @@
 import base64
 import re
 from collections import defaultdict
+from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any, Dict, List, Tuple
 
@@ -47,9 +48,28 @@ from pay_api.utils.constants import (
     DEFAULT_CURRENCY,
     DEFAULT_JURISDICTION,
     DEFAULT_POSTAL_CODE,
+    TAX_CLASSIFICATION_GST,
 )
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentSystem, ReverseOperation
 from pay_api.utils.util import current_local_time, generate_transaction_number
+
+
+@dataclass
+class LineItemData:
+    """Data for processing a line item."""
+
+    amount: float
+    description: str
+    has_gst: bool = False
+
+
+@dataclass
+class ProcessingContext:
+    """Context for processing line items."""
+
+    lines_map: dict
+    index: int
+    negate: bool
 
 
 class CFSService(OAuthService):
@@ -521,92 +541,120 @@ class CFSService(OAuthService):
     @classmethod
     def build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
         """Build lines for the invoice."""
-        # Fetch all distribution codes to reduce DB hits. Introduce caching if needed later
         distribution_codes: List[DistributionCodeModel] = DistributionCodeModel.find_all()
-        lines_map = defaultdict(dict)  # To group all the lines with same GL code together.
-        index: int = 0
+        distribution_lookup = {dist.distribution_code_id: dist for dist in distribution_codes}
+
+        context = ProcessingContext(defaultdict(dict), 0, negate)
+
         for line_item in payment_line_items:
-            # Find the distribution from the above list
             distribution_code = (
-                [dist for dist in distribution_codes if dist.distribution_code_id == line_item.fee_distribution_id][0]
-                if line_item.fee_distribution_id
-                else None
+                distribution_lookup.get(line_item.fee_distribution_id) if line_item.fee_distribution_id else None
             )
 
-            if line_item.total > 0:
-                # Check if a line with same GL code exists, if YES just add up the amount. if NO, create a new line.
-                line = lines_map[distribution_code.distribution_code_id]
-
-                if not line:
-                    index = index + 1
-                    distribution = (
-                        [
-                            {
-                                "dist_line_number": index,
-                                "amount": cls._get_amount(line_item.total, negate),
-                                "account": f"{distribution_code.client}.{distribution_code.responsibility_centre}."
-                                f"{distribution_code.service_line}.{distribution_code.stob}."
-                                f"{distribution_code.project_code}.000000.0000",
-                            }
-                        ]
-                        if distribution_code
-                        else None
-                    )
-
-                    line = {
-                        "line_number": index,
-                        "line_type": CFS_LINE_TYPE,
-                        "description": line_item.description,
-                        "unit_price": cls._get_amount(line_item.total, negate),
-                        "quantity": 1,
-                        "distribution": distribution,
-                    }
-                else:
-                    # Add up the price and distribution
-                    line["unit_price"] = line["unit_price"] + cls._get_amount(line_item.total, negate)
-                    line["distribution"][0]["amount"] = line["distribution"][0]["amount"] + cls._get_amount(
-                        line_item.total, negate
-                    )
-
-                lines_map[distribution_code.distribution_code_id] = line
-
-            if line_item.service_fees > 0:
-                service_fee_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                    distribution_code.service_fee_distribution_code_id
+            if not distribution_code:
+                current_app.logger.warning(
+                    f"No distribution code found for line item fee_distribution_id: {line_item.fee_distribution_id}"
                 )
-                service_line = lines_map[service_fee_distribution.distribution_code_id]
+                continue
 
-                if not service_line:
-                    index = index + 1
-                    service_line = {
-                        "line_number": index,
-                        "line_type": CFS_LINE_TYPE,
-                        "description": "Service Fee",
-                        "unit_price": cls._get_amount(line_item.service_fees, negate),
-                        "quantity": 1,
-                        "distribution": [
-                            {
-                                "dist_line_number": index,
-                                "amount": cls._get_amount(line_item.service_fees, negate),
-                                "account": f"{service_fee_distribution.client}."
-                                f"{service_fee_distribution.responsibility_centre}."
-                                f"{service_fee_distribution.service_line}."
-                                f"{service_fee_distribution.stob}."
-                                f"{service_fee_distribution.project_code}.000000.0000",
-                            }
-                        ],
-                    }
+            if line_item.total > 0:
+                context.index = cls._process_line_item(
+                    context, distribution_code, LineItemData(line_item.total, line_item.description)
+                )
 
-                else:
-                    # Add up the price and distribution
-                    service_line["unit_price"] = service_line["unit_price"] + cls._get_amount(
-                        line_item.service_fees, negate
+            if (
+                line_item.service_fees > 0
+                and distribution_code.service_fee_distribution_code_id
+                and (
+                    service_fee_distribution := distribution_lookup.get(
+                        distribution_code.service_fee_distribution_code_id
                     )
-                    service_line["distribution"][0]["amount"] = service_line["distribution"][0][
-                        "amount"
-                    ] + cls._get_amount(line_item.service_fees, negate)
-                lines_map[service_fee_distribution.distribution_code_id] = service_line
-        return list(lines_map.values())
+                )
+            ):
+                context.index = cls._process_line_item(
+                    context, service_fee_distribution, LineItemData(line_item.service_fees, "Service Fee")
+                )
+
+            if (
+                line_item.statutory_fees_gst > 0
+                and distribution_code.statutory_fees_gst_distribution_code_id
+                and (
+                    statutory_gst_distribution := distribution_lookup.get(
+                        distribution_code.statutory_fees_gst_distribution_code_id
+                    )
+                )
+            ):
+                context.index = cls._process_line_item(
+                    context,
+                    statutory_gst_distribution,
+                    LineItemData(line_item.statutory_fees_gst, "Statutory Fees GST", True),
+                )
+
+            if (
+                line_item.service_fees_gst > 0
+                and distribution_code.service_fee_gst_distribution_code_id
+                and (
+                    service_gst_distribution := distribution_lookup.get(
+                        distribution_code.service_fee_gst_distribution_code_id
+                    )
+                )
+            ):
+                context.index = cls._process_line_item(
+                    context,
+                    service_gst_distribution,
+                    LineItemData(line_item.service_fees_gst, "Service Fees GST", True),
+                )
+
+        return list(context.lines_map.values())
+
+    @classmethod
+    def _process_line_item(
+        cls, context: ProcessingContext, distribution_code: DistributionCodeModel, line_data: LineItemData
+    ) -> int:
+        """Process a single line item and update the lines map."""
+        dist_id = distribution_code.distribution_code_id
+        existing_line = context.lines_map[dist_id]
+        amount_value = cls._get_amount(line_data.amount, context.negate)
+
+        if not existing_line:
+            context.index += 1
+            account = (
+                f"{distribution_code.client}.{distribution_code.responsibility_centre}."
+                f"{distribution_code.service_line}.{distribution_code.stob}."
+                f"{distribution_code.project_code}.000000.0000"
+            )
+
+            line_dict = {
+                "line_number": context.index,
+                "line_type": CFS_LINE_TYPE,
+                "description": line_data.description,
+                "unit_price": amount_value,
+                "quantity": 1,
+                "distribution": [
+                    {
+                        "dist_line_number": context.index,
+                        "amount": amount_value,
+                        "account": account,
+                    }
+                ],
+            }
+
+            if line_data.has_gst:
+                line_dict["tax_classification"] = TAX_CLASSIFICATION_GST
+
+            context.lines_map[dist_id] = line_dict
+        else:
+            existing_line["unit_price"] += amount_value
+            existing_line["distribution"][0]["amount"] += amount_value
+
+            if (
+                line_data.has_gst
+                and existing_line.get("tax_classification") == TAX_CLASSIFICATION_GST
+                and existing_line["description"] != line_data.description
+            ):
+                existing_line["description"] = "Statutory & Service Fees GST"
+
+        return context.index
 
     @classmethod
     def _get_amount(cls, amount, negate):
