@@ -66,7 +66,6 @@ class TaxRate(Versioned, BaseModel):
         """Return a string representation for display."""
         return f"{self.tax_type}: {self.rate}"
 
-
     @classmethod
     def get_gst_effective_rate(cls, effective_date):
         """Get the current effective tax rate for GST."""
@@ -76,7 +75,7 @@ class TaxRate(Versioned, BaseModel):
                     cls.tax_type == TAX_CLASSIFICATION_GST,
                     cls.start_date <= effective_date,
                     cls.effective_end_date.is_(None) | (cls.effective_end_date > effective_date),
-                    )
+                )
             )
             .order_by(cls.start_date.desc())
             .one_or_none()
