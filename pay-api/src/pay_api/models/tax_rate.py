@@ -75,7 +75,7 @@ class TaxRate(Versioned, BaseModel):
                     cls.tax_type == TAX_CLASSIFICATION_GST,
                     cls.start_date <= effective_date,
                     cls.effective_end_date.is_(None) | (cls.effective_end_date > effective_date),
-                    )
+                )
             )
             .order_by(cls.start_date.desc())
             .one()
