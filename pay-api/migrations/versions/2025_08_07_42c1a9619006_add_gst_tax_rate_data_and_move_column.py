@@ -18,7 +18,7 @@ from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 # Please ignore those lines and don't include in migration.
 
 revision = '42c1a9619006'
-down_revision = '38045c22fe00'
+down_revision = 'eb14e6b27e34'
 branch_labels = None
 depends_on = None
 
