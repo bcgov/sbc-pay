@@ -317,25 +317,11 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
     assert rv.json.get("serviceFees") == 1.5
 
 
-def setup_tax():
-    """Check if there is existing tax, if not set one up."""
-    tax_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
-    if tax_rate is None:
-        tax_rate_model = TaxRate(
-            tax_type=TAX_CLASSIFICATION_GST,
-            rate=0.05,
-            start_date=datetime.now(tz=timezone.utc),
-            updated_name="TEST",
-            updated_by="TEST",
-        ).save()
-        tax_rate = tax_rate_model.rate
-
-    return tax_rate
-
-
 def test_product_fees_detail_query_all(session, client, jwt, app):
     """Assert enabled price list product fees are returned."""
-    tax_rate = setup_tax()
+    tax_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    assert tax_rate
+
     fee_schedule1 = factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN1", "TEST"),
         corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
