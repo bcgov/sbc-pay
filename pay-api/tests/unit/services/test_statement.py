@@ -724,7 +724,7 @@ def test_get_eft_statement_with_invoices(session):
                         StatementService.calculate_due_date(statement_to_date.date())
                     ),  # pylint: disable=protected-access
                     "due_summary": 250.0,
-                    "include_service_provided": False,
+                    "include_service_provided": True,
                     "is_index_0": True,
                     "paid_summary": 100.0,
                     "payment_method": "EFT",
@@ -834,7 +834,7 @@ def test_get_eft_statement_with_invoices(session):
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
-                            "service_provided": False,
+                            "service_provided": True,
                             "status_code": "COMPLETED",
                             "total": "50.00",
                         },
@@ -869,7 +869,7 @@ def test_get_eft_statement_with_invoices(session):
                             "products": ["None"],
                             "refund": 0.0,
                             "service_fee": "0.00",
-                            "service_provided": False,
+                            "service_provided": True,
                             "status_code": "COMPLETED",
                             "total": "50.00",
                         },

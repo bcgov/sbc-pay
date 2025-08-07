@@ -55,6 +55,8 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._end_date: date = None
         self._service_fee_distribution_code_id: int = None
         self._disbursement_distribution_code_id: int = None
+        self._service_fee_gst_distribution_code_id: int = None
+        self._statutory_fees_gst_distribution_code_id: int = None
         self._stop_ejv: bool = False
         self._account_id: int = None
 
@@ -93,6 +95,8 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._end_date: date = self._dao.end_date
         self._service_fee_distribution_code_id = self._dao.service_fee_distribution_code_id
         self._disbursement_distribution_code_id = self._dao.disbursement_distribution_code_id
+        self._service_fee_gst_distribution_code_id = self._dao.service_fee_gst_distribution_code_id
+        self._statutory_fees_gst_distribution_code_id = self._dao.statutory_fees_gst_distribution_code_id
         self._stop_ejv: bool = self._dao.stop_ejv
         self._account_id: int = self._dao.account_id
 
@@ -124,6 +128,30 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         if self._disbursement_distribution_code_id != value:
             self._disbursement_distribution_code_id = value
             self._dao.disbursement_distribution_code_id = value
+
+    @property
+    def service_fee_gst_distribution_code_id(self):
+        """Return the service_fee_gst_distribution_code_id."""
+        return self._service_fee_gst_distribution_code_id
+
+    @service_fee_gst_distribution_code_id.setter
+    def service_fee_gst_distribution_code_id(self, value: int):
+        """Set the service_fee_gst_distribution_code_id."""
+        if self._service_fee_gst_distribution_code_id != value:
+            self._service_fee_gst_distribution_code_id = value
+            self._dao.service_fee_gst_distribution_code_id = value
+
+    @property
+    def statutory_fees_gst_distribution_code_id(self):
+        """Return the statutory_fees_gst_distribution_code_id."""
+        return self._statutory_fees_gst_distribution_code_id
+
+    @statutory_fees_gst_distribution_code_id.setter
+    def statutory_fees_gst_distribution_code_id(self, value: int):
+        """Set the statutory_fees_gst_distribution_code_id."""
+        if self._statutory_fees_gst_distribution_code_id != value:
+            self._statutory_fees_gst_distribution_code_id = value
+            self._dao.statutory_fees_gst_distribution_code_id = value
 
     @property
     def end_date(self):
@@ -382,6 +410,12 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         dist_code_svc.stob = distribution_details.get("stob", None)
         dist_code_svc.project_code = distribution_details.get("projectCode", None)
         dist_code_svc.service_fee_distribution_code_id = distribution_details.get("serviceFeeDistributionCodeId", None)
+        dist_code_svc.service_fee_gst_distribution_code_id = distribution_details.get(
+            "serviceFeeGstDistributionCodeId", None
+        )
+        dist_code_svc.statutory_fees_gst_distribution_code_id = distribution_details.get(
+            "statutoryFeesGstDistributionCodeId", None
+        )
         dist_code_svc.disbursement_distribution_code_id = distribution_details.get(
             "disbursementDistributionCodeId", None
         )
