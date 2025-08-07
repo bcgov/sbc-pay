@@ -45,6 +45,7 @@ def determine_service_provision_status(status_code: str, payment_method: str) ->
         InvoiceStatus.CREDITED,
         InvoiceStatus.REFUND_REQUESTED,
         InvoiceStatus.REFUNDED,
+        InvoiceStatus.COMPLETED
     }
 
     if status_enum in default_statuses:

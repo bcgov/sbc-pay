@@ -62,6 +62,8 @@ class InvoiceStatus(Enum):
     # We left these as PAID otherwise we'd need to have partners make changes.
     PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED"
     PARTIALLY_CREDITED = "PARTIALLY_CREDITED"
+    # This status is not stored in the database but used in models/invoice.py
+    COMPLETED = "COMPLETED"
 
 
 class TransactionStatus(Enum):
