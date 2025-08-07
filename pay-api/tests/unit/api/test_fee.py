@@ -378,6 +378,8 @@ def test_product_fees_detail_query_all(session, client, jwt, app):
     assert schedule1_response["fee"] == fee_schedule1.fee.amount
     assert schedule1_response["serviceCharge"] == 0
     assert schedule1_response["gst"] == float(round(tax_rate.rate * fee_schedule1.fee.amount, 2))
+    assert schedule1_response["feeGst"] == float(round(tax_rate.rate * fee_schedule1.fee.amount, 2))
+    assert schedule1_response["serviceChargeGst"] == 0
 
     schedule2_response: FeeSchedule = next(item for item in items if item["filingType"] == "XOTANN2")
     assert schedule2_response["fee"] == fee_schedule2.fee.amount
@@ -385,11 +387,15 @@ def test_product_fees_detail_query_all(session, client, jwt, app):
     assert schedule2_response["gst"] == float(
         round(tax_rate.rate * (fee_schedule2.fee.amount + fee_schedule2.service_fee.amount), 2)
     )
+    assert schedule2_response["feeGst"] == float(round(tax_rate.rate * fee_schedule2.fee.amount, 2))
+    assert schedule2_response["serviceChargeGst"] == float(round(tax_rate.rate * fee_schedule2.service_fee.amount, 2))
 
     schedule3_response: FeeSchedule = next(item for item in items if item["filingType"] == "XOTANN3")
     assert schedule3_response["fee"] == fee_schedule3.fee.amount
     assert schedule3_response["serviceCharge"] == 0
     assert schedule3_response["gst"] == 0
+    assert schedule3_response["feeGst"] == 0
+    assert schedule3_response["serviceChargeGst"] == 0
 
 
 def test_fees_detail_query_by_product_code(session, client, jwt, app):

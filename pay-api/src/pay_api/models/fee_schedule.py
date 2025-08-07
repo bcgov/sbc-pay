@@ -172,22 +172,28 @@ class FeeSchedule(db.Model):
         return query.all()
 
     @classmethod
-    def get_gst_expression(cls, main_fee_code, service_fee_code):
-        """Retrieve calculation expression for GST."""
+    def get_gst_amount_expression(cls, amount_expr):
+        """Returns GST amount."""
         return func.coalesce(
             case(
                 (
                     cls.enable_gst.is_(True),
-                    func.round(
-                        TaxRate.rate
-                        * (func.coalesce(main_fee_code.amount, 0) + func.coalesce(service_fee_code.amount, 0)),
-                        2,
-                    ),
+                    func.round(TaxRate.rate * func.coalesce(amount_expr, 0), 2),
                 ),
                 else_=0,
             ),
             0,
-        ).label("gst")
+        )
+
+    @classmethod
+    def get_gst_expressions(cls, main_fee_code, service_fee_code):
+        """Returns GST break down amounts."""
+        main_fee_gst = cls.get_gst_amount_expression(main_fee_code.amount).label("main_fee_gst")
+        service_fee_gst = cls.get_gst_amount_expression(service_fee_code.amount).label("service_fee_gst")
+        total_gst = cls.get_gst_amount_expression(
+            func.coalesce(main_fee_code.amount, 0) + func.coalesce(service_fee_code.amount, 0)
+        ).label("total_gst")
+        return main_fee_gst, service_fee_gst, total_gst
 
     @classmethod
     def get_fee_details(cls, product_code: str = None):
@@ -207,7 +213,7 @@ class FeeSchedule(db.Model):
                 FilingType.description.label("service"),
                 func.coalesce(main_fee_code.amount, 0).label("fee"),
                 func.coalesce(service_fee_code.amount, 0).label("service_charge"),
-                cls.get_gst_expression(main_fee_code, service_fee_code),
+                *cls.get_gst_expressions(main_fee_code, service_fee_code),
                 cls.variable,
             )
             .select_from(cls)
@@ -280,4 +286,6 @@ class FeeDetailsSchema(Serializable):
     fee: Decimal
     service_charge: Decimal
     gst: Decimal
+    fee_gst: Decimal
+    service_charge_gst: Decimal
     variable: bool
