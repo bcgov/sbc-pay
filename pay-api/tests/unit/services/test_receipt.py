@@ -53,7 +53,7 @@ def test_receipt_saved_from_new(session):
     receipt.receipt_amount = 100
     receipt = receipt.save()
 
-    receipt_service = ReceiptService.find_by_id(receipt_service.id)
+    receipt_service = ReceiptService.find_by_id(receipt.id)
 
     assert receipt_service is not None
     assert receipt_service.id is not None
