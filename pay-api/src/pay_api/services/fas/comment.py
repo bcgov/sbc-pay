@@ -39,17 +39,13 @@ class Comment:
     def find_all_comments_for_a_routingslip(cls, routing_slip_number: str):
         """Find comments for a routing slip."""
         current_app.logger.debug("<Comment.get.service")
-        routing_slip = RoutingSlipModel.find_by_number(routing_slip_number)
-
-        if routing_slip is None:
+        if (routing_slip := RoutingSlipModel.find_by_number(routing_slip_number)) is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
         comments_dao = CommentModel.find_all_comments_for_a_routingslip(routing_slip.number)
         comments = CommentSchema().dump(comments_dao, many=True)
-        data = {"comments": comments}
-
         current_app.logger.debug(">Comment.get.service")
-        return data
+        return {"comments": comments}
 
     @classmethod
     def create(cls, comment_value: str, rs_number: str):
