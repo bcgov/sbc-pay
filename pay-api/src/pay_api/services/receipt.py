@@ -43,13 +43,6 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment Line Item operations."""
 
     @staticmethod
-    def find_by_id(receipt_id: int) -> Self:
-        """Find by receipt id."""
-        receipt = ReceiptModel.find_by_id(receipt_id)
-        current_app.logger.debug(">find_by_id")
-        return receipt
-
-    @staticmethod
     def find_by_invoice_id_and_receipt_number(invoice_id: int, receipt_number: str = None) -> Self:
         """Find by the combination of invoce id and receipt number."""
         receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id, receipt_number)
