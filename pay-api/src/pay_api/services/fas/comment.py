@@ -26,7 +26,7 @@ from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.utils.errors import Error
 
 
-class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
+class Comment:
     """Service to manage Routing slip comments related operations."""
 
     @classmethod
