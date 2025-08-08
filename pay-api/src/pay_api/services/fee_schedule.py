@@ -160,13 +160,13 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def total(self):
         """Return the total fees calculated."""
         return (
-            self._fee_amount + self.pst + self.gst + self.priority_fee + self.future_effective_fee + self.service_fees
+            self._fee_amount + self.priority_fee + self.future_effective_fee + self.service_fees
         )
 
     @property
     def total_excluding_service_fees(self):
         """Return the total excluding service fees fees calculated."""
-        return self._fee_amount + self.pst + self.gst + self.priority_fee + self.future_effective_fee
+        return self._fee_amount + self.priority_fee + self.future_effective_fee
 
     @property
     def fee_amount(self):
