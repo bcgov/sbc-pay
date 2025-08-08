@@ -56,8 +56,7 @@ class Comment:
     def create(cls, comment_value: str, rs_number: str):
         """Create routing slip comment."""
         current_app.logger.debug("<Comment.create.service")
-        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(number=rs_number)
-        if routing_slip is None:
+        if (routing_slip := RoutingSlipModel.find_by_number(number=rs_number)) is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
         # Create a routing slip comment record.
