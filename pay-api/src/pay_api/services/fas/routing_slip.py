@@ -63,6 +63,7 @@ class RoutingSlip:
             "total": total,
             "page": page,
             "limit": limit,
+            # Future: Use CATTRS
             # We need these fields, to populate the UI.
             "items": RoutingSlipSchema(
                 only=(
@@ -125,6 +126,7 @@ class RoutingSlip:
                 if routing_slip.total_usd is not None:
                     total_cheque_usd += routing_slip.total_usd
 
+        # Future: Use CATTRS
         report_dict = {
             "templateName": "routing_slip_report",
             "reportName": f"Routing-Slip-Daily-Report-{date}",
@@ -163,6 +165,7 @@ class RoutingSlip:
         """Find by routing slip number."""
         routing_slip_dict: Dict[str, any] = None
         if routing_slip := RoutingSlipModel.find_by_number(rs_number):
+            # Future: Use CATTRS
             routing_slip_schema = RoutingSlipSchema(
                 exclude=(
                     "city",
@@ -178,6 +181,7 @@ class RoutingSlip:
             routing_slip_dict["allowedStatuses"] = RoutingSlipStatusTransitionService.get_possible_transitions(
                 routing_slip
             )
+            # Future: Use CATTRS
             routing_slip_dict["mailingAddress"] = {
                 "city": routing_slip.city,
                 "country": routing_slip.country,
