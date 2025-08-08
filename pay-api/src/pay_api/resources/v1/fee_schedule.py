@@ -34,7 +34,7 @@ def get_fee_schedules():
         description = request.args.get("description", None)
         response, status = (
             FeeSchedule.find_all(
-                corp_type=corp_type,
+                corp_type_code=corp_type,
                 filing_type_code=filing_type,
                 description=description,
             ),

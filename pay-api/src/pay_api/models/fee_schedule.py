@@ -15,22 +15,22 @@
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from operator import or_
 
 from attr import define
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, cast, func
+from sqlalchemy import Boolean, Date, ForeignKey, cast
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import aliased, relationship
+from sqlalchemy.orm import relationship
 
 from pay_api.utils.serializable import Serializable
 
+from .base_model import BaseModel
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode
 from .filing_type import FilingType, FilingTypeSchema
 
 
-class FeeSchedule(db.Model):
+class FeeSchedule(BaseModel):
     """This class manages all of the base data about a fee schedule.
 
     Fee schedule holds the data related to filing type and fee code which is used to calculate the fees for a filing
@@ -129,86 +129,6 @@ class FeeSchedule(db.Model):
 
         return fee_schedule
 
-    @classmethod
-    def find_by_id(cls, fee_schedule_id: int):
-        """Find and return fee schedule by id."""
-        return cls.query.get(fee_schedule_id)
-
-    @classmethod
-    def find_all(
-        cls,
-        corp_type_code: str = None,
-        filing_type_code: str = None,
-        description: str = None,
-    ):
-        """Find all fee schedules matching the filters."""
-        valid_date = datetime.now(tz=timezone.utc).date()
-        query = cls.query.filter(FeeSchedule.fee_start_date <= valid_date).filter(
-            (FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= valid_date)
-        )
-
-        if filing_type_code:
-            query = query.filter_by(filing_type_code=filing_type_code)
-
-        if corp_type_code:
-            query = query.filter_by(corp_type_code=corp_type_code)
-
-        if description:
-            descriptions = description.replace(" ", "%")
-            query = query.join(CorpType, CorpType.code == FeeSchedule.corp_type_code).join(
-                FilingType, FilingType.code == FeeSchedule.filing_type_code
-            )
-            query = query.filter(
-                or_(
-                    func.lower(FilingType.description).contains(descriptions.lower()),
-                    func.lower(CorpType.description).contains(descriptions.lower()),
-                )
-            )
-
-        return query.all()
-
-    @classmethod
-    def get_fee_details(cls, product_code: str = None):
-        """Get detailed fee information including corp type, filing type, and fees."""
-        main_fee_code = aliased(FeeCode)
-        service_fee_code = aliased(FeeCode)
-
-        current_date = datetime.now(tz=timezone.utc).date()
-
-        query = (
-            db.session.query(
-                CorpType.code.label("corp_type"),
-                FilingType.code.label("filing_type"),
-                CorpType.description.label("corp_type_description"),
-                CorpType.product.label("product_code"),
-                FilingType.description.label("service"),
-                func.coalesce(main_fee_code.amount, 0).label("fee"),
-                func.coalesce(service_fee_code.amount, 0).label("service_charge"),
-                cast(0, Integer).label("gst"),  # Placeholder for GST, adjust as needed
-                cls.variable,
-            )
-            .select_from(cls)
-            .join(CorpType, cls.corp_type_code == CorpType.code)
-            .join(FilingType, cls.filing_type_code == FilingType.code)
-            .outerjoin(main_fee_code, cls.fee_code == main_fee_code.code)
-            .outerjoin(service_fee_code, cls.service_fee_code == service_fee_code.code)
-            .filter(cls.fee_start_date <= current_date)
-            .filter(cls.fee_end_date.is_(None) | (cls.fee_end_date >= current_date))
-            .filter(CorpType.product.is_not(None))
-            .filter(cls.show_on_pricelist.is_(True))
-        )
-
-        if product_code:
-            query = query.filter(CorpType.product == product_code)
-        results = query.all()
-
-        return results
-
-    def save(self):
-        """Save fee schedule."""
-        db.session.add(self)
-        db.session.commit()
-
 
 class FeeScheduleSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Business."""
@@ -247,5 +167,7 @@ class FeeDetailsSchema(Serializable):
     service: str
     fee: Decimal
     service_charge: Decimal
-    gst: int
+    gst: Decimal
+    fee_gst: Decimal
+    service_charge_gst: Decimal
     variable: bool

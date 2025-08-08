@@ -20,8 +20,9 @@ import json
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
-from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
+from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType, TaxRate
 from pay_api.schemas import utils as schema_utils
+from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 from pay_api.utils.enums import Role
 from tests.utilities.base_test import (
     factory_corp_type_model,
@@ -318,19 +319,25 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
 
 def test_product_fees_detail_query_all(session, client, jwt, app):
     """Assert enabled price list product fees are returned."""
-    factory_fee_schedule_model(
+    tax_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    assert tax_rate
+
+    fee_schedule1 = factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN1", "TEST"),
         corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
         fee_code=factory_fee_model("XXX1", 100),
         show_on_pricelist=True,
+        gst_added=True,
     )
-    factory_fee_schedule_model(
+    fee_schedule2 = factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN2", "TEST"),
         corp_type=factory_corp_type_model("YY", "TEST", "PRODUCT_CODE_2"),
         fee_code=factory_fee_model("XXX2", 200),
+        service_fee=factory_fee_model("SFEE1", 1.5),
         show_on_pricelist=True,
+        gst_added=True,
     )
-    factory_fee_schedule_model(
+    fee_schedule3 = factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN3", "TEST"),
         corp_type=factory_corp_type_model("ZZ", "TEST", "PRODUCT_CODE_3"),
         fee_code=factory_fee_model("XXX3", 300),
@@ -353,6 +360,29 @@ def test_product_fees_detail_query_all(session, client, jwt, app):
     assert "XOTANN1" in filing_type, "XOTANN1 not found in response."
     assert "XOTANN2" in filing_type, "XOTANN2 not found in response."
     assert "XOTANN3" in filing_type, "XOTANN3 not found in response."
+
+    schedule1_response: FeeSchedule = next(item for item in items if item["filingType"] == "XOTANN1")
+    assert schedule1_response["fee"] == fee_schedule1.fee.amount
+    assert schedule1_response["serviceCharge"] == 0
+    assert schedule1_response["gst"] == float(round(tax_rate * fee_schedule1.fee.amount, 2))
+    assert schedule1_response["feeGst"] == float(round(tax_rate * fee_schedule1.fee.amount, 2))
+    assert schedule1_response["serviceChargeGst"] == 0
+
+    schedule2_response: FeeSchedule = next(item for item in items if item["filingType"] == "XOTANN2")
+    assert schedule2_response["fee"] == fee_schedule2.fee.amount
+    assert schedule2_response["serviceCharge"] == fee_schedule2.service_fee.amount
+    assert schedule2_response["gst"] == float(
+        round(tax_rate * (fee_schedule2.fee.amount + fee_schedule2.service_fee.amount), 2)
+    )
+    assert schedule2_response["feeGst"] == float(round(tax_rate * fee_schedule2.fee.amount, 2))
+    assert schedule2_response["serviceChargeGst"] == float(round(tax_rate * fee_schedule2.service_fee.amount, 2))
+
+    schedule3_response: FeeSchedule = next(item for item in items if item["filingType"] == "XOTANN3")
+    assert schedule3_response["fee"] == fee_schedule3.fee.amount
+    assert schedule3_response["serviceCharge"] == 0
+    assert schedule3_response["gst"] == 0
+    assert schedule3_response["feeGst"] == 0
+    assert schedule3_response["serviceChargeGst"] == 0
 
 
 def test_fees_detail_query_by_product_code(session, client, jwt, app):
