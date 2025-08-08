@@ -497,7 +497,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     @staticmethod
     def __save_receipt(invoice, receipt_details):
         receipt = Receipt.find_by_invoice_id_and_receipt_number(invoice.id, receipt_details[0])
-        if not receipt.id:
+        if not receipt:
             receipt = ReceiptModel()
             receipt.receipt_number = receipt_details[0]
             receipt.receipt_date = receipt_details[1]
