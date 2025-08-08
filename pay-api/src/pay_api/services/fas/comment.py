@@ -54,6 +54,7 @@ class Comment:
         if RoutingSlipModel.find_by_number(number=rs_number) is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
-        comment = CommentModel(comment=comment_value, routing_slip_number=rs_number).commit()
+        comment = CommentModel(comment=comment_value, routing_slip_number=rs_number)
+        comment.commit()
         current_app.logger.debug(">Comment.create.service")
         return cls.asdict(comment)
