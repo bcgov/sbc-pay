@@ -13,18 +13,28 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
+from operator import or_
 
 from flask import current_app
 from sbc_common_components.tracing.service_tracing import ServiceTracing
+from sqlalchemy import Date, func
+from sqlalchemy.orm import aliased
+from sqlalchemy.sql.elements import literal
+from sqlalchemy.sql.expression import and_, case
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import AccountFee as AccountFeeModel
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeDetailsSchema
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import FeeScheduleSchema
+from pay_api.models import FilingType as FilingTypeModel
+from pay_api.models import TaxRate as TaxRateModel
+from pay_api.models import db
+from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -335,17 +345,39 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         return fee_schedule
 
     @staticmethod
-    def find_all(corp_type: str = None, filing_type_code: str = None, description: str = None):
+    def find_all(corp_type_code: str = None, filing_type_code: str = None, description: str = None):
         """Find all fee schedule by applying any filter."""
         current_app.logger.debug("<find_all")
         data = {"items": []}
-        fee_schdules = FeeScheduleModel.find_all(
-            corp_type_code=corp_type,
-            filing_type_code=filing_type_code,
-            description=description,
+
+        valid_date = datetime.now(tz=timezone.utc).date()
+        query = (
+            db.session.query(FeeScheduleModel)
+            .filter(FeeScheduleModel.fee_start_date <= valid_date)
+            .filter((FeeScheduleModel.fee_end_date.is_(None)) | (FeeScheduleModel.fee_end_date >= valid_date))
         )
-        schdule_schema = FeeScheduleSchema()
-        data["items"] = schdule_schema.dump(fee_schdules, many=True)
+
+        if filing_type_code:
+            query = query.filter_by(filing_type_code=filing_type_code)
+
+        if corp_type_code:
+            query = query.filter_by(corp_type_code=corp_type_code)
+
+        if description:
+            descriptions = description.replace(" ", "%")
+            query = query.join(CorpTypeModel, CorpTypeModel.code == FeeScheduleModel.corp_type_code).join(
+                FilingTypeModel, FilingTypeModel.code == FeeScheduleModel.filing_type_code
+            )
+            query = query.filter(
+                or_(
+                    func.lower(FilingTypeModel.description).contains(descriptions.lower()),
+                    func.lower(CorpTypeModel.description).contains(descriptions.lower()),
+                )
+            )
+
+        fee_schedules = query.all()
+        schedule_schema = FeeScheduleSchema()
+        data["items"] = schedule_schema.dump(fee_schedules, many=True)
         current_app.logger.debug(">find_all")
         return data
 
@@ -371,11 +403,75 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         return service_fees
 
     @staticmethod
+    def get_gst_amount_expression(amount_expr):
+        """Return calculated GST amount."""
+        return func.coalesce(
+            case(
+                (
+                    FeeScheduleModel.gst_added.is_(True),
+                    func.round(TaxRateModel.rate * func.coalesce(amount_expr, 0), 2),
+                ),
+                else_=0,
+            ),
+            0,
+        )
+
+    @staticmethod
+    def get_gst_expressions(main_fee_code, service_fee_code):
+        """Return GST break down amounts."""
+        main_fee_gst = FeeSchedule.get_gst_amount_expression(main_fee_code.amount).label("main_fee_gst")
+        service_fee_gst = FeeSchedule.get_gst_amount_expression(service_fee_code.amount).label("service_fee_gst")
+        total_gst = FeeSchedule.get_gst_amount_expression(
+            func.coalesce(main_fee_code.amount, 0) + func.coalesce(service_fee_code.amount, 0)
+        ).label("total_gst")
+        return main_fee_gst, service_fee_gst, total_gst
+
+    @staticmethod
     def get_fee_details(product_code: str = None):
         """Get Products Fees -the cost of a filing and the list of filings."""
         current_app.logger.debug("<get_fee_details")
         data = {"items": []}
-        products_fees = FeeScheduleModel.get_fee_details(product_code)
+        main_fee_code = aliased(FeeCodeModel)
+        service_fee_code = aliased(FeeCodeModel)
+
+        current_date = datetime.now(tz=timezone.utc).date()
+        infinity_date = literal("infinity").cast(Date)
+        query = (
+            db.session.query(
+                CorpTypeModel.code.label("corp_type"),
+                FilingTypeModel.code.label("filing_type"),
+                CorpTypeModel.description.label("corp_type_description"),
+                CorpTypeModel.product.label("product_code"),
+                FilingTypeModel.description.label("service"),
+                func.coalesce(main_fee_code.amount, 0).label("fee"),
+                func.coalesce(service_fee_code.amount, 0).label("service_charge"),
+                *FeeSchedule.get_gst_expressions(main_fee_code, service_fee_code),
+                FeeScheduleModel.variable,
+            )
+            .select_from(FeeScheduleModel)
+            .join(CorpTypeModel, FeeScheduleModel.corp_type_code == CorpTypeModel.code)
+            .join(FilingTypeModel, FeeScheduleModel.filing_type_code == FilingTypeModel.code)
+            .outerjoin(main_fee_code, FeeScheduleModel.fee_code == main_fee_code.code)
+            .outerjoin(service_fee_code, FeeScheduleModel.service_fee_code == service_fee_code.code)
+            .outerjoin(
+                TaxRateModel,
+                and_(
+                    FeeScheduleModel.gst_added.is_(True),
+                    TaxRateModel.tax_type == TAX_CLASSIFICATION_GST,
+                    TaxRateModel.start_date <= func.coalesce(FeeScheduleModel.fee_end_date, infinity_date),
+                    FeeScheduleModel.fee_start_date <= func.coalesce(TaxRateModel.effective_end_date, infinity_date),
+                ),
+            )
+            .filter(FeeScheduleModel.fee_start_date <= current_date)
+            .filter(FeeScheduleModel.fee_end_date.is_(None) | (FeeScheduleModel.fee_end_date >= current_date))
+            .filter(CorpTypeModel.product.is_not(None))
+            .filter(FeeScheduleModel.show_on_pricelist.is_(True))
+        )
+
+        if product_code:
+            query = query.filter(CorpTypeModel.product == product_code)
+
+        products_fees = query.all()
         for fee in products_fees:
             fee_details_schema = FeeDetailsSchema(
                 corp_type=fee.corp_type,
