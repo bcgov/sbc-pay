@@ -23,6 +23,7 @@ import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.receipt import Receipt as ReceiptService
 from tests.utilities.base_test import (
@@ -45,12 +46,12 @@ def test_receipt_saved_from_new(session):
     i.save()
     factory_invoice_reference(i.id).save()
 
-    receipt_service = ReceiptService()
-    receipt_service.receipt_number = "1234567890"
-    receipt_service.invoice_id = i.id
-    receipt_service.receipt_date = datetime.now(tz=timezone.utc)
-    receipt_service.receipt_amount = 100
-    receipt_service = receipt_service.save()
+    receipt = ReceiptModel()
+    receipt.receipt_number = "1234567890"
+    receipt.invoice_id = i.id
+    receipt.receipt_date = datetime.now(tz=timezone.utc)
+    receipt.receipt_amount = 100
+    receipt = receipt.save()
 
     receipt_service = ReceiptService.find_by_id(receipt_service.id)
 
