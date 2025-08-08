@@ -13,6 +13,8 @@
 # limitations under the License.
 """Model to handle all operations related to invoice refund."""
 
+from typing import Self
+
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.schema import CheckConstraint
@@ -72,12 +74,12 @@ class Refund(BaseModel):
     gl_error = db.Column(db.String(250), nullable=True)
 
     @classmethod
-    def find_by_invoice_id(cls, invoice_id: int):
+    def find_by_invoice_id(cls, invoice_id: int) -> Self:
         """Return a refund by invoice id."""
         return cls.query.filter_by(invoice_id=invoice_id).one_or_none()
 
     @classmethod
-    def find_by_routing_slip_id(cls, routing_slip_id: int):
+    def find_by_routing_slip_id(cls, routing_slip_id: int) -> Self:
         """Return a refund by invoice id."""
         return cls.query.filter_by(routing_slip_id=routing_slip_id).one_or_none()
 

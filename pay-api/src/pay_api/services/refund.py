@@ -50,155 +50,14 @@ from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_quantized, get_str_by_path, normalize_accented_characters_json
 
 
-class RefundService:  # pylint: disable=too-many-instance-attributes
+class RefundService:
     """Service to hold and manage refund instance."""
-
-    def __init__(self):
-        """Return a refund object."""
-        # Waiting Fix : https://github.com/PyCQA/pylint/issues/3882
-        # pylint:disable=unsubscriptable-object
-        self.__dao: Optional[RefundModel] = None
-        self._id: Optional[int] = None
-        self._invoice_id: Optional[int] = None
-        self._routing_slip_id: Optional[int] = None
-        self._requested_date: Optional[datetime] = None
-        self._details: Optional[Dict] = None
-        self._reason: Optional[str] = None
-        self._requested_by: Optional[str] = None
-        self._decision_made_by: Optional[str] = None
-        self._decision_date: Optional[datetime] = None
-
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = RefundModel()
-        return self.__dao
-
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao = value
-        self.id: int = self._dao.id
-        self.invoice_id: int = self._dao.invoice_id
-        self.routing_slip_id: int = self._dao.routing_slip_id
-        self.requested_date: datetime = self._dao.requested_date
-        self.reason: str = self._dao.reason
-        self.requested_by: str = self._dao.requested_by
-        self.details: Dict = self._dao.details
-        self.decision_made_by: str = self._dao.decision_made_by
-        self.decision_date: datetime = self._dao.decision_date
-
-    @property
-    def id(self) -> int:
-        """Return the _id."""
-        return self._id
-
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
-
-    @property
-    def invoice_id(self) -> int:
-        """Return the _invoice_id."""
-        return self._invoice_id
-
-    @invoice_id.setter
-    def invoice_id(self, value: int):
-        """Set the invoice_id."""
-        self._invoice_id = value
-        self._dao.invoice_id = value
-
-    @property
-    def routing_slip_id(self) -> int:
-        """Return the _routing_slip_id."""
-        return self._routing_slip_id
-
-    @routing_slip_id.setter
-    def routing_slip_id(self, value: int):
-        """Set the routing_slip_id."""
-        self._routing_slip_id = value
-        self._dao.routing_slip_id = value
-
-    @property
-    def requested_date(self) -> datetime:
-        """Return the requested_date."""
-        return self._requested_date
-
-    @requested_date.setter
-    def requested_date(self, value: datetime):
-        """Set the filing_fees."""
-        self._requested_date = value
-        self._dao.requested_date = value
-
-    @property
-    def reason(self) -> Optional[str]:  # pylint:disable=unsubscriptable-object
-        """Return the _reason."""
-        return self._reason
-
-    @reason.setter
-    def reason(self, value: datetime):
-        """Set the reason."""
-        self._reason = value
-        self._dao.reason = value
-
-    @property
-    def requested_by(self) -> Optional[str]:  # pylint:disable=unsubscriptable-object
-        """Return the requested_by."""
-        return self.requested_by
-
-    @requested_by.setter
-    def requested_by(self, value: str):
-        """Set the reason."""
-        self._requested_by = value
-        self._dao.requested_by = value
-
-    @property
-    def decision_date(self) -> datetime:
-        """Return the decision_date."""
-        return self._decision_date
-
-    @decision_date.setter
-    def decision_date(self, value: datetime):
-        """Set the decision_date."""
-        self._decision_date = value
-        self._dao.decision_date = value
-
-    @property
-    def details(self):
-        """Return the details."""
-        return self._details
-
-    @details.setter
-    def details(self, value: str):
-        """Set the details."""
-        self._details = value
-        self._dao.details = value
-
-    @property
-    def decision_made_by(self) -> Optional[str]:
-        """Return the decision_made_by."""
-        return self.decision_made_by
-
-    @decision_made_by.setter
-    def decision_made_by(self, value: str):
-        """Set the decision_made_by."""
-        self._decision_made_by = value
-        self._dao.decision_made_by = value
-
-    def save(self) -> RefundModel:
-        """Save the information to the DB and commit."""
-        return self._dao.save()
-
-    def flush(self) -> RefundModel:
-        """Save the information to the DB and flush."""
-        return self._dao.flush()
 
     @classmethod
     @user_context
     def create_routing_slip_refund(cls, routing_slip_number: str, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create Routing slip refund."""
-        current_app.logger.debug("<create Routing slip  refund")
+        current_app.logger.debug("<create Routing slip refund")
         #
         # check if routing slip exists
         # validate user role -> update status of routing slip
@@ -234,10 +93,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         rs_model.status = status
         rs_model.flush()
 
-        refund: RefundService = RefundService()
-        refund_dao = RefundModel.find_by_routing_slip_id(rs_model.id)
-        if refund_dao:
-            refund._dao = refund_dao
+        refund = RefundModel.find_by_routing_slip_id(rs_model.id)
 
         if not is_refund_finalized:
             # do not update these for approval/rejections
@@ -340,9 +196,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.INVALID_REQUEST)
 
     @classmethod
-    def _initialize_refund(cls, invoice_id: int, request: Dict[str, str], user: UserContext) -> RefundService:
+    def _initialize_refund(cls, invoice_id: int, request: Dict[str, str], user: UserContext) -> RefundModel:
         """Initialize refund."""
-        refund: RefundService = RefundService()
+        refund: RefundService = RefundModel()
         refund.invoice_id = invoice_id
         refund.reason = get_str_by_path(request, "reason")
         refund.requested_by = user.user_name
@@ -412,7 +268,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         return {
             "message": message,
-            "refundId": refund._dao.id,
+            "refundId": refund.id,
             "refundAmount": invoice.refund,
             "isPartialRefund": is_partial_refund,
         }
