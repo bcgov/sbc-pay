@@ -29,7 +29,7 @@ class Comment:
     """Service to manage Routing slip comments related operations."""
 
     @classmethod
-    def asdict(dao) -> Dict[str]:
+    def asdict(cls, dao) -> Dict[str]:
         """Return the comment as a python dict."""
         comment_schema = CommentSchema()
         d = comment_schema.dump(dao)
