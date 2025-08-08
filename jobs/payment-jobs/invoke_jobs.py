@@ -21,6 +21,7 @@ import sys
 from flask import Flask
 from pay_api import build_cache
 from pay_api.services import Flags
+from pay_api.services.email_service import JobFailureNotification
 from pay_api.services.gcp_queue import queue
 from pay_api.utils.logging import setup_logging
 
@@ -88,78 +89,98 @@ def run(job_name, argument=None):
     from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
 
     jobs_with_data_warehouse_connections = ["BCOL_REFUND_CONFIRMATION"]
+
     application = create_app(job_name=job_name, init_data_warehouse=job_name in jobs_with_data_warehouse_connections)
-
     application.app_context().push()
-    match job_name:
-        case "UPDATE_GL_CODE":
-            DistributionTask.update_failed_distributions()
-            application.logger.info("<<<< Completed Updating GL Codes >>>>")
-        case "GENERATE_STATEMENTS":
-            StatementTask.generate_statements(argument)
-            application.logger.info("<<<< Completed Generating Statements >>>>")
-        case "SEND_NOTIFICATIONS":
-            StatementNotificationTask.send_notifications()
-            application.logger.info("<<<< Completed Sending notifications >>>>")
-        case "UPDATE_STALE_PAYMENTS":
-            StalePaymentTask.update_stale_payments()
-            application.logger.info("<<<< Completed Updating stale payments >>>>")
-        case "CREATE_CFS_ACCOUNTS":
-            CreateAccountTask.create_accounts()
-            application.logger.info("<<<< Completed creating cfs accounts >>>>")
-        case "CREATE_INVOICES":
-            CreateInvoiceTask.create_invoices()
-            application.logger.info("<<<< Completed creating cfs invoices >>>>")
-        case "ACTIVATE_PAD_ACCOUNTS":
-            ActivatePadAccountTask.activate_pad_accounts()
-            application.logger.info("<<<< Completed Activating PAD accounts >>>>")
-        case "EJV_PARTNER":
-            EjvPartnerDistributionTask.create_ejv_file()
-            application.logger.info("<<<< Completed Creating EJV File for partner distribution>>>>")
-        case "NOTIFY_UNPAID_INVOICE_OB":
-            UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
-            application.logger.info("<<<< Completed Sending notification for OB invoices >>>>")
-        case "STATEMENTS_DUE":
-            action_override = argument[0] if argument and len(argument) >= 1 else None
-            date_override = argument[1] if argument and len(argument) >= 2 else None
-            auth_account_override = argument[2] if argument and len(argument) >= 3 else None
 
-            application.logger.info(f"{action_override} {date_override} {auth_account_override}")
-            EFTStatementDueTask.process_unpaid_statements(
-                action_override=action_override,
-                date_override=date_override,
-                auth_account_override=auth_account_override,
-            )
-            application.logger.info("<<<< Completed Sending notification for unpaid statements >>>>")
-        case "ROUTING_SLIP":
-            RoutingSlipTask.link_routing_slips()
-            RoutingSlipTask.process_void()
-            RoutingSlipTask.process_nsf()
-            RoutingSlipTask.process_correction()
-            RoutingSlipTask.adjust_routing_slips()
-            application.logger.info("<<<< Completed Routing Slip tasks >>>>")
-        case "EFT":
-            EFTTask.link_electronic_funds_transfers_cfs()
-            EFTTask.reverse_electronic_funds_transfers_cfs()
-            application.logger.info("<<<< Completed EFT tasks >>>>")
-        case "EFT_OVERPAYMENT":
-            date_override = argument[0] if argument and len(argument) >= 1 else None
-            EFTOverpaymentNotificationTask.process_overpayment_notification(date_override=date_override)
-            application.logger.info("<<<< Completed Sending notification for EFT Over Payment >>>>")
-        case "EJV_PAYMENT":
-            EjvPaymentTask.create_ejv_file()
-            application.logger.info("<<<< Completed running EJV payment >>>>")
-        case "AP":
-            ApTask.create_ap_files()
-            application.logger.info("<<<< Completed running AP Job for refund >>>>")
-        case "DIRECT_PAY_REFUND":
-            DirectPayAutomatedRefundTask.process_cc_refunds()
-            application.logger.info("<<<< Completed running Direct Pay Automated Refund Job >>>>")
-        case "BCOL_REFUND_CONFIRMATION":
-            BcolRefundConfirmationTask.update_bcol_refund_invoices()
-            application.logger.info("<<<< Completed running BCOL Refund Confirmation Job >>>>")
-        case _:
-            application.logger.debug("No valid args passed. Exiting job without running any ***************")
+    try:
+        match job_name:
+            case "UPDATE_GL_CODE":
+                DistributionTask.update_failed_distributions()
+                application.logger.info("<<<< Completed Updating GL Codes >>>>")
+            case "GENERATE_STATEMENTS":
+                StatementTask.generate_statements(argument)
+                application.logger.info("<<<< Completed Generating Statements >>>>")
+            case "SEND_NOTIFICATIONS":
+                StatementNotificationTask.send_notifications()
+                application.logger.info("<<<< Completed Sending notifications >>>>")
+            case "UPDATE_STALE_PAYMENTS":
+                StalePaymentTask.update_stale_payments()
+                application.logger.info("<<<< Completed Updating stale payments >>>>")
+            case "CREATE_CFS_ACCOUNTS":
+                CreateAccountTask.create_accounts()
+                application.logger.info("<<<< Completed creating cfs accounts >>>>")
+            case "CREATE_INVOICES":
+                CreateInvoiceTask.create_invoices()
+                application.logger.info("<<<< Completed creating cfs invoices >>>>")
+            case "ACTIVATE_PAD_ACCOUNTS":
+                ActivatePadAccountTask.activate_pad_accounts()
+                application.logger.info("<<<< Completed Activating PAD accounts >>>>")
+            case "EJV_PARTNER":
+                EjvPartnerDistributionTask.create_ejv_file()
+                application.logger.info("<<<< Completed Creating EJV File for partner distribution>>>>")
+            case "NOTIFY_UNPAID_INVOICE_OB":
+                UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
+                application.logger.info("<<<< Completed Sending notification for OB invoices >>>>")
+            case "STATEMENTS_DUE":
+                action_override = argument[0] if argument and len(argument) >= 1 else None
+                date_override = argument[1] if argument and len(argument) >= 2 else None
+                auth_account_override = argument[2] if argument and len(argument) >= 3 else None
+
+                application.logger.info(f"{action_override} {date_override} {auth_account_override}")
+                EFTStatementDueTask.process_unpaid_statements(
+                    action_override=action_override,
+                    date_override=date_override,
+                    auth_account_override=auth_account_override,
+                )
+                application.logger.info("<<<< Completed Sending notification for unpaid statements >>>>")
+            case "ROUTING_SLIP":
+                RoutingSlipTask.link_routing_slips()
+                RoutingSlipTask.process_void()
+                RoutingSlipTask.process_nsf()
+                RoutingSlipTask.process_correction()
+                RoutingSlipTask.adjust_routing_slips()
+                application.logger.info("<<<< Completed Routing Slip tasks >>>>")
+            case "EFT":
+                EFTTask.link_electronic_funds_transfers_cfs()
+                EFTTask.reverse_electronic_funds_transfers_cfs()
+                application.logger.info("<<<< Completed EFT tasks >>>>")
+            case "EFT_OVERPAYMENT":
+                date_override = argument[0] if argument and len(argument) >= 1 else None
+                EFTOverpaymentNotificationTask.process_overpayment_notification(date_override=date_override)
+                application.logger.info("<<<< Completed Sending notification for EFT Over Payment >>>>")
+            case "EJV_PAYMENT":
+                EjvPaymentTask.create_ejv_file()
+                application.logger.info("<<<< Completed running EJV payment >>>>")
+            case "AP":
+                ApTask.create_ap_files()
+                application.logger.info("<<<< Completed running AP Job for refund >>>>")
+            case "DIRECT_PAY_REFUND":
+                DirectPayAutomatedRefundTask.process_cc_refunds()
+                application.logger.info("<<<< Completed running Direct Pay Automated Refund Job >>>>")
+            case "BCOL_REFUND_CONFIRMATION":
+                BcolRefundConfirmationTask.update_bcol_refund_invoices()
+                application.logger.info("<<<< Completed running BCOL Refund Confirmation Job >>>>")
+            case _:
+                application.logger.debug("No valid args passed. Exiting job without running any ***************")
+    except Exception as e:
+        msg = f"Error occurred in Invoke Jobs: {e}"
+        if application is not None:
+            application.logger.error(msg)
+        send_notification(msg)
+        raise
+
+
+def send_notification(error_message: str):
+    """Send notification for job failure."""
+    notification = JobFailureNotification(
+        subject="Invoke Job Failure",
+        file_name="ejv_partner_distribution",
+        error_messages=[{"error": error_message}],
+        table_name=None,
+        job_name="Invoke Job Failure",
+    )
+    notification.send_notification()
 
 
 if __name__ == "__main__":
