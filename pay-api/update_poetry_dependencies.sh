@@ -6,6 +6,7 @@ TARGET_DIRS=(
   "../pay-queue"
   "../pay-admin"
   "../jobs/payment-jobs"
+  "../jobs/ftp-poller"
 )
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
