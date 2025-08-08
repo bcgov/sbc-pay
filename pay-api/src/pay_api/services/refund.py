@@ -198,7 +198,7 @@ class RefundService:
     @classmethod
     def _initialize_refund(cls, invoice_id: int, request: Dict[str, str], user: UserContext) -> RefundModel:
         """Initialize refund."""
-        refund: RefundService = RefundModel()
+        refund = RefundModel()
         refund.invoice_id = invoice_id
         refund.reason = get_str_by_path(request, "reason")
         refund.requested_by = user.user_name
