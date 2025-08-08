@@ -29,6 +29,7 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.gcp_queue_publisher import QueueMessage
@@ -495,9 +496,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
     @staticmethod
     def __save_receipt(invoice, receipt_details):
-        receipt: Receipt = Receipt.find_by_invoice_id_and_receipt_number(invoice.id, receipt_details[0])
-        if not receipt.id:
-            receipt: Receipt = Receipt()
+        receipt = Receipt.find_by_invoice_id_and_receipt_number(invoice.id, receipt_details[0])
+        if not receipt:
+            receipt = ReceiptModel()
             receipt.receipt_number = receipt_details[0]
             receipt.receipt_date = receipt_details[1]
             receipt.receipt_amount = receipt_details[2]
@@ -506,7 +507,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             receipt.receipt_date = receipt_details[1]
             receipt.receipt_amount = receipt_details[2]
 
-        # Save receipt details to DB.
         receipt.flush()
         return receipt
 
