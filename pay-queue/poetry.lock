@@ -2185,7 +2185,7 @@ werkzeug = "^3.0.3"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "service_cleanup"
-resolved_reference = "85fd3b4b2e73d8bb68917af62cfd3de29e78f799"
+resolved_reference = "beb218369d5ad7e9b1c0f4667cbc7d9f4c4df572"
 subdirectory = "pay-api"
 
 [[package]]
