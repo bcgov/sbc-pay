@@ -53,22 +53,22 @@ def test_receipt_saved_from_new(session):
     receipt.receipt_amount = 100
     receipt = receipt.save()
 
-    receipt_model_lookup = ReceiptService.find_by_id(receipt.id)
+    rm_lookup = ReceiptModel.find_by_id(receipt.id)
 
-    assert receipt_model_lookup is not None
-    assert receipt_model_lookup.id is not None
-    assert receipt_model_lookup.receipt_date is not None
-    assert receipt_model_lookup.invoice_id is not None
+    assert rm_lookup is not None
+    assert rm_lookup.id is not None
+    assert rm_lookup.receipt_date is not None
+    assert rm_lookup.invoice_id is not None
 
-    receipt_model_lookup = ReceiptService.find_by_invoice_id_and_receipt_number(i.id, receipt_model_lookup.receipt_number)
+    rm_lookup = ReceiptService.find_by_invoice_id_and_receipt_number(i.id, rm_lookup.receipt_number)
 
-    assert receipt_model_lookup is not None
-    assert receipt_model_lookup.id is not None
+    assert rm_lookup is not None
+    assert rm_lookup.id is not None
 
 
 def test_receipt_invalid_lookup(session):
     """Test invalid lookup."""
-    receipt = ReceiptService.find_by_id(999)
+    receipt = ReceiptModel.find_by_id(999)
 
     assert receipt is None
     receipt = ReceiptService.find_by_invoice_id_and_receipt_number(999, "1234567890")
