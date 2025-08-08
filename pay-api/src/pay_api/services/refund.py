@@ -93,7 +93,7 @@ class RefundService:
         rs_model.status = status
         rs_model.flush()
 
-        refund = RefundModel.find_by_routing_slip_id(rs_model.id)
+        refund = RefundModel.find_by_routing_slip_id(rs_model.id) or RefundModel()
 
         if not is_refund_finalized:
             # do not update these for approval/rejections
