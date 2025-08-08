@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage Receipt."""
 
-from typing import Any, Dict, Self
+from typing import Any, Dict
 
 from flask import current_app
 from sbc_common_components.utils.camel_case_response import camelcase_dict
