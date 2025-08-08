@@ -14,7 +14,6 @@
 """Service to manage routing slip comments."""
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Dict
 
 from flask import current_app
@@ -59,7 +58,6 @@ class Comment:
         if (routing_slip := RoutingSlipModel.find_by_number(number=rs_number)) is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
-        # Create a routing slip comment record.
         comment = Comment()
         comment = CommentModel(comment=comment_value, routing_slip_number=rs_number)
         comment.commit()
