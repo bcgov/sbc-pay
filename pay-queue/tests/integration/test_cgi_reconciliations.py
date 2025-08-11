@@ -646,7 +646,7 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
     jv_accounts = [jv_account_1, jv_account_2, jv_account_3, jv_account_4]
     inv_ids = []
     jv_account_ids = []
-    inv_total_amount = 101.5
+    inv_total_amount = 106.5  # 100 + 1.5 + 5.0 GST
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
         inv = factory_invoice(
@@ -663,6 +663,8 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
             filing_fees=100,
             total=100,
             service_fees=1.5,
+            service_fees_gst=0.075,  # 5% GST on service fees (1.5 * 0.05)
+            statutory_fees_gst=5.0,  # 5% GST on filing fees (100 * 0.05)
             fee_dist_id=dist_code.distribution_code_id,
         )
         inv_ids.append(inv.id)
@@ -681,6 +683,9 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         inv_total = f"{inv.total:.2f}".zfill(15)
         pay_line_amount = f"{line.total:.2f}".zfill(15)
         service_fee_amount = f"{line.service_fees:.2f}".zfill(15)
+        statutory_fees_gst_amount = f"{line.statutory_fees_gst:.2f}".zfill(15)
+        service_fees_gst_amount = f"{line.service_fees_gst:.2f}".zfill(15)
+        
         # one JD has a shortened width (outside of spec).
         jh_and_jd = (
             f"..JH...FI0000000{ejv_header.id}.........................{inv_total}....................."
@@ -708,6 +713,30 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
             f"..................................CGI\n"
             f"..JD...FI0000000{ejv_header.id}0000420230529................................................"
             f"...........{service_fee_amount}C.............................................................."
+            f"......................................{inv.id}                                             "
+            f"                                                                0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000520230529..................................................."
+            f"........{statutory_fees_gst_amount}D................................................................."
+            f"...................................{inv.id}                                             "
+            f"                                                        0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000620230529................................................"
+            f"...........{statutory_fees_gst_amount}C.............................................................."
+            f"......................................{inv.id}                                             "
+            f"                                                                0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000720230529..................................................."
+            f"........{service_fees_gst_amount}D................................................................."
+            f"...................................{inv.id}                                             "
+            f"                                                        0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000820230529................................................"
+            f"...........{service_fees_gst_amount}C.............................................................."
             f"......................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
@@ -835,7 +864,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
     jv_accounts = [jv_account_1, jv_account_3]
     inv_ids = []
     jv_account_ids = []
-    inv_total_amount = 101.5
+    inv_total_amount = 106.5  # 100 + 1.5 + 5.0 GST
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
         inv = factory_invoice(
@@ -852,6 +881,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
             filing_fees=100,
             total=100,
             service_fees=1.5,
+            service_fees_gst=0.075,  # 5% GST on service fees (1.5 * 0.05)
+            statutory_fees_gst=5.0,  # 5% GST on filing fees (100 * 0.05)
             fee_dist_id=dist_code.distribution_code_id,
         )
         inv_ids.append(inv.id)
@@ -870,6 +901,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
         inv_total = f"{inv.total:.2f}".zfill(15)
         pay_line_amount = f"{line.total:.2f}".zfill(15)
         service_fee_amount = f"{line.service_fees:.2f}".zfill(15)
+        statutory_fees_gst_amount = f"{line.statutory_fees_gst:.2f}".zfill(15)
+        service_fees_gst_amount = f"{line.service_fees_gst:.2f}".zfill(15)
         jh_and_jd = (
             f"..JH...FI0000000{ejv_header.id}.........................{inv_total}....................."
             f"............................................................................................"
@@ -900,10 +933,34 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000520230529..................................................."
+            f"........{statutory_fees_gst_amount}C................................................................."
+            f"...................................{inv.id}                                             "
+            f"                                                        0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000620230529................................................"
+            f"...........{statutory_fees_gst_amount}D.............................................................."
+            f"......................................{inv.id}                                             "
+            f"                                                                0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000720230529..................................................."
+            f"........{service_fees_gst_amount}C................................................................."
+            f"...................................{inv.id}                                             "
+            f"                                                        0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
+            f"..JD...FI0000000{ejv_header.id}0000820230529................................................"
+            f"...........{service_fees_gst_amount}D.............................................................."
+            f"......................................{inv.id}                                             "
+            f"                                                                0000........................"
+            f"............................................................................................"
+            f"..................................CGI\n"
         )
         feedback_content = feedback_content + jh_and_jd
     feedback_content = (
-        feedback_content + f"..BT.......FI0000000{ejv_header.id}000000000000002{inv_total}0000......."
+        feedback_content + f"..BT.......FI0000000{ejv_header.id}000000000000002{inv_total_amount:.2f}0000......."
         f"........................................................................."
         f"......................................................................CGI"
     )

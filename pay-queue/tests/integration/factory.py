@@ -141,6 +141,8 @@ def factory_payment_line_item(
     filing_fees: int = 10,
     total: int = 10,
     service_fees: int = 0,
+    service_fees_gst: int = 0,
+    statutory_fees_gst: int = 0,
     status: str = LineItemStatus.ACTIVE.value,
     fee_dist_id: int = None,
 ):
@@ -151,6 +153,8 @@ def factory_payment_line_item(
         filing_fees=filing_fees,
         total=total,
         service_fees=service_fees,
+        service_fees_gst=service_fees_gst,
+        statutory_fees_gst=statutory_fees_gst,
         line_item_status_code=status,
         fee_distribution_id=fee_dist_id
         or DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id,
