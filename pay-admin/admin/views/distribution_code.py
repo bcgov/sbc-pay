@@ -44,6 +44,8 @@ class DistributionCodeConfig(SecuredView):
         "stop_ejv": "Suspend EJV",
         "service_fee_distribution_code": "Service Fee Distribution Code",
         "disbursement_distribution_code": "Disbursement Distribution Code",
+        "statutory_fees_gst_distribution_code": "Statutory Fees GST Distribution Code",
+        "service_fee_gst_distribution_code": "Service Fee GST Distribution Code",
         "account": "Account (For ministry government accounts)",
     }
     column_searchable_list = (
@@ -80,6 +82,8 @@ class DistributionCodeConfig(SecuredView):
         "stop_ejv",
         "service_fee_distribution_code",
         "disbursement_distribution_code",
+        "statutory_fees_gst_distribution_code",
+        "service_fee_gst_distribution_code",
         "account",
     ]
 
