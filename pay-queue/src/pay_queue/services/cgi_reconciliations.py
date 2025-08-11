@@ -338,8 +338,8 @@ def _mark_distribution_codes_as_stopped(line_items):
     """Mark distribution codes as stopped."""
     for line_item in line_items:
         # Line debit distribution
-        debit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
-        credit_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+        debit_distribution = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
+        credit_distribution = DistributionCodeModel.find_by_id(
             debit_distribution.disbursement_distribution_code_id
         )
         credit_distribution.stop_ejv = True
@@ -476,7 +476,7 @@ def _group_batches(content: str) -> Dict[str, List]:
     """Group batches based on the group and trailer."""
     # A batch starts from BG to BT.
     group_batches: Dict[str, List] = {"EJV": [], "AP": []}
-    batch_content: str = ""
+    batch_content = ""
 
     is_ejv = True
     for line in content.splitlines():
