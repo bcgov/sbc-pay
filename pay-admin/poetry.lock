@@ -2110,8 +2110,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "15007"
-resolved_reference = "7a0e7d974d57d488a2e7cc4422aa7e8b5c9d04d6"
+reference = "15008"
+resolved_reference = "40ab69b209139a284bb74a3f2a109442acb905f0"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3350,4 +3350,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "6512b0e3b08eb96a6962de4168884411fb52e627fd52dc8e04b787adc22846a4"
+content-hash = "fb1520ab9bc6a43a2dfaef8bbae74820d4f9349e3e59d1d6295406d80035a757"
