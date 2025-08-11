@@ -47,6 +47,8 @@ from .factory import (
     factory_refund_partial,
 )
 
+from decimal import Decimal
+
 
 def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
     """Test payments for gov accounts.
@@ -333,19 +335,19 @@ def test_gst_transactions_creation(session, monkeypatch, google_bucket_mock):
     assert len(transactions) == 4
 
     transaction_amounts = [t.line_item.amount for t in transactions]
-    assert 100 in transaction_amounts
-    assert 1.5 in transaction_amounts
-    assert 0.2 in transaction_amounts
-    assert 9.0 in transaction_amounts
+    assert Decimal('100.00') in transaction_amounts
+    assert Decimal('1.50') in transaction_amounts
+    assert Decimal('0.20') in transaction_amounts
+    assert Decimal('9.00') in transaction_amounts
 
     for transaction in transactions:
-        if transaction.line_item.amount == 100:
+        if transaction.line_item.amount == Decimal('100.00'):
             assert transaction.line_distribution.distribution_code_id == dist_code.distribution_code_id
-        elif transaction.line_item.amount == 1.5:
+        elif transaction.line_item.amount == Decimal('1.50'):
             assert transaction.line_distribution.distribution_code_id == service_fee_dist_code.distribution_code_id
-        elif transaction.line_item.amount == 0.2:
+        elif transaction.line_item.amount == Decimal('0.20'):
             assert transaction.line_distribution.distribution_code_id == service_fee_gst_dist_code.distribution_code_id
-        elif transaction.line_item.amount == 9.0:
+        elif transaction.line_item.amount == Decimal('9.00'):
             assert (
                 transaction.line_distribution.distribution_code_id == statutory_fees_gst_dist_code.distribution_code_id
             )
