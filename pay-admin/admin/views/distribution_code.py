@@ -21,6 +21,9 @@ from .secured_view import SecuredView
 class DistributionCodeConfig(SecuredView):
     """Distribution Code config."""
 
+    # Fields that should be hidden when used as service fee distribution code
+    SERVICE_FEE_FIELDS_HIDDEN = ['service_fee_distribution_code', 'statutory_fees_gst_distribution_code', 'service_fee_gst_distribution_code']
+
     column_list = [
         "name",
         "client",
@@ -69,9 +72,8 @@ class DistributionCodeConfig(SecuredView):
         }
     }
 
-    form_columns = edit_columns = [
+    form_columns = [
         "name",
-        "stop_ejv",
         "client",
         "responsibility_centre",
         "service_line",
@@ -84,13 +86,42 @@ class DistributionCodeConfig(SecuredView):
         "disbursement_distribution_code",
         "statutory_fees_gst_distribution_code",
         "service_fee_gst_distribution_code",
-        "account",
+        "account"
     ]
+    
+    edit_columns = form_columns
+
+    def _should_hide_service_fee_fields(self, distribution_code_id):
+        """Check if service fee related fields should be hidden for the given distribution code."""
+        if not distribution_code_id:
+            return False
+        
+        try:
+            return db.session.query(DistributionCode).filter(
+                DistributionCode.service_fee_distribution_code_id == distribution_code_id
+            ).first() is not None
+        except Exception as e:
+            print(f"Error checking distribution code usage: {e}")
+            return False
+
+    def _disable_field(self, field, message):
+        """Disable a form field with a message."""
+        if hasattr(field, 'render_kw'):
+            if field.render_kw is None:
+                field.render_kw = {}
+            field.render_kw["disabled"] = True
+            field.render_kw["title"] = message
 
     def edit_form(self, obj=None):
         """Edit form overrides."""
         form = super().edit_form(obj)
         form.account.render_kw = {"disabled": True}
+
+        if obj and obj.distribution_code_id and self._should_hide_service_fee_fields(obj.distribution_code_id):
+            message = "This field is disabled because this distribution code is used as a service fee distribution code elsewhere"
+            for field_name in self.SERVICE_FEE_FIELDS_HIDDEN:
+                if hasattr(form, field_name):
+                    self._disable_field(getattr(form, field_name), message)
 
         return form
 
