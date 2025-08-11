@@ -32,7 +32,6 @@ click = "8.1.7"
 croniter = "2.0.2"
 cryptography = "44.0.1"
 dpath = "2.1.6"
-ecdsa = "0.18.0"
 expiringdict = "1.2.2"
 flask-marshmallow = "1.2.0"
 gcp-queue = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/gcp-queue", branch = "main" }

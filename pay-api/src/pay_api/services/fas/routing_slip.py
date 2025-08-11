@@ -45,134 +45,14 @@ from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_local_time, get_quantized, string_to_date
 
 
-class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
+class RoutingSlip:
     """Service to manage Routing slip related operations."""
 
-    def __init__(self):
-        """Initialize the service."""
-        self.__dao = None
-        self._id: int = None
-        self._number: str = None
-        self._payment_account_id: int = None
-        self._status_code: str = None
-        self._total: Decimal = None
-        self._remaining_amount: Decimal = None
-        self._total_usd: Decimal = None
-
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = RoutingSlipModel()
-        return self.__dao
-
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao: RoutingSlipModel = value
-        self.id: int = self._dao.id
-        self.number: str = self._dao.number
-        self.status_code: str = self._dao.status_code
-        self.payment_account_id: int = self._dao.payment_account_id
-        self.total: Decimal = self._dao.total
-        self.remaining_amount: Decimal = self._dao.remaining_amount
-        self._total_usd: Decimal = self._dao.total_usd
-
-    @property
-    def id(self):
-        """Return the _id."""
-        return self._id
-
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
-
-    @property
-    def number(self):
-        """Return the number."""
-        return self._number
-
-    @number.setter
-    def number(self, value: str):
-        """Set the number."""
-        self._number = value
-        self._dao.number = value
-
-    @property
-    def status_code(self):
-        """Return the status_code."""
-        return self._status_code
-
-    @status_code.setter
-    def status_code(self, value: str):
-        """Set the status_code."""
-        self._status_code = value
-        self._dao.status_code = value
-
-    @property
-    def payment_account_id(self):
-        """Return the payment_account_id."""
-        return self._payment_account_id
-
-    @payment_account_id.setter
-    def payment_account_id(self, value: int):
-        """Set the payment_account_id."""
-        self._payment_account_id = value
-        self._dao.payment_account_id = value
-
-    @property
-    def total(self):
-        """Return the total."""
-        return self._total
-
-    @total.setter
-    def total(self, value: Decimal):
-        """Set the total."""
-        self._total = value
-        self._dao.total = value
-
-    @property
-    def remaining_amount(self):
-        """Return the remaining_amount."""
-        return self._remaining_amount
-
-    @remaining_amount.setter
-    def remaining_amount(self, value: Decimal):
-        """Set the amount."""
-        self._remaining_amount = value
-        self._dao.remaining_amount = value
-
-    @property
-    def total_usd(self):
-        """Return the usd total."""
-        return self._total_usd
-
-    @total_usd.setter
-    def total_usd(self, value: Decimal):
-        """Set the usd total."""
-        self._total_usd = value
-        self._dao.total_usd = value
-
-    def commit(self):
-        """Save the information to the DB."""
-        return self._dao.commit()
-
-    def flush(self):
-        """Save the information to the DB."""
-        return self._dao.flush()
-
-    def rollback(self):
-        """Rollback."""
-        return self._dao.rollback()
-
-    def save(self):
-        """Save the information to the DB."""
-        return self._dao.save()
-
-    def asdict(self) -> Dict[str]:
+    @classmethod
+    def asdict(cls, dao) -> Dict[str]:
         """Return the routing slip as a python dict."""
         routing_slip_schema = RoutingSlipSchema()
-        d = routing_slip_schema.dump(self._dao)
+        d = routing_slip_schema.dump(dao)
         return d
 
     @classmethod
@@ -183,6 +63,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             "total": total,
             "page": page,
             "limit": limit,
+            # Future: Use CATTRS
             # We need these fields, to populate the UI.
             "items": RoutingSlipSchema(
                 only=(
@@ -245,6 +126,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 if routing_slip.total_usd is not None:
                     total_cheque_usd += routing_slip.total_usd
 
+        # Future: Use CATTRS
         report_dict = {
             "templateName": "routing_slip_report",
             "reportName": f"Routing-Slip-Daily-Report-{date}",
@@ -282,8 +164,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     def find_by_number(cls, rs_number: str) -> Dict[str, any]:
         """Find by routing slip number."""
         routing_slip_dict: Dict[str, any] = None
-        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
-        if routing_slip:
+        if routing_slip := RoutingSlipModel.find_by_number(rs_number):
+            # Future: Use CATTRS
             routing_slip_schema = RoutingSlipSchema(
                 exclude=(
                     "city",
@@ -299,6 +181,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             routing_slip_dict["allowedStatuses"] = RoutingSlipStatusTransitionService.get_possible_transitions(
                 routing_slip
             )
+            # Future: Use CATTRS
             routing_slip_dict["mailingAddress"] = {
                 "city": routing_slip.city,
                 "country": routing_slip.country,
@@ -315,8 +198,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     def get_links(cls, rs_number: str) -> Dict[str, any]:
         """Find dependents/links of a routing slips."""
         links: Dict[str, any] = None
-        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
-        if routing_slip:
+        if routing_slip := RoutingSlipModel.find_by_number(rs_number):
             routing_slip_schema = RoutingSlipSchema()
             children = RoutingSlipModel.find_children(rs_number)
             links = {
@@ -350,7 +232,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 if payment.get("paymentDate") is None:
                     raise BusinessException(Error.INVALID_REQUEST)
 
-        pay_account: PaymentAccountModel = PaymentAccountModel(
+        pay_account = PaymentAccountModel(
             name=request_json.get("paymentAccount").get("accountName"),
             payment_method=payment_methods[0],
         ).flush()
@@ -370,7 +252,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         mailing_address = request_json.get("mailingAddress", {})
         # Create a routing slip record.
-        routing_slip: RoutingSlipModel = RoutingSlipModel(
+        routing_slip = RoutingSlipModel(
             number=rs_number,
             payment_account_id=pay_account.id,
             status=RoutingSlipStatus.ACTIVE.value,
@@ -409,8 +291,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     @classmethod
     def do_link(cls, rs_number: str, parent_rs_number: str) -> Dict[str, any]:
         """Link routing slip to parent routing slip."""
-        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
-        parent_routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(parent_rs_number)
+        routing_slip = RoutingSlipModel.find_by_number(rs_number)
+        parent_routing_slip = RoutingSlipModel.find_by_number(parent_rs_number)
         if routing_slip is None or parent_routing_slip is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
@@ -544,7 +426,6 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             raise BusinessException(Error.RS_PARENT_ALREADY_LINKED)
 
         # prevent self linking
-
         if routing_slip.number == parent_rs_slip.number:
             raise BusinessException(Error.RS_CANT_LINK_TO_SAME)
 

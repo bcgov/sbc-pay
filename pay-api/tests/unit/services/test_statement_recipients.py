@@ -21,23 +21,6 @@ from pay_api.models.statement_recipients import StatementRecipients as Statement
 from pay_api.services.statement_recipients import StatementRecipients as StatementRecipientsService
 
 
-def test_statement_recipients_basic(session):
-    """Assert that the basic functionality works."""
-    statement_recipients = StatementRecipientsService()
-    statement_recipients.auth_user_id = 1
-    statement_recipients.id = 1
-    statement_recipients.firstname = "hey"
-    statement_recipients.payment_account_id = 1
-    statement_recipients.email = "hallo@hallo.com"
-    data = statement_recipients.asdict()
-    assert data
-    assert data["id"] == 1
-    assert data["auth_user_id"] == 1
-    assert data["firstname"] == "hey"
-    assert data["email"] == "hallo@hallo.com"
-    assert "payment_account_id" not in data
-
-
 def test_statement_recipients_find_statement_notification(session):
     """Assert that a statement notification can be found."""
     payment_account = PaymentAccountModel(auth_account_id="1").save()

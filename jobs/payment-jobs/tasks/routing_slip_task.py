@@ -29,7 +29,6 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
     CfsAccountStatus,
     CfsReceiptStatus,
@@ -501,8 +500,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.debug(f"Applying receipt {receipt_number} to {invoice_number}")
                 receipt_response = CFSService.apply_receipt(active_cfs_account, receipt_number, invoice_number)
 
-                # Create receipt.
-                receipt = Receipt()
+                receipt = ReceiptModel()
                 receipt.receipt_number = receipt_response.json().get("receipt_number", None)
                 receipt_amount = receipt_balance_before_apply - float(receipt_response.json().get("unapplied_amount"))
                 receipt.receipt_amount = receipt_amount

@@ -56,7 +56,6 @@ from pay_api.utils.errors import Error
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
 from .payment_line_item import PaymentLineItem
-from .receipt import Receipt
 
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -370,8 +369,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _publish_refund_to_mailer(invoice: InvoiceModel):
         """Construct message and send to mailer queue."""
-        receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
-        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+        receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
+        invoice_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice_id=invoice.id,
             status_code=InvoiceReferenceStatus.COMPLETED.value,
         )
@@ -434,8 +433,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         current_time = datetime.now(tz=timezone.utc)
         invoice.payment_date = current_time
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-        # Create receipt.
-        receipt = Receipt()
+        receipt = ReceiptModel()
         receipt.receipt_number = invoice_reference.invoice_number
         receipt.receipt_amount = invoice.total
         receipt.invoice_id = invoice.id

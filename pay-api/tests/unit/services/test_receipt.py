@@ -23,6 +23,7 @@ import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.receipt import Receipt as ReceiptService
 from tests.utilities.base_test import (
@@ -45,37 +46,33 @@ def test_receipt_saved_from_new(session):
     i.save()
     factory_invoice_reference(i.id).save()
 
-    receipt_service = ReceiptService()
-    receipt_service.receipt_number = "1234567890"
-    receipt_service.invoice_id = i.id
-    receipt_service.receipt_date = datetime.now(tz=timezone.utc)
-    receipt_service.receipt_amount = 100
-    receipt_service = receipt_service.save()
+    receipt = ReceiptModel()
+    receipt.receipt_number = "1234567890"
+    receipt.invoice_id = i.id
+    receipt.receipt_date = datetime.now(tz=timezone.utc)
+    receipt.receipt_amount = 100
+    receipt = receipt.save()
 
-    receipt_service = ReceiptService.find_by_id(receipt_service.id)
+    rm_lookup = ReceiptModel.find_by_id(receipt.id)
 
-    assert receipt_service is not None
-    assert receipt_service.id is not None
-    assert receipt_service.receipt_date is not None
-    assert receipt_service.invoice_id is not None
+    assert rm_lookup is not None
+    assert rm_lookup.id is not None
+    assert rm_lookup.receipt_date is not None
+    assert rm_lookup.invoice_id is not None
 
-    receipt_service = ReceiptService.find_by_invoice_id_and_receipt_number(i.id, receipt_service.receipt_number)
+    rm_lookup = ReceiptService.find_by_invoice_id_and_receipt_number(i.id, rm_lookup.receipt_number)
 
-    assert receipt_service is not None
-    assert receipt_service.id is not None
+    assert rm_lookup is not None
+    assert rm_lookup.id is not None
 
 
 def test_receipt_invalid_lookup(session):
     """Test invalid lookup."""
-    receipt = ReceiptService.find_by_id(999)
+    receipt = ReceiptModel.find_by_id(999)
 
-    assert receipt is not None
-    assert receipt.id is None
-
+    assert receipt is None
     receipt = ReceiptService.find_by_invoice_id_and_receipt_number(999, "1234567890")
-
-    assert receipt is not None
-    assert receipt.id is None
+    assert receipt is None
 
 
 def test_create_receipt_with_invoice(session, public_user_mock):

@@ -144,7 +144,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
         assert RefundModel.find_by_invoice_id(inv_id) is not None
         mock_publish.assert_called()
 
-        refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
+        refunds_partial = RefundService.get_refund_partials_by_invoice_id(inv_id)
         assert refunds_partial
         assert len(refunds_partial) == 1
 
@@ -236,7 +236,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
 
         assert RefundModel.find_by_invoice_id(inv_id) is not None
 
-        refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
+        refunds_partial = RefundService.get_refund_partials_by_invoice_id(inv_id)
         assert refunds_partial
         assert len(refunds_partial) == 1
 
@@ -327,7 +327,7 @@ def test_create_partial_refund_fails(session, client, jwt, app, monkeypatch):
     assert rv.json.get("type") == Error.PARTIAL_REFUND_INVOICE_NOT_PAID.name
     assert RefundModel.find_by_invoice_id(inv_id) is None
 
-    refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
+    refunds_partial = RefundService.get_refund_partials_by_invoice_id(inv_id)
     assert not refunds_partial
     assert len(refunds_partial) == 0
 
@@ -660,7 +660,7 @@ def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
         assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["EFT.PAID"]
         assert RefundModel.find_by_invoice_id(inv_id) is not None
 
-    refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
+    refunds_partial = RefundService.get_refund_partials_by_invoice_id(inv_id)
     assert refunds_partial
     assert len(refunds_partial) == 1
 
