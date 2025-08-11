@@ -2246,8 +2246,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "security_ecdsa_fix"
-resolved_reference = "7ed856b87d0d89269b597e655e1174d1a57e5224"
+reference = "15008"
+resolved_reference = "40ab69b209139a284bb74a3f2a109442acb905f0"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3552,4 +3552,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "72481f4a218c9ab35ff189ff94c16d7a99c3bbed7c80a5149225c29080446420"
+content-hash = "926d9f6c511c5a8669184bf8a218acda1a8fc6de3a8feefc9230feae86f8205f"

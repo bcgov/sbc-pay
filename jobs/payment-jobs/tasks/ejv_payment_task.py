@@ -15,7 +15,7 @@
 
 import time
 from dataclasses import dataclass
-from typing import List
+from typing import Any, List
 
 from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -57,6 +57,20 @@ class JVParams:
     total: float
     line_number: int
     payment_desc: str
+
+
+@dataclass
+class TransactionParams:
+    """Data class for transaction parameters."""
+
+    gov_account_dist: DistributionCodeModel
+    line_dist: DistributionCodeModel
+    amount: float
+    flow_through: str
+    description: str
+    is_reversal: bool
+    target_type: str
+    target: Any
 
 
 class EjvPaymentTask(CgiEjv):
@@ -313,86 +327,154 @@ class EjvPaymentTask(CgiEjv):
 
         # Debit from GOV account GL
         debit_distribution_code = DistributionCodeModel.find_by_active_for_account(account_id)
-
         current_app.logger.info(f"Processing invoices for account_id: {account_id}.")
 
         payment_desc = f"{PaymentAccountModel.find_by_id(account_id).name[:100]:<100}"
-        # Find all invoices for the gov account to pay.
+
+        cls._process_invoice_transactions(transactions, invoices, debit_distribution_code, payment_desc)
+
+        current_app.logger.info(f"Processing partial refunds for account_id: {account_id}.")
+        cls._process_partial_refund_transactions(
+            transactions, partial_refund_invoices, debit_distribution_code, payment_desc
+        )
+
+        return transactions
+
+    @classmethod
+    def _process_invoice_transactions(cls, transactions, invoices, debit_distribution_code, payment_desc):
+        """Process invoice transactions and add them to the transactions list."""
         for inv in invoices:
             # If it's a JV reversal credit and debit is reversed.
             is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
-
-            description = payment_desc[: -len(f"#{inv.id}")] + f"#{inv.id}"
-            description = f"{description[:100]:<100}"
+            description = cls._build_description(payment_desc, inv.id)
 
             for line in inv.payment_line_items:
-                # Line can have 2 distribution, 1 for the total and another one for service fees.
-                line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                    line.fee_distribution_id
-                )
+                # Line can have 4 distribution, 1 for the total 1 for service fees,
+                # 1 for service fees GST, 1 for statutory fees GST.
+                line_distribution_code = DistributionCodeModel.find_by_id(line.fee_distribution_id)
+
                 if line.total > 0:
                     transactions.append(
-                        EjvTransaction(
-                            gov_account_distribution=debit_distribution_code,
-                            line_distribution=line_distribution_code,
-                            line_item=TransactionLineItem(
+                        cls._create_transaction(
+                            TransactionParams(
+                                gov_account_dist=debit_distribution_code,
+                                line_dist=line_distribution_code,
                                 amount=line.total,
                                 flow_through=f"{inv.id:<110}",
                                 description=description,
                                 is_reversal=is_jv_reversal,
                                 target_type=EJVLinkType.INVOICE.value,
-                            ),
-                            target=inv,
+                                target=inv,
+                            )
                         )
                     )
+
                 if line.service_fees > 0:
-                    service_fee_distribution_code = DistributionCodeModel.find_by_id(
+                    service_fee_dist_code = DistributionCodeModel.find_by_id(
                         line_distribution_code.service_fee_distribution_code_id
                     )
                     transactions.append(
-                        EjvTransaction(
-                            gov_account_distribution=debit_distribution_code,
-                            line_distribution=service_fee_distribution_code,
-                            line_item=TransactionLineItem(
+                        cls._create_transaction(
+                            TransactionParams(
+                                gov_account_dist=debit_distribution_code,
+                                line_dist=service_fee_dist_code,
                                 amount=line.service_fees,
                                 flow_through=f"{inv.id:<110}",
                                 description=description,
                                 is_reversal=is_jv_reversal,
                                 target_type=EJVLinkType.INVOICE.value,
-                            ),
-                            target=inv,
+                                target=inv,
+                            )
                         )
                     )
 
-        # Process partial refunds
-        current_app.logger.info(f"Processing partial refunds for account_id: {account_id}.")
-        for pr_invoice in partial_refund_invoices:
-            # Create description that combines account name and invoice number for partial refund
-            description = payment_desc[: -len(f"#{pr_invoice.id}")] + f"#{pr_invoice.id}"
-            description = f"{description[:100]:<100}"
-
-            for pr in RefundsPartialModel.get_partial_refunds_for_invoice(pr_invoice.id):
-                line = PaymentLineItemModel.find_by_id(pr.payment_line_item_id)
-                line_distribution_code = DistributionCodeModel.find_by_id(line.fee_distribution_id)
-
-                # For service fee refunds, use service fee distribution
-                if pr.refund_type == RefundsPartialType.SERVICE_FEES.value:
-                    line_distribution_code = DistributionCodeModel.find_by_id(
-                        line_distribution_code.service_fee_distribution_code_id
+                if line.service_fees_gst > 0:
+                    service_fee_gst_dist_code = DistributionCodeModel.find_by_id(
+                        line_distribution_code.service_fee_gst_distribution_code_id
+                    )
+                    transactions.append(
+                        cls._create_transaction(
+                            TransactionParams(
+                                gov_account_dist=debit_distribution_code,
+                                line_dist=service_fee_gst_dist_code,
+                                amount=line.service_fees_gst,
+                                flow_through=f"{inv.id:<110}",
+                                description=description,
+                                is_reversal=is_jv_reversal,
+                                target_type=EJVLinkType.INVOICE.value,
+                                target=inv,
+                            )
+                        )
                     )
 
+                if line.statutory_fees_gst > 0:
+                    statutory_fee_gst_dist_code = DistributionCodeModel.find_by_id(
+                        line_distribution_code.statutory_fees_gst_distribution_code_id
+                    )
+                    transactions.append(
+                        cls._create_transaction(
+                            TransactionParams(
+                                gov_account_dist=debit_distribution_code,
+                                line_dist=statutory_fee_gst_dist_code,
+                                amount=line.statutory_fees_gst,
+                                flow_through=f"{inv.id:<110}",
+                                description=description,
+                                is_reversal=is_jv_reversal,
+                                target_type=EJVLinkType.INVOICE.value,
+                                target=inv,
+                            )
+                        )
+                    )
+
+    @classmethod
+    def _process_partial_refund_transactions(
+        cls, transactions, partial_refund_invoices, debit_distribution_code, payment_desc
+    ):
+        """Process partial refund transactions and add them to the transactions list."""
+        for pr_invoice in partial_refund_invoices:
+            # Create description that combines account name and invoice number for partial refund
+            description = cls._build_description(payment_desc, pr_invoice.id)
+
+            for pr in RefundsPartialModel.get_partial_refunds_for_invoice(pr_invoice.id):
+                payment_line = PaymentLineItemModel.find_by_id(pr.payment_line_item_id)
+                line_dist_code = DistributionCodeModel.find_by_id(payment_line.fee_distribution_id)
+
+                if pr.refund_type == RefundsPartialType.SERVICE_FEES.value:
+                    line_dist_code = DistributionCodeModel.find_by_id(line_dist_code.service_fee_distribution_code_id)
+
                 transactions.append(
-                    EjvTransaction(
-                        gov_account_distribution=debit_distribution_code,
-                        line_distribution=line_distribution_code,
-                        line_item=TransactionLineItem(
+                    cls._create_transaction(
+                        TransactionParams(
+                            gov_account_dist=debit_distribution_code,
+                            line_dist=line_dist_code,
                             amount=pr.refund_amount,
-                            flow_through=f"{f'{pr_invoice.id}-PR-{pr.id}':<110}",
+                            flow_through=f"{pr_invoice.id}-PR-{pr.id}",
                             description=description,
                             is_reversal=True,  # Partial refunds are always reversals
                             target_type=EJVLinkType.PARTIAL_REFUND.value,
-                        ),
-                        target=pr,
+                            target=pr,
+                        )
                     )
                 )
-        return transactions
+
+    @classmethod
+    def _build_description(cls, payment_desc: str, invoice_id: int) -> str:
+        """Build description for transaction."""
+        description = payment_desc[: -len(f"#{invoice_id}")] + f"#{invoice_id}"
+        return f"{description[:100]:<100}"
+
+    @classmethod
+    def _create_transaction(cls, params: TransactionParams):
+        """Create an EjvTransaction with the given parameters."""
+        return EjvTransaction(
+            gov_account_distribution=params.gov_account_dist,
+            line_distribution=params.line_dist,
+            line_item=TransactionLineItem(
+                amount=params.amount,
+                flow_through=f"{params.flow_through:<110}",
+                description=params.description,
+                is_reversal=params.is_reversal,
+                target_type=params.target_type,
+            ),
+            target=params.target,
+        )
