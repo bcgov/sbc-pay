@@ -125,7 +125,7 @@ class DistributionCodeConfig(SecuredView):
         form.account.render_kw = {"disabled": True}
 
         if obj and obj.distribution_code_id and self._should_hide_service_fee_fields(obj.distribution_code_id):
-            message = "This field is disabled because this distribution code is used as a service fee distribution code elsewhere"
+            message = "Disabled because this distribution code is used as a service fee distribution code elsewhere"
             for field_name in self.SERVICE_FEE_FIELDS_HIDDEN:
                 if hasattr(form, field_name):
                     self._disable_field(getattr(form, field_name), message)
