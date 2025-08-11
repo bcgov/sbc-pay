@@ -22,7 +22,11 @@ class DistributionCodeConfig(SecuredView):
     """Distribution Code config."""
 
     # Fields that should be hidden when used as service fee distribution code
-    SERVICE_FEE_FIELDS_HIDDEN = ['service_fee_distribution_code', 'statutory_fees_gst_distribution_code', 'service_fee_gst_distribution_code']
+    SERVICE_FEE_FIELDS_HIDDEN = [
+        "service_fee_distribution_code",
+        "statutory_fees_gst_distribution_code",
+        "service_fee_gst_distribution_code",
+    ]
 
     column_list = [
         "name",
@@ -86,27 +90,30 @@ class DistributionCodeConfig(SecuredView):
         "disbursement_distribution_code",
         "statutory_fees_gst_distribution_code",
         "service_fee_gst_distribution_code",
-        "account"
+        "account",
     ]
-    
+
     edit_columns = form_columns
 
     def _should_hide_service_fee_fields(self, distribution_code_id):
         """Check if service fee related fields should be hidden for the given distribution code."""
         if not distribution_code_id:
             return False
-        
+
         try:
-            return db.session.query(DistributionCode).filter(
-                DistributionCode.service_fee_distribution_code_id == distribution_code_id
-            ).first() is not None
+            return (
+                db.session.query(DistributionCode)
+                .filter(DistributionCode.service_fee_distribution_code_id == distribution_code_id)
+                .first()
+                is not None
+            )
         except Exception as e:
             print(f"Error checking distribution code usage: {e}")
             return False
 
     def _disable_field(self, field, message):
         """Disable a form field with a message."""
-        if hasattr(field, 'render_kw'):
+        if hasattr(field, "render_kw"):
             if field.render_kw is None:
                 field.render_kw = {}
             field.render_kw["disabled"] = True

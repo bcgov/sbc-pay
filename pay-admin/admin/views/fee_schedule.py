@@ -30,7 +30,7 @@ class FeeScheduleConfig(SecuredView):
         "service_fee",
         "variable",
         "show_on_pricelist",
-        "gst_added"
+        "gst_added",
     ]
 
     column_labels = {
@@ -68,7 +68,7 @@ class FeeScheduleConfig(SecuredView):
         "distribution_codes",
         "variable",
         "show_on_pricelist",
-        "gst_added"
+        "gst_added",
     ]
     edit_columns = [
         "corp_type",
@@ -79,7 +79,7 @@ class FeeScheduleConfig(SecuredView):
         "service_fee",
         "distribution_codes",
         "show_on_pricelist",
-        "gst_added"
+        "gst_added",
     ]
 
     @staticmethod
