@@ -685,7 +685,7 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         service_fee_amount = f"{line.service_fees:.2f}".zfill(15)
         statutory_fees_gst_amount = f"{line.statutory_fees_gst:.2f}".zfill(15)
         service_fees_gst_amount = f"{line.service_fees_gst:.2f}".zfill(15)
-        
+
         # one JD has a shortened width (outside of spec).
         jh_and_jd = (
             f"..JH...FI0000000{ejv_header.id}.........................{inv_total}....................."
