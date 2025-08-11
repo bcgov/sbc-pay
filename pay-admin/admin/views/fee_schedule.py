@@ -30,6 +30,7 @@ class FeeScheduleConfig(SecuredView):
         "service_fee",
         "variable",
         "show_on_pricelist",
+        "gst_added"
     ]
 
     column_labels = {
@@ -46,6 +47,7 @@ class FeeScheduleConfig(SecuredView):
         "distribution_codes": "Distribution Code",
         "variable": "Variable Fee Flag",
         "show_on_pricelist": "Show on Price List",
+        "gst_added": "GST Added to Price",
     }
     column_searchable_list = ("corp_type_code", "filing_type_code")
     column_sortable_list = ("corp_type_code",)
@@ -66,6 +68,7 @@ class FeeScheduleConfig(SecuredView):
         "distribution_codes",
         "variable",
         "show_on_pricelist",
+        "gst_added"
     ]
     edit_columns = [
         "corp_type",
@@ -76,6 +79,7 @@ class FeeScheduleConfig(SecuredView):
         "service_fee",
         "distribution_codes",
         "show_on_pricelist",
+        "gst_added"
     ]
 
     @staticmethod
@@ -85,6 +89,7 @@ class FeeScheduleConfig(SecuredView):
         form.priority_fee.label.text = "Priority Fee (Starts with 'PRI')"
         form.service_fee.label.text = "Service Fee (Starts with 'TRF')"
         form.distribution_codes.label.text = "Distribution Code (Mandatory for non-zero fees)"
+        form.gst_added.label.text = "GST Added to Price"
 
     def edit_form(self, obj=None):
         """Edit form overrides."""
