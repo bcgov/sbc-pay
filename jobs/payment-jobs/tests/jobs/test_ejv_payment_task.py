@@ -16,6 +16,8 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
+from decimal import Decimal
+
 from pay_api.models import (
     DistributionCode,
     EjvFile,
@@ -46,8 +48,6 @@ from .factory import (
     factory_payment_line_item,
     factory_refund_partial,
 )
-
-from decimal import Decimal
 
 
 def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
@@ -335,19 +335,19 @@ def test_gst_transactions_creation(session, monkeypatch, google_bucket_mock):
     assert len(transactions) == 4
 
     transaction_amounts = [t.line_item.amount for t in transactions]
-    assert Decimal('100.00') in transaction_amounts
-    assert Decimal('1.50') in transaction_amounts
-    assert Decimal('0.20') in transaction_amounts
-    assert Decimal('9.00') in transaction_amounts
+    assert Decimal("100.00") in transaction_amounts
+    assert Decimal("1.50") in transaction_amounts
+    assert Decimal("0.20") in transaction_amounts
+    assert Decimal("9.00") in transaction_amounts
 
     for transaction in transactions:
-        if transaction.line_item.amount == Decimal('100.00'):
+        if transaction.line_item.amount == Decimal("100.00"):
             assert transaction.line_distribution.distribution_code_id == dist_code.distribution_code_id
-        elif transaction.line_item.amount == Decimal('1.50'):
+        elif transaction.line_item.amount == Decimal("1.50"):
             assert transaction.line_distribution.distribution_code_id == service_fee_dist_code.distribution_code_id
-        elif transaction.line_item.amount == Decimal('0.20'):
+        elif transaction.line_item.amount == Decimal("0.20"):
             assert transaction.line_distribution.distribution_code_id == service_fee_gst_dist_code.distribution_code_id
-        elif transaction.line_item.amount == Decimal('9.00'):
+        elif transaction.line_item.amount == Decimal("9.00"):
             assert (
                 transaction.line_distribution.distribution_code_id == statutory_fees_gst_dist_code.distribution_code_id
             )
