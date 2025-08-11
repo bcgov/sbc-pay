@@ -29,24 +29,23 @@ def upgrade():
         VALUES ('{TAX_CLASSIFICATION_GST}', 0.05, '{datetime.now(tz=timezone.utc).isoformat()}', NULL, 'Canadian Goods and Services Tax', 'migration', 'System Migration')
     """)
     op.alter_column('fee_schedules', 'enable_gst', new_column_name='gst_added')
-    op.execute("UPDATE payment_line_items SET service_fees_gst = 0 WHERE service_fees_gst IS NULL")
-    op.execute("UPDATE payment_line_items SET statutory_fees_gst = 0 WHERE statutory_fees_gst IS NULL")
+    op.drop_column('payment_line_items', 'service_fees_gst')
+    op.drop_column('payment_line_items', 'statutory_fees_gst')
     
-    op.alter_column('payment_line_items', 'service_fees_gst',
-                    nullable=False,
-                    server_default='0')
-    op.alter_column('payment_line_items', 'statutory_fees_gst',
-                    nullable=False,
-                    server_default='0')
+    op.add_column('payment_line_items', 
+                  sa.Column('service_fees_gst', sa.Numeric(precision=10, scale=2), nullable=False, server_default='0'))
+    op.add_column('payment_line_items', 
+                  sa.Column('statutory_fees_gst', sa.Numeric(precision=10, scale=2), nullable=False, server_default='0'))
     
 
 def downgrade():
-    op.alter_column('payment_line_items', 'service_fees_gst',
-                    nullable=True,
-                    server_default=None)
-    op.alter_column('payment_line_items', 'statutory_fees_gst',
-                    nullable=True,
-                    server_default=None)
+    op.drop_column('payment_line_items', 'service_fees_gst')
+    op.drop_column('payment_line_items', 'statutory_fees_gst')
+    
+    op.add_column('payment_line_items', 
+                  sa.Column('service_fees_gst', sa.Numeric(precision=10, scale=2), nullable=True))
+    op.add_column('payment_line_items', 
+                  sa.Column('statutory_fees_gst', sa.Numeric(precision=10, scale=2), nullable=True))
     
     op.alter_column('fee_schedules', 'gst_added', new_column_name='enable_gst')
     op.execute(f"""
