@@ -321,9 +321,10 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
 
         if details.is_partial_refund:
             details.partial_refund.gl_error = DisbursementStatus.ERRORED.value
-            line_items: List[PaymentLineItemModel] = PaymentLineItemModel.find_by_id(
+            line_item: Optional[PaymentLineItemModel] = PaymentLineItemModel.find_by_id(
                 details.partial_refund.payment_line_item_id
             )
+            line_items: List[PaymentLineItemModel] = [line_item] if line_item else []
         else:
             details.invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
             line_items: List[PaymentLineItemModel] = details.invoice.payment_line_items
