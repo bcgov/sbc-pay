@@ -390,11 +390,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if not fees or not any(fee.gst_added for fee in fees):
             return 0
         gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
-        return sum(
-            round(fee.total * gst_rate, 2) 
-            for fee in fees 
-            if fee.gst_added
-        )
+        return sum(round(fee.total * gst_rate, 2) for fee in fees if fee.gst_added)
 
 
 def _calculate_fees(corp_type, filing_info):
