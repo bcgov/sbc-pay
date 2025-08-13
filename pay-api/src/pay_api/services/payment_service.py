@@ -17,7 +17,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from threading import Thread
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 from flask import copy_current_request_context, current_app
 
@@ -25,7 +25,6 @@ from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models.receipt import Receipt
-from pay_api.models.tax_rate import TaxRate
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
@@ -118,7 +117,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
             invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
             invoice.total = sum(fee.total for fee in fees) if fees else 0
-            invoice.gst = cls._calculate_gst(fees)
+            invoice.gst = sum(fee.service_fees_gst + fee.statutory_fees_gst for fee in fees)
             invoice.paid = 0
             invoice.refund = 0
             invoice.routing_slip = get_str_by_path(account_info, "routingSlip")
@@ -384,14 +383,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         thread.start()
         current_app.logger.debug(">accept_delete")
 
-    @classmethod
-    def _calculate_gst(cls, fees: List[FeeSchedule]):
-        """Calculate GST for fees that have GST added."""
-        if not fees or not any(fee.gst_added for fee in fees):
-            return 0
-        gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
-        return sum(round(fee.total * gst_rate, 2) for fee in fees if fee.gst_added)
-
 
 def _calculate_fees(corp_type, filing_info):
     """Calculate and return the fees based on the filing type codes."""
@@ -399,7 +390,7 @@ def _calculate_fees(corp_type, filing_info):
     service_fee_applied: bool = False
     for filing_type_info in filing_info.get("filingTypes"):
         current_app.logger.debug(f"Getting fees for {filing_type_info.get('filingTypeCode')} ")
-        fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
+        fee = FeeSchedule.find_by_corp_type_and_filing_type(
             corp_type=corp_type,
             filing_type_code=filing_type_info.get("filingTypeCode", None),
             valid_date=filing_info.get("date", None),
