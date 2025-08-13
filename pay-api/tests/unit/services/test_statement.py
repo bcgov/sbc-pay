@@ -749,8 +749,9 @@ def test_get_eft_statement_with_invoices(session):
                                 {
                                     "description": None,
                                     "filing_type_code": "OTANN",
-                                    "gst": 0.0,
                                     "pst": 0.0,
+                                    "service_fees_gst": 0.0,
+                                    "statutory_fees_gst": 0.0,
                                     "service_fees": 0.0,
                                     "total": 10.0,
                                 },
@@ -786,8 +787,9 @@ def test_get_eft_statement_with_invoices(session):
                                 {
                                     "description": None,
                                     "filing_type_code": "OTANN",
-                                    "gst": 0.0,
                                     "pst": 0.0,
+                                    "service_fees_gst": 0.0,
+                                    "statutory_fees_gst": 0.0,
                                     "service_fees": 0.0,
                                     "total": 10.0,
                                 },
@@ -820,8 +822,9 @@ def test_get_eft_statement_with_invoices(session):
                                 {
                                     "description": None,
                                     "filing_type_code": "OTANN",
-                                    "gst": 0.0,
                                     "pst": 0.0,
+                                    "service_fees_gst": 0.0,
+                                    "statutory_fees_gst": 0.0,
                                     "service_fees": 0.0,
                                     "total": 10.0,
                                 },
@@ -855,8 +858,9 @@ def test_get_eft_statement_with_invoices(session):
                                 {
                                     "description": None,
                                     "filing_type_code": "OTANN",
-                                    "gst": 0.0,
                                     "pst": 0.0,
+                                    "service_fees_gst": 0.0,
+                                    "statutory_fees_gst": 0.0,
                                     "service_fees": 0.0,
                                     "total": 10.0,
                                 },
