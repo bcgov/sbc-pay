@@ -17,7 +17,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from threading import Thread
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 from flask import copy_current_request_context, current_app
 
@@ -118,9 +118,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
             invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
             invoice.total = sum(fee.total for fee in fees) if fees else 0
-            if fee.gst_added:
-               gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
-               invoice.gst = round(invoice.total * gst_rate, 2)
+            invoice.gst = cls._calculate_gst(fees)
             invoice.paid = 0
             invoice.refund = 0
             invoice.routing_slip = get_str_by_path(account_info, "routingSlip")
@@ -385,6 +383,18 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         thread = Thread(target=run_delete)
         thread.start()
         current_app.logger.debug(">accept_delete")
+
+    @classmethod
+    def _calculate_gst(cls, fees: List[FeeSchedule]):
+        """Calculate GST for fees that have GST added."""
+        if not fees or not any(fee.gst_added for fee in fees):
+            return 0
+        gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+        return sum(
+            round(fee.total * gst_rate, 2) 
+            for fee in fees 
+            if fee.gst_added
+        )
 
 
 def _calculate_fees(corp_type, filing_info):
