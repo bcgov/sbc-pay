@@ -71,7 +71,6 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     priority_fees = db.Column(db.Numeric(19, 2), nullable=True)
     future_effective_fees = db.Column(db.Numeric(19, 2), nullable=True)
     description = db.Column(db.String(200), nullable=True)
-    gst = db.Column(db.Numeric(19, 2), nullable=True)  # Keep for backward compatibility during migration
     statutory_fees_gst = db.Column(db.Numeric(19, 2), nullable=False, default=0, comment="GST for statutory fees")
     pst = db.Column(db.Numeric(19, 2), nullable=True)
     total = db.Column(db.Numeric(19, 2), nullable=False)
@@ -111,7 +110,6 @@ class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-man
     filing_fees = fields.Float(data_key="filing_fees")
     priority_fees = fields.Float(data_key="priority_fees")
     future_effective_fees = fields.Float(data_key="future_effective_fees")
-    gst = fields.Float(data_key="gst")
     statutory_fees_gst = fields.Float(data_key="statutory_fees_gst")
     pst = fields.Float(data_key="pst")
     total = fields.Float(data_key="total")
@@ -125,7 +123,6 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
     """Payment Line Item Search Model."""
 
     total: Decimal
-    gst: Decimal
     statutory_fees_gst: Decimal
     pst: Decimal
     service_fees: Decimal
@@ -141,7 +138,6 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
         """
         return cls(
             total=row.total,
-            gst=row.gst,
             statutory_fees_gst=row.statutory_fees_gst,
             pst=row.pst,
             service_fees=row.service_fees,

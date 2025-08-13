@@ -468,8 +468,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
                     "createdOn": get_local_formatted_date(invoice_dao.created_on),
                     "filingTypeCode": line_item.fee_schedule.filing_type_code,
                     "fee": line_item.total,
-                    "gst": line_item.gst,
                     "serviceFees": line_item.service_fees,
+                    "statutoryFeesGst": line_item.statutory_fees_gst,
+                    "serviceFeesGst": line_item.service_fees_gst,
                     "total": line_item.total + line_item.service_fees,
                 }
             )
@@ -479,7 +480,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             "createdOn": get_local_formatted_date(invoice_dao.created_on),
             "accountNumber": cfs_account.cfs_account if cfs_account else None,
             "total": invoice_dao.total,
-            "gst": 0,
+            "gst": invoice_dao.gst,
             "serviceFees": invoice_dao.service_fees,
             "fees": invoice_dao.total - invoice_dao.service_fees,
             "filingTypes": filing_types,

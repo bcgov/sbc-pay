@@ -25,6 +25,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models.receipt import Receipt
+from pay_api.models.tax_rate import TaxRate
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
@@ -117,6 +118,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
             invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
             invoice.total = sum(fee.total for fee in fees) if fees else 0
+            if fee.gst_added:
+               gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+               invoice.gst = round(invoice.total * gst_rate, 2)
             invoice.paid = 0
             invoice.refund = 0
             invoice.routing_slip = get_str_by_path(account_info, "routingSlip")

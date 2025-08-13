@@ -281,6 +281,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     )
 
     total = fields.Float(data_key="total")
+    gst = fields.Float(data_key="gst")
     paid = fields.Float(data_key="paid")
     refund = fields.Float(data_key="refund")
     service_fees = fields.Float(data_key="service_fees")
@@ -326,6 +327,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     refund: Decimal
     service_fees: Decimal
     total: Decimal
+    gst: Decimal
     status_code: str
     filing_id: str
     folio_number: str
@@ -368,6 +370,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             refund=row.refund,
             service_fees=row.service_fees,
             total=row.total,
+            gst=row.gst,
             status_code=(
                 PaymentStatus.COMPLETED.value
                 if row.invoice_status_code == InvoiceStatus.PAID.value

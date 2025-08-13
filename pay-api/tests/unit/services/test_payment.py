@@ -1032,6 +1032,7 @@ def test_generate_payment_report_template_vars_structure(session, monkeypatch):
             "refund": float(invoice.refund or 0),
             "status_code": invoice.invoice_status_code,
             "total": float(invoice.total),
+            "gst": float(invoice.gst or 0),
             "service_fees": float(invoice.service_fees or 0),
             "payment_method": invoice.payment_method_code,
             "folio_number": invoice.folio_number,
@@ -1043,8 +1044,9 @@ def test_generate_payment_report_template_vars_structure(session, monkeypatch):
             invoice_dict["line_items"].append(
                 {
                     "total": float(line_item.total),
-                    "gst": float(line_item.gst or 0),
                     "pst": float(line_item.pst or 0),
+                    "statutory_fees_gst": float(line_item.statutory_fees_gst or 0),
+                    "service_fees_gst": float(line_item.service_fees_gst or 0),
                     "service_fees": float(line_item.service_fees or 0),
                     "description": line_item.description,
                     "filing_type_code": "CSBSRCH" if "View" in line_item.description else "NSF",
