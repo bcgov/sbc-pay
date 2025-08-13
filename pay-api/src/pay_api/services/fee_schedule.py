@@ -160,7 +160,12 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def total(self):
         """Return the total fees calculated."""
         return (
-            self._fee_amount + self.priority_fee + self.future_effective_fee + self.service_fees
+            self._fee_amount
+            + self.priority_fee
+            + self.future_effective_fee
+            + self.service_fees
+            + self.service_fees_gst
+            + self.statutory_fees_gst
         )
 
     @property
@@ -223,8 +228,19 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._service_fees = value
 
     @property
-    def gst(self):
-        """Return the fee amount."""
+    def service_fees_gst(self):
+        """Return the GST amount calculated."""
+        if self._gst_added:
+            gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+            return round(self.service_fees * gst_rate, 2)
+        return 0
+
+    @property
+    def statutory_fees_gst(self):
+        """Return the GST amount calculated."""
+        if self._gst_added:
+            gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+            return round(self.total_excluding_service_fees * gst_rate, 2)
         return 0
 
     @property
@@ -285,7 +301,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
             "filing_fees": float(self.fee_amount),
             "priority_fees": float(self.priority_fee),
             "future_effective_fees": float(self.future_effective_fee),
-            "tax": {"gst": float(self.gst), "pst": float(self.pst)},
+            "tax": {"gst": float(self.service_fees_gst + self.statutory_fees_gst), "pst": float(self.pst)},
             "total": float(self.total),
             "service_fees": float(self._service_fees),
             "processing_fees": 0,

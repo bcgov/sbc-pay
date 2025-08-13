@@ -62,7 +62,6 @@ def test_line_saved_from_new(session):
     assert p.invoice_id is not None
     assert p.filing_fees is not None
     assert p.fee_schedule_id is not None
-    assert p.gst is None
     assert p.pst is None
     assert p.line_item_status_code is not None
     assert p.priority_fees is None

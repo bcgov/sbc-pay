@@ -264,6 +264,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 Invoice.refund_date,
                 Invoice.invoice_status_code,
                 Invoice.total,
+                Invoice.gst,
                 Invoice.service_fees,
                 Invoice.paid,
                 Invoice.refund,
@@ -283,7 +284,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             contains_eager(Invoice.payment_line_items)
             .load_only(
                 PaymentLineItem.description,
-                PaymentLineItem.gst,
+                PaymentLineItem.statutory_fees_gst,
+                PaymentLineItem.service_fees_gst,
                 PaymentLineItem.pst,
                 PaymentLineItem.service_fees,
                 PaymentLineItem.total,

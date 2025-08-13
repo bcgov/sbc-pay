@@ -16,21 +16,30 @@
 
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
+from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
+from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services import CFSService
+from pay_api.services.fee_schedule import FeeSchedule as FeeScheduleService
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
+from pay_api.services.payment_line_item import PaymentLineItem
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, RoutingSlipStatus
-from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
+    factory_corp_type_model,
+    factory_distribution_code,
+    factory_distribution_link,
+    factory_fee_model,
+    factory_fee_schedule_model,
+    factory_filing_type_model,
     factory_invoice,
     factory_invoice_reference,
     factory_payment,
@@ -384,3 +393,123 @@ def test_internal_rs_back_active(session, public_user_mock):
     InternalPayService().process_cfs_refund(invoice, payment_account, None)
 
     assert rs.status == RoutingSlipStatus.ACTIVE.name
+
+
+def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
+    """Test the _calculate_gst method with multiple payment line items."""
+    corp_type = factory_corp_type_model("TEST", "Test Corp Type")
+    filing_type = factory_filing_type_model("TEST", "Test Filing Type")
+
+    fee_configs = [
+        # TEST 1 -> 6 are real ESRA scenarios.
+        ("TEST1", 25.00, True),  # 25.00 * 1 = 25.00
+        ("TEST2", 50.00, True),  # 50.00 * 1 = 50.00
+        ("TEST3", 10.00, True),  # 10.00 * 1 = 10.00
+        ("TEST4", 75.00, True),  # 75.00 * 1 = 75.00
+        ("TEST5", 100.00, True),  # 100.00 * 1 = 100.00
+        ("TEST6", 150.00, True),  # 150.00 * 1 = 150.00
+        ("TEST7", 43.39, True),  # 43.39 * 3 = 130.17
+        ("TEST8", 143.39, True),  # 143.39 * 7 = 1003.73
+        ("TEST9", 33.25, True),  # 33.25 * 3 = 99.75
+        ("TEST10", 66.50, True),  # 66.50 * 7 = 465.50
+        ("TEST11", 100.25, True),  # 100.25 * 2 = 200.50
+        ("TEST12", 12.75, True),  # 12.75 * 5 = 63.75
+    ]
+
+    fee_codes = [factory_fee_model(code, amount) for code, amount, _ in fee_configs]
+    service_fee_codes = [
+        factory_fee_model("SFEE1", 1.00),
+        factory_fee_model("SFEE2", 1.00),
+        factory_fee_model("SFEE3", 1.00),
+        factory_fee_model("SFEE4", 1.00),
+        factory_fee_model("SFEE5", 1.00),
+        factory_fee_model("SFEE6", 1.00),
+        factory_fee_model("SFEE7", 1.00),
+        factory_fee_model("SFEE8", 1.00),
+        factory_fee_model("SFEE9", 1.00),
+        factory_fee_model("SFEE10", 1.00),
+        factory_fee_model("SFEE11", 1.00),
+        factory_fee_model("SFEE12", 1.00),
+    ]
+
+    distribution_code = factory_distribution_code("TEST_DIST")
+    distribution_code.save()
+
+    fee_schedules = [
+        factory_fee_schedule_model(
+            filing_type=filing_type,
+            corp_type=corp_type,
+            fee_code=fee_code,
+            service_fee=service_fee,
+            gst_added=gst_enabled,
+        )
+        for fee_code, service_fee, (_, _, gst_enabled) in zip(fee_codes, service_fee_codes, fee_configs)
+    ]
+
+    for fee_schedule in fee_schedules:
+        distribution_link = factory_distribution_link(
+            distribution_code.distribution_code_id, fee_schedule.fee_schedule_id
+        )
+        distribution_link.save()
+
+    fees = [FeeScheduleService() for _ in fee_schedules]
+    quantities = [1, 1, 1, 1, 1, 1, 3, 7, 3, 7, 2, 5]
+    for fee, schedule, qty in zip(fees, fee_schedules, quantities):
+        fee._dao = schedule
+        fee.quantity = qty  # Set quantity to ensure total includes quantity * fee_amount
+        if schedule.service_fee_code:
+            service_fee_amount = FeeCodeModel.find_by_code(schedule.service_fee_code).amount
+            fee.service_fees = service_fee_amount
+
+    with patch("pay_api.models.tax_rate.TaxRate.get_gst_effective_rate", return_value=Decimal("0.05")):
+        # Calculate GST using fee_schedule properties
+        invoice_gst_amount = sum(fee.statutory_fees_gst + fee.service_fees_gst for fee in fees)
+        # GST calculated on all fees (all now have gst_added=True):
+        # (25.00 + 50.00 + 10.00 + 75.00 + 100.00 + 150.00 + 130.16 + 1003.74 + 99.75 + 465.50 + 200.50 + 63.75)
+        # * 0.05 = 118.68
+
+        assert invoice_gst_amount == Decimal("119.28")
+
+        payment_account = factory_payment_account()
+        payment_account.save()
+
+        invoice = factory_invoice(payment_account)
+        invoice.save()
+
+        line_items = [
+            PaymentLineItem.create(invoice_id=invoice.id, fee=fee, filing_info={"quantity": qty})
+            for fee, qty in zip(fees, quantities)
+        ]
+
+        # Refresh the invoice to get the updated payment_line_items
+        session.refresh(invoice)
+        assert len(invoice.payment_line_items) == 12
+
+        # GST rounding happens at individual level (statutory_fees_gst and service_fees_gst separately)
+        # NOT after adding them together
+        total_li_gst = sum([line_item.statutory_fees_gst + line_item.service_fees_gst for line_item in line_items])
+        assert total_li_gst == invoice_gst_amount
+
+        total_service_fees = sum(line_item.service_fees for line_item in line_items)
+        assert total_service_fees == Decimal("12.00")
+
+        expected_totals = [
+            Decimal("27.30"),  # 25.00 + 1.00 + (25.00 * 0.05) + 0.05 = 27.30
+            Decimal("53.55"),  # 50.00 + 1.00 + (50.00 * 0.05) + 0.05 = 53.55
+            Decimal("11.55"),  # 10.00 + 1.00 + (10.00 * 0.05) + 0.05 = 11.55
+            Decimal("79.80"),  # 75.00 + 1.00 + (75.00 * 0.05) + 0.05 = 79.80
+            Decimal("106.05"),  # 100.00 + 1.00 + (100.00 * 0.05) + 0.05 = 106.05
+            Decimal("158.55"),  # 150.00 + 1.00 + (150.00 * 0.05) + 0.05 = 158.55
+            Decimal("137.73"),  # 130.17 + 1.00 + (130.17 * 0.05) + 0.05 = 137.73
+            Decimal("1054.97"),  # 1003.73 + 1.00 + (1003.73 * 0.05) + 0.05 = 1054.97
+            Decimal("105.79"),  # 99.75 + 1.00 + (99.75 * 0.05) + 0.05 = 105.79
+            Decimal("489.83"),  # 465.50 + 1.00 + (465.50 * 0.05) + 0.05 = 489.83
+            Decimal("211.57"),  # 200.50 + 1.00 + (200.50 * 0.05) + 0.05 = 211.57
+            Decimal("67.99"),  # 63.75 + 1.00 + (63.75 * 0.05) + 0.05 = 67.99
+        ]
+
+        for line_item, expected_total in zip(line_items, expected_totals):
+            assert (
+                line_item.total + line_item.service_fees + line_item.statutory_fees_gst + line_item.service_fees_gst
+                == expected_total
+            )

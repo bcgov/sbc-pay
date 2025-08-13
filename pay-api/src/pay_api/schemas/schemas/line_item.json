@@ -6,7 +6,6 @@
   "required": [
     "description",
     "filingFees",
-    "gst",
     "id",
     "priorityFees",
     "pst",
@@ -57,6 +56,24 @@
       "$id": "#/properties/line_items/items/properties/priorityFees",
       "type": "integer",
       "title": "Priority fees",
+      "default": 0,
+      "examples": [
+        0
+      ]
+    },
+    "serviceFeesGst": {
+      "$id": "#/properties/line_items/items/properties/serviceFeesGst",
+      "type": "integer",
+      "title": "Service fees GST",
+      "default": 0,
+      "examples": [
+        0
+      ]
+    },
+    "statutoryFeesGst": {
+      "$id": "#/properties/line_items/items/properties/statutoryFeesGst",
+      "type": "integer",
+      "title": "Statutory fees GST",
       "default": 0,
       "examples": [
         0

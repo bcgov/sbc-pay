@@ -411,7 +411,7 @@ def factory_payment(
     paid_amount=0,
 ):
     """Return Factory."""
-    payment: Payment = Payment(
+    payment = Payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
@@ -433,7 +433,7 @@ def factory_usd_payment(
     paid_usd_amount=0,
 ):
     """Return Factory."""
-    payment: Payment = Payment(
+    payment = Payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
@@ -462,7 +462,7 @@ def factory_routing_slip(
     delivery_instructions=None,
 ):
     """Return Factory."""
-    routing_slip: RoutingSlip = RoutingSlip(
+    routing_slip = RoutingSlip(
         number=number or fake.name(),
         payment_account_id=payment_account_id,
         status=status,
@@ -500,7 +500,7 @@ def factory_routing_slip_usd(
     delivery_instructions=None,
 ):
     """Return Factory."""
-    routing_slip: RoutingSlip = RoutingSlip(
+    routing_slip = RoutingSlip(
         number=number or fake.name(),
         payment_account_id=payment_account_id,
         status=status,

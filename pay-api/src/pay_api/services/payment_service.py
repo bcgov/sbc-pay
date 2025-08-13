@@ -117,6 +117,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
             invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
             invoice.total = sum(fee.total for fee in fees) if fees else 0
+            invoice.gst = sum(fee.service_fees_gst + fee.statutory_fees_gst for fee in fees)
             invoice.paid = 0
             invoice.refund = 0
             invoice.routing_slip = get_str_by_path(account_info, "routingSlip")
@@ -389,7 +390,7 @@ def _calculate_fees(corp_type, filing_info):
     service_fee_applied: bool = False
     for filing_type_info in filing_info.get("filingTypes"):
         current_app.logger.debug(f"Getting fees for {filing_type_info.get('filingTypeCode')} ")
-        fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
+        fee = FeeSchedule.find_by_corp_type_and_filing_type(
             corp_type=corp_type,
             filing_type_code=filing_type_info.get("filingTypeCode", None),
             valid_date=filing_info.get("date", None),

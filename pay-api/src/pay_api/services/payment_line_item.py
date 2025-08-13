@@ -13,7 +13,6 @@
 # limitations under the License.
 """Service to manage Payment Line Items."""
 
-from datetime import datetime, timezone
 from decimal import Decimal
 
 from flask import current_app
@@ -21,7 +20,6 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.models.tax_rate import TaxRate
 from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.utils.enums import LineItemStatus, Role
 from pay_api.utils.errors import Error
@@ -41,7 +39,6 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self._priority_fees = None
         self._future_effective_fees = None
         self._description: str = None
-        self._gst = None
         self._pst = None
         self._total = None
         self._quantity: int = 1
@@ -70,7 +67,6 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self.priority_fees: Decimal = self._dao.priority_fees
         self.future_effective_fees: Decimal = self._dao.future_effective_fees
         self.description: str = self._dao.description
-        self.gst: Decimal = self._dao.gst
         self.pst: Decimal = self._dao.pst
         self.total: Decimal = self._dao.total
         self.quantity: int = self._dao.quantity
@@ -158,17 +154,6 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         """Set the description."""
         self._description = value
         self._dao.description = value
-
-    @property
-    def gst(self):
-        """Return the _gst."""
-        return self._gst
-
-    @gst.setter
-    def gst(self, value: Decimal):
-        """Set the gst."""
-        self._gst = value
-        self._dao.gst = value
 
     @property
     def pst(self):
@@ -311,7 +296,6 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         p.fee_schedule_id = fee.fee_schedule_id
         p.description = fee.description
         p.filing_fees = fee.fee_amount
-        p.gst = fee.gst
         p.priority_fees = fee.priority_fee
         p.pst = fee.pst
         p.future_effective_fees = fee.future_effective_fee
@@ -319,13 +303,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         p.line_item_status_code = LineItemStatus.ACTIVE.value
         p.waived_fees = fee.waived_fee_amount
         p.service_fees = fee.service_fees
-        p.service_fees_gst = 0
-        p.statutory_fees_gst = 0
-
-        if fee.gst_added:
-            gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
-            p.statutory_fees_gst = round(p.total * gst_rate, 2)
-            p.service_fees_gst = round(p.service_fees * gst_rate, 2)
+        p.service_fees_gst = fee.service_fees_gst
+        p.statutory_fees_gst = fee.statutory_fees_gst
 
         # Set distribution details to line item
         distribution_code = None
