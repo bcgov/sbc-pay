@@ -25,11 +25,17 @@ import pytest
 from flask import current_app
 from requests.exceptions import ConnectionError
 
+from datetime import datetime, timezone
+from decimal import Decimal
+from pay_api.models import CorpType
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
+from pay_api.models import FeeCode
 from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.models import FilingType
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models.tax_rate import TaxRate
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role, RoutingSlipStatus, TransactionStatus
 from tests.utilities.base_test import (
@@ -1379,6 +1385,121 @@ def test_business_identifier_too_long(session, client, jwt, app):
 
     rv = client.post("/api/v1/payment-requests", data=json.dumps(payload), headers=headers)
     assert rv.status_code == 400
+
+
+def test_payment_request_gst_and_service_fees_calculation(session, client, jwt, app):
+    """Test comprehensive GST and service fees calculation when creating a payment request."""
+    filing_type_code = "COMP_TEST"
+    corp_type_code = "COMP_CORP"
+    fee_code = "COMP_FEE"
+    service_fee_code = "COMP_SVC"
+    priority_fee_code = "COMP_PRI"
+    future_effective_fee_code = "COMP_FUT"
+    
+    main_fee = FeeCode(code=fee_code, amount=Decimal("150.00"))
+    main_fee.save()
+    
+    service_fee = FeeCode(code=service_fee_code, amount=Decimal("25.50"))
+    service_fee.save()
+    
+    priority_fee = FeeCode(code=priority_fee_code, amount=Decimal("15.75"))
+    priority_fee.save()
+    
+    future_effective_fee = FeeCode(code=future_effective_fee_code, amount=Decimal("35.25"))
+    future_effective_fee.save()
+    
+    corp_type = CorpType(code=corp_type_code, description="Comprehensive Test Corp")
+    corp_type.save()
+    
+    filing_type = FilingType(code=filing_type_code, description="Comprehensive Test Filing")
+    filing_type.save()
+    
+    fee_schedule_model = FeeScheduleModel(
+        filing_type_code=filing_type_code,
+        corp_type_code=corp_type_code,
+        fee_code=fee_code,
+        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        service_fee_code=service_fee_code,
+        priority_fee_code=priority_fee_code,
+        future_effective_fee_code=future_effective_fee_code,
+        gst_added=True,
+        show_on_pricelist=True,
+    )
+    fee_schedule_model.save()
+    
+    distribution_code = DistributionCodeModel(
+        name="Test Distribution Code",
+        client="100",
+        responsibility_centre="22222",
+        service_line="33333",
+        stob="4444",
+        project_code="5555555",
+        start_date=datetime.now(tz=timezone.utc).date(),
+        created_by="test"
+    )
+    distribution_code.save()
+    
+    DistributionCodeLinkModel(
+        fee_schedule_id=fee_schedule_model.fee_schedule_id,
+        distribution_code_id=distribution_code.distribution_code_id
+    ).save()
+    
+    payment_request = get_payment_request(
+        corp_type=corp_type_code,
+        second_filing_type=filing_type_code
+    )
+    
+    payment_request["filingInfo"]["filingTypes"] = [
+        {
+            "filingTypeCode": filing_type_code,
+            "priority": True,
+            "futureEffective": True,
+            "filingDescription": "Comprehensive Test Filing"
+        }
+    ]
+    payment_request["details"] = [{"label": "Test Label", "value": "Test Value"}]
+    
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payment_request), headers=headers)
+    
+    assert rv.status_code == 201
+    assert rv.json.get("_links") is not None
+    assert schema_utils.validate(rv.json, "invoice")[0]
+    
+    invoice = rv.json
+    
+    assert invoice["serviceFees"] == 25.50
+    
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    
+    expected_main_fee_gst = Decimal(str(round(150.00 * float(gst_rate), 2)))
+    expected_service_fee_gst = Decimal(str(round(25.50 * float(gst_rate), 2)))
+    expected_priority_fee_gst = Decimal(str(round(15.75 * float(gst_rate), 2)))
+    expected_future_effective_fee_gst = Decimal(str(round(35.25 * float(gst_rate), 2)))
+    
+    expected_total_gst = expected_main_fee_gst + expected_service_fee_gst + expected_priority_fee_gst + expected_future_effective_fee_gst
+    assert invoice["gst"] == float(expected_total_gst)
+    
+    expected_total_before_gst = Decimal("150.00") + Decimal("25.50") + Decimal("15.75") + Decimal("35.25")
+    expected_total = expected_total_before_gst + expected_total_gst
+    assert invoice["total"] == float(expected_total)
+    
+    line_items = invoice.get("lineItems", [])
+    assert len(line_items) == 1
+    
+    line_item = line_items[0]
+    assert line_item["filingFees"] == 150.00
+    assert line_item["serviceFees"] == 25.50
+    assert line_item["priorityFees"] == 15.75
+    assert line_item["futureEffectiveFees"] == 35.25
+    assert line_item["statutoryFeesGst"] == float(expected_main_fee_gst + expected_priority_fee_gst + expected_future_effective_fee_gst)
+    assert line_item["serviceFeesGst"] == float(expected_service_fee_gst)
+    expected_line_item_total = 150.00 + 15.75 + 35.25
+    # Line item total doesn't include GST or service fees because they goto another GL.
+    assert line_item["total"] == expected_line_item_total
+    assert invoice["corpTypeCode"] == corp_type_code
 
 
 def test_payment_request_skip_payment(session, client, jwt, app):

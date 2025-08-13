@@ -103,7 +103,7 @@ class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-man
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentLineItem
-        exclude = ["fee_schedule_id", "fee_schedule", "statutory_fees_gst", "service_fees_gst"]
+        exclude = ["fee_schedule_id", "fee_schedule"]
         load_instance = True
 
     line_item_status_code = fields.String(data_key="status_code")

@@ -258,7 +258,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
-        exclude = ["corp_type", "gst"]
+        exclude = ["corp_type"]
 
     invoice_status_code = fields.String(data_key="status_code")
     corp_type_code = fields.String(data_key="corp_type_code")
