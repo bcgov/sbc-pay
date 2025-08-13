@@ -68,6 +68,15 @@
         50
       ]
     },
+    "gst": {
+      "$id": "#/properties/gst",
+      "type": "number",
+      "title": "GST amount",
+      "default": 0,
+      "examples": [
+        50
+      ]
+    },
     "paymentDate": {
       "$id": "#/properties/paymentDate",
       "type": "string",
