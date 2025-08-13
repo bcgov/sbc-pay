@@ -1075,7 +1075,6 @@ def _create_nsf_invoice(
         fee_schedule_id=fee_schedule.fee_schedule_id,
         description=fee_schedule.filing_type.description,
         filing_fees=invoice.total,
-        gst=0,
         priority_fees=0,
         pst=0,
         future_effective_fees=0,
