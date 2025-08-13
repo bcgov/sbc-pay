@@ -294,7 +294,6 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
             for line in list(data.get("line_items")):
                 if line.get("status_code") == LineItemStatus.CANCELLED.value:
                     data.get("line_items").remove(line)
-                    # It's possible we might need to remove GST fields for CSO.
 
         if "line_items" in data and not data.get("line_items"):
             data.pop("line_items")
@@ -355,7 +354,6 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
         https://www.attrs.org/en/stable/init.html
         """
         # Similar to _clean_up in InvoiceSchema.
-        # It's possible we might need to remove GST fields for CSO.
 
         return cls(
             id=row.id,
