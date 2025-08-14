@@ -16,7 +16,7 @@
 from decimal import Decimal
 
 from attrs import define
-from marshmallow import fields, pre_dump
+from marshmallow import fields
 from sqlalchemy import ForeignKey, cast, func, select
 from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 from sqlalchemy.orm import relationship
@@ -84,6 +84,15 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
 
     fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy="joined", innerjoin=True)
 
+    @property
+    def gst(self):
+        """Computed GST field that sums statutory_fees_gst and service_fees_gst."""
+        if self.statutory_fees_gst == 0 and self.service_fees_gst == 0:
+            return 0
+        statutory_gst = self.statutory_fees_gst or Decimal('0')
+        service_gst = self.service_fees_gst or Decimal('0')
+        return float(statutory_gst + service_gst)
+
     @classmethod
     def find_by_invoice_ids(cls, invoice_ids: list):
         """Return list of line items by list of invoice ids."""
@@ -111,21 +120,12 @@ class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-man
     priority_fees = fields.Float(data_key="priority_fees")
     future_effective_fees = fields.Float(data_key="future_effective_fees")
     statutory_fees_gst = fields.Float(data_key="statutory_fees_gst")
-    gst = fields.Float(data_key="gst")
+    gst = fields.Float(data_key="gst", attribute="gst")
     pst = fields.Float(data_key="pst")
     total = fields.Float(data_key="total")
     waived_fees = fields.Float(data_key="waived_fees")
     service_fees = fields.Float(data_key="service_fees")
     service_fees_gst = fields.Float(data_key="service_fees_gst")
-
-    @pre_dump
-    def calculate_gst(self, data, **kwargs):
-        """Calculate GST as sum of statutory_fees_gst and service_fees_gst."""
-        # This is for backwards compat.
-        statutory_gst = Decimal(str(data.get("statutory_fees_gst", 0)))
-        service_gst = Decimal(str(data.get("service_fees_gst", 0)))
-        data.gst = float(statutory_gst + service_gst)
-        return data
 
 
 @define
