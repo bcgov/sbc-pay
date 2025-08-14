@@ -134,8 +134,10 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     filing_id = db.Column(db.String(50), nullable=True)
     folio_number = db.Column(db.String(50), nullable=True, index=True)
     gst = db.Column(
-        db.Numeric(19, 2), nullable=False, default=0,
-        comment="Total GST amount including statutory and service fees GST"
+        db.Numeric(19, 2),
+        nullable=False,
+        default=0,
+        comment="Total GST amount including statutory and service fees GST",
     )
     dat_number = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)
@@ -282,7 +284,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     )
 
     total = fields.Float(data_key="total")
-    gst = fields.Float(data_key="gst", dump_if=lambda obj, data: data.get("gst") != 0)
+    gst = fields.Float(data_key="gst")
     paid = fields.Float(data_key="paid")
     refund = fields.Float(data_key="refund")
     service_fees = fields.Float(data_key="service_fees")
@@ -295,6 +297,10 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
             for line in list(data.get("line_items")):
                 if line.get("status_code") == LineItemStatus.CANCELLED.value:
                     data.get("line_items").remove(line)
+                if line.get("statutory_fees_gst") == 0:
+                    line.pop("statutory_fees_gst")
+                if line.get("service_fees_gst") == 0:
+                    line.pop("service_fees_gst")
 
         if "line_items" in data and not data.get("line_items"):
             data.pop("line_items")
@@ -306,6 +312,10 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         # Adding this here to make non-breaking changes for other teams EG: CSO
         if data.get("status_code") == InvoiceStatus.PAID.value:
             data["status_code"] = PaymentStatus.COMPLETED.value
+
+        # Hide GST field if it's 0
+        if data.get("gst") == 0:
+            data.pop("gst")
 
         return data
 
@@ -327,7 +337,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     refund: Decimal
     service_fees: Decimal
     total: Decimal
-    gst: Decimal
+    gst: Optional[Decimal]
     status_code: str
     filing_id: str
     folio_number: str
@@ -369,7 +379,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             refund=row.refund,
             service_fees=row.service_fees,
             total=row.total,
-            gst=row.gst,
+            gst=None if row.gst == 0 else row.gst,
             status_code=(
                 PaymentStatus.COMPLETED.value
                 if row.invoice_status_code == InvoiceStatus.PAID.value

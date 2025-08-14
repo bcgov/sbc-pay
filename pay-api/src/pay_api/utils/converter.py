@@ -89,19 +89,14 @@ class Converter(cattrs.Converter):
         return obj.isoformat() if obj else None
 
     @staticmethod
-    def remove_zero_invoice_gst(data: Dict[Any, Any]) -> Dict[str, Any]:
-        """Remove zero GST from invoice payload."""
-        if data.get("gst") == 0:
-            data.pop("gst")
-        return data
-
-    @staticmethod
     def remove_nones(data: Dict[Any, Any]) -> Dict[str, Any]:
         """Remove nones from payload."""
         new_data = {}
         for key, val in data.items():
             if isinstance(val, dict):
                 new_data[key] = Converter.remove_nones(val)
+            elif isinstance(val, list):
+                new_data[key] = [Converter.remove_nones(item) if isinstance(item, dict) else item for item in val]
             elif val is not None:
                 new_data[key] = val
         return new_data
