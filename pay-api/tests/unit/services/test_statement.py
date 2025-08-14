@@ -729,7 +729,7 @@ def test_get_eft_statement_with_invoices(session):
         total=150,
         paid=0,
     ).save()
-    line_item_5 = factory_payment_line_item(
+    factory_payment_line_item(
         invoice_id=invoice_5.id,
         fee_schedule_id=fee_schedule_gst.fee_schedule_id,
         service_fees=25.0,
