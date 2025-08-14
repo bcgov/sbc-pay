@@ -63,6 +63,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._cfs_account_id: int
         self._payment_method_code: str = None
         self._details: Dict = None
+        self._gst = None
 
     @property
     def _dao(self):
@@ -94,6 +95,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.dat_number: str = self._dao.dat_number
         self.cfs_account_id: int = self._dao.cfs_account_id
         self.details: Dict = self._dao.details
+        self.gst: Decimal = self._dao.gst
 
     @property
     def id(self):
@@ -335,6 +337,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def created_on(self, value: datetime):
         """Set the created date."""
         self._dao.created_on = value
+
+    @property
+    def gst(self):
+        """Return the gst."""
+        return self._gst
+
+    @gst.setter
+    def gst(self, value: Decimal):
+        """Set the gst."""
+        self._gst = value
+        self._dao.gst = value
 
     def commit(self):
         """Save the information to the DB."""

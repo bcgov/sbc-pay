@@ -27,20 +27,11 @@
     },
     "filingFees": {
       "$id": "#/properties/line_items/items/properties/filingFees",
-      "type": "integer",
+      "type": "number",
       "title": "Filing Fees",
       "default": 0,
       "examples": [
         20
-      ]
-    },
-    "gst": {
-      "$id": "#/properties/line_items/items/properties/gst",
-      "type": "integer",
-      "title": "GST",
-      "default": 0,
-      "examples": [
-        0
       ]
     },
     "id": {
@@ -54,7 +45,7 @@
     },
     "priorityFees": {
       "$id": "#/properties/line_items/items/properties/priorityFees",
-      "type": "integer",
+      "type": "number",
       "title": "Priority fees",
       "default": 0,
       "examples": [
@@ -63,7 +54,7 @@
     },
     "serviceFeesGst": {
       "$id": "#/properties/line_items/items/properties/serviceFeesGst",
-      "type": "integer",
+      "type": "number",
       "title": "Service fees GST",
       "default": 0,
       "examples": [
@@ -72,7 +63,7 @@
     },
     "statutoryFeesGst": {
       "$id": "#/properties/line_items/items/properties/statutoryFeesGst",
-      "type": "integer",
+      "type": "number",
       "title": "Statutory fees GST",
       "default": 0,
       "examples": [
@@ -99,7 +90,7 @@
     },
     "futureEffectiveFees": {
       "$id": "#/properties/line_items/items/properties/futureEffectiveFees",
-      "type": "integer",
+      "type": "number",
       "title": "Fees for future effective filing",
       "default": 0,
       "examples": [
