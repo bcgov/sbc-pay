@@ -134,7 +134,8 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     filing_id = db.Column(db.String(50), nullable=True)
     folio_number = db.Column(db.String(50), nullable=True, index=True)
     gst = db.Column(
-        db.Numeric(19, 2), nullable=True, comment="Total GST amount including statutory and service fees GST"
+        db.Numeric(19, 2), nullable=False, default=0,
+        comment="Total GST amount including statutory and service fees GST"
     )
     dat_number = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)

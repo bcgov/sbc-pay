@@ -27,4 +27,5 @@ def upgrade():
 
 def downgrade():
     with op.batch_alter_table('payment_line_items', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('gst', sa.NUMERIC(precision=19, scale=2), autoincrement=False, nullable=True))
+        batch_op.add_column(sa.Column('gst', sa.NUMERIC(precision=19, scale=2), autoincrement=False, nullable=False,
+                                      server_default='0'))
