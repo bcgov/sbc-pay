@@ -158,6 +158,8 @@ class RefundService:
                 ),
                 None,
             )
+            if refund_line.refund_type == RefundsPartialType.SERVICE_FEES.value:
+                raise BusinessException(Error.PARTIAL_REFUND_SERVICE_FEES_NOT_ALLOWED)
             if payment_line is None:
                 raise BusinessException(Error.REFUND_PAYMENT_LINE_ITEM_INVALID)
             RefundService._validate_refund_amount(refund_line, payment_line)
