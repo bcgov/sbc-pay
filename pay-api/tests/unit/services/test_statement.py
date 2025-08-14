@@ -18,12 +18,19 @@ Test-Suite to ensure that the Statement Service is working as expected.
 """
 import pprint
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from unittest.mock import patch
 
 import pytz
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
+from pay_api.models import CorpType
+from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
+from pay_api.models import FeeCode
+from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.models import FilingType
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import StatementInvoices as StatementInvoiceModel
 from pay_api.models import StatementSettings as StatementSettingsModel
@@ -671,15 +678,82 @@ def test_get_eft_statement_with_invoices(session):
     ).save()
     factory_payment_line_item(invoice_id=invoice_4.id, fee_schedule_id=1).save()
 
+    # Create fee schedule with GST enabled for invoice 5
+    fee_code_gst = FeeCode(code="GSTFEE", amount=Decimal("100.00"))
+    fee_code_gst.save()
+
+    service_fee_code_gst = FeeCode(code="GSTSRV", amount=Decimal("25.00"))
+    service_fee_code_gst.save()
+
+    corp_type_gst = CorpType(code="GSTTEST", description="GST Test Corp", product="BUSINESS")
+    corp_type_gst.save()
+
+    filing_type_gst = FilingType(code="GSTTEST", description="GST Test Filing")
+    filing_type_gst.save()
+
+    fee_schedule_gst = FeeScheduleModel(
+        filing_type_code="GSTTEST",
+        corp_type_code="GSTTEST",
+        fee_code="GSTFEE",
+        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        gst_added=True,
+        show_on_pricelist=True,
+        service_fee=service_fee_code_gst,
+    )
+    fee_schedule_gst.save()
+
+    # Create distribution code for the GST fee schedule
+    distribution_code_gst = DistributionCodeModel(
+        name="GST Test Distribution Code",
+        client="100",
+        responsibility_centre="22222",
+        service_line="33333",
+        stob="4444",
+        project_code="5555555",
+        start_date=datetime.now(tz=timezone.utc).date(),
+        created_by="test",
+    )
+    distribution_code_gst.save()
+
+    # Link distribution code to fee schedule
+    DistributionCodeLinkModel(
+        fee_schedule_id=fee_schedule_gst.fee_schedule_id,
+        distribution_code_id=distribution_code_gst.distribution_code_id,
+    ).save()
+
+    # Create invoice with GST (including service fee GST and statutory fee GST)
+    invoice_5 = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=150,
+        paid=0,
+    ).save()
+    line_item_5 = factory_payment_line_item(
+        invoice_id=invoice_5.id,
+        fee_schedule_id=fee_schedule_gst.fee_schedule_id,
+        service_fees=25.0,
+        total=150.0,
+        service_fees_gst=1.25,
+        statutory_fees_gst=5.0,
+    ).save()
+
+    # Update the invoice to include service fees and GST
+    invoice_5.service_fees = Decimal("25.00")
+    invoice_5.gst = Decimal("6.25")
+    invoice_5.save()
+
     factory_invoice_reference(invoice_1.id).save()
     factory_invoice_reference(invoice_2.id).save()
     factory_invoice_reference(invoice_3.id).save()
     factory_invoice_reference(invoice_4.id).save()
+    factory_invoice_reference(invoice_5.id).save()
 
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_1.id)
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_2.id)
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_3.id)
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_4.id)
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_5.id)
     expected_report_name = (
         f"bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-"
         f"to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf"
@@ -719,18 +793,18 @@ def test_get_eft_statement_with_invoices(session):
             },
             "groupedInvoices": [
                 {
-                    "amount_owing": "250.00",
+                    "amount_owing": "400.00",
                     "due_date": get_statement_date_string(
                         StatementService.calculate_due_date(statement_to_date.date())
                     ),  # pylint: disable=protected-access
-                    "due_summary": 250.0,
+                    "due_summary": 400.0,
                     "include_service_provided": True,
                     "is_index_0": True,
                     "paid_summary": 100.0,
                     "payment_method": "EFT",
                     "statement_header_text": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
                     "total_paid": "100.00",
-                    "totals_summary": 350.0,
+                    "totals_summary": 500.0,
                     "transactions": [
                         {
                             "bcol_account": "TEST",
@@ -747,12 +821,10 @@ def test_get_eft_statement_with_invoices(session):
                             "invoice_number": "10021",
                             "line_items": [
                                 {
-                                    "description": None,
+                                    "description": "test",
                                     "filing_type_code": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees_gst": 0.0,
-                                    "statutory_fees_gst": 0.0,
                                     "service_fees": 0.0,
                                     "total": 10.0,
                                 },
@@ -764,7 +836,7 @@ def test_get_eft_statement_with_invoices(session):
                             },
                             "payment_method": "EFT",
                             "product": "BUSINESS",
-                            "products": ["None"],
+                            "products": ["test"],
                             "refund": 0.0,
                             "service_fee": "0.00",
                             "service_provided": False,
@@ -786,12 +858,10 @@ def test_get_eft_statement_with_invoices(session):
                             "invoice_number": "10021",
                             "line_items": [
                                 {
-                                    "description": None,
+                                    "description": "test",
                                     "filing_type_code": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees_gst": 0.0,
-                                    "statutory_fees_gst": 0.0,
                                     "service_fees": 0.0,
                                     "total": 10.0,
                                 },
@@ -800,7 +870,7 @@ def test_get_eft_statement_with_invoices(session):
                             "payment_account": {"account_id": "1234", "billable": True},
                             "payment_method": "EFT",
                             "product": "BUSINESS",
-                            "products": ["None"],
+                            "products": ["test"],
                             "refund": 0.0,
                             "service_fee": "0.00",
                             "service_provided": False,
@@ -822,12 +892,10 @@ def test_get_eft_statement_with_invoices(session):
                             "invoice_number": "10021",
                             "line_items": [
                                 {
-                                    "description": None,
+                                    "description": "test",
                                     "filing_type_code": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees_gst": 0.0,
-                                    "statutory_fees_gst": 0.0,
                                     "service_fees": 0.0,
                                     "total": 10.0,
                                 },
@@ -837,7 +905,7 @@ def test_get_eft_statement_with_invoices(session):
                             "payment_date": datetime.strftime(invoice_3.payment_date, "%Y-%m-%dT%H:%M:%S.%f"),
                             "payment_method": "EFT",
                             "product": "BUSINESS",
-                            "products": ["None"],
+                            "products": ["test"],
                             "refund": 0.0,
                             "service_fee": "0.00",
                             "service_provided": True,
@@ -859,12 +927,10 @@ def test_get_eft_statement_with_invoices(session):
                             "invoice_number": "10021",
                             "line_items": [
                                 {
-                                    "description": None,
+                                    "description": "test",
                                     "filing_type_code": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees_gst": 0.0,
-                                    "statutory_fees_gst": 0.0,
                                     "service_fees": 0.0,
                                     "total": 10.0,
                                 },
@@ -874,18 +940,54 @@ def test_get_eft_statement_with_invoices(session):
                             "payment_date": datetime.strftime(invoice_4.payment_date, "%Y-%m-%dT%H:%M:%S"),
                             "payment_method": "EFT",
                             "product": "BUSINESS",
-                            "products": ["None"],
+                            "products": ["test"],
                             "refund": 0.0,
                             "service_fee": "0.00",
                             "service_provided": True,
                             "status_code": "COMPLETED",
                             "total": "50.00",
                         },
+                        {
+                            "bcol_account": "TEST",
+                            "business_identifier": "CP0001234",
+                            "corp_type_code": "CP",
+                            "created_by": "test",
+                            "created_name": "test name",
+                            "created_on": get_statement_date_string(invoice_5.created_on),
+                            "details": ["label value"],
+                            "fee": "125.00",
+                            "folio": "1234567890",
+                            "gst": "6.25",
+                            "id": invoice_5.id,
+                            "invoice_number": "10021",
+                            "line_items": [
+                                {
+                                    "description": "test",
+                                    "filing_type_code": "GSTTEST",
+                                    "gst": 6.25,
+                                    "pst": 0.0,
+                                    "service_fees": 25.0,
+                                    "service_fees_gst": 1.25,
+                                    "statutory_fees_gst": 5.0,
+                                    "total": 150.0,
+                                },
+                            ],
+                            "paid": 0.0,
+                            "payment_account": {"account_id": "1234", "billable": True},
+                            "payment_method": "EFT",
+                            "product": "BUSINESS",
+                            "products": ["test"],
+                            "refund": 0.0,
+                            "service_fee": "25.00",
+                            "service_provided": False,
+                            "status_code": "Invoice Approved",
+                            "total": "150.00",
+                        },
                     ],
                 }
             ],
             "statement": {
-                "amount_owing": "250.00",
+                "amount_owing": "400.00",
                 "created_on": date_string_now,
                 "duration": (
                     f"{get_statement_date_string(statement_from_date)} - "
@@ -900,7 +1002,7 @@ def test_get_eft_statement_with_invoices(session):
                 "notification_date": None,
                 "overdue_notification_date": None,
                 "payment_methods": ["EFT"],
-                "statement_total": 350.0,
+                "statement_total": 500.0,
             },
             "statementSummary": {
                 "dueDate": get_statement_date_string(
@@ -912,11 +1014,11 @@ def test_get_eft_statement_with_invoices(session):
             },
             # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {
-                "due": "300.00",
-                "fees": "350.00",
+                "due": "450.00",
+                "fees": "500.00",
                 "paid": "50.00",
-                "serviceFees": "0.00",
-                "statutoryFees": "350.00",
+                "serviceFees": "25.00",
+                "statutoryFees": "475.00",
             },
             "hasPaymentInstructions": True,
         }
