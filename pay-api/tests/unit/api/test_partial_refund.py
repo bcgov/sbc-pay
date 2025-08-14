@@ -384,8 +384,6 @@ def test_create_refund_validation(session, client, jwt, app, monkeypatch, fee_ty
             refund_amount = payment_line_item.filing_fees + 1
         case RefundsPartialType.FUTURE_EFFECTIVE_FEES.value:
             refund_amount = payment_line_item.future_effective_fees + 1
-        case RefundsPartialType.SERVICE_FEES.value:
-            refund_amount = payment_line_item.service_fees + 1
         case RefundsPartialType.PRIORITY_FEES.value:
             refund_amount = payment_line_item.priority_fees + 1
     refund_revenue = [
@@ -406,8 +404,13 @@ def test_create_refund_validation(session, client, jwt, app, monkeypatch, fee_ty
             data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
             headers=headers,
         )
+        error_name = Error.REFUND_AMOUNT_INVALID.name
+
+        if fee_type == RefundsPartialType.SERVICE_FEES.value:
+            error_name = Error.PARTIAL_REFUND_SERVICE_FEES_NOT_ALLOWED.name
+
         assert rv.status_code == 400
-        assert rv.json.get("type") == Error.REFUND_AMOUNT_INVALID.name
+        assert rv.json.get("type") == error_name
         assert RefundModel.find_by_invoice_id(inv_id) is None
 
 
