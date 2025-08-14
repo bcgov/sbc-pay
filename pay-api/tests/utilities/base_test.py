@@ -571,7 +571,7 @@ def factory_payment_line_item(
     total: int = 10,
     service_fees: int = 0,
     status: str = LineItemStatus.ACTIVE.value,
-    description: str = None,
+    description: str = "test",
     service_fees_gst: float = 0,
     statutory_fees_gst: float = 0,
 ):

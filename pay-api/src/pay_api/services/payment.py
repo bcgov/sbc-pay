@@ -401,7 +401,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         invoice_search_list = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao in purchases]
         converter = Converter()
         invoice_list = converter.unstructure(invoice_search_list)
-        data["items"] = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
+        data["items"] = [Converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
         return data
 
     @staticmethod
@@ -566,7 +566,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             total_pst = 0
             for line_item in invoice.get("line_items"):
                 txn_description += "," + line_item.get("description")
-                total_gst += line_item.get("service_fees_gst") + line_item.get("statutory_fees_gst")
+                total_gst += line_item.get("gst")
                 total_pst += line_item.get("pst")
             service_fee = float(invoice.get("service_fees", 0))
             total_fees = float(invoice.get("total", 0))

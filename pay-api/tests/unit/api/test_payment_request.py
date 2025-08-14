@@ -32,7 +32,7 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import FeeCode
 from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.models import FilingType
+from pay_api.models import FilingType, Invoice
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models.tax_rate import TaxRate
@@ -1537,3 +1537,192 @@ def test_payment_request_skip_payment(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get("statusCode") == TransactionStatus.COMPLETED.value
     assert rv.json.get("paid") == rv.json.get("total")
+
+
+def test_payment_request_gst_field_behavior(session, client, jwt, app):
+    """Test payment-request POST and GET endpoints have proper GST field behavior."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    # Create an invoice with GST by using a fee schedule that has GST enabled
+    filing_type_code = "GSTTEST"
+    corp_type_code = "GSTTEST"
+    fee_code = "GSTTEST"
+
+    fee_code_model = FeeCode(code=fee_code, amount=Decimal("100.00"))
+    fee_code_model.save()
+
+    service_fee_code_model = FeeCode(code="GSTSRV", amount=Decimal("10.00"))
+    service_fee_code_model.save()
+
+    corp_type = CorpType(code=corp_type_code, description="GST Test Corp", product="BUSINESS")
+    corp_type.save()
+
+    filing_type = FilingType(code=filing_type_code, description="GST Test Filing")
+    filing_type.save()
+
+    fee_schedule_with_gst = FeeScheduleModel(
+        filing_type_code=filing_type_code,
+        corp_type_code=corp_type_code,
+        fee_code=fee_code,
+        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        gst_added=True,
+        show_on_pricelist=True,
+        service_fee=service_fee_code_model,
+    )
+    fee_schedule_with_gst.save()
+
+    distribution_code = DistributionCodeModel(
+        name="GST Test Distribution Code",
+        client="100",
+        responsibility_centre="22222",
+        service_line="33333",
+        stob="4444",
+        project_code="5555555",
+        start_date=datetime.now(tz=timezone.utc).date(),
+        created_by="test",
+    )
+    distribution_code.save()
+
+    DistributionCodeLinkModel(
+        fee_schedule_id=fee_schedule_with_gst.fee_schedule_id,
+        distribution_code_id=distribution_code.distribution_code_id,
+    ).save()
+
+    # Create invoice with GST
+    payment_request_with_gst = get_payment_request(corp_type=corp_type_code, second_filing_type=filing_type_code)
+    payment_request_with_gst["filingInfo"]["filingTypes"] = [
+        {
+            "filingTypeCode": filing_type_code,
+            "filingDescription": "GST Test Filing",
+        }
+    ]
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(payment_request_with_gst),
+        headers=headers,
+    )
+
+    assert rv.status_code == 201
+    payment_request_response = rv.json
+
+    assert "id" in payment_request_response
+    assert "statusCode" in payment_request_response
+
+    assert "gst" in payment_request_response, "GST field should be present in POST response when invoice has GST"
+    assert payment_request_response["gst"] > 0, "GST amount should be greater than 0"
+
+    if "lineItems" in payment_request_response and payment_request_response["lineItems"]:
+        line_item = payment_request_response["lineItems"][0]
+        assert "gst" in line_item, "Line item GST field should be present in POST response when invoice has GST"
+        assert line_item["gst"] > 0, "Line item GST amount should be greater than 0"
+        assert "statutoryFeesGst" in line_item, "statutoryFeesGst should be present when invoice has GST"
+        assert "serviceFeesGst" in line_item, "serviceFeesGst should be present when invoice has GST"
+
+    invoice_id = payment_request_response["id"]
+    rv = client.get(f"/api/v1/payment-requests/{invoice_id}", headers=headers)
+
+    assert rv.status_code == 200
+    get_response = rv.json
+
+    assert "id" in get_response
+    assert "statusCode" in get_response
+    assert get_response["id"] == invoice_id
+
+    # Verify the GET response has GST fields when GST is present
+    assert "gst" in get_response, "GST field should be present in GET response when invoice has GST"
+    assert get_response["gst"] > 0, "GST amount should be greater than 0"
+
+    if "lineItems" in get_response and get_response["lineItems"]:
+        line_item = get_response["lineItems"][0]
+        assert "gst" in line_item, "Line item GST field should be present in GET response when invoice has GST"
+        assert line_item["gst"] > 0, "Line item GST amount should be greater than 0"
+        assert "statutoryFeesGst" in line_item, "statutoryFeesGst should be present when invoice has GST"
+        assert "serviceFeesGst" in line_item, "serviceFeesGst should be present when invoice has GST"
+
+    # Create an invoice without GST by using a fee schedule that has GST disabled
+    filing_type_code_no_gst = "NOGSTTEST"
+    corp_type_code_no_gst = "NOGSTTEST"
+    fee_code_no_gst = "NOGSTTEST"
+
+    fee_code_model_no_gst = FeeCode(code=fee_code_no_gst, amount=Decimal("100.00"))
+    fee_code_model_no_gst.save()
+
+    service_fee_code_model_no_gst = FeeCode(code="NOGSTSRV", amount=Decimal("10.00"))
+    service_fee_code_model_no_gst.save()
+
+    corp_type_no_gst = CorpType(code=corp_type_code_no_gst, description="No GST Test Corp", product="BUSINESS")
+    corp_type_no_gst.save()
+
+    filing_type_no_gst = FilingType(code=filing_type_code_no_gst, description="No GST Test Filing")
+    filing_type_no_gst.save()
+
+    fee_schedule_without_gst = FeeScheduleModel(
+        filing_type_code=filing_type_code_no_gst,
+        corp_type_code=corp_type_code_no_gst,
+        fee_code=fee_code_no_gst,
+        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        gst_added=False,
+        show_on_pricelist=True,
+        service_fee=service_fee_code_model_no_gst,
+    )
+    fee_schedule_without_gst.save()
+
+    DistributionCodeLinkModel(
+        fee_schedule_id=fee_schedule_without_gst.fee_schedule_id,
+        distribution_code_id=distribution_code.distribution_code_id,
+    ).save()
+
+    # Create invoice without GST
+    payment_request_without_gst = get_payment_request(
+        corp_type=corp_type_code_no_gst, second_filing_type=filing_type_code_no_gst
+    )
+    payment_request_without_gst["filingInfo"]["filingTypes"] = [
+        {
+            "filingTypeCode": filing_type_code_no_gst,
+            "filingDescription": "No GST Test Filing",
+        }
+    ]
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(payment_request_without_gst),
+        headers=headers,
+    )
+
+    assert rv.status_code == 201
+    payment_request_response_no_gst = rv.json
+
+    # Verify the POST response has GST fields hidden when GST is not present
+    assert (
+        "gst" not in payment_request_response_no_gst
+    ), "GST field should be hidden in POST response when invoice has no GST"
+
+    if "lineItems" in payment_request_response_no_gst and payment_request_response_no_gst["lineItems"]:
+        line_item = payment_request_response_no_gst["lineItems"][0]
+        assert "gst" in line_item, "Line item GST field should always be present"
+        assert line_item["gst"] == 0, "Line item GST amount should be 0 when invoice has no GST"
+        assert "statutoryFeesGst" not in line_item, "statutoryFeesGst should be hidden when invoice has no GST"
+        assert "serviceFeesGst" not in line_item, "serviceFeesGst should be hidden when invoice has no GST"
+
+    # Test GET payment-request endpoint for invoice without GST
+    invoice_id_no_gst = payment_request_response_no_gst["id"]
+    rv = client.get(f"/api/v1/payment-requests/{invoice_id_no_gst}", headers=headers)
+
+    assert rv.status_code == 200
+    get_response_no_gst = rv.json
+
+    assert "id" in get_response_no_gst
+    assert "statusCode" in get_response_no_gst
+    assert get_response_no_gst["id"] == invoice_id_no_gst
+
+    # Verify the GET response has GST fields hidden when GST is not present
+    assert "gst" not in get_response_no_gst, "GST field should be hidden in GET response when invoice has no GST"
+
+    if "lineItems" in get_response_no_gst and get_response_no_gst["lineItems"]:
+        line_item = get_response_no_gst["lineItems"][0]
+        assert "gst" in line_item, "Line item GST field should always be present"
+        assert line_item["gst"] == 0, "Line item GST amount should be 0 when invoice has no GST"
+        assert "statutoryFeesGst" not in line_item, "statutoryFeesGst should be hidden when invoice has no GST"
+        assert "serviceFeesGst" not in line_item, "serviceFeesGst should be hidden when invoice has no GST"

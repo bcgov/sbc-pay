@@ -14,6 +14,7 @@
 """Model to handle all operations related to Payment Line Item."""
 
 from decimal import Decimal
+from typing import Optional
 
 from attrs import define
 from marshmallow import fields
@@ -84,6 +85,15 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
 
     fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy="joined", innerjoin=True)
 
+    @property
+    def gst(self):
+        """Computed GST field that sums statutory_fees_gst and service_fees_gst."""
+        if self.statutory_fees_gst == 0 and self.service_fees_gst == 0:
+            return 0
+        statutory_gst = self.statutory_fees_gst or Decimal("0")
+        service_gst = self.service_fees_gst or Decimal("0")
+        return float(statutory_gst + service_gst)
+
     @classmethod
     def find_by_invoice_ids(cls, invoice_ids: list):
         """Return list of line items by list of invoice ids."""
@@ -111,6 +121,7 @@ class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-man
     priority_fees = fields.Float(data_key="priority_fees")
     future_effective_fees = fields.Float(data_key="future_effective_fees")
     statutory_fees_gst = fields.Float(data_key="statutory_fees_gst")
+    gst = fields.Float(data_key="gst", attribute="gst")
     pst = fields.Float(data_key="pst")
     total = fields.Float(data_key="total")
     waived_fees = fields.Float(data_key="waived_fees")
@@ -123,10 +134,11 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
     """Payment Line Item Search Model."""
 
     total: Decimal
-    statutory_fees_gst: Decimal
+    statutory_fees_gst: Optional[Decimal]
     pst: Decimal
+    gst: Decimal
     service_fees: Decimal
-    service_fees_gst: Decimal
+    service_fees_gst: Optional[Decimal]
     description: str
     filing_type_code: str
 
@@ -138,10 +150,11 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
         """
         return cls(
             total=row.total,
-            statutory_fees_gst=row.statutory_fees_gst,
+            statutory_fees_gst=None if row.statutory_fees_gst == 0 else row.statutory_fees_gst,
             pst=row.pst,
+            gst=row.statutory_fees_gst + row.service_fees_gst,
             service_fees=row.service_fees,
-            service_fees_gst=row.service_fees_gst,
+            service_fees_gst=None if row.service_fees_gst == 0 else row.service_fees_gst,
             description=row.description,
             filing_type_code=row.fee_schedule.filing_type_code,
         )

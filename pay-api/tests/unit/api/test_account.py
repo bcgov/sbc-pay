@@ -29,9 +29,12 @@ from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
+from pay_api.models.corp_type import CorpType
 from pay_api.models.credit import Credit
 from pay_api.models.distribution_code import DistributionCodeLink as DistributionCodeLinkModel
+from pay_api.models.fee_code import FeeCode
 from pay_api.models.fee_schedule import FeeSchedule
+from pay_api.models.filing_type import FilingType
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.models.payment_line_item import PaymentLineItem
@@ -49,7 +52,13 @@ from pay_api.utils.enums import (
 )
 from tests.utilities.base_test import (
     factory_applied_credits,
+    factory_corp_type_model,
     factory_credit,
+    factory_distribution_code,
+    factory_distribution_link,
+    factory_fee_model,
+    factory_fee_schedule_model,
+    factory_filing_type_model,
     factory_invoice,
     factory_payment_line_item,
     factory_refunds_partial,
@@ -233,6 +242,141 @@ def test_account_purchase_history_exclude_counts(session, client, jwt, app):
             assert previous_invoice_id != current_invoice_id
 
         previous_response = rv
+
+
+def test_gst_field_serialization_comprehensive(session, client, jwt, app):
+    """Test GST field serialization behavior comprehensively - creating invoices with and without GST."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    distribution_code = factory_distribution_code(
+        name="Test Distribution Code",
+        client="100",
+        reps_centre="22222",
+        service_line="33333",
+        stob="4444",
+        project_code="5555555",
+    )
+    distribution_code.save()
+
+    fee_code_model = factory_fee_model("GSTFEE", 100.00)
+    service_fee_code_model = factory_fee_model("GSTSRV", 10.00)
+    corp_type = factory_corp_type_model("GSTTEST", "GST Test Corp", "BUSINESS")
+    filing_type = factory_filing_type_model("GSTTEST", "GST Test Filing")
+
+    fee_schedule_with_gst = factory_fee_schedule_model(
+        filing_type=filing_type,
+        corp_type=corp_type,
+        fee_code=fee_code_model,
+        gst_added=True,
+        show_on_pricelist=True,
+        service_fee=service_fee_code_model,
+    )
+
+    factory_distribution_link(
+        distribution_code_id=distribution_code.distribution_code_id,
+        fee_schedule_id=fee_schedule_with_gst.fee_schedule_id,
+    ).save()
+
+    payment_request_with_gst = get_payment_request(corp_type="GSTTEST", second_filing_type="GSTTEST")
+    payment_request_with_gst["filingInfo"]["filingTypes"] = [{"filingTypeCode": "GSTTEST"}]
+
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payment_request_with_gst), headers=headers)
+    assert rv.status_code == 201
+    invoice_with_gst_id = rv.json.get("id")
+    assert invoice_with_gst_id is not None
+
+    fee_code_no_gst_model = factory_fee_model("NOGSTFEE", 100.00)
+    service_fee_code_no_gst_model = factory_fee_model("NOGSTSRV", 10.00)
+    corp_type_no_gst = factory_corp_type_model("NOGSTTEST", "No GST Test Corp", "BUSINESS")
+    filing_type_no_gst = factory_filing_type_model("NOGSTTEST", "No GST Test Filing")
+
+    fee_schedule_without_gst = factory_fee_schedule_model(
+        filing_type=filing_type_no_gst,
+        corp_type=corp_type_no_gst,
+        fee_code=fee_code_no_gst_model,
+        gst_added=False,
+        show_on_pricelist=True,
+        service_fee=service_fee_code_no_gst_model,
+    )
+
+    factory_distribution_link(
+        distribution_code_id=distribution_code.distribution_code_id,
+        fee_schedule_id=fee_schedule_without_gst.fee_schedule_id,
+    ).save()
+
+    payment_request_without_gst = get_payment_request(corp_type="NOGSTTEST", second_filing_type="NOGSTTEST")
+    payment_request_without_gst["filingInfo"]["filingTypes"] = [{"filingTypeCode": "NOGSTTEST"}]
+
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(payment_request_without_gst), headers=headers)
+    assert rv.status_code == 201
+    invoice_without_gst_id = rv.json.get("id")
+    assert invoice_without_gst_id is not None
+
+    invoice = Invoice.find_by_id(invoice_with_gst_id)
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    for exclude_counts in [False, True]:
+        query_data = {"excludeCounts": True} if exclude_counts else {}
+        rv = client.post(
+            f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries",
+            data=json.dumps(query_data),
+            headers=headers,
+        )
+
+        response_data = rv.json
+        assert "items" in response_data
+        assert len(response_data["items"]) >= 2
+
+        invoice_with_gst_response = next(
+            (item for item in response_data["items"] if item["id"] == invoice_with_gst_id), None
+        )
+        invoice_without_gst_response = next(
+            (item for item in response_data["items"] if item["id"] == invoice_without_gst_id), None
+        )
+
+        assert invoice_with_gst_response is not None, "Invoice with GST not found in response"
+        assert "serviceFees" in invoice_with_gst_response, "Service fees should be present"
+        assert invoice_with_gst_response["serviceFees"] > 0, "Service fees should be greater than 0"
+
+        # Invoice gst is conditional - should be present when > 0
+        assert "gst" in invoice_with_gst_response, "GST field should be present for invoice with GST"
+        assert invoice_with_gst_response["gst"] > 0, "GST amount should be greater than 0"
+
+        if "lineItems" in invoice_with_gst_response and invoice_with_gst_response["lineItems"]:
+            line_item = invoice_with_gst_response["lineItems"][0]
+            # Line item gst should always be present
+            assert "gst" in line_item, "Line item GST field should always be present"
+            assert line_item["gst"] >= 0, "Line item GST amount should be >= 0"
+            assert "serviceFees" in line_item, "Line item service fees should be present"
+            assert line_item["serviceFees"] > 0, "Line item service fees should be greater than 0"
+
+            # statutoryFeesGst and serviceFeesGst are conditional - should be present when > 0
+            for field in ["statutoryFeesGst", "serviceFeesGst"]:
+                if line_item.get(field, 0) > 0:
+                    assert field in line_item, f"{field} should be present when > 0"
+                    assert line_item[field] > 0
+                else:
+                    assert field not in line_item, f"{field} should be hidden when = 0"
+
+        assert invoice_without_gst_response is not None, "Invoice without GST not found in response"
+        assert "serviceFees" in invoice_without_gst_response, "Service fees should be present"
+        assert invoice_without_gst_response["serviceFees"] > 0, "Service fees should be greater than 0"
+
+        # Invoice gst is conditional - should be hidden when 0
+        assert "gst" not in invoice_without_gst_response, "GST field should be hidden for invoice without GST"
+
+        if "lineItems" in invoice_without_gst_response and invoice_without_gst_response["lineItems"]:
+            line_item = invoice_without_gst_response["lineItems"][0]
+            # Line item gst should always be present
+            assert "gst" in line_item, "Line item GST field should always be present"
+            assert line_item["gst"] == 0, "Line item GST amount should be 0 for invoice without GST"
+            assert "serviceFees" in line_item, "Line item service fees should be present"
+            assert line_item["serviceFees"] > 0, "Line item service fees should be greater than 0"
+
+            # statutoryFeesGst and serviceFeesGst are conditional - should be hidden when 0
+            for field in ["statutoryFeesGst", "serviceFeesGst"]:
+                assert field not in line_item, f"{field} should be hidden for invoice without GST"
 
 
 def test_account_purchase_history_with_service_account(session, client, jwt, app, executor_mock):

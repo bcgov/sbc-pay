@@ -95,6 +95,8 @@ class Converter(cattrs.Converter):
         for key, val in data.items():
             if isinstance(val, dict):
                 new_data[key] = Converter.remove_nones(val)
+            elif isinstance(val, list):
+                new_data[key] = [Converter.remove_nones(item) if isinstance(item, dict) else item for item in val]
             elif val is not None:
                 new_data[key] = val
         return new_data
