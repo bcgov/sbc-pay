@@ -281,7 +281,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     )
 
     total = fields.Float(data_key="total")
-    gst = fields.Float(data_key="gst")
+    gst = fields.Float(data_key="gst", dump_if=lambda obj, data: data.get("gst") != 0)
     paid = fields.Float(data_key="paid")
     refund = fields.Float(data_key="refund")
     service_fees = fields.Float(data_key="service_fees")

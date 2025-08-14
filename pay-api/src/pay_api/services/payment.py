@@ -401,7 +401,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         invoice_search_list = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao in purchases]
         converter = Converter()
         invoice_list = converter.unstructure(invoice_search_list)
-        data["items"] = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
+        data["items"] = [Converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
+        # Backwards compatibility
+        data["items"] = [Converter.remove_zero_invoice_gst(invoice_dict) for invoice_dict in data["items"]]
         return data
 
     @staticmethod
