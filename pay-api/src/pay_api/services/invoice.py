@@ -96,7 +96,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.cfs_account_id: int = self._dao.cfs_account_id
         self.details: Dict = self._dao.details
         self.gst: Decimal = self._dao.gst
-    
+
     @property
     def id(self):
         """Return the _id."""
