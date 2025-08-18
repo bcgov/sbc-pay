@@ -340,6 +340,9 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     ACCOUNT_SECRET_KEY = "mysecretkeyforbank"
     ALLOW_SKIP_PAYMENT = False
 
+    # Google Cloud Storage emulator settings for testing
+    GCS_EMULATOR_HOST = "http://localhost:4443"
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
