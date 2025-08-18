@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Manage the database and some other items required to run the API
-"""
+"""Manage the database and some other items required to run the API."""
 import logging
 
 from flask_migrate import Migrate
