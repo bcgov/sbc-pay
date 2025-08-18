@@ -31,7 +31,7 @@ class EmailParams:
 
     subject: Optional[str] = ""
     file_name: Optional[str] = None
-    minio_location: Optional[str] = None
+    google_bucket_name: Optional[str] = None
     error_messages: Optional[List[Dict[str, Any]]] = dataclasses.field(default_factory=list)
     ce: Optional[Any] = None
     table_name: Optional[str] = None
@@ -50,7 +50,7 @@ def send_error_email(params: EmailParams):
     email_params = {
         "fileName": params.file_name,
         "errorMessages": params.error_messages,
-        "minioLocation": params.minio_location,
+        "googleBucketName": params.google_bucket_name,
         "payload": json.dumps(dataclasses.asdict(params.ce)),
         "tableName": params.table_name,
     }
