@@ -137,7 +137,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     # Google Cloud Storage settings
     GOOGLE_STORAGE_SA = os.getenv("GOOGLE_STORAGE_SA", "")
-    GOOGLE_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME")  # FTP_POLLER_BUCKET_NAME
+    GOOGLE_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME")
     GOOGLE_BUCKET_FOLDER_CGI_PROCESSING = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_PROCESSING", "cgi_processing")
     GOOGLE_BUCKET_FOLDER_CGI_PROCESSED = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_PROCESSED", "cgi_processed")
     GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK", "cgi_feedback")
