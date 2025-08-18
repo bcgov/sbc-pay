@@ -228,7 +228,7 @@ def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod =
         detail_lines = []
         for detail in inv.get("details", []):
             detail_lines.append(f"{detail.get('label', '')} {detail.get('value', '')}")
-        fee = inv.get("total", 0) - inv.get("service_fees", 0) if inv.get("total") and inv.get("service_fees") else 0.00
+        fee = max(inv.get("total", 0) - inv.get("service_fees", 0) - inv.get("gst", 0), 0)
 
         row = TransactionRow(
             products=product_lines,
