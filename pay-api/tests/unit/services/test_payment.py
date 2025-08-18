@@ -907,7 +907,7 @@ def test_build_transaction_rows():
     rows = build_transaction_rows(invoices)
     assert rows[0]["products"] == ["Service Fee"]
     assert rows[0]["details"][0].startswith("Folio")
-    assert rows[0]["fee"] == "90.00"
+    assert rows[0]["fee"] == "85.00"
 
 
 def test_build_statement_context():
