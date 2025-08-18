@@ -14,9 +14,7 @@
 """Utilities used by the integration tests."""
 import base64
 import csv
-import io
 import json
-import os
 import uuid
 from datetime import datetime, timezone
 from socket import SO_REUSEADDR, SOL_SOCKET, socket
@@ -24,7 +22,8 @@ from time import sleep
 from typing import List
 
 from flask import current_app
-from minio import Minio
+from google.auth.credentials import AnonymousCredentials
+from google.cloud import storage
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import QueueSources
@@ -62,7 +61,7 @@ def post_to_queue(client, request_payload):
 
 
 def create_and_upload_settlement_file(file_name: str, rows: List[List]):
-    """Create settlement file, upload to minio and send event."""
+    """Create settlement file, upload to google bucket and send event."""
     headers = [
         "Record type",
         "Source Transaction Type",
@@ -86,38 +85,40 @@ def create_and_upload_settlement_file(file_name: str, rows: List[List]):
             cas_writer.writerow(row)
 
     with open(file_name, "rb") as f:
-        upload_to_minio(f.read(), file_name)
+        upload_to_google_bucket(f.read(), file_name)
 
 
 def create_and_upload_eft_file(file_name: str, rows: List[List]):
-    """Create eft file, upload to minio and send event."""
+    """Create eft file, upload to google bucket and send event."""
     with open(file_name, mode="w", encoding="utf-8") as eft_file:
         for row in rows:
             print(row, file=eft_file)
 
     with open(file_name, "rb") as f:
-        upload_to_minio(f.read(), file_name)
+        upload_to_google_bucket(f.read(), file_name)
 
 
-def upload_to_minio(value_as_bytes, file_name: str):
-    """Return a pre-signed URL for new doc upload."""
-    minio_endpoint = current_app.config["MINIO_ENDPOINT"]
-    minio_key = current_app.config["MINIO_ACCESS_KEY"]
-    minio_secret = current_app.config["MINIO_ACCESS_SECRET"]
-    minio_client = Minio(
-        minio_endpoint,
-        access_key=minio_key,
-        secret_key=minio_secret,
-        secure=current_app.config["MINIO_SECURE"],
+def get_test_bucket(app):
+    """Get a Google Cloud Storage bucket for testing with emulator."""
+    bucket_name = app.config.get("GOOGLE_BUCKET_NAME")
+    host_name = app.config.get("GCS_EMULATOR_HOST")
+
+    client = storage.Client(
+        project="test-project",
+        credentials=AnonymousCredentials(),
+        client_options={"api_endpoint": host_name},
     )
 
-    value_as_stream = io.BytesIO(value_as_bytes)
-    minio_client.put_object(
-        current_app.config["MINIO_BUCKET_NAME"],
-        file_name,
-        value_as_stream,
-        os.stat(file_name).st_size,
-    )
+    bucket = client.bucket(bucket_name)
+    return bucket
+
+
+def upload_to_google_bucket(value_as_bytes, file_name: str):
+    """Upload bytes to GCS bucket."""
+    bucket = get_test_bucket(current_app)
+    blob = bucket.blob(file_name)
+    data = bytes(value_as_bytes)
+    blob.upload_from_string(data, content_type="application/octet-stream")
 
 
 def forward_incoming_message_to_test_instance(session, app, client):
@@ -148,7 +149,7 @@ def add_file_event_to_queue_and_process(client, file_name: str, message_type: st
     """Add event to the Queue."""
     queue_payload = {
         "fileName": file_name,
-        "location": current_app.config["MINIO_BUCKET_NAME"],
+        "location": current_app.config["GOOGLE_BUCKET_NAME"],
     }
     if use_pubsub_emulator:
         gcp_queue_publisher.publish_to_queue(

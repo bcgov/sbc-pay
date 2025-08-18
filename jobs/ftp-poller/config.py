@@ -130,22 +130,19 @@ class _Config(object):  # pylint: disable=too-few-public-methods
         },
     }
 
-    # Minio configuration values
-    MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
-    MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-    MINIO_ACCESS_SECRET = os.getenv("MINIO_ACCESS_SECRET")
-    MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME", "payment-sftp")
-    MINIO_CGI_BUCKET_NAME = os.getenv("MINIO_CGI_BUCKET_NAME", "cgi-ejv")
-    MINIO_EFT_BUCKET_NAME = os.getenv("MINIO_EFT_BUCKET_NAME", "eft-sftp")
-    MINIO_SECURE = True
-
     # PUB/SUB - PUB: ftp-poller-payment-reconciliation-dev
     FTP_POLLER_TOPIC = os.getenv("FTP_POLLER_TOPIC", "ftp-poller-payment-reconciliation-dev")
     GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
     PUB_ENABLE_MESSAGE_ORDERING = os.getenv("PUB_ENABLE_MESSAGE_ORDERING", "True")
 
-    FTP_POLLER_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME", "")
+    # Google Cloud Storage settings
     GOOGLE_STORAGE_SA = os.getenv("GOOGLE_STORAGE_SA", "")
+    GOOGLE_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME")  # FTP_POLLER_BUCKET_NAME
+    GOOGLE_BUCKET_FOLDER_CGI_PROCESSING = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_PROCESSING", "cgi_processing")
+    GOOGLE_BUCKET_FOLDER_CGI_PROCESSED = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_PROCESSED", "cgi_processed")
+    GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK", "cgi_feedback")
+    GOOGLE_BUCKET_FOLDER_AR = os.getenv("GOOGLE_BUCKET_FOLDER_AR", "ar")
+    GOOGLE_BUCKET_FOLDER_EFT = os.getenv("GOOGLE_BUCKET_FOLDER_EFT", "eft")
 
     TESTING = False
     DEBUG = True

@@ -53,8 +53,8 @@ from pay_api.utils.enums import (
 from sqlalchemy import inspect
 
 from pay_queue import config
-from pay_queue.minio import get_object
 from pay_queue.services.email_service import EmailParams, send_error_email
+from pay_queue.util import get_object_from_bucket_folder
 
 APP_CONFIG = config.get_named_config(os.getenv("DEPLOYMENT_ENV", "production"))
 
@@ -81,9 +81,9 @@ def _update_feedback(msg: Dict[str, any], cloud_event):  # pylint:disable=too-ma
     # Read the file and find records from the database, and update status.
 
     file_name: str = msg.get("fileName")
-    minio_location: str = msg.get("location")
-    file = get_object(minio_location, file_name)
-    content = file.data.decode("utf-8-sig")
+    bucket_folder_name: str = msg.get("location")
+    file = get_object_from_bucket_folder(bucket_folder_name, file_name)
+    content = file.decode("utf-8-sig")
     group_batches: Dict[str, List[str]] = _group_batches(content)
 
     if _is_processed_or_processing(group_batches["EJV"], file_name):
@@ -96,7 +96,7 @@ def _update_feedback(msg: Dict[str, any], cloud_event):  # pylint:disable=too-ma
         email_service_params = EmailParams(
             subject="Payment Reconciliation Failure - GL disbursement failure for EJV",
             file_name=file_name,
-            minio_location=minio_location,
+            google_bucket_name=f"{current_app.config.get("GOOGLE_BUCKET_NAME")}/{bucket_folder_name}",
             error_messages="The GL disbursement failed for the electronic journal voucher batch. "
             "It maybe necessary to contact the ministry to get the correct GL and update in the "
             "BC Registries application. Unless this is an error is unrelated to the GL correctness."
@@ -339,9 +339,7 @@ def _mark_distribution_codes_as_stopped(line_items):
     for line_item in line_items:
         # Line debit distribution
         debit_distribution = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
-        credit_distribution = DistributionCodeModel.find_by_id(
-            debit_distribution.disbursement_distribution_code_id
-        )
+        credit_distribution = DistributionCodeModel.find_by_id(debit_distribution.disbursement_distribution_code_id)
         credit_distribution.stop_ejv = True
 
 

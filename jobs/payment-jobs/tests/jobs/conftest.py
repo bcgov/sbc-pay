@@ -188,10 +188,10 @@ def admin_users_mock(monkeypatch):
 def google_bucket_mock(monkeypatch):
     """Mock google bucket upload."""
 
-    def upload_to_bucket(p1, p2):
+    def upload(file_path_with_name, trg_file_path):
         return None
 
-    monkeypatch.setattr("tasks.common.cgi_ejv.upload_to_bucket", upload_to_bucket)
+    monkeypatch.setattr("tasks.common.cgi_ejv.CgiEjv.upload", upload)
 
 
 @pytest.fixture()
