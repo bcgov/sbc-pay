@@ -109,7 +109,7 @@ def get_test_bucket(app):
         client_options={"api_endpoint": host_name},
     )
 
-    bucket_name = "payment-sftp"
+    bucket_name = app.config.get("GOOGLE_BUCKET_NAME")
     bucket = client.bucket(bucket_name)
     if not bucket.exists():
         bucket.create()
