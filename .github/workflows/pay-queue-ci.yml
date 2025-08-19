@@ -68,6 +68,7 @@ jobs:
       DISABLE_CSV_ERROR_EMAIL: False
       IT_OPS_EMAIL: 'ken.li@gov.bc.ca'
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
+      FTP_POLLER_BUCKET_NAME: "ftp-poller-test"
 
     runs-on: ubuntu-24.04
 
