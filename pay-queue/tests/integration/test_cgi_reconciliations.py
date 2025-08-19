@@ -2174,7 +2174,7 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
     email_params = call_args[0][0]
     assert email_params.subject == "Payment Reconciliation Failure - GL disbursement failure for EJV"
     assert email_params.file_name == feedback_file_name
-    assert email_params.google_bucket_name == "payment-sftp"
+    assert email_params.google_bucket_name == "payment-sftp/test-folder"
     assert email_params.table_name == EjvFileModel.__tablename__
     assert "The GL disbursement failed for the electronic journal voucher batch" in email_params.error_messages
 
