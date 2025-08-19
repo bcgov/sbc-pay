@@ -196,4 +196,4 @@ def set_eft_configuration(app):
 def mock_get_bucket(mocker, app):
     """Mock get_bucket for all tests in this module."""
     bucket = get_test_bucket(app)
-    mocker.patch("pay_queue.google_bucket.get_bucket", return_value=bucket)
+    mocker.patch("pay_queue.util.get_google_bucket", return_value=bucket)

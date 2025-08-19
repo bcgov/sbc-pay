@@ -38,24 +38,16 @@ def get_bucket(storage_client, bucket_name):
     return bucket
 
 
-@pytest.fixture(autouse=True)
-def app_context(app):
-    """Automatically provide app context for all tests."""
-    with app.app_context():
-        yield
-
-
 @pytest.fixture
 def storage_client(app):
     """Create google storage client using emulator."""
-    with app.app_context():
-        host_name = current_app.config.get("GCS_EMULATOR_HOST")
-        client = storage.Client(
-            project="test-project",
-            credentials=AnonymousCredentials(),
-            client_options={"api_endpoint": host_name},
-        )
-        return client
+    host_name = app.config.get("GCS_EMULATOR_HOST")
+    client = storage.Client(
+        project="test-project",
+        credentials=AnonymousCredentials(),
+        client_options={"api_endpoint": host_name},
+    )
+    return client
 
 
 @pytest.fixture
@@ -72,7 +64,7 @@ def temp_test_files() -> Iterator[List[str]]:
         yield files
 
 
-def test_get_client(app: Flask) -> None:
+def test_get_client(session, app) -> None:
     """Test getting storage client."""
     service_account_info = {}
 
@@ -89,7 +81,7 @@ def test_get_client(app: Flask) -> None:
         assert client == mock_client_instance
 
 
-def test_get_file_bytes_from_bucket_folder(storage_client, app) -> None:
+def test_get_file_bytes_from_bucket_folder(session, storage_client, app) -> None:
     """Test getting file bytes from bucket folder."""
     bucket = get_bucket(storage_client, "test-bucket-get-files-bytes")
     folder_name = "test-folder"
@@ -106,7 +98,7 @@ def test_get_file_bytes_from_bucket_folder(storage_client, app) -> None:
     bucket.delete(force=True)
 
 
-def test_upload_to_bucket_folder(storage_client, temp_test_files: List[str], app: Flask) -> None:
+def test_upload_to_bucket_folder(session, storage_client, temp_test_files: List[str], app: Flask) -> None:
     """Testing upload_to_bucket_folder."""
     bucket = get_bucket(storage_client, "test-bucket-upload-files")
     folder_name = "test-folder"
@@ -128,7 +120,7 @@ def test_upload_to_bucket_folder(storage_client, temp_test_files: List[str], app
     bucket.delete(force=True)
 
 
-def test_upload_file_bytes_to_bucket_folder(storage_client, app: Flask) -> None:
+def test_upload_file_bytes_to_bucket_folder(session, storage_client, app: Flask) -> None:
     """Test uploading file bytes to bucket folder."""
     bucket = get_bucket(storage_client, "test-bucket-upload-file-bytes")
     folder_name = "test-folder"
@@ -144,7 +136,7 @@ def test_upload_file_bytes_to_bucket_folder(storage_client, app: Flask) -> None:
     bucket.delete(force=True)
 
 
-def test_get_files_from_bucket_folder(storage_client, app: Flask) -> None:
+def test_get_files_from_bucket_folder(session, storage_client, app: Flask) -> None:
     """Test getting files from bucket folder."""
     bucket = get_bucket(storage_client, "test-bucket-get-files")
     folder_name = "test-folder"
@@ -177,7 +169,7 @@ def test_get_files_from_bucket_folder(storage_client, app: Flask) -> None:
     bucket.delete(force=True)
 
 
-def test_move_file_in_bucket(storage_client, app: Flask) -> None:
+def test_move_file_in_bucket(session, storage_client, app: Flask) -> None:
     """Test moving a file in bucket."""
     bucket = get_bucket(storage_client, "test-bucket-move-file")
     source_folder = "source-folder"
