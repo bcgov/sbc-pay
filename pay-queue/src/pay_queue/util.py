@@ -21,8 +21,6 @@ def get_google_bucket():
     """Get a Google Cloud Storage bucket."""
     google_storage_client = GoogleBucketService.get_client()
     bucket_name = current_app.config.get("GOOGLE_BUCKET_NAME")
-    if not bucket_name:
-        raise ValueError("GOOGLE_BUCKET_NAME configuration is required")
     bucket = GoogleBucketService.get_bucket(google_storage_client, bucket_name)
     return bucket
 

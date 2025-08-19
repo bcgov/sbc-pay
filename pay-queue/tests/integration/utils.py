@@ -26,6 +26,7 @@ from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
+from pay_api.services.google_bucket_service import GoogleBucketService
 from pay_api.utils.enums import QueueSources
 from sbc_common_components.utils.enums import QueueMessageTypes
 from simple_cloudevent import SimpleCloudEvent, to_queue_message
@@ -100,7 +101,6 @@ def create_and_upload_eft_file(file_name: str, rows: List[List]):
 
 def get_test_bucket(app):
     """Get a Google Cloud Storage bucket for testing with emulator."""
-    bucket_name = app.config.get("GOOGLE_BUCKET_NAME")
     host_name = app.config.get("GCS_EMULATOR_HOST")
 
     client = storage.Client(
@@ -109,16 +109,17 @@ def get_test_bucket(app):
         client_options={"api_endpoint": host_name},
     )
 
+    bucket_name = "test-bucket"
     bucket = client.bucket(bucket_name)
+    if not bucket.exists():
+        bucket.create()
     return bucket
 
 
 def upload_to_google_bucket(value_as_bytes, file_name: str):
     """Upload bytes to GCS bucket."""
     bucket = get_test_bucket(current_app)
-    blob = bucket.blob(file_name)
-    data = bytes(value_as_bytes)
-    blob.upload_from_string(data, content_type="application/octet-stream")
+    GoogleBucketService.upload_file_bytes_to_bucket_folder(bucket, "test-folder", file_name, value_as_bytes)
 
 
 def forward_incoming_message_to_test_instance(session, app, client):
@@ -149,7 +150,7 @@ def add_file_event_to_queue_and_process(client, file_name: str, message_type: st
     """Add event to the Queue."""
     queue_payload = {
         "fileName": file_name,
-        "location": current_app.config["GOOGLE_BUCKET_NAME"],
+        "location": "test-folder",
     }
     if use_pubsub_emulator:
         gcp_queue_publisher.publish_to_queue(

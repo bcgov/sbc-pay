@@ -188,6 +188,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     # Need a value for this, so we can mock the publish client.
     BUSINESS_PAY_TOPIC = "business-pay-topic"
 
+    # Google Cloud Storage emulator settings for testing
+    GCS_EMULATOR_HOST = "http://localhost:4443"
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
