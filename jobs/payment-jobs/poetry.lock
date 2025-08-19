@@ -2323,8 +2323,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "more_gst_unit_tests"
-resolved_reference = "35b58cd65652174b928fe35a7dd5a18b8b4fcbca"
+reference = "main"
+resolved_reference = "049c0c9750dcb89fe2b95715d11ceac86d2762a0"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3614,4 +3614,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "df3ab82b79cd6006bf146337ab2512bfa27976d483179784462cc0c80e79a833"
+content-hash = "ae9f321f12e249f99ffd7f6f061f6b040ec8edfd368b129f8190f6f50ade5e08"
