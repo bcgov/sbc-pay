@@ -240,7 +240,7 @@ def test_build_lines_with_gst_fees(session):
 
     assert len(lines) == 3
 
-    # Note this should ignore the GST lines, as that's done in the CAS AR side. The AR module determines the rate 
+    # Note this should ignore the GST lines, as that's done in the CAS AR side. The AR module determines the rate
     # and GL for GST.
     base_line = next(line for line in lines if "Base Filing Fee" in line["description"])
     service_line = next(line for line in lines if "Service Fee" in line["description"])
