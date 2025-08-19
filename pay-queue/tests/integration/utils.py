@@ -109,7 +109,7 @@ def get_test_bucket(app):
         client_options={"api_endpoint": host_name},
     )
 
-    bucket_name = "test-bucket"
+    bucket_name = "payment-sftp"
     bucket = client.bucket(bucket_name)
     if not bucket.exists():
         bucket.create()
