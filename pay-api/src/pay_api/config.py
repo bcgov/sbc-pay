@@ -86,7 +86,7 @@ class _Config:  # pylint: disable=too-few-public-methods
         "pool_pre_ping": True,  # Test connections before use - Default False
         "pool_recycle": 300,  # Recycle connections 5m - Default 1800
         "pool_timeout": 30,  # Timeout for getting connection - Default 30
-		    "pool_use_lifo": True,
+		"pool_use_lifo": True,
     }
 
     ALEMBIC_INI = "migrations/alembic.ini"
