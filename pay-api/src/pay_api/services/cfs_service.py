@@ -559,9 +559,7 @@ class CFSService(OAuthService):
 
             if line_item.total > 0:
                 context.index = cls._process_line_item(
-                    context,
-                    distribution_code,
-                    LineItemData(line_item.total, line_item.description, has_gst=line_item.statutory_fees_gst > 0),
+                    context, distribution_code, LineItemData(line_item.total, line_item.description)
                 )
 
             if (
@@ -574,13 +572,38 @@ class CFSService(OAuthService):
                 )
             ):
                 context.index = cls._process_line_item(
-                    context,
-                    service_fee_distribution,
-                    LineItemData(line_item.service_fees, "Service Fee", has_gst=line_item.service_fees_gst > 0),
+                    context, service_fee_distribution, LineItemData(line_item.service_fees, "Service Fee")
                 )
 
-        # We don't include service fee gst and stat fee gst, because it's configured inside of the AR module.
-        # It calculates it for us and sends it to preconfigured GL inside of CAS depending on the receipt method.
+            if (
+                line_item.statutory_fees_gst > 0
+                and distribution_code.statutory_fees_gst_distribution_code_id
+                and (
+                    statutory_gst_distribution := distribution_lookup.get(
+                        distribution_code.statutory_fees_gst_distribution_code_id
+                    )
+                )
+            ):
+                context.index = cls._process_line_item(
+                    context,
+                    statutory_gst_distribution,
+                    LineItemData(line_item.statutory_fees_gst, "Statutory Fees GST", True),
+                )
+
+            if (
+                line_item.service_fees_gst > 0
+                and distribution_code.service_fee_gst_distribution_code_id
+                and (
+                    service_gst_distribution := distribution_lookup.get(
+                        distribution_code.service_fee_gst_distribution_code_id
+                    )
+                )
+            ):
+                context.index = cls._process_line_item(
+                    context,
+                    service_gst_distribution,
+                    LineItemData(line_item.service_fees_gst, "Service Fees GST", True),
+                )
 
         return list(context.lines_map.values())
 
@@ -623,6 +646,13 @@ class CFSService(OAuthService):
         else:
             existing_line["unit_price"] += amount_value
             existing_line["distribution"][0]["amount"] += amount_value
+
+            if (
+                line_data.has_gst
+                and existing_line.get("tax_classification") == TAX_CLASSIFICATION_GST
+                and existing_line["description"] != line_data.description
+            ):
+                existing_line["description"] = "Statutory & Service Fees GST"
 
         return context.index
 
