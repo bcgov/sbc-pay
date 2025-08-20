@@ -1,13 +1,10 @@
 """Google Bucket Poller."""
 
-import base64
-import json
 import os
-import tempfile
 import traceback
 
 from flask import current_app
-from google.cloud import storage
+from pay_api.services.google_bucket_service import GoogleBucketService
 
 from services.sftp import SFTPService
 
@@ -15,61 +12,35 @@ from services.sftp import SFTPService
 class GoogleBucketPollerTask:
     """Relies on pay-jobs creating files in the processing bucket, should move them into processed after sftp upload."""
 
-    client: storage.Client = None
-    bucket: storage.Bucket = None
-
-    @classmethod
-    def poll_google_bucket_for_ejv_files(cls):
+    @staticmethod
+    def poll_google_bucket_for_ejv_files():
         """Check google bucket for ejv files that PAY-JOBS has created."""
         try:
-            current_app.logger.info('Polling Google bucket for EJV files.')
-            cls.initialize_storage_client()
-            file_paths = cls._get_processing_files()
-            cls._upload_to_sftp(file_paths)
-            cls._move_to_processed_folder(file_paths)
+            current_app.logger.info("Polling Google bucket for EJV files.")
+            google_storage_client = GoogleBucketService.get_client()
+            bucket = GoogleBucketService.get_bucket(google_storage_client, current_app.config.get("GOOGLE_BUCKET_NAME"))
+            file_paths = GoogleBucketService.get_files_from_bucket_folder(
+                bucket, current_app.config.get("GOOGLE_BUCKET_FOLDER_CGI_PROCESSING")
+            )
+            GoogleBucketPollerTask._upload_to_sftp(file_paths)
+            GoogleBucketPollerTask._move_to_processed_folder(bucket, file_paths)
         except Exception as e:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
 
-    @classmethod
-    def initialize_storage_client(cls):
-        """Initialize google storage client / bucket for use."""
-        current_app.logger.info("Initializing Google Storage client.")
-        ftp_poller_bucket_name = current_app.config.get("FTP_POLLER_BUCKET_NAME")
-        json_text = base64.b64decode(current_app.config.get("GOOGLE_STORAGE_SA")).decode("utf-8")
-        auth_json = json.loads(json_text, strict=False)
-        cls.client = storage.Client.from_service_account_info(auth_json)
-        cls.bucket = cls.client.bucket(ftp_poller_bucket_name)
-
-    @classmethod
-    def _get_processing_files(cls):
-        """Download all files to temp folder, so they can be SFTP'd and moved to processed."""
-        file_paths = []
-        for blob in cls.bucket.list_blobs(prefix="cgi_processing/"):
-            # Skip if folder.
-            if blob.name.endswith("/"):
-                continue
-            target_path = f"{tempfile.gettempdir()}/{blob.name.split('/')[-1]}"
-            current_app.logger.info(f"Downloading {blob.name} to {target_path}")
-            # This automatically overrides if the file exists.
-            blob.download_to_filename(target_path)
-            file_paths.append(target_path)
-        current_app.logger.info(f"Processing files: {file_paths}")
-        return file_paths
-
-    @classmethod
-    def _move_to_processed_folder(cls, file_paths):
+    @staticmethod
+    def _move_to_processed_folder(bucket, file_paths):
         """Move files from processing to processed folder."""
         for file_path in file_paths:
             file_name = os.path.basename(file_path)
-            current_app.logger.info(f"Moving {file_name} from processing to processed folder.")
-            source_blob = cls.bucket.blob(f"cgi_processing/{file_name}")
-            destination = f"cgi_processed/{file_name}"
-            cls.bucket.copy_blob(source_blob, cls.bucket, destination)
-            source_blob.delete()
-            current_app.logger.info(f"File moved to {destination}.")
+            GoogleBucketService.move_file_in_bucket(
+                bucket,
+                current_app.config.get("GOOGLE_BUCKET_FOLDER_CGI_PROCESSING"),
+                current_app.config.get("GOOGLE_BUCKET_FOLDER_CGI_PROCESSED"),
+                file_name,
+            )
 
-    @classmethod
-    def _upload_to_sftp(cls, file_paths):
+    @staticmethod
+    def _upload_to_sftp(file_paths):
         """Handle SFTP upload for these files."""
         if not file_paths:
             return

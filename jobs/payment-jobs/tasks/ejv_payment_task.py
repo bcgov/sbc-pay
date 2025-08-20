@@ -84,7 +84,7 @@ class EjvPaymentTask(CgiEjv):
         1. Find all accounts for GI or GA.
         2. Find outstanding invoices and partial refunds for payment.
         3. Group by account and create JD for each service fee and filing fee.
-        4. Upload the file to minio for future reference.
+        4. Upload the file to bucket for future reference.
         5. Upload to sftp for processing. First upload JV file and then a TRG file.
         6. Update the statuses and create records to for the batch.
         """
@@ -229,7 +229,7 @@ class EjvPaymentTask(CgiEjv):
         ejv_content = f"{batch_header}{ejv_content}{batch_trailer}"
         file_path_with_name, trg_file_path, _ = cls.create_inbox_and_trg_files(ejv_content, file_name)
         current_app.logger.info("Uploading to sftp.")
-        cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
+        cls.upload(file_path_with_name, trg_file_path)
         db.session.commit()
 
         # Sleep to prevent collision on file name.

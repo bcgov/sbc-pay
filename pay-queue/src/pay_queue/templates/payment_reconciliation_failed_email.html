@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Payment Reconciliation Failure</title>
 </head>
+
 <body>
     <p>The following reconciliation job failed:</p>
     <ul>
         <li><strong>Feedback File Name:</strong> {{ fileName }}</li>
-        <li><strong>Feedback File Location:</strong> {{ minioLocation }}</li>
+        <li><strong>Feedback File Location:</strong> {{ googleBucketName }}</li>
         <li><strong>Table to update:</strong> {{ tableName }}</li>
         <li><strong>Errors:</strong>
             <ul style="line-height: 2em;">
                 {% for error in errorMessages %}
-                    <li>
-                        {% if error.row %}Row: {{ error.row }}<br >{% endif %}
-                        {% if error.error %}Error: {{ error.error }}<br >{% endif %}
-                    </li>
+                <li>
+                    {% if error.row %}Row: {{ error.row }}<br>{% endif %}
+                    {% if error.error %}Error: {{ error.error }}<br>{% endif %}
+                </li>
                 {% endfor %}
             </ul>
         </li>
         <li><strong>Payload:</strong> {{ payload }}</li>
     </ul>
 </body>
+
 </html>

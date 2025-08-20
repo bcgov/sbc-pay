@@ -27,9 +27,9 @@ from pay_api.services.eft_short_name_links import EFTShortnameLinks as EFTShortn
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
 from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus, EFTShortnameType
 
-from pay_queue.minio import get_object
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
 from pay_queue.services.email_service import EmailParams, send_error_email
+from pay_queue.util import get_object_from_bucket_folder
 
 
 class EFTReconciliation:  # pylint: disable=too-few-public-methods
@@ -40,7 +40,7 @@ class EFTReconciliation:  # pylint: disable=too-few-public-methods
         self.ce = ce
         self.msg = ce.data
         self.file_name: str = self.msg.get("fileName")
-        self.minio_location: str = self.msg.get("location")
+        self.bucket_folder_name: str = self.msg.get("location")
         self.error_messages: List[Dict[str, any]] = []
 
     def eft_error_handling(self, row, error_msg: str, capture_error: bool = True, table_name: str = None):
@@ -52,7 +52,7 @@ class EFTReconciliation:  # pylint: disable=too-few-public-methods
             email_service_params = EmailParams(
                 subject="EFT TDI17 Reconciliation Failure",
                 file_name=self.file_name,
-                minio_location=self.minio_location,
+                google_bucket_name=f"{current_app.config.get("GOOGLE_BUCKET_NAME")}/{self.bucket_folder_name}",
                 error_messages=self.error_messages,
                 ce=self.ce,
                 table_name=table_name,
@@ -98,8 +98,8 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     eft_location_id = current_app.config.get("EFT_TDI17_LOCATION_ID")
 
     # Fetch EFT File
-    file = get_object(context.minio_location, context.file_name)
-    file_content = file.data.decode("utf-8-sig")
+    file = get_object_from_bucket_folder(context.bucket_folder_name, context.file_name)
+    file_content = file.decode("utf-8-sig")
 
     # Split into lines
     lines = file_content.splitlines()

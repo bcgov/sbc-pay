@@ -80,12 +80,6 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     else:
         SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
 
-    # Minio configuration values
-    MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
-    MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-    MINIO_ACCESS_SECRET = os.getenv("MINIO_ACCESS_SECRET")
-    MINIO_SECURE = os.getenv("MINIO_SECURE", "True").lower() == "true"
-
     # CFS API Settings
     CFS_BASE_URL = os.getenv("CFS_BASE_URL")
     CFS_CLIENT_ID = os.getenv("CFS_CLIENT_ID")
@@ -130,6 +124,15 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     VERIFY_PUBSUB_EMAILS = f'{os.getenv("AUTHPAY_SERVICE_ACCOUNT")},{os.getenv("BUSINESS_SERVICE_ACCOUNT")}'.split(",")
     SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT = os.getenv("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT", "").lower() == "true"
 
+    # Google Cloud Storage settings
+    GOOGLE_STORAGE_SA = os.getenv("GOOGLE_STORAGE_SA", "")
+    GOOGLE_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME")
+    GOOGLE_BUCKET_FOLDER_CGI_PROCESSING = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_PROCESSING", "cgi_processing")
+    GOOGLE_BUCKET_FOLDER_CGI_PROCESSED = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_PROCESSED", "cgi_processed")
+    GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK", "cgi_feedback")
+    GOOGLE_BUCKET_FOLDER_AR = os.getenv("GOOGLE_BUCKET_FOLDER_AR", "ar")
+    GOOGLE_BUCKET_FOLDER_EFT = os.getenv("GOOGLE_BUCKET_FOLDER_EFT", "eft")
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     """Creates the Development Config object."""
@@ -159,13 +162,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     USE_DOCKER_MOCK = os.getenv("USE_DOCKER_MOCK", None)
 
-    # Minio variables
-    MINIO_ENDPOINT = "localhost:9000"
-    MINIO_ACCESS_KEY = "minio"
-    MINIO_ACCESS_SECRET = "minio123"
-    MINIO_BUCKET_NAME = "payment-sftp"
-    MINIO_SECURE = False
-
     CFS_BASE_URL = "http://localhost:8080/paybc-api"
     CFS_CLIENT_ID = "TEST"
     CFS_CLIENT_SECRET = "TEST"
@@ -191,6 +187,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DISABLE_CSV_ERROR_EMAIL = False
     # Need a value for this, so we can mock the publish client.
     BUSINESS_PAY_TOPIC = "business-pay-topic"
+
+    # Google Cloud Storage emulator settings for testing
+    GCS_EMULATOR_HOST = "http://localhost:4443"
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

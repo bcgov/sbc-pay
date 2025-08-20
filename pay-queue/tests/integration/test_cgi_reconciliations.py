@@ -69,7 +69,7 @@ from .factory import (
     factory_refund,
     factory_routing_slip_account,
 )
-from .utils import upload_to_minio
+from .utils import upload_to_google_bucket
 
 
 def test_successful_partner_ejv_reconciliations(session, app, client):
@@ -172,7 +172,7 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    upload_to_minio(str.encode(""), ack_file_name)
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -225,9 +225,9 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
+    # Now upload the ACK file to google bucket and publish message.
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -342,8 +342,8 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
-    upload_to_minio(str.encode(""), ack_file_name)
+    # Now upload the ACK file to google bucket and publish message.
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -396,9 +396,9 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
+    # Now upload the ACK file to google bucket and publish message.
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -519,8 +519,8 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
-    upload_to_minio(str.encode(""), ack_file_name)
+    # Now upload the ACK file to google bucket and publish message.
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -574,7 +574,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
         jv_file.close()
 
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -754,8 +754,8 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
-    upload_to_minio(str.encode(""), ack_file_name)
+    # Now upload the ACK file to google bucket and publish message.
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -767,9 +767,9 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
+    # Now upload the ACK file to google bucket and publish message.
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -970,7 +970,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
         jv_file.write("")
         jv_file.close()
 
-    upload_to_minio(str.encode(""), ack_file_name)
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -982,9 +982,9 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
+    # Now upload the ACK file to google bucket and publish message.
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
@@ -1067,8 +1067,8 @@ def test_successful_refund_reconciliations(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
-    upload_to_minio(str.encode(""), ack_file_name)
+    # Now upload the ACK file to google bucket and publish message.
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -1140,9 +1140,9 @@ def test_successful_refund_reconciliations(session, app, client):
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
+    # Now upload the ACK file to google bucket and publish message.
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -1205,8 +1205,8 @@ def test_failed_refund_reconciliations(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
-    upload_to_minio(str.encode(""), ack_file_name)
+    # Now upload the ACK file to google bucket and publish message.
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -1279,9 +1279,9 @@ def test_failed_refund_reconciliations(session, app, client):
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
+    # Now upload the ACK file to google bucket and publish message.
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -1334,8 +1334,8 @@ def test_successful_eft_refund_reconciliations(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    # Upload the ACK file to minio and publish message.
-    upload_to_minio(str.encode(""), ack_file_name)
+    # Upload the ACK file to google bucket and publish message.
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -1394,9 +1394,9 @@ def test_successful_eft_refund_reconciliations(session, app, client):
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
+    # Now upload the ACK file to google bucket and publish message.
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -1448,8 +1448,8 @@ def test_failed_eft_refund_reconciliations(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
-    upload_to_minio(str.encode(""), ack_file_name)
+    # Now upload the ACK file to google bucket and publish message.
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -1508,9 +1508,9 @@ def test_failed_eft_refund_reconciliations(session, app, client):
         jv_file.write(feedback_content)
         jv_file.close()
 
-    # Now upload the ACK file to minio and publish message.
+    # Now upload the ACK file to google bucket and publish message.
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -1595,7 +1595,7 @@ def test_successful_ap_disbursement(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    upload_to_minio(str.encode(""), ack_file_name)
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -1668,7 +1668,7 @@ def test_successful_ap_disbursement(session, app, client):
         jv_file.close()
 
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -1752,7 +1752,7 @@ def test_failure_ap_disbursement(session, app, client):
         jv_file.write("")
         jv_file.close()
 
-    upload_to_minio(str.encode(""), ack_file_name)
+    upload_to_google_bucket(str.encode(""), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -1828,7 +1828,7 @@ def test_failure_ap_disbursement(session, app, client):
         jv_file.close()
 
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
@@ -1994,7 +1994,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
         jv_file.close()
 
     with open(ack_file_name, "rb") as f:
-        upload_to_minio(f.read(), ack_file_name)
+        upload_to_google_bucket(f.read(), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
@@ -2003,7 +2003,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
         jv_file.write(feedback_content)
         jv_file.close()
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
 
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
@@ -2119,7 +2119,7 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
     with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
         jv_file.write("")
         jv_file.close()
-    upload_to_minio(str.encode(""), ack_file_name)
+    upload_to_google_bucket(str.encode(""), ack_file_name)
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
 
@@ -2166,7 +2166,7 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
         jv_file.write(feedback_content)
         jv_file.close()
     with open(feedback_file_name, "rb") as f:
-        upload_to_minio(f.read(), feedback_file_name)
+        upload_to_google_bucket(f.read(), feedback_file_name)
     add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     mock_send_error_email.assert_called_once()
@@ -2174,7 +2174,7 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
     email_params = call_args[0][0]
     assert email_params.subject == "Payment Reconciliation Failure - GL disbursement failure for EJV"
     assert email_params.file_name == feedback_file_name
-    assert email_params.minio_location == "payment-sftp"
+    assert email_params.google_bucket_name == f"{app.config.get("GOOGLE_BUCKET_NAME")}/test-folder"
     assert email_params.table_name == EjvFileModel.__tablename__
     assert "The GL disbursement failed for the electronic journal voucher batch" in email_params.error_messages
 

@@ -151,7 +151,7 @@ def process_partner_notebooks(data_dir: str):
     logging.info(f"Weekly running report dates: {Config.WEEKLY_REPORT_DATES}")
     if today.isoweekday() in Config.WEEKLY_REPORT_DATES:
         from_date, to_date = get_first_last_week_dates_in_utc(Config.OVERRIDE_CURRENT_DATE)
-        for partner_code in Config.WEEKLY_RECONCILIATION_PARTNERS.replace("\"","").split(","):
+        for partner_code in Config.WEEKLY_RECONCILIATION_PARTNERS.replace('"', "").split(","):
             if len(partner_code) < 2:
                 continue
             logging.info(
@@ -162,7 +162,7 @@ def process_partner_notebooks(data_dir: str):
     logging.info(f"Monthly running report dates: {Config.MONTHLY_REPORT_DATES}")
     if today.day in Config.MONTHLY_REPORT_DATES:
         from_date, to_date = get_first_last_month_dates_in_utc(Config.OVERRIDE_CURRENT_DATE)
-        for partner_code in Config.MONTHLY_RECONCILIATION_PARTNERS.replace("\"","").split(","):
+        for partner_code in Config.MONTHLY_RECONCILIATION_PARTNERS.replace('"', "").split(","):
             if len(partner_code) < 2:
                 continue
             logging.info(

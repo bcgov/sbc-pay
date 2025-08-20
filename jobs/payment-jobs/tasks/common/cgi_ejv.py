@@ -19,10 +19,8 @@ from datetime import datetime, timezone
 
 from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.services.google_bucket_service import GoogleBucketService
 from pay_api.utils.util import get_fiscal_year, get_nearest_business_day
-
-from utils.google_bucket import upload_to_bucket
-from utils.minio import put_object
 
 
 class CgiEjv:
@@ -104,15 +102,6 @@ class CgiEjv:
         return formatted_amount.zfill(15)
 
     @classmethod
-    def upload_to_minio(cls, content, file_name, file_size):
-        """Upload to minio."""
-        try:
-            put_object(content, file_name, file_size)
-        except Exception as e:  # NOQA # pylint: disable=broad-except
-            current_app.logger.error(e)
-            current_app.logger.error(f"upload to minio failed for the file: {file_name}")
-
-    @classmethod
     def get_distribution_string(cls, dist_code: DistributionCodeModel):
         """Return GL code combination for the distribution."""
         return (
@@ -121,15 +110,14 @@ class CgiEjv:
         )
 
     @classmethod
-    def upload(cls, ejv_content, file_name, file_path_with_name, trg_file_path):
-        """Upload to ftp and to minio."""
-        upload_to_bucket(file_path_with_name, trg_file_path)
-        # Future replace minio with buckets, this will have to be a different bucket, with less strict access control.
-        cls.upload_to_minio(
-            content=ejv_content.encode(),
-            file_name=file_name,
-            file_size=os.stat(file_path_with_name).st_size,
-        )
+    def upload(cls, file_path_with_name, trg_file_path):
+        """Upload to Google bucket."""
+        google_storage_client = GoogleBucketService.get_client()
+        bucket_name = current_app.config.get("GOOGLE_BUCKET_NAME")
+        bucket = GoogleBucketService.get_bucket(google_storage_client, bucket_name)
+        bucket_folder_name = current_app.config.get("GOOGLE_BUCKET_FOLDER_CGI_PROCESSING")
+        GoogleBucketService.upload_to_bucket_folder(bucket, bucket_folder_name, file_path_with_name)
+        GoogleBucketService.upload_to_bucket_folder(bucket, bucket_folder_name, trg_file_path)
 
     @classmethod
     def get_jv_header(cls, batch_type, journal_batch_name, journal_name, total):

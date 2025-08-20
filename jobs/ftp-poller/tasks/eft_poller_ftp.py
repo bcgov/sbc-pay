@@ -17,10 +17,12 @@ from typing import List
 
 from flask import current_app
 from paramiko.sftp_attr import SFTPAttributes
+from pay_api.services.google_bucket_service import GoogleBucketService
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from services.sftp import SFTPService
-from utils.utils import publish_to_queue, upload_to_minio
+from utils import utils
+from utils.utils import publish_to_queue
 
 
 class EFTPollerFtpTask:  # pylint:disable=too-few-public-methods
@@ -33,7 +35,7 @@ class EFTPollerFtpTask:  # pylint:disable=too-few-public-methods
         Steps:
         1. List Files.
         2. If file exists ,
-                copy to minio
+                copy to google bucket
                 archive to back up folder
                 send jms message
         """
@@ -43,23 +45,32 @@ class EFTPollerFtpTask:  # pylint:disable=too-few-public-methods
                 ftp_dir: str = current_app.config.get("EFT_SFTP_DIRECTORY")
                 file_list: List[SFTPAttributes] = sftp_client.listdir_attr(ftp_dir)
                 current_app.logger.info(f"Found {len(file_list)} to be copied.")
+
+                google_storage_client = GoogleBucketService.get_client()
+                bucket_name = current_app.config.get("GOOGLE_BUCKET_NAME")
+                bucket = GoogleBucketService.get_bucket(google_storage_client, bucket_name)
+                bucket_folder_name = current_app.config.get("GOOGLE_BUCKET_FOLDER_EFT")
+
                 for file in file_list:
                     file_name = file.filename
                     file_full_name = ftp_dir + "/" + file_name
                     current_app.logger.info(f"Processing file  {file_full_name} started-----.")
                     if EFTPollerFtpTask._is_valid_payment_file(sftp_client, file_full_name):
-                        upload_to_minio(file, file_full_name, sftp_client, current_app.config["MINIO_EFT_BUCKET_NAME"])
+                        file_bytes = utils.read_sftp_file(sftp_client, file_full_name)
+                        GoogleBucketService.upload_file_bytes_to_bucket_folder(
+                            bucket, bucket_folder_name, file.filename, file_bytes
+                        )
                         payment_file_list.append(file_name)
 
                 if len(payment_file_list) > 0:
-                    EFTPollerFtpTask._post_process(sftp_client, payment_file_list)
+                    EFTPollerFtpTask._post_process(sftp_client, payment_file_list, bucket_folder_name)
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
         return payment_file_list
 
     @classmethod
-    def _post_process(cls, sftp_client, payment_file_list: List[str]):
+    def _post_process(cls, sftp_client, payment_file_list: List[str], location: str):
         """
         Post processing of the file.
 
@@ -70,7 +81,7 @@ class EFTPollerFtpTask:  # pylint:disable=too-few-public-methods
         publish_to_queue(
             payment_file_list,
             QueueMessageTypes.EFT_FILE_UPLOADED.value,
-            location=current_app.config.get("MINIO_EFT_BUCKET_NAME"),
+            location=location,
         )
 
     @classmethod

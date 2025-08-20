@@ -155,13 +155,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     DISABLE_CSV_ERROR_EMAIL = os.getenv("DISABLE_CSV_ERROR_EMAIL", "true").lower() == "true"
     DISABLE_AP_ERROR_EMAIL = os.getenv("DISABLE_AP_ERROR_EMAIL", "true").lower() == "true"
 
-    # Minio configuration values
-    MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
-    MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-    MINIO_ACCESS_SECRET = os.getenv("MINIO_ACCESS_SECRET")
-    MINIO_BUCKET_NAME = os.getenv("MINIO_EJV_BUCKET_NAME", "cgi-ejv")
-    MINIO_SECURE = True
-
     # the day on which mail to get.put 1 to get mail next day of creation.put 2 to get mails day after tomorrow.
     NOTIFY_AFTER_DAYS = int(os.getenv("NOTIFY_AFTER_DAYS", 8))  # to get full 7 days tp pass, u need to put 8.
 
@@ -202,8 +195,14 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     EFT_TRANSFER_DESC = os.getenv("EFT_TRANSFER_DESC", "BCREGISTRIES {} {} EFT TRANSFER")
     EFT_OVERDUE_NOTIFY_EMAILS = os.getenv("EFT_OVERDUE_NOTIFY_EMAILS", "")
 
-    FTP_POLLER_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME", "")
+    # Google Cloud Storage settings
     GOOGLE_STORAGE_SA = os.getenv("GOOGLE_STORAGE_SA", "")
+    GOOGLE_BUCKET_NAME = os.getenv("FTP_POLLER_BUCKET_NAME")
+    GOOGLE_BUCKET_FOLDER_CGI_PROCESSING = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_PROCESSING", "cgi_processing")
+    GOOGLE_BUCKET_FOLDER_CGI_PROCESSED = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_PROCESSED", "cgi_processed")
+    GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK = os.getenv("GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK", "cgi_feedback")
+    GOOGLE_BUCKET_FOLDER_AR = os.getenv("GOOGLE_BUCKET_FOLDER_AR", "ar")
+    GOOGLE_BUCKET_FOLDER_EFT = os.getenv("GOOGLE_BUCKET_FOLDER_EFT", "eft")
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods

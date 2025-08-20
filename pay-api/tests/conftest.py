@@ -206,6 +206,7 @@ def auto(docker_services, app):
         docker_services.start("paybc")
         docker_services.start("reports")
         docker_services.start("proxy")
+        docker_services.start("gcs-emulator")
 
 
 @pytest.fixture(scope="session")
