@@ -107,7 +107,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def _verify_created_direct_pay_invoices(cls):
         """Verify recent invoice with PAYBC."""
-        created_invoices = InvoiceModel.find_created_direct_pay_invoices(days=2)
+        created_invoices = InvoiceModel.find_created_credit_card_invoices(days=2)
         current_app.logger.info(f"Found {len(created_invoices)} Created Invoices to be Verified.")
 
         for invoice in created_invoices:
@@ -117,7 +117,10 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
 
                 if paybc_invoice.paymentstatus in STATUS_PAID:
                     current_app.logger.debug("_update_active_transactions")
-                    transaction = TransactionService.find_active_by_invoice_id(invoice.id)
+                    transaction = (
+                        TransactionService.find_by_invoice_id_and_status(invoice.id, TransactionStatus.CREATED.value)
+                        or TransactionService.find_by_invoice_id_and_status(invoice.id, TransactionStatus.FAILED.value)
+                    )
                     if not transaction or not transaction.payment_id:
                         continue
                     payment = PaymentModel.find_by_id(transaction.payment_id)
