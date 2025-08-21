@@ -82,7 +82,7 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_size": 5,  # Base connection pool size - Default 5
-        "max_overflow": 10,  # Additional connections when needed - Default 10
+        "max_overflow": 3,  # Additional connections when needed - Default 10
         "pool_pre_ping": True,  # Test connections before use - Default False
         "pool_recycle": 300,  # Recycle connections 5m - Default 1800
         "pool_timeout": 30,  # Timeout for getting connection - Default 30
