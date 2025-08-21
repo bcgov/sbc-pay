@@ -272,7 +272,6 @@ def test_build_lines_with_gst_fees(session):
 
     assert len(lines) == 6
 
-    # Find lines by description
     base_line = next(line for line in lines if "Base Filing Fee" in line["description"])
     service_line = next(line for line in lines if "Service Fee" in line["description"])
     secondary_line = next(line for line in lines if "Secondary Filing Fee" in line["description"])
@@ -280,10 +279,9 @@ def test_build_lines_with_gst_fees(session):
     service_gst_line = next(line for line in lines if "Service Fees GST" in line["description"])
     combined_gst_line = next(line for line in lines if "Statutory & Service Fees GST" in line["description"])
 
-    # Verify each line amount - base amounts should not include GST since GST is separate
-    _verify_line_structure(base_line, Decimal("100.00"))  # base amount only
-    _verify_line_structure(service_line, Decimal("10.00"))  # service fees only
-    _verify_line_structure(secondary_line, Decimal("200.00"))  # secondary amount only
+    _verify_line_structure(base_line, Decimal("100.00"))
+    _verify_line_structure(service_line, Decimal("10.00"))
+    _verify_line_structure(secondary_line, Decimal("200.00"))
     _verify_line_structure(statutory_gst_line, Decimal("5.00"))
     _verify_line_structure(service_gst_line, Decimal("0.50"))
     _verify_line_structure(combined_gst_line, Decimal("3.75"))  # 2.50 + 1.25 from combined GST test
