@@ -81,11 +81,12 @@ class _Config:  # pylint: disable=too-few-public-methods
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_size": 10,  # Base connection pool size - Default 5
-        "max_overflow": 20,  # Additional connections when needed - Default 10
+        "pool_size": 5,  # Base connection pool size - Default 5
+        "max_overflow": 3,  # Additional connections when needed - Default 10
         "pool_pre_ping": True,  # Test connections before use - Default False
-        "pool_recycle": 1800,  # Recycle connections every hour - Default 1800
+        "pool_recycle": 300,  # Recycle connections 5m - Default 1800
         "pool_timeout": 30,  # Timeout for getting connection - Default 30
+        "pool_use_lifo": True,
     }
 
     ALEMBIC_INI = "migrations/alembic.ini"
