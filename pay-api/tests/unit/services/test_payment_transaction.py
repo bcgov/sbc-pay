@@ -318,7 +318,7 @@ def test_transaction_find_active_lookup(session):
     transaction = factory_payment_transaction(payment.id, TransactionStatus.CREATED.value)
     transaction.save()
 
-    transaction = PaymentTransactionService.find_active_by_invoice_id(invoice.id)
+    transaction = PaymentTransactionService.find_by_invoice_id_and_status(invoice.id, TransactionStatus.CREATED.value)
     assert transaction is not None
     assert transaction.id is not None
     assert transaction.status_code is not None
@@ -345,7 +345,7 @@ def test_transaction_find_active_none_lookup(session):
     transaction = factory_payment_transaction(payment.id, TransactionStatus.COMPLETED.value)
     transaction.save()
 
-    transaction = PaymentTransactionService.find_active_by_invoice_id(invoice.id)
+    transaction = PaymentTransactionService.find_by_invoice_id_and_status(invoice.id)
     assert transaction is None
 
 
@@ -381,7 +381,7 @@ def test_no_existing_transaction(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.find_active_by_invoice_id(invoice.id)
+    transaction = PaymentTransactionService.find_by_invoice_id_and_status(invoice.id)
 
     assert transaction is None
 

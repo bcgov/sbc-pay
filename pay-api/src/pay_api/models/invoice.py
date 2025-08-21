@@ -238,7 +238,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
-    def find_created_direct_pay_invoices(cls, days: int = 0, hours: int = 0, minutes: int = 0):
+    def find_created_credit_card_invoices(cls, days: int = 0, hours: int = 0, minutes: int = 0):
         """Return recent invoices within a certain time and is not complete.
 
         Used in the batch job to find orphan records which are untouched for a time.
@@ -248,7 +248,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return (
             db.session.query(Invoice)
             .filter(Invoice.invoice_status_code == InvoiceStatus.CREATED.value)
-            .filter(Invoice.payment_method_code.in_([PaymentMethod.DIRECT_PAY.value]))
+            .filter(Invoice.payment_method_code.in_([PaymentMethod.DIRECT_PAY.value, PaymentMethod.CC.value]))
             .filter(Invoice.created_on >= earliest_transaction_time)
             .all()
         )
