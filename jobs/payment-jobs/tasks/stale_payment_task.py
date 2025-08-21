@@ -107,7 +107,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def _verify_created_direct_pay_invoices(cls):
         """Verify recent invoice with PAYBC."""
-        created_invoices = InvoiceModel.find_created_credit_card_invoices(days=2)
+        created_invoices = InvoiceModel.find_created_direct_pay_invoices(days=2)
         current_app.logger.info(f"Found {len(created_invoices)} Created Invoices to be Verified.")
 
         for invoice in created_invoices:
