@@ -11,21 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The configuration for gunicorn, which picks up the
-   runtime options from environment variables
-"""
 
+"""The configuration for gunicorn, which picks up the
+   runtime options from environment variables.
+   The best practice so far is For environments with multiple CPU cores, increase the number of workers to be equal to
+   the cores available. Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance
+   scaling. Adjust the number of workers and threads on a per-application basis.
+"""
 import os
 
-# https://docs.gunicorn.org/en/stable/settings.html#workers
-workers = int(os.environ.get("GUNICORN_PROCESSES", "1"))  # gunicorn default - 1
-worker_class = os.environ.get("GUNICORN_WORKER_CLASS", "sync")  # gunicorn default - sync
-worker_connections = int(os.environ.get("GUNICORN_WORKER_CONNECIONS", "1000"))  # gunicorn default - 1000
-threads = int(os.environ.get("GUNICORN_THREADS", "3"))  # gunicorn default - 1
-timeout = int(os.environ.get("GUNICORN_TIMEOUT", "100"))  # gunicorn default - 30
-keepalive = int(os.environ.get("GUNICORN_KEEPALIVE", "2"))  # gunicorn default - 2
-# WHEN MIGRATING TO GCP -  GUNICORN_THREADS = 8, GUNICORN_TIMEOUT = 0, GUNICORN_PROCESSES = 1
+# https://cloud.google.com/run/docs/tips/python#optimize_the_wsgi_server
 
+workers = int(os.environ.get("GUNICORN_PROCESSES", "1"))  # pylint: disable=invalid-name
+threads = int(os.environ.get("GUNICORN_THREADS", "8"))  # pylint: disable=invalid-name
+timeout = int(os.environ.get("GUNICORN_TIMEOUT", "0"))  # pylint: disable=invalid-name
 
 forwarded_allow_ips = "*"  # pylint: disable=invalid-name
 secure_scheme_headers = {"X-Forwarded-Proto": "https"}  # pylint: disable=invalid-name
