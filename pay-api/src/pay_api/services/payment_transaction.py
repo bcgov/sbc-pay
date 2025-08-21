@@ -354,10 +354,10 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         return transaction
 
     @staticmethod
-    def find_active_by_invoice_id(invoice_id: int):
+    def find_by_invoice_id_and_status(invoice_id: int, status_code: str):
         """Find active transaction by invoice id."""
-        current_app.logger.debug(">find_active_by_invoice_id")
-        active_transaction = PaymentTransactionModel.find_active_by_invoice_id(invoice_id)
+        current_app.logger.debug(">find_by_invoice_id_and_status")
+        active_transaction = PaymentTransactionModel.find_by_invoice_id_and_status(invoice_id, status_code)
         return PaymentTransaction.populate(active_transaction)
 
     @staticmethod

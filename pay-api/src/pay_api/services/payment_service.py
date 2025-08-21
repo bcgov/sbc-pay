@@ -27,7 +27,14 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import (
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    LineItemStatus,
+    PaymentMethod,
+    PaymentStatus,
+    TransactionStatus,
+)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number, get_str_by_path
@@ -419,7 +426,7 @@ def _calculate_fees(corp_type, filing_info):
 def _update_active_transactions(invoice_id: int):
     # update active transactions
     current_app.logger.debug("<_update_active_transactions")
-    transaction = PaymentTransaction.find_active_by_invoice_id(invoice_id)
+    transaction = PaymentTransaction.find_by_invoice_id_and_status(invoice_id, TransactionStatus.CREATED.value)
     if transaction:
         # check existing payment status in PayBC;
         PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
