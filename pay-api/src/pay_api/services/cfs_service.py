@@ -48,7 +48,6 @@ from pay_api.utils.constants import (
     DEFAULT_CURRENCY,
     DEFAULT_JURISDICTION,
     DEFAULT_POSTAL_CODE,
-    TAX_CLASSIFICATION_GST,
 )
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentSystem, ReverseOperation
 from pay_api.utils.util import current_local_time, generate_transaction_number
@@ -559,9 +558,7 @@ class CFSService(OAuthService):
 
             if line_item.total > 0:
                 context.index = cls._process_line_item(
-                    context,
-                    distribution_code,
-                    LineItemData(line_item.total, line_item.description, has_gst=line_item.statutory_fees_gst > 0),
+                    context, distribution_code, LineItemData(line_item.total, line_item.description)
                 )
 
             if (
@@ -574,24 +571,49 @@ class CFSService(OAuthService):
                 )
             ):
                 context.index = cls._process_line_item(
-                    context,
-                    service_fee_distribution,
-                    LineItemData(line_item.service_fees, "Service Fee", has_gst=line_item.service_fees_gst > 0),
+                    context, service_fee_distribution, LineItemData(line_item.service_fees, "Service Fee")
                 )
 
-        # We don't include service fee gst and stat fee gst, because it's configured inside of the AR module.
-        # It calculates it for us and sends it to preconfigured GL inside of CAS depending on the receipt method.
+            if (
+                line_item.statutory_fees_gst > 0
+                and distribution_code.statutory_fees_gst_distribution_code_id
+                and (
+                    statutory_gst_distribution := distribution_lookup.get(
+                        distribution_code.statutory_fees_gst_distribution_code_id
+                    )
+                )
+            ):
+                context.index = cls._process_line_item(
+                    context,
+                    statutory_gst_distribution,
+                    LineItemData(line_item.statutory_fees_gst, "Statutory Fees GST"),
+                )
+
+            if (
+                line_item.service_fees_gst > 0
+                and distribution_code.service_fee_gst_distribution_code_id
+                and (
+                    service_gst_distribution := distribution_lookup.get(
+                        distribution_code.service_fee_gst_distribution_code_id
+                    )
+                )
+            ):
+                context.index = cls._process_line_item(
+                    context,
+                    service_gst_distribution,
+                    LineItemData(line_item.service_fees_gst, "Service Fees GST"),
+                )
 
         return list(context.lines_map.values())
 
     @classmethod
     def _process_line_item(
-        cls, context: ProcessingContext, distribution_code: DistributionCodeModel, line_data: LineItemData
+        cls, context: ProcessingContext, distribution_code: DistributionCodeModel, line: LineItemData
     ) -> int:
         """Process a single line item and update the lines map."""
         dist_id = distribution_code.distribution_code_id
         existing_line = context.lines_map[dist_id]
-        amount_value = cls._get_amount(line_data.amount, context.negate)
+        amount_value = cls._get_amount(line.amount, context.negate)
 
         if not existing_line:
             context.index += 1
@@ -604,7 +626,7 @@ class CFSService(OAuthService):
             line_dict = {
                 "line_number": context.index,
                 "line_type": CFS_LINE_TYPE,
-                "description": line_data.description,
+                "description": line.description,
                 "unit_price": amount_value,
                 "quantity": 1,
                 "distribution": [
@@ -615,14 +637,15 @@ class CFSService(OAuthService):
                     }
                 ],
             }
-
-            if line_data.has_gst:
-                line_dict["tax_classification"] = TAX_CLASSIFICATION_GST
-
             context.lines_map[dist_id] = line_dict
         else:
             existing_line["unit_price"] += amount_value
             existing_line["distribution"][0]["amount"] += amount_value
+            is_gst_combination = (
+                line.description == "Statutory Fees GST" and existing_line["description"] == "Service Fees GST"
+            ) or (line.description == "Service Fees GST" and existing_line["description"] == "Statutory Fees GST")
+            if is_gst_combination:
+                existing_line["description"] = "Statutory & Service Fees GST"
 
         return context.index
 
