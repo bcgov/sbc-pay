@@ -81,7 +81,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_size": 5,  # Base connection pool size - Default 5
+        "pool_size": 7,  # Base connection pool size - Default 5
         "max_overflow": 3,  # Additional connections when needed - Default 10
         "pool_pre_ping": True,  # Test connections before use - Default False
         "pool_recycle": 300,  # Recycle connections 5m - Default 1800
