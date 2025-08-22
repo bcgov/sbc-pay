@@ -367,15 +367,6 @@ def test_link_electronic_funds_transfers(session, test_name):
     "test_name, cil_status, inv_status, inv_ref_status, result_cil_status, result_inv_status, result_inv_ref_status",
     [
         (
-            "reverse-paid-invoice",
-            EFTCilStatus.PENDING_REFUND.value,
-            InvoiceStatus.PAID.value,
-            InvoiceRefStatus.COMPLETED.value,
-            EFTCilStatus.REFUNDED.value,
-            InvoiceStatus.APPROVED.value,
-            InvoiceRefStatus.ACTIVE.value,
-        ),
-        (
             "full-refund-cil-paid",
             EFTCilStatus.PENDING_REFUND.value,
             InvoiceStatus.REFUND_REQUESTED.value,
@@ -393,6 +384,16 @@ def test_link_electronic_funds_transfers(session, test_name):
             InvoiceStatus.CANCELLED.value,
             InvoiceRefStatus.CANCELLED.value,
         ),
+        (
+            "reverse-paid-invoice",
+            EFTCilStatus.PENDING_REFUND.value,
+            InvoiceStatus.PAID.value,
+            InvoiceRefStatus.COMPLETED.value,
+            EFTCilStatus.REFUNDED.value,
+            InvoiceStatus.APPROVED.value,
+            InvoiceRefStatus.ACTIVE.value,
+        ),
+
     ],
 )
 def test_reverse_electronic_funds_transfers(

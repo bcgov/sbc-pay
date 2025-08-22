@@ -247,9 +247,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             case PaymentMethod.ONLINE_BANKING.value:
                 available_credit = payment_account.ob_credit or 0
             case _:
-                raise NotImplementedError(
-                    f"Payment method {cfs_account.payment_method} invalid Online Banking only."
-                )
+                raise NotImplementedError(f"Payment method {cfs_account.payment_method} invalid Online Banking only.")
 
         if available_credit >= invoice_balance:
             pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
@@ -268,9 +266,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             case PaymentMethod.ONLINE_BANKING.value:
                 payment_account.ob_credit = credit_balance
             case _:
-                raise NotImplementedError(
-                    f"Payment method {cfs_account.payment_method} invalid Online Banking only."
-                )
+                raise NotImplementedError(f"Payment method {cfs_account.payment_method} invalid Online Banking only.")
         payment_account.save()
 
     @classmethod
