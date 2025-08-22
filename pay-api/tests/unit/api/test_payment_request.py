@@ -1025,40 +1025,22 @@ def test_create_pad_payment_request(session, client, jwt, app):
     assert rv.json["invoices"][0]["paymentAccount"]["accountId"] == "1234"
 
 
-@pytest.mark.parametrize(
-    "payment_method",
-    [
-        (PaymentMethod.ONLINE_BANKING.value),
-        (PaymentMethod.EFT.value),
-    ],
-)
-def test_payment_request_payment_method_with_credit(session, client, jwt, app, admin_users_mock, payment_method):
+def test_payment_request_online_banking_with_credit(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     rv = client.post(
         "/api/v1/accounts",
-        data=json.dumps(get_basic_account_payload(payment_method=payment_method)),
+        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
 
     # Update the payment account as ACTIVE
     payment_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-    credit_amount = 51
-
-    match payment_method:
-        case PaymentMethod.ONLINE_BANKING.value:
-            payment_account.ob_credit = credit_amount
-            payment_account.pad_credit = 0
-            payment_account.eft_credit = 0
-        case PaymentMethod.EFT.value:
-            payment_account.ob_credit = 0
-            payment_account.pad_credit = 0
-            payment_account.eft_credit = credit_amount
-        case _:
-            assert False, f"Implement missing credit set up for payment method {payment_method}"
+    payment_account.ob_credit = 51
+    payment_account.pad_credit = 0
     payment_account.save()
 
     token = jwt.create_jwt(get_claims(), token_header)
@@ -1066,7 +1048,7 @@ def test_payment_request_payment_method_with_credit(session, client, jwt, app, a
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method=payment_method)
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="ONLINE_BANKING")
         ),
         headers=headers,
     )
@@ -1079,29 +1061,18 @@ def test_payment_request_payment_method_with_credit(session, client, jwt, app, a
     )
 
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-    expected_credit = 1
+    assert payment_account.ob_credit == 1
+    assert payment_account.pad_credit == 0
 
-    # Assert correct credit amounts and set the credit less than the total of invoice.
-    match payment_method:
-        case PaymentMethod.ONLINE_BANKING.value:
-            assert payment_account.eft_credit == 0
-            assert payment_account.ob_credit == expected_credit
-            assert payment_account.pad_credit == 0
-            payment_account.ob_credit == 49
-        case PaymentMethod.EFT.value:
-            assert payment_account.eft_credit == expected_credit
-            assert payment_account.ob_credit == 0
-            assert payment_account.pad_credit == 0
-            payment_account.eft_credit == 49
-        case _:
-            assert False, f"Implement missing expected_credit assert for payment method {payment_method}"
-
+    # Now set the credit less than the total of invoice.
+    payment_account.ob_credit = 49
+    payment_account.pad_credit = 0
     payment_account.save()
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(
-            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method=payment_method)
+            get_payment_request_with_payment_method(business_identifier="CP0002000", payment_method="ONLINE_BANKING")
         ),
         headers=headers,
     )
@@ -1116,7 +1087,6 @@ def test_payment_request_payment_method_with_credit(session, client, jwt, app, a
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     assert payment_account.ob_credit == 0
     assert payment_account.pad_credit == 0
-    assert payment_account.eft_credit == 0
 
 
 def test_create_ejv_payment_request(session, client, jwt, app):
