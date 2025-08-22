@@ -321,9 +321,7 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
 
         if details.is_partial_refund:
             details.partial_refund.gl_error = DisbursementStatus.ERRORED.value
-            line_items = [PaymentLineItemModel.find_by_id(
-                details.partial_refund.payment_line_item_id
-            )]
+            line_items = [PaymentLineItemModel.find_by_id(details.partial_refund.payment_line_item_id)]
         else:
             details.invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
             line_items: List[PaymentLineItemModel] = details.invoice.payment_line_items
@@ -339,9 +337,7 @@ def _mark_distribution_codes_as_stopped(line_items):
     for line_item in line_items:
         # Line debit distribution
         debit_distribution = DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
-        credit_distribution = DistributionCodeModel.find_by_id(
-            debit_distribution.disbursement_distribution_code_id
-        )
+        credit_distribution = DistributionCodeModel.find_by_id(debit_distribution.disbursement_distribution_code_id)
         credit_distribution.stop_ejv = True
 
 

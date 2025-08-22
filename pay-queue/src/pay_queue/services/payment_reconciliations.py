@@ -797,8 +797,9 @@ def _sync_credit_records_with_cfs():
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             try:
-                credit_memo, credit_site = _fetch_credit_memo_payment_method(credit, cfs_account_pad, cfs_account_ob,
-                                                                             cfs_account_eft)
+                credit_memo, credit_site = _fetch_credit_memo_payment_method(
+                    credit, cfs_account_pad, cfs_account_ob, cfs_account_eft
+                )
             except Exception as e:  # NOQA pylint: disable=broad-except
                 # For TEST, we can't reverse these
                 if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):

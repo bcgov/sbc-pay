@@ -34,13 +34,14 @@ from sbc_common_components.utils.enums import QueueMessageTypes
 from pay_queue.enums import RecordType, SourceTransaction, Status, TargetTransaction
 
 from .factory import (
+    factory_create_eft_account,
     factory_create_online_banking_account,
     factory_create_pad_account,
     factory_invoice,
     factory_invoice_reference,
     factory_payment,
     factory_payment_line_item,
-    factory_receipt, factory_create_eft_account,
+    factory_receipt,
 )
 from .utils import add_file_event_to_queue_and_process, create_and_upload_settlement_file
 
@@ -870,13 +871,14 @@ async def test_eft_wire_reconciliations(session, app, client):
     assert payment.paid_amount == paid_amount
     assert payment.receipt_number == receipt
 
+
 @pytest.mark.parametrize(
     "payment_method",
     [
         (PaymentMethod.ONLINE_BANKING.value),
         (PaymentMethod.PAD.value),
         (PaymentMethod.EFT.value),
-    ]
+    ],
 )
 def test_credits(session, app, client, monkeypatch, payment_method):
     """Test Reconciliations worker."""
@@ -887,7 +889,6 @@ def test_credits(session, app, client, monkeypatch, payment_method):
     # 5. Mock CFS Response for the receipt and credit memo.
     # 6. Confirm the credit matches the records.
     cfs_account_number = "1234"
-
 
     pay_account = None
     match payment_method:
@@ -903,7 +904,7 @@ def test_credits(session, app, client, monkeypatch, payment_method):
             pay_account = factory_create_eft_account(
                 status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
             )
-    assert pay_account, f'Payment account set up failed for payment method {payment_method}'
+    assert pay_account, f"Payment account set up failed for payment method {payment_method}"
 
     pay_account_id = pay_account.id
     invoice = factory_invoice(
@@ -1035,7 +1036,7 @@ def test_credits(session, app, client, monkeypatch, payment_method):
             assert pay_account.ob_credit == 0
             assert pay_account.pad_credit == 0
         case _:
-            assert False, f'Implement missing expected_credit assert for payment method {payment_method}'
+            assert False, f"Implement missing expected_credit assert for payment method {payment_method}"
 
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
