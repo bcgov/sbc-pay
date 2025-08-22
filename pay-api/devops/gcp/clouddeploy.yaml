@@ -45,7 +45,8 @@ serialPipeline:
       container-name: "pay-api-test"
       cloudsql-instances: "gtksf3-test:northamerica-northeast1:pay-db-test"
       service-account: "sa-api@gtksf3-test.iam.gserviceaccount.com"
-      resources-memory: 1Gi
+      resources-cpu: 4000m
+      resources-memory: 2Gi
  - targetId: gtksf3-sandbox
    profiles: [sandbox]
    strategy:

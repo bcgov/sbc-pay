@@ -117,7 +117,6 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict, stateme
             has_staff_payment = False
 
         summary = calculate_invoice_summaries(items, method, statement)
-
         statement_header_text = StatementTitles["DEFAULT"].value
 
         if method == PaymentMethod.INTERNAL.value and has_staff_payment:
