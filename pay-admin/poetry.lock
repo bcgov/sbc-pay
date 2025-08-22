@@ -2109,9 +2109,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "30290"
-resolved_reference = "a2225790b206707861673e543f0ae97f7f5489c8"
+url = "https://github.com/ochiu/sbc-pay.git"
+reference = "30294-EFT-credit-memo-handling"
+resolved_reference = "1df7b80b37e753b98ba78e826a77df5cc26004d3"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3350,4 +3350,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "d0840a2341c11755ad3df29e7939360c53a2e38312e7fcce4c46fe0d20f48d4d"
+content-hash = "b1ea8f90fa623869477d353647338a467a67b18f4827ed60a95d4d3318614d29"
