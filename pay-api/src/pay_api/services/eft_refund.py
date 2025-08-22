@@ -153,7 +153,7 @@ class EFTRefund:
                     related_group_link_id=link_group_id,
                     statement_number=(short_name_history.statement_number if short_name_history else None),
                     invoice_id=invoice.id,
-                    is_processing=False if is_partial_refund else True,
+                    is_processing=not is_partial_refund,
                     hidden=False,
                 ),
                 is_partial_refund,

@@ -1030,7 +1030,7 @@ def test_create_pad_payment_request(session, client, jwt, app):
     [
         (PaymentMethod.ONLINE_BANKING.value),
         (PaymentMethod.EFT.value),
-    ]
+    ],
 )
 def test_payment_request_payment_method_with_credit(session, client, jwt, app, admin_users_mock, payment_method):
     """Assert that the endpoint returns 201."""
@@ -1058,7 +1058,7 @@ def test_payment_request_payment_method_with_credit(session, client, jwt, app, a
             payment_account.pad_credit = 0
             payment_account.eft_credit = credit_amount
         case _:
-            assert False, f'Implement missing credit set up for payment method {payment_method}'
+            assert False, f"Implement missing credit set up for payment method {payment_method}"
     payment_account.save()
 
     token = jwt.create_jwt(get_claims(), token_header)
@@ -1094,7 +1094,7 @@ def test_payment_request_payment_method_with_credit(session, client, jwt, app, a
             assert payment_account.pad_credit == 0
             payment_account.eft_credit == 49
         case _:
-            assert False, f'Implement missing expected_credit assert for payment method {payment_method}'
+            assert False, f"Implement missing expected_credit assert for payment method {payment_method}"
 
     payment_account.save()
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
