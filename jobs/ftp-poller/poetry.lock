@@ -2247,7 +2247,7 @@ werkzeug = "^3.0.3"
 type = "git"
 url = "https://github.com/ochiu/sbc-pay.git"
 reference = "30294-EFT-credit-memo-handling"
-resolved_reference = "1df7b80b37e753b98ba78e826a77df5cc26004d3"
+resolved_reference = "c9a0bcd955df05b06edb249443bf65f6c1d5025b"
 subdirectory = "pay-api"
 
 [[package]]
