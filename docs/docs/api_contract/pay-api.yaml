@@ -1294,29 +1294,6 @@ paths:
           description: Accept
           required: true
   /api/v1/accounts:
-    get:
-      tags:
-        - Accounts
-      summary: Get Payment Account records
-      description: Retrieve Payment Account records.
-      operationId: Get_Accounts
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              examples:
-                /api/v1/accounts:
-                  value:
-                    accountFees: []
-                    accountId: "1234"
-                    accountName: "zz"
-                    branchName: "sdfs"
-                    eftEnable: true
-                    id: 8830
-                    paymentMethod: "EJV"
-                    revenueAccount: {}
-                    version: 2
     post:
       tags:
         - Accounts
@@ -1364,6 +1341,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   '/api/v1/accounts/{account_id}':
+    get:
+        tags:
+          - Accounts
+        summary: Get Payment Account records
+        description: Retrieve Payment Account records.
+        operationId: Get_Accounts
+        responses:
+          '200':
+            description: Success
+            content:
+              application/json:
+                examples:
+                  /api/v1/accounts:
+                    value:
+                      accountFees: []
+                      accountId: "1234"
+                      accountName: "zz"
+                      branchName: "sdfs"
+                      eftEnable: true
+                      id: 8830
+                      paymentMethod: "EJV"
+                      revenueAccount: {}
+                      version: 2
     put:
       tags:
         - Accounts
