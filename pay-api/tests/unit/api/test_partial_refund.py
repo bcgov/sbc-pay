@@ -702,6 +702,11 @@ def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
     assert disbursements[0].partner_code == inv.corp_type_code
     assert disbursements[0].status_code == DisbursementStatus.WAITING_FOR_JOB.value
 
+    pay_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+    assert pay_account.eft_credit == refund_amount
+    assert pay_account.ob_credit is None
+    assert pay_account.pad_credit is None
+
 
 def set_payment_method_partial_refund(payment_method_code: str, enabled: bool):
     """Set partial refund flag on payment method."""
