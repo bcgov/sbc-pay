@@ -5,7 +5,7 @@ info:
     <p>BC Registries Pay system is used by the BC Registries account services and integrated systems to create payment transactions to pay for the products purchased. This abstracts the integrated systems from the underlying payment integrations and payment methods. <br/>
     With this API you can submit the following transactions:<ul><li>Create payment transactions</li><li>Get payment status</li><li>Delete unpaid payment transactions</li><li>Generate PDF receipt</li><li>Retrieve account statements</li><li>Generate account transactions reports</li></ul>
     <p>All requests must include an Account ID.</p>
-  version: 1.0.9
+  version: 1.0.10
   contact:
     name: BC Registries
 servers:
@@ -1294,6 +1294,29 @@ paths:
           description: Accept
           required: true
   /api/v1/accounts:
+    get:
+      tags:
+        - Accounts
+      summary: Get Payment Account records
+      description: Retrieve Payment Account records.
+      operationId: Get_Accounts
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              examples:
+                /api/v1/accounts:
+                  value:
+                    accountFees: []
+                    accountId: "1234"
+                    accountName: "zz"
+                    branchName: "sdfs"
+                    eftEnable: true
+                    id: 8830
+                    paymentMethod: "EJV"
+                    revenueAccount: {}
+                    version: 2
     post:
       tags:
         - Accounts
