@@ -246,11 +246,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         match cfs_account.payment_method:
             case PaymentMethod.ONLINE_BANKING.value:
                 available_credit = payment_account.ob_credit or 0
-            case PaymentMethod.EFT.value:
-                available_credit = payment_account.eft_credit or 0
             case _:
                 raise NotImplementedError(
-                    f"Payment method {cfs_account.payment_method} invalid Online Banking / EFT " f"only."
+                    f"Payment method {cfs_account.payment_method} invalid Online Banking only."
                 )
 
         if available_credit >= invoice_balance:
@@ -269,11 +267,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         match cfs_account.payment_method:
             case PaymentMethod.ONLINE_BANKING.value:
                 payment_account.ob_credit = credit_balance
-            case PaymentMethod.EFT.value:
-                payment_account.eft_credit = credit_balance
             case _:
                 raise NotImplementedError(
-                    f"Payment method {cfs_account.payment_method} invalid Online Banking/EFT only."
+                    f"Payment method {cfs_account.payment_method} invalid Online Banking only."
                 )
         payment_account.save()
 
