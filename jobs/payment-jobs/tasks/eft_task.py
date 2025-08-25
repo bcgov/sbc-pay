@@ -232,6 +232,13 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice.id, InvoiceReferenceStatus.ACTIVE.value
             )
+            if invoice_reference is None:
+                current_app.logger.error(
+                    f"Cannot refund EFT invoice id={invoice.id}. Missing credit invoice link and "
+                    f"an active invoice reference."
+                )
+                continue
+
             try:
                 refund_invoice = cls._handle_invoice_refund(invoice, invoice_reference)
                 db.session.commit()
@@ -428,13 +435,18 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _handle_invoice_refund(cls, invoice: InvoiceModel, invoice_reference: InvoiceReferenceModel) -> InvoiceModel:
         """Handle invoice refunds adjustment on a non-rolled up invoice."""
+        invoice_status_code = InvoiceStatus.REFUNDED.value
         if invoice_reference:
             if invoice_reference.is_consolidated:
                 raise ValueError(f"Cannot reverse a consolidated invoice: {invoice_reference.invoice_number}")
+            if invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value:
+                invoice_status_code = InvoiceStatus.CANCELLED.value
+
             CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.flush()
-        invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+
+        invoice.invoice_status_code = invoice_status_code
         invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.refund = invoice.total
         invoice.flush()
