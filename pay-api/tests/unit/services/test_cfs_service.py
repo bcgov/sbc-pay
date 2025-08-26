@@ -158,94 +158,130 @@ def _verify_line_structure(line, expected_price, expected_description=None, is_g
 
 
 def test_build_lines_with_gst_fees(session):
-    """Test build_lines with 4 different distribution codes for different fee types."""
-    base_fee_dist = factory_distribution_code(
-        name="Base Fee Distribution",
+    """Test build_lines with statutory and service fees GST."""
+    base_distribution = factory_distribution_code(
+        name="Base Distribution",
         client="111",
         reps_centre="11111",
         service_line="35300",
         stob="1230",
         project_code="1111110",
     )
-    base_fee_dist.save()
+    base_distribution.save()
 
-    service_fee_dist = factory_distribution_code(
+    service_fee_distribution = factory_distribution_code(
         name="Service Fee Distribution",
         client="111",
         reps_centre="11111",
         service_line="35300",
         stob="1230",
-        project_code="1111110",
+        project_code="1111111",
     )
-    service_fee_dist.save()
+    service_fee_distribution.save()
 
-    gst_dist = factory_distribution_code(
-        name="GST Distribution",
+    gst_statutory_distribution = factory_distribution_code(
+        name="GST Statutory Distribution",
         client="111",
         reps_centre="11111",
         service_line="35300",
         stob="1230",
-        project_code="1111110",
+        project_code="1111112",
     )
-    gst_dist.save()
+    gst_statutory_distribution.save()
 
-    other_fee_dist = factory_distribution_code(
-        name="Other Fee Distribution",
+    gst_service_distribution = factory_distribution_code(
+        name="GST Service Distribution",
+        client="111",
+        reps_centre="11111",
+        service_line="35300",
+        stob="1230",
+        project_code="1111113",
+    )
+    gst_service_distribution.save()
+
+    combined_gst_distribution = factory_distribution_code(
+        name="Combined GST Distribution",
+        client="111",
+        reps_centre="11111",
+        service_line="35300",
+        stob="1230",
+        project_code="1111115",
+    )
+    combined_gst_distribution.save()
+
+    secondary_distribution = factory_distribution_code(
+        name="Secondary Distribution",
         client="112",
         reps_centre="22222",
         service_line="35301",
         stob="1234",
-        project_code="1111111",
+        project_code="1111114",
     )
-    other_fee_dist.save()
+    secondary_distribution.save()
 
-    # Set service fee distribution code references
-    base_fee_dist.service_fee_distribution_code_id = service_fee_dist.distribution_code_id
-    base_fee_dist.save()
+    base_distribution.service_fee_distribution_code_id = service_fee_distribution.distribution_code_id
+    base_distribution.statutory_fees_gst_distribution_code_id = gst_statutory_distribution.distribution_code_id
+    base_distribution.service_fee_gst_distribution_code_id = gst_service_distribution.distribution_code_id
+    base_distribution.save()
 
-    gst_dist.service_fee_distribution_code_id = service_fee_dist.distribution_code_id
-    gst_dist.save()
+    combined_gst_distribution.statutory_fees_gst_distribution_code_id = combined_gst_distribution.distribution_code_id
+    combined_gst_distribution.service_fee_gst_distribution_code_id = combined_gst_distribution.distribution_code_id
+    combined_gst_distribution.save()
 
-    other_fee_dist.service_fee_distribution_code_id = service_fee_dist.distribution_code_id
-    other_fee_dist.save()
+    secondary_distribution.service_fee_distribution_code_id = service_fee_distribution.distribution_code_id
+    secondary_distribution.statutory_fees_gst_distribution_code_id = gst_statutory_distribution.distribution_code_id
+    secondary_distribution.service_fee_gst_distribution_code_id = gst_service_distribution.distribution_code_id
+    secondary_distribution.save()
 
     payment_line_items = [
         PaymentLineItemModel(
             total=Decimal("100"),
-            service_fees=Decimal("10"),
-            fee_distribution_id=base_fee_dist.distribution_code_id,
-            statutory_fees_gst=Decimal("5.00"),
-            service_fees_gst=Decimal("0.50"),
+            service_fees=Decimal("0"),
+            fee_distribution_id=base_distribution.distribution_code_id,
+            statutory_fees_gst=Decimal("5"),
+            service_fees_gst=Decimal("0"),
             description="Base Filing Fee",
         ),
         PaymentLineItemModel(
-            total=Decimal("25"),
-            service_fees=Decimal("25"),
-            fee_distribution_id=base_fee_dist.distribution_code_id,
-            statutory_fees_gst=Decimal("1.25"),
-            service_fees_gst=Decimal("1.25"),
+            total=Decimal("0"),
+            service_fees=Decimal("10"),
+            fee_distribution_id=base_distribution.distribution_code_id,
+            statutory_fees_gst=Decimal("0"),
+            service_fees_gst=Decimal("0.50"),
             description="Service Fee",
         ),
         PaymentLineItemModel(
             total=Decimal("200"),
-            service_fees=Decimal("20"),
-            fee_distribution_id=other_fee_dist.distribution_code_id,
-            statutory_fees_gst=Decimal("10.00"),
-            service_fees_gst=Decimal("1.00"),
-            description="Other Filing Fee",
+            service_fees=Decimal("0"),
+            fee_distribution_id=secondary_distribution.distribution_code_id,
+            statutory_fees_gst=Decimal("0"),
+            service_fees_gst=Decimal("0"),
+            description="Secondary Filing Fee",
+        ),
+        PaymentLineItemModel(
+            total=Decimal("0"),
+            service_fees=Decimal("0"),
+            fee_distribution_id=combined_gst_distribution.distribution_code_id,
+            statutory_fees_gst=Decimal("2.50"),
+            service_fees_gst=Decimal("1.25"),
+            description="Combined GST Test",
         ),
     ]
 
     lines = cfs_service.build_lines(payment_line_items)
 
-    assert len(lines) == 3
+    assert len(lines) == 6
 
-    # Note this should ignore the GST lines, as that's done in the CAS AR side. The AR module determines the rate
-    # and GL for GST.
     base_line = next(line for line in lines if "Base Filing Fee" in line["description"])
     service_line = next(line for line in lines if "Service Fee" in line["description"])
-    other_line = next(line for line in lines if "Other Filing Fee" in line["description"])
+    secondary_line = next(line for line in lines if "Secondary Filing Fee" in line["description"])
+    statutory_gst_line = next(line for line in lines if "Statutory Fees GST" in line["description"])
+    service_gst_line = next(line for line in lines if "Service Fees GST" in line["description"])
+    combined_gst_line = next(line for line in lines if "Statutory & Service Fees GST" in line["description"])
 
-    _verify_line_structure(base_line, Decimal("125.00"), is_gst=True)
-    _verify_line_structure(service_line, Decimal("55.00"), is_gst=True)
-    _verify_line_structure(other_line, Decimal("200.00"), is_gst=True)
+    _verify_line_structure(base_line, Decimal("100.00"))
+    _verify_line_structure(service_line, Decimal("10.00"))
+    _verify_line_structure(secondary_line, Decimal("200.00"))
+    _verify_line_structure(statutory_gst_line, Decimal("5.00"))
+    _verify_line_structure(service_gst_line, Decimal("0.50"))
+    _verify_line_structure(combined_gst_line, Decimal("3.75"))  # 2.50 + 1.25 from combined GST test

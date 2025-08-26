@@ -82,7 +82,7 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
         )
 
     @classmethod
-    def find_active_by_invoice_id(cls, invoice_id: int):
+    def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str):
         """Return Active Payment Transactions by invoice identifier."""
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .invoice import Invoice
@@ -99,7 +99,7 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
             .join(Invoice, InvoiceReference.invoice_id == Invoice.id)
             .filter(Invoice.id == invoice_id)
             .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value)
-            .filter(PaymentTransaction.status_code == TransactionStatus.CREATED.value)
+            .filter(PaymentTransaction.status_code == status_code)
         )
 
         return query.one_or_none()

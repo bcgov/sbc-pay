@@ -23,13 +23,26 @@ from unittest.mock import Mock, patch
 import pytest
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.cfs_account import CfsAccount
 from pay_api.services import RefundService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.enums import (
+    EFTCreditInvoiceStatus,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    PaymentStatus,
+    TransactionStatus,
+)
 from tests.utilities.base_test import (
+    factory_eft_credit,
+    factory_eft_credit_invoice_link,
+    factory_eft_file,
+    factory_eft_shortname,
     factory_invoice,
     factory_invoice_reference,
     factory_payment,
@@ -195,3 +208,93 @@ def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
     with pytest.raises(Exception) as excinfo:
         RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
     assert excinfo.type == BusinessException
+
+
+@pytest.mark.parametrize(
+    "test_name, cil_status, inv_status, inv_ref_status, result_cil_status, result_inv_status, result_inv_ref_status",
+    [
+        (
+            "full-refund-paid-cil-completed",
+            EFTCreditInvoiceStatus.COMPLETED.value,
+            InvoiceStatus.PAID.value,
+            InvoiceReferenceStatus.COMPLETED.value,
+            EFTCreditInvoiceStatus.PENDING_REFUND.value,
+            InvoiceStatus.REFUND_REQUESTED.value,
+            InvoiceReferenceStatus.COMPLETED.value,
+        ),
+        (
+            "full-refund-unpaid-pending-cil-payment",
+            EFTCreditInvoiceStatus.PENDING.value,
+            InvoiceStatus.APPROVED.value,
+            InvoiceReferenceStatus.ACTIVE.value,
+            EFTCreditInvoiceStatus.CANCELLED.value,
+            InvoiceStatus.REFUND_REQUESTED.value,
+            InvoiceReferenceStatus.ACTIVE.value,
+        ),
+        (
+            "full-refund-unpaid-no-cil",
+            None,
+            InvoiceStatus.APPROVED.value,
+            InvoiceReferenceStatus.ACTIVE.value,
+            None,
+            InvoiceStatus.REFUND_REQUESTED.value,
+            InvoiceReferenceStatus.ACTIVE.value,
+        ),
+    ],
+)
+def test_create_eft_refund(
+    session,
+    monkeypatch,
+    test_name,
+    cil_status,
+    inv_status,
+    inv_ref_status,
+    result_cil_status,
+    result_inv_status,
+    result_inv_ref_status,
+):
+    """Assert valid states for EFT refund."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    cfs_account = CfsAccount.find_latest_account_by_account_id(payment_account.id)
+    short_name = factory_eft_shortname(short_name="TESTSHORTNAME").save()
+    eft_file = factory_eft_file()
+
+    inv_ref = None
+    invoice_number = "1234"
+
+    invoice = factory_invoice(
+        payment_account=payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=inv_status,
+        cfs_account_id=cfs_account.id,
+        payment_date=datetime.now(tz=timezone.utc) if inv_status == InvoiceStatus.PAID.value else None,
+    ).save()
+
+    eft_credit = factory_eft_credit(
+        eft_file_id=eft_file.id, short_name_id=short_name.id, amount=invoice.total, remaining_amount=0
+    )
+
+    if cil_status:
+        factory_eft_credit_invoice_link(
+            invoice_id=invoice.id,
+            eft_credit_id=eft_credit.id,
+            status_code=cil_status,
+            amount=invoice.total,
+            link_group_id=2,
+        ).save()
+
+    if inv_ref_status:
+        inv_ref = factory_invoice_reference(
+            invoice_id=invoice.id, invoice_number=invoice_number, status_code=inv_ref_status
+        ).save()
+
+    RefundService.create_refund(invoice_id=invoice.id, request={"reason": "Test"})
+    invoice = InvoiceModel.find_by_id(invoice.id)
+    cils = EFTCreditInvoiceModel.find_by_invoice_id(invoice.id)
+
+    assert not cils if result_cil_status is None else cils
+    if cils:
+        latest_cil = cils[0]
+        assert latest_cil.status_code == result_cil_status
+    assert invoice.invoice_status_code == result_inv_status
+    assert inv_ref.status_code == result_inv_ref_status

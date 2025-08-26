@@ -791,10 +791,15 @@ def _sync_credit_records_with_cfs():
         cfs_account_ob = CfsAccountModel.find_effective_or_latest_by_payment_method(
             credit.account_id, PaymentMethod.ONLINE_BANKING.value
         )
+        cfs_account_eft = CfsAccountModel.find_effective_or_latest_by_payment_method(
+            credit.account_id, PaymentMethod.EFT.value
+        )
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             try:
-                credit_memo, credit_site = _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob)
+                credit_memo, credit_site = _fetch_credit_memo_payment_method(
+                    credit, cfs_account_pad, cfs_account_ob, cfs_account_eft
+                )
             except Exception as e:  # NOQA pylint: disable=broad-except
                 # For TEST, we can't reverse these
                 if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
@@ -822,7 +827,7 @@ def _sync_credit_records_with_cfs():
         _rollup_credits(account_ids)
 
 
-def _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
+def _fetch_credit_memo_payment_method(credit, cfs_account_pad, cfs_account_ob, cfs_account_eft):
     """Fetch credit memo from CFS."""
     credit_memo = None
     credit_site = None
@@ -840,6 +845,14 @@ def _fetch_credit_memo_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
             return_none_if_404=True,
         )
         credit_site = cfs_account_ob.cfs_site
+    if credit_memo is None and cfs_account_eft:
+        credit_memo = CFSService.get_cms(
+            cfs_account=cfs_account_eft,
+            cms_number=credit.cfs_identifier,
+            return_none_if_404=True,
+        )
+        credit_site = cfs_account_eft.cfs_site
+
     if credit_memo is None:
         raise CasDataNotFoundError(
             f"Credit memo not found in CFS for PAD or OB - payment account id: {credit.account_id}"
@@ -871,7 +884,7 @@ def _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
 
 
 def _rollup_credits(account_ids):
-    """Roll up the credits and add up to ob_credit and pad_credit in payment_account."""
+    """Roll up the credits and add up to eft_credit, ob_credit and pad_credit in payment_account."""
     for account_id in set(account_ids):
         account_credits: List[CreditModel] = (
             db.session.query(CreditModel)
@@ -880,6 +893,7 @@ def _rollup_credits(account_ids):
             .all()
         )
 
+        eft_credit_total: float = 0
         ob_credit_total: float = 0
         pad_credit_total: float = 0
 
@@ -898,6 +912,8 @@ def _rollup_credits(account_ids):
                     pad_credit_total += account_credit.remaining_amount
                 case PaymentMethod.ONLINE_BANKING.value:
                     ob_credit_total += account_credit.remaining_amount
+                case PaymentMethod.EFT.value:
+                    eft_credit_total += account_credit.remaining_amount
                 case _:
                     raise Exception(  # pylint: disable=broad-exception-raised
                         f"Unsupported payment method {cfs_account.payment_method}"
@@ -905,6 +921,7 @@ def _rollup_credits(account_ids):
                     )
 
         pay_account = PaymentAccountModel.find_by_id(account_id)
+        pay_account.eft_credit = eft_credit_total
         pay_account.ob_credit = ob_credit_total
         pay_account.pad_credit = pad_credit_total
         pay_account.save()

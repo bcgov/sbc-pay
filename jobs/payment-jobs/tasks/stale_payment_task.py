@@ -117,7 +117,9 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
 
                 if paybc_invoice.paymentstatus in STATUS_PAID:
                     current_app.logger.debug("_update_active_transactions")
-                    transaction = TransactionService.find_active_by_invoice_id(invoice.id)
+                    transaction = TransactionService.find_by_invoice_id_and_status(
+                        invoice.id, TransactionStatus.CREATED.value
+                    ) or TransactionService.find_by_invoice_id_and_status(invoice.id, TransactionStatus.FAILED.value)
                     if not transaction or not transaction.payment_id:
                         continue
                     payment = PaymentModel.find_by_id(transaction.payment_id)
