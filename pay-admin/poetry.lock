@@ -2221,7 +2221,7 @@ werkzeug = "^3.0.3"
 type = "git"
 url = "https://github.com/circuit-breaker-bc/sbc-pay.git"
 reference = "google_bucket"
-resolved_reference = "2ea0376a2d367f5ced7c156af05979b0b5a57046"
+resolved_reference = "3976c61346b433a3d4e8ee3f59746442fe3e2170"
 subdirectory = "pay-api"
 
 [[package]]
