@@ -1135,7 +1135,7 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     email_params = call_args[0][0]
     assert email_params.subject == "Payment Reconciliation Failure"
     assert email_params.file_name == file_name
-    assert email_params.minio_location == "payment-sftp"
+    assert email_params.google_bucket_name == f"{app.config.get("GOOGLE_BUCKET_NAME")}/test-folder"
     assert email_params.error_messages == error_messages
     assert email_params.table_name == CasSettlementModel.__tablename__
 

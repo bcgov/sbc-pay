@@ -393,7 +393,6 @@ def test_link_electronic_funds_transfers(session, test_name):
             InvoiceStatus.APPROVED.value,
             InvoiceRefStatus.ACTIVE.value,
         ),
-
     ],
 )
 def test_reverse_electronic_funds_transfers(

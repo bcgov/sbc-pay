@@ -66,7 +66,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         Steps:
         1. Find all invoices/partial refunds/EFT reversals for disbursements.
         2. Group by fee schedule and create JV Header and JV Details.
-        3. Upload the file to minio for future reference.
+        3. Upload the file to bucket for future reference.
         4. Upload to sftp for processing. First upload JV file and then a TRG file.
         5. Update the statuses and create records to for the batch.
         """
@@ -311,7 +311,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             jv_batch_trailer = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
             ejv_content = f"{batch_header}{ejv_content}{jv_batch_trailer}"
             file_path_with_name, trg_file_path, _ = cls.create_inbox_and_trg_files(ejv_content, file_name)
-            cls.upload(ejv_content, file_name, file_path_with_name, trg_file_path)
+            cls.upload(file_path_with_name, trg_file_path)
 
             db.session.commit()
 

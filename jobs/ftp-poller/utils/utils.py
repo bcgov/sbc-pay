@@ -16,20 +16,17 @@ from time import time
 from typing import List
 
 from flask import current_app
-from paramiko import SFTPFile
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import QueueSources
 from sbc_common_components.utils.enums import QueueMessageTypes
-
-from utils.minio import put_object
 
 
 def publish_to_queue(
     payment_file_list: List[str], message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value, location: str = ""
 ):
     """Publish message to the Queue, saying file has been uploaded. Using the event spec."""
-    queue_data = {"fileSource": "MINIO", "location": location or current_app.config["MINIO_BUCKET_NAME"]}
+    queue_data = {"fileSource": "GOOGLE_BUCKET", "location": location or current_app.config["GOOGLE_BUCKET_FOLDER_AR"]}
     for file_name in payment_file_list:
         queue_data["fileName"] = file_name
 
@@ -48,19 +45,9 @@ def publish_to_queue(
             raise
 
 
-def upload_to_minio(file, file_full_name, sftp_client, bucket_name):
-    """Upload to minio."""
-    f: SFTPFile
-    with sftp_client.open(file_full_name) as f:
+def read_sftp_file(sftp_client, file_full_name):
+    """Read the contents of a file from an SFTP server."""
+    with sftp_client.open(file_full_name, "rb") as f:
         f.prefetch()
         value_as_bytes = f.read()
-        try:
-            put_object(
-                value_as_bytes,
-                file.filename,
-                bucket_name,
-                file.st_size,
-            )
-        except Exception:  # NOQA # pylint: disable=broad-except
-            current_app.logger.error(f"upload to minio failed for the file: {file_full_name}")
-            raise
+        return value_as_bytes

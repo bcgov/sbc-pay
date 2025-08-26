@@ -16,15 +16,13 @@ jsonschema = "4.17.3"
 requests = "^2.31.0"
 werkzeug = "^3.0.1"
 pysftp = "^0.2.9"
-minio = "^7.2.5"
 jaeger-client = "^4.8.0"
 itsdangerous = "^2.1.2"
 jinja2 = "^3.1.3"
 launchdarkly-server-sdk = "^8.2.1"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
-pay-api = { git = "https://github.com/ochiu/sbc-pay.git", branch = "30294-EFT-credit-memo-handling", subdirectory = "pay-api" }
+pay-api = { git = "https://github.com/circuit-breaker-bc/sbc-pay.git", branch = "google_bucket", subdirectory = "pay-api" }
 wheel = "^0.43.0"
-google-cloud-storage = "^2.19.0"
 
 
 [tool.poetry.group.dev.dependencies]

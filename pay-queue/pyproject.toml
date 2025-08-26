@@ -12,14 +12,12 @@ jsonschema = "4.17.3"
 python-dotenv = "^1.0.1"
 pycountry = "^23.12.11"
 werkzeug = "^3.0.1"
-minio = "^7.2.5"
 attrs = "^23.2.0"
 sqlalchemy = "^2.0.28"
 itsdangerous = "^2.1.2"
 launchdarkly-server-sdk = "^8.2.1"
 cachecontrol = "^0.14.0"
-pay-api = { git = "https://github.com/ochiu/sbc-pay.git", branch = "30294-EFT-credit-memo-handling", subdirectory = "pay-api" }
-
+pay-api = { git = "https://github.com/circuit-breaker-bc/sbc-pay.git", branch = "google_bucket", subdirectory = "pay-api" }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"

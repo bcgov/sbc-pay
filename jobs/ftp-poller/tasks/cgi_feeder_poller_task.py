@@ -17,6 +17,7 @@ from typing import List
 
 from flask import current_app
 from paramiko.sftp_attr import SFTPAttributes
+from pay_api.services.google_bucket_service import GoogleBucketService
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from services.sftp import SFTPService
@@ -38,6 +39,11 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
             try:
                 ftp_dir: str = current_app.config.get("CGI_SFTP_DIRECTORY")
                 file_list: List[SFTPAttributes] = sftp_client.listdir_attr(ftp_dir)
+                google_storage_client = GoogleBucketService.get_client()
+                bucket_name = current_app.config.get("GOOGLE_BUCKET_NAME")
+                bucket = GoogleBucketService.get_bucket(google_storage_client, bucket_name)
+                cgi_feedback_folder_name = current_app.config.get("GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK")
+                ar_folder_name = current_app.config.get("GOOGLE_BUCKET_FOLDER_AR")
 
                 current_app.logger.info(
                     f"Found {len(file_list)} to be processed.This includes all files in the folder."
@@ -49,13 +55,21 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
                         current_app.logger.info(f"Skipping directory {file_name}.")
                         continue
                     if cls._is_ack_file(file_name):
-                        utils.publish_to_queue([file_name], QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+                        utils.publish_to_queue(
+                            [file_name],
+                            QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value,
+                            ar_folder_name,
+                        )
                         cls._move_file_to_backup(sftp_client, [file_name])
                     elif cls._is_feedback_file(file_name):
-                        bucket_name = current_app.config.get("MINIO_CGI_BUCKET_NAME")
-                        utils.upload_to_minio(file, file_full_name, sftp_client, bucket_name)
+                        file_bytes = utils.read_sftp_file(sftp_client, file_full_name)
+                        GoogleBucketService.upload_file_bytes_to_bucket_folder(
+                            bucket, cgi_feedback_folder_name, file.filename, file_bytes
+                        )
                         utils.publish_to_queue(
-                            [file_name], QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value, location=bucket_name
+                            [file_name],
+                            QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value,
+                            location=cgi_feedback_folder_name,
                         )
                         cls._move_file_to_backup(sftp_client, [file_name])
                     elif cls._is_a_trigger_file(file_name):
