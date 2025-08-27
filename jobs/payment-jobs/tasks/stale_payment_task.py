@@ -130,7 +130,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def _handle_direct_pay_invoice(cls, invoice: InvoiceModel):
-        """This handles NSF or shopping card credit card invoices."""
+        """Handle NSF or shopping card credit card invoices."""
         # DIRECT_PAY are actually DirectSale invoices.
         if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
             return
@@ -143,13 +143,13 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def _handle_direct_sale_invoice(cls, invoice: InvoiceModel):
-        """This handles regular direct sale invoices, these are 99% of transactions."""
-        ## CC invoices are true DirectPay invoices.
+        """Handle regular direct sale invoices, these are 99% of transactions."""
+        # CC invoices are true DirectPay invoices.
         if invoice.payment_method_code == PaymentMethod.CC.value:
             return
         try:
             paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
-            if not paybc_invoice.paymentstatus in STATUS_PAID:
+            if paybc_invoice.paymentstatus not in STATUS_PAID:
                 return
             if not (
                 transaction := cls._should_process_transaction(
