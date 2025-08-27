@@ -147,6 +147,6 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
             nsf_invoice.service_fees += invoice.service_fees
             nsf_invoice.paid += invoice.paid
             nsf_invoice.details.extend(invoice.details or [])
-        receipt_details["invoice"] = camelcase_dict(nsf_invoice.asdict(), {})
+        receipt_details["invoice"] = camelcase_dict(nsf_invoice.asdict(include_links=False), {})
         receipt_details["invoice"]["createdOn"] = get_local_formatted_date(nsf_invoice.created_on)
         return receipt_details

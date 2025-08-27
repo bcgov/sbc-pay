@@ -141,25 +141,22 @@ class PaybcService(PaymentSystemService, CFSService):
         )
         parsed_url = parse_url_params(pay_response_url)
         receipt_number: str = parsed_url.get("receipt_number") if "receipt_number" in parsed_url else None
-        if not receipt_number:  # Find all receipts for the site and then match with invoice number
-            receipts_response = self.get(
-                receipt_url,
-                access_token,
-                AuthHeaderType.BEARER,
-                ContentType.JSON,
-                retry_on_failure=True,
-                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
-            ).json()
-            for receipt in receipts_response.get("items"):
-                expanded_receipt = self._get_receipt_by_number(access_token, receipt_url, receipt.get("receipt_number"))
-                for invoice in expanded_receipt.get("invoices"):
-                    if invoice.get("invoice_number") == invoice_reference.invoice_number:
+        if not receipt_number:
+            invoice = self.get_invoice(payment_account, invoice_reference.invoice_number)
+            for receipt in invoice.get("receipts", []):
+                receipt_applied_links = [
+                    link for link in receipt.get("links", []) if link.get("rel") == "receipt_applied"
+                ]
+                if receipt_applied_links:
+                    # Takes the top, there could definitely be multiple, will have to tackle this in the future.
+                    receipt_url = receipt_applied_links[0].get("href")
+                    if receipt_url:
+                        receipt_response = self._get_receipt_by_number(access_token, receipt_url, None)
                         return (
                             receipt.get("receipt_number"),
-                            parser.parse(expanded_receipt.get("receipt_date")),
-                            float(invoice.get("amount_applied")),
+                            parser.parse(receipt_response.get("receipt_date")),
+                            float(receipt.get("amount_applied")),
                         )
-
         if receipt_number:
             receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
             receipt_date = parser.parse(receipt_response.get("receipt_date"))
@@ -179,7 +176,8 @@ class PaybcService(PaymentSystemService, CFSService):
         receipt_number: str = None,
     ):
         """Get receipt details by receipt number."""
-        receipt_url = receipt_url + f"{receipt_number}/"
+        if receipt_number:
+            receipt_url = receipt_url + f"{receipt_number}/"
         return self.get(
             receipt_url,
             access_token,

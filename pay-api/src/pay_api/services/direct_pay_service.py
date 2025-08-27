@@ -34,6 +34,7 @@ from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
+from pay_api.utils.cache import cache
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
     AuthHeaderType,
@@ -335,6 +336,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
                 )
         return None
 
+    @cache.memoize(timeout=1800)
     def get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""
         current_app.logger.debug("<Getting token")

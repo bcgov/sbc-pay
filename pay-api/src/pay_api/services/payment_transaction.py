@@ -412,6 +412,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         current_app.logger.info(f"Pay system instance created {pay_system_service}")
         invoice_reference = InvoiceReference.find_any_active_reference_by_invoice_number(payment.invoice_number)
         try:
+            # This doesn't handle multiple receipts, a user could under directPay (CC - NSF flow)
+            # EG. Just pay $1, which means it wont cover the entire balance.
             receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)
             txn_reason_code = None
             transaction_dao.pay_system_reason_code = None

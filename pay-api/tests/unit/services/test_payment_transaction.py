@@ -192,7 +192,7 @@ def test_transaction_update_with_no_receipt(session):
     payment_account.save()
     invoice = factory_invoice(payment_account)
     invoice.save()
-    invoice_reference = factory_invoice_reference(invoice.id, invoice_number="").save()
+    invoice_reference = factory_invoice_reference(invoice.id, invoice_number="REG123").save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()

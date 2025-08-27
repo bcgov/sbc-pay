@@ -102,6 +102,10 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
             .filter(PaymentTransaction.status_code == status_code)
         )
 
+        # There can be multiple failed transactions for an invoice.
+        if status_code == TransactionStatus.FAILED.value:
+            return query.first()
+
         return query.one_or_none()
 
     @classmethod
