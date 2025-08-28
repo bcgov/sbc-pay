@@ -443,7 +443,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 AuthEvent.publish_lock_account_event(
                     LockAccountDetails(
                         pay_account=payment_account,
-                        additional_emails=current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
+                        additional_emails=current_app.config.get("PAD_NSF_NOTIFY_EMAILS"),
                         payment_method=_convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
                         source=QueueSources.PAY_QUEUE.value,
                         suspension_reason_code=SuspensionReasonCodes.PAD_NSF.value,
