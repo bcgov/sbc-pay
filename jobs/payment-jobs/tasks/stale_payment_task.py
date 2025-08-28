@@ -114,8 +114,8 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         current_app.logger.info(f"Found {len(invoices)} Created Invoices to be Verified.")
         for invoice in invoices:
             current_app.logger.info(f"Verifying invoice: {invoice.id}")
-            cls._handle_direct_pay_invoice(invoice)
             cls._handle_direct_sale_invoice(invoice)
+            cls._handle_direct_pay_invoice(invoice)
 
     @classmethod
     def _should_process_transaction(cls, invoice_id: int, status_codes: List[str]):
