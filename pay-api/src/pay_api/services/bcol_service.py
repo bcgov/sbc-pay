@@ -120,13 +120,13 @@ class BcolService(PaymentSystemService, OAuthService):
             current_app.logger.debug(f"BCOL Response : {response_json}")
             pay_response.raise_for_status()
         except HTTPError as bol_err:
-            self._handle_http_error(bol_err, response_json)
+            self._handle_http_error(bol_err, response_json, payload)
         invoice_reference: InvoiceReference = InvoiceReference.create(
             invoice.id, response_json.get("key"), response_json.get("sequenceNo")
         )
         return invoice_reference
 
-    def _handle_http_error(self, bol_err, response_json):
+    def _handle_http_error(self, bol_err, response_json, payload):
         """Log BCOL errors."""
         error_type: str = response_json.get("type")
         # It's possible raise_for_status, skips this part.
@@ -140,7 +140,7 @@ class BcolService(PaymentSystemService, OAuthService):
         else:
             error = Error.BCOL_ERROR
             current_app.logger.error(bol_err)
-            current_app.logger.error(f"Json Response: {response_json}")
+            current_app.logger.error(f"Request {payload} - Response: {response_json}")
         raise BusinessException(error) from bol_err
 
     def get_receipt(
