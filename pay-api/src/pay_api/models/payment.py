@@ -35,6 +35,7 @@ from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
+from ..utils.dataclasses import PurchaseHistorySearch
 from .applied_credits import AppliedCredits
 from .base_model import BaseModel
 from .base_schema import BaseSchema
@@ -333,18 +334,22 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return results[: params.limit], has_more
 
     @classmethod
-    def search_purchase_history(  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
-        cls, auth_account_id: str, search_filter: Dict, page: int, limit: int, return_all: bool, max_no_records: int = 0
+    def search_purchase_history(  # noqa:E501; too-many-locals, too-many-branches, too-many-statements;
+        cls, search_params: PurchaseHistorySearch
     ):
         """Search for purchase history."""
         executor = current_app.extensions["flask_executor"]
+        search_filter = search_params.search_filter
         query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=False)
-        query = cls.filter(query, auth_account_id, search_filter)
-        if not return_all:
-            count_future = executor.submit(cls.get_count, auth_account_id, search_filter)
+        query = cls.filter(query, search_params.auth_account_id, search_filter)
+        if not search_params.return_all:
+            count_future = executor.submit(cls.get_count, search_params.auth_account_id, search_filter)
             sub_query = cls.generate_subquery(
                 TransactionSearchParams(
-                    auth_account_id=auth_account_id, search_filter=search_filter, page=page, limit=limit
+                    auth_account_id=search_params.auth_account_id,
+                    search_filter=search_filter,
+                    page=search_params.page,
+                    limit=search_params.limit,
                 )
             )
             query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
@@ -352,19 +357,24 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             count = count_future.result()
             result = result_future.result()
             # If maximum number of records is provided, return it as total
-            if max_no_records > 0:
-                count = max_no_records if max_no_records < count else count
-        elif max_no_records > 0:
+            if search_params.max_no_records > 0:
+                count = search_params.max_no_records if search_params.max_no_records < count else count
+        elif search_params.max_no_records > 0:
             # If maximum number of records is provided, set the page with that number
             sub_query = cls.generate_subquery(
-                TransactionSearchParams(auth_account_id, search_filter, limit=max_no_records, page=None)
+                TransactionSearchParams(
+                    auth_account_id=search_params.auth_account_id,
+                    search_filter=search_filter,
+                    limit=search_params.max_no_records,
+                    page=None,
+                )
             )
             result, count = (
                 query.filter(Invoice.id.in_(sub_query.subquery().select())).all(),
                 sub_query.count(),
             )
         else:
-            count = cls.get_count(auth_account_id, search_filter)
+            count = cls.get_count(search_params.auth_account_id, search_filter)
             if count > 100000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
             result = query.all()
@@ -505,9 +515,18 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     def filter_corp_type(cls, query, search_filter: dict):
         """Filter for corp type."""
         if product := search_filter.get("userProductCode", None):
+            # Product claim - We should restrict filter to this if provided
             query = query.join(CorpType, CorpType.code == Invoice.corp_type_code).filter(CorpType.product == product)
-        if product := search_filter.get("product", None):
+        elif products := search_filter.get("allowed_products", None):
+            # products list is based on security roles, if a product filter is specified needs to exist on the list
+            single_product = search_filter.get("product", None)
+            if single_product and single_product in products:
+                products = [single_product]
+
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code).filter(CorpType.product.in_(products))
+        elif product := search_filter.get("product", None):
             query = query.join(CorpType, CorpType.code == Invoice.corp_type_code).filter(CorpType.product == product)
+
         return query
 
     @classmethod
