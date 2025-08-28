@@ -142,7 +142,9 @@ class PaybcService(PaymentSystemService, CFSService):
         parsed_url = parse_url_params(pay_response_url)
         receipt_number: str = parsed_url.get("receipt_number") if "receipt_number" in parsed_url else None
         if not receipt_number:
-            invoice = self.get_invoice(payment_account, invoice_reference.invoice_number)
+            invoice = InvoiceModel.find_by_id(invoice_reference.invoice_id)
+            cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
+            invoice = self.get_invoice(cfs_account, invoice_reference.invoice_number)
             for receipt in invoice.get("receipts", []):
                 receipt_applied_links = [
                     link for link in receipt.get("links", []) if link.get("rel") == "receipt_applied"
