@@ -29,6 +29,7 @@ from pay_api.utils.enums import (
     Role,
 )
 from pay_api.utils.user_context import UserContext, user_context
+from pay_api.utils.util import normalize_accented_characters
 
 
 class EFTRefund:
@@ -296,16 +297,16 @@ class EFTRefund:
             cas_supplier_site=refund.cas_supplier_site,
             refund_email=refund.refund_email,
             refund_method=refund.refund_method,
-            comment=refund.comment,
+            comment=normalize_accented_characters(refund.comment),
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
-            entity_name=refund.entity_name,
-            street=refund.street,
-            street_additional=refund.street_additional,
-            city=refund.city,
-            region=refund.region,
-            postal_code=refund.postal_code,
-            country=refund.country,
-            delivery_instructions=refund.delivery_instructions,
+            entity_name=normalize_accented_characters(refund.entity_name),
+            street=normalize_accented_characters(refund.street),
+            street_additional=normalize_accented_characters(refund.street_additional),
+            city=normalize_accented_characters(refund.city),
+            region=normalize_accented_characters(refund.region),
+            postal_code=normalize_accented_characters(refund.postal_code),
+            country=normalize_accented_characters(refund.country),
+            delivery_instructions=normalize_accented_characters(refund.delivery_instructions),
         )
         refund.flush()
         return refund
