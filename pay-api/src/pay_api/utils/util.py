@@ -368,6 +368,8 @@ def unstructure_schema_items(schema, items):
 # in the refund details, CAS will not be able to process the refund.
 def normalize_accented_characters(s):
     """Normalize accented characters and replace em dash and en dash with hyphen."""
+    if s is None:
+        return None
     s = s.replace("—", "-").replace("–", "-")
     # Normalize accented characters
     s = unicodedata.normalize("NFKD", s)
