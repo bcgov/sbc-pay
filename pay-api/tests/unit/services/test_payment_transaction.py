@@ -190,7 +190,9 @@ def test_transaction_update_with_no_receipt(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
     payment_account.save()
+    cfs_account = CfsAccount.find_by_account_id(payment_account.id)[0]
     invoice = factory_invoice(payment_account)
+    invoice.cfs_account_id = cfs_account.id
     invoice.save()
     invoice_reference = factory_invoice_reference(invoice.id, invoice_number="REG123").save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
