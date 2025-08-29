@@ -32,6 +32,7 @@ from pay_api.services.payment_calculations import (
     calculate_invoice_summaries,
     determine_service_provision_status,
 )
+from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import (
@@ -280,11 +281,13 @@ def test_search_payment_history(
     for additional_payload in [{}, {"excludeCounts": True}]:
         search_filter.update(additional_payload)
         results = PaymentService.search_purchase_history(
-            auth_account_id=auth_account_id,
-            search_filter=search_filter,
-            limit=limit,
-            page=1,
-            return_all=return_all,
+            PurchaseHistorySearch(
+                auth_account_id=auth_account_id,
+                search_filter=search_filter,
+                limit=limit,
+                page=1,
+                return_all=return_all,
+            )
         )
         assert results is not None
         assert "items" in results, "'items' key is missing in results"
@@ -300,11 +303,13 @@ def test_search_payment_history(
         if return_all:
             return
         results = PaymentService.search_purchase_history(
-            auth_account_id=auth_account_id,
-            search_filter=search_filter,
-            limit=limit,
-            page=2,
-            return_all=return_all,
+            PurchaseHistorySearch(
+                auth_account_id=auth_account_id,
+                search_filter=search_filter,
+                limit=limit,
+                page=2,
+                return_all=return_all,
+            )
         )
         assert results is not None
         assert len(results.get("items")) == max(expected_total - limit, 0)
@@ -390,7 +395,9 @@ def test_search_payment_history_with_tz(session, executor_mock):
     factory_invoice_reference(invoice.id).save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = PaymentService.search_purchase_history(auth_account_id=auth_account_id, search_filter={}, limit=1, page=1)
+    results = PaymentService.search_purchase_history(
+        PurchaseHistorySearch(auth_account_id=auth_account_id, search_filter={}, limit=1, page=1)
+    )
     assert results is not None
     assert results.get("items") is not None
     assert results.get("total") == 1
@@ -405,7 +412,9 @@ def test_search_payment_history_with_tz(session, executor_mock):
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
-    results = PaymentService.search_purchase_history(auth_account_id=auth_account_id, search_filter={}, limit=1, page=1)
+    results = PaymentService.search_purchase_history(
+        PurchaseHistorySearch(auth_account_id=auth_account_id, search_filter={}, limit=1, page=1)
+    )
     assert results is not None
     assert results.get("items") is not None
     assert results.get("total") == 2
