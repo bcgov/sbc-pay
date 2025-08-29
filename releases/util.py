@@ -15,14 +15,21 @@ def get_issues_from_repo(target, latest_release_only=False):
     for release in repo.get_releases():
         release_names.append(release.title)
         release_dates.append(release.created_at)
+        pattern = re.compile(
+            r'^\s*(\d+)\s*-\s*'            # "123 -" or "123-"
+            r'|^\s*(\d+)\s*&\s*(\d+)\s*-'  # "123 & 456 -"
+            r'|^\s*(\d+)\s+'               # "123 description"
+        )
+        
         for l in release.body.splitlines():
-            if re.search(r'\d+ -', l):
-                issue_ids.append(re.search(r'\d+ -', l).group(0).replace(' -',''))
-            if re.search(r'\d+-', l):
-                issue_ids.append(re.search(r'\d+-', l).group(0).replace('-',''))
-            if re.search(r'(\d+)\s&\s(\d+)\s-', l):
-                issue_ids.append(re.search(r'(\d+)\s&\s(\d+)\s-', l).group(1))
-                issue_ids.append(re.search(r'(\d+)\s&\s(\d+)\s-', l).group(2))
+            match = pattern.match(l)
+            if match:
+                if match.group(1):  # "123 -" or "123-"
+                    issue_ids.append(match.group(1))
+                elif match.group(2) and match.group(3):  # "123 & 456 -"
+                    issue_ids.extend([match.group(2), match.group(3)])
+                elif match.group(4):  # "123 description"
+                    issue_ids.append(match.group(4))
 
         if latest_release_only:
             break
