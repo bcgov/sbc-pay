@@ -155,9 +155,9 @@ class PaybcService(PaymentSystemService, CFSService):
                     if receipt_url:
                         receipt_response = self._get_receipt_by_number(access_token, receipt_url, None)
                         return (
-                            receipt.get("receipt_number"),
+                            receipt_response.get("receipt_number"),
                             parser.parse(receipt_response.get("receipt_date")),
-                            float(receipt.get("amount_applied")),
+                            float(receipt_response.get("amount_applied")),
                         )
         if receipt_number:
             receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
