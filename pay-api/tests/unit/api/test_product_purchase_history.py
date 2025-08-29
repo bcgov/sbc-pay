@@ -63,7 +63,7 @@ fake = Faker()
     ],
 )
 def test_product_purchase_history(
-    session, client, jwt, app, auth_mock, product_role, product_role2, has_product_refund_viewer, response_status_code
+    session, client, jwt, app, product_role, product_role2, has_product_refund_viewer, response_status_code
 ):
     """Assert account transaction filter by product roles are working."""
     product_token, staff_token = setup_tokens(jwt, product_role, has_product_refund_viewer)
@@ -98,6 +98,32 @@ def test_product_purchase_history(
                 assert rv.status_code == response_status_code
                 assert rv.json
                 assert len(rv.json["items"]) == 2
+
+
+def test_product_claim_purchase_history(session, client, jwt, app):
+    """Assert account transaction filter by product claim is working."""
+    product_code = "BCA"
+    product_claim_token = jwt.create_jwt(
+        get_claims(product_code=product_code),
+        token_header,
+    )
+
+    pay_account = setup_transactions(client, jwt, product_code)
+    headers = {"Authorization": f"Bearer {product_claim_token}", "content-type": "application/json"}
+
+    for payload in [{}, {"excludeCounts": True}]:
+        with patch("pay_api.resources.v1.account.check_auth") as mock_auth:
+            rv = client.post(
+                f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?viewAll=true",
+                data=json.dumps(payload),
+                headers=headers,
+            )
+
+            assert rv.status_code == 200
+            assert rv.json
+            assert len(rv.json["items"]) == 1
+            assert rv.json["items"][0]["product"] == product_code
+            mock_auth.assert_called_once()
 
 
 def setup_tokens(jwt, product_role: str, has_product_refund_viewer: bool) -> Tuple:
