@@ -107,6 +107,9 @@ def run(job_name, argument=None):
             case "UPDATE_STALE_PAYMENTS":
                 StalePaymentTask.update_stale_payments()
                 application.logger.info("<<<< Completed Updating stale payments >>>>")
+            case "UPDATE_STALE_PAYMENTS_DAILY":
+                StalePaymentTask.update_stale_payments(daily_run=True)
+                application.logger.info("<<<< Completed Updating stale payments daily >>>>")
             case "CREATE_CFS_ACCOUNTS":
                 CreateAccountTask.create_accounts()
                 application.logger.info("<<<< Completed creating cfs accounts >>>>")

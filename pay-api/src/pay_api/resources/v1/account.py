@@ -91,6 +91,8 @@ def get_eft_accounts():
 @_jwt.requires_auth
 def get_account(account_number: str):
     """Get payment account details."""
+    if account_number == "undefined":
+        return error_to_response(Error.INVALID_REQUEST, invalid_params="account_number")
     current_app.logger.info("<get_account")
     # Check if user is authorized to perform this action
     check_auth(

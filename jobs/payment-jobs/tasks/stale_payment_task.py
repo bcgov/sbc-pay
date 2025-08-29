@@ -13,6 +13,7 @@
 # limitations under the License.
 """This module is being invoked from a job and it cleans up the stale records."""
 import datetime
+from typing import List
 
 from flask import current_app
 from pay_api.exceptions import BusinessException, Error
@@ -20,9 +21,9 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db
-from pay_api.services import PaymentService, TransactionService
+from pay_api.services import InvoiceService, PaymentService, TransactionService
 from pay_api.services.direct_pay_service import DirectPayService
-from pay_api.utils.enums import InvoiceReferenceStatus, PaymentStatus, TransactionStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod, PaymentStatus, TransactionStatus
 from requests import HTTPError
 
 STATUS_PAID = ("PAID", "CMPLT")
@@ -32,12 +33,12 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
     """Task to sync stale payments."""
 
     @classmethod
-    def update_stale_payments(cls):
+    def update_stale_payments(cls, daily_run=False):
         """Update stale payments."""
         current_app.logger.info(f"StalePaymentTask Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}")
         cls._update_stale_payments()
         cls._delete_marked_payments()
-        cls._verify_created_direct_pay_invoices()
+        cls._verify_created_credit_card_invoices(daily_run)
 
     @classmethod
     def _update_stale_payments(cls):
@@ -105,37 +106,65 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                 current_app.logger.warn(err)
 
     @classmethod
-    def _verify_created_direct_pay_invoices(cls):
+    def _verify_created_credit_card_invoices(cls, daily_run):
         """Verify recent invoice with PAYBC."""
-        created_invoices = InvoiceModel.find_created_direct_pay_invoices(days=2)
-        current_app.logger.info(f"Found {len(created_invoices)} Created Invoices to be Verified.")
+        days = 30 if daily_run else 2
+        invoices = InvoiceService.find_created_invoices(payment_method=PaymentMethod.DIRECT_PAY.value, days=days)
+        invoices += InvoiceService.find_created_invoices(payment_method=PaymentMethod.CC.value, days=90)
+        current_app.logger.info(f"Found {len(invoices)} Created Invoices to be Verified.")
+        for invoice in invoices:
+            current_app.logger.info(f"Verifying invoice: {invoice.id}")
+            cls._handle_direct_sale_invoice(invoice)
+            cls._handle_direct_pay_invoice(invoice)
 
-        for invoice in created_invoices:
-            try:
-                current_app.logger.info(f"Verify Invoice Job found records.Invoice Id: {invoice.id}")
-                paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+    @classmethod
+    def _should_process_transaction(cls, invoice_id: int, status_codes: List[str]):
+        """Check if a transaction should be processed."""
+        for status_code in status_codes:
+            transaction = TransactionService.find_by_invoice_id_and_status(invoice_id, status_code)
+            if transaction and transaction.payment_id:
+                payment = PaymentModel.find_by_id(transaction.payment_id)
+                if payment.payment_status_code != PaymentStatus.COMPLETED.value:
+                    return transaction
+        return None
 
-                if paybc_invoice.paymentstatus in STATUS_PAID:
-                    current_app.logger.debug("_update_active_transactions")
-                    transaction = TransactionService.find_by_invoice_id_and_status(
-                        invoice.id, TransactionStatus.CREATED.value
-                    ) or TransactionService.find_by_invoice_id_and_status(invoice.id, TransactionStatus.FAILED.value)
-                    if not transaction or not transaction.payment_id:
-                        continue
-                    payment = PaymentModel.find_by_id(transaction.payment_id)
+    @classmethod
+    def _handle_direct_pay_invoice(cls, invoice: InvoiceModel):
+        """Handle NSF or shopping card credit card invoices."""
+        # DIRECT_PAY are actually DirectSale invoices.
+        if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
+            return
+        try:
+            if not (transaction := cls._should_process_transaction(invoice.id, [TransactionStatus.FAILED.value])):
+                return
+            TransactionService.update_transaction(transaction.id, pay_response_url=None)
+        except Exception as err:  # NOQA # pylint: disable=broad-except
+            current_app.logger.error(f"Error verifying invoice {invoice.id}: {err}", exc_info=True)
 
-                    if payment.payment_status_code == PaymentStatus.COMPLETED.value:
-                        continue
-                    if transaction:
-                        # check existing payment status in PayBC and save receipt
-                        TransactionService.update_transaction(transaction.id, pay_response_url=None)
-
-            except HTTPError as http_err:
-                if http_err.response is None or http_err.response.status_code != 404:
-                    current_app.logger.error(
-                        f"HTTPError on verifying invoice {invoice.id}: {http_err}",
-                        exc_info=True,
-                    )
-                current_app.logger.info(f"Invoice not found (404) at PAYBC. Skipping invoice id: {invoice.id}")
-            except Exception as err:  # NOQA # pylint: disable=broad-except
-                current_app.logger.error(f"Error verifying invoice {invoice.id}: {err}", exc_info=True)
+    @classmethod
+    def _handle_direct_sale_invoice(cls, invoice: InvoiceModel):
+        """Handle regular direct sale invoices, these are 99% of transactions."""
+        # CC invoices are true DirectPay invoices.
+        if invoice.payment_method_code == PaymentMethod.CC.value:
+            return
+        try:
+            paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+            if paybc_invoice.paymentstatus not in STATUS_PAID:
+                return
+            if not (
+                transaction := cls._should_process_transaction(
+                    invoice.id, [TransactionStatus.CREATED.value, TransactionStatus.FAILED.value]
+                )
+            ):
+                return
+            # check existing payment status in PayBC and save receipt
+            TransactionService.update_transaction(transaction.id, pay_response_url=None)
+        except HTTPError as http_err:
+            if http_err.response is None or http_err.response.status_code != 404:
+                current_app.logger.error(
+                    f"HTTPError on verifying invoice {invoice.id}: {http_err}",
+                    exc_info=True,
+                )
+            current_app.logger.info(f"Invoice not found (404) at PAYBC. Skipping invoice id: {invoice.id}")
+        except Exception as err:  # NOQA # pylint: disable=broad-except
+            current_app.logger.error(f"Error verifying invoice {invoice.id}: {err}", exc_info=True)

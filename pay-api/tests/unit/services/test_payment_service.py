@@ -23,6 +23,7 @@ import pytest
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
+from pay_api.models import CfsAccount
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount
 from pay_api.models import RoutingSlip as RoutingSlipModel
@@ -215,9 +216,11 @@ def test_delete_payment(session, auth_mock, public_user_mock):
     # payment = factory_payment()
     payment_account.save()
     # payment.save()
+    cfs_account = CfsAccount.find_by_account_id(payment_account.id)[0]
     invoice = factory_invoice(payment_account, total=10)
+    invoice.cfs_account_id = cfs_account.id
     invoice.save()
-    invoice_reference = factory_invoice_reference(invoice.id).save()
+    invoice_reference = factory_invoice_reference(invoice.id, invoice_number="INV-001").save()
 
     # Create a payment for this reference
     payment = factory_payment(invoice_number=invoice_reference.invoice_number, invoice_amount=10).save()
