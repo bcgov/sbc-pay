@@ -16,9 +16,11 @@ def get_issues_from_repo(target, latest_release_only=False):
         release_names.append(release.title)
         release_dates.append(release.created_at)
         pattern = re.compile(
-            r'^\s*(\d+)\s*-\s*'            # "123 -" or "123-"
-            r'|^\s*(\d+)\s*&\s*(\d+)\s*-'  # "123 & 456 -"
-            r'|^\s*(\d+)\s+'               # "123 description"
+            r'^\s*(?:\*\s*)?(?:'         # optional "*" bullet prefix
+            r'(\d+)\s*-\s*'              # group 1: "123 -" or "123-"
+            r'|(\d+)\s*&\s*(\d+)\s*-'    # groups 2,3: "123 & 456 -"
+            r'|(\d+)(?=\s+\S)'           # group 4: "123 description"
+            r')'
         )
         
         for l in release.body.splitlines():
