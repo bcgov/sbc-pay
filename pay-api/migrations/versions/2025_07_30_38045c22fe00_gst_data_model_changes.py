@@ -63,7 +63,7 @@ def upgrade():
         batch_op.add_column(sa.Column('enable_gst', sa.Boolean(), nullable=True, comment='Flag to indicate if GST should be calculated for this fee schedule'))
 
     with op.batch_alter_table('invoices', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('gst', sa.Numeric(precision=19, scale=2), nullable=True, comment='Total GST amount including statutory and service fees GST'))
+        batch_op.add_column(sa.Column('gst', sa.Numeric(precision=19, scale=2), nullable=False, server_default='0', comment='Total GST amount including statutory and service fees GST'))
 
     with op.batch_alter_table('payment_line_items', schema=None) as batch_op:
         batch_op.add_column(sa.Column('statutory_fees_gst', sa.Numeric(precision=19, scale=2), nullable=True, comment='GST for statutory fees (filing_fees)'))
