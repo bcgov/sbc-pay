@@ -193,6 +193,21 @@ class Role(Enum):
     VIEW_ACCOUNT_TRANSACTIONS = "view_account_transactions"
     API_USER = "api_user"
     CSO_REFUNDS = "cso_refunds"
+    # General role for security check, used with RolePattern.PRODUCT_VIEW_TRANSACTION to determine allowed products
+    PRODUCT_REFUND_VIEWER = "product_refund_viewer"
+    # Below are for users that have the ability to manage refund transactions for all products
+    PRODUCT_REFUND_REQUESTER = "product_refund_requester"
+    PRODUCT_REFUND_APPROVER = "product_refund_approver"
+
+
+class RolePattern(Enum):
+    """Role Patterns."""
+
+    # Used to check against product permissions for refunding.
+    # e.g. having strr_view_transactions allows for the user to retrieve transactions that are of the strr product
+    PRODUCT_VIEW_TRANSACTION = "_view_transactions"
+    PRODUCT_REFUND_REQUESTER = "_refund_requester"
+    PRODUCT_REFUND_APPROVER = "_refund_approver"
 
 
 class Code(Enum):
