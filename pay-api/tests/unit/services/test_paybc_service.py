@@ -79,7 +79,7 @@ def test_get_receipt_no_receipt_number(mock_get_token, session):
                         "links": [
                             {
                                 "rel": "receipt_applied",
-                                "href": "https://ggogo/rcpts/PYBCCC052435_01964218/",
+                                "href": "https://ggogo/cfs/rcpts/PYBCCC052435_01964218/",
                             }
                         ]
                     }
