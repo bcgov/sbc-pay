@@ -92,7 +92,13 @@ def test_get_receipt_no_receipt_number(mock_get_token, session):
             return_value={
                 "receipt_date": "2024-01-15T10:30:00Z",
                 "receipt_number": "PYBCCC052435_01964218",
-                "amount_applied": "100.00",
+                "invoices": [
+                    {
+                        "invoice_number": "INV-001",
+                        "total": 266,
+                        "amount_applied": 100,
+                    }
+                ],
             },
         ),
     ):

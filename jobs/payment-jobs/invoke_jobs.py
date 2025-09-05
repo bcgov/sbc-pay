@@ -170,18 +170,18 @@ def run(job_name, argument=None):
         msg = f"Error occurred in Invoke Jobs: {e}"
         if application is not None:
             application.logger.error(msg)
-        send_notification(msg)
+        send_notification(msg, job_name)
         raise
 
 
-def send_notification(error_message: str):
+def send_notification(error_message: str, job_name: str):
     """Send notification for job failure."""
     notification = JobFailureNotification(
-        subject="Invoke Job Failure",
+        subject="Invoke Job Failure - {job_name}",
         file_name="ejv_partner_distribution",
         error_messages=[{"error": error_message}],
         table_name=None,
-        job_name="Invoke Job Failure",
+        job_name=job_name,
     )
     notification.send_notification()
 
