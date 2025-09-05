@@ -2253,8 +2253,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "main"
-resolved_reference = "7b00d51abe4ec95609bf1b9ff211f19e06fa0a90"
+reference = "fix_stale_payment_nsf"
+resolved_reference = "854e7d05c1801c31eacaa99090ff421b5f6c8564"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3502,4 +3502,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "f29d8305129f9fabdf670dc63d8807d620aee196ec71f25b1234a56f6f715b92"
+content-hash = "374a0cf6d4322567a58ae5414df183a275c988438b2d9151da8ff0020ae2f8db"
