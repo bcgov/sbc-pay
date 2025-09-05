@@ -45,8 +45,9 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         """Update stale payment records.
 
         This is to handle edge cases where the user has completed payment and some error occured and payment status
-        is not up-to-date.
+        is not up-to-date. This handles short term scenarios.
         """
+        # Note stale transactions can cover the NSF case, but this is only 30 minutes.
         stale_transactions = PaymentTransactionModel.find_stale_records(minutes=30)
         # Find all payments which were failed due to service unavailable error.
         service_unavailable_transactions = (
@@ -59,19 +60,16 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
 
         if len(stale_transactions) == 0 and len(service_unavailable_transactions) == 0:
             current_app.logger.info(
-                f"Stale Transaction Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}."
-                "But No records found!"
+                f"Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}." "But No records found!"
             )
         for transaction in [*stale_transactions, *service_unavailable_transactions]:
             try:
                 current_app.logger.info(
-                    f"Stale Transaction Job found records.Payment Id: {transaction.payment_id}, "
-                    f"Transaction Id : {transaction.id}"
+                    f"Found records.Payment Id: {transaction.payment_id}, " f"Transaction Id : {transaction.id}"
                 )
                 TransactionService.update_transaction(transaction.id, pay_response_url=None)
                 current_app.logger.info(
-                    f"Stale Transaction Job Updated records.Payment Id: {transaction.payment_id}, "
-                    f"Transaction Id : {transaction.id}"
+                    f"Updated records.Payment Id: {transaction.payment_id}, " f"Transaction Id : {transaction.id}"
                 )
             except BusinessException as err:  # just catch and continue .Don't stop
                 # If the error is for COMPLETED PAYMENT, then mark the transaction as CANCELLED
@@ -115,7 +113,8 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         for invoice in invoices:
             current_app.logger.info(f"Verifying invoice: {invoice.id}")
             cls._handle_direct_sale_invoice(invoice)
-            cls._handle_direct_pay_invoice(invoice)
+            if daily_run:
+                cls._handle_direct_pay_invoice(invoice)
 
     @classmethod
     def _should_process_transaction(cls, invoice_id: int, status_codes: List[str]):
@@ -130,7 +129,10 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def _handle_direct_pay_invoice(cls, invoice: InvoiceModel):
-        """Handle NSF or shopping card credit card invoices."""
+        """Handle NSF or shopping cart credit card invoices.
+
+        This handles the longer scenario up to 90 days.
+        """
         # DIRECT_PAY are actually DirectSale invoices.
         if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
             return
