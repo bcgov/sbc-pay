@@ -154,6 +154,7 @@ class PaybcService(PaymentSystemService, CFSService):
                     receipt_url = receipt_applied_links[0].get("href")
                     if receipt_url:
                         receipt_number = receipt_url.rstrip("/").split("/")[-1]
+                        break
         if receipt_number:
             receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
             receipt_date = parser.parse(receipt_response.get("receipt_date"))
