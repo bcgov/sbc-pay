@@ -110,7 +110,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         invoices = InvoiceService.find_created_invoices(payment_method=PaymentMethod.DIRECT_PAY.value, days=days)
         if daily_run:
             invoices += InvoiceService.find_created_invoices(payment_method=PaymentMethod.CC.value, days=90)
-        current_app.logger.info(f"Found {len(invoices)} Created Invoices to be Verified.")
+        current_app.logger.info(f"Found {len(invoices)} created invoices to be verified.")
         for invoice in invoices:
             current_app.logger.info(f"Verifying invoice: {invoice.id}")
             cls._handle_direct_sale_invoice(invoice)
