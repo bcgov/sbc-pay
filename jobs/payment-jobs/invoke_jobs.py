@@ -177,7 +177,7 @@ def run(job_name, argument=None):
 def send_notification(error_message: str, job_name: str):
     """Send notification for job failure."""
     notification = JobFailureNotification(
-        subject="Invoke Job Failure - {job_name}",
+        subject=f"Invoke Job Failure - {job_name}",
         file_name="ejv_partner_distribution",
         error_messages=[{"error": error_message}],
         table_name=None,
