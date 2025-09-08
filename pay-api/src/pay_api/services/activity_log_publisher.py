@@ -55,7 +55,7 @@ class ActivityLogPublisher:
             action=ActivityAction.STATEMENT_INTERVAL_CHANGE.value,
             item_name=None,
             item_id=params.account_id,
-            item_value=f"{params.old_frequency}|{params.new_frequency}",
+            item_value=f"{params.old_frequency.title()}|{params.new_frequency.title()}",
             org_id=params.account_id,
             remote_addr=request.remote_addr if request else None,
             created_at=datetime.now(tz=timezone.utc).isoformat(),
@@ -67,10 +67,14 @@ class ActivityLogPublisher:
     def publish_statement_recipient_change_event(params: StatementRecipientChange):
         """Publish statement recipient change event to the activity log queue."""
         old_recipients_str = (
-            ",".join(params.old_recipients) if params.old_recipients and len(params.old_recipients) > 0 else "None"
+            ",".join(params.old_recipients).lower()
+            if params.old_recipients and len(params.old_recipients) > 0
+            else "None"
         )
         new_recipients_str = (
-            ",".join(params.new_recipients) if params.new_recipients and len(params.new_recipients) > 0 else "None"
+            ",".join(params.new_recipients).lower()
+            if params.new_recipients and len(params.new_recipients) > 0
+            else "None"
         )
 
         activity_data = ActivityLogData(
