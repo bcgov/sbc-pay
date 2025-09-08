@@ -133,7 +133,6 @@ class PaybcService(PaymentSystemService, CFSService):
     ):
         """Get receipt from paybc for the receipt number or get receipt against invoice number."""
         current_app.logger.debug("<paybc_service_Getting token")
-        access_token: str = CFSService.get_token().json().get("access_token")
         current_app.logger.debug("<Getting receipt")
         receipt_url = (
             current_app.config.get("CFS_BASE_URL") + f"/cfs/parties/{payment_account.cfs_party}/accs/"
@@ -151,12 +150,14 @@ class PaybcService(PaymentSystemService, CFSService):
                 ]
                 if receipt_applied_links:
                     # Takes the top, there could definitely be multiple, will have to tackle this in the future.
-                    receipt_url = receipt_applied_links[0].get("href")
-                    if receipt_url:
-                        receipt_number = receipt_url.rstrip("/").split("/")[-1]
+                    href = receipt_applied_links[0].get("href")
+                    if href:
+                        receipt_number = href.rstrip("/").split("/")[-1]
                         break
         if receipt_number:
-            receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
+            receipt_response = self._get_receipt_by_number(
+                CFSService.get_token().json().get("access_token"), receipt_url, receipt_number
+            )
             receipt_date = parser.parse(receipt_response.get("receipt_date"))
 
             amount = Decimal("0")
