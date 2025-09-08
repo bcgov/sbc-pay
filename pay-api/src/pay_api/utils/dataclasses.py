@@ -28,3 +28,38 @@ class PurchaseHistorySearch:
     allowed_products: List[str] = None
     return_all: bool = False
     max_no_records: int = 0
+
+
+@dataclass
+class StatementIntervalChange:
+    """Statement interval change data class."""
+
+    account_id: str
+    old_frequency: str
+    new_frequency: str
+    source: str
+
+
+@dataclass
+class StatementRecipientChange:
+    """Statement recipient change data class."""
+
+    account_id: str
+    old_recipients: List[str]
+    new_recipients: List[str]
+    source: str
+
+
+@dataclass
+class ActivityLogData:
+    """Activity log data class."""
+
+    actor_id: str
+    action: str
+    item_name: str
+    item_id: str
+    item_value: str
+    org_id: str
+    remote_addr: str
+    created_at: str
+    item_type: str = "ACCOUNT"

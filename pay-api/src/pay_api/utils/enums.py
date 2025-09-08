@@ -541,3 +541,10 @@ class APRefundMethod(Enum):
 
     CHEQUE = "CHEQUE"
     EFT = "EFT"
+
+
+class ActivityAction(Enum):
+    """Activity action types."""
+
+    STATEMENT_INTERVAL_CHANGE = "STATEMENT_INTERVAL_CHANGE"
+    STATEMENT_RECIPIENT_CHANGE = "STATEMENT_RECIPIENT_CHANGE"

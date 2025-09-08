@@ -19,6 +19,9 @@ from flask import current_app
 from pay_api.models import StatementRecipients as StatementRecipientsModel
 from pay_api.models import StatementRecipientsSchema as NotificationSchema
 from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
+from pay_api.services.activity_log_publisher import ActivityLogPublisher
+from pay_api.utils.dataclasses import StatementRecipientChange
+from pay_api.utils.enums import QueueSources
 
 
 class StatementRecipients:
@@ -53,7 +56,10 @@ class StatementRecipients:
         payment_account.name = notification_details.get("accountName")
         payment_account.statement_notification_enabled = notification_details.get("statementNotificationEnabled")
         payment_account.save()
-        recepient_list: list = []
+
+        old_recipients = StatementRecipientsModel.find_all_recipients(auth_account_id) or []
+        old_recipients_emails = [r.email for r in old_recipients]
+        recipient_list = []
 
         # if no object is passed , dont update anything.Empty list passed means , delete everything
         if (recepients := notification_details.get("recipients")) is not None:
@@ -65,5 +71,16 @@ class StatementRecipients:
                 recipient.lastname = rec.get("lastname")
                 recipient.email = rec.get("email")
                 recipient.payment_account_id = payment_account.id
-                recepient_list.append(recipient)
-            StatementRecipientsModel.bulk_save_recipients(recepient_list)
+                recipient_list.append(recipient)
+            StatementRecipientsModel.bulk_save_recipients(recipient_list)
+            new_recipients_emails = [r.email for r in recipient_list]
+
+            if old_recipients_emails != new_recipients_emails:
+                ActivityLogPublisher.publish_statement_recipient_change_event(
+                    StatementRecipientChange(
+                        account_id=payment_account.auth_account_id,
+                        old_recipients=old_recipients_emails,
+                        new_recipients=new_recipients_emails,
+                        source=QueueSources.PAY_API.value,
+                    )
+                )

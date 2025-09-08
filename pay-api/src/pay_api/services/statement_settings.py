@@ -22,7 +22,9 @@ from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import StatementSettingsSchema as StatementSettingsModelSchema
 from pay_api.models import db
-from pay_api.utils.enums import StatementFrequency
+from pay_api.services import ActivityLogPublisher
+from pay_api.utils.dataclasses import StatementIntervalChange
+from pay_api.utils.enums import QueueSources, StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
 
@@ -150,10 +152,22 @@ class StatementSettings:
         today = datetime.now(tz=timezone.utc)
         current_statements_settings = StatementSettingsModel.find_active_settings(auth_account_id, today)
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+
+        old_frequency = None
         if current_statements_settings is None:
             # no frequency yet.first time accessing the statement settings.so create a new record
             statements_settings = StatementSettingsModel(frequency=frequency, payment_account_id=payment_account.id)
             statements_settings.save()
+
+            ActivityLogPublisher.publish_statement_interval_change_event(
+                StatementIntervalChange(
+                    account_id=payment_account.auth_account_id,
+                    old_frequency=old_frequency,
+                    new_frequency=frequency,
+                    source=QueueSources.PAY_API.value,
+                )
+            )
+
             return statements_settings_schema.dump(statements_settings)
 
         # check if the latest one is the active one.. if not , inactivate the latest one.
@@ -165,6 +179,7 @@ class StatementSettings:
             future_statements_settings.to_date = today
             future_statements_settings.save()
 
+        old_frequency = current_statements_settings.frequency
         max_frequency = StatementSettings._find_longest_frequency(current_statements_settings.frequency, frequency)
         last_date = StatementSettings._get_end_of(max_frequency)
         current_statements_settings.to_date = last_date
@@ -177,6 +192,17 @@ class StatementSettings:
         )
 
         new_statements_settings.save()
+
+        if old_frequency != frequency:
+            ActivityLogPublisher.publish_statement_interval_change_event(
+                StatementIntervalChange(
+                    account_id=payment_account.auth_account_id,
+                    old_frequency=old_frequency,
+                    new_frequency=frequency,
+                    source=QueueSources.PAY_API.value,
+                )
+            )
+
         return statements_settings_schema.dump(new_statements_settings)
 
     @staticmethod
