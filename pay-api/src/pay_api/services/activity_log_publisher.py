@@ -55,7 +55,7 @@ class ActivityLogPublisher:
             action=ActivityAction.STATEMENT_INTERVAL_CHANGE.value,
             item_name=None,
             item_id=params.account_id,
-            item_value=f"{params.old_frequency.title()}|{params.new_frequency.title()}",
+            item_value=f"{str(params.old_frequency).title()}|{str(params.new_frequency).title()}",
             org_id=params.account_id,
             remote_addr=request.remote_addr if request else None,
             created_at=datetime.now(tz=timezone.utc).isoformat(),

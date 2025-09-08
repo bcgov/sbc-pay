@@ -162,8 +162,8 @@ class StatementSettings:
             ActivityLogPublisher.publish_statement_interval_change_event(
                 StatementIntervalChange(
                     account_id=payment_account.auth_account_id,
-                    old_frequency=str(old_frequency),
-                    new_frequency=str(frequency),
+                    old_frequency=old_frequency,
+                    new_frequency=frequency,
                     source=QueueSources.PAY_API.value,
                 )
             )
@@ -197,8 +197,8 @@ class StatementSettings:
             ActivityLogPublisher.publish_statement_interval_change_event(
                 StatementIntervalChange(
                     account_id=payment_account.auth_account_id,
-                    old_frequency=str(old_frequency),
-                    new_frequency=str(frequency),
+                    old_frequency=old_frequency,
+                    new_frequency=frequency,
                     source=QueueSources.PAY_API.value,
                 )
             )
