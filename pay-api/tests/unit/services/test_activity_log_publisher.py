@@ -29,11 +29,11 @@ from pay_api.utils.enums import ActivityAction, QueueSources
 @pytest.mark.parametrize(
     "old_frequency,new_frequency,expected_value",
     [
-        ("WEEKLY", "MONTHLY", "WEEKLY|MONTHLY"),
-        ("DAILY", "WEEKLY", "DAILY|WEEKLY"),
-        (None, "MONTHLY", "None|MONTHLY"),
-        ("WEEKLY", None, "WEEKLY|None"),
-        ("DAILY", "DAILY", "DAILY|DAILY"),
+        ("WEEKLY", "MONTHLY", "Weekly|Monthly"),
+        ("DAILY", "WEEKLY", "Daily|Weekly"),
+        (None, "MONTHLY", "None|Monthly"),
+        ("WEEKLY", None, "Weekly|None"),
+        ("DAILY", "DAILY", "Daily|Daily"),
     ],
 )
 @patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
