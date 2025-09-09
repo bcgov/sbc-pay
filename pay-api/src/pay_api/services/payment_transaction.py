@@ -18,7 +18,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Dict
 
 import humps
 from flask import current_app
@@ -375,21 +375,20 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         """
         # Assumption this will be called only for credit card, bcol and internal payments.
         # Doesn't support PAD or ONLINE BANKING.
-        transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id(transaction_id)
-        if not transaction_dao:
+        if not (transaction_dao := PaymentTransactionModel.find_by_id(transaction_id)):
             raise BusinessException(Error.INVALID_TRANSACTION_ID)
         if transaction_dao.status_code == TransactionStatus.COMPLETED.value:
             raise BusinessException(Error.INVALID_TRANSACTION)
         current_app.logger.info(f"Updating transaction record for {transaction_id}, {transaction_dao.status_code}")
-        payment: Payment = Payment.find_by_id(transaction_dao.payment_id)
-        payment_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
+        payment = Payment.find_by_id(transaction_dao.payment_id)
+        payment_account = PaymentAccount.find_by_id(payment.payment_account_id)
         current_app.logger.info(
             f"Updating transaction for {payment.invoice_number} ({payment.payment_status_code}), "
             f"Account {payment_account.auth_account_id}"
         )
 
         # For transactions other than Credit Card, there could be more than one invoice per payment.
-        invoices: List[Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
+        invoices = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
 
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             current_app.logger.info("Stale payment found.")
@@ -406,9 +405,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
-        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-            payment_method=payment.payment_method_code
-        )
+        pay_system_service = PaymentSystemFactory.create_from_payment_method(payment_method=payment.payment_method_code)
         current_app.logger.info(f"Pay system instance created {pay_system_service}")
         invoice_reference = InvoiceReference.find_any_active_reference_by_invoice_number(payment.invoice_number)
         txn_reason_code = None
