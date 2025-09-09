@@ -53,7 +53,7 @@ def test_statement_interval_change_frequency_combinations(
     mock_publish.assert_called_once()
     call_args = mock_publish.call_args[0][0]
     payload = call_args.payload
-    assert payload["item_value"] == expected_value
+    assert payload["itemValue"] == expected_value
 
 
 @pytest.mark.parametrize(
@@ -101,4 +101,4 @@ def test_statement_recipient_change_recipient_combinations(
     mock_publish.assert_called_once()
     call_args = mock_publish.call_args[0][0]
     payload = call_args.payload
-    assert payload["item_value"] == expected_value
+    assert payload["itemValue"] == expected_value
