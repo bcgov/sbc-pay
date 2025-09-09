@@ -137,7 +137,11 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
             return
         try:
-            if not (transaction := cls._should_process_transaction(invoice.id, [TransactionStatus.FAILED.value])):
+            if not (
+                transaction := cls._should_process_transaction(
+                    invoice.id, [TransactionStatus.FAILED.value, TransactionStatus.CREATED.value]
+                )
+            ):
                 return
             TransactionService.update_transaction(transaction.id, pay_response_url=None)
         except Exception as err:  # NOQA # pylint: disable=broad-except
