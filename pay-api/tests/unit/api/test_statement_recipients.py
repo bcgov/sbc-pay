@@ -84,26 +84,38 @@ def test_post_statement_notifications_add_recipients(session, client, jwt, app):
 
 
 @pytest.mark.parametrize(
-    "recipients,expected_old,expected_new,should_publish",
+    "recipients,expected_old,expected_new,statement_notification_enabled,should_publish",
     [
         (
             [{"authUserId": 123, "firstname": "John", "lastname": "Doe", "email": "john@example.com"}],
             [],
             ["john@example.com"],
             True,
+            True,
         ),
         (
             [{"authUserId": 124, "firstname": "Jane", "lastname": "Smith", "email": "jane@example.com"}],
             [],
             ["jane@example.com"],
+            False,
             True,
         ),
-        ([], [], [], False),
+        ([], [], [], True, True),  # when statement notification has changed, it should publish
+        ([], [], [], False, False),
     ],
 )
 @patch("pay_api.services.statement_recipients.ActivityLogPublisher.publish_statement_recipient_change_event")
 def test_post_statement_notifications_activity_log_add_recipients(
-    mock_publish, recipients, expected_old, expected_new, should_publish, session, client, jwt, app
+    mock_publish,
+    recipients,
+    expected_old,
+    expected_new,
+    statement_notification_enabled,
+    should_publish,
+    session,
+    client,
+    jwt,
+    app,
 ):
     """Test that the statement notifications can be updated."""
     token = jwt.create_jwt(get_claims(), token_header)
@@ -118,7 +130,11 @@ def test_post_statement_notifications_activity_log_add_recipients(
     invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    request_data = {"recipients": recipients, "statementNotificationEnabled": True, "accountName": "Test Account"}
+    request_data = {
+        "recipients": recipients,
+        "statementNotificationEnabled": statement_notification_enabled,
+        "accountName": "Test Account",
+    }
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/statements/notifications",
@@ -133,7 +149,7 @@ def test_post_statement_notifications_activity_log_add_recipients(
         assert call_args.account_id == pay_account.auth_account_id
         assert call_args.old_recipients == expected_old
         assert call_args.new_recipients == expected_new
-        assert call_args.statement_notification_email == pay_account.statement_notification_enabled
+        assert call_args.statement_notification_email == statement_notification_enabled
         assert call_args.source == QueueSources.PAY_API.value
     else:
         mock_publish.assert_not_called()
