@@ -19,13 +19,15 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import dateutil
+import pytest
 
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import StatementFrequency
+from pay_api.utils.enums import QueueSources, StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 from tests.utilities.base_test import get_claims, get_payment_request, token_header
 
@@ -40,8 +42,8 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
         headers=headers,
     )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.get(
         f"/api/v1/accounts/{pay_account.auth_account_id}/statements/settings",
@@ -80,8 +82,8 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
         headers=headers,
     )
 
-    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.get(
         f"/api/v1/accounts/{pay_account.auth_account_id}/statements/settings",
@@ -121,3 +123,99 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
     )
     assert rv.status_code == 200
     assert rv.json.get("currentFrequency").get("frequency") == StatementFrequency.MONTHLY.value
+
+
+@pytest.mark.parametrize(
+    "frequency,expected_old,expected_new,should_publish",
+    [
+        ("DAILY", StatementFrequency.WEEKLY.value, StatementFrequency.DAILY.value, True),
+        ("WEEKLY", StatementFrequency.WEEKLY.value, StatementFrequency.WEEKLY.value, False),
+        ("MONTHLY", StatementFrequency.WEEKLY.value, StatementFrequency.MONTHLY.value, True),
+    ],
+)
+@patch("pay_api.services.statement_settings.ActivityLogPublisher.publish_statement_interval_change_event")
+def test_post_statement_settings_activity_log_first_time(
+    mock_publish, frequency, expected_old, expected_new, should_publish, session, client, jwt, app
+):
+    """Test that the statement settings can be added."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
+
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    frequency_data = {"frequency": frequency}
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/settings",
+        data=json.dumps(frequency_data),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    if should_publish:
+        mock_publish.assert_called_once()
+        call_args = mock_publish.call_args[0][0]
+        assert call_args.account_id == pay_account.auth_account_id
+        assert call_args.old_frequency == expected_old
+        assert call_args.new_frequency == expected_new
+        assert call_args.source == QueueSources.PAY_API.value
+    else:
+        mock_publish.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "old_freq,new_freq,should_publish",
+    [
+        ("WEEKLY", "DAILY", True),  # Default is WEEKLY, change to DAILY
+        ("WEEKLY", "MONTHLY", True),  # Default is WEEKLY, change to MONTHLY
+        ("WEEKLY", "WEEKLY", False),  # No change from default
+    ],
+)
+@patch("pay_api.services.statement_settings.ActivityLogPublisher.publish_statement_interval_change_event")
+def test_post_statement_settings_activity_log_frequency_change(
+    mock_publish, old_freq, new_freq, should_publish, session, client, jwt, app
+):
+    """Test that the statement settings can be updated."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request(business_identifier="CP0002000")),
+        headers=headers,
+    )
+
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    old_frequency = {"frequency": old_freq}
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/settings",
+        data=json.dumps(old_frequency),
+        headers=headers,
+    )
+    mock_publish.reset_mock()
+
+    new_frequency = {"frequency": new_freq}
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/statements/settings",
+        data=json.dumps(new_frequency),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    if should_publish:
+        mock_publish.assert_called_once()
+        call_args = mock_publish.call_args[0][0]
+        assert call_args.account_id == pay_account.auth_account_id
+        assert call_args.old_frequency == old_freq
+        assert call_args.new_frequency == new_freq
+        assert call_args.source == QueueSources.PAY_API.value
+    else:
+        mock_publish.assert_not_called()
