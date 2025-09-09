@@ -54,6 +54,7 @@ class StatementRecipients:
             payment_account = PaymentAccountModel()
             payment_account.auth_account_id = auth_account_id
         payment_account.name = notification_details.get("accountName")
+        old_statement_notification_enabled = payment_account.statement_notification_enabled
         payment_account.statement_notification_enabled = notification_details.get("statementNotificationEnabled")
         payment_account.save()
 
@@ -75,7 +76,10 @@ class StatementRecipients:
             StatementRecipientsModel.bulk_save_recipients(recipient_list)
             new_recipients_emails = [r.email for r in recipient_list]
 
-            if old_recipients_emails != new_recipients_emails:
+            if (
+                old_recipients_emails != new_recipients_emails
+                or old_statement_notification_enabled != notification_details.get("statementNotificationEnabled")
+            ):
                 ActivityLogPublisher.publish_statement_recipient_change_event(
                     StatementRecipientChange(
                         account_id=payment_account.auth_account_id,
