@@ -15,6 +15,10 @@
 from dataclasses import dataclass
 from typing import Dict, List
 
+from attrs import define
+
+from pay_api.utils.serializable import Serializable
+
 
 @dataclass
 class PurchaseHistorySearch:
@@ -47,11 +51,12 @@ class StatementRecipientChange:
     account_id: str
     old_recipients: List[str]
     new_recipients: List[str]
+    statement_notification_email: bool
     source: str
 
 
-@dataclass
-class ActivityLogData:
+@define
+class ActivityLogData(Serializable):
     """Activity log data class."""
 
     actor_id: str

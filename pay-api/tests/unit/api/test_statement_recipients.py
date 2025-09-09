@@ -133,6 +133,7 @@ def test_post_statement_notifications_activity_log_add_recipients(
         assert call_args.account_id == pay_account.auth_account_id
         assert call_args.old_recipients == expected_old
         assert call_args.new_recipients == expected_new
+        assert call_args.statement_notification_email == pay_account.statement_notification_enabled
         assert call_args.source == QueueSources.PAY_API.value
     else:
         mock_publish.assert_not_called()
@@ -199,6 +200,7 @@ def test_post_statement_notifications_activity_log_update_recipients(
         new_emails = [r["email"] for r in new_recipients] if new_recipients else []
         assert call_args.old_recipients == old_emails
         assert call_args.new_recipients == new_emails
+        assert call_args.statement_notification_email == pay_account.statement_notification_enabled
         assert call_args.source == QueueSources.PAY_API.value
     else:
         mock_publish.assert_not_called()

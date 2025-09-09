@@ -37,7 +37,6 @@ class Converter(cattrs.Converter):
 
         if snake_case_to_camel:
             self.register_unstructure_hook_factory(has, self._to_camel_case_unstructure)
-
             self.register_structure_hook_factory(has, self._to_camel_case_structure)
 
     def _to_snake_case(self, camel_str: str) -> str:

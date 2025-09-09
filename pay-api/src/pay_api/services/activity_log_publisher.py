@@ -20,9 +20,9 @@ from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import ActivityLogData, StatementIntervalChange, StatementRecipientChange
 from pay_api.utils.enums import ActivityAction, QueueSources
+from pay_api.utils.user_context import UserContext, user_context
 
 
 class ActivityLogPublisher:
@@ -32,7 +32,7 @@ class ActivityLogPublisher:
     def _publish_activity_event(activity_data: ActivityLogData):
         """Publish activity events to the queue."""
         try:
-            payload = Converter(snake_case_to_camel=True).unstructure(activity_data)
+            payload = activity_data.to_dict()
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_API.value,
@@ -48,10 +48,12 @@ class ActivityLogPublisher:
             )
 
     @staticmethod
-    def publish_statement_interval_change_event(params: StatementIntervalChange):
+    @user_context
+    def publish_statement_interval_change_event(params: StatementIntervalChange, **kwargs):
         """Publish statement interval change event to the activity log queue."""
+        user: UserContext = kwargs["user"]
         activity_data = ActivityLogData(
-            actor_id=params.account_id,
+            actor_id=user.sub,
             action=ActivityAction.STATEMENT_INTERVAL_CHANGE.value,
             item_name=None,
             item_id=params.account_id,
@@ -64,8 +66,10 @@ class ActivityLogPublisher:
         ActivityLogPublisher._publish_activity_event(activity_data)
 
     @staticmethod
-    def publish_statement_recipient_change_event(params: StatementRecipientChange):
+    @user_context
+    def publish_statement_recipient_change_event(params: StatementRecipientChange, **kwargs):
         """Publish statement recipient change event to the activity log queue."""
+        user: UserContext = kwargs["user"]
         old_recipients_str = (
             ",".join(params.old_recipients).lower()
             if params.old_recipients and len(params.old_recipients) > 0
@@ -76,13 +80,14 @@ class ActivityLogPublisher:
             if params.new_recipients and len(params.new_recipients) > 0
             else "None"
         )
+        statement_notification_email_str = "enabled" if params.statement_notification_email else "disabled"
 
         activity_data = ActivityLogData(
-            actor_id=params.account_id,
+            actor_id=user.sub,
             action=ActivityAction.STATEMENT_RECIPIENT_CHANGE.value,
             item_name=None,
             item_id=params.account_id,
-            item_value=f"{old_recipients_str}|{new_recipients_str}",
+            item_value=f"{old_recipients_str}|{new_recipients_str}|{statement_notification_email_str}",
             org_id=params.account_id,
             remote_addr=request.remote_addr if request else None,
             created_at=datetime.now(tz=timezone.utc).isoformat(),

@@ -81,6 +81,7 @@ class StatementRecipients:
                         account_id=payment_account.auth_account_id,
                         old_recipients=old_recipients_emails,
                         new_recipients=new_recipients_emails,
+                        statement_notification_email=payment_account.statement_notification_enabled,
                         source=QueueSources.PAY_API.value,
                     )
                 )

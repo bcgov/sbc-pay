@@ -57,31 +57,42 @@ def test_statement_interval_change_frequency_combinations(
 
 
 @pytest.mark.parametrize(
-    "old_recipients,new_recipients,expected_value",
+    "old_recipients,new_recipients,statement_notification_email,expected_value",
     [
-        (["old1@example.com"], ["new1@example.com"], "old1@example.com|new1@example.com"),
+        (["old1@example.com"], ["new1@example.com"], True, "old1@example.com|new1@example.com|enabled"),
+        (["old1@example.com"], ["new1@example.com"], False, "old1@example.com|new1@example.com|disabled"),
         (
             ["old1@example.com", "old2@example.com"],
             ["new1@example.com"],
-            "old1@example.com,old2@example.com|new1@example.com",
+            True,
+            "old1@example.com,old2@example.com|new1@example.com|enabled",
         ),
-        ([], ["new1@example.com"], "None|new1@example.com"),
-        (["old1@example.com"], [], "old1@example.com|None"),
-        (None, ["new1@example.com"], "None|new1@example.com"),
-        (["old1@example.com"], None, "old1@example.com|None"),
-        (None, None, "None|None"),
-        (["same@example.com"], ["same@example.com"], "same@example.com|same@example.com"),
+        ([], ["new1@example.com"], True, "None|new1@example.com|enabled"),
+        (["old1@example.com"], [], False, "old1@example.com|None|disabled"),
+        (None, ["new1@example.com"], True, "None|new1@example.com|enabled"),
+        (["old1@example.com"], None, False, "old1@example.com|None|disabled"),
+        (None, None, False, "None|None|disabled"),
+        (["same@example.com"], ["same@example.com"], True, "same@example.com|same@example.com|enabled"),
     ],
 )
 @patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
 def test_statement_recipient_change_recipient_combinations(
-    mock_publish, old_recipients, new_recipients, expected_value, session, client, jwt, app
+    mock_publish,
+    old_recipients,
+    new_recipients,
+    statement_notification_email,
+    expected_value,
+    session,
+    client,
+    jwt,
+    app,
 ):
     """Test statement recipient change with different recipient combinations."""
     params = StatementRecipientChange(
         account_id="test-account-123",
         old_recipients=old_recipients,
         new_recipients=new_recipients,
+        statement_notification_email=statement_notification_email,
         source=QueueSources.PAY_API.value,
     )
 
