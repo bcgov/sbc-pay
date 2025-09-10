@@ -236,7 +236,7 @@ def test_account_lock(setup, session):
             expected_calls = [
                 call(
                     LockAccountDetails(
-                        pay_account=account1,
+                        account_id=account1.auth_account_id,
                         additional_emails="",
                         payment_method=PaymentMethod.EFT.value,
                         source="PAY-JOBS",
@@ -336,7 +336,7 @@ def test_multi_account_lock(setup, session):
             expected_calls = [
                 call(
                     LockAccountDetails(
-                        pay_account=account1,
+                        account_id=account1.auth_account_id,
                         additional_emails="",
                         payment_method=PaymentMethod.EFT.value,
                         source="PAY-JOBS",
@@ -348,7 +348,7 @@ def test_multi_account_lock(setup, session):
                 ),
                 call(
                     LockAccountDetails(
-                        pay_account=account2,
+                        account_id=account2.auth_account_id,
                         additional_emails="",
                         payment_method=PaymentMethod.EFT.value,
                         source="PAY-JOBS",

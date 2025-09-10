@@ -62,4 +62,10 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
                     if pay_account.payment_method != PaymentMethod.PAD.value:
                         pay_account.payment_method = PaymentMethod.PAD.value
                         pay_account.save()
+                        ActivityLogPublisher.publish_payment_method_change_event(
+                            account_id=pay_account.auth_account_id,
+                            old_method=pay_account.payment_method,
+                            new_method=PaymentMethod.PAD.value,
+                            source=QueueSources.PAY_JOBS.value,
+                        )
                 mailer.publish_mailer_events(QueueMessageTypes.CONFIRMATION_PERIOD_OVER.value, pay_account)

@@ -144,11 +144,14 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
 
         overdue_results = db.session.execute(overdue_query)
         accounts_to_lock = {}
+        overdue_statement_ids = {}
         # Update statement overdue_notification_date and collect accounts so we don't lock it multiple times
         for payment_account, overdue_statement in overdue_results:
             accounts_to_lock[payment_account.id] = payment_account
             overdue_statement.overdue_notification_date = datetime.now(tz=timezone.utc)
             overdue_statement.save()
+            overdue_statement_ids.setdefault(payment_account.id, [])
+            overdue_statement_ids[payment_account.id].append(overdue_statement.id)
 
         for _, payment_account in accounts_to_lock.items():
             current_app.logger.info(
@@ -161,11 +164,12 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
             if payment_account.has_overdue_invoices is None:
                 AuthEvent.publish_lock_account_event(
                     LockAccountDetails(
-                        pay_account=payment_account,
+                        account_id=payment_account.auth_account_id,
                         additional_emails=current_app.config.get("EFT_OVERDUE_NOTIFY_EMAILS"),
                         payment_method=PaymentMethod.EFT.value,
                         source=QueueSources.PAY_JOBS.value,
                         suspension_reason_code=SuspensionReasonCodes.OVERDUE_EFT.value,
+                        reversal_reason=",".join(overdue_statement_ids[payment_account.id])
                     )
                 )
 

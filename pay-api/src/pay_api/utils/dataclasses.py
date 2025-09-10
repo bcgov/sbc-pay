@@ -60,31 +60,19 @@ class StatementRecipientChangeEvent(BaseActivityEvent):
 
 
 @dataclass
-class PadNsfLockEvent(BaseActivityEvent):
-    """PAD NSF lock event data class."""
+class AccountLockEvent(BaseActivityEvent):
+    """Account lock event data class."""
 
+    current_payment_method: str
     reason: str
 
 
 @dataclass
-class PadNsfUnlockEvent(BaseActivityEvent):
-    """PAD NSF unlock event data class."""
+class AccountUnlockEvent(BaseActivityEvent):
+    """Account unlock event data class."""
 
-    payment_method: str
-
-
-@dataclass
-class EftOverdueLockEvent(BaseActivityEvent):
-    """EFT overdue lock event data class."""
-
-    statement_numbers: str
-
-
-@dataclass
-class EftOverdueUnlockEvent(BaseActivityEvent):
-    """EFT overdue unlock event data class."""
-
-    payment_method: str
+    current_payment_method: str
+    unlock_payment_method: str
 
 
 @dataclass
@@ -114,4 +102,5 @@ class ActivityLogData(Serializable):
     org_id: str
     remote_addr: str
     created_at: str
+    source: str
     item_type: str = "ACCOUNT"

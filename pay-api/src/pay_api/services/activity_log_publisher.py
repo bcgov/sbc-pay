@@ -19,24 +19,32 @@ from flask import current_app, request
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.code import Code as CodeService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.dataclasses import (
+    AccountLockEvent,
+    AccountUnlockEvent,
     ActivityLogData,
-    EftOverdueLockEvent,
-    EftOverdueUnlockEvent,
-    PadNsfLockEvent,
-    PadNsfUnlockEvent,
     PaymentInfoChangeEvent,
     PaymentMethodChangeEvent,
     StatementIntervalChangeEvent,
     StatementRecipientChangeEvent,
 )
-from pay_api.utils.enums import ActivityAction, QueueSources
+from pay_api.utils.enums import ActivityAction, Code, PaymentMethod, QueueSources
 from pay_api.utils.user_context import UserContext, user_context
 
 
 class ActivityLogPublisher:
     """Publishes activity log events to the queue."""
+
+    @staticmethod
+    def _get_payment_method_description(payment_method_code: str) -> str:
+        """Get payment method description from code."""
+        if not payment_method_code:
+            return payment_method_code
+
+        method = CodeService.find_code_value_by_type_and_code(Code.PAYMENT_METHODS.value, payment_method_code)
+        return method.get("description", payment_method_code) if method else payment_method_code
 
     @staticmethod
     def _publish_activity_event(activity_data: ActivityLogData):
@@ -45,7 +53,7 @@ class ActivityLogPublisher:
             payload = activity_data.to_dict()
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
-                    source=QueueSources.PAY_API.value,
+                    source=activity_data.source,
                     message_type=QueueMessageTypes.ACTIVITY_LOG.value,
                     payload=payload,
                     topic=current_app.config.get("AUTH_EVENT_TOPIC"),
@@ -60,7 +68,12 @@ class ActivityLogPublisher:
     @staticmethod
     @user_context
     def _create_and_publish_activity_event(
-        action: str, account_id: str, item_value: str, item_name: str = "", **kwargs
+        action: str,
+        account_id: str,
+        item_value: str,
+        item_name: str = "",
+        source: str = QueueSources.PAY_API.value,
+        **kwargs,
     ):
         """Create and publish a standard activity event."""
         user: UserContext = kwargs["user"]
@@ -73,33 +86,25 @@ class ActivityLogPublisher:
             org_id=account_id,
             remote_addr=request.remote_addr if request else None,
             created_at=datetime.now(tz=timezone.utc).isoformat(),
+            source=source,
             item_type="ACCOUNT",
         )
         ActivityLogPublisher._publish_activity_event(activity_data)
 
     @staticmethod
-    @user_context
-    def publish_statement_interval_change_event(params: StatementIntervalChangeEvent, **kwargs):
+    def publish_statement_interval_change_event(params: StatementIntervalChangeEvent):
         """Publish statement interval change event to the activity log queue."""
-        user: UserContext = kwargs["user"]
-        activity_data = ActivityLogData(
-            actor_id=user.sub,
+        item_value = f"{str(params.old_frequency).title()}|{str(params.new_frequency).title()}"
+        ActivityLogPublisher._create_and_publish_activity_event(
             action=ActivityAction.STATEMENT_INTERVAL_CHANGE.value,
-            item_name=None,
-            item_id=params.account_id,
-            item_value=f"{str(params.old_frequency).title()}|{str(params.new_frequency).title()}",
-            org_id=params.account_id,
-            remote_addr=request.remote_addr if request else None,
-            created_at=datetime.now(tz=timezone.utc).isoformat(),
-            item_type="ACCOUNT",
+            account_id=params.account_id,
+            item_value=item_value,
+            source=params.source,
         )
-        ActivityLogPublisher._publish_activity_event(activity_data)
 
     @staticmethod
-    @user_context
-    def publish_statement_recipient_change_event(params: StatementRecipientChangeEvent, **kwargs):
+    def publish_statement_recipient_change_event(params: StatementRecipientChangeEvent):
         """Publish statement recipient change event to the activity log queue."""
-        user: UserContext = kwargs["user"]
         old_recipients_str = (
             ",".join(params.old_recipients).lower()
             if params.old_recipients and len(params.old_recipients) > 0
@@ -111,84 +116,82 @@ class ActivityLogPublisher:
             else "None"
         )
         statement_notification_email_str = "enabled" if params.statement_notification_email else "disabled"
+        item_value = f"{old_recipients_str}|{new_recipients_str}|{statement_notification_email_str}"
 
-        activity_data = ActivityLogData(
-            actor_id=user.sub,
+        ActivityLogPublisher._create_and_publish_activity_event(
             action=ActivityAction.STATEMENT_RECIPIENT_CHANGE.value,
-            item_name=None,
-            item_id=params.account_id,
-            item_value=f"{old_recipients_str}|{new_recipients_str}|{statement_notification_email_str}",
-            org_id=params.account_id,
-            remote_addr=request.remote_addr if request else None,
-            created_at=datetime.now(tz=timezone.utc).isoformat(),
-            item_type="ACCOUNT",
-        )
-        ActivityLogPublisher._publish_activity_event(activity_data)
-
-    @staticmethod
-    @user_context
-    def publish_pad_nsf_lock_event(params: PadNsfLockEvent, **kwargs):
-        """Publish PAD NSF lock event to the activity log queue."""
-        ActivityLogPublisher._create_and_publish_activity_event(
-            action=ActivityAction.PAD_NSF_LOCK.value, account_id=params.account_id, item_value=params.reason, **kwargs
-        )
-
-    @staticmethod
-    @user_context
-    def publish_pad_nsf_unlock_event(params: PadNsfUnlockEvent, **kwargs):
-        """Publish PAD NSF unlock event to the activity log queue."""
-        ActivityLogPublisher._create_and_publish_activity_event(
-            action=ActivityAction.PAD_NSF_UNLOCK.value,
             account_id=params.account_id,
-            item_value=params.payment_method,
-            **kwargs,
+            item_value=item_value,
+            source=params.source,
         )
 
     @staticmethod
-    @user_context
-    def publish_eft_overdue_lock_event(params: EftOverdueLockEvent, **kwargs):
-        """Publish EFT overdue lock event to the activity log queue."""
-        ActivityLogPublisher._create_and_publish_activity_event(
-            action=ActivityAction.EFT_OVERDUE_LOCK.value,
-            account_id=params.account_id,
-            item_value=params.statement_numbers,
-            **kwargs,
-        )
-
-    @staticmethod
-    @user_context
-    def publish_eft_overdue_unlock_event(params: EftOverdueUnlockEvent, **kwargs):
-        """Publish EFT overdue unlock event to the activity log queue."""
-        ActivityLogPublisher._create_and_publish_activity_event(
-            action=ActivityAction.EFT_OVERDUE_UNLOCK.value,
-            account_id=params.account_id,
-            item_value=params.payment_method,
-            **kwargs,
-        )
-
-    @staticmethod
-    @user_context
-    def publish_payment_method_change_event(params: PaymentMethodChangeEvent, **kwargs):
+    def publish_payment_method_change_event(params: PaymentMethodChangeEvent):
         """Publish payment method change event to the activity log queue."""
-        if params.old_method and params.new_method:
-            item_value = f"{params.old_method}|{params.new_method}"
-        else:
-            item_value = params.new_method or params.old_method or ""
+        if params.old_method == params.new_method:
+            return
+
+        old_method_description = ActivityLogPublisher._get_payment_method_description(params.old_method or "")
+        new_method_description = ActivityLogPublisher._get_payment_method_description(params.new_method or "")
+        item_value = f"{old_method_description}|{new_method_description}"
 
         ActivityLogPublisher._create_and_publish_activity_event(
             action=ActivityAction.PAYMENT_METHOD_CHANGE.value,
             account_id=params.account_id,
             item_value=item_value,
-            **kwargs,
+            source=params.source,
         )
 
     @staticmethod
-    @user_context
-    def publish_payment_info_change_event(params: PaymentInfoChangeEvent, **kwargs):
+    def publish_payment_info_change_event(params: PaymentInfoChangeEvent):
         """Publish payment info change event to the activity log queue."""
+        payment_method_description = ActivityLogPublisher._get_payment_method_description(params.payment_method)
         ActivityLogPublisher._create_and_publish_activity_event(
             action=ActivityAction.PAYMENT_INFO_CHANGE.value,
             account_id=params.account_id,
-            item_value=params.payment_method,
-            **kwargs,
+            item_value=payment_method_description,
+            source=params.source,
+        )
+
+    @staticmethod
+    def publish_unlock_event(params: AccountUnlockEvent):
+        """Publish unlock event to the activity log queue based on payment method."""
+        unlock_actions = {
+            PaymentMethod.PAD.value: ActivityAction.PAD_NSF_UNLOCK.value,
+            PaymentMethod.EFT.value: ActivityAction.EFT_OVERDUE_UNLOCK.value,
+        }
+
+        action = unlock_actions.get(params.payment_method)
+        if not action:
+            current_app.logger.error(f"Unsupported payment method for unlock event: {params.unlock_payment_method}")
+            return
+
+        unlock_payment_method_description = ActivityLogPublisher._get_payment_method_description(
+            params.unlock_payment_method
+        )
+        ActivityLogPublisher._create_and_publish_activity_event(
+            action=action,
+            account_id=params.account_id,
+            item_value=unlock_payment_method_description,
+            source=params.source,
+        )
+
+    @staticmethod
+    def publish_lock_event(params: AccountLockEvent):
+        """Publish lock event to the activity log queue based on payment method."""
+        lock_actions = {
+            PaymentMethod.PAD.value: ActivityAction.PAD_NSF_LOCK.value,
+            PaymentMethod.EFT.value: ActivityAction.EFT_OVERDUE_LOCK.value,
+        }
+
+        action = lock_actions.get(params.payment_method)
+        if not action:
+            current_app.logger.error(f"Unsupported payment method for lock event: {params.payment_method}")
+            return
+
+        ActivityLogPublisher._create_and_publish_activity_event(
+            action=action,
+            account_id=params.account_id,
+            item_value=params.reason,
+            source=params.source,
         )
