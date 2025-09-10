@@ -137,6 +137,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
             return
         try:
+            # Note: CREATED is handled by find_stale_records, might not need this in the job, it doesn't handle FAILED though.
             if not (
                 transaction := cls._should_process_transaction(
                     invoice.id, [TransactionStatus.FAILED.value, TransactionStatus.CREATED.value]
