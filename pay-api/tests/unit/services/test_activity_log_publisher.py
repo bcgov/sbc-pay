@@ -22,7 +22,7 @@ from unittest.mock import patch
 import pytest
 
 from pay_api.services.activity_log_publisher import ActivityLogPublisher
-from pay_api.utils.dataclasses import ActivityLogData, StatementIntervalChange, StatementRecipientChange
+from pay_api.utils.dataclasses import ActivityLogData, StatementIntervalChangeEvent, StatementRecipientChangeEvent
 from pay_api.utils.enums import ActivityAction, QueueSources
 
 
@@ -41,7 +41,7 @@ def test_statement_interval_change_frequency_combinations(
     mock_publish, old_frequency, new_frequency, expected_value, session, client, jwt, app
 ):
     """Test statement interval change with different frequency combinations."""
-    params = StatementIntervalChange(
+    params = StatementIntervalChangeEvent(
         account_id="test-account-123",
         old_frequency=old_frequency,
         new_frequency=new_frequency,
@@ -88,7 +88,7 @@ def test_statement_recipient_change_recipient_combinations(
     app,
 ):
     """Test statement recipient change with different recipient combinations."""
-    params = StatementRecipientChange(
+    params = StatementRecipientChangeEvent(
         account_id="test-account-123",
         old_recipients=old_recipients,
         new_recipients=new_recipients,

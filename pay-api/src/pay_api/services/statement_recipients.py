@@ -20,7 +20,7 @@ from pay_api.models import StatementRecipients as StatementRecipientsModel
 from pay_api.models import StatementRecipientsSchema as NotificationSchema
 from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.services.activity_log_publisher import ActivityLogPublisher
-from pay_api.utils.dataclasses import StatementRecipientChange
+from pay_api.utils.dataclasses import StatementRecipientChangeEvent
 from pay_api.utils.enums import QueueSources
 
 
@@ -81,7 +81,7 @@ class StatementRecipients:
                 or old_statement_notification_enabled != notification_details.get("statementNotificationEnabled")
             ):
                 ActivityLogPublisher.publish_statement_recipient_change_event(
-                    StatementRecipientChange(
+                    StatementRecipientChangeEvent(
                         account_id=payment_account.auth_account_id,
                         old_recipients=old_recipients_emails,
                         new_recipients=new_recipients_emails,
