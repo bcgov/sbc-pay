@@ -244,6 +244,7 @@ def test_account_lock(setup, session):
                         outstanding_amount=None,
                         original_amount=None,
                         amount=None,
+                        reversal_reason=f'{statements[0][0].id},{statements[0][1].id}'
                     )
                 )
             ]
