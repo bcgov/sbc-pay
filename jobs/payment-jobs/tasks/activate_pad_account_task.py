@@ -21,8 +21,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import ActivityLogPublisher
 from pay_api.services.flags import flags
 from pay_api.utils.dataclasses import PaymentMethodChangeEvent
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
-from pay_api.utils.enums import QueueSources
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, QueueSources
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from utils import mailer

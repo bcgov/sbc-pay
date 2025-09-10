@@ -169,7 +169,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
                         payment_method=PaymentMethod.EFT.value,
                         source=QueueSources.PAY_JOBS.value,
                         suspension_reason_code=SuspensionReasonCodes.OVERDUE_EFT.value,
-                        reversal_reason=",".join(map(str, overdue_statement_ids[payment_account.id]))
+                        reversal_reason=",".join(map(str, overdue_statement_ids[payment_account.id])),
                     )
                 )
 
