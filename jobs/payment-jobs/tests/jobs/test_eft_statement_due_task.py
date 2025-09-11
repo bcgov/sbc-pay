@@ -134,15 +134,22 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
     total_amount_owing = summary["total_due"]
 
     with patch("pay_api.utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
-        with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
-            with freeze_time(action_on):
-                # Statement due task looks at the month before.
-                EFTStatementDueTask.process_unpaid_statements(statement_date_override=datetime(2023, 2, 1, 0))
-                if action == StatementNotificationAction.OVERDUE:
-                    mock_auth_event.assert_called()
-                    assert statements[0][0].overdue_notification_date
-                    assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
-                    assert account.has_overdue_invoices
+        with patch("pay_api.utils.auth_event.ActivityLogPublisher.publish_lock_event") as mock_activity_log:
+            with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
+                with freeze_time(action_on):
+                    # Statement due task looks at the month before.
+                    EFTStatementDueTask.process_unpaid_statements(statement_date_override=datetime(2023, 2, 1, 0))
+                    if action == StatementNotificationAction.OVERDUE:
+                        mock_auth_event.assert_called()
+                        mock_activity_log.assert_called()
+                        call_args = mock_activity_log.call_args[0][0]
+                        assert call_args.account_id == account.auth_account_id
+                        assert call_args.current_payment_method == PaymentMethod.EFT.value
+                        assert call_args.source == "PAY_JOBS"
+                        assert call_args.reversal_reason is not None
+                        assert statements[0][0].overdue_notification_date
+                        assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
+                        assert account.has_overdue_invoices
                 else:
                     due_date = statements[0][0].to_date + relativedelta(months=1)
                     mock_mailer.assert_called_with(

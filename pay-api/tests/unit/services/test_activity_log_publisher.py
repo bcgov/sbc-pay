@@ -127,17 +127,17 @@ def test_publish_payment_info_change_event(mock_publish, session, client, jwt, a
     payload = call_args.payload
     assert payload["action"] == ActivityAction.PAYMENT_INFO_CHANGE.value
     assert payload["orgId"] == "test-account-123"
-    assert payload["itemValue"] == PaymentMethod.PAD.value
+    assert payload["itemValue"] == "Pre Authorized Debit"
 
 
 @pytest.mark.parametrize(
     "old_method,new_method,expected_value",
     [
-        ("PAD", "EFT", "PAD|EFT"),
-        ("EFT", "PAD", "EFT|PAD"),
-        ("CC", "ONLINE_BANKING", "CC|ONLINE_BANKING"),
-        (None, "PAD", "PAD"),
-        ("PAD", "PAD", "PAD|PAD"),
+        ("PAD", "EFT", "Pre Authorized Debit|Electronic Funds Transfer"),
+        ("EFT", "PAD", "Electronic Funds Transfer|Pre Authorized Debit"),
+        ("CC", "ONLINE_BANKING", "Credit Card|Online Banking"),
+        (None, "PAD", "Pre Authorized Debit"),
+        ("PAD", "PAD", "Pre Authorized Debit|Pre Authorized Debit"),
     ],
 )
 @patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")

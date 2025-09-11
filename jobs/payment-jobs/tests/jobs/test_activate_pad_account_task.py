@@ -64,7 +64,8 @@ def test_activate_pad_accounts_with_time_check(session):
         assert account.payment_method == PaymentMethod.PAD.value
 
 
-def test_activate_bcol_change_to_pad(session):
+@patch("tasks.activate_pad_account_task.ActivityLogPublisher.publish_payment_method_change_event")
+def test_activate_bcol_change_to_pad(mock_publish, session):
     """Test Activate account."""
     # Create a pending account first, then call the job
     account = factory_create_pad_account(auth_account_id="1", payment_method=PaymentMethod.DRAWDOWN.value)
@@ -92,3 +93,11 @@ def test_activate_bcol_change_to_pad(session):
         ), "After the confirmation period is over , status should be active"
         account = PaymentAccount.find_by_id(account.id)
         assert account.payment_method == PaymentMethod.PAD.value
+        
+        # Verify ActivityLogPublisher was called for payment method change
+        mock_publish.assert_called_once()
+        call_args = mock_publish.call_args[0][0]
+        assert call_args.account_id == account.auth_account_id
+        assert call_args.old_method == PaymentMethod.DRAWDOWN.value
+        assert call_args.new_method == PaymentMethod.PAD.value
+        assert call_args.source == QueueSources.PAY_JOBS.value

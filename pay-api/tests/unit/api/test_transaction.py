@@ -19,12 +19,14 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 
 import json
 import uuid
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 from requests.exceptions import ConnectionError
 
+from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import PaymentMethod
+from pay_api.utils.enums import PaymentMethod, QueueSources
 from tests import skip_in_pod
 from tests.utilities.base_test import (
     factory_invoice,
@@ -460,11 +462,21 @@ def test_transaction_patch_direct_pay(session, client, jwt, app):
     # Get payment details
 
 
-def test_transaction_post_for_nsf_payment(session, client, jwt, app):
+@patch("pay_api.services.payment_account.ActivityLogPublisher.publish_unlock_event")
+@patch("pay_api.services.payment_transaction.PaymentSystemFactory.create_from_payment_method")
+def test_transaction_post_for_nsf_payment(mock_payment_system_factory, mock_unlock, session, client, jwt, app):
     """Assert that the endpoint returns 201."""
+    # Mock the payment system service to return valid receipt details
+    mock_payment_system = mock_payment_system_factory.return_value
+    mock_payment_system.get_receipt.return_value = ("12345", "2024-01-01", 100.00)
+    mock_payment_system.get_pay_system_reason_code.return_value = None
+    
     inv_number_1 = "REG00001"
-    payment_account = factory_payment_account().save()
-    invoice_1 = factory_invoice(payment_account, total=100)
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
+    payment_account.has_nsf_invoices = datetime.now(tz=timezone.utc)
+    payment_account.save()
+    cfs_account = CfsAccountModel.find_latest_account_by_account_id(payment_account.id)
+    invoice_1 = factory_invoice(payment_account, total=10, cfs_account_id=cfs_account.id)
     invoice_1.save()
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
     factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
@@ -504,6 +516,24 @@ def test_transaction_post_for_nsf_payment(session, client, jwt, app):
     assert rv.json.get("paymentId") == payment_2.id
 
     assert schema_utils.validate(rv.json, "transaction")[0]
+    
+    # Complete the payment to trigger unlock
+    txn_id = rv.json.get("id")
+    rv = client.patch(
+        f"/api/v1/payments/{payment_2.id}/transactions/{txn_id}",
+        data=json.dumps({"payResponseUrl": f"trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=100.00&paymentMethod=CC&pbcTxnNumber={inv_number_1}&hashValue=test"}),
+        headers={"content-type": "application/json"},
+    )
+    
+    assert rv.status_code == 200
+    
+    # Verify ActivityLogPublisher was called for PAD NSF unlock event
+    mock_unlock.assert_called_once()
+    call_args = mock_unlock.call_args[0][0]
+    assert call_args.account_id == payment_account.auth_account_id
+    assert call_args.current_payment_method == PaymentMethod.PAD.value
+    assert call_args.unlock_payment_method == PaymentMethod.CC.value
+    assert call_args.source == QueueSources.PAY_API.value
 
 
 def test_valid_redirect_url(session, jwt, client, app):

@@ -25,6 +25,7 @@ from pay_api import create_app
 from pay_api import jwt as _jwt
 from pay_api import setup_jwt_manager
 from pay_api.models import db as _db
+from pay_api.services.code import Code as CodeService
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -136,6 +137,13 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
                 transaction.rollback()
                 event.remove(sess, "after_transaction_end", restart_savepoint)
                 db.session = old_session
+
+
+@pytest.fixture(scope="function", autouse=True)
+def setup_code_service(session, app):
+    """Set up CodeService cache for unit tests."""
+    with app.app_context():
+        CodeService.build_all_codes_cache()
 
 
 @pytest.fixture()
