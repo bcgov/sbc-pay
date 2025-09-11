@@ -145,7 +145,7 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
                         call_args = mock_activity_log.call_args[0][0]
                         assert call_args.account_id == account.auth_account_id
                         assert call_args.current_payment_method == PaymentMethod.EFT.value
-                        assert call_args.source == "PAY_JOBS"
+                        assert call_args.source == QueueSources.PAY_JOBS.value
                         assert call_args.reversal_reason is not None
                         assert statements[0][0].overdue_notification_date
                         assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)

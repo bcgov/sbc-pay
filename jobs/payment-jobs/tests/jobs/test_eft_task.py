@@ -545,7 +545,7 @@ def test_unlock_overdue_accounts(session):
             assert call_args.account_id == payment_account.auth_account_id
             assert call_args.current_payment_method == PaymentMethod.EFT.value
             assert call_args.unlock_payment_method == PaymentMethod.EFT.value
-            assert call_args.source == "PAY_JOBS"
+            assert call_args.source == QueueSources.PAY_JOBS.value
             mock_gcp_publisher.assert_called()
 
 
