@@ -82,14 +82,22 @@ def test_auth_for_client_user_roles_for_error(session, public_user_mock, roles, 
         assert excinfo.exception.code == 403
 
 
-@pytest.mark.parametrize("function,header,input_value,expected", [
-    (get_original_user_sub, "Original-Sub", "123-abc!@#$%^&*()_+{}|:<>?[];'\",./", "123-abc"),
-    (get_original_username, "Original-Username", "user@domain\\test!@#$%^&*()_+{}|:<>?[];'\",./", "user@domain\\test@"),
-    (get_original_user_sub, "Original-Sub", "", None),
-    (get_original_username, "Original-Username", "", None),
-    (get_original_user_sub, "Original-Sub", "!@#$%^&*()_+{}|:<>?[];'\",./", None),
-    (get_original_username, "Original-Username", "!@#$%^&*()_+{}|:<>?[];'\",./", "@"),
-])
+@pytest.mark.parametrize(
+    "function,header,input_value,expected",
+    [
+        (get_original_user_sub, "Original-Sub", "123-abc!@#$%^&*()_+{}|:<>?[];'\",./", "123-abc"),
+        (
+            get_original_username,
+            "Original-Username",
+            "user@domain\\test!@#$%^&*()_+{}|:<>?[];'\",./",
+            "user@domain\\test@",
+        ),
+        (get_original_user_sub, "Original-Sub", "", None),
+        (get_original_username, "Original-Username", "", None),
+        (get_original_user_sub, "Original-Sub", "!@#$%^&*()_+{}|:<>?[];'\",./", None),
+        (get_original_username, "Original-Username", "!@#$%^&*()_+{}|:<>?[];'\",./", "@"),
+    ],
+)
 def test_sanitization(function, header, input_value, expected):
     """Test sanitization for both functions with various inputs."""
     with patch("pay_api.utils.user_context.request") as mock_request:
