@@ -27,12 +27,12 @@ from pay_api import setup_jwt_manager
 from pay_api.models import db as _db
 from pay_api.services.code import Code as CodeService
 
-
 @pytest.fixture(scope="session", autouse=True)
 def app():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app("testing")
-    return _app
+    with _app.test_request_context():
+        yield _app
 
 
 @pytest.fixture(scope="function", autouse=True)
