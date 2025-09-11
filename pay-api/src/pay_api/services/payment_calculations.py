@@ -154,8 +154,8 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict, stateme
         method_context.service_fees_total = summary.get("service_fees_total", 0.0)
         method_context.gst_total = summary.get("gst_total", 0.0)
         refunds_total = summary.get("refunds_total", 0.0)
-        credits_total = summary.get("credits_total", 0.0)
         method_context.refunds_total = refunds_total if refunds_total != 0.0 else None
+        credits_total = summary.get("credits_total", 0.0)
         method_context.credits_total = credits_total if credits_total != 0.0 else None
         method_context.statement_header_text = statement_header_text
         method_context.include_service_provided = any(t.get("service_provided", False) for t in transactions)
@@ -218,8 +218,12 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
         db.session.query(
             func.coalesce(func.sum(InvoiceModel.paid), 0).label("paid_summary"),
             func.coalesce(func.sum(InvoiceModel.total), 0).label("totals_summary"),
-            func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0).label("due_summary"),
-            func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.service_fees - InvoiceModel.gst), 0).label("fees_total"),
+            func.coalesce(
+                func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0
+            ).label("due_summary"),
+            func.coalesce(
+                func.sum(InvoiceModel.total - InvoiceModel.service_fees - InvoiceModel.gst), 0
+            ).label("fees_total"),
             func.coalesce(func.sum(InvoiceModel.service_fees), 0).label("service_fees_total"),
             func.coalesce(func.sum(InvoiceModel.gst), 0).label("gst_total"),
             func.coalesce(

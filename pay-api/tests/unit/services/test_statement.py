@@ -794,14 +794,22 @@ def test_get_eft_statement_with_invoices(session):
             "groupedInvoices": [
                 {
                     "amount_owing": "400.00",
+                    'credits_total': None,
                     "due_date": get_statement_date_string(
                         StatementService.calculate_due_date(statement_to_date.date())
                     ),  # pylint: disable=protected-access
                     "due_summary": 400.0,
+                    'fees_total': 468.75,
+                    'gst_total': 6.25,
+                    'refunds_total': None,
                     "include_service_provided": True,
                     "is_index_0": True,
+                    'is_staff_payment': None,
+                    'latest_payment_date': None,
                     "paid_summary": 100.0,
                     "payment_method": "EFT",
+                    'refunds_total': None,
+                    'service_fees_total': 25.0,
                     "statement_header_text": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
                     "total_paid": "100.00",
                     "totals_summary": 500.0,
