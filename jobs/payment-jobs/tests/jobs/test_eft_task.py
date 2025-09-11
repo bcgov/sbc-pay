@@ -27,7 +27,7 @@ from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus
 from pay_api.utils.enums import EFTCreditInvoiceStatus as EFTCilStatus
 from pay_api.utils.enums import EFTHistoricalTypes
 from pay_api.utils.enums import InvoiceReferenceStatus as InvoiceRefStatus
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources
 
 from tasks.eft_task import EFTTask
 

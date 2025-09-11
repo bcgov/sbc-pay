@@ -251,7 +251,7 @@ def test_account_lock(setup, session):
                         outstanding_amount=None,
                         original_amount=None,
                         amount=None,
-                        reversal_reason=ANY
+                        reversal_reason=ANY,
                     )
                 )
             ]
@@ -352,7 +352,7 @@ def test_multi_account_lock(setup, session):
                         outstanding_amount=None,
                         original_amount=None,
                         amount=None,
-                        reversal_reason=ANY
+                        reversal_reason=ANY,
                     )
                 ),
                 call(
@@ -365,7 +365,7 @@ def test_multi_account_lock(setup, session):
                         outstanding_amount=None,
                         original_amount=None,
                         amount=None,
-                        reversal_reason=ANY
+                        reversal_reason=ANY,
                     )
                 ),
             ]
