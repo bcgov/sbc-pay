@@ -523,7 +523,8 @@ def test_transaction_post_for_nsf_payment(mock_payment_system_factory, mock_unlo
         f"/api/v1/payments/{payment_2.id}/transactions/{txn_id}",
         data=json.dumps(
             {
-                "payResponseUrl": f"trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=100.00&paymentMethod=CC&pbcTxnNumber={inv_number_1}&hashValue=test"
+                "payResponseUrl": "trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=100.00"
+                f"&paymentMethod=CC&pbcTxnNumber={inv_number_1}&hashValue=test"
             }
         ),
         headers={"content-type": "application/json"},
