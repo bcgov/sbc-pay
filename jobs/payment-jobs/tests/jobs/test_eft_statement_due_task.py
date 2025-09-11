@@ -150,19 +150,19 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
                         assert statements[0][0].overdue_notification_date
                         assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
                         assert account.has_overdue_invoices
-                else:
-                    due_date = statements[0][0].to_date + relativedelta(months=1)
-                    mock_mailer.assert_called_with(
-                        StatementNotificationInfo(
-                            auth_account_id=account.auth_account_id,
-                            statement=statements[0][0],
-                            action=action,
-                            due_date=due_date,
-                            emails=statement_recipient.email,
-                            total_amount_owing=total_amount_owing,
-                            short_name_links_count=0,
+                    else:
+                        due_date = statements[0][0].to_date + relativedelta(months=1)
+                        mock_mailer.assert_called_with(
+                            StatementNotificationInfo(
+                                auth_account_id=account.auth_account_id,
+                                statement=statements[0][0],
+                                action=action,
+                                due_date=due_date,
+                                emails=statement_recipient.email,
+                                total_amount_owing=total_amount_owing,
+                                short_name_links_count=0,
+                            )
                         )
-                    )
 
 
 def test_unpaid_statement_notification_not_sent(setup, session):
