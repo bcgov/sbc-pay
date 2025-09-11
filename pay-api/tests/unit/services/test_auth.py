@@ -98,7 +98,7 @@ def test_auth_for_client_user_roles_for_error(session, public_user_mock, roles, 
         (get_original_username, "Original-Username", "!@#$%^&*()_+{}|:<>?[];'\",./", None),
     ],
 )
-def test_sanitization(function, header, input_value, expected):
+def test_sanitization(session, function, header, input_value, expected):
     """Test sanitization for both functions with various inputs."""
     with patch("pay_api.utils.user_context.request") as mock_request:
         mock_request.headers = {header: input_value}
@@ -107,7 +107,7 @@ def test_sanitization(function, header, input_value, expected):
 
 
 @pytest.mark.parametrize("function", [get_original_user_sub, get_original_username])
-def test_non_system_user_returns_none(function):
+def test_non_system_user_returns_none(session, function):
     """Test both functions return None for non-system users."""
     result = function(is_system=False)
     assert result is None
@@ -120,7 +120,7 @@ def test_non_system_user_returns_none(function):
         (get_original_username, "Original-Username"),
     ],
 )
-def test_no_request_returns_none(function, header):
+def test_no_request_returns_none(session, function, header):
     """Test both functions return None when request is None."""
     with patch("pay_api.utils.user_context.request", None):
         result = function(is_system=True)
@@ -134,7 +134,7 @@ def test_no_request_returns_none(function, header):
         (get_original_username, "Original-Username"),
     ],
 )
-def test_missing_header_returns_none(function, header):
+def test_missing_header_returns_none(session, function, header):
     """Test both functions return None when header is missing."""
     with patch("pay_api.utils.user_context.request") as mock_request:
         mock_request.headers = {}
