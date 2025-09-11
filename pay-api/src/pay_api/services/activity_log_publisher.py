@@ -133,7 +133,11 @@ class ActivityLogPublisher:
 
         old_method_description = ActivityLogPublisher._get_payment_method_description(params.old_method or "")
         new_method_description = ActivityLogPublisher._get_payment_method_description(params.new_method or "")
-        item_value = f"{old_method_description}|{new_method_description}"
+        item_value = (
+            new_method_description
+            if not old_method_description
+            else f"{old_method_description}|{new_method_description}"
+        )
 
         ActivityLogPublisher._create_and_publish_activity_event(
             action=ActivityAction.PAYMENT_METHOD_CHANGE.value,
@@ -161,9 +165,9 @@ class ActivityLogPublisher:
             PaymentMethod.EFT.value: ActivityAction.EFT_OVERDUE_UNLOCK.value,
         }
 
-        action = unlock_actions.get(params.payment_method)
+        action = unlock_actions.get(params.current_payment_method)
         if not action:
-            current_app.logger.error(f"Unsupported payment method for unlock event: {params.unlock_payment_method}")
+            current_app.logger.error(f"Unsupported payment method for unlock event: {params.current_payment_method}")
             return
 
         unlock_payment_method_description = ActivityLogPublisher._get_payment_method_description(
@@ -184,9 +188,9 @@ class ActivityLogPublisher:
             PaymentMethod.EFT.value: ActivityAction.EFT_OVERDUE_LOCK.value,
         }
 
-        action = lock_actions.get(params.payment_method)
+        action = lock_actions.get(params.current_payment_method)
         if not action:
-            current_app.logger.error(f"Unsupported payment method for lock event: {params.payment_method}")
+            current_app.logger.error(f"Unsupported payment method for lock event: {params.current_payment_method}")
             return
 
         ActivityLogPublisher._create_and_publish_activity_event(

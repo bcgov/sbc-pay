@@ -22,8 +22,15 @@ from unittest.mock import patch
 import pytest
 
 from pay_api.services.activity_log_publisher import ActivityLogPublisher
-from pay_api.utils.dataclasses import ActivityLogData, StatementIntervalChangeEvent, StatementRecipientChangeEvent
-from pay_api.utils.enums import ActivityAction, QueueSources
+from pay_api.utils.dataclasses import (
+    AccountLockEvent,
+    AccountUnlockEvent,
+    PaymentInfoChangeEvent,
+    PaymentMethodChangeEvent,
+    StatementIntervalChangeEvent,
+    StatementRecipientChangeEvent,
+)
+from pay_api.utils.enums import ActivityAction, PaymentMethod, QueueSources
 
 
 @pytest.mark.parametrize(
@@ -102,3 +109,122 @@ def test_statement_recipient_change_recipient_combinations(
     call_args = mock_publish.call_args[0][0]
     payload = call_args.payload
     assert payload["itemValue"] == expected_value
+
+
+@patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
+def test_publish_payment_info_change_event(mock_publish, session, client, jwt, app):
+    """Test payment info change event publishing."""
+    params = PaymentInfoChangeEvent(
+        account_id="test-account-123",
+        payment_method=PaymentMethod.PAD.value,
+        source=QueueSources.PAY_API.value,
+    )
+
+    ActivityLogPublisher.publish_payment_info_change_event(params)
+
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args[0][0]
+    payload = call_args.payload
+    assert payload["action"] == ActivityAction.PAYMENT_INFO_CHANGE.value
+    assert payload["orgId"] == "test-account-123"
+    assert payload["itemValue"] == PaymentMethod.PAD.value
+
+
+@pytest.mark.parametrize(
+    "old_method,new_method,expected_value",
+    [
+        ("PAD", "EFT", "PAD|EFT"),
+        ("EFT", "PAD", "EFT|PAD"),
+        ("CC", "ONLINE_BANKING", "CC|ONLINE_BANKING"),
+        (None, "PAD", "PAD"),
+        ("PAD", "PAD", "PAD|PAD"),
+    ],
+)
+@patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
+def test_publish_payment_method_change_event_combinations(
+    mock_publish, old_method, new_method, expected_value, session, client, jwt, app
+):
+    """Test payment method change event with different method combinations."""
+    params = PaymentMethodChangeEvent(
+        account_id="test-account-123",
+        old_method=old_method,
+        new_method=new_method,
+        source=QueueSources.PAY_API.value,
+    )
+
+    ActivityLogPublisher.publish_payment_method_change_event(params)
+
+    if old_method == new_method:
+        mock_publish.assert_not_called()
+    else:
+        mock_publish.assert_called_once()
+        call_args = mock_publish.call_args[0][0]
+        payload = call_args.payload
+        assert payload["action"] == ActivityAction.PAYMENT_METHOD_CHANGE.value
+        assert payload["orgId"] == "test-account-123"
+        assert payload["itemValue"] == expected_value
+
+
+@pytest.mark.parametrize(
+    "payment_method,expected_action,should_publish",
+    [
+        (PaymentMethod.PAD.value, ActivityAction.PAD_NSF_LOCK.value, True),
+        (PaymentMethod.EFT.value, ActivityAction.EFT_OVERDUE_LOCK.value, True),
+        ("UNSUPPORTED", None, False),
+    ],
+)
+@patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
+def test_publish_lock_event_payment_methods(
+    mock_publish, payment_method, expected_action, should_publish, session, client, jwt, app
+):
+    """Test lock event publishing for different payment methods and unsupported methods."""
+    params = AccountLockEvent(
+        account_id="test-account-123",
+        current_payment_method=payment_method,
+        reason="Test lock reason",
+        source=QueueSources.PAY_API.value,
+    )
+
+    ActivityLogPublisher.publish_lock_event(params)
+
+    if should_publish:
+        mock_publish.assert_called_once()
+        call_args = mock_publish.call_args[0][0]
+        payload = call_args.payload
+        assert payload["action"] == expected_action
+        assert payload["orgId"] == "test-account-123"
+        assert payload["itemValue"] == "Test lock reason"
+    else:
+        mock_publish.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "payment_method,expected_action,should_publish",
+    [
+        (PaymentMethod.PAD.value, ActivityAction.PAD_NSF_UNLOCK.value, True),
+        (PaymentMethod.EFT.value, ActivityAction.EFT_OVERDUE_UNLOCK.value, True),
+        ("UNSUPPORTED", None, False),
+    ],
+)
+@patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
+def test_publish_unlock_event_payment_methods(
+    mock_publish, payment_method, expected_action, should_publish, session, client, jwt, app
+):
+    """Test unlock event publishing for different payment methods and unsupported methods."""
+    params = AccountUnlockEvent(
+        account_id="test-account-123",
+        current_payment_method=payment_method,
+        unlock_payment_method=PaymentMethod.CC.value,
+        source=QueueSources.PAY_API.value,
+    )
+
+    ActivityLogPublisher.publish_unlock_event(params)
+
+    if should_publish:
+        mock_publish.assert_called_once()
+        call_args = mock_publish.call_args[0][0]
+        payload = call_args.payload
+        assert payload["action"] == expected_action
+        assert payload["orgId"] == "test-account-123"
+    else:
+        mock_publish.assert_not_called()
