@@ -536,18 +536,17 @@ def test_unlock_overdue_accounts(session):
     factory_invoice_reference(invoice_id=invoice_2.id)
     factory_create_eft_credit_invoice_link(invoice_id=invoice_2.id, eft_credit_id=eft_credit.id, amount=10)
 
-    with patch("pay_api.utils.auth_event.AuthEvent.publish_unlock_account_event") as mock_unlock:
-        with patch("pay_api.utils.auth_event.ActivityLogPublisher.publish_unlock_event") as mock_activity_log:
+    with patch("pay_api.utils.auth_event.ActivityLogPublisher.publish_unlock_event") as mock_activity_log:
+        with patch("pay_api.services.gcp_queue_publisher.publish_to_queue") as mock_gcp_publisher:
             EFTTask.link_electronic_funds_transfers_cfs()
             assert payment_account.has_overdue_invoices is None
-            mock_unlock.assert_called_once()
-            mock_unlock.assert_called_with(payment_account)
             mock_activity_log.assert_called_once()
             call_args = mock_activity_log.call_args[0][0]
             assert call_args.account_id == payment_account.auth_account_id
             assert call_args.current_payment_method == PaymentMethod.EFT.value
             assert call_args.unlock_payment_method == PaymentMethod.EFT.value
             assert call_args.source == "PAY_JOBS"
+            mock_gcp_publisher.assert_called()
 
 
 @pytest.mark.parametrize(
