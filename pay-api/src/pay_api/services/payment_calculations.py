@@ -96,7 +96,7 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict, stateme
         items = grouped[method]
         transactions = build_transaction_rows(items, method)
         summary = calculate_invoice_summaries(items, method, statement)
-
+        has_staff_payment = False
         if method == PaymentMethod.INTERNAL.value:
             has_staff_payment = any("routing_slip" not in inv or inv["routing_slip"] is None for inv in items)
             statement_header_text = (
