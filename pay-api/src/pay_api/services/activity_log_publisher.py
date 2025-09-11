@@ -149,6 +149,12 @@ class ActivityLogPublisher:
     @staticmethod
     def publish_payment_info_change_event(params: PaymentInfoChangeEvent):
         """Publish payment info change event to the activity log queue."""
+        if params.payment_method not in (
+            PaymentMethod.EJV.value,
+            PaymentMethod.PAD.value,
+            PaymentMethod.DRAWDOWN.value,
+        ):
+            return
         payment_method_description = ActivityLogPublisher._get_payment_method_description(params.payment_method)
         ActivityLogPublisher._create_and_publish_activity_event(
             action=ActivityAction.PAYMENT_INFO_CHANGE.value,
