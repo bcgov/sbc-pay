@@ -106,7 +106,7 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict, stateme
             statement_header_text = StatementTitles[method].value
 
         method_context = {
-            **{k: v for k, v in summary.items() if k not in ("refunds_total", "credits_total")},
+            **summary,
             "payment_method": method,
             "total_paid": get_statement_currency_string(sum(Decimal(inv.get("paid", 0)) for inv in items)),
             "transactions": transactions,
@@ -124,11 +124,6 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict, stateme
 
         if method == PaymentMethod.INTERNAL.value:
             method_context["is_staff_payment"] = has_staff_payment
-
-        for key in ("refunds_total", "credits_total"):
-            # refunds_taotal and credits_total not includes when they are 0
-            if summary.get(key):
-                method_context[key] = summary[key]
 
         grouped_invoices.append(method_context)
         first_group = False
