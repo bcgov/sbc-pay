@@ -1,8 +1,8 @@
 """Common code that sends AUTH events."""
 
-from dataclasses import dataclass
 from typing import Optional
 
+from attrs import define
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
 
@@ -12,10 +12,11 @@ from pay_api.services.activity_log_publisher import ActivityLogPublisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.dataclasses import AccountLockEvent, AccountUnlockEvent
 from pay_api.utils.enums import PaymentMethod, QueueSources
+from pay_api.utils.serializable import Serializable
 
 
-@dataclass
-class LockAccountDetails:
+@define
+class LockAccountDetails(Serializable):
     """Lock account details."""
 
     account_id: str
