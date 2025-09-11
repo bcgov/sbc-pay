@@ -747,7 +747,7 @@ def test_premium_account_update(mock_publish, session, client, jwt, app):
     )
 
     assert rv.status_code == 200
-    
+
     # Verify ActivityLogPublisher was called for payment method change
     mock_publish.assert_called()
     call_args = mock_publish.call_args[0][0]
@@ -785,7 +785,7 @@ def test_create_pad_account_when_cfs_up(mock_publish, session, client, jwt, app)
     )
 
     assert rv.status_code == 202
-    
+
     # Verify ActivityLogPublisher was called for payment method change
     mock_publish.assert_called()
     call_args = mock_publish.call_args[0][0]
@@ -998,7 +998,7 @@ def test_create_gov_accounts(mock_publish, session, client, jwt, app):
     rv = client.post("/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers)
 
     assert rv.status_code == 201
-    
+
     # Verify ActivityLogPublisher was called for payment info change event
     mock_publish.assert_called()
     call_args = mock_publish.call_args[0][0]

@@ -29,7 +29,7 @@ from pay_api.models import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.services import Statement as StatementService
 from pay_api.utils.auth_event import LockAccountDetails
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources, StatementFrequency
 from pay_api.utils.util import current_local_time
 
 import config

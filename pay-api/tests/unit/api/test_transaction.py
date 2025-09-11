@@ -470,7 +470,7 @@ def test_transaction_post_for_nsf_payment(mock_payment_system_factory, mock_unlo
     mock_payment_system = mock_payment_system_factory.return_value
     mock_payment_system.get_receipt.return_value = ("12345", "2024-01-01", 100.00)
     mock_payment_system.get_pay_system_reason_code.return_value = None
-    
+
     inv_number_1 = "REG00001"
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
     payment_account.has_nsf_invoices = datetime.now(tz=timezone.utc)
@@ -516,17 +516,21 @@ def test_transaction_post_for_nsf_payment(mock_payment_system_factory, mock_unlo
     assert rv.json.get("paymentId") == payment_2.id
 
     assert schema_utils.validate(rv.json, "transaction")[0]
-    
+
     # Complete the payment to trigger unlock
     txn_id = rv.json.get("id")
     rv = client.patch(
         f"/api/v1/payments/{payment_2.id}/transactions/{txn_id}",
-        data=json.dumps({"payResponseUrl": f"trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=100.00&paymentMethod=CC&pbcTxnNumber={inv_number_1}&hashValue=test"}),
+        data=json.dumps(
+            {
+                "payResponseUrl": f"trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=100.00&paymentMethod=CC&pbcTxnNumber={inv_number_1}&hashValue=test"
+            }
+        ),
         headers={"content-type": "application/json"},
     )
-    
+
     assert rv.status_code == 200
-    
+
     # Verify ActivityLogPublisher was called for PAD NSF unlock event
     mock_unlock.assert_called_once()
     call_args = mock_unlock.call_args[0][0]
