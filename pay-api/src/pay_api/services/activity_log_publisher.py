@@ -77,8 +77,10 @@ class ActivityLogPublisher:
     ):
         """Create and publish a standard activity event."""
         user: UserContext = kwargs["user"]
+        # Original sub convers the case where we have a service account, this is empty on NON SYSTEM users.
+        actor_id = user.original_sub or user.sub
         activity_data = ActivityLogData(
-            actor_id=user.sub,
+            actor_id=actor_id,
             action=action,
             item_name=item_name,
             item_id=account_id,
