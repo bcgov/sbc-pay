@@ -800,7 +800,6 @@ def test_get_eft_statement_with_invoices(session):
                     "due_summary": 400.0,
                     'fees_total': 468.75,
                     'gst_total': 6.25,
-                    'refunds_total': None,
                     "include_service_provided": True,
                     "is_index_0": True,
                     "paid_summary": 100.0,
