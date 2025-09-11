@@ -18,6 +18,7 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 """
 import logging
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 import pytest
 from pay_api.models import AppliedCredits as AppliedCreditsModel
@@ -28,7 +29,14 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources
+from pay_api.utils.enums import (
+    CfsAccountStatus,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    PaymentStatus,
+    QueueSources,
+)
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.enums import RecordType, SourceTransaction, Status, TargetTransaction
@@ -688,7 +696,7 @@ def test_pad_nsf_reconciliations(mock_auth_event, session, app, client):
     )
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
     assert pay_account.has_nsf_invoices
-    
+
     # Verify ActivityLogPublisher was called for NSF lock event
     mock_auth_event.assert_called_once()
     call_args = mock_auth_event.call_args[0][0]

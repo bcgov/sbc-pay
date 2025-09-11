@@ -451,7 +451,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                         original_amount=_get_row_value(row, Column.TARGET_TXN_ORIGINAL),
                         amount=_get_row_value(row, Column.APP_AMOUNT),
                         # This includes Non sufficient funds, or bank account incorrect etc.
-                        reversal_reason=_get_row_value(row, Column.REVERSAL_REASON_DESC)
+                        reversal_reason=_get_row_value(row, Column.REVERSAL_REASON_DESC),
                     )
                 )
         else:
