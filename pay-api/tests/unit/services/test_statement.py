@@ -1043,7 +1043,7 @@ def test_get_eft_statement_with_invoices(session):
                         "payment_method": "EFT",
                     }
                 ],
-                "display_summary_page": True,
+                "display_summary_page": False,
                 "total": {
                     "totals_summary": 500.0,
                     "due_summary": 400.0,
