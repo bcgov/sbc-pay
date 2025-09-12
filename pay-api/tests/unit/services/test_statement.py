@@ -609,13 +609,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "statutoryFees": "0.00",
             },
             "summaryPage": {
-                "grouped_summary": [],
-                "display_summary_page": False,
-                "total": {
-                    "totals_summary": 0,
-                    "due_summary": 0,
-                    "refunds_credits_total": 0,
-                },
+                "display_summary_page": False
             },
         }
         expected_report_inputs = ReportRequest(
@@ -1035,20 +1029,7 @@ def test_get_eft_statement_with_invoices(session):
                 "statutoryFees": "475.00",
             },
             "summaryPage": {
-                "grouped_summary": [
-                    {
-                        "totals_summary": 500.0,
-                        "due_summary": 400.0,
-                        "refunds_credits_total": 0.0,
-                        "payment_method": "EFT",
-                    }
-                ],
-                "display_summary_page": False,
-                "total": {
-                    "totals_summary": 500.0,
-                    "due_summary": 400.0,
-                    "refunds_credits_total": 0.0,
-                },
+                "display_summary_page": False
             },
             "hasPaymentInstructions": True,
         }

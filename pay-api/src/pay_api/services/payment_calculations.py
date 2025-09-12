@@ -374,16 +374,19 @@ def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
 
     Summary page needs context because of chunked rendering in the report API.
     """
+    if len(grouped_invoices or []) <= 1:
+       return {"display_summary_page": False}
+
     grouped_summary: List[dict] = []
 
-    for ctx in (grouped_invoices or []):
+    for invoice in (grouped_invoices or []):
 
         grouped_summary.append(
             {
-                "totals_summary": ctx.get("totals_summary", 0.00),
-                "due_summary": ctx.get("due_summary", 0.00),
-                "refunds_credits_total": ctx.get("refunds_total", 0.00) + ctx.get("credits_total", 0.00),
-                "payment_method": ctx.get("payment_method"),
+                "totals_summary": invoice.get("totals_summary", 0.00),
+                "due_summary": invoice.get("due_summary", 0.00),
+                "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
+                "payment_method": invoice.get("payment_method"),
             }
         )
 
