@@ -366,3 +366,33 @@ def build_statement_summary_context(statement_summary: dict) -> List[dict]:
     if summary_row_dict.get("cancelledTransactions") is None:
         summary_row_dict.pop("cancelledTransactions")
     return summary_row_dict
+
+
+def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
+    """
+    Build summary context from grouped_invoices for the summary page.
+
+    Summary page needs context because of chunked rendering in the report API.
+    """
+    grouped_summary: List[dict] = []
+
+    for ctx in (grouped_invoices or []):
+
+        grouped_summary.append(
+            {
+                "totals_summary": ctx.get("totals_summary", 0.00),
+                "due_summary": ctx.get("due_summary", 0.00),
+                "refunds_credits_total": ctx.get("refunds_total", 0.00) + ctx.get("credits_total", 0.00),
+                "payment_method": ctx.get("payment_method"),
+            }
+        )
+
+    return {
+        "grouped_summary": grouped_summary,
+        "display_summary_page": len(grouped_invoices or []) > 1,
+        "total": {
+            "totals_summary": sum(item["totals_summary"] for item in grouped_summary),
+            "due_summary": sum(item["due_summary"] for item in grouped_summary),
+            "refunds_credits_total": sum(item["refunds_credits_total"] for item in grouped_summary),
+        },
+    }
