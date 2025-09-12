@@ -375,7 +375,7 @@ def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
     Summary page needs context because of chunked rendering in the report API.
     """
     if len(grouped_invoices or []) <= 1:
-       return {"display_summary_page": False}
+        return {"display_summary_page": False}
 
     grouped_summary: List[dict] = []
 

@@ -1107,6 +1107,7 @@ def test_summary_page_with_invoices(session):
         methods = {row.get("payment_method") for row in grouped_summary}
         assert methods == {PaymentMethod.PAD.value, PaymentMethod.CC.value}
 
+
 def localize_date(date: datetime):
     """Localize date object by adding timezone information."""
     pst = pytz.timezone("America/Vancouver")
