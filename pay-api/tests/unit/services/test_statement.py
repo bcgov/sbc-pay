@@ -1044,6 +1044,69 @@ def test_get_eft_statement_with_invoices(session):
         mock_report.assert_called_with(expected_report_inputs)
 
 
+def test_summary_page_with_invoices(session):
+    """Assert that the summary page toggles on when multiple payment methods (PAD, CC) are present."""
+    statement_from_date = datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1)
+    statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DRAWDOWN.value)
+    settings_model = factory_statement_settings(
+        payment_account_id=payment_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        from_date=statement_from_date,
+    )
+    statement_model = factory_statement(
+        payment_account_id=payment_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings_model.id,
+        from_date=statement_from_date,
+        to_date=statement_to_date,
+    )
+
+    payment_account = PaymentAccountModel.find_by_id(payment_account.id)
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
+    assert statements is not None
+
+    inv_pad = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=120,
+        paid=20,
+    ).save()
+    factory_payment_line_item(invoice_id=inv_pad.id, fee_schedule_id=1).save()
+
+    inv_cc = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.CC.value,
+        status_code=InvoiceStatus.PAID.value,
+        total=80,
+        paid=80,
+    ).save()
+    factory_payment_line_item(invoice_id=inv_cc.id, fee_schedule_id=1).save()
+
+    factory_invoice_reference(inv_pad.id).save()
+    factory_invoice_reference(inv_cc.id).save()
+
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=inv_pad.id)
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=inv_cc.id)
+
+    with patch.object(ReportService, "get_report_response", return_value=None) as mock_report:
+        report_response, report_name = StatementService.get_statement_report(
+            statement_id=statement_model.id,
+            content_type=ContentType.PDF.value,
+            auth=get_auth_premium_user(),
+        )
+
+        args, kwargs = mock_report.call_args
+        req: ReportRequest = args[0]
+        tmpl = req.template_vars
+
+        assert "summaryPage" in tmpl
+        assert tmpl["summaryPage"]["display_summary_page"] is True
+        grouped_summary = tmpl["summaryPage"].get("grouped_summary", [])
+        methods = {row.get("payment_method") for row in grouped_summary}
+        assert methods == {PaymentMethod.PAD.value, PaymentMethod.CC.value}
+
 def localize_date(date: datetime):
     """Localize date object by adding timezone information."""
     pst = pytz.timezone("America/Vancouver")

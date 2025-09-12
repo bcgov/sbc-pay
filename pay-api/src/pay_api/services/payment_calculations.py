@@ -392,7 +392,7 @@ def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
 
     return {
         "grouped_summary": grouped_summary,
-        "display_summary_page": len(grouped_invoices or []) > 1,
+        "display_summary_page": True,
         "total": {
             "totals_summary": sum(item["totals_summary"] for item in grouped_summary),
             "due_summary": sum(item["due_summary"] for item in grouped_summary),
