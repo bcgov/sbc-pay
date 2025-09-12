@@ -22,7 +22,7 @@ from flask import g, request
 from pay_api.utils.enums import Role
 
 _USER_SUB_PATTERN = re.compile(r"[^a-zA-Z0-9\-]")
-_USERNAME_PATTERN = re.compile(r"[^a-zA-Z0-9\\@]")
+_USERNAME_PATTERN = re.compile(r"[^a-zA-Z0-9\\@_]")
 
 
 def _sanitize_input(value: str, pattern: re.Pattern) -> str:
@@ -39,7 +39,7 @@ def _sanitize_user_sub(value: str) -> str:
 
 
 def _sanitize_username(value: str) -> str:
-    """Sanitize username to only allow alphanumeric characters, backslashes, and @ symbols."""
+    """Sanitize username to only allow alphanumeric characters, backslashes, underscores, and @ symbols."""
     return _sanitize_input(value, _USERNAME_PATTERN)
 
 
@@ -182,14 +182,14 @@ def get_auth_account_id() -> str:
     return account_id
 
 
-def get_original_user_sub(is_system) -> str:
+def get_original_user_sub(is_system: bool) -> str:
     """Return original sub from the header. Note this only applies to service accounts (SYSTEM role)."""
     if not is_system or not request:
         return None
     return _sanitize_user_sub(request.headers.get("Original-Sub"))
 
 
-def get_original_username(is_system) -> str:
+def get_original_username(is_system: bool) -> str:
     """Return original username from the header.  Note this only applies to service accounts (SYSTEM role)."""
     if not is_system or not request:
         return None
