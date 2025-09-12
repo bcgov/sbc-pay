@@ -47,6 +47,7 @@ from pay_api.utils.enums import (
     LineItemStatus,
     PaymentMethod,
     PaymentStatus,
+    QueueSources,
     RefundsPartialType,
     Role,
 )
@@ -660,7 +661,8 @@ def test_premium_account_creation(session, client, jwt, app):
     assert rv.status_code == 201
 
 
-def test_premium_account_update_bcol_pad(session, client, jwt, app):
+@patch("pay_api.services.payment_account.ActivityLogPublisher.publish_payment_method_change_event")
+def test_premium_account_update_bcol_pad(mock_publish, session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -686,6 +688,12 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
 
     assert rv.json.get("futurePaymentMethod") == PaymentMethod.PAD.value
     assert rv.json.get("bankTransitNumber") == pad_account_details.get("bankTransitNumber")
+
+    # Verify ActivityLogPublisher was called for payment method change
+    mock_publish.assert_called()
+    call_args = mock_publish.call_args[0][0]
+    assert call_args.account_id == auth_account_id
+    assert call_args.source == QueueSources.PAY_API.value
 
     # Assert switching to bcol returns no bank details
     rv = client.put(f"/api/v1/accounts/{auth_account_id}", data=json.dumps(payload), headers=headers)
@@ -715,7 +723,8 @@ def test_premium_duplicate_account_creation(session, client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_premium_account_update(session, client, jwt, app):
+@patch("pay_api.services.payment_account.ActivityLogPublisher.publish_payment_method_change_event")
+def test_premium_account_update(mock_publish, session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -739,6 +748,12 @@ def test_premium_account_update(session, client, jwt, app):
 
     assert rv.status_code == 200
 
+    # Verify ActivityLogPublisher was called for payment method change
+    mock_publish.assert_called()
+    call_args = mock_publish.call_args[0][0]
+    assert call_args.account_id == auth_account_id
+    assert call_args.source == QueueSources.PAY_API.value
+
 
 def test_create_pad_account_when_cfs_down(session, client, jwt, app):
     """Assert that the payment records are created with 202."""
@@ -758,7 +773,8 @@ def test_create_pad_account_when_cfs_down(session, client, jwt, app):
         assert rv.status_code == 202
 
 
-def test_create_pad_account_when_cfs_up(session, client, jwt, app):
+@patch("pay_api.services.payment_account.ActivityLogPublisher.publish_payment_method_change_event")
+def test_create_pad_account_when_cfs_up(mock_publish, session, client, jwt, app):
     """Assert that the payment records are created with 202."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -769,6 +785,12 @@ def test_create_pad_account_when_cfs_up(session, client, jwt, app):
     )
 
     assert rv.status_code == 202
+
+    # Verify ActivityLogPublisher was called for payment method change
+    mock_publish.assert_called()
+    call_args = mock_publish.call_args[0][0]
+    assert call_args.account_id == rv.json.get("accountId")
+    assert call_args.source == QueueSources.PAY_API.value
 
 
 def test_create_online_banking_account_when_cfs_down(session, client, jwt, app):
@@ -967,7 +989,8 @@ def test_account_get_by_user(session, client, jwt, app):
     assert rv.json.get("cfsAccount").get("bankInstitutionNumber")
 
 
-def test_create_gov_accounts(session, client, jwt, app):
+@patch("pay_api.services.payment_account.ActivityLogPublisher.publish_payment_info_change_event")
+def test_create_gov_accounts(mock_publish, session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
@@ -975,6 +998,13 @@ def test_create_gov_accounts(session, client, jwt, app):
     rv = client.post("/api/v1/accounts", data=json.dumps(get_gov_account_payload()), headers=headers)
 
     assert rv.status_code == 201
+
+    # Verify ActivityLogPublisher was called for payment info change event
+    mock_publish.assert_called()
+    call_args = mock_publish.call_args[0][0]
+    assert call_args.account_id == rv.json.get("accountId")
+    assert call_args.payment_method == PaymentMethod.EJV.value
+    assert call_args.source == QueueSources.PAY_API.value
 
 
 def test_create_and_delete_gov_accounts_with_account_fee(session, client, jwt, app):

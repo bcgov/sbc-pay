@@ -2253,8 +2253,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "small_update_transaction_tweaks"
-resolved_reference = "79dc3d6b8380fc376c4ac36dc0ca537d26d29033"
+reference = "30306__"
+resolved_reference = "42a652dc59ab054e68728d559f0a95c6c08e9d8a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3504,4 +3504,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "74e56482d30f6a360b2310ad98d18ee8b4caa1506d91b946e57d18e843a0dcf6"
+content-hash = "ea820c73cf704017971fdadd7d8651ce2d52ec6f40256f1fbe063457f5082fed"

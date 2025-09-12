@@ -36,28 +36,6 @@ from .converter import Converter
 from .enums import Code, CorpType, Product, StatementFrequency
 
 
-def cors_preflight(methods: str = "GET"):
-    """Render an option method on the class."""
-
-    def wrapper(f):
-        def options(self, *args, **kwargs):  # pylint: disable=unused-argument
-            allow_headers = "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey"
-            return (
-                {"Allow": methods},
-                200,
-                {
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": methods,
-                    "Access-Control-Allow-Headers": allow_headers,
-                },
-            )
-
-        setattr(f, "options", options)
-        return f
-
-    return wrapper
-
-
 def normalize_url(url: str) -> str:
     """Normalize the URL by removing 'www.' if present and strip trailing slash."""
     parsed = urlparse(url)

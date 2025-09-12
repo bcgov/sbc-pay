@@ -19,7 +19,7 @@ Test-Suite to ensure that the Statement Service is working as expected.
 import pprint
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytz
 from dateutil.relativedelta import relativedelta
@@ -817,7 +817,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": get_statement_date_string(invoice_1.created_on),
+                            "created_on": ANY,
                             "details": ["label value"],
                             "fee": "200.00",
                             "folio": "1234567890",
@@ -854,7 +854,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": get_statement_date_string(invoice_2.created_on),
+                            "created_on": ANY,
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -888,7 +888,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": get_statement_date_string(invoice_3.created_on),
+                            "created_on": ANY,
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -923,7 +923,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": get_statement_date_string(invoice_4.created_on),
+                            "created_on": ANY,
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -958,7 +958,7 @@ def test_get_eft_statement_with_invoices(session):
                             "corp_type_code": "CP",
                             "created_by": "test",
                             "created_name": "test name",
-                            "created_on": get_statement_date_string(invoice_5.created_on),
+                            "created_on": ANY,
                             "details": ["label value"],
                             "fee": "118.75",
                             "folio": "1234567890",

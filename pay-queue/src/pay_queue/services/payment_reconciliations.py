@@ -442,7 +442,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 # Send mailer and account events to update status and send email notification
                 AuthEvent.publish_lock_account_event(
                     LockAccountDetails(
-                        pay_account=payment_account,
+                        account_id=payment_account.auth_account_id,
                         additional_emails=current_app.config.get("PAD_NSF_NOTIFY_EMAILS"),
                         payment_method=_convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
                         source=QueueSources.PAY_QUEUE.value,
@@ -450,6 +450,8 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                         outstanding_amount=_get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
                         original_amount=_get_row_value(row, Column.TARGET_TXN_ORIGINAL),
                         amount=_get_row_value(row, Column.APP_AMOUNT),
+                        # This includes Non sufficient funds, or bank account incorrect etc.
+                        reversal_reason=_get_row_value(row, Column.REVERSAL_REASON_DESC),
                     )
                 )
         else:

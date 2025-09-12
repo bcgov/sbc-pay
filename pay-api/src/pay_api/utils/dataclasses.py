@@ -35,24 +35,59 @@ class PurchaseHistorySearch:
 
 
 @dataclass
-class StatementIntervalChange:
-    """Statement interval change data class."""
+class BaseActivityEvent:
+    """Base activity event data class with common fields."""
 
     account_id: str
-    old_frequency: str
-    new_frequency: str
     source: str
 
 
 @dataclass
-class StatementRecipientChange:
+class StatementIntervalChangeEvent(BaseActivityEvent):
+    """Statement interval change data class."""
+
+    old_frequency: str
+    new_frequency: str
+
+
+@dataclass
+class StatementRecipientChangeEvent(BaseActivityEvent):
     """Statement recipient change data class."""
 
-    account_id: str
     old_recipients: List[str]
     new_recipients: List[str]
     statement_notification_email: bool
-    source: str
+
+
+@dataclass
+class AccountLockEvent(BaseActivityEvent):
+    """Account lock event data class."""
+
+    current_payment_method: str
+    reason: str
+
+
+@dataclass
+class AccountUnlockEvent(BaseActivityEvent):
+    """Account unlock event data class."""
+
+    current_payment_method: str
+    unlock_payment_method: str
+
+
+@dataclass
+class PaymentMethodChangeEvent(BaseActivityEvent):
+    """Payment method change event data class."""
+
+    old_method: str
+    new_method: str
+
+
+@dataclass
+class PaymentInfoChangeEvent(BaseActivityEvent):
+    """Payment info change event data class."""
+
+    payment_method: str
 
 
 @define
@@ -67,4 +102,5 @@ class ActivityLogData(Serializable):
     org_id: str
     remote_addr: str
     created_at: str
+    source: str
     item_type: str = "ACCOUNT"

@@ -29,7 +29,7 @@ from pay_api.models import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.services import Statement as StatementService
 from pay_api.utils.auth_event import LockAccountDetails
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources, StatementFrequency
 from pay_api.utils.util import current_local_time
 
 import config
@@ -133,29 +133,36 @@ def test_send_unpaid_statement_notification(setup, session, test_name, action_on
     summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
     total_amount_owing = summary["total_due"]
 
-    with patch("pay_api.utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
-        with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
-            with freeze_time(action_on):
-                # Statement due task looks at the month before.
-                EFTStatementDueTask.process_unpaid_statements(statement_date_override=datetime(2023, 2, 1, 0))
-                if action == StatementNotificationAction.OVERDUE:
-                    mock_auth_event.assert_called()
-                    assert statements[0][0].overdue_notification_date
-                    assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
-                    assert account.has_overdue_invoices
-                else:
-                    due_date = statements[0][0].to_date + relativedelta(months=1)
-                    mock_mailer.assert_called_with(
-                        StatementNotificationInfo(
-                            auth_account_id=account.auth_account_id,
-                            statement=statements[0][0],
-                            action=action,
-                            due_date=due_date,
-                            emails=statement_recipient.email,
-                            total_amount_owing=total_amount_owing,
-                            short_name_links_count=0,
+    with patch("pay_api.utils.auth_event.ActivityLogPublisher.publish_lock_event") as mock_activity_log:
+        with patch("pay_api.services.gcp_queue_publisher.publish_to_queue") as mock_gcp_publisher:
+            with patch("tasks.eft_statement_due_task.publish_payment_notification") as mock_mailer:
+                with freeze_time(action_on):
+                    # Statement due task looks at the month before.
+                    EFTStatementDueTask.process_unpaid_statements(statement_date_override=datetime(2023, 2, 1, 0))
+                    if action == StatementNotificationAction.OVERDUE:
+                        mock_activity_log.assert_called()
+                        mock_gcp_publisher.assert_called()
+                        call_args = mock_activity_log.call_args[0][0]
+                        assert call_args.account_id == account.auth_account_id
+                        assert call_args.current_payment_method == PaymentMethod.EFT.value
+                        assert call_args.source == QueueSources.PAY_JOBS.value
+                        assert call_args.reason is not None
+                        assert statements[0][0].overdue_notification_date
+                        assert NonSufficientFundsModel.find_by_invoice_id(invoice.id)
+                        assert account.has_overdue_invoices
+                    else:
+                        due_date = statements[0][0].to_date + relativedelta(months=1)
+                        mock_mailer.assert_called_with(
+                            StatementNotificationInfo(
+                                auth_account_id=account.auth_account_id,
+                                statement=statements[0][0],
+                                action=action,
+                                due_date=due_date,
+                                emails=statement_recipient.email,
+                                total_amount_owing=total_amount_owing,
+                                short_name_links_count=0,
+                            )
                         )
-                    )
 
 
 def test_unpaid_statement_notification_not_sent(setup, session):
@@ -236,7 +243,7 @@ def test_account_lock(setup, session):
             expected_calls = [
                 call(
                     LockAccountDetails(
-                        pay_account=account1,
+                        account_id=account1.auth_account_id,
                         additional_emails="",
                         payment_method=PaymentMethod.EFT.value,
                         source="PAY-JOBS",
@@ -244,6 +251,7 @@ def test_account_lock(setup, session):
                         outstanding_amount=None,
                         original_amount=None,
                         amount=None,
+                        reversal_reason=ANY,
                     )
                 )
             ]
@@ -336,7 +344,7 @@ def test_multi_account_lock(setup, session):
             expected_calls = [
                 call(
                     LockAccountDetails(
-                        pay_account=account1,
+                        account_id=account1.auth_account_id,
                         additional_emails="",
                         payment_method=PaymentMethod.EFT.value,
                         source="PAY-JOBS",
@@ -344,11 +352,12 @@ def test_multi_account_lock(setup, session):
                         outstanding_amount=None,
                         original_amount=None,
                         amount=None,
+                        reversal_reason=ANY,
                     )
                 ),
                 call(
                     LockAccountDetails(
-                        pay_account=account2,
+                        account_id=account2.auth_account_id,
                         additional_emails="",
                         payment_method=PaymentMethod.EFT.value,
                         source="PAY-JOBS",
@@ -356,6 +365,7 @@ def test_multi_account_lock(setup, session):
                         outstanding_amount=None,
                         original_amount=None,
                         amount=None,
+                        reversal_reason=ANY,
                     )
                 ),
             ]

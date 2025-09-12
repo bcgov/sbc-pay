@@ -26,7 +26,6 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
-from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.cfs_account import CfsAccount
 from pay_api.services import RefundService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
@@ -38,6 +37,7 @@ from pay_api.utils.enums import (
     PaymentStatus,
     TransactionStatus,
 )
+from pay_api.utils.user_context import UserContext
 from tests.utilities.base_test import (
     factory_eft_credit,
     factory_eft_credit_invoice_link,
@@ -298,3 +298,47 @@ def test_create_eft_refund(
         assert latest_cil.status_code == result_cil_status
     assert invoice.invoice_status_code == result_inv_status
     assert inv_ref.status_code == result_inv_ref_status
+
+
+@pytest.mark.parametrize(
+    "is_system,has_original_username_header,original_username_value,expected_requested_by",
+    [
+        (True, True, "original_user@domain", "original_user@domain"),
+        (True, False, None, "SYSTEM_USER"),
+        (False, True, "original_user@domain", "REGULAR_USER"),
+        (False, False, None, "REGULAR_USER"),
+    ],
+)
+def test_initialize_refund_requested_by(
+    session, is_system, has_original_username_header, original_username_value, expected_requested_by
+):
+    """Test that _initialize_refund sets requested_by correctly for SYSTEM vs non-SYSTEM users."""
+
+    def mock_token_info():
+        return {
+            "preferred_username": "system_user" if is_system else "regular_user",
+            "realm_access": {"roles": ["system"] if is_system else ["user"]},
+            "sub": "test-sub",
+            "loginSource": "test",
+            "name": "Test User",
+            "product_code": "test",
+        }
+
+    headers = {}
+    if has_original_username_header and original_username_value:
+        headers["Original-Username"] = original_username_value
+
+    with patch("pay_api.utils.user_context._get_token_info", mock_token_info):
+        with patch("pay_api.utils.user_context.request") as mock_request:
+            mock_request.headers = headers
+            mock_user = UserContext()
+
+            with patch("pay_api.services.refund.RefundModel") as mock_refund_model:
+                mock_refund_instance = mock_refund_model.return_value
+                mock_refund_instance.flush = lambda: None
+
+                result = RefundService._initialize_refund(  # pylint: disable=protected-access
+                    invoice_id=123, request={"reason": "Test refund"}, user=mock_user
+                )
+
+                assert result.requested_by == expected_requested_by

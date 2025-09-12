@@ -23,7 +23,7 @@ from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import StatementSettingsSchema as StatementSettingsModelSchema
 from pay_api.models import db
 from pay_api.services import ActivityLogPublisher
-from pay_api.utils.dataclasses import StatementIntervalChange
+from pay_api.utils.dataclasses import StatementIntervalChangeEvent
 from pay_api.utils.enums import QueueSources, StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
@@ -160,7 +160,7 @@ class StatementSettings:
             statements_settings.save()
 
             ActivityLogPublisher.publish_statement_interval_change_event(
-                StatementIntervalChange(
+                StatementIntervalChangeEvent(
                     account_id=payment_account.auth_account_id,
                     old_frequency=old_frequency,
                     new_frequency=frequency,
@@ -195,7 +195,7 @@ class StatementSettings:
 
         if old_frequency != frequency:
             ActivityLogPublisher.publish_statement_interval_change_event(
-                StatementIntervalChange(
+                StatementIntervalChangeEvent(
                     account_id=payment_account.auth_account_id,
                     old_frequency=old_frequency,
                     new_frequency=frequency,
