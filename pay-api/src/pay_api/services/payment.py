@@ -63,6 +63,7 @@ from .payment_calculations import (
     build_grouped_invoice_context,
     build_statement_context,
     build_statement_summary_context,
+    build_summary_page_context,
 )
 from .report_service import ReportRequest, ReportService
 
@@ -475,7 +476,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 totals["paid"] += paid
                 if paid == 0 and refund > 0:
                     totals["due"] -= refund
-            elif payment_method == PaymentMethod.EFT.value:
+            elif payment_method in [PaymentMethod.EFT.value, PaymentMethod.PAD.value]:
                 if payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
                     totals["due"] -= paid
                     totals["paid"] += paid
@@ -562,6 +563,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 "total": formatted_totals,
                 "account": account_info,
                 "statement": build_statement_context(kwargs.get("statement")),
+                "summaryPage": build_summary_page_context(grouped_invoices),
             }
 
             if has_payment_instructions:
