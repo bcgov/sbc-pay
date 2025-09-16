@@ -20,6 +20,7 @@ from decimal import Decimal
 from typing import List, Optional
 
 import cattrs
+from dateutil import parser
 import humps
 from sqlalchemy import and_, case, func
 
@@ -94,7 +95,7 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict, stateme
             continue
 
         items = grouped[method]
-        transactions = build_transaction_rows(items, method)
+        transactions = build_transaction_rows(items, method, statement)
         summary = calculate_invoice_summaries(items, method, statement)
         has_staff_payment = False
         if method == PaymentMethod.INTERNAL.value:
@@ -148,7 +149,7 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
             "credits_total": 0.0,
         }
 
-    if payment_method != PaymentMethod.EFT.value:
+    if payment_method not in [PaymentMethod.EFT.value, PaymentMethod.PAD.value]:
         # For non-EFT: refund applies if paid == 0 and refund > 0
         refund_condition = case((and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund), else_=0)
     else:
@@ -171,14 +172,26 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
             refund_condition = case(
                 (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund), else_=0
             )
-    # Query to get aggregated values for the specific payment method and invoice IDs
+
+    if payment_method in [PaymentMethod.EFT.value, PaymentMethod.PAD.value] and statement_to_date:
+        paid_condition = case(
+            (
+                and_(
+                    InvoiceModel.payment_date.isnot(None),
+                    InvoiceModel.payment_date <= func.cast(statement_to_date, db.Date),
+                ),
+                InvoiceModel.paid,
+            ),
+            else_=0,
+        )
+    else:
+        paid_condition = InvoiceModel.paid
+
     result = (
         db.session.query(
-            func.coalesce(func.sum(InvoiceModel.paid), 0).label("paid_summary"),
-            func.coalesce(func.sum(InvoiceModel.total), 0).label("totals_summary"),
-            func.coalesce(
-                func.sum(InvoiceModel.total - InvoiceModel.paid - refund_condition), 0
-            ).label("due_summary"),
+            func.coalesce(func.sum(paid_condition), 0).label("paid_summary"),
+            func.coalesce(func.sum(InvoiceModel.total - refund_condition), 0).label("totals_summary"),
+            func.coalesce(func.sum(InvoiceModel.total - paid_condition - refund_condition), 0).label("due_summary"),
             func.coalesce(
                 func.sum(InvoiceModel.total - InvoiceModel.service_fees - InvoiceModel.gst), 0
             ).label("fees_total"),
@@ -209,6 +222,18 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
     return summary
 
 
+def get_statement_status_for_invoice(inv: dict, payment_method: str, statement: dict) -> str:
+    """For PAD: if payment_date is after statement.to_date, mark as 'Pending'."""
+
+    default_status = inv.get("status_code", "")
+
+    if payment_method == PaymentMethod.PAD.value and inv:
+        payment_date = inv.get("payment_date")
+        to_date = (statement or {}).get("to_date")
+        if payment_date and to_date and parser.parse(payment_date) > parser.parse(to_date):
+            return InvoiceStatus.APPROVED.value
+    return default_status
+
 @dataclass
 class TransactionRow:
     """transactions details."""
@@ -222,9 +247,10 @@ class TransactionRow:
     gst: str
     total: str
     extra: dict = field(default_factory=dict)
+    status_code: str = ""
 
 
-def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod = None) -> List[dict]:
+def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod = None, statement: dict = None) -> List[dict]:
     """Build transactions for grouped_invoices."""
     rows = []
     for inv in invoices:
@@ -252,13 +278,13 @@ def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod =
             extra={
                 k: v
                 for k, v in inv.items()
-                if k not in {"details", "folio_number", "created_on", "fee", "gst", "total", "service_fees"}
+                if k not in {"details", "folio_number", "created_on", "fee", "gst", "total", "service_fees", "status_code"}
             },
         )
         service_provided = False
         if payment_method:
             service_provided = determine_service_provision_status(inv.get("status_code", ""), payment_method)
-
+        row.status_code = get_statement_status_for_invoice(inv, payment_method, statement)
         row.extra["service_provided"] = service_provided
 
         row_dict = cattrs.unstructure(row)
@@ -379,23 +405,23 @@ def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
 
     grouped_summary: List[dict] = []
 
+    summary_fields = ["totals_summary", "due_summary", "refunds_summary", "credits_summary"]
+    
     for invoice in (grouped_invoices or []):
+        summary_item = {field: invoice.get(field, 0.00) for field in summary_fields}
+        summary_item.update({
+            "refunds_total": invoice.get("refunds_total", 0.00),
+            "credits_total": invoice.get("credits_total", 0.00),
+            "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
+            "payment_method": invoice.get("payment_method"),
+        })
+        grouped_summary.append(summary_item)
 
-        grouped_summary.append(
-            {
-                "totals_summary": invoice.get("totals_summary", 0.00),
-                "due_summary": invoice.get("due_summary", 0.00),
-                "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
-                "payment_method": invoice.get("payment_method"),
-            }
-        )
+    totals = {field: sum(item[field] for item in grouped_summary) for field in summary_fields}
+    totals["refunds_credits_total"] = sum(item["refunds_credits_total"] for item in grouped_summary)
 
     return {
         "grouped_summary": grouped_summary,
         "display_summary_page": True,
-        "total": {
-            "totals_summary": sum(item["totals_summary"] for item in grouped_summary),
-            "due_summary": sum(item["due_summary"] for item in grouped_summary),
-            "refunds_credits_total": sum(item["refunds_credits_total"] for item in grouped_summary),
-        },
+        "total": totals,
     }

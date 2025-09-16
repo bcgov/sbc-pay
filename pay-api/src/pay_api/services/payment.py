@@ -476,7 +476,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 totals["paid"] += paid
                 if paid == 0 and refund > 0:
                     totals["due"] -= refund
-            elif payment_method == PaymentMethod.EFT.value:
+            elif payment_method in [PaymentMethod.EFT.value, PaymentMethod.PAD.value]:
                 if payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
                     totals["due"] -= paid
                     totals["paid"] += paid

@@ -290,14 +290,14 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
     @staticmethod
-    def is_eft_statement(statement: StatementModel, ordered_invoices: List[InvoiceModel]) -> bool:
-        """Return the statement template name."""
+    def is_payment_method_statement(statement: StatementModel, ordered_invoices: List[InvoiceModel], payment_method_code: str) -> bool:
+        """Return if the statement is for the specified payment method."""
         # Check invoice payment method for statement template
-        if ordered_invoices and ordered_invoices[0].payment_method_code == PaymentMethod.EFT.value:
+        if ordered_invoices and ordered_invoices[0].payment_method_code == payment_method_code:
             return True
 
         # In the event of an empty statement check statement payment methods, could be more than one on transition days
-        if PaymentMethod.EFT.value in statement.payment_methods:
+        if payment_method_code in (statement.payment_methods or ""):
             return True
 
         return False
@@ -367,12 +367,12 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
     @classmethod
-    def _populate_statement_summary(cls, statement: StatementModel, statement_invoices: List[InvoiceModel]) -> dict:
+    def _populate_statement_summary(cls, statement: StatementModel, statement_invoices: List[InvoiceModel], payment_method: PaymentMethod) -> dict:
         """Populate statement summary with additional information."""
         previous_statement = Statement.get_previous_statement(statement)
         previous_totals = None
         if previous_statement:
-            previous_invoices = Statement.find_all_payments_and_invoices_for_statement(previous_statement.id)
+            previous_invoices = Statement.find_all_payments_and_invoices_for_statement(previous_statement.id, payment_method)
             previous_items = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
             # Skip passing statement, we need the totals independent of the statement/payment date.
             previous_totals = PaymentService.get_invoices_totals(previous_items.get("items", None), None)
@@ -429,8 +429,20 @@ class Statement:  # pylint:disable=too-many-public-methods
             results=result_items,
         )
 
-        if Statement.is_eft_statement(statement_dao, statement_purchases):
-            report_inputs.statement_summary = Statement._populate_statement_summary(statement_dao, statement_purchases)
+        summary = {}
+        if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.EFT.value):
+            summary.update(
+                Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.EFT)
+            )
+        if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.PAD.value):
+            pad_summary = Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.PAD)
+            pad_amount = pad_summary.get("lastStatementPaidAmount")
+            if pad_amount:
+                summary["lastPADStatementPaidAmount"] = pad_amount
+
+        if summary:
+            report_inputs.statement_summary = summary
+
 
         report_response = PaymentService.generate_payment_report(
             report_inputs, auth=kwargs.get("auth", None), statement=statement
@@ -659,7 +671,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         return statement
 
     @staticmethod
-    def find_all_payments_and_invoices_for_statement(statement_id: str) -> List[InvoiceModel]:
+    def find_all_payments_and_invoices_for_statement(statement_id: str, payment_method: PaymentMethod = None) -> List[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""
         query = (
             db.session.query(InvoiceModel)
@@ -667,5 +679,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             .filter(StatementInvoicesModel.statement_id == cast(statement_id, Integer))
             .order_by(InvoiceModel.id.asc())
         )
+        if payment_method:
+            query = query.filter(InvoiceModel.payment_method_code == payment_method.value)
 
         return query.all()
