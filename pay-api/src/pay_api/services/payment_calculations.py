@@ -20,8 +20,8 @@ from decimal import Decimal
 from typing import List, Optional
 
 import cattrs
-from dateutil import parser
 import humps
+from dateutil import parser
 from sqlalchemy import and_, case, func
 
 from pay_api.models import Invoice as InvoiceModel
@@ -224,7 +224,6 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
 
 def get_statement_status_for_invoice(inv: dict, payment_method: str, statement: dict) -> str:
     """For PAD: if payment_date is after statement.to_date, mark as 'Pending'."""
-
     default_status = inv.get("status_code", "")
 
     if payment_method == PaymentMethod.PAD.value and inv:
@@ -233,6 +232,7 @@ def get_statement_status_for_invoice(inv: dict, payment_method: str, statement: 
         if payment_date and to_date and parser.parse(payment_date) > parser.parse(to_date):
             return InvoiceStatus.APPROVED.value
     return default_status
+
 
 @dataclass
 class TransactionRow:
@@ -250,7 +250,11 @@ class TransactionRow:
     status_code: str = ""
 
 
-def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod = None, statement: dict = None) -> List[dict]:
+def build_transaction_rows(
+    invoices: List[dict],
+    payment_method: PaymentMethod = None,
+    statement: dict = None
+) -> List[dict]:
     """Build transactions for grouped_invoices."""
     rows = []
     for inv in invoices:
@@ -278,7 +282,16 @@ def build_transaction_rows(invoices: List[dict], payment_method: PaymentMethod =
             extra={
                 k: v
                 for k, v in inv.items()
-                if k not in {"details", "folio_number", "created_on", "fee", "gst", "total", "service_fees", "status_code"}
+                if k not in {
+                    "details",
+                    "folio_number",
+                    "created_on",
+                    "fee",
+                    "gst",
+                    "total",
+                    "service_fees",
+                    "status_code",
+                }
             },
         )
         service_provided = False
@@ -406,7 +419,7 @@ def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
     grouped_summary: List[dict] = []
 
     summary_fields = ["totals_summary", "due_summary", "refunds_summary", "credits_summary"]
-    
+
     for invoice in (grouped_invoices or []):
         summary_item = {field: invoice.get(field, 0.00) for field in summary_fields}
         summary_item.update({
