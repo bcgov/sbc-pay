@@ -402,9 +402,7 @@ def test_amount_calculation_with_statutory_fees_gst(session, monkeypatch, google
     "should_log_error",
     [False, True],
 )
-def test_statutory_fees_gst_distribution_code_validation(
-    session, monkeypatch, google_bucket_mock, should_log_error
-):
+def test_statutory_fees_gst_distribution_code_validation(session, monkeypatch, google_bucket_mock, should_log_error):
     """Test error logging when statutory fees GST GL doesn't point to Partner Disbursement Code GL."""
     monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
 
