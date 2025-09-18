@@ -430,7 +430,14 @@ def test_statutory_fees_gst_distribution_code_validation(session, monkeypatch, g
     )
 
     if should_log_error:
-        different_disbursement_distribution = factory_distribution(name="Different Disbursement", client="112")
+        different_disbursement_distribution = factory_distribution(
+            name="Different Disbursement",
+            client="112",
+            reps_centre="99999",  # Different responsibility_centre
+            service_line="88888",  # Different service_line
+            stob="7777",  # Different stob
+            project_code="6666666",  # Different project_code
+        )
         fee_distribution.statutory_fees_gst_distribution_code_id = (
             different_disbursement_distribution.distribution_code_id
         )

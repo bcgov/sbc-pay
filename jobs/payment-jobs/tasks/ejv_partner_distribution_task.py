@@ -59,6 +59,17 @@ class EjvPartnerDistributionTask(CgiEjv):
     error_messages = []
     has_errors = False
 
+    @staticmethod
+    def distribution_codes_match(dc, gst_dc):
+        """Check if distribution codes have matching GL account fields."""
+        return (
+            dc.client == gst_dc.client
+            and dc.responsibility_centre == gst_dc.responsibility_centre
+            and dc.service_line == gst_dc.service_line
+            and dc.stob == gst_dc.stob
+            and dc.project_code == gst_dc.project_code
+        )
+
     @classmethod
     def create_ejv_file(cls):
         """Create JV files and upload to CGI.
@@ -140,9 +151,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         disbursement_rows = []
         distribution_code_totals = {}
         for invoice, payment_line_item, dc in transactions + reversals:
-            if (
-                dc.statutory_fees_gst_distribution_code_id
-                and dc.distribution_code_id != dc.statutory_fees_gst_distribution_code_id
+            if dc.statutory_fees_gst_distribution_code_id and not EjvPartnerDistributionTask.distribution_codes_match(
+                dc, dc.statutory_fees_gst_distribution_code
             ):
                 current_app.logger.error("Stat Fee GST GL not pointing to Distribution Code GL")
                 continue
@@ -199,9 +209,8 @@ class EjvPartnerDistributionTask(CgiEjv):
             flow_through = f"{payment_line_item.invoice_id}-{partner_disbursement.id}"
             if suffix != "":
                 flow_through += f"-{suffix}"
-            if (
-                dc.statutory_fees_gst_distribution_code_id
-                and dc.distribution_code_id != dc.statutory_fees_gst_distribution_code_id
+            if dc.statutory_fees_gst_distribution_code_id and not EjvPartnerDistributionTask.distribution_codes_match(
+                dc, dc.statutory_fees_gst_distribution_code
             ):
                 current_app.logger.error("Stat Fee GST GL not pointing to Distribution Code GL")
                 continue
