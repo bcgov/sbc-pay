@@ -435,7 +435,7 @@ def test_statutory_fees_gst_distribution_code_validation(session, monkeypatch, g
             different_disbursement_distribution.distribution_code_id
         )
     else:
-        fee_distribution.statutory_fees_gst_distribution_code_id = disbursement_distribution.distribution_code_id
+        fee_distribution.statutory_fees_gst_distribution_code_id = fee_distribution.distribution_code_id
 
     fee_distribution.save()
 
@@ -474,7 +474,7 @@ def test_statutory_fees_gst_distribution_code_validation(session, monkeypatch, g
             disbursements, _ = EjvPartnerDistributionTask.get_disbursement_by_distribution_for_partner(corp_type)
 
             if should_log_error:
-                mock_logger.assert_called_once_with("Stat Fee GST GL not pointing to Partner Disbursement Code GL")
+                mock_logger.assert_called_once_with("Stat Fee GST GL not pointing to Distribution Code GL")
                 assert len(disbursements) == 0
             else:
                 mock_logger.assert_not_called()

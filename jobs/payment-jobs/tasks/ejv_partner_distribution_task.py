@@ -142,9 +142,9 @@ class EjvPartnerDistributionTask(CgiEjv):
         for invoice, payment_line_item, dc in transactions + reversals:
             if (
                 dc.statutory_fees_gst_distribution_code_id
-                and dc.disbursement_distribution_code_id != dc.statutory_fees_gst_distribution_code_id
+                and dc.distribution_code_id != dc.statutory_fees_gst_distribution_code_id
             ):
-                current_app.logger.error("Stat Fee GST GL not pointing to Partner Disbursement Code GL")
+                current_app.logger.error("Stat Fee GST GL not pointing to Distribution Code GL")
                 continue
             distribution_code_totals.setdefault(dc.distribution_code_id, 0)
             distribution_code_totals[dc.distribution_code_id] += (
@@ -201,9 +201,9 @@ class EjvPartnerDistributionTask(CgiEjv):
                 flow_through += f"-{suffix}"
             if (
                 dc.statutory_fees_gst_distribution_code_id
-                and dc.disbursement_distribution_code_id != dc.statutory_fees_gst_distribution_code_id
+                and dc.distribution_code_id != dc.statutory_fees_gst_distribution_code_id
             ):
-                current_app.logger.error("Stat Fee GST GL not pointing to Partner Disbursement Code GL")
+                current_app.logger.error("Stat Fee GST GL not pointing to Distribution Code GL")
                 continue
             distribution_code_totals.setdefault(dc.distribution_code_id, 0)
             distribution_code_totals[dc.distribution_code_id] += partner_disbursement.amount
