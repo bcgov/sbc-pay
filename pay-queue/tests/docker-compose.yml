@@ -1,7 +1,7 @@
 version: '2.1'
 services:
     minio:
-        image: 'minio/minio:RELEASE.2024-07-31T05-46-26Z-cpuv1'
+        image: 'minio/minio:RELEASE.2024-08-03T04-33-23Z'
         ports:
           - '9000:9000'
         environment:
