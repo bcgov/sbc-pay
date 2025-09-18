@@ -8,6 +8,8 @@ services:
           - MINIO_ROOT_USER=minio
           - MINIO_ROOT_PASSWORD=minio123
           - MINIO_DEFAULT_BUCKETS=payment-sftp,test
+        volumes:
+          - minio_data:/data
         command: server /data --console-address ":9000"
     proxy:
         image: nginx:alpine
