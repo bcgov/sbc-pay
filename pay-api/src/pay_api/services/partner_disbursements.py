@@ -35,8 +35,9 @@ class PartnerDisbursements:
         )
 
         if latest_active_disbursement is None or latest_active_disbursement.is_reversal:
+            service_fee_gst = sum(pli.service_fees_gst for pli in invoice.payment_line_items)
             PartnerDisbursementsModel(
-                amount=invoice.total - invoice.service_fees - invoice.gst,
+                amount=invoice.total - invoice.service_fees - service_fee_gst,
                 is_reversal=False,
                 partner_code=invoice.corp_type_code,
                 status_code=DisbursementStatus.WAITING_FOR_JOB.value,
@@ -74,8 +75,9 @@ class PartnerDisbursements:
                 latest_active_disbursement.flush()
             case _:
                 # We'll assume errored status should be fixed in the future to COMPLETED hopefully.
+                service_fee_gst = sum(pli.service_fees_gst for pli in invoice.payment_line_items)
                 PartnerDisbursementsModel(
-                    amount=invoice.total - invoice.service_fees - invoice.gst,
+                    amount=invoice.total - invoice.service_fees - service_fee_gst,
                     is_reversal=True,
                     partner_code=invoice.corp_type_code,
                     status_code=DisbursementStatus.WAITING_FOR_JOB.value,

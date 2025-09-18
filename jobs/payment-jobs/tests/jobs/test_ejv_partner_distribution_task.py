@@ -293,3 +293,199 @@ def test_disbursement_error_handling(session, monkeypatch, client_code, batch_ty
 
     EjvPartnerDistributionTask.has_errors = False
     EjvPartnerDistributionTask.error_messages = []
+
+
+def test_amount_calculation_with_statutory_fees_gst(session, monkeypatch, google_bucket_mock):
+    """Test amount calculation includes both total and statutory_fees_gst for payment line items."""
+    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+
+    corp_type = CorpTypeModel.find_by_code("VS")
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
+
+    pad_account = factory_create_pad_account(
+        auth_account_id="1234",
+        bank_number="001",
+        bank_branch="004",
+        bank_account="1234567890",
+        status=CfsAccountStatus.ACTIVE.value,
+        payment_method=PaymentMethod.PAD.value,
+    )
+
+    disbursement_distribution = factory_distribution(name="VS Disbursement", client="112")
+    service_fee_distribution = factory_distribution(name="VS Service Fee", client="112")
+    fee_distribution = factory_distribution(
+        name="VS Fee distribution",
+        client="112",
+        service_fee_dist_id=service_fee_distribution.distribution_code_id,
+        disbursement_dist_id=disbursement_distribution.distribution_code_id,
+    )
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type.code, "WILLNOTICE")
+
+    factory_distribution_link(fee_distribution.distribution_code_id, fee_schedule.fee_schedule_id)
+
+    invoice1 = factory_invoice(
+        payment_account=pad_account,
+        corp_type_code=corp_type.code,
+        total=15.5,
+        status_code="PAID",
+    )
+
+    payment_line_item1 = factory_payment_line_item(
+        invoice_id=invoice1.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        filing_fees=10,
+        total=10,
+        service_fees=1.5,
+        statutory_fees_gst=4.0,
+        fee_dist_id=fee_distribution.distribution_code_id,
+    )
+
+    inv_ref1 = factory_invoice_reference(invoice_id=invoice1.id)
+    factory_payment(invoice_number=inv_ref1.invoice_number, payment_status_code="COMPLETED")
+    factory_receipt(invoice_id=invoice1.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+
+    invoice2 = factory_invoice(
+        payment_account=pad_account,
+        corp_type_code=corp_type.code,
+        total=20.0,
+        status_code="PAID",
+    )
+
+    payment_line_item2 = factory_payment_line_item(
+        invoice_id=invoice2.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        filing_fees=12,
+        total=12,
+        service_fees=2.0,
+        statutory_fees_gst=6.0,
+        fee_dist_id=fee_distribution.distribution_code_id,
+    )
+
+    inv_ref2 = factory_invoice_reference(invoice_id=invoice2.id)
+    factory_payment(invoice_number=inv_ref2.invoice_number, payment_status_code="COMPLETED")
+    factory_receipt(invoice_id=invoice2.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+        days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
+    )
+    with freeze_time(day_after_time_delay):
+        disbursements, distribution_code_totals = (
+            EjvPartnerDistributionTask.get_disbursement_by_distribution_for_partner(corp_type)
+        )
+
+        assert len(disbursements) == 2
+
+        disbursement1 = disbursements[0]
+        expected_amount1 = payment_line_item1.total + payment_line_item1.statutory_fees_gst
+        assert disbursement1.line_item.amount == expected_amount1
+        assert disbursement1.line_item.amount == 14.0
+
+        disbursement2 = disbursements[1]
+        expected_amount2 = payment_line_item2.total + payment_line_item2.statutory_fees_gst
+        assert disbursement2.line_item.amount == expected_amount2
+        assert disbursement2.line_item.amount == 18.0
+
+        expected_total = expected_amount1 + expected_amount2
+        assert fee_distribution.distribution_code_id in distribution_code_totals
+        assert distribution_code_totals[fee_distribution.distribution_code_id] == expected_total
+        assert distribution_code_totals[fee_distribution.distribution_code_id] == 32.0
+
+        assert disbursement1.line_item.flow_through == f"{invoice1.id:<110}"
+        assert disbursement1.line_item.description_identifier == f"#{invoice1.id}"
+        assert disbursement1.line_item.is_reversal is False
+        assert disbursement1.line_item.target_type == EJVLinkType.INVOICE.value
+        assert disbursement1.line_item.identifier == invoice1.id
+
+
+@pytest.mark.parametrize(
+    "should_log_error",
+    [False, True],
+)
+def test_statutory_fees_gst_distribution_code_validation(session, monkeypatch, google_bucket_mock, should_log_error):
+    """Test error logging when statutory fees GST GL doesn't point to Partner Disbursement Code GL."""
+    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+
+    corp_type = CorpTypeModel.find_by_code("VS")
+    corp_type.has_partner_disbursements = True
+    corp_type.save()
+
+    pad_account = factory_create_pad_account(
+        auth_account_id="1234",
+        bank_number="001",
+        bank_branch="004",
+        bank_account="1234567890",
+        status=CfsAccountStatus.ACTIVE.value,
+        payment_method=PaymentMethod.PAD.value,
+    )
+
+    disbursement_distribution = factory_distribution(name="VS Disbursement", client="112")
+    service_fee_distribution = factory_distribution(name="VS Service Fee", client="112")
+
+    fee_distribution = factory_distribution(
+        name="VS Fee distribution",
+        client="112",
+        service_fee_dist_id=service_fee_distribution.distribution_code_id,
+        disbursement_dist_id=disbursement_distribution.distribution_code_id,
+    )
+
+    if should_log_error:
+        different_disbursement_distribution = factory_distribution(
+            name="Different Disbursement",
+            client="112",
+            reps_centre="99999",  # Different responsibility_centre
+            service_line="88888",  # Different service_line
+            stob="7777",  # Different stob
+            project_code="6666666",  # Different project_code
+        )
+        fee_distribution.statutory_fees_gst_distribution_code_id = (
+            different_disbursement_distribution.distribution_code_id
+        )
+    else:
+        fee_distribution.statutory_fees_gst_distribution_code_id = fee_distribution.distribution_code_id
+
+    fee_distribution.save()
+
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type.code, "WILLNOTICE")
+    factory_distribution_link(fee_distribution.distribution_code_id, fee_schedule.fee_schedule_id)
+
+    invoice = factory_invoice(
+        payment_account=pad_account,
+        corp_type_code=corp_type.code,
+        total=15.5,
+        status_code="PAID",
+    )
+
+    payment_line_item = factory_payment_line_item(
+        invoice_id=invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        filing_fees=10,
+        total=10,
+        service_fees=1.5,
+        statutory_fees_gst=4.0,
+        fee_dist_id=fee_distribution.distribution_code_id,
+    )
+
+    inv_ref = factory_invoice_reference(invoice_id=invoice.id)
+    factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
+    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+
+    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+        days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
+    )
+    with freeze_time(day_after_time_delay):
+        with monkeypatch.context() as m:
+            mock_logger = MagicMock()
+            m.setattr("flask.current_app.logger.error", mock_logger)
+
+            disbursements, _ = EjvPartnerDistributionTask.get_disbursement_by_distribution_for_partner(corp_type)
+
+            if should_log_error:
+                mock_logger.assert_called_once_with("Stat Fee GST GL not pointing to Distribution Code GL")
+                assert len(disbursements) == 0
+            else:
+                mock_logger.assert_not_called()
+                assert len(disbursements) == 1
+                disbursement = disbursements[0]
+                expected_amount = payment_line_item.total + payment_line_item.statutory_fees_gst
+                assert disbursement.line_item.amount == expected_amount
