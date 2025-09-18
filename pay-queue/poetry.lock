@@ -2163,9 +2163,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/ochiu/sbc-pay.git"
-reference = "30294-EFT-credit-memo-handling"
-resolved_reference = "c9a0bcd955df05b06edb249443bf65f6c1d5025b"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "feature-30736"
+resolved_reference = "e4ff97c59bc915a1a95fe5edf53355791335be86"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2665,6 +2665,8 @@ files = [
 ]
 
 [package.dependencies]
+astroid = ">=1.0"
+pylint = ">=1.0"
 pylint-plugin-utils = ">=0.2.1"
 
 [[package]]
@@ -3410,4 +3412,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "e0e296daa6b783d29d95c5d4e76e3ecd89f38bdc2f5cfc1d74f9cea1064e816f"
+content-hash = "8f657da0749447ceb23ff09d1f1774a704ef29f42d95fb8fd460a53628c1ec62"
