@@ -1,7 +1,7 @@
 version: '2.1'
 services:
     minio:
-        image: 'bitnami/minio:2022.8.26'
+        image: 'minio/minio:RELEASE.2024-07-31T05-46-26Z-cpuv1'
         ports:
           - '9000:9000'
         environment:
