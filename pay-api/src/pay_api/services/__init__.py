@@ -13,6 +13,7 @@
 # limitations under the License.
 """Exposes all of the Services used in the API."""
 
+from .activity_log_publisher import ActivityLogPublisher
 from .cfs_service import CFSService
 from .distribution_code import DistributionCode
 from .eft_service import EftService

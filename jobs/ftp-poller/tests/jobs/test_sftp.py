@@ -51,8 +51,10 @@ def test_queue_message(session):  # pylint:disable=unused-argument
     publish_to_queue(
         [file_name],
         QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value,
-        location=current_app.config.get("MINIO_CGI_BUCKET_NAME"),
+        location=current_app.config.get("GOOGLE_BUCKET_FOLDER_CGI_FEEDBACK"),
     )
     publish_to_queue(
-        [file_name], QueueMessageTypes.EFT_FILE_UPLOADED.value, location=current_app.config.get("MINIO_EFT_BUCKET_NAME")
+        [file_name],
+        QueueMessageTypes.EFT_FILE_UPLOADED.value,
+        location=current_app.config.get("GOOGLE_BUCKET_FOLDER_EFT"),
     )

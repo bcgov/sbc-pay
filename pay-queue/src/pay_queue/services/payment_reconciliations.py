@@ -56,8 +56,8 @@ from pay_api.utils.util import generate_consolidated_transaction_number, get_top
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue import config
-from pay_queue.minio import get_object
 from pay_queue.services.email_service import EmailParams, send_error_email
+from pay_queue.util import get_object_from_bucket_folder
 
 from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 
@@ -265,7 +265,7 @@ def reconcile_payments(ce):
     """
     msg = ce.data
     file_name: str = msg.get("fileName")
-    minio_location: str = msg.get("location")
+    bucket_folder_name: str = msg.get("location")
 
     cas_settlement: CasSettlementModel = (
         db.session.query(CasSettlementModel).filter(CasSettlementModel.file_name == file_name).one_or_none()
@@ -280,8 +280,8 @@ def reconcile_payments(ce):
     current_app.logger.info("Creating cas_settlement record for file: %s", file_name)
     cas_settlement = _create_cas_settlement(file_name)
 
-    file = get_object(minio_location, file_name)
-    content = file.data.decode("utf-8-sig")
+    file = get_object_from_bucket_folder(bucket_folder_name, file_name)
+    content = file.decode("utf-8-sig")
 
     error_messages = []
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
@@ -290,7 +290,7 @@ def reconcile_payments(ce):
         email_service_params = EmailParams(
             subject="Payment Reconciliation Failure",
             file_name=file_name,
-            minio_location=minio_location,
+            google_bucket_name=f"{current_app.config.get("GOOGLE_BUCKET_NAME")}/{bucket_folder_name}",
             error_messages=error_messages,
             ce=ce,
             table_name=cas_settlement.__tablename__,
@@ -442,14 +442,16 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 # Send mailer and account events to update status and send email notification
                 AuthEvent.publish_lock_account_event(
                     LockAccountDetails(
-                        pay_account=payment_account,
-                        additional_emails=current_app.config.get("PAD_OVERDUE_NOTIFY_EMAILS"),
+                        account_id=payment_account.auth_account_id,
+                        additional_emails=current_app.config.get("PAD_NSF_NOTIFY_EMAILS"),
                         payment_method=_convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
                         source=QueueSources.PAY_QUEUE.value,
                         suspension_reason_code=SuspensionReasonCodes.PAD_NSF.value,
                         outstanding_amount=_get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
                         original_amount=_get_row_value(row, Column.TARGET_TXN_ORIGINAL),
                         amount=_get_row_value(row, Column.APP_AMOUNT),
+                        # This includes Non sufficient funds, or bank account incorrect etc.
+                        reversal_reason=_get_row_value(row, Column.REVERSAL_REASON_DESC),
                     )
                 )
         else:

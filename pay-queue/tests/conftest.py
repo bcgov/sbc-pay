@@ -26,6 +26,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pay_queue import create_app
 from pay_queue.config import get_comma_delimited_string_as_tuple
+from tests.integration.utils import get_test_bucket
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -112,10 +113,10 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
 def auto(docker_services, app):
     """Spin up docker containers."""
     if app.config["USE_DOCKER_MOCK"]:
-        docker_services.start("minio")
         docker_services.start("proxy")
         docker_services.start("paybc")
         docker_services.start("pubsub-emulator")
+        docker_services.start("gcs-emulator")
 
 
 @pytest.fixture()
@@ -189,3 +190,10 @@ def set_eft_configuration(app):
     app.config["EFT_PATTERNS"] = get_comma_delimited_string_as_tuple(
         "ACCOUNT PAYABLE PMT,BILL PAYMENT,COMM BILL PAYMENT,MISC PAYMENT,PAYROLL DEPOSIT"
     )
+
+
+@pytest.fixture(autouse=True)
+def mock_get_bucket(mocker, app):
+    """Mock get_bucket for all tests in this module."""
+    bucket = get_test_bucket(app)
+    mocker.patch("pay_queue.util.get_google_bucket", return_value=bucket)

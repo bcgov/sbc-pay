@@ -25,13 +25,15 @@ from pay_api import create_app
 from pay_api import jwt as _jwt
 from pay_api import setup_jwt_manager
 from pay_api.models import db as _db
+from pay_api.services.code import Code as CodeService
 
 
 @pytest.fixture(scope="session", autouse=True)
 def app():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app("testing")
-    return _app
+    with _app.test_request_context():
+        yield _app
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -138,6 +140,13 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
                 db.session = old_session
 
 
+@pytest.fixture(scope="function", autouse=True)
+def setup_code_service(session, app):
+    """Set up CodeService cache for unit tests."""
+    with app.app_context():
+        CodeService.build_all_codes_cache()
+
+
 @pytest.fixture()
 def auth_mock(monkeypatch):
     """Mock check_auth."""
@@ -206,6 +215,7 @@ def auto(docker_services, app):
         docker_services.start("paybc")
         docker_services.start("reports")
         docker_services.start("proxy")
+        docker_services.start("gcs-emulator")
 
 
 @pytest.fixture(scope="session")

@@ -20,7 +20,6 @@ jsonschema = "4.17.3"
 requests = "^2.31.0"
 werkzeug = "^3.0.1"
 jaeger-client = "^4.8.0"
-minio = "^7.2.5"
 pysftp = "^0.2.9"
 flask-migrate = "^4.0.7"
 itsdangerous = "^2.1.2"
@@ -29,7 +28,6 @@ launchdarkly-server-sdk = "^8.2.1"
 more-itertools = "^10.2.0"
 pg8000 = "^1.30.5"
 cloud-sql-python-connector = "^1.13.0"
-google-cloud-storage = "^2.19.0"
 
 
 [tool.poetry.group.dev.dependencies]

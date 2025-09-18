@@ -193,6 +193,21 @@ class Role(Enum):
     VIEW_ACCOUNT_TRANSACTIONS = "view_account_transactions"
     API_USER = "api_user"
     CSO_REFUNDS = "cso_refunds"
+    # General role for security check, used with RolePattern.PRODUCT_VIEW_TRANSACTION to determine allowed products
+    PRODUCT_REFUND_VIEWER = "product_refund_viewer"
+    # Below are for users that have the ability to manage refund transactions for all products
+    PRODUCT_REFUND_REQUESTER = "product_refund_requester"
+    PRODUCT_REFUND_APPROVER = "product_refund_approver"
+
+
+class RolePattern(Enum):
+    """Role Patterns."""
+
+    # Used to check against product permissions for refunding.
+    # e.g. having strr_view_transactions allows for the user to retrieve transactions that are of the strr product
+    PRODUCT_VIEW_TRANSACTION = "_view_transactions"
+    PRODUCT_REFUND_REQUESTER = "_refund_requester"
+    PRODUCT_REFUND_APPROVER = "_refund_approver"
 
 
 class Code(Enum):
@@ -526,3 +541,16 @@ class APRefundMethod(Enum):
 
     CHEQUE = "CHEQUE"
     EFT = "EFT"
+
+
+class ActivityAction(Enum):
+    """Activity action types."""
+
+    STATEMENT_INTERVAL_CHANGE = "STATEMENT_INTERVAL_CHANGE"
+    STATEMENT_RECIPIENT_CHANGE = "STATEMENT_RECIPIENT_CHANGE"
+    PAD_NSF_LOCK = "PAD_NSF_LOCK"
+    PAD_NSF_UNLOCK = "PAD_NSF_UNLOCK"
+    EFT_OVERDUE_LOCK = "EFT_OVERDUE_LOCK"
+    EFT_OVERDUE_UNLOCK = "EFT_OVERDUE_UNLOCK"
+    PAYMENT_METHOD_CHANGE = "PAYMENT_METHOD_CHANGE"
+    PAYMENT_INFO_CHANGE = "PAYMENT_INFO_CHANGE"

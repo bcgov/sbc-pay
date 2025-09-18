@@ -35,7 +35,7 @@ from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
-from pay_api.services import gcp_queue_publisher
+from pay_api.services import ActivityLogPublisher, gcp_queue_publisher
 from pay_api.services.auth import get_account_admin_users
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.cfs_service import PaymentSystem as PaymentSystemService
@@ -45,6 +45,7 @@ from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
+from pay_api.utils.dataclasses import AccountUnlockEvent, PaymentInfoChangeEvent, PaymentMethodChangeEvent
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -232,6 +233,29 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                 ).save()
 
     @classmethod
+    def _handle_bcol_updates(
+        cls, payment_account: PaymentAccountModel, account_request: Dict[str, any], payment_method: str
+    ):
+        """Handle BCOL account updates and publish change event if needed."""
+        new_bcol_account = account_request.get("bcolAccountNumber")
+        new_bcol_user_id = account_request.get("bcolUserId")
+
+        # We only need to publish the event if the BCOL account or user id has changed.
+        if payment_method == PaymentMethod.DRAWDOWN.value and (
+            payment_account.bcol_account != new_bcol_account or payment_account.bcol_user_id != new_bcol_user_id
+        ):
+            ActivityLogPublisher.publish_payment_info_change_event(
+                PaymentInfoChangeEvent(
+                    account_id=payment_account.auth_account_id,
+                    payment_method=payment_account.payment_method,
+                    source=QueueSources.PAY_API.value,
+                )
+            )
+
+        payment_account.bcol_account = new_bcol_account
+        payment_account.bcol_user_id = new_bcol_user_id
+
+    @classmethod
     def _save_account(
         cls,
         account_request: Dict[str, any],
@@ -250,8 +274,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             cls._check_and_handle_payment_method(payment_account, payment_method)
 
             payment_account.payment_method = payment_method
-            payment_account.bcol_account = account_request.get("bcolAccountNumber", None)
-            payment_account.bcol_user_id = account_request.get("bcolUserId", None)
+            cls._handle_bcol_updates(payment_account, account_request, payment_method)
 
         if name := account_request.get("accountName", None):
             payment_account.name = name
@@ -288,6 +311,15 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                 previous_payment,
             )
             cls._handle_payment_details(details)
+            # Needs to be here because of PAD waiting period which can adjust the current payment method.
+            ActivityLogPublisher.publish_payment_method_change_event(
+                PaymentMethodChangeEvent(
+                    account_id=payment_account.auth_account_id,
+                    old_method=previous_payment,
+                    new_method=payment_account.payment_method,
+                    source=QueueSources.PAY_API.value,
+                )
+            )
             cls._check_and_update_statement_settings(payment_account)
         payment_account.save()
 
@@ -313,6 +345,13 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                     cfs_account.payment_account = details.payment_account
                     cfs_account.flush()
             else:
+                ActivityLogPublisher.publish_payment_info_change_event(
+                    PaymentInfoChangeEvent(
+                        account_id=details.payment_account.auth_account_id,
+                        payment_method=details.payment_account.payment_method,
+                        source=QueueSources.PAY_API.value,
+                    )
+                )
                 details.pay_system.update_account(
                     name=details.payment_account.name,
                     cfs_account=cfs_account,
@@ -332,6 +371,13 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
             # Create distribution code details.
             if revenue_account := details.payment_info.get("revenueAccount"):
+                ActivityLogPublisher.publish_payment_info_change_event(
+                    PaymentInfoChangeEvent(
+                        account_id=details.payment_account.auth_account_id,
+                        payment_method=details.payment_account.payment_method,
+                        source=QueueSources.PAY_API.value,
+                    )
+                )
                 revenue_account.update(
                     {
                         "accountId": details.payment_account.id,
@@ -701,6 +747,15 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                     topic=current_app.config.get("AUTH_EVENT_TOPIC"),
                 )
             )
+            ActivityLogPublisher.publish_unlock_event(
+                AccountUnlockEvent(
+                    account_id=pay_account.auth_account_id,
+                    current_payment_method=pay_account.payment_method,
+                    unlock_payment_method=PaymentMethod.CC.value,
+                    source=QueueSources.PAY_API.value,  # This could be stale payment job too.
+                )
+            )
+
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e, exc_info=True)
             current_app.logger.error(

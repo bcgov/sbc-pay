@@ -15,7 +15,7 @@
 from datetime import datetime, timezone
 from http import HTTPStatus
 
-from flask import Blueprint, Response, current_app, jsonify, request
+from flask import Blueprint, Response, abort, current_app, jsonify, request
 from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
@@ -25,8 +25,9 @@ from pay_api.services.auth import check_auth
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
+from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.enums import CfsAccountStatus, ContentType, PaymentMethod, Role
+from pay_api.utils.enums import CfsAccountStatus, ContentType, PaymentMethod, Role, RolePattern
 from pay_api.utils.errors import Error
 
 bp = Blueprint("ACCOUNTS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/accounts")
@@ -91,6 +92,8 @@ def get_eft_accounts():
 @_jwt.requires_auth
 def get_account(account_number: str):
     """Get payment account details."""
+    if account_number == "undefined":
+        return error_to_response(Error.INVALID_REQUEST, invalid_params="account_number")
     current_app.logger.info("<get_account")
     # Check if user is authorized to perform this action
     check_auth(
@@ -273,6 +276,35 @@ def post_search_purchase_history(account_number: str):
         return error_to_response(Error.INVALID_REQUEST, invalid_params="account_number")
 
     any_org_transactions = request.args.get("viewAll", None) == "true"
+    products, filter_by_product = _check_purchase_history_auth(any_org_transactions, account_number)
+
+    account_to_search = None if any_org_transactions else account_number
+    page: int = int(request.args.get("page", "1"))
+    limit: int = int(request.args.get("limit", "10"))
+    response, status = (
+        Payment.search_purchase_history(
+            PurchaseHistorySearch(
+                auth_account_id=account_to_search,
+                search_filter=request_json,
+                page=page,
+                limit=limit,
+                filter_by_product=filter_by_product,
+                allowed_products=products,
+            )
+        ),
+        HTTPStatus.OK,
+    )
+    current_app.logger.debug(">post_search_purchase_history")
+    return jsonify(response), status
+
+
+def _check_purchase_history_auth(any_org_transactions: bool, account_number: str, **kwargs):
+    products, filter_by_product = Payment.check_products_from_role_pattern(RolePattern.PRODUCT_VIEW_TRANSACTION.value)
+    if filter_by_product:
+        if not products:
+            abort(403)
+        return products, filter_by_product
+
     if any_org_transactions:
         check_auth(
             business_identifier=None,
@@ -288,16 +320,7 @@ def post_search_purchase_history(account_number: str):
             account_id=account_number,
             one_of_roles=[Role.EDITOR.value, Role.VIEW_ACCOUNT_TRANSACTIONS.value],
         )
-
-    account_to_search = None if any_org_transactions else account_number
-    page: int = int(request.args.get("page", "1"))
-    limit: int = int(request.args.get("limit", "10"))
-    response, status = (
-        Payment.search_purchase_history(account_to_search, request_json, page, limit),
-        HTTPStatus.OK,
-    )
-    current_app.logger.debug(">post_search_purchase_history")
-    return jsonify(response), status
+    return None, False
 
 
 @bp.route("/<string:account_number>/payments/reports", methods=["POST", "OPTIONS"])

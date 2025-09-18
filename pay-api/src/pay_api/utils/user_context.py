@@ -14,11 +14,33 @@
 """User Context to hold request scoped variables."""
 
 import functools
+import re
 from typing import Dict, List
 
 from flask import g, request
 
 from pay_api.utils.enums import Role
+
+_USER_SUB_PATTERN = re.compile(r"[^a-zA-Z0-9\-]")
+_USERNAME_PATTERN = re.compile(r"[^a-zA-Z0-9\\@_]")
+
+
+def _sanitize_input(value: str, pattern: re.Pattern) -> str:
+    """Sanitize input using the provided compiled regex pattern."""
+    if not value:
+        return None
+    sanitized = pattern.sub("", value)
+    return sanitized if sanitized else None
+
+
+def _sanitize_user_sub(value: str) -> str:
+    """Sanitize user sub to only allow alphanumeric characters and dashes."""
+    return _sanitize_input(value, _USER_SUB_PATTERN)
+
+
+def _sanitize_username(value: str) -> str:
+    """Sanitize username to only allow alphanumeric characters, backslashes, underscores, and @ symbols."""
+    return _sanitize_input(value, _USERNAME_PATTERN)
 
 
 def _get_context():
@@ -44,6 +66,8 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._name = token_info.get("name", None)
         self._product_code: str = token_info.get("product_code", None)
         self._permission = _get_permission()
+        self.original_username = get_original_username(self.is_system())
+        self.original_sub = get_original_user_sub(self.is_system())
 
     @property
     def user_name(self) -> str:
@@ -156,3 +180,17 @@ def get_auth_account_id() -> str:
     if not account_id:
         account_id = request.headers["Account-Id"] if request and "Account-Id" in request.headers else None
     return account_id
+
+
+def get_original_user_sub(is_system: bool) -> str:
+    """Return original sub from the header. Note this only applies to service accounts (SYSTEM role)."""
+    if not is_system or not request:
+        return None
+    return _sanitize_user_sub(request.headers.get("Original-Sub"))
+
+
+def get_original_username(is_system: bool) -> str:
+    """Return original username from the header.  Note this only applies to service accounts (SYSTEM role)."""
+    if not is_system or not request:
+        return None
+    return _sanitize_username(request.headers.get("Original-Username"))

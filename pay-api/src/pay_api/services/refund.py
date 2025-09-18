@@ -203,7 +203,7 @@ class RefundService:
         refund = RefundModel()
         refund.invoice_id = invoice_id
         refund.reason = get_str_by_path(request, "reason")
-        refund.requested_by = user.user_name
+        refund.requested_by = user.original_username or user.user_name
         refund.requested_date = datetime.now(tz=timezone.utc)
         refund.flush()
 

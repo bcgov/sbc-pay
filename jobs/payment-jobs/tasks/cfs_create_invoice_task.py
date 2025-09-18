@@ -356,7 +356,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 if not invoice_total_matches:
                     msg = (
                         f"Error on creating PAD invoice: account id={payment_account.id}, "
-                        f"auth account : {payment_account.auth_account_id}, Invoice exists: "
+                        f"auth account : {payment_account.auth_account_id}, Invoice {invoice_number} exists: "
                         f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}'
                     )
                     current_app.logger.error(
@@ -495,7 +495,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     if not invoice_total_matches:
                         msg = (
                             f"Error on creating EFT invoice: account id={payment_account.id}, "
-                            f"auth account : {payment_account.auth_account_id}, Invoice exists: "
+                            f"auth account : {payment_account.auth_account_id}, Invoice {invoice_number} exists: "
                             f' CAS total: {invoice_response.get("total", 0)}, '
                             f"PAY-BC total: {invoice.total}, ERROR : {str(e)}"
                         )

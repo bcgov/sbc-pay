@@ -43,8 +43,9 @@ from pay_api.utils.enums import (
     PaymentMethod,
     PaymentStatus,
     PaymentSystem,
+    Role,
 )
-from pay_api.utils.user_context import user_context
+from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
     generate_receipt_number,
     generate_transaction_number,
@@ -54,6 +55,7 @@ from pay_api.utils.util import (
 )
 
 from ..exceptions import BusinessException
+from ..utils.dataclasses import PurchaseHistorySearch
 from ..utils.errors import Error
 from .code import Code as CodeService
 from .oauth_service import OAuthService
@@ -61,6 +63,7 @@ from .payment_calculations import (
     build_grouped_invoice_context,
     build_statement_context,
     build_statement_summary_context,
+    build_summary_page_context,
 )
 from .report_service import ReportRequest, ReportService
 
@@ -357,37 +360,57 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @staticmethod
     def search_all_purchase_history(auth_account_id: str, search_filter: Dict):
         """Return all results for the purchase history."""
-        return Payment.search_purchase_history(auth_account_id, search_filter, 0, 0, True)
+        return Payment.search_purchase_history(
+            PurchaseHistorySearch(
+                auth_account_id=auth_account_id, search_filter=search_filter, page=0, limit=0, return_all=True
+            )
+        )
 
     @classmethod
     @user_context
-    def search_purchase_history(  # pylint: disable=too-many-locals, too-many-arguments
-        cls, auth_account_id: str, search_filter: Dict, page: int, limit: int, return_all: bool = False, **kwargs
-    ):
+    def search_purchase_history(cls, search_params: PurchaseHistorySearch, **kwargs):  # pylint: disable=too-many-locals
         """Search purchase history for the account."""
-        current_app.logger.debug(f"<search_purchase_history {auth_account_id}")
-        max_no_records: int = (
+        current_app.logger.debug(f"<search_purchase_history {search_params.auth_account_id}")
+        search_filter = search_params.search_filter
+        search_params.max_no_records = (
             current_app.config.get("TRANSACTION_REPORT_DEFAULT_TOTAL", 0)
             if not search_filter or not any(search_filter.values())
             else 0
         )
+        search_filter["allowed_products"] = search_params.allowed_products if search_params.filter_by_product else None
         search_filter["userProductCode"] = kwargs["user"].product_code
-        data = {"page": page, "limit": limit, "items": []}
+        data = {"page": search_params.page, "limit": search_params.limit, "items": []}
         if bool(search_filter.get("excludeCounts")):
             # Ideally our data tables will be using this call from now on much better performance.
             purchases, data["hasMore"] = PaymentModel.search_without_counts(
                 TransactionSearchParams(
-                    auth_account_id=auth_account_id, search_filter=search_filter, page=page, limit=limit, no_counts=True
+                    auth_account_id=search_params.auth_account_id,
+                    search_filter=search_filter,
+                    page=search_params.page,
+                    limit=search_params.limit,
+                    no_counts=True,
                 )
             )
         else:
             # This is to maintain backwards compat for CSO, also for other functions like exporting to CSV etc.
-            purchases, data["total"] = PaymentModel.search_purchase_history(
-                auth_account_id, search_filter, page, limit, return_all, max_no_records
-            )
+            purchases, data["total"] = PaymentModel.search_purchase_history(search_params)
         data = cls.create_payment_report_details(purchases, data)
         current_app.logger.debug(">search_purchase_history")
         return data
+
+    @staticmethod
+    @user_context
+    def check_products_from_role_pattern(role_pattern: str, **kwargs) -> Tuple:
+        """Check roles to see if product filtering is applicable and return allowed products list."""
+        user: UserContext = kwargs["user"]
+        roles = user.roles or []
+        has_view_all_transactions = Role.VIEW_ALL_TRANSACTIONS.value in roles
+        if has_view_all_transactions:
+            return None, False
+
+        filter_by_product = Role.PRODUCT_REFUND_VIEWER.value in roles
+        products = [s[: -len(role_pattern)].upper() for s in roles if s.endswith(role_pattern)]
+        return products, filter_by_product
 
     @classmethod
     def create_payment_report_details(cls, purchases: Tuple, data: Dict) -> dict:  # pylint:disable=too-many-locals
@@ -453,7 +476,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 totals["paid"] += paid
                 if paid == 0 and refund > 0:
                     totals["due"] -= refund
-            elif payment_method == PaymentMethod.EFT.value:
+            elif payment_method in [PaymentMethod.EFT.value, PaymentMethod.PAD.value]:
                 if payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
                     totals["due"] -= paid
                     totals["paid"] += paid
@@ -540,6 +563,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 "total": formatted_totals,
                 "account": account_info,
                 "statement": build_statement_context(kwargs.get("statement")),
+                "summaryPage": build_summary_page_context(grouped_invoices),
             }
 
             if has_payment_instructions:

@@ -14,7 +14,7 @@
 """Service to manage Invoice."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
@@ -23,8 +23,10 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import db
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
@@ -365,9 +367,18 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Save the information to the DB."""
         return self._dao.save()
 
-    def asdict(self, include_dynamic_fields: bool = False):
+    def asdict(self, include_dynamic_fields: bool = False, include_links: bool = True):
         """Return the invoice as a python dict."""
-        invoice_schema = InvoiceSchema()
+        if include_links:
+            invoice_schema = InvoiceSchema()
+        else:
+            # We need to exclude links, because the links are based on the flask context.
+            invoice_schema = InvoiceSchema(
+                exclude=(
+                    "_links",
+                    "corp_type",
+                )
+            )
         d = invoice_schema.dump(self._dao)
         self._add_dynamic_fields(d, include_dynamic_fields)
         return d
@@ -564,3 +575,22 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
                 invoice["is_online_banking_allowed"] = online_banking_allowed
 
         return invoice
+
+    @staticmethod
+    def find_created_invoices(
+        payment_method=PaymentMethod.DIRECT_PAY.value, days: int = 0, hours: int = 0, minutes: int = 0
+    ):
+        """Return recent invoices within a certain time and is not complete.
+
+        Used in the batch job to find orphan records which are untouched for a time.
+        """
+        earliest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
+        return (
+            db.session.query(InvoiceModel)
+            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value)
+            .filter(InvoiceModel.payment_method_code == payment_method)
+            .filter(InvoiceModel.created_on >= earliest_transaction_time)
+            .order_by(InvoiceModel.id.desc())
+            .all()
+        )
