@@ -139,16 +139,24 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         disbursement_rows = []
         distribution_code_totals = {}
-        for invoice, payment_line_item, distribution_code in transactions + reversals:
-            distribution_code_totals.setdefault(distribution_code.distribution_code_id, 0)
-            distribution_code_totals[distribution_code.distribution_code_id] += payment_line_item.total
+        for invoice, payment_line_item, dc in transactions + reversals:
+            if (
+                dc.statutory_fees_gst_distribution_code_id
+                and dc.disbursement_distribution_code_id != dc.statutory_fees_gst_distribution_code_id
+            ):
+                current_app.logger.error("Stat Fee GST GL not pointing to Partner Disbursement Code GL")
+                continue
+            distribution_code_totals.setdefault(dc.distribution_code_id, 0)
+            distribution_code_totals[dc.distribution_code_id] += (
+                payment_line_item.total + payment_line_item.statutory_fees_gst
+            )
             disbursement_rows.append(
                 Disbursement(
-                    bcreg_distribution_code=distribution_code,
-                    partner_distribution_code=distribution_code.disbursement_distribution_code,
+                    bcreg_distribution_code=dc,
+                    partner_distribution_code=dc.disbursement_distribution_code,
                     target=invoice,
                     line_item=DisbursementLineItem(
-                        amount=payment_line_item.total,
+                        amount=payment_line_item.total + payment_line_item.statutory_fees_gst,
                         flow_through=f"{invoice.id:<110}",
                         description_identifier=f"#{invoice.id}",
                         is_reversal=invoice.invoice_status_code
@@ -185,18 +193,24 @@ class EjvPartnerDistributionTask(CgiEjv):
         for (
             partner_disbursement,
             payment_line_item,
-            distribution_code,
+            dc,
         ) in partner_disbursements:
             suffix = "PR" if partner_disbursement.target_type == EJVLinkType.PARTIAL_REFUND.value else ""
             flow_through = f"{payment_line_item.invoice_id}-{partner_disbursement.id}"
             if suffix != "":
                 flow_through += f"-{suffix}"
-            distribution_code_totals.setdefault(distribution_code.distribution_code_id, 0)
-            distribution_code_totals[distribution_code.distribution_code_id] += partner_disbursement.amount
+            if (
+                dc.statutory_fees_gst_distribution_code_id
+                and dc.disbursement_distribution_code_id != dc.statutory_fees_gst_distribution_code_id
+            ):
+                current_app.logger.error("Stat Fee GST GL not pointing to Partner Disbursement Code GL")
+                continue
+            distribution_code_totals.setdefault(dc.distribution_code_id, 0)
+            distribution_code_totals[dc.distribution_code_id] += partner_disbursement.amount
             disbursement_rows.append(
                 Disbursement(
-                    bcreg_distribution_code=distribution_code,
-                    partner_distribution_code=distribution_code.disbursement_distribution_code,
+                    bcreg_distribution_code=dc,
+                    partner_distribution_code=dc.disbursement_distribution_code,
                     target=partner_disbursement,
                     line_item=DisbursementLineItem(
                         amount=partner_disbursement.amount,
