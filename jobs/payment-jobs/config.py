@@ -150,7 +150,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_BCREG_CLIENT_CODE = os.getenv("CGI_BCREG_CLIENT_CODE", "112")
     CGI_EJV_SUPPLIER_NUMBER = os.getenv("CGI_EJV_SUPPLIER_NUMBER", "")
 
-    IT_OPS_EMAIL = os.getenv("IT_OPS_EMAIL", "SBC_ITOperationsSupport@gov.bc.ca").split(",")
+    IT_OPS_EMAIL = os.getenv("IT_OPS_EMAIL", "").split(",")
     DISABLE_EJV_ERROR_EMAIL = os.getenv("DISABLE_EJV_ERROR_EMAIL", "true").lower() == "true"
     DISABLE_CSV_ERROR_EMAIL = os.getenv("DISABLE_CSV_ERROR_EMAIL", "true").lower() == "true"
     DISABLE_AP_ERROR_EMAIL = os.getenv("DISABLE_AP_ERROR_EMAIL", "true").lower() == "true"

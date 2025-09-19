@@ -57,6 +57,10 @@ def send_error_email(params: EmailParams):
 
     html_body = template.render(email_params)
 
+    if not recipients:
+        current_app.logger.info("No recipients found to send email")
+        return
+
     send_email_service(recipients=recipients, subject=params.subject, html_body=html_body)
 
 
