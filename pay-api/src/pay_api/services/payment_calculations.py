@@ -192,9 +192,9 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
             func.coalesce(func.sum(paid_condition), 0).label("paid_summary"),
             func.coalesce(func.sum(InvoiceModel.total - refund_condition), 0).label("totals_summary"),
             func.coalesce(func.sum(InvoiceModel.total - paid_condition - refund_condition), 0).label("due_summary"),
-            func.coalesce(
-                func.sum(InvoiceModel.total - InvoiceModel.service_fees - InvoiceModel.gst), 0
-            ).label("fees_total"),
+            func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.service_fees - InvoiceModel.gst), 0).label(
+                "fees_total"
+            ),
             func.coalesce(func.sum(InvoiceModel.service_fees), 0).label("service_fees_total"),
             func.coalesce(func.sum(InvoiceModel.gst), 0).label("gst_total"),
             func.coalesce(
@@ -251,9 +251,7 @@ class TransactionRow:
 
 
 def build_transaction_rows(
-    invoices: List[dict],
-    payment_method: PaymentMethod = None,
-    statement: dict = None
+    invoices: List[dict], payment_method: PaymentMethod = None, statement: dict = None
 ) -> List[dict]:
     """Build transactions for grouped_invoices."""
     rows = []
@@ -282,7 +280,8 @@ def build_transaction_rows(
             extra={
                 k: v
                 for k, v in inv.items()
-                if k not in {
+                if k
+                not in {
                     "details",
                     "folio_number",
                     "created_on",
@@ -420,14 +419,16 @@ def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
 
     summary_fields = ["totals_summary", "due_summary", "refunds_summary", "credits_summary"]
 
-    for invoice in (grouped_invoices or []):
+    for invoice in grouped_invoices or []:
         summary_item = {field: invoice.get(field, 0.00) for field in summary_fields}
-        summary_item.update({
-            "refunds_total": invoice.get("refunds_total", 0.00),
-            "credits_total": invoice.get("credits_total", 0.00),
-            "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
-            "payment_method": invoice.get("payment_method"),
-        })
+        summary_item.update(
+            {
+                "refunds_total": invoice.get("refunds_total", 0.00),
+                "credits_total": invoice.get("credits_total", 0.00),
+                "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
+                "payment_method": invoice.get("payment_method"),
+            }
+        )
         grouped_summary.append(summary_item)
 
     totals = {field: sum(item[field] for item in grouped_summary) for field in summary_fields}
