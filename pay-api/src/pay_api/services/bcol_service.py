@@ -70,7 +70,7 @@ class BcolService(PaymentSystemService, OAuthService):
                 f"Service fees ${invoice.service_fees} greater than $1.50 detected,"
                 " BCONLINE only charges up to a max of $1.50 for a service fee."
             )
-        filing_types = ",".join([item.filing_type_code for item in line_items])
+        filing_types = ",".join([item.fee_schedule.filing_type_code for item in line_items])
         remarks = f"{corp_number}({filing_types})"
         if user.first_name:
             remarks = f"{remarks}-{user.first_name}"
