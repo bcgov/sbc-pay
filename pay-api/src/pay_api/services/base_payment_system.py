@@ -93,7 +93,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def create_invoice(
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: List[PaymentLineItemModel],
         invoice: Invoice,
         **kwargs,
     ) -> InvoiceReferenceModel:
@@ -102,7 +102,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def update_invoice(  # pylint:disable=too-many-arguments,unused-argument
         self,
         payment_account: PaymentAccount,  # pylint: disable=unused-argument
-        line_items: List[PaymentLineItem],
+        line_items: List[PaymentLineItemModel],
         invoice_id: int,  # pylint: disable=unused-argument
         paybc_inv_number: str,
         reference_count: int = 0,  # pylint: disable=unused-argument

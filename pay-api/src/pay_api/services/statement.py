@@ -358,9 +358,9 @@ class Statement:  # pylint:disable=too-many-public-methods
         statement_purchases = Statement.find_all_payments_and_invoices_for_statement(statement_id)
 
         result_items = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
-        statement = Statement.asdict(statement)
-        statement["from_date"] = from_date_string
-        statement["to_date"] = to_date_string
+        statement_dict = Statement.asdict(statement)
+        statement_dict["from_date"] = from_date_string
+        statement_dict["to_date"] = to_date_string
 
         report_inputs = PaymentReportInput(
             content_type=content_type,
@@ -374,7 +374,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             report_inputs.statement_summary = summary
 
         report_response = PaymentService.generate_payment_report(
-            report_inputs, auth=kwargs.get("auth", None), statement=statement
+            report_inputs, auth=kwargs.get("auth", None), statement=statement_dict
         )
         current_app.logger.debug(">get_statement_report")
 
