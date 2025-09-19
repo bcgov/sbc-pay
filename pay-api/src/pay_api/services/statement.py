@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List
 
@@ -55,7 +55,8 @@ from .payment import PaymentReportInput
 class Statement:  # pylint:disable=too-many-public-methods
     """Service to manage statement related operations."""
 
-    def asdict(self, dao):
+    @staticmethod
+    def asdict(dao):
         """Return the invoice as a python dict."""
         statement_schema = StatementModelSchema()
         d = statement_schema.dump(dao)
