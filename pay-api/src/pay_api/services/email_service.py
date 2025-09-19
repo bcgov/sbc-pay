@@ -137,5 +137,8 @@ class JobFailureNotification(Serializable):
             "tableName": self.table_name,
         }
 
+        if not recipients:
+            current_app.logger.info("No recipients found to send email")
+            return
         html_body = template.render(email_params)
         send_email(recipients=recipients, subject=self.subject, body=html_body)
