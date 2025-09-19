@@ -1105,7 +1105,7 @@ def test_summary_page_with_invoices(session):
         assert tmpl["summaryPage"]["display_summary_page"] is True
         grouped_summary = tmpl["summaryPage"].get("grouped_summary", [])
         methods = {row.get("payment_method") for row in grouped_summary}
-        assert methods == {"Pre-Authorized Debit", "Credit Card"}
+        assert methods == {"Pre Authorized Debit", "Credit Card"}
 
 
 def localize_date(date: datetime):
