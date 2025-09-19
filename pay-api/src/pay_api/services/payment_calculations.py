@@ -26,6 +26,7 @@ from sqlalchemy import and_, case, func
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import db
+from pay_api.models.refunds_partial import RefundsPartial as RefundsPartialModel
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
@@ -200,7 +201,10 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
             func.coalesce(
                 func.sum(
                     case(
-                        (InvoiceModel.invoice_status_code == InvoiceStatus.REFUNDED.value, InvoiceModel.refund),
+                        (
+                            InvoiceModel.invoice_status_code == InvoiceStatus.REFUNDED.value,
+                            refund_condition,
+                        ),
                         else_=0,
                     )
                 ),
@@ -209,16 +213,72 @@ def calculate_invoice_summaries(invoices: List[dict], payment_method: str, state
             func.coalesce(
                 func.sum(
                     case(
-                        (InvoiceModel.invoice_status_code == InvoiceStatus.CREDITED.value, InvoiceModel.refund),
+                        (
+                            InvoiceModel.invoice_status_code == InvoiceStatus.CREDITED.value,
+                            refund_condition,
+                        ),
                         else_=0,
                     )
                 ),
                 0,
             ).label("credits_total"),
-        ).filter(and_(InvoiceModel.id.in_(invoice_ids), InvoiceModel.payment_method_code == payment_method))
+        ).filter(
+            and_(
+                InvoiceModel.id.in_(invoice_ids),
+                InvoiceModel.invoice_status_code != InvoiceStatus.CANCELLED.value,
+                InvoiceModel.payment_method_code == payment_method,
+            )
+        )
     ).first()
 
     summary = {k: float(v or 0) for k, v in result._asdict().items()}
+
+    # Adjust for partial refunds (refunds_partial) that occurred on or before to_date
+    # These reduce paid_summary and contribute to refunds_total/credits_total
+    partial_filter = [RefundsPartialModel.invoice_id.in_(invoice_ids)]
+    if statement_to_date:
+        partial_filter.append(RefundsPartialModel.created_on <= func.cast(statement_to_date, db.Date))
+
+    partial_agg = (
+        db.session.query(
+            func.coalesce(
+                func.sum(
+                    case(
+                        (RefundsPartialModel.is_credit.is_(True), RefundsPartialModel.refund_amount),
+                        else_=0
+                    )
+                ),
+                0
+            ).label("credit_sum"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (RefundsPartialModel.is_credit.is_(False), RefundsPartialModel.refund_amount),
+                        else_=0
+                    )
+                ),
+                0
+            ).label("refund_sum"),
+            func.coalesce(
+                func.sum(RefundsPartialModel.refund_amount),
+                0
+            ).label("total_partial")
+        )
+        .filter(and_(*partial_filter))
+        .first()
+    )
+
+    credit_sum = float(partial_agg.credit_sum or 0)
+    refund_sum = float(partial_agg.refund_sum or 0)
+    total_partial = float(partial_agg.total_partial or 0)
+
+    if total_partial:
+        summary["paid_summary"] = float(summary.get("paid_summary", 0.0)) - total_partial
+        summary["due_summary"] = float(summary.get("due_summary", 0.0)) - total_partial
+    if refund_sum:
+        summary["refunds_total"] = float(summary.get("refunds_total", 0.0)) + refund_sum
+    if credit_sum:
+        summary["credits_total"] = float(summary.get("credits_total", 0.0)) + credit_sum
     return summary
 
 
@@ -226,11 +286,26 @@ def get_statement_status_for_invoice(inv: dict, payment_method: str, statement: 
     """For PAD: if payment_date is after statement.to_date, mark as 'Pending'."""
     default_status = inv.get("status_code", "")
 
-    if payment_method == PaymentMethod.PAD.value and inv:
+    if not inv:
+        return default_status
+
+    to_date = (statement or {}).get("to_date")
+    if not to_date:
+        return default_status
+
+    statement_to_date = parser.parse(to_date)
+
+    if payment_method == PaymentMethod.PAD.value:
         payment_date = inv.get("payment_date")
-        to_date = (statement or {}).get("to_date")
-        if payment_date and to_date and parser.parse(payment_date) > parser.parse(to_date):
+        if payment_date and parser.parse(payment_date) > statement_to_date:
             return InvoiceStatus.APPROVED.value
+
+    partial_refunds = inv.get("partial_refunds")
+    if partial_refunds:
+        refund_date = partial_refunds[0].get("created_on")
+        if refund_date and statement_to_date > parser.parse(refund_date):
+            is_credit = partial_refunds[0].get("is_credit")
+            return InvoiceStatus.PARTIALLY_CREDITED.value if is_credit else InvoiceStatus.PARTIALLY_REFUNDED.value
     return default_status
 
 
@@ -259,14 +334,19 @@ def build_transaction_rows(
     rows = []
     for inv in invoices:
         product_lines = []
+        is_cancelled = inv.get("status_code") == InvoiceStatus.CANCELLED.value
         for item in inv.get("line_items", []):
-            label = "(Cancelled) " if inv.get("status_code") == InvoiceStatus.CANCELLED.value else ""
+            label = "(Cancelled) " if is_cancelled else ""
             product_lines.append(f"{label}{item.get('description', '')}")
 
         detail_lines = []
         for detail in inv.get("details", []):
             detail_lines.append(f"{detail.get('label', '')} {detail.get('value', '')}")
         fee = max(inv.get("total", 0) - inv.get("service_fees", 0) - inv.get("gst", 0), 0)
+        is_refunded = inv.get("status_code") in (
+            InvoiceStatus.CREDITED.value,
+            InvoiceStatus.REFUNDED.value,
+        )
 
         row = TransactionRow(
             products=product_lines,
@@ -275,10 +355,18 @@ def build_transaction_rows(
             created_on=get_statement_date_string(
                 datetime.fromisoformat(inv["created_on"]).strftime("%b %d,%Y") if inv.get("created_on") else "-"
             ),
-            fee=get_statement_currency_string(fee),
-            service_fee=get_statement_currency_string(inv.get("service_fees", 0)),
-            gst=get_statement_currency_string(inv.get("gst", 0)),
-            total=get_statement_currency_string(inv.get("total", 0)),
+            fee="$0.00" if is_cancelled else get_statement_currency_string(
+                fee, is_negative=is_refunded, add_dollar_sign=True
+            ),
+            service_fee="$0.00" if is_cancelled else get_statement_currency_string(
+                inv.get("service_fees", 0), is_negative=is_refunded, add_dollar_sign=True
+            ),
+            gst="$0.00" if is_cancelled else get_statement_currency_string(
+                inv.get("gst", 0), is_negative=is_refunded, add_dollar_sign=True
+            ),
+            total="$0.00" if is_cancelled else get_statement_currency_string(
+                inv.get("total", 0), is_negative=is_refunded, add_dollar_sign=True
+            ),
             extra={
                 k: v
                 for k, v in inv.items()
@@ -294,11 +382,9 @@ def build_transaction_rows(
                 }
             },
         )
-        service_provided = False
-        if payment_method:
-            service_provided = determine_service_provision_status(inv.get("status_code", ""), payment_method)
+
         row.status_code = get_statement_status_for_invoice(inv, payment_method, statement)
-        row.extra["service_provided"] = service_provided
+        row.extra["service_provided"] = determine_service_provision_status(inv.get("status_code", ""), payment_method)
 
         row_dict = cattrs.unstructure(row)
         row_dict.update(row_dict.pop("extra"))

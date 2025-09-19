@@ -41,6 +41,7 @@ from tests.utilities.base_test import (
     factory_payment,
     factory_payment_account,
     factory_payment_line_item,
+    factory_refunds_partial,
     factory_statement,
     factory_usd_payment,
 )
@@ -916,7 +917,7 @@ def test_build_transaction_rows():
     rows = build_transaction_rows(invoices)
     assert rows[0]["products"] == ["Service Fee"]
     assert rows[0]["details"][0].startswith("Folio")
-    assert rows[0]["fee"] == "85.00"
+    assert rows[0]["fee"] == "$85.00"
 
 
 def test_build_statement_context():
@@ -1267,3 +1268,48 @@ def test_build_transaction_rows_includes_service_provided():
 
     assert transactions[1]["service_provided"] is True
     assert "(Cancelled) Service 2" in transactions[1]["products"][0]
+
+
+def test_calculate_invoice_summaries_with_partial_refunds(session):
+    """Partial refunds should reduce paid_summary and adjust credits/refunds totals."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    invoice = factory_invoice(
+        payment_account,
+        paid=100.00,
+        refund=0.00,
+        total=150.00,
+        payment_method_code=PaymentMethod.PAD.value,
+        payment_date="2024-06-01",
+    )
+    invoice.save()
+
+    line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1)
+    line_item.save()
+
+    factory_refunds_partial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=30.00,
+        created_on=datetime(2024, 6, 1, tzinfo=timezone.utc),
+        is_credit=True,
+    )
+
+    invoices = [
+        {
+            "id": invoice.id,
+            "payment_method": PaymentMethod.PAD.value,
+            "paid": 100,
+            "refund": 0,
+            "total": 150,
+        }
+    ]
+    statement = {"to_date": "2024-06-02"}
+
+    summary = calculate_invoice_summaries(invoices, PaymentMethod.PAD.value, statement)
+
+    assert summary["paid_summary"] == 70.0
+    assert summary["due_summary"] == 20.0
+    assert summary["credits_total"] == 30.0
+    assert summary["refunds_total"] == 0.0
