@@ -381,9 +381,13 @@ def get_statement_date_string(value, fmt="%B %d, %Y"):
         return ""
 
 
-def get_statement_currency_string(value):
+def get_statement_currency_string(value, is_negative: bool = False, add_dollar_sign: bool = False) -> str:
     """Return a string representation of a number formatted as 0.00."""
     try:
-        return "{:,.2f}".format(float(value))
+        num = float(value)
+        formatted_value = f"{abs(num):,.2f}"
+        sign = "-" if is_negative else ""
+        dollar = "$" if add_dollar_sign else ""
+        return f"{sign}{dollar}{formatted_value}"
     except (TypeError, ValueError):
-        return "0.00"
+        return f"{'$' if add_dollar_sign else ''}0.00"

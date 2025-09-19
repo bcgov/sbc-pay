@@ -516,13 +516,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         report_name = report_inputs.report_name
         template_name = report_inputs.template_name
 
-        # Use the status_code_description instead of status_code.
-        invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
-        for invoice in results.get("items", None):
-            filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
-            if filtered_codes:
-                invoice["status_code"] = filtered_codes[0]["description"]
-
         if content_type == ContentType.CSV.value:
             template_vars = {
                 "columns": labels,
@@ -556,6 +549,16 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             formatted_totals = {}
             for key, value in totals.items():
                 formatted_totals[key] = get_statement_currency_string(value)
+
+            invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
+            for invoice in grouped_invoices:
+                for transaction in invoice["transactions"]:
+                    filtered_codes = [
+                        cd for cd in invoice_status_codes["codes"]
+                        if cd["code"] == transaction["status_code"]
+                    ]
+                    if filtered_codes:
+                        transaction["status_code"] = filtered_codes[0]["description"]
 
             template_vars = {
                 "statementSummary": build_statement_summary_context(statement_summary),
