@@ -55,8 +55,6 @@ from pay_api.utils.enums import (
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
-from .payment_line_item import PaymentLineItem
-
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Abstract base class for payment system.
