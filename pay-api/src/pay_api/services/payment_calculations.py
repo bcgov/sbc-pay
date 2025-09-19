@@ -26,7 +26,13 @@ from sqlalchemy import and_, case, func
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import db
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
+from pay_api.utils.enums import (
+    InvoiceStatus,
+    PaymentMethod,
+    PaymentMethodDescription,
+    StatementFrequency,
+    StatementTitles,
+)
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
 
@@ -426,7 +432,7 @@ def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
             "refunds_total": invoice.get("refunds_total", 0.00),
             "credits_total": invoice.get("credits_total", 0.00),
             "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
-            "payment_method": invoice.get("payment_method"),
+            "payment_method": PaymentMethodDescription[invoice.get("payment_method")].value,
         })
         grouped_summary.append(summary_item)
 

@@ -158,6 +158,23 @@ class StatementTitles(Enum):
     DEFAULT = "ACCOUNT STATEMENT"
 
 
+class PaymentMethodDescription(Enum):
+    """Payment Method Descriptions."""
+
+    CC = "Credit Card"
+    DRAWDOWN = "BC Online"
+    INTERNAL = "Routing Slip"
+    DIRECT_PAY = "Credit Card"
+    EFT = "Electronic Funds Transfer"
+    WIRE = "Wire Transfer"
+    ONLINE_BANKING = "Online Banking"
+    PAD = "Pre-Authorized Debit"
+    EJV = "Electronic Journal Voucher"
+    CASH = "Cash"
+    CHEQUE = "Cheque"
+    CREDIT = "Credit"
+
+
 class Role(Enum):
     """User Role."""
 
