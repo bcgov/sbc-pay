@@ -35,21 +35,6 @@ from tests.utilities.base_test import (
 )
 
 
-def test_statement_settings_basic(session):
-    """Assert basic service works."""
-    statement_settings = StatementSettingsService()
-    statement_settings.id = 1
-    statement_settings.from_date = datetime.fromisoformat("2022-01-01")
-    statement_settings.to_date = datetime.fromisoformat("2022-01-01")
-    statement_settings.payment_account_id = 1
-    data = statement_settings.asdict()
-    assert data
-    assert data["id"] == 1
-    assert data["from_date"] == "2022-01-01"
-    assert data["to_date"] == "2022-01-01"
-    assert "payment_account_id" not in data
-
-
 def test_statement_settings_find_by_account(session):
     """Assert that the statement settings by id works."""
     bcol_account = factory_premium_payment_account()

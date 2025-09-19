@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 from sqlalchemy import exists
@@ -30,91 +30,6 @@ from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_m
 
 class StatementSettings:
     """Service to manage statement related operations."""
-
-    def __init__(self):
-        """Return a Statement Service Object."""
-        self.__dao = None
-        self._id: int = None
-        self._frequency = None
-        self._payment_account_id = None
-        self._from_date = None
-        self._to_date = None
-
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = StatementSettingsModel()
-        return self.__dao
-
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao = value
-        self.id: int = self._dao.id
-        self.frequency: str = self._dao.frequency
-        self.payment_account_id: int = self._dao.payment_account_id
-        self.from_date: datetime = self._dao.from_date
-        self.to_date: datetime = self._dao.to_date
-
-    @property
-    def frequency(self):
-        """Return the for the statement settings."""
-        return self._frequency
-
-    @frequency.setter
-    def frequency(self, value: int):
-        """Set the frequency for the statement settings."""
-        self._frequency = value
-        self._dao.frequency = value
-
-    @property
-    def id(self):
-        """Return the _id."""
-        return self._id
-
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
-
-    @property
-    def from_date(self):
-        """Return the from_date of the statement setting."""
-        return self._from_date
-
-    @from_date.setter
-    def from_date(self, value: date):
-        """Set the from for the statement setting."""
-        self._from_date = value
-        self._dao.from_date = value
-
-    @property
-    def payment_account_id(self):
-        """Return the account_id."""
-        return self._payment_account_id
-
-    @payment_account_id.setter
-    def payment_account_id(self, value: str):
-        """Set the account_id."""
-        self._payment_account_id = value
-        self._dao.payment_account_id = value
-
-    @property
-    def to_date(self):
-        """Return the to_date of the statement setting."""
-        return self._to_date
-
-    @to_date.setter
-    def to_date(self, value: date):
-        """Set the to_date for the statement setting."""
-        self._to_date = value
-        self._dao.to_date = value
-
-    def asdict(self):
-        """Return the invoice as a python dict."""
-        statements_settings_schema = StatementSettingsModelSchema()
-        d = statements_settings_schema.dump(self._dao)
-        return d
 
     @staticmethod
     def find_by_account_id(auth_account_id: str):
