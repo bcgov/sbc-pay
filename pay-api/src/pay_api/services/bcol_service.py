@@ -23,6 +23,7 @@ from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
+from pay_api.models.invoice_reference import InvoiceReference
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
@@ -32,7 +33,6 @@ from pay_api.utils.util import generate_transaction_number
 
 from .base_payment_system import PaymentSystemService, skip_complete_post_invoice_for_sandbox, skip_invoice_for_sandbox
 from .invoice import Invoice
-from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
@@ -121,7 +121,7 @@ class BcolService(PaymentSystemService, OAuthService):
             pay_response.raise_for_status()
         except HTTPError as bol_err:
             self._handle_http_error(bol_err, response_json, payload)
-        invoice_reference: InvoiceReference = InvoiceReference.create(
+        invoice_reference = InvoiceReference.create(
             invoice.id, response_json.get("key"), response_json.get("sequenceNo")
         )
         return invoice_reference
