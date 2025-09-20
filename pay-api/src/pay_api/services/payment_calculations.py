@@ -423,14 +423,16 @@ def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
     for invoice in grouped_invoices or []:
         summary_item = {field: invoice.get(field, 0.00) for field in summary_fields}
         payment_method = invoice.get("payment_method")
-        summary_item.update({
-            "refunds_total": invoice.get("refunds_total", 0.00),
-            "credits_total": invoice.get("credits_total", 0.00),
-            "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
-            "payment_method": CodeService.find_code_value_by_type_and_code(
-                Code.PAYMENT_METHODS.value, payment_method
-            ).get("description", payment_method),
-        })
+        summary_item.update(
+            {
+                "refunds_total": invoice.get("refunds_total", 0.00),
+                "credits_total": invoice.get("credits_total", 0.00),
+                "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
+                "payment_method": CodeService.find_code_value_by_type_and_code(
+                    Code.PAYMENT_METHODS.value, payment_method
+                ).get("description", payment_method),
+            }
+        )
         grouped_summary.append(summary_item)
 
     totals = {field: sum(item[field] for item in grouped_summary) for field in summary_fields}
