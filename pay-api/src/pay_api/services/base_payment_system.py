@@ -55,8 +55,6 @@ from pay_api.utils.enums import (
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
-from .payment_line_item import PaymentLineItem
-
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Abstract base class for payment system.
@@ -93,16 +91,16 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def create_invoice(
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: List[PaymentLineItemModel],
         invoice: Invoice,
         **kwargs,
-    ) -> InvoiceReference:
+    ) -> InvoiceReferenceModel:
         """Create invoice in payment system."""
 
     def update_invoice(  # pylint:disable=too-many-arguments,unused-argument
         self,
         payment_account: PaymentAccount,  # pylint: disable=unused-argument
-        line_items: List[PaymentLineItem],
+        line_items: List[PaymentLineItemModel],
         invoice_id: int,  # pylint: disable=unused-argument
         paybc_inv_number: str,
         reference_count: int = 0,  # pylint: disable=unused-argument
@@ -123,7 +121,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         self,
         payment_account: PaymentAccount,  # pylint:disable=unused-argument
         pay_response_url: str,
-        invoice_reference: InvoiceReference,
+        invoice_reference: InvoiceReferenceModel,
     ):  # pylint: disable=unused-argument
         """Get receipt from payment system."""
         return None
@@ -131,7 +129,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def get_payment_system_url_for_invoice(
         self,
         invoice: Invoice,  # pylint:disable=unused-argument
-        inv_ref: InvoiceReference,  # pylint: disable=unused-argument
+        inv_ref: InvoiceReferenceModel,  # pylint: disable=unused-argument
         return_url: str,
     ) -> str:  # pylint: disable=unused-argument
         """Return the payment system portal URL for payment."""
@@ -140,7 +138,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def get_payment_system_url_for_payment(
         self,
         payment: Payment,  # pylint:disable=unused-argument
-        inv_ref: InvoiceReference,  # pylint: disable=unused-argument
+        inv_ref: InvoiceReferenceModel,  # pylint: disable=unused-argument
         return_url: str,
     ) -> str:  # pylint: disable=unused-argument
         """Return the payment system portal URL for payment."""
@@ -178,7 +176,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def complete_post_invoice(
         self,
         invoice: Invoice,  # pylint: disable=unused-argument
-        invoice_reference: InvoiceReference,
+        invoice_reference: InvoiceReferenceModel,
     ) -> None:  # pylint: disable=unused-argument
         """Complete any post invoice activities if needed."""
         return None

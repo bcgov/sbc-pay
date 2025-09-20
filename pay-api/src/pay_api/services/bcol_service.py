@@ -23,6 +23,7 @@ from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
+from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
@@ -53,7 +54,7 @@ class BcolService(PaymentSystemService, OAuthService):
         line_items: List[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
-    ) -> InvoiceReference:
+    ) -> InvoiceReferenceModel:
         """Create Invoice in PayBC."""
         self.ensure_no_payment_blockers(payment_account)
         current_app.logger.debug(
@@ -70,7 +71,7 @@ class BcolService(PaymentSystemService, OAuthService):
                 f"Service fees ${invoice.service_fees} greater than $1.50 detected,"
                 " BCONLINE only charges up to a max of $1.50 for a service fee."
             )
-        filing_types = ",".join([item.filing_type_code for item in line_items])
+        filing_types = ",".join([item.fee_schedule.filing_type_code for item in line_items])
         remarks = f"{corp_number}({filing_types})"
         if user.first_name:
             remarks = f"{remarks}-{user.first_name}"
@@ -121,7 +122,7 @@ class BcolService(PaymentSystemService, OAuthService):
             pay_response.raise_for_status()
         except HTTPError as bol_err:
             self._handle_http_error(bol_err, response_json, payload)
-        invoice_reference: InvoiceReference = InvoiceReference.create(
+        invoice_reference = InvoiceReference.create(
             invoice.id, response_json.get("key"), response_json.get("sequenceNo")
         )
         return invoice_reference
@@ -185,7 +186,7 @@ class BcolService(PaymentSystemService, OAuthService):
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         self._publish_refund_to_mailer(invoice)
-        payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
+        payment = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
         payment.flush()
 

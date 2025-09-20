@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List
 
@@ -55,89 +55,11 @@ from .payment import PaymentReportInput
 class Statement:  # pylint:disable=too-many-public-methods
     """Service to manage statement related operations."""
 
-    def __init__(self):
-        """Return a Statement Service Object."""
-        self.__dao = None
-        self._id: int = None
-        self._frequency = None
-        self._from_date = None
-        self._to_date = None
-        self._payment_account_id = None
-
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = StatementModel()
-        return self.__dao
-
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao = value
-        self.id: int = self._dao.id
-        self.frequency: str = self._dao.frequency
-        self.from_date: datetime = self._dao.from_date
-        self.to_date: datetime = self._dao.to_date
-        self.payment_account_id: int = self._dao.payment_account_id
-
-    @property
-    def id(self):
-        """Return the _id."""
-        return self._id
-
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
-
-    @property
-    def payment_account_id(self):
-        """Return the payment_account_id."""
-        return self._payment_account_id
-
-    @payment_account_id.setter
-    def payment_account_id(self, value: str):
-        """Set the account_id."""
-        self._payment_account_id = value
-        self._dao.payment_account_id = value
-
-    @property
-    def frequency(self):
-        """Return the frequency."""
-        return self._frequency
-
-    @frequency.setter
-    def frequency(self, value: int):
-        """Set the frequency."""
-        self._frequency = value
-        self._dao.frequency = value
-
-    @property
-    def to_date(self):
-        """Return the to_date of the statement."""
-        return self._to_date
-
-    @to_date.setter
-    def to_date(self, value: date):
-        """Set the to_date for the statement."""
-        self._to_date = value
-        self._dao.to_date = value
-
-    @property
-    def from_date(self):
-        """Return the from_date of the statement."""
-        return self._from_date
-
-    @from_date.setter
-    def from_date(self, value: date):
-        """Set the from for the statement."""
-        self._from_date = value
-        self._dao.from_date = value
-
-    def asdict(self):
+    @staticmethod
+    def asdict(dao):
         """Return the invoice as a python dict."""
         statement_schema = StatementModelSchema()
-        d = statement_schema.dump(self._dao)
+        d = statement_schema.dump(dao)
         return d
 
     @classmethod
@@ -172,7 +94,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
     @staticmethod
-    def get_statement_total(statement_id: int):
+    def get_statement_total(statement_id: int) -> Decimal:
         """Get statement query used for statement total."""
         result = (
             db.session.query(
@@ -188,7 +110,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         return result or 0
 
     @staticmethod
-    def find_by_id(statement_id: int):
+    def find_by_id(statement_id: int) -> StatementModel:
         """Get statement by id and populate payment methods and amount owing."""
         owing_subquery = Statement.get_statement_owing_query().subquery()
 
@@ -291,9 +213,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def is_payment_method_statement(
-        statement: StatementModel,
-        ordered_invoices: List[InvoiceModel],
-        payment_method_code: str
+        statement: StatementModel, ordered_invoices: List[InvoiceModel], payment_method_code: str
     ) -> bool:
         """Return if the statement is for the specified payment method."""
         # Check invoice payment method for statement template
@@ -372,18 +292,14 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @classmethod
     def _populate_statement_summary(
-        cls,
-        statement: StatementModel,
-        statement_invoices: List[InvoiceModel],
-        payment_method: PaymentMethod
+        cls, statement: StatementModel, statement_invoices: List[InvoiceModel], payment_method: PaymentMethod
     ) -> dict:
         """Populate statement summary with additional information."""
         previous_statement = Statement.get_previous_statement(statement)
         previous_totals = None
         if previous_statement:
             previous_invoices = Statement.find_all_payments_and_invoices_for_statement(
-                previous_statement.id,
-                payment_method
+                previous_statement.id, payment_method
             )
             previous_items = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
             # Skip passing statement, we need the totals independent of the statement/payment date.
@@ -407,15 +323,12 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def _build_statement_summary_for_methods(
-        statement_dao: StatementModel,
-        statement_purchases: List[InvoiceModel]
+        statement_dao: StatementModel, statement_purchases: List[InvoiceModel]
     ) -> dict:
         """Build statement_summary for EFT and PAD without inflating locals in caller."""
         summary: dict = {}
         if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.EFT.value):
-            summary.update(
-                Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.EFT)
-            )
+            summary.update(Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.EFT))
         if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.PAD.value):
             pad_summary = Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.PAD)
             pad_amount = pad_summary.get("lastStatementPaidAmount")
@@ -427,20 +340,17 @@ class Statement:  # pylint:disable=too-many-public-methods
     def get_statement_report(statement_id: str, content_type: str, **kwargs):
         """Generate statement report."""
         current_app.logger.debug(f"<get_statement_report {statement_id}")
-        report_name: str = "bcregistry-statements"
+        report_name = "bcregistry-statements"
 
-        statement_dao: StatementModel = Statement.find_by_id(statement_id)
-        Statement.populate_overdue_from_invoices([statement_dao])
+        statement = Statement.find_by_id(statement_id)
+        Statement.populate_overdue_from_invoices([statement])
 
-        statement_svc = Statement()
-        statement_svc._dao = statement_dao  # pylint: disable=protected-access
-
-        from_date_string: str = statement_svc.from_date.strftime(DT_SHORT_FORMAT)
-        to_date_string: str = statement_svc.to_date.strftime(DT_SHORT_FORMAT)
+        from_date_string = statement.from_date.strftime(DT_SHORT_FORMAT)
+        to_date_string = statement.to_date.strftime(DT_SHORT_FORMAT)
 
         extension = "pdf" if content_type == ContentType.PDF.value else "csv"
 
-        if statement_svc.frequency == StatementFrequency.DAILY.value:
+        if statement.frequency == StatementFrequency.DAILY.value:
             report_name = f"{report_name}-{from_date_string}.{extension}"
         else:
             report_name = f"{report_name}-{from_date_string}-to-{to_date_string}.{extension}"
@@ -448,9 +358,9 @@ class Statement:  # pylint:disable=too-many-public-methods
         statement_purchases = Statement.find_all_payments_and_invoices_for_statement(statement_id)
 
         result_items = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
-        statement = statement_svc.asdict()
-        statement["from_date"] = from_date_string
-        statement["to_date"] = to_date_string
+        statement_dict = Statement.asdict(statement)
+        statement_dict["from_date"] = from_date_string
+        statement_dict["to_date"] = to_date_string
 
         report_inputs = PaymentReportInput(
             content_type=content_type,
@@ -459,12 +369,12 @@ class Statement:  # pylint:disable=too-many-public-methods
             results=result_items,
         )
 
-        summary = Statement._build_statement_summary_for_methods(statement_dao, statement_purchases)
+        summary = Statement._build_statement_summary_for_methods(statement, statement_purchases)
         if summary:
             report_inputs.statement_summary = summary
 
         report_response = PaymentService.generate_payment_report(
-            report_inputs, auth=kwargs.get("auth", None), statement=statement
+            report_inputs, auth=kwargs.get("auth", None), statement=statement_dict
         )
         current_app.logger.debug(">get_statement_report")
 
@@ -691,8 +601,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def find_all_payments_and_invoices_for_statement(
-        statement_id: str,
-        payment_method: PaymentMethod = None
+        statement_id: str, payment_method: PaymentMethod = None
     ) -> List[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""
         query = (

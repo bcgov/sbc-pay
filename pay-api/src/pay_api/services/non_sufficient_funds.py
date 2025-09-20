@@ -46,20 +46,10 @@ from .oauth_service import OAuthService
 class NonSufficientFundsService:
     """Service to manage Non-Sufficient Funds related operations."""
 
-    def __init__(self):
-        """Initialize the service."""
-        self.dao = NonSufficientFunds()
-
-    def asdict(self):
-        """Return the EFT Short name as a python dict."""
-        return Converter().unstructure(NonSufficientFundsSchema.from_row(self.dao))
-
     @staticmethod
-    def populate(value: NonSufficientFunds):
-        """Populate Non-Sufficient Funds Service."""
-        non_sufficient_funds_service = NonSufficientFundsService()
-        non_sufficient_funds_service.dao = value
-        return non_sufficient_funds_service
+    def asdict(dao):
+        """Return the EFT Short name as a python dict."""
+        return Converter().unstructure(NonSufficientFundsSchema.from_row(dao))
 
     @staticmethod
     def save_non_sufficient_funds(
@@ -67,17 +57,16 @@ class NonSufficientFundsService:
     ) -> NonSufficientFundsService:
         """Create Non-Sufficient Funds record."""
         current_app.logger.debug("<save_non_sufficient_funds")
-        non_sufficient_funds_service = NonSufficientFundsService()
+        non_sufficient_funds_dao = NonSufficientFunds()
 
-        non_sufficient_funds_service.dao.description = description
-        non_sufficient_funds_service.dao.invoice_id = invoice_id
-        non_sufficient_funds_service.dao.invoice_number = invoice_number
-        non_sufficient_funds_service.dao.cfs_account = cfs_account
-        non_sufficient_funds_dao = non_sufficient_funds_service.dao.save()
+        non_sufficient_funds_dao.description = description
+        non_sufficient_funds_dao.invoice_id = invoice_id
+        non_sufficient_funds_dao.invoice_number = invoice_number
+        non_sufficient_funds_dao.cfs_account = cfs_account
+        non_sufficient_funds_dao = non_sufficient_funds_dao.save()
 
-        non_sufficient_funds_service = NonSufficientFundsService.populate(non_sufficient_funds_dao)
         current_app.logger.debug(">save_non_sufficient_funds")
-        return NonSufficientFundsService.asdict(non_sufficient_funds_service)
+        return NonSufficientFundsService.asdict(non_sufficient_funds_dao)
 
     @staticmethod
     def exists_for_invoice_number(invoice_number: str) -> bool:
@@ -168,7 +157,7 @@ class NonSufficientFundsService:
         return results, total, aggregate_totals, statements
 
     @staticmethod
-    def find_all_non_sufficient_funds_invoices(account_id: str):
+    def find_all_non_sufficient_funds_invoices(account_id: str) -> dict:
         """Return all Non-Sufficient Funds invoices."""
         results, total, aggregate_totals, statements = (
             NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id)
