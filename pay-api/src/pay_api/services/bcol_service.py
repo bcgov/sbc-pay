@@ -23,7 +23,7 @@ from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
-from pay_api.models.invoice_reference import InvoiceReference
+from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
@@ -33,6 +33,7 @@ from pay_api.utils.util import generate_transaction_number
 
 from .base_payment_system import PaymentSystemService, skip_complete_post_invoice_for_sandbox, skip_invoice_for_sandbox
 from .invoice import Invoice
+from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
@@ -53,7 +54,7 @@ class BcolService(PaymentSystemService, OAuthService):
         line_items: List[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
-    ) -> InvoiceReference:
+    ) -> InvoiceReferenceModel:
         """Create Invoice in PayBC."""
         self.ensure_no_payment_blockers(payment_account)
         current_app.logger.debug(
@@ -185,7 +186,7 @@ class BcolService(PaymentSystemService, OAuthService):
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         self._publish_refund_to_mailer(invoice)
-        payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
+        payment = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
         payment.flush()
 
