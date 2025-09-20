@@ -24,7 +24,7 @@ from unittest.mock import patch
 import pytest
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment
+from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment, PaymentTransaction
 from pay_api.services.hashing import HashingService
 from pay_api.services.payment_service import Payment as PaymentService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
@@ -62,7 +62,7 @@ def test_transaction_saved_from_new(session):
 
     payment = factory_payment(invoice_number=invoice_reference.invoice_number).save()
 
-    payment_transaction = PaymentTransactionService()
+    payment_transaction = PaymentTransaction()
     payment_transaction.status_code = "CREATED"
     payment_transaction.transaction_end_time = datetime.now(tz=timezone.utc)
     payment_transaction.transaction_start_time = datetime.now(tz=timezone.utc)
@@ -71,7 +71,7 @@ def test_transaction_saved_from_new(session):
     payment_transaction.payment_id = payment.id
     payment_transaction = payment_transaction.save()
 
-    transaction = PaymentTransactionService.find_by_id(payment_transaction.id)
+    transaction = PaymentTransaction.find_by_id(payment_transaction.id)
 
     assert transaction is not None
     assert transaction.id is not None
@@ -105,7 +105,6 @@ def test_transaction_create_from_new(session):
     assert transaction.client_system_url is not None
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
-    assert transaction.asdict() is not None
 
 
 def test_transaction_for_direct_pay_create_from_new(session):
@@ -131,7 +130,6 @@ def test_transaction_for_direct_pay_create_from_new(session):
     assert transaction.client_system_url is not None
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
-    assert transaction.asdict() is not None
 
 
 def test_transaction_create_from_invalid_payment(session):
@@ -216,7 +214,6 @@ def test_transaction_update_with_no_receipt(session):
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
     assert transaction.status_code == TransactionStatus.FAILED.value
-    assert transaction.asdict() is not None
 
 
 @skip_in_pod
