@@ -19,7 +19,6 @@ import os
 import pytest
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import event, text
-from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pay_api import create_app
 from pay_api import jwt as _jwt
@@ -91,19 +90,16 @@ def client_ctx(app):
 @pytest.fixture(scope="session", autouse=True)
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
-    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
-    unique_db_name = f"pay-test-{worker_id}"
-
-    # Parse the original URL and replace the database name properly
-    original_url = _db.engine.url
-    new_url = original_url.set(database=unique_db_name)
-    _db.engine.url = new_url
-
     with app.app_context():
-        if database_exists(_db.engine.url):
-            drop_database(_db.engine.url)
-        create_database(_db.engine.url)
+        # Create schema for this worker
+        worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+        schema_name = f"test_{worker_id}"
+
+        # Drop and recreate schema
+        _db.session().execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
+        _db.session().execute(text(f'CREATE SCHEMA "{schema_name}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
+
         Migrate(app, _db)
         upgrade()
         return _db

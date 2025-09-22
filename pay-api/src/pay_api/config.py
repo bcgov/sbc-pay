@@ -244,9 +244,15 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config("DATABASE_TEST_NAME", default="paytestdb")
     DB_HOST = _get_config("DATABASE_TEST_HOST", default="localhost")
     DB_PORT = _get_config("DATABASE_TEST_PORT", default="5432")
+
+    # Use different schemas for parallel test isolation
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    schema_name = f"test_{worker_id}"
+
     SQLALCHEMY_DATABASE_URI = _get_config(
         "DATABASE_TEST_URL",
-        default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}",
+        default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
+        f"?options=-csearch_path%3D{schema_name}",
     )
 
     JWT_OIDC_TEST_MODE = True
