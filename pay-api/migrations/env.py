@@ -52,8 +52,12 @@ def get_list_from_config(config, key):
 exclude_tables = get_list_from_config(config, "exclude_tables")
 
 
-def include_object(object, name, type_, reflected, compare_to):
-    return not (type_ == "table" and name in exclude_tables)
+def _include_object(target_schema_name):
+    def include_object(obj, name, object_type, reflected, compare_to):
+        if object_type == "table":
+            return obj.schema == target_schema_name
+        return True
+    return include_object
 
 
 def run_migrations_offline():
@@ -74,7 +78,7 @@ def run_migrations_offline():
         target_metadata=target_metadata,
         literal_binds=True,
         compare_type=True,
-        include_object=include_object,
+        include_object=_include_object(current_app.config.get("ALEMBIC_SCHEMA", "public")),
     )
 
     with context.begin_transaction():
@@ -110,7 +114,7 @@ def run_migrations_online():
             connection=connection,
             target_metadata=target_metadata,
             process_revision_directives=process_revision_directives,
-            include_object=include_object,
+            include_object=_include_object(current_app.config.get("ALEMBIC_SCHEMA", "public")),
             **current_app.extensions["migrate"].configure_args,
         )
 
