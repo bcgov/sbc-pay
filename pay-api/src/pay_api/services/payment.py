@@ -496,6 +496,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
         labels = [
+            "Product",
+            "Corp Type",
+            "Transaction Type",
             "Transaction",
             "Transaction Details",
             "Folio Number",
@@ -595,6 +598,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             service_fee = float(invoice.get("service_fees", 0))
             total_fees = float(invoice.get("total", 0))
             row_value = [
+                invoice.get("product"),
+                invoice.get("corp_type_code"),
+                ",".join([line_item.get("filing_type_code") for line_item in invoice.get("line_items")]),
                 ",".join([line_item.get("description") for line_item in invoice.get("line_items")]),
                 (
                     ",".join([f"{detail.get('label')} {detail.get('value')}" for detail in invoice.get("details")])
