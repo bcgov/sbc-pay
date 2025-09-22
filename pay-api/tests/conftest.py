@@ -100,7 +100,6 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         _db.session().execute(text('SET TIME ZONE "UTC";'))
         _db.session().execute(text(f'SET search_path TO "{schema_name}"'))
 
-        app.config['ALEMBIC_SCHEMA'] = schema_name
         Migrate(app, _db)
         upgrade()
         return _db
