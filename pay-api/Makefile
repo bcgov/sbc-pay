@@ -65,7 +65,7 @@ flake8: ## Linting with flake8
 
 lint: isort black pylint flake8 ## run all lint type scripts
 
-test: ## Unit testing
+test: ## Unit testing (parallel)
 	poetry run pytest
 
 mac-cov: test ## Run the coverage report and display in a browser window (mac)

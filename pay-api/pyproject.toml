@@ -83,6 +83,7 @@ google-cloud-storage = "^2.19.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
 pytest-mock = "^3.14.0"
+pytest-xdist = "^3.6.0"
 requests = "^2.32.4"
 pyhamcrest = "^2.1.0"
 pytest-cov = "^4.1.0"
@@ -186,7 +187,7 @@ minversion = "2.0"
 testpaths = [
    "tests",
 ]
-addopts = "--verbose --strict -p no:warnings --cov=src --cov-report html:htmlcov --cov-report xml:coverage.xml"
+addopts = "--verbose --strict -p no:warnings --cov=src --cov-report html:htmlcov --cov-report xml:coverage.xml -n auto"
 python_files = [
    "test*.py"
 ]
