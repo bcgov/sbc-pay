@@ -100,6 +100,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         _db.session().execute(text(f'CREATE SCHEMA "{schema_name}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
         _db.session().execute(text(f'SET search_path TO "{schema_name}"'))
+        _db.session().commit()
 
         Migrate(app, _db)
         upgrade()
