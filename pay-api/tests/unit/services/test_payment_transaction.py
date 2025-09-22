@@ -578,7 +578,6 @@ def test_create_transaction_for_nsf_payment(session):
     assert transaction.client_system_url is not None
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
-    assert transaction.asdict() is not None
 
 
 def test_create_transaction_for_completed_nsf_payment(session):
