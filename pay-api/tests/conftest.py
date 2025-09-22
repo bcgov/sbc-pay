@@ -92,9 +92,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     with app.app_context():
         # Create schema for this worker
-        worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
-        print(f"PYTEST_XDIST_WORKER value: {worker_id}")
-        schema_name = f"test_{worker_id}"
+        schema_name = app.config["ALEMBIC_SCHEMA"]
 
         _db.session().execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
         _db.session().execute(text(f'CREATE SCHEMA "{schema_name}"'))
