@@ -26,6 +26,11 @@ logger = logging.getLogger("alembic.env")
 config.set_main_option(
     "sqlalchemy.url", current_app.config.get("SQLALCHEMY_DATABASE_URI")
 )
+
+# Set schema if specified in app config
+if current_app.config.get("ALEMBIC_SCHEMA"):
+    config.set_main_option("schema", current_app.config.get("ALEMBIC_SCHEMA"))
+
 target_metadata = current_app.extensions["migrate"].db.metadata
 
 # other values from the config, defined by the needs of env.py,
