@@ -213,6 +213,11 @@ def system_user_mock(monkeypatch):
 @pytest.fixture(scope="session", autouse=True)
 def auto(docker_services, app):
     """Spin up a keycloak instance and initialize jwt."""
+    # Only run on master worker to avoid starting Docker services multiple times
+    worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'master')
+    if worker_id != 'master':
+        return
+    
     if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
         docker_services.start("keycloak")
         docker_services.wait_for_service("keycloak", 8081)
