@@ -93,14 +93,13 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     with app.app_context():
         # Create schema for this worker
         schema_name = app.config["ALEMBIC_SCHEMA"]
-
         _db.session().execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
         _db.session().execute(text(f'CREATE SCHEMA "{schema_name}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
         _db.session().execute(text(f'SET search_path TO "{schema_name}"'))
         _db.session().commit()
 
-        Migrate(app, _db)
+        Migrate(app, _db, version_table_schema=schema_name)
         upgrade()
         return _db
 
