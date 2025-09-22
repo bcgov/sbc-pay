@@ -255,7 +255,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
         f"?options=-csearch_path%3D{schema_name}",
     )
 
-    # Set schema for Alembic migrations
     ALEMBIC_SCHEMA = schema_name
 
     JWT_OIDC_TEST_MODE = True
