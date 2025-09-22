@@ -68,6 +68,9 @@ lint: isort black pylint flake8 ## run all lint type scripts
 test: ## Unit testing (parallel)
 	poetry run pytest
 
+test-serial: ## Unit testing (serial - no parallelization)
+	poetry run pytest -n 0
+
 mac-cov: test ## Run the coverage report and display in a browser window (mac)
 	@open -a "Google Chrome" htmlcov/index.html
 

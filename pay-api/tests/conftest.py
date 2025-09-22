@@ -92,14 +92,15 @@ def client_ctx(app):
 @pytest.fixture(scope="session", autouse=True)
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
-    worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'master')
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
     hostname = socket.gethostname()[:8]  # Use first 8 chars of hostname
     unique_db_name = f"pay-test-{hostname}-{worker_id}"
-    
-    original_url = str(_db.engine.url)
-    new_url = original_url.replace('pay-test', unique_db_name)
+
+    # Parse the original URL and replace the database name properly
+    original_url = _db.engine.url
+    new_url = original_url.set(database=unique_db_name)
     _db.engine.url = new_url
-    
+
     with app.app_context():
         if database_exists(_db.engine.url):
             drop_database(_db.engine.url)
@@ -214,10 +215,10 @@ def system_user_mock(monkeypatch):
 def auto(docker_services, app):
     """Spin up a keycloak instance and initialize jwt."""
     # Only run on master worker to avoid starting Docker services multiple times
-    worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'master')
-    if worker_id != 'master':
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    if worker_id != "master":
         return
-    
+
     if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
         docker_services.start("keycloak")
         docker_services.wait_for_service("keycloak", 8081)

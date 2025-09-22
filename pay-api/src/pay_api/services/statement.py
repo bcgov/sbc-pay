@@ -291,9 +291,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def is_payment_method_statement(
-        statement: StatementModel,
-        ordered_invoices: List[InvoiceModel],
-        payment_method_code: str
+        statement: StatementModel, ordered_invoices: List[InvoiceModel], payment_method_code: str
     ) -> bool:
         """Return if the statement is for the specified payment method."""
         # Check invoice payment method for statement template
@@ -372,18 +370,14 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @classmethod
     def _populate_statement_summary(
-        cls,
-        statement: StatementModel,
-        statement_invoices: List[InvoiceModel],
-        payment_method: PaymentMethod
+        cls, statement: StatementModel, statement_invoices: List[InvoiceModel], payment_method: PaymentMethod
     ) -> dict:
         """Populate statement summary with additional information."""
         previous_statement = Statement.get_previous_statement(statement)
         previous_totals = None
         if previous_statement:
             previous_invoices = Statement.find_all_payments_and_invoices_for_statement(
-                previous_statement.id,
-                payment_method
+                previous_statement.id, payment_method
             )
             previous_items = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
             # Skip passing statement, we need the totals independent of the statement/payment date.
@@ -407,15 +401,12 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def _build_statement_summary_for_methods(
-        statement_dao: StatementModel,
-        statement_purchases: List[InvoiceModel]
+        statement_dao: StatementModel, statement_purchases: List[InvoiceModel]
     ) -> dict:
         """Build statement_summary for EFT and PAD without inflating locals in caller."""
         summary: dict = {}
         if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.EFT.value):
-            summary.update(
-                Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.EFT)
-            )
+            summary.update(Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.EFT))
         if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.PAD.value):
             pad_summary = Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.PAD)
             pad_amount = pad_summary.get("lastStatementPaidAmount")
@@ -691,8 +682,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def find_all_payments_and_invoices_for_statement(
-        statement_id: str,
-        payment_method: PaymentMethod = None
+        statement_id: str, payment_method: PaymentMethod = None
     ) -> List[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""
         query = (
