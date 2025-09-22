@@ -93,6 +93,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     with app.app_context():
         # Create schema for this worker
         schema_name = app.config["ALEMBIC_SCHEMA"]
+        raise Exception(f"schema_name: {schema_name}")
         _db.session().execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
         _db.session().execute(text(f'CREATE SCHEMA "{schema_name}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
