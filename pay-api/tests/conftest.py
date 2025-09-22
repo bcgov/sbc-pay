@@ -95,10 +95,10 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
         schema_name = f"test_{worker_id}"
 
-        # Drop and recreate schema
         _db.session().execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
         _db.session().execute(text(f'CREATE SCHEMA "{schema_name}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
+        _db.session().execute(text(f'SET search_path TO "{schema_name}"'))
 
         Migrate(app, _db)
         upgrade()
