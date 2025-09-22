@@ -15,8 +15,6 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
-import time
-import uuid
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -94,9 +92,7 @@ def client_ctx(app):
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
-    # Use UUID4 for guaranteed uniqueness, no network calls needed
-    unique_id = str(uuid.uuid4()).replace("-", "")[:12]  # First 12 chars of UUID
-    unique_db_name = f"pay-test-{worker_id}-{unique_id}"
+    unique_db_name = f"pay-test-{worker_id}"
 
     # Parse the original URL and replace the database name properly
     original_url = _db.engine.url
