@@ -217,7 +217,7 @@ def auto(docker_services, app):
             # First worker: initialize Docker services
             if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
                 docker_services.start("keycloak")
-                docker_services.wait_for_service("keycloak", 8081)
+                docker_services.wait_for_service("keycloak", 8081, timeout=60.0)
 
             if app.config["USE_DOCKER_MOCK"]:
                 docker_services.start("bcol")
@@ -226,8 +226,8 @@ def auto(docker_services, app):
                 docker_services.start("reports")
                 docker_services.start("proxy")
                 docker_services.start("gcs-emulator")
-                docker_services.wait_for_service("proxy", 8080)
-                docker_services.wait_for_service("gcs-emulator", 4443)
+                time.sleep(10)
+
             with open(docker_lock_file, "w") as f:
                 f.write("ready")
         else:
