@@ -226,8 +226,8 @@ def auto(docker_services, app):
                 docker_services.start("reports")
                 docker_services.start("proxy")
                 docker_services.start("gcs-emulator")
-
-            # Signal completion
+                docker_services.wait_for_service("proxy", 8080)
+                docker_services.wait_for_service("gcs-emulator", 4443)
             with open(docker_lock_file, "w") as f:
                 f.write("ready")
         else:
