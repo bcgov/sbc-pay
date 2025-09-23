@@ -102,20 +102,9 @@ def upgrade():
         ],
     )
 
-    op.execute("""
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 FROM pg_constraint c
-                JOIN pg_class t ON c.conrelid = t.oid
-                JOIN pg_namespace n ON t.relnamespace = n.oid
-                WHERE c.conname = 'invoice_invoice_status_code_fkey'
-                AND n.nspname = current_schema()
-            ) THEN
-                ALTER TABLE invoice DROP CONSTRAINT invoice_invoice_status_code_fkey;
-            END IF;
-        END $$;
-    """)
+    op.drop_constraint(
+        "invoice_invoice_status_code_fkey", "invoice", type_="foreignkey"
+    )
     op.create_foreign_key(
         "invoice_invoice_status_code_fkey",
         "invoice",
@@ -203,7 +192,7 @@ def downgrade():
         sa.Column(
             "description", sa.VARCHAR(length=200), autoincrement=False, nullable=False
         ),
-        sa.PrimaryKeyConstraint("code"),
+        sa.PrimaryKeyConstraint("code", name="status_code_pkey"),
     )
 
     op.drop_constraint(
