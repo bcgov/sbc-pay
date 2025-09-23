@@ -68,6 +68,9 @@ lint: isort black pylint flake8 ## run all lint type scripts
 test: ## Unit testing (parallel)
 	poetry run pytest
 
+test-fast: ## Unit testing (parallel, stop after 3 failures)
+	poetry run pytest -n auto --maxfail=3
+
 test-serial: ## Unit testing (serial - no parallelization)
 	poetry run pytest -n 0
 

@@ -18,7 +18,8 @@ import os
 
 import pytest
 from flask_migrate import Migrate, upgrade
-from sqlalchemy import event, text
+from sqlalchemy import create_engine, event, text
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pay_api import create_app
 from pay_api import jwt as _jwt
@@ -91,15 +92,20 @@ def client_ctx(app):
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     with app.app_context():
-        # Create schema for this worker
-        schema_name = app.config["ALEMBIC_SCHEMA"]
-        _db.session().execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
-        _db.session().execute(text(f'CREATE SCHEMA "{schema_name}"'))
+        if os.environ.get("PYTEST_XDIST_WORKER"):
+            # Create worker-specific database
+            config = app.config
+            initial_url = f"postgresql+pg8000://{config['DB_USER']}:{config['DB_PASSWORD']}@{config['DB_HOST']}:{config['DB_PORT']}/pay-test"
+            engine = create_engine(initial_url, isolation_level="AUTOCOMMIT")
+            with engine.connect() as conn:
+                conn.execute(text(f'DROP DATABASE IF EXISTS "{config["DB_NAME"]}"'))
+                conn.execute(text(f'CREATE DATABASE "{config["DB_NAME"]}"'))
+        else:
+            if database_exists(_db.engine.url):
+                drop_database(_db.engine.url)
+            create_database(_db.engine.url)
         _db.session().execute(text('SET TIME ZONE "UTC";'))
-        _db.session().execute(text(f'SET search_path TO "{schema_name}"'))
-        _db.session().commit()
-
-        Migrate(app, _db, version_table_schema=schema_name)
+        Migrate(app, _db)
         upgrade()
         return _db
 
