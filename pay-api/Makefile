@@ -65,8 +65,14 @@ flake8: ## Linting with flake8
 
 lint: isort black pylint flake8 ## run all lint type scripts
 
-test: ## Unit testing
-	poetry run pytest
+test: ## Unit testing (parallel)
+	poetry run pytest -n auto
+
+test-fast: ## Unit testing (parallel, stop after 3 failures)
+	poetry run pytest -n auto --maxfail=3
+
+test-serial: ## Unit testing (serial - no parallelization)
+	poetry run pytest -n 0
 
 mac-cov: test ## Run the coverage report and display in a browser window (mac)
 	@open -a "Google Chrome" htmlcov/index.html

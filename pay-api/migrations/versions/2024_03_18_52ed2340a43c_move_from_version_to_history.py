@@ -114,7 +114,7 @@ def upgrade():
             from 
                 account_fees_version afv 
             left join 
-               public.transaction t on afv.transaction_id = t.id
+               transaction t on afv.transaction_id = t.id
         ),
         max_versions as (
             select 
@@ -155,7 +155,7 @@ def upgrade():
                 t.issued_at as changed, 
                 COALESCE(ROW_NUMBER() OVER (PARTITION BY cav.id ORDER BY cav.transaction_id ASC), 1) as version
             from cfs_accounts_version cav
-                left join public.transaction t on cav.transaction_id = t.id
+                left join transaction t on cav.transaction_id = t.id
         ),
         max_versions as (
             select 
@@ -206,7 +206,7 @@ def upgrade():
                 t.issued_at as changed,
                 COALESCE(ROW_NUMBER() OVER (PARTITION BY dcv.distribution_code_id ORDER BY dcv.transaction_id ASC), 1) as version
             from distribution_codes_version dcv
-                left join public.transaction t on dcv.transaction_id = t.id
+                left join transaction t on dcv.transaction_id = t.id
         ),
         max_versions as (
             select
@@ -248,7 +248,7 @@ def upgrade():
                 t.issued_at as changed,
                 COALESCE(ROW_NUMBER() OVER (PARTITION BY esnv.id ORDER BY esnv.transaction_id ASC), 1) as version
             from eft_short_names_version esnv
-            left join public.transaction t on esnv.transaction_id = t.id
+            left join transaction t on esnv.transaction_id = t.id
         ), 
         max_versions as (
             select 
@@ -293,7 +293,7 @@ def upgrade():
             from 
                payment_accounts_version pav
             left join 
-               public.transaction t on pav.transaction_id = t.id
+               transaction t on pav.transaction_id = t.id
             ),
             max_versions as (
                 select
@@ -341,7 +341,7 @@ def upgrade():
             from 
                refunds_partial_version rpv
             left join
-               public.transaction t on rpv.transaction_id = t.id
+               transaction t on rpv.transaction_id = t.id
         ),
         max_versions as (
             select

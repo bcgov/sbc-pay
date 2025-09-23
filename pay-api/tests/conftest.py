@@ -15,10 +15,11 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
+import time
 
 import pytest
 from flask_migrate import Migrate, upgrade
-from sqlalchemy import event, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pay_api import create_app
@@ -92,9 +93,13 @@ def client_ctx(app):
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     with app.app_context():
-        if database_exists(_db.engine.url):
-            drop_database(_db.engine.url)
-        create_database(_db.engine.url)
+        # Create worker-specific database
+        c = app.config
+        initial_url = f"postgresql+pg8000://{c['DB_USER']}:{c['DB_PASSWORD']}@{c['DB_HOST']}:{c['DB_PORT']}/pay-test"
+        engine = create_engine(initial_url, isolation_level="AUTOCOMMIT")
+        with engine.connect() as conn:
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{c["DB_NAME"]}"'))
+            conn.execute(text(f'CREATE DATABASE "{c["DB_NAME"]}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
         Migrate(app, _db)
         upgrade()
@@ -203,19 +208,8 @@ def system_user_mock(monkeypatch):
 
 @pytest.fixture(scope="session", autouse=True)
 def auto(docker_services, app):
-    """Spin up a keycloak instance and initialize jwt."""
-    if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
-        docker_services.start("keycloak")
-        docker_services.wait_for_service("keycloak", 8081)
-
+    """Initialize JWT manager."""
     setup_jwt_manager(app, _jwt)
-    if app.config["USE_DOCKER_MOCK"]:
-        docker_services.start("bcol")
-        docker_services.start("auth")
-        docker_services.start("paybc")
-        docker_services.start("reports")
-        docker_services.start("proxy")
-        docker_services.start("gcs-emulator")
 
 
 @pytest.fixture(scope="session")

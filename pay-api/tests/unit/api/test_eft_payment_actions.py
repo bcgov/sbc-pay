@@ -418,14 +418,24 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     )
     assert credit_invoice_links
     assert len(credit_invoice_links) == 2
-    assert credit_invoice_links[0].status_code == EFTCreditInvoiceStatus.COMPLETED.value
-    assert credit_invoice_links[0].link_group_id is not None
-    assert credit_invoice_links[0].amount == 100
 
-    assert credit_invoice_links[1].status_code == EFTCreditInvoiceStatus.PENDING_REFUND.value
-    assert credit_invoice_links[1].link_group_id is not None
-    assert credit_invoice_links[1].amount == credit_invoice_links[0].amount
-    assert credit_invoice_links[1].receipt_number == credit_invoice_links[0].receipt_number
+    # Find the COMPLETED and PENDING_REFUND links (order may vary)
+    completed_link = next(
+        (link for link in credit_invoice_links if link.status_code == EFTCreditInvoiceStatus.COMPLETED.value), None
+    )
+    pending_refund_link = next(
+        (link for link in credit_invoice_links if link.status_code == EFTCreditInvoiceStatus.PENDING_REFUND.value), None
+    )
+
+    assert completed_link is not None, "Should have a COMPLETED link"
+    assert pending_refund_link is not None, "Should have a PENDING_REFUND link"
+
+    assert completed_link.link_group_id is not None
+    assert completed_link.amount == 100
+
+    assert pending_refund_link.link_group_id is not None
+    assert pending_refund_link.amount == completed_link.amount
+    assert pending_refund_link.receipt_number == completed_link.receipt_number
     assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 100
 
     partner_disbursement = PartnerDisbursements.query.order_by(PartnerDisbursements.id.desc()).first()
