@@ -18,6 +18,7 @@ import os
 import time
 
 import pytest
+from filelock import FileLock
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import create_engine, event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
@@ -209,31 +210,32 @@ def system_user_mock(monkeypatch):
 @pytest.fixture(scope="session", autouse=True)
 def auto(docker_services, app):
     """Spin up a keycloak instance and initialize jwt."""
-    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
     docker_lock_file = "/tmp/pay_api_docker_ready.lock"
-    if worker_id in ["master"]:
-        # Master: start Docker services first
-        if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
-            docker_services.start("keycloak")
-            docker_services.wait_for_service("keycloak", 8081)
 
-        if app.config["USE_DOCKER_MOCK"]:
-            docker_services.start("bcol")
-            docker_services.start("auth")
-            docker_services.start("paybc")
-            docker_services.start("reports")
-            docker_services.start("proxy")
-            docker_services.start("gcs-emulator")
-        
-        # Signal other workers to proceed
-        with open(docker_lock_file, 'w') as f:
-            f.write("ready")
-    else:
-        # Workers: wait for master to finish Docker setup
-        while not os.path.exists(docker_lock_file):
-            time.sleep(0.1)
+    with FileLock(docker_lock_file, timeout=60):
+        if not os.path.exists(docker_lock_file):
+            # First worker: initialize Docker services
+            if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
+                docker_services.start("keycloak")
+                docker_services.wait_for_service("keycloak", 8081)
+
+            if app.config["USE_DOCKER_MOCK"]:
+                docker_services.start("bcol")
+                docker_services.start("auth")
+                docker_services.start("paybc")
+                docker_services.start("reports")
+                docker_services.start("proxy")
+                docker_services.start("gcs-emulator")
+
+            # Signal completion
+            with open(docker_lock_file, "w") as f:
+                f.write("ready")
+        else:
+            # Other workers: wait for services to be ready
+            while not os.path.exists(docker_lock_file):
+                time.sleep(0.1)
+
     setup_jwt_manager(app, _jwt)
-        
 
 
 @pytest.fixture(scope="session")
