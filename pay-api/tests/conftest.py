@@ -95,12 +95,12 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     with app.app_context():
         # Create worker-specific database
-        config = app.config
-        initial_url = f"postgresql+pg8000://{config['DB_USER']}:{config['DB_PASSWORD']}@{config['DB_HOST']}:{config['DB_PORT']}/pay-test"
+        c = app.config
+        initial_url = f"postgresql+pg8000://{c['DB_USER']}:{c['DB_PASSWORD']}@{c['DB_HOST']}:{c['DB_PORT']}/pay-test"
         engine = create_engine(initial_url, isolation_level="AUTOCOMMIT")
         with engine.connect() as conn:
-            conn.execute(text(f'DROP DATABASE IF EXISTS "{config["DB_NAME"]}"'))
-            conn.execute(text(f'CREATE DATABASE "{config["DB_NAME"]}"'))
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{c["DB_NAME"]}"'))
+            conn.execute(text(f'CREATE DATABASE "{c["DB_NAME"]}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
         Migrate(app, _db)
         upgrade()
