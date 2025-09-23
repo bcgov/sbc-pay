@@ -101,10 +101,26 @@ jobs:
       - name: Install dependencies
         run: |
           make setup
+      - name: Start Docker services
+        run: |
+          cd tests/docker
+          docker-compose up -d
+          # Wait for Keycloak to be ready with proper health check
+          echo "Waiting for Keycloak to be ready..."
+          timeout 300 bash -c 'until curl --output /dev/null --silent --head --fail http://localhost:8081/auth/realms/demo; do
+            printf "."
+            sleep 5
+          done'
+          echo "Keycloak is ready!"
       - name: Test with pytest
         id: test
         run: |
           make test
+      - name: Stop Docker services
+        if: always()
+        run: |
+          cd tests/docker
+          docker-compose down
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
