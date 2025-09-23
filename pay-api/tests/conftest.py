@@ -15,6 +15,7 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
+import time
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -92,18 +93,13 @@ def client_ctx(app):
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     with app.app_context():
-        if os.environ.get("PYTEST_XDIST_WORKER"):
-            # Create worker-specific database
-            config = app.config
-            initial_url = f"postgresql+pg8000://{config['DB_USER']}:{config['DB_PASSWORD']}@{config['DB_HOST']}:{config['DB_PORT']}/pay-test"
-            engine = create_engine(initial_url, isolation_level="AUTOCOMMIT")
-            with engine.connect() as conn:
-                conn.execute(text(f'DROP DATABASE IF EXISTS "{config["DB_NAME"]}"'))
-                conn.execute(text(f'CREATE DATABASE "{config["DB_NAME"]}"'))
-        else:
-            if database_exists(_db.engine.url):
-                drop_database(_db.engine.url)
-            create_database(_db.engine.url)
+        # Create worker-specific database
+        config = app.config
+        initial_url = f"postgresql+pg8000://{config['DB_USER']}:{config['DB_PASSWORD']}@{config['DB_HOST']}:{config['DB_PORT']}/pay-test"
+        engine = create_engine(initial_url, isolation_level="AUTOCOMMIT")
+        with engine.connect() as conn:
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{config["DB_NAME"]}"'))
+            conn.execute(text(f'CREATE DATABASE "{config["DB_NAME"]}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
         Migrate(app, _db)
         upgrade()
@@ -213,23 +209,31 @@ def system_user_mock(monkeypatch):
 @pytest.fixture(scope="session", autouse=True)
 def auto(docker_services, app):
     """Spin up a keycloak instance and initialize jwt."""
-    # Only run on master worker to avoid starting Docker services multiple times
     worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
-    if worker_id != "master":
-        return
+    docker_lock_file = "/tmp/pay_api_docker_ready.lock"
+    if worker_id in ["master"]:
+        # Master: start Docker services first
+        if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
+            docker_services.start("keycloak")
+            docker_services.wait_for_service("keycloak", 8081)
 
-    if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
-        docker_services.start("keycloak")
-        docker_services.wait_for_service("keycloak", 8081)
-
+        if app.config["USE_DOCKER_MOCK"]:
+            docker_services.start("bcol")
+            docker_services.start("auth")
+            docker_services.start("paybc")
+            docker_services.start("reports")
+            docker_services.start("proxy")
+            docker_services.start("gcs-emulator")
+        
+        # Signal other workers to proceed
+        with open(docker_lock_file, 'w') as f:
+            f.write("ready")
+    else:
+        # Workers: wait for master to finish Docker setup
+        while not os.path.exists(docker_lock_file):
+            time.sleep(0.1)
     setup_jwt_manager(app, _jwt)
-    if app.config["USE_DOCKER_MOCK"]:
-        docker_services.start("bcol")
-        docker_services.start("auth")
-        docker_services.start("paybc")
-        docker_services.start("reports")
-        docker_services.start("proxy")
-        docker_services.start("gcs-emulator")
+        
 
 
 @pytest.fixture(scope="session")

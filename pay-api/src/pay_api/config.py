@@ -246,10 +246,11 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_PORT = _get_config("DATABASE_TEST_PORT", default="5432")
 
     # Use different databases for parallel test isolation
-    if worker_id := os.environ.get("PYTEST_XDIST_WORKER"):
-        DB_NAME = f"pay-test-{worker_id}"
-    else:
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    if worker_id == "master":
         DB_NAME = "pay-test"
+    else:
+        DB_NAME = f"pay-test-{worker_id}"
 
     SQLALCHEMY_DATABASE_URI = _get_config(
         "DATABASE_TEST_URL", default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
