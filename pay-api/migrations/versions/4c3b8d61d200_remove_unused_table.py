@@ -79,14 +79,12 @@ def downgrade():
         sa.ForeignKeyConstraint(
             ["account_id"],
             ["payment_accounts.id"],
-            name="internal_payment_accounts_account_id_fkey",
         ),
         sa.ForeignKeyConstraint(
             ["corp_type_code"],
             ["corp_types.code"],
-            name="internal_payment_account_corp_types_code_fkey",
         ),
-        sa.PrimaryKeyConstraint("id", name="internal_payment_account_pkey"),
+        sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
         "ix_internal_payment_account_account_id",
@@ -116,14 +114,12 @@ def downgrade():
         sa.ForeignKeyConstraint(
             ["account_id"],
             ["payment_accounts.id"],
-            name="credit_payment_accounts_account_id_fkey",
         ),
         sa.ForeignKeyConstraint(
             ["corp_type_code"],
             ["corp_types.code"],
-            name="credit_payment_account_corp_types_code_fkey",
         ),
-        sa.PrimaryKeyConstraint("id", name="credit_payment_account_pkey"),
+        sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
         "ix_credit_payment_account_paybc_account",
@@ -150,9 +146,8 @@ def downgrade():
         sa.ForeignKeyConstraint(
             ["account_id"],
             ["payment_accounts.id"],
-            name="bcol_payment_accounts_account_id_fkey",
         ),
-        sa.PrimaryKeyConstraint("id", name="bcol_payment_account_pkey"),
+        sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
         "ix_bcol_payment_account_bcol_user_id",

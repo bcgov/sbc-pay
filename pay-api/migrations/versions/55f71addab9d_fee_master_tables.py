@@ -59,7 +59,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("fee_schedule_id"),
         sa.UniqueConstraint(
-            "filing_type_code", "corp_type_code", "fee_code", name="unique_fee_sched_1"
+            "filing_type_code", "corp_type_code", "fee_code"
         ),
     )
     # ### end Alembic commands ###
