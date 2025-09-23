@@ -14,10 +14,10 @@
 """Service class to control all the operations related to Payment."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from threading import Thread
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from flask import copy_current_request_context, current_app
 
@@ -55,8 +55,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     @classmethod
     @user_context
     def create_invoice(
-        cls, payment_request: Tuple[Dict[str, Any]], authorization: Tuple[Dict[str, Any]], **kwargs
-    ) -> Dict:
+        cls, payment_request: tuple[dict[str, Any]], authorization: tuple[dict[str, Any]], **kwargs
+    ) -> dict:
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
@@ -113,7 +113,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         current_app.logger.info(f"Created Pay System Instance : {pay_service}")
 
-        pay_system_invoice: Dict[str, any] = None
+        pay_system_invoice: dict[str, any] = None
         invoice: Invoice = None
 
         try:
@@ -192,7 +192,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 receipt_number=f"SP-{uuid.uuid4()}",
                 receipt_amount=invoice.total,
                 invoice_id=invoice_reference.invoice_id,
-                receipt_date=datetime.now(tz=timezone.utc),
+                receipt_date=datetime.now(tz=UTC),
             ).save()
             Payment.create(
                 payment_method=pay_service.get_payment_method_code(),
@@ -270,7 +270,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account.save()
 
     @classmethod
-    def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: Tuple[Dict[str, Any]]):
+    def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
         """Handle conversion of invoice to credit card payment method."""
         payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
 
@@ -308,7 +308,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     def update_invoice(
         cls,
         invoice_id: int,
-        payment_request: Tuple[Dict[str, Any]],
+        payment_request: tuple[dict[str, Any]],
         is_apply_credit: bool = False,
     ):
         """Update invoice related records."""
@@ -446,7 +446,7 @@ def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
-def _get_payment_method(payment_request: Dict, payment_account: PaymentAccount):
+def _get_payment_method(payment_request: dict, payment_account: PaymentAccount):
     # If no methodOfPayment is provided, use the one against the payment account table.
     payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
     if not payment_method:

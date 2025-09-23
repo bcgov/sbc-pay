@@ -2,8 +2,7 @@
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from flask import current_app
 from simple_cloudevent import SimpleCloudEvent
@@ -19,8 +18,8 @@ class QueueMessage:
     message_type: str
     payload: dict
     topic: str
-    ordering_key: Optional[str] = None
-    corp_type: Optional[str] = None
+    ordering_key: str | None = None
+    corp_type: str | None = None
 
 
 def publish_to_queue(queue_message: QueueMessage):
@@ -35,7 +34,7 @@ def publish_to_queue(queue_message: QueueMessage):
         source=f"sbc-pay-{queue_message.source}",
         # Intentionally blank, this field has been moved to topic.
         subject=None,
-        time=datetime.now(tz=timezone.utc).isoformat(),
+        time=datetime.now(tz=UTC).isoformat(),
         type=queue_message.message_type,
         data=queue_message.payload,
     )

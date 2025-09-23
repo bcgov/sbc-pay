@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Manage the Feature Flags initialization, setup and service."""
+
 import logging
 
 from flask import current_app
@@ -50,7 +51,6 @@ class Flags:
         self.sdk_key = app.config.get("PAY_LD_SDK_KEY")
 
         if self.sdk_key or app.env != "production":
-
             if app.env == "testing":
                 factory = Files.new_data_source(paths=["flags.json"], auto_update=True)
                 config = Config(

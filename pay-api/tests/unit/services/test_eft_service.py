@@ -17,7 +17,7 @@
 Test-Suite to ensure that the EFT Service is working as expected.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -76,7 +76,7 @@ def test_has_no_payment_blockers(session):
 def test_has_payment_blockers(session):
     """Test has payment blockers."""
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
-    payment_account.has_overdue_invoices = datetime.now(tz=timezone.utc)
+    payment_account.has_overdue_invoices = datetime.now(tz=UTC)
     payment_account.save()
 
     with pytest.raises(BusinessException):
@@ -201,7 +201,6 @@ def test_refund_eft_credits_exceed_balance(session):
         ),
         patch("pay_api.models.EFTCredit.get_eft_credit_balance", return_value=8),
     ):
-
         with pytest.raises(BusinessException) as excinfo:
             EFTRefundService.refund_eft_credits(1, 20)
 

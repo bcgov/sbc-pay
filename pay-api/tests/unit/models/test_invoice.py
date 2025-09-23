@@ -16,7 +16,8 @@
 
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 import pytest
 from dateutil.relativedelta import relativedelta
@@ -41,7 +42,7 @@ def test_invoice(session):
 
     # assert overdue default is set
     assert invoice.overdue_date is not None
-    assert invoice.overdue_date.date() == (datetime.now(tz=timezone.utc) + relativedelta(months=2, day=15)).date()
+    assert invoice.overdue_date.date() == (datetime.now(tz=UTC) + relativedelta(months=2, day=15)).date()
 
 
 def test_invoice_find_by_id(session):

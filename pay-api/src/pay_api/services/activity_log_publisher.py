@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to publish activity log events."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import current_app, request
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -87,7 +87,7 @@ class ActivityLogPublisher:
             item_value=item_value,
             org_id=account_id,
             remote_addr=request.remote_addr if request else None,
-            created_at=datetime.now(tz=timezone.utc).isoformat(),
+            created_at=datetime.now(tz=UTC).isoformat(),
             source=source,
             item_type="ACCOUNT",
         )

@@ -17,7 +17,7 @@
 Test-Suite to ensure that the Receipt Service is working as expected.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -49,7 +49,7 @@ def test_receipt_saved_from_new(session):
     receipt = ReceiptModel()
     receipt.receipt_number = "1234567890"
     receipt.invoice_id = i.id
-    receipt.receipt_date = datetime.now(tz=timezone.utc)
+    receipt.receipt_date = datetime.now(tz=UTC)
     receipt.receipt_amount = 100
     receipt = receipt.save()
 

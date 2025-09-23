@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Payment Account model related operations."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Tuple
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from cattr import Converter
 from flask import current_app
@@ -25,15 +26,13 @@ from sqlalchemy import and_, desc, or_
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import AccountFee as AccountFeeModel
-from pay_api.models import AccountFeeSchema
+from pay_api.models import AccountFeeSchema, PaymentAccountSchema, db
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
 from pay_api.services import ActivityLogPublisher, gcp_queue_publisher
 from pay_api.services.auth import get_account_admin_users
@@ -64,11 +63,11 @@ from .flags import flags
 class PaymentDetails:
     """Payment details for the account."""
 
-    account_request: Dict[str, Any] = None
+    account_request: dict[str, Any] = None
     is_sandbox: bool = False
     pay_system: PaymentSystemService = None
     payment_account: PaymentAccountModel = None
-    payment_info: Dict[str, Any] = None
+    payment_info: dict[str, Any] = None
     previous_payment: str = None
 
 
@@ -137,7 +136,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         return self._dao.flush()
 
     @classmethod
-    def create(cls, account_request: Dict[str, Any] = None, is_sandbox: bool = False) -> PaymentAccount:
+    def create(cls, account_request: dict[str, Any] = None, is_sandbox: bool = False) -> PaymentAccount:
         """Create new payment account record."""
         current_app.logger.debug("<create payment account")
         auth_account_id = account_request.get("accountId")
@@ -211,7 +210,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         payment_account.statement_notification_enabled = True
         payment_account.save()
 
-        recipients: List[StatementRecipientModel] = StatementRecipientModel.find_all_recipients_for_payment_id(
+        recipients: list[StatementRecipientModel] = StatementRecipientModel.find_all_recipients_for_payment_id(
             payment_account.id
         )
 
@@ -234,7 +233,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
     @classmethod
     def _handle_bcol_updates(
-        cls, payment_account: PaymentAccountModel, account_request: Dict[str, any], payment_method: str
+        cls, payment_account: PaymentAccountModel, account_request: dict[str, any], payment_method: str
     ):
         """Handle BCOL account updates and publish change event if needed."""
         new_bcol_account = account_request.get("bcolAccountNumber")
@@ -258,7 +257,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
     @classmethod
     def _save_account(
         cls,
-        account_request: Dict[str, any],
+        account_request: dict[str, any],
         payment_account: PaymentAccountModel,
         is_sandbox: bool = False,
     ):
@@ -284,7 +283,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
         if pad_tos_accepted_by := account_request.get("padTosAcceptedBy", None):
             payment_account.pad_tos_accepted_by = pad_tos_accepted_by
-            payment_account.pad_tos_accepted_date = datetime.now(tz=timezone.utc)
+            payment_account.pad_tos_accepted_date = datetime.now(tz=UTC)
 
         if payment_info := account_request.get("paymentInfo"):
             billable = payment_info.get("billable", True)
@@ -365,7 +364,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             # if distribution code exists, put an end date as previous day and create new.
             dist_code_svc = DistributionCode.find_active_by_account_id(details.payment_account.id)
             if dist_code_svc and dist_code_svc.distribution_code_id:
-                end_date: datetime = datetime.now(tz=timezone.utc) - timedelta(days=1)
+                end_date: datetime = datetime.now(tz=UTC) - timedelta(days=1)
                 dist_code_svc.end_date = end_date.date()
                 dist_code_svc.save()
 
@@ -406,7 +405,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         # If the account is created for sandbox env, then set the status to ACTIVE and set pad activation time to now
         if is_pad and details.is_sandbox:
             cfs_account.status = CfsAccountStatus.ACTIVE.value
-            details.payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
+            details.payment_account.pad_activation_date = datetime.now(tz=UTC)
         # override payment method for since pad has 3 days wait period
         elif is_pad:
             effective_pay_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(
@@ -457,7 +456,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         account_fee.save()
 
     @classmethod
-    def update(cls, auth_account_id: str, account_request: Dict[str, Any]) -> PaymentAccount:
+    def update(cls, auth_account_id: str, account_request: dict[str, Any]) -> PaymentAccount:
         """Create or update payment account record."""
         current_app.logger.debug("<update payment account")
         try:
@@ -471,7 +470,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         return cls.find_by_id(account.id)
 
     @staticmethod
-    def _get_payment_based_on_pad_activation(account: PaymentAccountModel, previous_payment: str) -> Tuple[str, str]:
+    def _get_payment_based_on_pad_activation(account: PaymentAccountModel, previous_payment: str) -> tuple[str, str]:
         """Infer the payment method."""
         is_first_time_pad = not account.pad_activation_date
         # default it. If ever was in PAD , no new activation date needed
@@ -506,12 +505,12 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             frequency=frequency,
             payment_account_id=payment_account_id,
             # To help with mocking tests - freeze_time doesn't seem to work on the model default
-            from_date=datetime.now(tz=timezone.utc).date(),
+            from_date=datetime.now(tz=UTC).date(),
         )
         statement_settings_model.save()
 
     @classmethod
-    def find_account(cls, authorization: Dict[str, Any]) -> PaymentAccount | None:
+    def find_account(cls, authorization: dict[str, Any]) -> PaymentAccount | None:
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug("<find_payment_account")
         auth_account_id: str = get_str_by_path(authorization, "account/id")
@@ -582,7 +581,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         date_after_wait_period = current_local_time() + timedelta(days=account_activation_wait_period + 1)
         # reset the day to the beginning of the day.
         round_to_full_day = date_after_wait_period.replace(minute=0, hour=0, second=0)
-        utc_time = round_to_full_day.astimezone(timezone.utc)
+        utc_time = round_to_full_day.astimezone(UTC)
         return utc_time
 
     @user_context
@@ -674,7 +673,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
     def create_account_event_payload(self, event_type: str, receipt_info: dict = None, include_pay_info: bool = False):
         """Return event payload for account."""
-        payload: Dict[str, any] = {
+        payload: dict[str, any] = {
             "accountId": self.auth_account_id,
             "accountName": self.name,
         }

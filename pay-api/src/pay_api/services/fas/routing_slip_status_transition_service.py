@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage routing slip status transition operations."""
-from __future__ import annotations
 
-from typing import Dict, List
+from __future__ import annotations
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Refund as RefundModel
@@ -27,7 +26,7 @@ from pay_api.utils.user_context import user_context
 class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Routing slip status transition related operations."""
 
-    STATUS_TRANSITIONS: Dict[str, List] = {
+    STATUS_TRANSITIONS: dict[str, list] = {
         RoutingSlipStatus.ACTIVE.value: [
             RoutingSlipStatus.HOLD.value,
             RoutingSlipStatus.NSF.value,
@@ -63,9 +62,9 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
 
     @classmethod
     @user_context
-    def get_possible_transitions(cls, rs_model: RoutingSlipModel, **kwargs) -> List[RoutingSlipStatus]:
+    def get_possible_transitions(cls, rs_model: RoutingSlipModel, **kwargs) -> list[RoutingSlipStatus]:
         """Return all the status transition available."""
-        transition_list: List[RoutingSlipStatus] = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(
+        transition_list: list[RoutingSlipStatus] = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(
             rs_model.status, []
         )
 

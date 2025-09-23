@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This manages the retrieval of report-api documents."""
+
 from flask import current_app
 
 from pay_api.exceptions import BusinessException

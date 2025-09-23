@@ -18,7 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -91,7 +91,7 @@ def test_create_eft_short_name_link(session, client, jwt, app):
     assert link_dict["updatedBy"] == "IDIR/JSMITH"
 
     date_format = "%Y-%m-%dT%H:%M:%S.%f"
-    assert datetime.strptime(link_dict["updatedOn"], date_format).date() == datetime.now(tz=timezone.utc).date()
+    assert datetime.strptime(link_dict["updatedOn"], date_format).date() == datetime.now(tz=UTC).date()
 
 
 def test_create_eft_short_name_link_with_credit_and_owing(db, session, client, jwt, app):
@@ -603,8 +603,8 @@ def create_eft_summary_search_data():
         line_number=1,
         file_id=eft_file.id,
         status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 5, 2, 30, tzinfo=timezone.utc),
-        deposit_date=datetime(2024, 1, 6, 10, 5, tzinfo=timezone.utc),
+        transaction_date=datetime(2024, 1, 5, 2, 30, tzinfo=UTC),
+        deposit_date=datetime(2024, 1, 6, 10, 5, tzinfo=UTC),
         deposit_amount_cents=10150,
         short_name_id=short_name_1.id,
     ).save()
@@ -622,8 +622,8 @@ def create_eft_summary_search_data():
         line_number=1,
         file_id=eft_file.id,
         status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 5, 2, 30, tzinfo=timezone.utc),
-        deposit_date=datetime(2024, 1, 6, 10, 5, tzinfo=timezone.utc),
+        transaction_date=datetime(2024, 1, 5, 2, 30, tzinfo=UTC),
+        deposit_date=datetime(2024, 1, 6, 10, 5, tzinfo=UTC),
         deposit_amount_cents=10250,
         short_name_id=short_name_1.id,
     ).save()
@@ -640,8 +640,8 @@ def create_eft_summary_search_data():
         line_number=1,
         file_id=eft_file.id,
         status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 10, 2, 30, tzinfo=timezone.utc),
-        deposit_date=datetime(2024, 1, 5, 10, 5, tzinfo=timezone.utc),
+        transaction_date=datetime(2024, 1, 10, 2, 30, tzinfo=UTC),
+        deposit_date=datetime(2024, 1, 5, 10, 5, tzinfo=UTC),
         deposit_amount_cents=30150,
         short_name_id=short_name_1.id,
     ).save()
@@ -652,8 +652,8 @@ def create_eft_summary_search_data():
         line_number=1,
         file_id=eft_file.id,
         status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 15, 2, 30, tzinfo=timezone.utc),
-        deposit_date=datetime(2024, 1, 16, 8, 0, tzinfo=timezone.utc),
+        transaction_date=datetime(2024, 1, 15, 2, 30, tzinfo=UTC),
+        deposit_date=datetime(2024, 1, 16, 8, 0, tzinfo=UTC),
         deposit_amount_cents=30250,
         short_name_id=short_name_2.id,
     ).save()

@@ -16,25 +16,24 @@
 
 Test-Suite to ensure that the refunds endpoint for partials is working as expected.
 """
+
 import json
-from datetime import datetime, timezone
-from typing import List
+from _decimal import Decimal
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
-from _decimal import Decimal
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Credit as CreditModel
-from pay_api.models import EFTCredit
+from pay_api.models import EFTCredit, RefundPartialLine
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Refund as RefundModel
-from pay_api.models import RefundPartialLine
 from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.refund import RefundService
@@ -56,7 +55,6 @@ from tests.utilities.base_test import (
     factory_eft_credit_invoice_link,
     factory_eft_file,
     factory_eft_shortname,
-    factory_eft_shortname_link,
     factory_invoice_reference,
     get_claims,
     get_eft_enable_account_payload,
@@ -102,7 +100,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    payment_line_items: list[PaymentLineItemModel] = invoice.payment_line_items
     refund_amount = float(payment_line_items[0].filing_fees / 2)
     refund_revenue = [
         {
@@ -157,7 +155,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
 
         invoice = InvoiceModel.find_by_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-        assert invoice.refund_date.date() == datetime.now(tz=timezone.utc).date()
+        assert invoice.refund_date.date() == datetime.now(tz=UTC).date()
         assert invoice.refund == refund_amount
 
 
@@ -181,7 +179,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
     cfs_account.status = CfsAccountStatus.ACTIVE.value
     cfs_account.save()
 
-    pay_account.pad_activation_date = datetime.now(tz=timezone.utc)
+    pay_account.pad_activation_date = datetime.now(tz=UTC)
     pay_account.save()
 
     token = jwt.create_jwt(get_claims(), token_header)
@@ -201,7 +199,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
-    inv.payment_date = datetime.now(tz=timezone.utc)
+    inv.payment_date = datetime.now(tz=UTC)
     inv.cfs_account_id = cfs_account.id
     inv.save()
 
@@ -209,7 +207,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
     corp_type.has_partner_disbursements = True
     corp_type.save()
 
-    payment_line_items: List[PaymentLineItemModel] = inv.payment_line_items
+    payment_line_items: list[PaymentLineItemModel] = inv.payment_line_items
 
     refund_amount = float(payment_line_items[0].filing_fees / 2)
     refund_revenue = [
@@ -249,7 +247,7 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
 
         inv = InvoiceModel.find_by_id(inv.id)
         assert inv.invoice_status_code == InvoiceStatus.PAID.value
-        assert inv.refund_date.date() == datetime.now(tz=timezone.utc).date()
+        assert inv.refund_date.date() == datetime.now(tz=UTC).date()
         assert inv.refund == refund_amount
 
         credit = CreditModel.query.filter_by(account_id=inv.payment_account_id).first()
@@ -306,7 +304,7 @@ def test_create_partial_refund_fails(session, client, jwt, app, monkeypatch):
     invoice.invoice_status_code = InvoiceStatus.APPROVED.value
     invoice.save()
 
-    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    payment_line_items: list[PaymentLineItemModel] = invoice.payment_line_items
     refund_amount = float(payment_line_items[0].filing_fees / 2)
     refund_revenue = [
         {
@@ -376,7 +374,7 @@ def test_create_refund_validation(session, client, jwt, app, monkeypatch, fee_ty
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    payment_line_items: list[PaymentLineItemModel] = invoice.payment_line_items
     payment_line_item = payment_line_items[0]
     refund_amount = 0
     match fee_type:
@@ -487,7 +485,7 @@ def test_invalid_payment_method_partial_refund(session, client, jwt, app, monkey
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    payment_line_items: list[PaymentLineItemModel] = invoice.payment_line_items
     refund_revenue = [
         {
             "paymentLineItemId": payment_line_items[0].id,
@@ -551,7 +549,7 @@ def test_eft_partial_refund_validation(session, client, jwt, app, monkeypatch):
     invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
     invoice.payment_method_code = PaymentMethod.EFT.value
-    invoice.payment_date = datetime.now(tz=timezone.utc)
+    invoice.payment_date = datetime.now(tz=UTC)
     invoice.cfs_account_id = cfs_account.id
     invoice.save()
     set_payment_method_partial_refund(invoice.payment_method_code, True)
@@ -559,7 +557,7 @@ def test_eft_partial_refund_validation(session, client, jwt, app, monkeypatch):
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    payment_line_items: list[PaymentLineItemModel] = invoice.payment_line_items
     refund_revenue = [
         {
             "paymentLineItemId": payment_line_items[0].id,
@@ -612,7 +610,7 @@ def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
     invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
     invoice.payment_method_code = PaymentMethod.EFT.value
-    invoice.payment_date = datetime.now(tz=timezone.utc)
+    invoice.payment_date = datetime.now(tz=UTC)
     invoice.cfs_account_id = cfs_account.id
     invoice.save()
     corp_type = CorpTypeModel.find_by_code(invoice.corp_type_code)
@@ -642,7 +640,7 @@ def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     refund_amount = float(15)
-    payment_line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+    payment_line_items: list[PaymentLineItemModel] = invoice.payment_line_items
     refund_revenue = [
         {
             "paymentLineItemId": payment_line_items[0].id,
@@ -676,7 +674,7 @@ def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
 
     inv = InvoiceModel.find_by_id(inv_id)
     assert inv.invoice_status_code == InvoiceStatus.PAID.value
-    assert inv.refund_date.date() == datetime.now(tz=timezone.utc).date()
+    assert inv.refund_date.date() == datetime.now(tz=UTC).date()
     assert inv.refund == refund_amount
 
     credit = CreditModel.query.filter_by(account_id=inv.payment_account_id).first()

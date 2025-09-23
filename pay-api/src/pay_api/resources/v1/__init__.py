@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Exposes all of the resource endpoints mounted in Flask-Blueprints."""
+
 from typing import Optional
 
 from flask import Flask
@@ -44,7 +45,7 @@ class V1Endpoint:  # pylint: disable=too-few-public-methods,
 
     def __init__(self):
         """Create the endpoint setup, without initializations."""
-        self.app: Optional[Flask] = None
+        self.app: Flask | None = None
 
     def init_app(self, app):
         """Register and initialize the Endpoint setup."""

@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT short name to BCROS account mapping links."""
-from datetime import datetime, timezone
-from typing import List, Self
 
 from _decimal import Decimal
+from datetime import UTC, datetime
+from typing import Self
+
 from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
@@ -59,7 +60,7 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     status_code = db.Column("status_code", db.String(25), nullable=False, index=True)
     updated_by = db.Column("updated_by", db.String(100), nullable=True)
@@ -94,7 +95,7 @@ class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-insta
         return cls.find_link_by_status(short_name_id, auth_account_id, [EFTShortnameStatus.INACTIVE.value])
 
     @classmethod
-    def find_link_by_status(cls, short_name_id: int, auth_account_id: str, statuses: List[str]) -> Self:
+    def find_link_by_status(cls, short_name_id: int, auth_account_id: str, statuses: list[str]) -> Self:
         """Find short name account link by status."""
         return (
             cls.query.filter_by(eft_short_name_id=short_name_id)
@@ -155,7 +156,7 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
     updated_by_name: str
     updated_on: datetime
     has_pending_payment: bool
-    statements_owing: List[StatementOwingSchema]
+    statements_owing: list[StatementOwingSchema]
 
     @classmethod
     def from_row(cls, row: EFTShortnameLinks):

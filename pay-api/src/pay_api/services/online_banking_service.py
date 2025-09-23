@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage CFS Online Banking Payments."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from flask import current_app
 
@@ -42,7 +42,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         return PaymentMethod.ONLINE_BANKING.value
 
     def create_account(
-        self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs
+        self, identifier: str, contact_info: dict[str, Any], payment_info: dict[str, Any], **kwargs
     ) -> CfsAccountModel:
         """Create an account for the online banking."""
         # Create CFS Account model instance and set the status as PENDING
@@ -52,7 +52,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         return cfs_account
 
     def create_invoice(
-        self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice, **kwargs
+        self, payment_account: PaymentAccount, line_items: list[PaymentLineItem], invoice: Invoice, **kwargs
     ) -> InvoiceReference:
         """Return a static invoice number for online banking."""
         self.ensure_no_payment_blockers(payment_account)
@@ -81,7 +81,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         self,
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        refund_partial: list[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         return super()._refund_and_create_credit_memo(invoice, refund_partial)

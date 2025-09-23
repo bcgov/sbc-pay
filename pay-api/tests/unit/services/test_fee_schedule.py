@@ -17,15 +17,14 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 
 from pay_api import services
-from pay_api.models import CorpType, FeeCode
+from pay_api.models import CorpType, FeeCode, FilingType, TaxRate
 from pay_api.models import FeeSchedule as FeesScheduleModel
-from pay_api.models import FilingType, TaxRate
 from pay_api.utils.errors import Error
 
 CORP_TYPE_CODE = "CPX"
@@ -41,7 +40,7 @@ def test_fee_schedule_saved_from_new(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
+    fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
@@ -56,13 +55,13 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
+    fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
 
     assert fee_schedule.fee_schedule_id is not None
-    assert fee_schedule.fee_start_date == datetime.now(tz=timezone.utc).date()
+    assert fee_schedule.fee_start_date == datetime.now(tz=UTC).date()
     assert fee_schedule.fee_end_date is None
     assert fee_schedule.fee_code == FEE_CODE
     assert fee_schedule.corp_type_code == CORP_TYPE_CODE
@@ -106,11 +105,11 @@ def test_find_by_corp_type_and_filing_type_and_valid_date(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
+    fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
-        CORP_TYPE_CODE, FILING_TYPE_CODE, datetime.now(tz=timezone.utc)
+        CORP_TYPE_CODE, FILING_TYPE_CODE, datetime.now(tz=UTC)
     )
 
     assert fee_schedule.fee_schedule_id is not None
@@ -125,14 +124,14 @@ def test_find_by_corp_type_and_filing_type_and_invalid_date(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
+    fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.save()
 
     with pytest.raises(BusinessException) as excinfo:
         fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
             CORP_TYPE_CODE,
             FILING_TYPE_CODE,
-            datetime.now(tz=timezone.utc) - timedelta(1),
+            datetime.now(tz=UTC) - timedelta(1),
         )
 
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
@@ -173,11 +172,11 @@ def test_fee_schedule_with_waive_fees(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
-    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
+    fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
-        CORP_TYPE_CODE, FILING_TYPE_CODE, datetime.now(tz=timezone.utc), waive_fees=True
+        CORP_TYPE_CODE, FILING_TYPE_CODE, datetime.now(tz=UTC), waive_fees=True
     )
 
     assert fee_schedule is not None
@@ -206,14 +205,14 @@ def test_fee_schedule_with_service_fees(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = corp_type_code
     fee_schedule.fee_code = fee_code
-    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
+    fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.service_fee_code = tran_fee_code
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
         corp_type=corp_type_code,
         filing_type_code=FILING_TYPE_CODE,
-        valid_date=datetime.now(tz=timezone.utc),
+        valid_date=datetime.now(tz=UTC),
         include_service_fees=True,
     )
     assert fee_schedule.service_fees == 10
@@ -241,14 +240,14 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = corp_type_code
     fee_schedule.fee_code = fee_code
-    fee_schedule.fee_start_date = datetime.now(tz=timezone.utc)
+    fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.service_fee_code = tran_fee_code
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
         corp_type=corp_type_code,
         filing_type_code=FILING_TYPE_CODE,
-        valid_date=datetime.now(tz=timezone.utc),
+        valid_date=datetime.now(tz=UTC),
         include_service_fees=False,
     )
     assert fee_schedule.service_fees == 10
@@ -276,7 +275,7 @@ def test_get_fee_details(session):
         filing_type_code=filing_type_code,
         corp_type_code=corp_type_code,
         fee_code=fee_code,
-        fee_start_date=datetime.now(tz=timezone.utc),
+        fee_start_date=datetime.now(tz=UTC),
         show_on_pricelist=True,
     )
     fee_schedule.save()
@@ -298,20 +297,20 @@ def test_fee_schedule_gst_properties(session):
         filing_type_code=FILING_TYPE_CODE,
         corp_type_code=CORP_TYPE_CODE,
         fee_code=FEE_CODE,
-        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
     )
     fee_schedule_model.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
-        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=timezone.utc)
+        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
     )
 
     fee_schedule.service_fees = Decimal("10.00")
     fee_schedule.priority_fee = Decimal("5.00")
     fee_schedule.future_effective_fee = Decimal("15.00")
 
-    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     expected_service_gst = round(Decimal("10.00") * gst_rate, 2)
     expected_statutory_gst = round((Decimal("100.00") + Decimal("5.00") + Decimal("15.00")) * gst_rate, 2)
 
@@ -337,13 +336,13 @@ def test_fee_schedule_gst_properties_disabled(session):
         filing_type_code=FILING_TYPE_CODE,
         corp_type_code=CORP_TYPE_CODE,
         fee_code=FEE_CODE,
-        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=False,
     )
     fee_schedule_model.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
-        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=timezone.utc)
+        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
     )
 
     fee_schedule.service_fees = Decimal("10.00")
@@ -364,20 +363,20 @@ def test_fee_schedule_gst_properties_with_zero_fees(session):
         filing_type_code=FILING_TYPE_CODE,
         corp_type_code=CORP_TYPE_CODE,
         fee_code=FEE_CODE,
-        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
     )
     fee_schedule_model.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
-        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=timezone.utc)
+        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
     )
 
     fee_schedule.service_fees = Decimal("0.00")
     fee_schedule.priority_fee = Decimal("0.00")
     fee_schedule.future_effective_fee = Decimal("0.00")
 
-    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     assert fee_schedule.service_fees_gst == Decimal("0.00")
     expected_statutory_gst = round(Decimal("100.00") * gst_rate, 2)
     assert fee_schedule.statutory_fees_gst == expected_statutory_gst
@@ -391,19 +390,19 @@ def test_fee_schedule_gst_properties_rounding(session):
         filing_type_code=FILING_TYPE_CODE,
         corp_type_code=CORP_TYPE_CODE,
         fee_code=FEE_CODE,
-        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
     )
     fee_schedule_model.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
-        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=timezone.utc)
+        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
     )
 
     fee_schedule.service_fees = Decimal("11.11")  # This will result in 0.5555 when multiplied by 0.05
     fee_schedule.priority_fee = Decimal("7.77")  # This will result in 0.3885 when multiplied by 0.05
 
-    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     expected_service_gst = round(Decimal("11.11") * gst_rate, 2)
     assert fee_schedule.service_fees_gst == expected_service_gst
     expected_statutory_gst = round((Decimal("100.00") + Decimal("7.77")) * gst_rate, 2)

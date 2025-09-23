@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Fee related to accounts."""
+
 from __future__ import annotations
 
 from marshmallow import fields, post_dump

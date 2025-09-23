@@ -16,12 +16,12 @@
 
 A simple decorator to add the options method to a Request Class.
 """
+
 import ast
 import calendar
 import unicodedata
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Dict
 from urllib.parse import parse_qsl, urlparse
 
 import pytz
@@ -67,7 +67,7 @@ def convert_to_bool(value: str) -> bool:
     return value.lower() == "true"
 
 
-def get_str_by_path(payload: Dict, path: str) -> str:
+def get_str_by_path(payload: dict, path: str) -> str:
     """Return the string value from the dict for the path using dpath library."""
     if payload is None:
         return None
@@ -79,7 +79,7 @@ def get_str_by_path(payload: Dict, path: str) -> str:
         return None
 
 
-def get_week_start_and_end_date(target_date: datetime = datetime.now(tz=timezone.utc), index: int = 0):
+def get_week_start_and_end_date(target_date: datetime = datetime.now(tz=UTC), index: int = 0):
     """Return first and last dates (sunday and saturday) for the index."""
     # index: 0 (current week), 1 (last week) and so on
     date = target_date - timedelta(days=index * 6)
@@ -93,12 +93,12 @@ def get_week_start_and_end_date(target_date: datetime = datetime.now(tz=timezone
 
 def get_first_and_last_dates_of_month(month: int, year: int):
     """Return first and last dates for a given month and year."""
-    start_date = datetime.now(tz=timezone.utc).replace(day=1, year=year, month=month)
+    start_date = datetime.now(tz=UTC).replace(day=1, year=year, month=month)
     end_date = start_date.replace(day=calendar.monthrange(year=year, month=month)[1])
     return start_date, end_date
 
 
-def get_previous_month_and_year(target_date=datetime.now(tz=timezone.utc)):
+def get_previous_month_and_year(target_date=datetime.now(tz=UTC)):
     """Return last month and year."""
     last_month = target_date.replace(day=1) - timedelta(days=1)
     return last_month.month, last_month.year
@@ -123,7 +123,7 @@ def get_first_and_last_of_frequency(date: datetime, frequency: str):
             return None, None
 
 
-def parse_url_params(url_params: str) -> Dict:
+def parse_url_params(url_params: str) -> dict:
     """Parse URL params and return dict of parsed url params."""
     parsed_url: dict = {}
     if url_params is not None:
@@ -136,7 +136,7 @@ def parse_url_params(url_params: str) -> Dict:
 
 def current_local_time(timezone_override=None) -> datetime:
     """Return current local time."""
-    today = datetime.now(tz=timezone.utc)
+    today = datetime.now(tz=UTC)
     return get_local_time(today, timezone_override)
 
 
@@ -178,7 +178,7 @@ def generate_consolidated_transaction_number(reg_number: str) -> str:
     return f"{reg_number}-C"
 
 
-def get_fiscal_year(date_val: datetime = datetime.now(tz=timezone.utc)) -> int:
+def get_fiscal_year(date_val: datetime = datetime.now(tz=UTC)) -> int:
     """Return fiscal year for the date."""
     fiscal_year: int = date_val.year
     if date_val.month > 3:  # Up to March 31, use the current year.
@@ -247,7 +247,7 @@ def get_next_day(val: datetime):
 def get_outstanding_txns_from_date() -> datetime:
     """Return the date value which can be used as start date to calculate outstanding PAD transactions."""
     days_interval: int = current_app.config.get("OUTSTANDING_TRANSACTION_DAYS")
-    from_date = datetime.now(tz=timezone.utc)
+    from_date = datetime.now(tz=UTC)
     # Find the business day before days_interval time.
     counter: int = 0
     while counter < days_interval:
@@ -384,6 +384,6 @@ def get_statement_date_string(value, fmt="%B %d, %Y"):
 def get_statement_currency_string(value):
     """Return a string representation of a number formatted as 0.00."""
     try:
-        return "{:,.2f}".format(float(value))
+        return f"{float(value):,.2f}"
     except (TypeError, ValueError):
         return "0.00"

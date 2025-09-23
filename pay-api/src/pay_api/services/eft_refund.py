@@ -1,7 +1,6 @@
 """Module for EFT refunds that go tghrough the AP module via EFT."""
 
 from decimal import Decimal
-from typing import List
 
 from flask import abort, current_app
 
@@ -89,7 +88,7 @@ class EFTRefund:
     def handle_invoice_refund(
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        cils: List[EFTCreditInvoiceLinkModel],
+        cils: list[EFTCreditInvoiceLinkModel],
         is_partial_refund: bool = False,
     ) -> InvoiceStatus:
         """Create EFT Short name funds received historical record."""

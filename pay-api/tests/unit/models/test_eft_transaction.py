@@ -16,7 +16,8 @@
 
 Test-Suite to ensure that the EFT Transaction model is working as expected.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from pay_api.models import db
 from pay_api.models.eft_file import EFTFile as EFTFileModel
@@ -64,8 +65,8 @@ def test_eft_file_all_attributes(session):
     assert eft_file.id is not None
 
     completed_on = datetime(2023, 9, 30, 10, 0)
-    deposit_date = datetime(2023, 9, 28, 10, 0, tzinfo=timezone.utc)
-    transaction_date = datetime(2023, 9, 29, 10, 0, tzinfo=timezone.utc)
+    deposit_date = datetime(2023, 9, 28, 10, 0, tzinfo=UTC)
+    transaction_date = datetime(2023, 9, 29, 10, 0, tzinfo=UTC)
     error_messages = ["message 1", "message 2"]
     batch_number = "123456789"
     jv_type = "I"

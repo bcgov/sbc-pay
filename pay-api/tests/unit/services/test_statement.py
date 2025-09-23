@@ -16,8 +16,8 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
-import pprint
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import ANY, patch
 
@@ -25,12 +25,10 @@ import pytz
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
-from pay_api.models import CorpType
+from pay_api.models import CorpType, FeeCode, FilingType
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
-from pay_api.models import FeeCode
 from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.models import FilingType
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import StatementInvoices as StatementInvoiceModel
 from pay_api.models import StatementSettings as StatementSettingsModel
@@ -200,7 +198,7 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
 
     # Assert that the default weekly statement settings are created
     statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
-        str(account.auth_account_id), datetime.now(tz=timezone.utc)
+        str(account.auth_account_id), datetime.now(tz=UTC)
     )
 
     assert statement_settings is not None
@@ -265,7 +263,7 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
 
     # Assert that the default MONTHLY statement settings are created
     statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
-        str(account.auth_account_id), datetime.now(tz=timezone.utc)
+        str(account.auth_account_id), datetime.now(tz=UTC)
     )
 
     assert statement_settings is not None
@@ -331,7 +329,7 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
 
     # Update current active settings to monthly
     statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
-        str(account.auth_account_id), datetime.now(tz=timezone.utc)
+        str(account.auth_account_id), datetime.now(tz=UTC)
     )
 
     statement_settings.frequency = StatementFrequency.MONTHLY.value
@@ -400,7 +398,7 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
 
     # Confirm initial default settings when account is created
     initial_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
-        str(account.auth_account_id), datetime.now(tz=timezone.utc)
+        str(account.auth_account_id), datetime.now(tz=UTC)
     )
 
     assert initial_settings is not None
@@ -519,7 +517,7 @@ def test_interim_statement_settings_eft(db, session, admin_users_mock):
 
 def test_get_eft_statement_for_empty_invoices(session):
     """Assert that the get statement report works for eft statement with no invoices."""
-    statement_from_date = datetime.now(timezone.utc) + relativedelta(months=1, day=1)
+    statement_from_date = datetime.now(UTC) + relativedelta(months=1, day=1)
     statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     settings_model = factory_statement_settings(
@@ -550,7 +548,7 @@ def test_get_eft_statement_for_empty_invoices(session):
         )
         assert report_name == expected_report_name
 
-        date_string_now = get_statement_date_string(datetime.now(tz=timezone.utc))
+        date_string_now = get_statement_date_string(datetime.now(tz=UTC))
         expected_template_vars = {
             "account": {
                 "accountType": "PREMIUM",
@@ -594,9 +592,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 ),
             },
             "statementSummary": {
-                "dueDate": get_statement_date_string(
-                    StatementService.calculate_due_date(statement_to_date.date())
-                ),  # pylint: disable=protected-access
+                "dueDate": get_statement_date_string(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
                 "latestStatementPaymentDate": None,
@@ -622,7 +618,7 @@ def test_get_eft_statement_for_empty_invoices(session):
 
 def test_get_eft_statement_with_invoices(session):
     """Assert that the get statement report works for eft statement with invoices."""
-    statement_from_date = datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1)
+    statement_from_date = datetime.now(tz=UTC) + relativedelta(months=1, day=1)
     statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
     settings_model = factory_statement_settings(
@@ -665,7 +661,7 @@ def test_get_eft_statement_with_invoices(session):
         status_code=InvoiceStatus.PAID.value,
         total=50,
         paid=50,
-        payment_date=datetime.now(tz=timezone.utc) + timedelta(days=9000),
+        payment_date=datetime.now(tz=UTC) + timedelta(days=9000),
     ).save()
     factory_payment_line_item(invoice_id=invoice_3.id, fee_schedule_id=1).save()
 
@@ -696,7 +692,7 @@ def test_get_eft_statement_with_invoices(session):
         filing_type_code="GSTTEST",
         corp_type_code="GSTTEST",
         fee_code="GSTFEE",
-        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
         show_on_pricelist=True,
         service_fee=service_fee_code_gst,
@@ -711,7 +707,7 @@ def test_get_eft_statement_with_invoices(session):
         service_line="33333",
         stob="4444",
         project_code="5555555",
-        start_date=datetime.now(tz=timezone.utc).date(),
+        start_date=datetime.now(tz=UTC).date(),
         created_by="test",
     )
     distribution_code_gst.save()
@@ -768,7 +764,7 @@ def test_get_eft_statement_with_invoices(session):
 
         assert report_name == expected_report_name
 
-        date_string_now = get_statement_date_string(datetime.now(tz=timezone.utc))
+        date_string_now = get_statement_date_string(datetime.now(tz=UTC))
         expected_template_vars = {
             "account": {
                 "accountType": "PREMIUM",
@@ -1011,9 +1007,7 @@ def test_get_eft_statement_with_invoices(session):
                 "statement_total": 500.0,
             },
             "statementSummary": {
-                "dueDate": get_statement_date_string(
-                    StatementService.calculate_due_date(statement_to_date.date())
-                ),  # pylint: disable=protected-access
+                "dueDate": get_statement_date_string(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
                 "latestStatementPaymentDate": get_statement_date_string(invoice_3.payment_date.strftime("%Y-%m-%d")),
@@ -1042,7 +1036,7 @@ def test_get_eft_statement_with_invoices(session):
 
 def test_summary_page_with_invoices(session):
     """Assert that the summary page toggles on when multiple payment methods (PAD, CC) are present."""
-    statement_from_date = datetime.now(tz=timezone.utc) + relativedelta(months=1, day=1)
+    statement_from_date = datetime.now(tz=UTC) + relativedelta(months=1, day=1)
     statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.DRAWDOWN.value)
     settings_model = factory_statement_settings(

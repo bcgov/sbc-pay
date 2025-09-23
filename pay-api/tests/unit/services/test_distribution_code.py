@@ -17,7 +17,7 @@
 Test-Suite to ensure that the Distribution code Service is working as expected.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pay_api import services
 from pay_api.models import FeeSchedule
@@ -93,10 +93,8 @@ def test_update_distribution(session, public_user_mock, monkeypatch):
 
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
-    def get_receipt(
-        cls, payment_account, pay_response_url: str, invoice_reference
-    ):  # pylint: disable=unused-argument; mocks of library methods
-        return "1234567890", datetime.now(tz=timezone.utc), 30.00
+    def get_receipt(cls, payment_account, pay_response_url: str, invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
+        return "1234567890", datetime.now(tz=UTC), 30.00
 
     monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
 

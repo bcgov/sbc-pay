@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to support EFT statements."""
+
 from __future__ import annotations
 
 from sqlalchemy import and_, func, select

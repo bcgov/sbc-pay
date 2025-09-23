@@ -13,7 +13,6 @@
 # limitations under the License.
 """Super class to handle all operations related to base model."""
 
-
 from decimal import Decimal
 from typing import Self
 

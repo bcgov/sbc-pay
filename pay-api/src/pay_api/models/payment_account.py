@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
+
 from __future__ import annotations
 
 from attrs import define

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT TDI17 short name to BCROS account mapping."""
-from datetime import datetime, timezone
 
 from _decimal import Decimal
+from datetime import UTC, datetime
+
 from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import text
@@ -56,7 +57,7 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     short_name = db.Column("short_name", db.String, nullable=False, index=True)
     email = db.Column(db.String(100), nullable=True)
@@ -110,9 +111,9 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
             created_on=row.created_on,
             short_name=row.short_name,
             short_name_type=row.type,
-            email=getattr(row, "email"),
-            cas_supplier_number=getattr(row, "cas_supplier_number"),
-            cas_supplier_site=getattr(row, "cas_supplier_site"),
+            email=row.email,
+            cas_supplier_number=row.cas_supplier_number,
+            cas_supplier_site=row.cas_supplier_site,
             statement_id=getattr(row, "latest_statement_id", None),
             status_code=getattr(row, "status_code", None),
             cfs_account_status=getattr(row, "cfs_account_status", None),

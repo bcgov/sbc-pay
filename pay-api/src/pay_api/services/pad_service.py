@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS Pre Authorized Debit Payments."""
-from typing import Any, Dict, List
+
+from typing import Any
 
 from flask import current_app
 
@@ -49,8 +50,8 @@ class PadService(PaymentSystemService, CFSService):
     def create_account(
         self,
         identifier: str,
-        contact_info: Dict[str, Any],
-        payment_info: Dict[str, Any],
+        contact_info: dict[str, Any],
+        payment_info: dict[str, Any],
         **kwargs,
     ) -> CfsAccountModel:
         """Create an account for the PAD transactions."""
@@ -64,7 +65,7 @@ class PadService(PaymentSystemService, CFSService):
         cfs_account.payment_method = PaymentMethod.PAD.value
         return cfs_account
 
-    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: dict[str, Any]) -> CfsAccountModel:
         """Update account in CFS."""
         if (
             str(payment_info.get("bankInstitutionNumber")) != cfs_account.bank_number
@@ -116,7 +117,7 @@ class PadService(PaymentSystemService, CFSService):
     def create_invoice(
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
     ) -> InvoiceReference:  # pylint: disable=unused-argument
@@ -149,7 +150,7 @@ class PadService(PaymentSystemService, CFSService):
         self,
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        refund_partial: list[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         # Move invoice to CREDITED or CANCELLED. There are no refunds for PAD, just cancellation or credit.

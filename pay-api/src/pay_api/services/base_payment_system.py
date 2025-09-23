@@ -17,8 +17,8 @@ import copy
 import functools
 import traceback
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -72,8 +72,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def create_account(
         self,
         identifier: str,
-        contact_info: Dict[str, Any],
-        payment_info: Dict[str, Any],
+        contact_info: dict[str, Any],
+        payment_info: dict[str, Any],
         **kwargs,
     ) -> CfsAccountModel:
         # pylint: disable=unused-argument
@@ -84,7 +84,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         self,
         name: str,
         cfs_account: CfsAccountModel,  # pylint: disable=unused-argument
-        payment_info: Dict[str, Any],
+        payment_info: dict[str, Any],
     ) -> CfsAccountModel:  # pylint: disable=unused-argument
         """Update account in payment system."""
         return None
@@ -93,7 +93,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def create_invoice(
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
     ) -> InvoiceReference:
@@ -102,7 +102,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def update_invoice(  # pylint:disable=too-many-arguments,unused-argument
         self,
         payment_account: PaymentAccount,  # pylint: disable=unused-argument
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice_id: int,  # pylint: disable=unused-argument
         paybc_inv_number: str,
         reference_count: int = 0,  # pylint: disable=unused-argument
@@ -150,7 +150,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         self,
         invoice: InvoiceModel,  # pylint:disable=unused-argument
         payment_account: PaymentAccount,  # pylint:disable=unused-argument
-        refund_partial: List[RefundPartialLine],
+        refund_partial: list[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process Refund if any."""
         return None
@@ -240,13 +240,13 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.INVALID_REQUEST)
 
     @staticmethod
-    def get_total_partial_refund_amount(refund_revenue: List[RefundPartialLine]):
+    def get_total_partial_refund_amount(refund_revenue: list[RefundPartialLine]):
         """Sum refund revenue refund amounts."""
         return sum(revenue.refund_amount for revenue in refund_revenue)
 
     @staticmethod
     def _refund_and_create_credit_memo(
-        invoice: InvoiceModel, refund_partial: List[RefundPartialLine] = None, send_credit_notification: bool = True
+        invoice: InvoiceModel, refund_partial: list[RefundPartialLine] = None, send_credit_notification: bool = True
     ):
         # Create credit memo in CFS if the invoice status is PAID.
         # Don't do anything is the status is APPROVED.
@@ -266,7 +266,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
         cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
 
-        line_items: List[PaymentLineItemModel] = []
+        line_items: list[PaymentLineItemModel] = []
         refund_amount = 0
 
         if is_partial:
@@ -391,7 +391,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             "transactionDateTime": get_local_formatted_date_time(transaction_date_time),
             "transactionAmount": receipt.receipt_amount,
             "transactionId": invoice_ref.invoice_number,
-            "refundDate": get_local_formatted_date_time(datetime.now(tz=timezone.utc), "%Y%m%d"),
+            "refundDate": get_local_formatted_date_time(datetime.now(tz=UTC), "%Y%m%d"),
             "filingDescription": filing_description,
         }
         if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
@@ -427,7 +427,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         )
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.paid = invoice.total
-        current_time = datetime.now(tz=timezone.utc)
+        current_time = datetime.now(tz=UTC)
         invoice.payment_date = current_time
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         receipt = ReceiptModel()

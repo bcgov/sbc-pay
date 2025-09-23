@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
+
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -23,9 +24,8 @@ import pytest
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
-from pay_api.models import CfsAccount
+from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment, PaymentAccount
 from pay_api.models import FeeCode as FeeCodeModel
-from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services import CFSService
 from pay_api.services.fee_schedule import FeeSchedule as FeeScheduleService
@@ -446,7 +446,7 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
             service_fee=service_fee,
             gst_added=gst_enabled,
         )
-        for fee_code, service_fee, (_, _, gst_enabled) in zip(fee_codes, service_fee_codes, fee_configs)
+        for fee_code, service_fee, (_, _, gst_enabled) in zip(fee_codes, service_fee_codes, fee_configs, strict=False)
     ]
 
     for fee_schedule in fee_schedules:
@@ -457,7 +457,7 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
 
     fees = [FeeScheduleService() for _ in fee_schedules]
     quantities = [1, 1, 1, 1, 1, 1, 3, 7, 3, 7, 2, 5]
-    for fee, schedule, qty in zip(fees, fee_schedules, quantities):
+    for fee, schedule, qty in zip(fees, fee_schedules, quantities, strict=False):
         fee._dao = schedule
         fee.quantity = qty  # Set quantity to ensure total includes quantity * fee_amount
         if schedule.service_fee_code:
@@ -481,7 +481,7 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
 
         line_items = [
             PaymentLineItem.create(invoice_id=invoice.id, fee=fee, filing_info={"quantity": qty})
-            for fee, qty in zip(fees, quantities)
+            for fee, qty in zip(fees, quantities, strict=False)
         ]
 
         # Refresh the invoice to get the updated payment_line_items
@@ -511,7 +511,7 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
             Decimal("67.99"),  # 63.75 + 1.00 + (63.75 * 0.05) + 0.05 = 67.99
         ]
 
-        for line_item, expected_total in zip(line_items, expected_totals):
+        for line_item, expected_total in zip(line_items, expected_totals, strict=False):
             assert (
                 line_item.total + line_item.service_fees + line_item.statutory_fees_gst + line_item.service_fees_gst
                 == expected_total

@@ -15,16 +15,13 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
-import time
 
 import pytest
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import create_engine, event, text
-from sqlalchemy_utils import create_database, database_exists, drop_database
 
-from pay_api import create_app
+from pay_api import create_app, setup_jwt_manager
 from pay_api import jwt as _jwt
-from pay_api import setup_jwt_manager
 from pay_api.models import db as _db
 from pay_api.services.code import Code as CodeService
 
@@ -41,7 +38,7 @@ def app():
 def mock_pub_sub_call(mocker):
     """Mock pub sub call."""
 
-    class Expando(object):
+    class Expando:
         """Expando class."""
 
     class PublisherMock:

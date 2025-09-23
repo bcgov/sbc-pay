@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Centralized setup of logging for the service."""
+
 import json
 import logging
 import logging.config
@@ -27,7 +28,7 @@ def setup_logging(conf, logging_override_content=None):
         logging.config.dictConfig(json.loads(logging_override_content))
         print("Configure logging, from environment variable", file=sys.stdout)
     elif conf and path.isfile(conf):
-        with open(conf, "r") as f:
+        with open(conf) as f:
             config = json.load(f)
         logging.config.dictConfig(config)
         print(f"Configure logging, from file:{conf}", file=sys.stdout)

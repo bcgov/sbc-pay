@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any
 
 from flask import current_app
 from sqlalchemy import and_, func
@@ -33,10 +34,9 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.models import RefundPartialLine
+from pay_api.models import RefundPartialLine, db
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
-from pay_api.models import db
 from pay_api.utils.enums import (
     CfsAccountStatus,
     EFTCreditInvoiceStatus,
@@ -77,8 +77,8 @@ class EftService(DepositService):
     def create_account(
         self,
         identifier: str,
-        contact_info: Dict[str, Any],
-        payment_info: Dict[str, Any],
+        contact_info: dict[str, Any],
+        payment_info: dict[str, Any],
         **kwargs,
     ) -> CfsAccountModel:
         """Create an account for the EFT transactions."""
@@ -92,7 +92,7 @@ class EftService(DepositService):
     def create_invoice(
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
     ) -> None:
@@ -134,7 +134,7 @@ class EftService(DepositService):
         self,
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        refund_partial: list[RefundPartialLine],
     ):
         """Process refund in CFS."""
         is_partial = bool(refund_partial)
@@ -351,10 +351,10 @@ class EftService(DepositService):
     def _get_shortname_invoice_links(
         short_name_id: int,
         payment_account_id: int,
-        statuses: List[str],
+        statuses: list[str],
         invoice_id: int = None,
         statement_id: int = None,
-    ) -> List[EFTCreditInvoiceLinkModel]:
+    ) -> list[EFTCreditInvoiceLinkModel]:
         """Get short name credit invoice links by account."""
         credit_links_query = (
             db.session.query(EFTCreditInvoiceLinkModel)
@@ -406,7 +406,7 @@ class EftService(DepositService):
 
     @staticmethod
     def _validate_reversal_credit_invoice_links(
-        statement_id: int, credit_invoice_links: List[EFTCreditInvoiceLinkModel]
+        statement_id: int, credit_invoice_links: list[EFTCreditInvoiceLinkModel]
     ):
         """Validate credit invoice links for reversal."""
         invalid_link_statuses = [
@@ -435,12 +435,12 @@ class EftService(DepositService):
         if min_payment_date is None:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_UNPAID_STATEMENT)
 
-        date_difference = datetime.now(tz=timezone.utc) - min_payment_date.replace(tzinfo=timezone.utc)
+        date_difference = datetime.now(tz=UTC) - min_payment_date.replace(tzinfo=UTC)
         if date_difference.days > 60:
             raise BusinessException(Error.EFT_PAYMENT_ACTION_REVERSAL_EXCEEDS_SIXTY_DAYS)
 
     @staticmethod
-    def get_statement_credit_invoice_links(shortname_id, statement_id) -> List[EFTCreditInvoiceLinkModel]:
+    def get_statement_credit_invoice_links(shortname_id, statement_id) -> list[EFTCreditInvoiceLinkModel]:
         """Get most recent EFT Credit invoice links associated to a statement and short name."""
         max_link_group_id_subquery = (
             db.session.query(
@@ -574,7 +574,7 @@ class EftService(DepositService):
         current_app.logger.debug(">process_owing_statements")
 
     @staticmethod
-    def _get_statement_invoices_owing(auth_account_id: str, statement_id: int = None) -> List[InvoiceModel]:
+    def _get_statement_invoices_owing(auth_account_id: str, statement_id: int = None) -> list[InvoiceModel]:
         """Return statement invoices that have not been fully paid."""
         unpaid_status = (
             InvoiceStatus.PARTIAL.value,

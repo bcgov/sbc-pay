@@ -15,7 +15,6 @@
 
 import functools
 import re
-from typing import Dict, List
 
 from flask import g, request
 
@@ -53,7 +52,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
 
     def __init__(self):
         """Return a User Context object."""
-        token_info: Dict = _get_token_info()
+        token_info: dict = _get_token_info()
         self._user_name: str = token_info.get("username", None) or token_info.get("preferred_username", None)
         self._first_name: str = token_info.get("firstname", None)
         self._bearer_token: str = _get_token()
@@ -109,7 +108,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         return self._account_id
 
     @property
-    def permission(self) -> List[str]:
+    def permission(self) -> list[str]:
         """Return the permission."""
         return self._permission
 
@@ -161,11 +160,11 @@ def user_context(function):
     return wrapper
 
 
-def _get_token_info() -> Dict:
+def _get_token_info() -> dict:
     return g.jwt_oidc_token_info if g and "jwt_oidc_token_info" in g else {}
 
 
-def _get_permission() -> Dict:
+def _get_permission() -> dict:
     return g.user_permission if g and "user_permission" in g else []
 
 

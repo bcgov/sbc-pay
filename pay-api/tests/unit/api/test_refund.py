@@ -16,8 +16,9 @@
 
 Test-Suite to ensure that the /receipt endpoint is working as expected.
 """
+
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from pay_api.exceptions import BusinessException
@@ -171,7 +172,7 @@ def test_create_pad_refund(session, client, jwt, app, account_admin_mock, monkey
     cfs_account.account_id = pay_account.id
     cfs_account.save()
 
-    pay_account.pad_activation_date = datetime.now(tz=timezone.utc)
+    pay_account.pad_activation_date = datetime.now(tz=UTC)
     pay_account.save()
 
     token = jwt.create_jwt(get_claims(), token_header)
@@ -192,7 +193,7 @@ def test_create_pad_refund(session, client, jwt, app, account_admin_mock, monkey
 
     inv = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
-    inv.payment_date = datetime.now(tz=timezone.utc)
+    inv.payment_date = datetime.now(tz=UTC)
     inv.cfs_account_id = cfs_account.id
     inv.save()
 
@@ -279,7 +280,7 @@ def test_ob_credit_with_online_banking(session, client, jwt, app, account_admin_
 
     inv = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
-    inv.payment_date = datetime.now(tz=timezone.utc)
+    inv.payment_date = datetime.now(tz=UTC)
     inv.payment_account_id = pay_account.id
     inv.cfs_account_id = cfs_account.id
     inv.save()
@@ -371,7 +372,7 @@ def test_create_refund_with_existing_routing_slip(session, client, jwt, app):
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
-    inv.payment_date = datetime.now(tz=timezone.utc)
+    inv.payment_date = datetime.now(tz=UTC)
     inv.save()
 
     assert items[0].get("remainingAmount") == payload.get("payments")[0].get("paidAmount") - total

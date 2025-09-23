@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Base class for audit model."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from marshmallow import fields
 from sqlalchemy.ext.declarative import declared_attr
@@ -32,13 +33,13 @@ class Audit(BaseModel):  # pylint: disable=too-few-public-methods
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     updated_on = db.Column(
         "updated_on",
         db.DateTime,
         default=None,
-        onupdate=lambda: datetime.now(tz=timezone.utc),
+        onupdate=lambda: datetime.now(tz=UTC),
     )
 
     @declared_attr

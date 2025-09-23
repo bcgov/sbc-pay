@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage EFT Short names historical data."""
+
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy import and_, case, exists, false, func, select
 from sqlalchemy.orm import aliased
 
 from pay_api.models import EFTRefund as EFTRefundModel
-from pay_api.models import EFTShortnameHistorySchema
+from pay_api.models import EFTShortnameHistorySchema, db
 from pay_api.models import EFTShortnamesHistorical as EFTShortnamesHistoricalModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import db
 from pay_api.utils.enums import EFTHistoricalTypes
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
@@ -37,22 +36,22 @@ class EFTShortnameHistory:  # pylint: disable=too-many-instance-attributes
     short_name_id: int
     amount: Decimal
     credit_balance: Decimal
-    payment_account_id: Optional[int] = None
-    related_group_link_id: Optional[int] = None
-    statement_number: Optional[int] = None
-    hidden: Optional[bool] = False
-    is_processing: Optional[bool] = False
-    invoice_id: Optional[int] = None
-    eft_refund_id: Optional[int] = None
-    transaction_date: Optional[datetime] = None
+    payment_account_id: int | None = None
+    related_group_link_id: int | None = None
+    statement_number: int | None = None
+    hidden: bool | None = False
+    is_processing: bool | None = False
+    invoice_id: int | None = None
+    eft_refund_id: int | None = None
+    transaction_date: datetime | None = None
 
 
 @dataclass
 class EFTShortnameHistorySearch:
     """Used for searching EFT Short name historical records."""
 
-    page: Optional[int] = 1
-    limit: Optional[int] = 10
+    page: int | None = 1
+    limit: int | None = 10
 
 
 class EFTShortnameHistorical:
@@ -156,7 +155,7 @@ class EFTShortnameHistorical:
     @staticmethod
     def transaction_date_now() -> datetime:
         """Construct transaction datetime using the utc timezone."""
-        return datetime.now(tz=timezone.utc)
+        return datetime.now(tz=UTC)
 
     @staticmethod
     def _get_account_name():

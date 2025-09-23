@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict
 
 import pytz
 from attrs import define
@@ -28,9 +27,8 @@ from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, rela
 
 from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
-from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
@@ -381,7 +379,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return result, count
 
     @classmethod
-    def get_invoices_and_payment_accounts_for_statements(cls, search_filter: Dict):
+    def get_invoices_and_payment_accounts_for_statements(cls, search_filter: dict):
         """Slimmed down version for statements."""
         auth_account_ids = select(func.unnest(cast(search_filter.get("authAccountIds", []), ARRAY(TEXT))))
         query = (
@@ -415,7 +413,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
-    def get_count(cls, auth_account_id: str, search_filter: Dict):
+    def get_count(cls, auth_account_id: str, search_filter: dict):
         """Slimmed downed version for count (less joins)."""
         query = db.session.query(func.distinct(Invoice.id))
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
@@ -423,7 +421,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return count
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict, include_joins=False):
+    def filter(cls, query, auth_account_id: str, search_filter: dict, include_joins=False):
         """For filtering queries."""
         query = cls.filter_payment_account(query, auth_account_id, search_filter, include_joins)
         if status_code := search_filter.get("statusCode", None):
@@ -650,7 +648,7 @@ class TransactionSearchParams:
     """Parameters for search operations."""
 
     auth_account_id: str
-    search_filter: Dict
+    search_filter: dict
     page: int
     limit: int
     no_counts: bool = False

@@ -14,7 +14,6 @@
 """Model to handle all operations related to Payment Line Item."""
 
 from decimal import Decimal
-from typing import Optional
 
 from attrs import define
 from marshmallow import fields
@@ -134,11 +133,11 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
     """Payment Line Item Search Model."""
 
     total: Decimal
-    statutory_fees_gst: Optional[Decimal]
+    statutory_fees_gst: Decimal | None
     pst: Decimal
     gst: Decimal
     service_fees: Decimal
-    service_fees_gst: Optional[Decimal]
+    service_fees_gst: Decimal | None
     description: str
     filing_type_code: str
 

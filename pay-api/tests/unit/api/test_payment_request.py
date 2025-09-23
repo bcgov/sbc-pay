@@ -16,10 +16,10 @@
 
 Test-Suite to ensure that the /payment-requests endpoint is working as expected.
 """
+
 import copy
 import json
-import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -27,12 +27,10 @@ import pytest
 from flask import current_app
 from requests.exceptions import ConnectionError
 
-from pay_api.models import CorpType
+from pay_api.models import CorpType, FeeCode, FilingType
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
-from pay_api.models import FeeCode
 from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.models import FilingType, Invoice
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models.tax_rate import TaxRate
@@ -1422,7 +1420,7 @@ def test_payment_request_gst_and_service_fees_calculation(session, client, jwt, 
         filing_type_code=filing_type_code,
         corp_type_code=corp_type_code,
         fee_code=fee_code,
-        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        fee_start_date=datetime.now(tz=UTC).date(),
         service_fee_code=service_fee_code,
         priority_fee_code=priority_fee_code,
         future_effective_fee_code=future_effective_fee_code,
@@ -1438,7 +1436,7 @@ def test_payment_request_gst_and_service_fees_calculation(session, client, jwt, 
         service_line="33333",
         stob="4444",
         project_code="5555555",
-        start_date=datetime.now(tz=timezone.utc).date(),
+        start_date=datetime.now(tz=UTC).date(),
         created_by="test",
     )
     distribution_code.save()
@@ -1472,7 +1470,7 @@ def test_payment_request_gst_and_service_fees_calculation(session, client, jwt, 
 
     assert invoice["serviceFees"] == 25.50
 
-    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
 
     expected_main_fee_gst = Decimal(str(round(150.00 * float(gst_rate), 2)))
     expected_service_fee_gst = Decimal(str(round(25.50 * float(gst_rate), 2)))
@@ -1569,7 +1567,7 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
         filing_type_code=filing_type_code,
         corp_type_code=corp_type_code,
         fee_code=fee_code,
-        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
         show_on_pricelist=True,
         service_fee=service_fee_code_model,
@@ -1583,7 +1581,7 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
         service_line="33333",
         stob="4444",
         project_code="5555555",
-        start_date=datetime.now(tz=timezone.utc).date(),
+        start_date=datetime.now(tz=UTC).date(),
         created_by="test",
     )
     distribution_code.save()
@@ -1666,7 +1664,7 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
         filing_type_code=filing_type_code_no_gst,
         corp_type_code=corp_type_code_no_gst,
         fee_code=fee_code_no_gst,
-        fee_start_date=datetime.now(tz=timezone.utc).date(),
+        fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=False,
         show_on_pricelist=True,
         service_fee=service_fee_code_model_no_gst,

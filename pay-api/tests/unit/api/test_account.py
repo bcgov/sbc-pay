@@ -18,8 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -29,12 +28,8 @@ from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
-from pay_api.models.corp_type import CorpType
-from pay_api.models.credit import Credit
 from pay_api.models.distribution_code import DistributionCodeLink as DistributionCodeLinkModel
-from pay_api.models.fee_code import FeeCode
 from pay_api.models.fee_schedule import FeeSchedule
-from pay_api.models.filing_type import FilingType
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.models.payment_line_item import PaymentLineItem
@@ -96,8 +91,8 @@ def test_account_purchase_history(session, client, jwt, app):
     invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    invoice.disbursement_date = datetime.now(tz=timezone.utc)
-    invoice.disbursement_reversal_date = datetime.now(tz=timezone.utc)
+    invoice.disbursement_date = datetime.now(tz=UTC)
+    invoice.disbursement_reversal_date = datetime.now(tz=UTC)
     invoice.save()
 
     for payload in [{}, {"excludeCounts": True}]:
@@ -1330,7 +1325,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         is_credit=False,
     )
     partial_refund1.save()
@@ -1343,7 +1338,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         is_credit=True,
     )
     partial_refund2.save()
@@ -1488,7 +1483,7 @@ def test_search_partially_refunded_invoices(session, client, jwt, app):
         status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         is_credit=False,
     )
     partial_refund.save()
@@ -1537,7 +1532,7 @@ def test_search_partially_credited_invoices(session, client, jwt, app):
         status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         is_credit=True,
     )
     partial_refund.save()

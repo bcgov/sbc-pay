@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the CFS Service layer is working as expected.
 """
+
 from decimal import Decimal
 from unittest.mock import patch
 

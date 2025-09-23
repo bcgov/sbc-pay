@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Non-Sufficient Funds."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -22,13 +23,11 @@ from sqlalchemy import case, func
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import InvoiceSearchModel, NonSufficientFunds, NonSufficientFundsSchema
+from pay_api.models import InvoiceSearchModel, NonSufficientFunds, NonSufficientFundsSchema, StatementDTO, db
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Statement as StatementModel
-from pay_api.models import StatementDTO
 from pay_api.models import StatementInvoices as StatementInvoicesModel
-from pay_api.models import db
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
     AuthHeaderType,

@@ -16,10 +16,10 @@
 
 Test-Suite to ensure that the util functions are working as expected.
 """
+
 from datetime import datetime
 
 import pytest
-from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 

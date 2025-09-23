@@ -15,7 +15,7 @@
 
 import urllib.parse
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any
 
 from dateutil import parser
 from flask import current_app
@@ -58,8 +58,8 @@ class PaybcService(PaymentSystemService, CFSService):
     def create_account(
         self,
         identifier: str,
-        contact_info: Dict[str, Any],
-        payment_info: Dict[str, Any],
+        contact_info: dict[str, Any],
+        payment_info: dict[str, Any],
         **kwargs,
     ) -> any:
         """Create account in PayBC."""
@@ -76,14 +76,14 @@ class PaybcService(PaymentSystemService, CFSService):
     def create_invoice(
         self,
         payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
     ) -> InvoiceReference:
         """Create Invoice in PayBC."""
         # Build line item model array, as that's needed for CFS Service
         # No need to check for payment blockers here as this payment method is used to unblock.
-        line_item_models: List[PaymentLineItemModel] = []
+        line_item_models: list[PaymentLineItemModel] = []
         for line_item in line_items:
             line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
 
@@ -100,7 +100,7 @@ class PaybcService(PaymentSystemService, CFSService):
     def update_invoice(  # pylint: disable=too-many-arguments
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice_id: int,
         paybc_inv_number: str,
         reference_count: int = 0,
@@ -190,7 +190,7 @@ class PaybcService(PaymentSystemService, CFSService):
         self,
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        refund_partial: list[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         return super()._refund_and_create_credit_memo(invoice)

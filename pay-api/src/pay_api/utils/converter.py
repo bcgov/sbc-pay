@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, Type
+from typing import Any
 
 import cattrs
 from attrs import fields, has
@@ -69,11 +69,11 @@ class Converter(cattrs.Converter):
         )
 
     @staticmethod
-    def _structure_decimal(obj: Any, cls: Type) -> Decimal:
+    def _structure_decimal(obj: Any, cls: type) -> Decimal:
         return cls(str(obj))
 
     @staticmethod
-    def _structure_enum_value(obj: Any, cls: Type):
+    def _structure_enum_value(obj: Any, cls: type):
         if not issubclass(cls, Enum):
             return None
         # Enum automatically comes in as the value here, just return it
@@ -88,7 +88,7 @@ class Converter(cattrs.Converter):
         return obj.isoformat() if obj else None
 
     @staticmethod
-    def remove_nones(data: Dict[Any, Any]) -> Dict[str, Any]:
+    def remove_nones(data: dict[Any, Any]) -> dict[str, Any]:
         """Remove nones from payload."""
         new_data = {}
         for key, val in data.items():

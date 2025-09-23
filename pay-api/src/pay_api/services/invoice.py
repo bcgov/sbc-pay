@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Invoice."""
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Dict, List, Optional, Tuple
 
 from flask import current_app
 
@@ -24,9 +24,8 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import InvoiceSchema
+from pay_api.models import InvoiceSchema, db
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import db
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
@@ -51,8 +50,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._total = None
         self._paid = None
         self._refund = None
-        self._payment_date: Optional[datetime] = None
-        self._refund_date: Optional[datetime] = None
+        self._payment_date: datetime | None = None
+        self._refund_date: datetime | None = None
         self._payment_line_items = None
         self._corp_type_code = None
         self._receipts = None
@@ -64,7 +63,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._dat_number: str = None
         self._cfs_account_id: int
         self._payment_method_code: str = None
-        self._details: Dict = None
+        self._details: dict = None
         self._gst = None
 
     @property
@@ -96,7 +95,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.business_identifier: str = self._dao.business_identifier
         self.dat_number: str = self._dao.dat_number
         self.cfs_account_id: int = self._dao.cfs_account_id
-        self.details: Dict = self._dao.details
+        self.details: dict = self._dao.details
         self.gst: Decimal = self._dao.gst
 
     @property
@@ -410,10 +409,10 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     @staticmethod
     def find_invoices_for_payment(
         payment_id: int, reference_status=InvoiceReferenceStatus.ACTIVE.value
-    ) -> List[Invoice]:
+    ) -> list[Invoice]:
         """Find invoices by payment id."""
-        invoices: List[Invoice] = []
-        invoice_daos: List[InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id, reference_status)
+        invoices: list[Invoice] = []
+        invoice_daos: list[InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id, reference_status)
 
         for invoice_dao in invoice_daos:
             invoice = Invoice()
@@ -424,10 +423,10 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoices
 
     @staticmethod
-    def find_invoices(business_identifier: str) -> Dict[str, any]:
+    def find_invoices(business_identifier: str) -> dict[str, any]:
         """Find invoices by business identifier."""
-        invoices: Dict[str, any] = {"invoices": []}
-        invoice_daos: List[InvoiceModel] = InvoiceModel.find_by_business_identifier(business_identifier)
+        invoices: dict[str, any] = {"invoices": []}
+        invoice_daos: list[InvoiceModel] = InvoiceModel.find_by_business_identifier(business_identifier)
 
         for invoice_dao in invoice_daos:
             invoice = Invoice()
@@ -448,7 +447,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
     @staticmethod
     @user_context
-    def create_invoice_pdf(identifier: int, **kwargs) -> Tuple:
+    def create_invoice_pdf(identifier: int, **kwargs) -> tuple:
         """Find invoice by id."""
         invoice_dao: InvoiceModel = InvoiceModel.find_by_id(identifier)
         if not invoice_dao:
@@ -477,7 +476,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             else generate_transaction_number(invoice_dao.id)
         )
 
-        filing_types: List[Dict[str, str]] = []
+        filing_types: list[dict[str, str]] = []
         for line_item in invoice_dao.payment_line_items:
             business_identifier = (
                 invoice_dao.business_identifier
@@ -499,7 +498,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
                 }
             )
 
-        template_vars: Dict[str, any] = {
+        template_vars: dict[str, any] = {
             "invoiceNumber": invoice_number,
             "createdOn": get_local_formatted_date(invoice_dao.created_on),
             "accountNumber": cfs_account.cfs_account if cfs_account else None,
@@ -543,7 +542,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         check_auth(dao.business_identifier, one_of_roles=one_of_roles)
 
     @staticmethod
-    def _add_dynamic_fields(invoice: Dict[str, any], calculate_dynamic_fields: bool = False) -> Dict[str, any]:
+    def _add_dynamic_fields(invoice: dict[str, any], calculate_dynamic_fields: bool = False) -> dict[str, any]:
         """Add calculated fields to the schema json."""
         if calculate_dynamic_fields:
             # Include redirect_for_payment flag
@@ -584,7 +583,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
         Used in the batch job to find orphan records which are untouched for a time.
         """
-        earliest_transaction_time = datetime.now(tz=timezone.utc) - (timedelta(days=days, hours=hours, minutes=minutes))
+        earliest_transaction_time = datetime.now(tz=UTC) - (timedelta(days=days, hours=hours, minutes=minutes))
         return (
             db.session.query(InvoiceModel)
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)

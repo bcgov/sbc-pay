@@ -14,6 +14,7 @@
 
 
 """Service for hashing."""
+
 import hashlib
 
 from flask import current_app

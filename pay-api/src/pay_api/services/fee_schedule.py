@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from operator import or_
 
@@ -28,12 +28,10 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import FeeCode as FeeCodeModel
-from pay_api.models import FeeDetailsSchema
+from pay_api.models import FeeDetailsSchema, FeeScheduleSchema, db
 from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.models import FeeScheduleSchema
 from pay_api.models import FilingType as FilingTypeModel
 from pay_api.models import TaxRate as TaxRateModel
-from pay_api.models import db
 from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
@@ -231,7 +229,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def service_fees_gst(self):
         """Return the GST amount calculated."""
         if self._gst_added:
-            gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+            gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC))
             return round(self.service_fees * gst_rate, 2)
         return 0
 
@@ -239,7 +237,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def statutory_fees_gst(self):
         """Return the GST amount calculated."""
         if self._gst_added:
-            gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+            gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC))
             return round(self.total_excluding_service_fees * gst_rate, 2)
         return 0
 
@@ -366,7 +364,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         current_app.logger.debug("<find_all")
         data = {"items": []}
 
-        valid_date = datetime.now(tz=timezone.utc).date()
+        valid_date = datetime.now(tz=UTC).date()
         query = (
             db.session.query(FeeScheduleModel)
             .filter(FeeScheduleModel.fee_start_date <= valid_date)
@@ -450,7 +448,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         main_fee_code = aliased(FeeCodeModel)
         service_fee_code = aliased(FeeCodeModel)
 
-        current_date = datetime.now(tz=timezone.utc).date()
+        current_date = datetime.now(tz=UTC).date()
         infinity_date = literal("infinity").cast(Date)
         query = (
             db.session.query(

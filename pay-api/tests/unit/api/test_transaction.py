@@ -19,7 +19,7 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from requests.exceptions import ConnectionError
@@ -473,7 +473,7 @@ def test_transaction_post_for_nsf_payment(mock_payment_system_factory, mock_unlo
 
     inv_number_1 = "REG00001"
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
-    payment_account.has_nsf_invoices = datetime.now(tz=timezone.utc)
+    payment_account.has_nsf_invoices = datetime.now(tz=UTC)
     payment_account.save()
     cfs_account = CfsAccountModel.find_latest_account_by_account_id(payment_account.id)
     invoice_1 = factory_invoice(payment_account, total=10, cfs_account_id=cfs_account.id)

@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Direct Pay PAYBC Payments."""
+
 import base64
 import json
 from decimal import Decimal
-from typing import List, Optional
 from urllib.parse import unquote_plus, urlencode
 
 from attrs import define
@@ -73,7 +73,7 @@ class RefundLineRequest:
 class RefundData:
     """Refund data from order status query. From PAYBC."""
 
-    refundglstatus: Optional[PaymentDetailsGlStatus]
+    refundglstatus: PaymentDetailsGlStatus | None
     refundglerrormessage: str
 
 
@@ -85,18 +85,18 @@ class RevenueLine:
     revenueaccount: str
     revenueamount: Decimal
     glstatus: str
-    glerrormessage: Optional[str]
-    refund_data: List[RefundData]
+    glerrormessage: str | None
+    refund_data: list[RefundData]
 
 
 @define
 class OrderStatus:
     """Return from order status query from PAYBC."""
 
-    revenue: List[RevenueLine]
-    postedrefundamount: Optional[Decimal]
-    refundedamount: Optional[Decimal]
-    paymentstatus: Optional[str]
+    revenue: list[RevenueLine]
+    postedrefundamount: Decimal | None
+    refundedamount: Decimal | None
+    paymentstatus: str | None
 
 
 class DirectPayService(PaymentSystemService, OAuthService):
@@ -193,7 +193,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def create_invoice(
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
     ) -> InvoiceReference:
@@ -207,7 +207,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def update_invoice(  # pylint:disable=too-many-arguments
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice_id: int,
         paybc_inv_number: str,
         reference_count: int = 0,
@@ -234,7 +234,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         self,
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        refund_partial: list[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         current_app.logger.debug(
@@ -385,7 +385,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return token_response
 
     @staticmethod
-    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: List[RefundLineRequest]):
+    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: list[RefundLineRequest]):
         """Build PAYBC refund revenue lines for the refund."""
         if (paybc_invoice.postedrefundamount or 0) > 0 or (paybc_invoice.refundedamount or 0) > 0:
             current_app.logger.error("Refund already detected.")
@@ -420,7 +420,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return lines
 
     @staticmethod
-    def _build_refund_revenue_lines(refund_partial: List[RefundPartialLine]):
+    def _build_refund_revenue_lines(refund_partial: list[RefundPartialLine]):
         """Provide refund lines and total for the refund."""
         total = Decimal("0")
         refund_lines = []
@@ -470,7 +470,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return Converter().structure(payment_response, OrderStatus)
 
     @classmethod
-    def build_automated_refund_payload(cls, invoice: InvoiceModel, refund_partial: List[RefundPartialLine]):
+    def build_automated_refund_payload(cls, invoice: InvoiceModel, refund_partial: list[RefundPartialLine]):
         """Build payload to create a refund in PAYBC."""
         receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(

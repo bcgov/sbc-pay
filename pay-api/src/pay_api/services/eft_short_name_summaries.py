@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to provide summarized information for EFT Short names."""
+
 from __future__ import annotations
 
 from flask import current_app

@@ -15,9 +15,9 @@
 
 There are conditions where the payment will be handled internally. For e.g, zero $ or staff payments.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from http import HTTPStatus
-from typing import List
 
 from flask import current_app
 
@@ -48,7 +48,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def create_invoice(
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
     ) -> InvoiceReference:
@@ -86,7 +86,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return (
             f"{invoice_reference.invoice_number}",
-            datetime.now(tz=timezone.utc),
+            datetime.now(tz=UTC),
             invoice.total,
         )
 
@@ -109,7 +109,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         self,
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        refund_partial: list[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         if invoice.total == 0:

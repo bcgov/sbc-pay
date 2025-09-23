@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Mounting the end-points."""
-from typing import Optional
 
 from flask import Flask
 
@@ -22,7 +21,7 @@ from .v1 import v1_endpoint
 class Endpoints:  # pylint: disable=too-few-public-methods
     """Manage the mounting, traversal and redirects for a set of versioned end-points."""
 
-    app: Optional[Flask] = None
+    app: Flask | None = None
 
     def init_app(self, app: Flask):
         """Initialize the endpoints mapped for all services.

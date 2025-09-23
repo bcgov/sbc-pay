@@ -21,7 +21,7 @@ This is used in three different distinct flows for EFT only currently (provided 
 
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pay_api.utils.enums import DisbursementStatus
 
@@ -64,7 +64,7 @@ class PartnerDisbursements(BaseModel):  # pylint: disable=too-many-instance-attr
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     feedback_on = db.Column("feedback_on", db.DateTime, nullable=True)
     partner_code = db.Column("partner_code", db.String(50), nullable=False)

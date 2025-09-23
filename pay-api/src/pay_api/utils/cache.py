@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Bring in the common cache."""
+
 from flask_caching import Cache
 
 # lower case name as used by convention in most Flask apps

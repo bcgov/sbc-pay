@@ -17,7 +17,7 @@
 Test-Suite to ensure that the Refund Service is working as expected.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
@@ -194,7 +194,7 @@ def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
     factory_payment_transaction(payment_id=payment.id, status_code=TransactionStatus.COMPLETED.value).save()
 
     i.invoice_status_code = InvoiceStatus.PAID.value
-    i.payment_date = datetime.now(tz=timezone.utc)
+    i.payment_date = datetime.now(tz=UTC)
     i.save()
 
     factory_receipt(invoice_id=i.id, receipt_number="953959345343").save()
@@ -267,7 +267,7 @@ def test_create_eft_refund(
         payment_method_code=PaymentMethod.EFT.value,
         status_code=inv_status,
         cfs_account_id=cfs_account.id,
-        payment_date=datetime.now(tz=timezone.utc) if inv_status == InvoiceStatus.PAID.value else None,
+        payment_date=datetime.now(tz=UTC) if inv_status == InvoiceStatus.PAID.value else None,
     ).save()
 
     eft_credit = factory_eft_credit(

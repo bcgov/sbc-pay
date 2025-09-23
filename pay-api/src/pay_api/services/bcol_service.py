@@ -13,8 +13,7 @@
 # limitations under the License.
 """Service to manage PayBC interaction."""
 
-from datetime import datetime, timezone
-from typing import Dict, List
+from datetime import UTC, datetime
 
 from flask import current_app
 from requests.exceptions import HTTPError
@@ -50,7 +49,7 @@ class BcolService(PaymentSystemService, OAuthService):
     def create_invoice(  # pylint: disable=too-many-locals
         self,
         payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
+        line_items: list[PaymentLineItem],
         invoice: Invoice,
         **kwargs,
     ) -> InvoiceReference:
@@ -83,7 +82,7 @@ class BcolService(PaymentSystemService, OAuthService):
         if filing_types == "CSBPDOC" or force_non_staff_fee_code:
             use_staff_fee_code = False
             force_use_debit_account = True
-        payload: Dict = {
+        payload: dict = {
             "userId": payment_account.bcol_user_id,
             "invoiceNumber": invoice_number,
             "folioNumber": invoice.folio_number,
@@ -154,7 +153,7 @@ class BcolService(PaymentSystemService, OAuthService):
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return (
             f"{invoice_reference.invoice_number}",
-            datetime.now(tz=timezone.utc),
+            datetime.now(tz=UTC),
             invoice.total,
         )
 
@@ -181,7 +180,7 @@ class BcolService(PaymentSystemService, OAuthService):
         self,
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        refund_partial: list[RefundPartialLine],
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         self._publish_refund_to_mailer(invoice)

@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Invoice."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import List, Optional
 
 import pytz
 from attrs import define
@@ -47,7 +47,7 @@ def determine_overdue_date(context):
     target_datetime = datetime.combine(target_date, datetime.min.time())
     # Correct for daylight savings.
     hours = target_datetime.astimezone(pytz.timezone("America/Vancouver")).utcoffset().total_seconds() / 60 / 60
-    target_date = target_datetime.replace(tzinfo=timezone.utc) + relativedelta(hours=-hours)
+    target_date = target_datetime.replace(tzinfo=UTC) + relativedelta(hours=-hours)
     return target_date.replace(tzinfo=None)
 
 
@@ -119,7 +119,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
         index=True,
     )
 
@@ -169,7 +169,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             .filter(PaymentLineItem.fee_distribution_id == fee_distribution_id)
         )
 
-        invoices: List[Invoice] = query.all()
+        invoices: list[Invoice] = query.all()
         for invoice in invoices:
             if invoice.invoice_status_code == InvoiceStatus.PAID.value:
                 invoice.invoice_status_code = InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value
@@ -184,7 +184,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(business_identifier=business_identifier).all()
 
     @classmethod
-    def find_invoices_by_status_for_account(cls, pay_account_id: int, invoice_statuses: List[str]) -> List[Invoice]:
+    def find_invoices_by_status_for_account(cls, pay_account_id: int, invoice_statuses: list[str]) -> list[Invoice]:
         """Return invoices by status for an account."""
         query = (
             cls.query.filter_by(payment_account_id=pay_account_id)
@@ -197,7 +197,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def find_invoices_for_payment(
         cls, payment_id: int, reference_status=InvoiceReferenceStatus.ACTIVE.value
-    ) -> List[Invoice]:
+    ) -> list[Invoice]:
         """Find all invoice records created for the payment."""
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .invoice_reference import InvoiceReference
@@ -321,23 +321,23 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     refund: Decimal
     service_fees: Decimal
     total: Decimal
-    gst: Optional[Decimal]
+    gst: Decimal | None
     status_code: str
     filing_id: str
     folio_number: str
     payment_method: str
     created_name: str
-    details: Optional[List[dict]]
-    payment_account: Optional[PaymentAccountSearchModel]
-    line_items: Optional[List[PaymentLineItemSearchModel]]
+    details: list[dict] | None
+    payment_account: PaymentAccountSearchModel | None
+    line_items: list[PaymentLineItemSearchModel] | None
     product: str
     invoice_number: str
     payment_date: datetime
     refund_date: datetime
     disbursement_date: datetime
     disbursement_reversal_date: datetime
-    partial_refunds: Optional[List[RefundPartialSearch]]
-    applied_credits: Optional[List[AppliedCreditsSearchModel]]
+    partial_refunds: list[RefundPartialSearch] | None
+    applied_credits: list[AppliedCreditsSearchModel] | None
 
     @classmethod
     def from_row(
