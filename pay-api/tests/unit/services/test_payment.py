@@ -338,7 +338,7 @@ def test_search_payment_history_for_all(session):
     assert results.get("total") == 10
 
 
-def test_create_payment_report_csv(session, rest_call_mock):
+def test_create_payment_report_csv(session):
     """Assert that the create payment report is working."""
     payment_account = factory_payment_account()
     payment_account.save()
@@ -350,6 +350,38 @@ def test_create_payment_report_csv(session, rest_call_mock):
         invoice = factory_invoice(payment_account)
         invoice.save()
         factory_invoice_reference(invoice.id).save()
+        factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
+
+    search_results = PaymentService.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
+    assert search_results is not None
+    assert len(search_results.get("items")) > 0
+
+    csv_rows = PaymentService._prepare_csv_data(search_results)
+    assert csv_rows is not None
+    assert len(csv_rows) == len(search_results.get("items"))
+
+    first_invoice = search_results.get("items")[0]
+    first_row = csv_rows[0]
+    assert isinstance(first_row, list)
+    assert len(first_row) == 16
+
+    assert first_row[0] == first_invoice.get("product")
+    assert first_row[1] == first_invoice.get("corp_type_code")
+    assert first_row[2] is None or isinstance(first_row[2], str)
+    assert first_row[3] is None or isinstance(first_row[3], str)
+    assert first_row[4] is None or isinstance(first_row[4], str)
+    assert first_row[5] == first_invoice.get("folio_number")
+    assert first_row[6] == first_invoice.get("created_name")
+    assert isinstance(first_row[7], str) and "Pacific Time" in first_row[7]
+    expected_total = float(first_invoice.get("total", 0))
+    expected_service_fee = float(first_invoice.get("service_fees", 0))
+    assert float(first_row[8]) == expected_total
+    assert float(first_row[10]) == expected_total - expected_service_fee
+    assert float(first_row[11]) == expected_service_fee
+    assert first_row[12] == first_invoice.get("status_code")
+    assert first_row[13] == first_invoice.get("business_identifier")
+    assert first_row[14] == first_invoice.get("id")
+    assert first_row[15] == first_invoice.get("invoice_number")
 
     PaymentService.create_payment_report(
         auth_account_id=auth_account_id,
