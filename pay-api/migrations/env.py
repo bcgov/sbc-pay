@@ -26,11 +26,6 @@ logger = logging.getLogger("alembic.env")
 config.set_main_option(
     "sqlalchemy.url", current_app.config.get("SQLALCHEMY_DATABASE_URI")
 )
-
-# Set schema if specified in app config
-if current_app.config.get("ALEMBIC_SCHEMA"):
-    config.set_main_option("schema", current_app.config.get("ALEMBIC_SCHEMA"))
-
 target_metadata = current_app.extensions["migrate"].db.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -52,12 +47,8 @@ def get_list_from_config(config, key):
 exclude_tables = get_list_from_config(config, "exclude_tables")
 
 
-def _include_object(target_schema_name):
-    def include_object(obj, name, object_type, reflected, compare_to):
-        if object_type == "table":
-            return obj.schema == target_schema_name
-        return True
-    return include_object
+def include_object(object, name, type_, reflected, compare_to):
+    return not (type_ == "table" and name in exclude_tables)
 
 
 def run_migrations_offline():
@@ -73,22 +64,12 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
-    schema_name = current_app.config.get("ALEMBIC_SCHEMA", "public")
-    naming_convention = {
-        "ix": f"ix_%(column_0_label)s_{schema_name}",
-        "uq": f"uq_%(table_name)s_%(column_0_name)s_{schema_name}",
-        "ck": f"ck_%(table_name)s_%(constraint_name)s_{schema_name}",
-        "fk": f"fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s_{schema_name}",
-        "pk": f"pk_%(table_name)s_{schema_name}"
-    }
-    
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         compare_type=True,
-        include_object=_include_object(schema_name),
-        naming_convention=naming_convention,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -120,22 +101,11 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        # Set up naming convention to make constraint names unique per schema
-        schema_name = current_app.config.get("ALEMBIC_SCHEMA", "public")
-        naming_convention = {
-            "ix": f"ix_%(column_0_label)s_{schema_name}",
-            "uq": f"uq_%(table_name)s_%(column_0_name)s_{schema_name}",
-            "ck": f"ck_%(table_name)s_%(constraint_name)s_{schema_name}",
-            "fk": f"fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s_{schema_name}",
-            "pk": f"pk_%(table_name)s_{schema_name}"
-        }
-        
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             process_revision_directives=process_revision_directives,
-            include_object=_include_object(schema_name),
-            naming_convention=naming_convention,
+            include_object=include_object,
             **current_app.extensions["migrate"].configure_args,
         )
 
