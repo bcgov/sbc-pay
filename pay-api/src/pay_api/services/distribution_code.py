@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 
 from dateutil import parser
 from flask import current_app
@@ -87,7 +87,7 @@ class DistributionCode:
         if distribution_details.get("startDate", None):
             dist_code_dao.start_date = parser.parse(distribution_details.get("startDate"))
         else:
-            dist_code_svc.start_date = datetime.now(tz=UTC).date()
+            dist_code_dao.start_date = datetime.now(tz=UTC).date()
 
         _has_code_changes: bool = (
             dist_code_dao.client != distribution_details.get("client", None)

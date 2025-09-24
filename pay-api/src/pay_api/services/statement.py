@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service class to control all the operations related to statements."""
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
