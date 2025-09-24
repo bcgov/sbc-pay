@@ -135,7 +135,6 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         non_nsf_invoices = [inv for inv in invoices if nsf_invoice is None or inv.id != nsf_invoice.id]
         # We don't generate a CC invoice for EFT overdue payments.
         if not nsf_invoice:
-            # TODO look at this one
             nsf_invoice = InvoiceModel()
             nsf_invoice.created_on = payment.payment_date
             nsf_invoice.paid = 0
@@ -151,4 +150,5 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
             nsf_invoice.details.extend(invoice.details or [])
         receipt_details["invoice"] = camelcase_dict(Invoice.asdict(nsf_invoice, include_links=False), {})
         receipt_details["invoice"]["createdOn"] = get_local_formatted_date(nsf_invoice.created_on)
+        nsf_invoice.rollback()
         return receipt_details
