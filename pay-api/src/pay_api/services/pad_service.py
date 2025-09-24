@@ -22,7 +22,6 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
@@ -118,7 +117,7 @@ class PadService(PaymentSystemService, CFSService):
         self,
         payment_account: PaymentAccount,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:  # pylint: disable=unused-argument
         """Return a static invoice number for direct pay."""
@@ -138,7 +137,7 @@ class PadService(PaymentSystemService, CFSService):
     @skip_complete_post_invoice_for_sandbox
     def complete_post_invoice(
         self,
-        invoice: Invoice,  # pylint: disable=unused-argument  # noqa: ARG002
+        invoice: InvoiceModel,  # pylint: disable=unused-argument  # noqa: ARG002
         invoice_reference: InvoiceReference,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> None:

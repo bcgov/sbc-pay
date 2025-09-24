@@ -21,7 +21,6 @@ from flask import current_app
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem
@@ -50,7 +49,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
         self,
         payment_account: PaymentAccount,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number."""
@@ -65,7 +64,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
         # else Do nothing here as the invoice references are created later.
         return invoice_reference
 
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: InvoiceModel, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         if invoice_reference and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value:
             # Create a payment record

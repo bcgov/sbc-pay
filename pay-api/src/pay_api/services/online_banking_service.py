@@ -22,7 +22,6 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem
@@ -59,7 +58,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         self,
         payment_account: PaymentAccount,
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number for online banking."""
@@ -76,7 +75,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
     ):
         """Get the receipt details by calling PayBC web service."""
 
-    def apply_credit(self, invoice: Invoice) -> None:
+    def apply_credit(self, invoice: InvoiceModel) -> None:
         """Apply credit to the invoice."""
         self.release_payment_or_reversal(invoice=invoice)
 

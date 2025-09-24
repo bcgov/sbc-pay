@@ -38,7 +38,7 @@ def get_invoice_by_id(invoice_id):
     try:
         response = {"items": []}
 
-        response["items"].append(InvoiceService.find_by_id(invoice_id).asdict())
+        response["items"].append(InvoiceService.asdict(InvoiceService.find_by_id(invoice_id)))
     except BusinessException as exception:
         return exception.response()
     return jsonify(response), HTTPStatus.OK

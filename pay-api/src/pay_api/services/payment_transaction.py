@@ -26,6 +26,7 @@ from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.models import Receipt as ReceiptModel
@@ -118,7 +119,7 @@ class PaymentTransaction:
         return transaction
 
     @staticmethod
-    def _create_transaction(payment: Payment, request_json: dict, invoice: Invoice = None):
+    def _create_transaction(payment: Payment, request_json: dict, invoice: InvoiceModel = None):
         # Cannot start transaction on completed payment
         current_app.logger.info(
             f"Creating transactional record {payment.invoice_number}, " f"{payment.payment_status_code}"
@@ -174,7 +175,7 @@ class PaymentTransaction:
 
     @staticmethod
     def _build_pay_system_url_for_invoice(
-        invoice: Invoice,
+        invoice: InvoiceModel,
         pay_system_service: PaymentSystemService,
         transaction_id: uuid,
         pay_return_url: str,
@@ -375,7 +376,7 @@ class PaymentTransaction:
         return data
 
     @staticmethod
-    def publish_status(transaction_dao: PaymentTransactionModel, invoice: Invoice):
+    def publish_status(transaction_dao: PaymentTransactionModel, invoice: InvoiceModel):
         """Publish payment/transaction status to the Queue."""
         current_app.logger.debug("<publish_status")
         if transaction_dao.status_code == TransactionStatus.COMPLETED.value:

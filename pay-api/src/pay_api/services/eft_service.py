@@ -50,12 +50,12 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 
 from .auth import get_account_admin_users
-from .deposit_service import DepositService
+from .base_payment_system import PaymentSystemService
+from .cfs_service import CFSService
 from .eft_refund import EFTRefund as EFTRefundService
 from .eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from .eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from .email_service import _render_payment_reversed_template, send_email
-from .invoice import Invoice  # noqa: TC001
 from .invoice_reference import InvoiceReference  # noqa: TC001
 from .partner_disbursements import PartnerDisbursements
 from .payment_account import PaymentAccount  # noqa: TC001
@@ -63,7 +63,7 @@ from .payment_line_item import PaymentLineItem  # noqa: TC001
 from .statement import Statement as StatementService
 
 
-class EftService(DepositService):
+class EftService(PaymentSystemService, CFSService):
     """Service to manage electronic fund transfers."""
 
     def get_payment_method_code(self):
@@ -93,14 +93,14 @@ class EftService(DepositService):
         self,
         payment_account: PaymentAccount,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
         PartnerDisbursements.handle_payment(invoice)
 
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:  # noqa: ARG002
+    def complete_post_invoice(self, invoice: InvoiceModel, invoice_reference: InvoiceReference) -> None:  # noqa: ARG002
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.
         self.release_payment_or_reversal(invoice=invoice)

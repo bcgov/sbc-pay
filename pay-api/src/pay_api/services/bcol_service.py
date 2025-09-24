@@ -51,7 +51,7 @@ class BcolService(PaymentSystemService, OAuthService):
         self,
         payment_account: PaymentAccount,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReferenceModel:
         """Create Invoice in PayBC."""
@@ -193,7 +193,7 @@ class BcolService(PaymentSystemService, OAuthService):
     @skip_complete_post_invoice_for_sandbox
     def complete_post_invoice(
         self,
-        invoice: Invoice,  # pylint: disable=unused-argument  # noqa: ARG002
+        invoice: InvoiceModel,  # pylint: disable=unused-argument  # noqa: ARG002
         invoice_reference: InvoiceReference,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> None:

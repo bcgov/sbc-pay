@@ -24,6 +24,7 @@ from flask import copy_current_request_context, current_app
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
@@ -114,10 +115,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.info(f"Created Pay System Instance : {pay_service}")
 
         pay_system_invoice: dict[str, any] = None
-        invoice: Invoice = None
+        invoice: InvoiceModel = None
 
         try:
-            invoice = Invoice()
+            invoice = InvoiceModel()
             invoice.bcol_account = bcol_account
             invoice.payment_account_id = payment_account.id
             invoice.cfs_account_id = payment_account.cfs_account_id
@@ -173,7 +174,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         current_app.logger.debug(">Finished creating payment request")
 
-        return invoice.asdict(include_dynamic_fields=True)
+        return Invoice.asdict(invoice, include_dynamic_fields=True)
 
     @classmethod
     def _handle_invoice(cls, invoice, invoice_reference, pay_service, skip_payment):
@@ -236,7 +237,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return bcol_account
 
     @classmethod
-    def _apply_credit(cls, invoice: Invoice):
+    def _apply_credit(cls, invoice: InvoiceModel):
         """Apply credit to invoice and update payment account for online banking only."""
         credit_balance = Decimal("0")
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
@@ -270,7 +271,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account.save()
 
     @classmethod
-    def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
+    def _convert_invoice_to_credit_card(cls, invoice: InvoiceModel, payment_request: tuple[dict[str, Any]]):
         """Handle conversion of invoice to credit card payment method."""
         payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
 
@@ -320,7 +321,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         else:
             cls._convert_invoice_to_credit_card(invoice, payment_request)
         current_app.logger.debug(">update_invoice")
-        return invoice.asdict()
+        return Invoice.asdict(invoice)
 
     @classmethod
     def delete_invoice(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
@@ -432,7 +433,7 @@ def _update_active_transactions(invoice_id: int):
         PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
 
 
-def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
+def _check_if_invoice_can_be_deleted(invoice: InvoiceModel, payment: Payment = None):
     if invoice.invoice_status_code in (
         InvoiceStatus.PAID.value,
         InvoiceStatus.DELETED.value,

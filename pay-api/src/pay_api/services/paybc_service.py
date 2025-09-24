@@ -26,7 +26,6 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
@@ -39,7 +38,7 @@ from .payment_line_item import PaymentLineItem
 class PaybcService(PaymentSystemService, CFSService):
     """Service to manage PayBC integration. - for NSF/balance payments, we usually use direct pay service instead."""
 
-    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
+    def get_payment_system_url_for_invoice(self, invoice: InvoiceModel, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
         """Return the payment system url."""
         current_app.logger.debug("<get_payment_system_url")
         pay_system_url = self._build_payment_url(inv_ref, return_url)
@@ -77,7 +76,7 @@ class PaybcService(PaymentSystemService, CFSService):
         self,
         payment_account: PaymentAccount,  # pylint: disable=too-many-locals
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Create Invoice in PayBC."""

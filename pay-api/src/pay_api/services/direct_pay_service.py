@@ -31,7 +31,6 @@ from pay_api.models.distribution_code import DistributionCode as DistributionCod
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.hashing import HashingService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.cache import cache
@@ -102,7 +101,7 @@ class OrderStatus:
 class DirectPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
+    def get_payment_system_url_for_invoice(self, invoice: InvoiceModel, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
         """Return the payment system url."""
         today = current_local_time().strftime(PAYBC_DATE_FORMAT)
         url_params_dict = {
@@ -194,7 +193,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         self,
         payment_account: PaymentAccount,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number for direct pay."""

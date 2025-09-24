@@ -19,6 +19,7 @@ from flask import current_app
 from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Receipt as ReceiptModel
@@ -113,7 +114,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         receipt_details["paymentMethod"] = payment_method.code
         if invoice_data.payment_method_code != PaymentSystem.INTERNAL.value:
             receipt_details["paymentMethodDescription"] = payment_method.description
-        receipt_details["invoice"] = camelcase_dict(invoice_data.asdict(), {})
+        receipt_details["invoice"] = camelcase_dict(Invoice.asdict(invoice_data), {})
         # Format date to display in report.
         receipt_details["invoice"]["createdOn"] = get_local_formatted_date(invoice_data.created_on)
         return receipt_details
@@ -134,7 +135,8 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         non_nsf_invoices = [inv for inv in invoices if nsf_invoice is None or inv.id != nsf_invoice.id]
         # We don't generate a CC invoice for EFT overdue payments.
         if not nsf_invoice:
-            nsf_invoice = Invoice()
+            # TODO look at this one
+            nsf_invoice = InvoiceModel()
             nsf_invoice.created_on = payment.payment_date
             nsf_invoice.paid = 0
             nsf_invoice.payment_line_items = []
@@ -147,6 +149,6 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
             nsf_invoice.service_fees += invoice.service_fees
             nsf_invoice.paid += invoice.paid
             nsf_invoice.details.extend(invoice.details or [])
-        receipt_details["invoice"] = camelcase_dict(nsf_invoice.asdict(include_links=False), {})
+        receipt_details["invoice"] = camelcase_dict(Invoice.asdict(nsf_invoice, include_links=False), {})
         receipt_details["invoice"]["createdOn"] = get_local_formatted_date(nsf_invoice.created_on)
         return receipt_details

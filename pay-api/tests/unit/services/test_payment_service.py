@@ -123,7 +123,7 @@ def test_create_payment_record_with_internal_pay(session, public_user_mock):
 def test_create_payment_record_rollback(session, public_user_mock):
     """Assert that the payment records are created."""
     # Mock here that the invoice update fails here to test the rollback scenario
-    with patch("pay_api.services.invoice.Invoice.flush", side_effect=Exception("mocked error")):
+    with patch("pay_api.models.invoice.Invoice.flush", side_effect=Exception("mocked error")):
         with pytest.raises(Exception) as excinfo:
             PaymentService.create_invoice(get_payment_request(), get_auth_basic_user())
         assert excinfo.type is Exception

@@ -49,7 +49,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         self,
         payment_account: PaymentAccount,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number."""
@@ -94,7 +94,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return CC as the method code."""
         return PaymentMethod.INTERNAL.value
 
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: InvoiceModel, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         if invoice.invoice_status_code != InvoiceStatus.APPROVED.value:
             self.complete_payment(invoice, invoice_reference)
@@ -138,7 +138,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         invoice.flush()
 
     @staticmethod
-    def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: Invoice):
+    def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: InvoiceModel):
         """Validate different conditions of a routing slip payment."""
         # is rs doesnt exist , legacy routing slip flag should be on
         if routing_slip is None:
