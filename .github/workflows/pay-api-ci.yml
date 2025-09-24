@@ -40,14 +40,10 @@ jobs:
       - name: Install dependencies
         run: |
           make setup
-      - name: Lint with pylint
-        id: pylint
+      - name: Lint with ruff
+        id: ruff
         run: |
-          make pylint
-      - name: Lint with flake8
-        id: flake8
-        run: |
-          make flake8
+          make lint
 
   testing:
     needs: setup-job
@@ -98,6 +94,11 @@ jobs:
           sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose version
+      - name: Start Docker services
+        # This will complete before installing all the dependencies.
+        run: |
+          cd tests/docker
+          docker-compose up -d
       - name: Install dependencies
         run: |
           make setup
@@ -105,6 +106,11 @@ jobs:
         id: test
         run: |
           make test
+      - name: Stop Docker services
+        if: always()
+        run: |
+          cd tests/docker
+          docker-compose down
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:

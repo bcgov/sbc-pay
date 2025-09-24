@@ -16,8 +16,9 @@
 
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
+
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from pay_api.models.payment import Payment as PaymentModel
@@ -99,7 +100,7 @@ def test_create_eft_payment(session, client, jwt, app):
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     payload = {
         "paidAmount": 100,
-        "paymentDate": str(datetime.now(tz=timezone.utc)),
+        "paymentDate": str(datetime.now(tz=UTC)),
         "paymentMethod": "EFT",
     }
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()

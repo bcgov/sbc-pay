@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Google Bucket."""
+
 import base64
 import json
 import os
 import tempfile
-from typing import List
 
 from attrs import define
 from flask import current_app
@@ -46,7 +46,7 @@ class GoogleBucketService:
         return bucket
 
     @staticmethod
-    def get_files_from_bucket_folder(bucket: storage.Bucket, folder_name: str) -> List[str]:
+    def get_files_from_bucket_folder(bucket: storage.Bucket, folder_name: str) -> list[str]:
         """Get a list of files in a Google bucket folder."""
         current_app.logger.info(f"Getting files from bucket folder {folder_name}.")
         blobs = bucket.list_blobs(prefix=f"{folder_name}/")
@@ -102,8 +102,6 @@ class GoogleBucketService:
         bucket.copy_blob(source_blob, bucket, destination_path)
         source_blob.delete()
         current_app.logger.info(
-            (
-                f"Move of {source_folder_name}/{file_name} to {destination_folder_name}/{file_name} "
-                f"in bucket {bucket.name} completed."
-            )
+            f"Move of {source_folder_name}/{file_name} to {destination_folder_name}/{file_name} "
+            f"in bucket {bucket.name} completed."
         )

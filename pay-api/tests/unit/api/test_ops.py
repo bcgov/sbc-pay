@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Tests to assure the ops end-point.
+"""Tests to assure the ops end-point.
 
 Test-Suite to ensure that the /ops endpoint is working as expected.
 """
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from pay_api.models import db

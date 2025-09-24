@@ -18,7 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from dateutil.relativedelta import relativedelta
 
@@ -316,7 +316,7 @@ def test_statement_summary(session, client, jwt, app):
     total_due = 0
     payment_account_id = 0
     invoice_ids = []
-    oldest_due_date = datetime.now(tz=timezone.utc) + relativedelta(months=1)
+    oldest_due_date = datetime.now(tz=UTC) + relativedelta(months=1)
     for _ in range(5):
         rv = client.post(
             "/api/v1/payment-requests",

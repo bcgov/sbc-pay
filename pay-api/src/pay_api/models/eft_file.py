@@ -13,7 +13,7 @@
 # limitations under the License.
 """Model to handle EFT file processing."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import ForeignKey
 
@@ -55,7 +55,7 @@ class EFTFile(BaseModel):  # pylint: disable=too-many-instance-attributes
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     completed_on = db.Column("completed_on", db.DateTime, nullable=True)
     deposit_from_date = db.Column("deposit_from_date", db.DateTime, nullable=True)

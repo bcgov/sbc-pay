@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT file processing."""
-from datetime import datetime, timezone
 
 from _decimal import Decimal
+from datetime import UTC, datetime
+
 from attrs import define
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -66,7 +67,7 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     error_messages = db.Column(ARRAY(String, dimensions=1), nullable=True)
     file_id = db.Column(db.Integer, ForeignKey("eft_files.id"), nullable=False, index=True)
@@ -74,7 +75,7 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
         "last_updated_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     line_number = db.Column("line_number", db.Integer, nullable=False)
     line_type = db.Column("line_type", db.String(), nullable=False)

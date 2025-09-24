@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to EFT Short name historical audit data."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Self
 
@@ -60,7 +61,7 @@ class EFTShortnamesHistorical(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     amount = db.Column(db.Numeric(19, 2), nullable=False)
     created_by = db.Column(db.String, nullable=True)
-    created_on = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    created_on = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(tz=UTC))
     credit_balance = db.Column(db.Numeric(19, 2), nullable=False)
     eft_refund_id = db.Column(db.Integer, ForeignKey("eft_refunds.id"), nullable=True, index=True)
     hidden = db.Column(db.Boolean(), nullable=False, default=False, index=True)

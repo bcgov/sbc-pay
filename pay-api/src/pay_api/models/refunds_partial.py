@@ -14,13 +14,13 @@
 """Model to handle all operations related to Payment Line Item partial refunds."""
 
 from decimal import Decimal
-from typing import List, Self
+from typing import Self
 
 from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
-from ..utils.enums import RefundsPartialType
+from ..utils.enums import RefundsPartialType  # noqa: TID252
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db
@@ -71,7 +71,7 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     gl_error = db.Column(db.String(250), nullable=True)
 
     @classmethod
-    def get_partial_refunds_for_invoice(cls, invoice_id: int) -> List[Self]:
+    def get_partial_refunds_for_invoice(cls, invoice_id: int) -> list[Self]:
         """Get all partial refunds for a specific invoice."""
         return cls.query.filter_by(invoice_id=invoice_id).all()
 

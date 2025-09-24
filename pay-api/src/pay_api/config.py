@@ -76,7 +76,7 @@ class _Config:  # pylint: disable=too-few-public-methods
         except Exception:
             LOGGING_OVERRIDE_CONFIG = None
 
-    SECRET_KEY = "a secret"
+    SECRET_KEY = "a secret"  # noqa: S105
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -244,10 +244,18 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config("DATABASE_TEST_NAME", default="paytestdb")
     DB_HOST = _get_config("DATABASE_TEST_HOST", default="localhost")
     DB_PORT = _get_config("DATABASE_TEST_PORT", default="5432")
+
+    # Use different databases for parallel test isolation
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    if worker_id == "master":
+        DB_NAME = "pay-test"
+    else:
+        DB_NAME = f"pay-test-{worker_id}"
+
     SQLALCHEMY_DATABASE_URI = _get_config(
-        "DATABASE_TEST_URL",
-        default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}",
+        "DATABASE_TEST_URL", default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     )
+    SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.rsplit("/", 1)[0] + f"/{DB_NAME}"
 
     JWT_OIDC_TEST_MODE = True
     # JWT_OIDC_ISSUER = _get_config('JWT_OIDC_TEST_ISSUER')
@@ -312,7 +320,7 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
 
     CFS_BASE_URL = "http://localhost:8080/paybc-api"
     CFS_CLIENT_ID = "TEST"
-    CFS_CLIENT_SECRET = "TEST"
+    CFS_CLIENT_SECRET = "TEST"  # noqa: S105
     PAYBC_PORTAL_URL = "https://paydev.gov.bc.ca/public/directpay"
 
     SERVER_NAME = "auth-web.dev.com"
@@ -333,11 +341,11 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     PAYBC_DIRECT_PAY_BASE_URL = "http://localhost:8080/paybc-api"
     PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = PAYBC_DIRECT_PAY_BASE_URL
     PAYBC_DIRECT_PAY_CLIENT_ID = "TEST"
-    PAYBC_DIRECT_PAY_CLIENT_SECRET = "TEST"
+    PAYBC_DIRECT_PAY_CLIENT_SECRET = "TEST"  # noqa: S105
 
     PAD_CONFIRMATION_PERIOD_IN_DAYS = 3
     # Secret key for encrypting bank account
-    ACCOUNT_SECRET_KEY = "mysecretkeyforbank"
+    ACCOUNT_SECRET_KEY = "mysecretkeyforbank"  # noqa: S105
     ALLOW_SKIP_PAYMENT = False
 
     # Google Cloud Storage emulator settings for testing
@@ -351,7 +359,7 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
     if not SECRET_KEY:
         SECRET_KEY = os.urandom(24)
-        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)
+        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)  # noqa: T201
 
     TESTING = False
     DEBUG = False

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, date, datetime, timedelta
 
 from flask import current_app
 from sqlalchemy import exists
@@ -64,7 +65,7 @@ class StatementSettings:
 
         """
         statements_settings_schema = StatementSettingsModelSchema()
-        today = datetime.now(tz=timezone.utc)
+        today = datetime.now(tz=UTC)
         current_statements_settings = StatementSettingsModel.find_active_settings(auth_account_id, today)
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
 
@@ -134,7 +135,7 @@ class StatementSettings:
     @staticmethod
     def _get_end_of(frequency: StatementFrequency):
         """Return the end of either week or month."""
-        today = datetime.now(tz=timezone.utc)
+        today = datetime.now(tz=UTC)
         end_date = current_local_time()
         if frequency == StatementFrequency.WEEKLY.value:
             end_date = get_week_start_and_end_date()[1]

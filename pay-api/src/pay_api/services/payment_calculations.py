@@ -17,7 +17,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field, fields
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
 
 import cattrs
 import humps
@@ -81,7 +80,7 @@ def determine_service_provision_status(status_code: str, payment_method: str) ->
             return False
 
 
-def build_grouped_invoice_context(invoices: List[dict], statement: dict, statement_summary: dict) -> list[dict]:
+def build_grouped_invoice_context(invoices: list[dict], statement: dict, statement_summary: dict) -> list[dict]:
     """Build grouped invoice context, with fixed payment method order."""
     grouped = defaultdict(list)
     for inv in invoices:
@@ -133,7 +132,7 @@ def build_grouped_invoice_context(invoices: List[dict], statement: dict, stateme
     return grouped_invoices
 
 
-def calculate_invoice_summaries(invoices: List[dict], payment_method: str, statement: dict) -> dict:
+def calculate_invoice_summaries(invoices: list[dict], payment_method: str, statement: dict) -> dict:
     """Calculate invoice summaries for a payment method using database aggregation."""
     invoice_ids = [inv.get("id") for inv in invoices if inv.get("payment_method") == payment_method and inv.get("id")]
     statement_to_date = statement.get("to_date")
@@ -239,8 +238,8 @@ def get_statement_status_for_invoice(inv: dict, payment_method: str, statement: 
 class TransactionRow:
     """transactions details."""
 
-    products: List[str]
-    details: List[str]
+    products: list[str]
+    details: list[str]
     folio: str
     created_on: str
     fee: str
@@ -252,8 +251,8 @@ class TransactionRow:
 
 
 def build_transaction_rows(
-    invoices: List[dict], payment_method: PaymentMethod = None, statement: dict = None
-) -> List[dict]:
+    invoices: list[dict], payment_method: PaymentMethod = None, statement: dict = None
+) -> list[dict]:
     """Build transactions for grouped_invoices."""
     rows = []
     for inv in invoices:
@@ -311,12 +310,12 @@ def build_transaction_rows(
 class StatementContext:
     """A class representing the context of a statement."""
 
-    duration: Optional[str] = None
-    amount_owing: Optional[str] = None
-    from_date: Optional[str] = None
-    to_date: Optional[str] = None
-    created_on: Optional[str] = None
-    frequency: Optional[str] = None
+    duration: str | None = None
+    amount_owing: str | None = None
+    from_date: str | None = None
+    to_date: str | None = None
+    created_on: str | None = None
+    frequency: str | None = None
     extra: dict = field(default_factory=dict)
 
 
@@ -366,15 +365,15 @@ def build_statement_context(statement: dict) -> dict:
 class StatementSummary:
     """A class representing the summary of a statement."""
 
-    last_statement_total: Optional[str] = None
-    last_statement_paid_amount: Optional[str] = None
-    cancelled_transactions: Optional[str] = None
-    latest_statement_payment_date: Optional[str] = None
-    due_date: Optional[str] = None
+    last_statement_total: str | None = None
+    last_statement_paid_amount: str | None = None
+    cancelled_transactions: str | None = None
+    latest_statement_payment_date: str | None = None
+    due_date: str | None = None
     extra: dict = field(default_factory=dict)
 
 
-def build_statement_summary_context(statement_summary: dict) -> List[dict]:
+def build_statement_summary_context(statement_summary: dict) -> list[dict]:
     """Build and enhance statement_summary context with formatted fields."""
     if not statement_summary:
         return None
@@ -407,16 +406,15 @@ def build_statement_summary_context(statement_summary: dict) -> List[dict]:
     return summary_row_dict
 
 
-def build_summary_page_context(grouped_invoices: List[dict]) -> dict:
-    """
-    Build summary context from grouped_invoices for the summary page.
+def build_summary_page_context(grouped_invoices: list[dict]) -> dict:
+    """Build summary context from grouped_invoices for the summary page.
 
     Summary page needs context because of chunked rendering in the report API.
     """
     if len(grouped_invoices or []) <= 1:
         return {"display_summary_page": False}
 
-    grouped_summary: List[dict] = []
+    grouped_summary: list[dict] = []
 
     summary_fields = ["totals_summary", "due_summary", "refunds_summary", "credits_summary"]
 

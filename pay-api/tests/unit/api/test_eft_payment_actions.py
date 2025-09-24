@@ -18,9 +18,8 @@ Test-Suite to ensure that the EFT payment endpoint is working as expected.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import List, Tuple
 from unittest.mock import patch
 
 from dateutil.relativedelta import relativedelta
@@ -58,7 +57,7 @@ from tests.utilities.base_test import (
 )
 
 
-def setup_account_shortname_data() -> Tuple[PaymentAccountModel, EFTShortnamesModel]:
+def setup_account_shortname_data() -> tuple[PaymentAccountModel, EFTShortnamesModel]:
     """Set up test data for payment account and short name."""
     account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234").save()
     short_name = factory_eft_shortname(short_name="TESTSHORTNAME").save()
@@ -71,7 +70,7 @@ def setup_account_shortname_data() -> Tuple[PaymentAccountModel, EFTShortnamesMo
     return account, short_name
 
 
-def setup_statement_data(account: PaymentAccountModel, invoice_totals: List[Decimal]) -> StatementModel:
+def setup_statement_data(account: PaymentAccountModel, invoice_totals: list[Decimal]) -> StatementModel:
     """Set up test data for statement."""
     statement_settings = factory_statement_settings(
         payment_account_id=account.id, frequency=StatementFrequency.MONTHLY.value
@@ -99,7 +98,7 @@ def setup_statement_data(account: PaymentAccountModel, invoice_totals: List[Deci
     return statement
 
 
-def setup_eft_credits(short_name: EFTShortnamesModel, credit_amounts: List[Decimal] = [100]) -> List[EFTCreditModel]:
+def setup_eft_credits(short_name: EFTShortnamesModel, credit_amounts: list[Decimal] = [100]) -> list[EFTCreditModel]:
     """Set up EFT Credit data."""
     eft_file = factory_eft_file("test.txt")
     eft_credits = []
@@ -358,7 +357,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
 
     invoices = StatementService.find_all_payments_and_invoices_for_statement(statement.id)
     invoices[0].invoice_status_code = InvoiceStatus.PAID.value
-    invoices[0].payment_date = datetime.now(tz=timezone.utc) - relativedelta(days=61)
+    invoices[0].payment_date = datetime.now(tz=UTC) - relativedelta(days=61)
     invoices[0].save()
 
     rv = client.post(
@@ -372,7 +371,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     for invoice in invoices:
         invoice.paid = invoice.total
         invoice.invoice_status_code = InvoiceStatus.PAID.value
-        invoice.payment_date = datetime.now(tz=timezone.utc)
+        invoice.payment_date = datetime.now(tz=UTC)
         invoice.save()
 
     invoices[0].invoice_status_code = InvoiceStatus.CREATED.value
@@ -418,14 +417,24 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     )
     assert credit_invoice_links
     assert len(credit_invoice_links) == 2
-    assert credit_invoice_links[0].status_code == EFTCreditInvoiceStatus.COMPLETED.value
-    assert credit_invoice_links[0].link_group_id is not None
-    assert credit_invoice_links[0].amount == 100
 
-    assert credit_invoice_links[1].status_code == EFTCreditInvoiceStatus.PENDING_REFUND.value
-    assert credit_invoice_links[1].link_group_id is not None
-    assert credit_invoice_links[1].amount == credit_invoice_links[0].amount
-    assert credit_invoice_links[1].receipt_number == credit_invoice_links[0].receipt_number
+    # Find the COMPLETED and PENDING_REFUND links (order may vary)
+    completed_link = next(
+        (link for link in credit_invoice_links if link.status_code == EFTCreditInvoiceStatus.COMPLETED.value), None
+    )
+    pending_refund_link = next(
+        (link for link in credit_invoice_links if link.status_code == EFTCreditInvoiceStatus.PENDING_REFUND.value), None
+    )
+
+    assert completed_link is not None, "Should have a COMPLETED link"
+    assert pending_refund_link is not None, "Should have a PENDING_REFUND link"
+
+    assert completed_link.link_group_id is not None
+    assert completed_link.amount == 100
+
+    assert pending_refund_link.link_group_id is not None
+    assert pending_refund_link.amount == completed_link.amount
+    assert pending_refund_link.receipt_number == completed_link.receipt_number
     assert EFTCreditModel.get_eft_credit_balance(short_name.id) == 100
 
     partner_disbursement = PartnerDisbursements.query.order_by(PartnerDisbursements.id.desc()).first()

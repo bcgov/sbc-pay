@@ -39,8 +39,10 @@ from pay_api.utils.user_context import _get_context
 setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
 
 
-def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")):
+def create_app(run_mode=None):
     """Return a configured Flask App using the Factory method."""
+    if run_mode is None:
+        run_mode = os.getenv("DEPLOYMENT_ENV", "production")
     app = Flask(__name__)
     app.env = run_mode
     app.config.from_object(config.CONFIGURATION[run_mode])

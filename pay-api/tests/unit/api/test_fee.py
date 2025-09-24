@@ -16,13 +16,12 @@
 
 Test-Suite to ensure that the /fees endpoint is working as expected.
 """
+
 import json
-from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from datetime import UTC, datetime, timedelta
 
 from pay_api.models import TaxRate
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 from pay_api.utils.enums import Role
 from tests.utilities.base_test import (
     factory_corp_type_model,
@@ -59,7 +58,7 @@ def test_fees_with_corp_type_and_filing_type_with_valid_start_date(session, clie
 
     corp_type = "XX"
     filing_type_code = "XOTANN"
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     factory_fee_schedule_model(
         factory_filing_type_model("XOTANN", "TEST"),
         factory_corp_type_model("XX", "TEST"),
@@ -80,7 +79,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, cl
 
     corp_type = "XX"
     filing_type_code = "XOTANN"
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     factory_fee_schedule_model(
         factory_filing_type_model("XOTANN", "TEST"),
         factory_corp_type_model("XX", "TEST"),
@@ -101,7 +100,7 @@ def test_fees_with_corp_type_and_filing_type_with_valid_end_date(session, client
 
     corp_type = "XX"
     filing_type_code = "XOTANN"
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     factory_fee_schedule_model(
         factory_filing_type_model("XOTANN", "TEST"),
         factory_corp_type_model("XX", "TEST"),
@@ -122,7 +121,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(session, clie
 
     corp_type = "XX"
     filing_type_code = "XOTANN"
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     factory_fee_schedule_model(
         factory_filing_type_model("XOTANN", "TEST"),
         factory_corp_type_model("XX", "TEST"),
@@ -319,7 +318,7 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
 
 def test_product_fees_detail_query_all(session, client, jwt, app):
     """Assert enabled price list product fees are returned."""
-    tax_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    tax_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     assert tax_rate
 
     fee_schedule1 = factory_fee_schedule_model(
@@ -408,7 +407,7 @@ def test_fees_detail_query_by_product_code_future_start_date(session, client, jw
         filing_type=factory_filing_type_model("XOTANN", "TEST"),
         corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
         fee_code=factory_fee_model("XXX", 100),
-        fee_start_date=datetime.now(tz=timezone.utc).date() + timedelta(days=1),
+        fee_start_date=datetime.now(tz=UTC).date() + timedelta(days=1),
         show_on_pricelist=True,
     )
     rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")
@@ -447,7 +446,7 @@ def test_get_fee_with_gst_enabled(client, jwt, session):
     # Get the actual GST rate from the database
     from pay_api.models.tax_rate import TaxRate
 
-    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     expected_gst = float(round(100.0 * float(gst_rate), 2))
     expected_total = 100.0 + expected_gst
 
@@ -493,7 +492,7 @@ def test_get_fee_with_gst_and_service_fees(client, jwt, session):
     # Get the actual GST rate from the database
     from pay_api.models.tax_rate import TaxRate
 
-    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=timezone.utc))
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     expected_filing_gst = float(round(200.0 * float(gst_rate), 2))
     expected_service_gst = float(round(25.0 * float(gst_rate), 2))
     expected_total_gst = expected_filing_gst + expected_service_gst
@@ -547,8 +546,8 @@ def test_fees_detail_query_by_product_code_expired_end_date(session, client, jwt
         filing_type=factory_filing_type_model("XOTANN", "TEST"),
         corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE"),
         fee_code=factory_fee_model("XXX", 100),
-        fee_start_date=datetime.now(tz=timezone.utc).date() - timedelta(days=2),
-        fee_end_date=datetime.now(tz=timezone.utc).date() - timedelta(days=1),
+        fee_start_date=datetime.now(tz=UTC).date() - timedelta(days=2),
+        fee_end_date=datetime.now(tz=UTC).date() - timedelta(days=1),
         show_on_pricelist=True,
     )
     rv = client.get("/api/v1/fees?productCode=PRODUCT_CODE")

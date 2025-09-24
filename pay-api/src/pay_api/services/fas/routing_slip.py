@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage routing slip operations."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Dict, List, Set
 
 from flask import abort, current_app
 
@@ -49,14 +49,14 @@ class RoutingSlip:
     """Service to manage Routing slip related operations."""
 
     @classmethod
-    def asdict(cls, dao) -> Dict[str]:
+    def asdict(cls, dao) -> dict[str]:
         """Return the routing slip as a python dict."""
         routing_slip_schema = RoutingSlipSchema()
         d = routing_slip_schema.dump(dao)
         return d
 
     @classmethod
-    def search(cls, search_filter: Dict, page: int, limit: int, return_all: bool = False):
+    def search(cls, search_filter: dict, page: int, limit: int, return_all: bool = False):
         """Search for routing slip."""
         routing_slips, total = RoutingSlipModel.search(search_filter, page, limit, return_all)
         data = {
@@ -92,7 +92,7 @@ class RoutingSlip:
     @user_context
     def create_daily_reports(cls, date: str, **kwargs):
         """Create and return daily report for the day provided."""
-        routing_slips: List[RoutingSlipModel] = RoutingSlipModel.search(
+        routing_slips: list[RoutingSlipModel] = RoutingSlipModel.search(
             {
                 "dateFilter": {
                     "endDate": date,
@@ -132,7 +132,7 @@ class RoutingSlip:
             "reportName": f"Routing-Slip-Daily-Report-{date}",
             "templateVars": {
                 "day": date,
-                "reportDay": str(get_local_time(datetime.now(tz=timezone.utc))),
+                "reportDay": str(get_local_time(datetime.now(tz=UTC))),
                 "total": float(total),
                 "numberOfCashReceipts": no_of_cash,
                 "numberOfChequeReceipts": no_of_cheque,
@@ -154,16 +154,16 @@ class RoutingSlip:
         return pdf_response, report_dict.get("reportName")
 
     @classmethod
-    def validate_and_find_by_number(cls, rs_number: str) -> Dict[str, any]:
+    def validate_and_find_by_number(cls, rs_number: str) -> dict[str, any]:
         """Validate digits before finding by routing slip number."""
         if not current_app.config.get("ALLOW_LEGACY_ROUTING_SLIPS"):
             RoutingSlip._validate_routing_slip_number_digits(rs_number)
         return cls.find_by_number(rs_number)
 
     @classmethod
-    def find_by_number(cls, rs_number: str) -> Dict[str, any]:
+    def find_by_number(cls, rs_number: str) -> dict[str, any]:
         """Find by routing slip number."""
-        routing_slip_dict: Dict[str, any] = None
+        routing_slip_dict: dict[str, any] = None
         if routing_slip := RoutingSlipModel.find_by_number(rs_number):
             # Future: Use CATTRS
             routing_slip_schema = RoutingSlipSchema(
@@ -195,9 +195,9 @@ class RoutingSlip:
         return routing_slip_dict
 
     @classmethod
-    def get_links(cls, rs_number: str) -> Dict[str, any]:
+    def get_links(cls, rs_number: str) -> dict[str, any]:
         """Find dependents/links of a routing slips."""
-        links: Dict[str, any] = None
+        links: dict[str, any] = None
         if routing_slip := RoutingSlipModel.find_by_number(rs_number):
             routing_slip_schema = RoutingSlipSchema()
             children = RoutingSlipModel.find_children(rs_number)
@@ -210,7 +210,7 @@ class RoutingSlip:
 
     @classmethod
     @user_context
-    def create(cls, request_json: Dict[str, any], **kwargs):
+    def create(cls, request_json: dict[str, any], **kwargs):
         """Search for routing slip."""
         # 1. Create customer profile in CFS and store it in payment_account and cfs_accounts
         # 2. Create receipt in CFS
@@ -221,7 +221,7 @@ class RoutingSlip:
         if cls.validate_and_find_by_number(rs_number):
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
-        payment_methods: List[str] = [payment.get("paymentMethod") for payment in request_json.get("payments")]
+        payment_methods: list[str] = [payment.get("paymentMethod") for payment in request_json.get("payments")]
         # all the payment should have the same payment method
         if len(set(payment_methods)) != 1:
             raise BusinessException(Error.FAS_INVALID_PAYMENT_METHOD)
@@ -289,7 +289,7 @@ class RoutingSlip:
         return cls.find_by_number(rs_number)
 
     @classmethod
-    def do_link(cls, rs_number: str, parent_rs_number: str) -> Dict[str, any]:
+    def do_link(cls, rs_number: str, parent_rs_number: str) -> dict[str, any]:
         """Link routing slip to parent routing slip."""
         routing_slip = RoutingSlipModel.find_by_number(rs_number)
         parent_routing_slip = RoutingSlipModel.find_by_number(parent_rs_number)
@@ -312,7 +312,7 @@ class RoutingSlip:
 
     @classmethod
     @user_context
-    def update(cls, rs_number: str, action: str, request_json: Dict[str, any], **kwargs) -> Dict[str, any]:
+    def update(cls, rs_number: str, action: str, request_json: dict[str, any], **kwargs) -> dict[str, any]:
         """Update routing slip."""
         user: UserContext = kwargs["user"]
         if (patch_action := PatchActions.from_value(action)) is None:
@@ -370,7 +370,7 @@ class RoutingSlip:
         return cls.find_by_number(rs_number)
 
     @classmethod
-    def _calculate_correction_and_comment(cls, rs_number: str, request_json: Dict[str, any]):
+    def _calculate_correction_and_comment(cls, rs_number: str, request_json: dict[str, any]):
         correction_total = Decimal("0")
         comment: str = ""
         payments = PaymentModel.find_payments_for_routing_slip(rs_number)
@@ -447,8 +447,8 @@ class RoutingSlip:
     @staticmethod
     def _validate_status(routing_slip: RoutingSlipModel, child_rs: RoutingSlipModel):
         """Check if status belongs to any of these.These are invalid status for linking."""
-        rs_statuses: Set[str] = {routing_slip.status, child_rs.status}
-        invalid_statuses: Set[str] = {
+        rs_statuses: set[str] = {routing_slip.status, child_rs.status}
+        invalid_statuses: set[str] = {
             RoutingSlipStatus.REFUND_REQUESTED.value,
             RoutingSlipStatus.REFUND_AUTHORIZED.value,
             RoutingSlipStatus.REFUND_PROCESSED.value,

@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to PayBC Account data."""
-from __future__ import annotations
 
-from typing import List
+from __future__ import annotations
 
 from flask import current_app
 from sql_versioning import Versioned
@@ -131,7 +130,7 @@ class CfsAccount(Versioned, BaseModel):
         return CfsAccount.query.filter(CfsAccount.account_id == account_id).order_by(CfsAccount.id.desc()).one_or_none()
 
     @classmethod
-    def find_by_account_id(cls, account_id: str) -> List[CfsAccount]:
+    def find_by_account_id(cls, account_id: str) -> list[CfsAccount]:
         """Return a Account by id."""
         return CfsAccount.query.filter(CfsAccount.account_id == account_id).all()
 

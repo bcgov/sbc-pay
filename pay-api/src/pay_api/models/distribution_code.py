@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to distribution code."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from marshmallow import fields
 from sql_versioning import Versioned
@@ -94,7 +95,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
     stob = db.Column(db.String(50), nullable=True)
     project_code = db.Column(db.String(50), nullable=True)
 
-    start_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
+    start_date = db.Column(db.Date, default=lambda: datetime.now(tz=UTC).date(), nullable=False)
     end_date = db.Column(db.Date, default=None, nullable=True)
     stop_ejv = db.Column("stop_ejv", Boolean(), default=False)
 
@@ -155,7 +156,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
     @classmethod
     def find_all(cls, include_gov_account_gl_codes: bool = False):
         """Find all distribution codes."""
-        valid_date = datetime.now(tz=timezone.utc).date()
+        valid_date = datetime.now(tz=UTC).date()
         query = (
             cls.query.filter(DistributionCode.start_date <= valid_date)
             .filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
@@ -180,7 +181,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
     @classmethod
     def find_by_active_for_fee_schedule(cls, fee_schedule_id: int):
         """Return active distribution for fee schedule."""
-        valid_date = datetime.now(tz=timezone.utc).date()
+        valid_date = datetime.now(tz=UTC).date()
         query = (
             db.session.query(DistributionCode)
             .join(DistributionCodeLink)
@@ -195,7 +196,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
     @classmethod
     def find_by_active_for_account(cls, account_id: int):
         """Return active distribution for account."""
-        valid_date = datetime.now(tz=timezone.utc).date()
+        valid_date = datetime.now(tz=UTC).date()
         query = (
             db.session.query(DistributionCode)
             .filter(DistributionCode.account_id == account_id)

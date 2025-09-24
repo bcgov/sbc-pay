@@ -1,7 +1,5 @@
 """Common code that sends AUTH events."""
 
-from typing import Optional
-
 from attrs import define
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -21,15 +19,15 @@ class LockAccountDetails(Serializable):
 
     account_id: str
     additional_emails: str = ""
-    payment_method: Optional[str] = None
-    source: Optional[str] = None
+    payment_method: str | None = None
+    source: str | None = None
     # Generic suspension reason code shown on the staff dashboard
-    suspension_reason_code: Optional[str] = None
-    outstanding_amount: Optional[float] = None
-    original_amount: Optional[float] = None
-    amount: Optional[float] = None
+    suspension_reason_code: str | None = None
+    outstanding_amount: float | None = None
+    original_amount: float | None = None
+    amount: float | None = None
     # Contains NSF reason or Statement ids that were overdue for EFT
-    reversal_reason: Optional[str] = None
+    reversal_reason: str | None = None
 
 
 class AuthEvent:

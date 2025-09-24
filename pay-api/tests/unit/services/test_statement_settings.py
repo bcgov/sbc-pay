@@ -16,7 +16,8 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 from freezegun import freeze_time
 
@@ -86,7 +87,7 @@ def test_update_statement_daily(session):
 
     # daily to weekly - assert current active one is stil daily ending end of the week
     current_statement_settings = StatementSettingsModel.find_active_settings(
-        payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+        payment_account.auth_account_id, datetime.now(tz=UTC)
     )
     assert current_statement_settings is not None
     assert current_statement_settings.frequency == StatementFrequency.DAILY.value
@@ -95,7 +96,7 @@ def test_update_statement_daily(session):
     # travel to next week and see whats active
     with freeze_time(end_of_week_date + timedelta(days=2)):
         next_week_statement_settings = StatementSettingsModel.find_active_settings(
-            payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+            payment_account.auth_account_id, datetime.now(tz=UTC)
         )
         assert next_week_statement_settings is not None
         assert next_week_statement_settings.frequency == StatementFrequency.WEEKLY.value
@@ -110,14 +111,12 @@ def test_update_statement_daily(session):
     assert statement_settings.get("to_date") is None
 
     # daily to monthly - assert monthly should start by next month first day
-    end_of_month_date = get_first_and_last_dates_of_month(
-        datetime.now(tz=timezone.utc).month, datetime.now(tz=timezone.utc).year
-    )[1]
+    end_of_month_date = get_first_and_last_dates_of_month(datetime.now(tz=UTC).month, datetime.now(tz=UTC).year)[1]
     assert statement_settings.get("from_date") == (end_of_month_date + timedelta(days=1)).strftime(DT_SHORT_FORMAT)
 
     # current one is still Ddaily , but ending end of the month
     current_statement_settings = StatementSettingsModel.find_active_settings(
-        payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+        payment_account.auth_account_id, datetime.now(tz=UTC)
     )
     assert current_statement_settings is not None
     assert current_statement_settings.frequency == StatementFrequency.DAILY.value
@@ -126,7 +125,7 @@ def test_update_statement_daily(session):
     # travel to next month and see whats active
     with freeze_time(end_of_month_date + timedelta(days=2)):
         next_week_statement_settings = StatementSettingsModel.find_active_settings(
-            payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+            payment_account.auth_account_id, datetime.now(tz=UTC)
         )
         assert next_week_statement_settings is not None
         assert next_week_statement_settings.frequency == StatementFrequency.MONTHLY.value
@@ -142,22 +141,22 @@ def test_update_statement_daily(session):
     assert statement_settings.get("to_date") is None
 
     # daily to monthly - assert daily should Tomorrow
-    assert statement_settings.get("from_date") == (datetime.now(tz=timezone.utc).date() + timedelta(days=1)).strftime(
+    assert statement_settings.get("from_date") == (datetime.now(tz=UTC).date() + timedelta(days=1)).strftime(
         DT_SHORT_FORMAT
     )
 
     # current one is still daily , but ending Today
     current_statement_settings = StatementSettingsModel.find_active_settings(
-        payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+        payment_account.auth_account_id, datetime.now(tz=UTC)
     )
     assert current_statement_settings is not None
     assert current_statement_settings.frequency == StatementFrequency.DAILY.value
-    assert current_statement_settings.to_date == datetime.now(tz=timezone.utc).date()
+    assert current_statement_settings.to_date == datetime.now(tz=UTC).date()
 
     # travel to next month and see whats active
     with freeze_time(end_of_month_date + timedelta(days=2)):
         next_week_statement_settings = StatementSettingsModel.find_active_settings(
-            payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+            payment_account.auth_account_id, datetime.now(tz=UTC)
         )
         assert next_week_statement_settings is not None
         assert next_week_statement_settings.frequency == StatementFrequency.DAILY.value
@@ -186,17 +185,15 @@ def test_update_statement_daily_to_daily(session):
     assert statement_settings.get("to_date") is None
 
     # daily to daily - assert daily should start by tomorow
-    assert statement_settings.get("from_date") == (datetime.now(tz=timezone.utc) + timedelta(days=1)).strftime(
-        DT_SHORT_FORMAT
-    )
+    assert statement_settings.get("from_date") == (datetime.now(tz=UTC) + timedelta(days=1)).strftime(DT_SHORT_FORMAT)
 
     # daily to daily - assert current active one is stil daily ending today
     current_statement_settings = StatementSettingsModel.find_active_settings(
-        payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+        payment_account.auth_account_id, datetime.now(tz=UTC)
     )
     assert current_statement_settings is not None
     assert current_statement_settings.frequency == StatementFrequency.DAILY.value
-    assert current_statement_settings.to_date == datetime.now(tz=timezone.utc).date()
+    assert current_statement_settings.to_date == datetime.now(tz=UTC).date()
 
 
 def test_update_statement_monthly(session):
@@ -221,14 +218,12 @@ def test_update_statement_monthly(session):
     assert statement_settings.get("to_date") is None
 
     # monthly to weekly - assert weekly should start by next week first day
-    end_of_month_date = get_first_and_last_dates_of_month(
-        datetime.now(tz=timezone.utc).month, datetime.now(tz=timezone.utc).year
-    )[1]
+    end_of_month_date = get_first_and_last_dates_of_month(datetime.now(tz=UTC).month, datetime.now(tz=UTC).year)[1]
     assert statement_settings.get("from_date") == (end_of_month_date + timedelta(days=1)).strftime(DT_SHORT_FORMAT)
 
     # monthly to weekly - assert current active one is stil monthly ending end of the week
     current_statement_settings = StatementSettingsModel.find_active_settings(
-        payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+        payment_account.auth_account_id, datetime.now(tz=UTC)
     )
     assert current_statement_settings is not None
     assert current_statement_settings.frequency == StatementFrequency.MONTHLY.value
@@ -237,7 +232,7 @@ def test_update_statement_monthly(session):
     # travel to next week and see whats active
     with freeze_time(end_of_month_date + timedelta(days=2)):
         next_week_statement_settings = StatementSettingsModel.find_active_settings(
-            payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+            payment_account.auth_account_id, datetime.now(tz=UTC)
         )
         assert next_week_statement_settings is not None
         assert next_week_statement_settings.frequency == StatementFrequency.WEEKLY.value
@@ -271,7 +266,7 @@ def test_update_statement_weekly(session):
 
     # daily to weekly - assert current active one is stil daily ending end of the week
     current_statement_settings = StatementSettingsModel.find_active_settings(
-        payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+        payment_account.auth_account_id, datetime.now(tz=UTC)
     )
     assert current_statement_settings is not None
     assert current_statement_settings.frequency == StatementFrequency.WEEKLY.value
@@ -280,7 +275,7 @@ def test_update_statement_weekly(session):
     # travel to next week and see whats active
     with freeze_time(end_of_week_date + timedelta(days=2)):
         next_week_statement_settings = StatementSettingsModel.find_active_settings(
-            payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+            payment_account.auth_account_id, datetime.now(tz=UTC)
         )
         assert next_week_statement_settings is not None
         assert next_week_statement_settings.frequency == StatementFrequency.WEEKLY.value
@@ -295,14 +290,12 @@ def test_update_statement_weekly(session):
     assert statement_settings.get("to_date") is None
 
     # weekly to monthly - assert monthly should start by next month first day
-    end_of_month_date = get_first_and_last_dates_of_month(
-        datetime.now(tz=timezone.utc).month, datetime.now(tz=timezone.utc).year
-    )[1]
+    end_of_month_date = get_first_and_last_dates_of_month(datetime.now(tz=UTC).month, datetime.now(tz=UTC).year)[1]
     assert statement_settings.get("from_date") == (end_of_month_date + timedelta(days=1)).strftime(DT_SHORT_FORMAT)
 
     # current one is still weekly , but ending end of the month
     current_statement_settings = StatementSettingsModel.find_active_settings(
-        payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+        payment_account.auth_account_id, datetime.now(tz=UTC)
     )
     assert current_statement_settings is not None
     assert current_statement_settings.frequency == StatementFrequency.WEEKLY.value
@@ -311,7 +304,7 @@ def test_update_statement_weekly(session):
     # travel to next month and see whats active
     with freeze_time(end_of_month_date + timedelta(days=2)):
         next_week_statement_settings = StatementSettingsModel.find_active_settings(
-            payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+            payment_account.auth_account_id, datetime.now(tz=UTC)
         )
         assert next_week_statement_settings is not None
         assert next_week_statement_settings.frequency == StatementFrequency.MONTHLY.value
@@ -331,7 +324,7 @@ def test_update_statement_weekly(session):
 
     # current one is still weekly , but ending end of the week
     current_statement_settings = StatementSettingsModel.find_active_settings(
-        payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+        payment_account.auth_account_id, datetime.now(tz=UTC)
     )
     assert current_statement_settings is not None
     assert current_statement_settings.frequency == StatementFrequency.WEEKLY.value
@@ -340,7 +333,7 @@ def test_update_statement_weekly(session):
     # travel to next month and see whats active
     with freeze_time(end_of_month_date + timedelta(days=7)):
         next_week_statement_settings = StatementSettingsModel.find_active_settings(
-            payment_account.auth_account_id, datetime.now(tz=timezone.utc)
+            payment_account.auth_account_id, datetime.now(tz=UTC)
         )
         assert next_week_statement_settings is not None
         assert next_week_statement_settings.frequency == StatementFrequency.DAILY.value

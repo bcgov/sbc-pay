@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the /nsf endpoint is working as expected.
 """
+
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (

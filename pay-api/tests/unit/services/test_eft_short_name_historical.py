@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the EFT short name historical service is working as expected.
 """
+
 from datetime import datetime
 
 import pytest

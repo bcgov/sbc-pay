@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from sqlalchemy import ForeignKey
 
@@ -49,7 +50,7 @@ class StatementSettings(BaseModel):
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
     payment_account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)
-    from_date = db.Column(db.Date, default=lambda: datetime.now(tz=timezone.utc).date(), nullable=False)
+    from_date = db.Column(db.Date, default=lambda: datetime.now(tz=UTC).date(), nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
 
     @classmethod
@@ -68,7 +69,7 @@ class StatementSettings(BaseModel):
     def find_latest_settings(cls, auth_account_id: str):
         """Return latest active statement setting for the account."""
         query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
-        query = query.filter((StatementSettings.to_date.is_(None)))
+        query = query.filter(StatementSettings.to_date.is_(None))
         return query.one_or_none()
 
 

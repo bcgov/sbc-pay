@@ -13,7 +13,7 @@
 # limitations under the License.
 """Class to record the settlement file information for a payment."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pay_api.models.base_model import BaseModel
 
@@ -41,7 +41,7 @@ class CasSettlement(BaseModel):  # pylint: disable=too-few-public-methods
         "received_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     file_name = db.Column(db.String, nullable=False)
     processed_on = db.Column("processed_on", db.DateTime, nullable=True)

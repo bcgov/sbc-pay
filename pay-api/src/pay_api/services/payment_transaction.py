@@ -15,10 +15,9 @@
 
 from __future__ import annotations
 
-import uuid
+import uuid  # noqa: TC003
 from dataclasses import asdict
-from datetime import datetime, timezone
-from typing import Dict
+from datetime import UTC, datetime
 
 import humps
 from flask import current_app
@@ -31,7 +30,7 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services import gcp_queue_publisher
-from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.base_payment_system import PaymentSystemService  # noqa: TC001
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -62,7 +61,7 @@ class PaymentTransaction:
         return d
 
     @staticmethod
-    def create_transaction_for_payment(payment_id: int, request_json: Dict) -> PaymentTransaction:
+    def create_transaction_for_payment(payment_id: int, request_json: dict) -> PaymentTransaction:
         """Create transaction record for payment."""
         payment = Payment.find_by_id(payment_id)
         if not payment.id or payment.payment_status_code != PaymentStatus.CREATED.value:
@@ -77,7 +76,7 @@ class PaymentTransaction:
         return transaction
 
     @staticmethod
-    def create_transaction_for_invoice(invoice_id: int, request_json: Dict) -> PaymentTransaction:
+    def create_transaction_for_invoice(invoice_id: int, request_json: dict) -> PaymentTransaction:
         """Create transaction record for invoice, by creating a payment record if doesn't exist."""
         # Lookup invoice record
         invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
@@ -119,7 +118,7 @@ class PaymentTransaction:
         return transaction
 
     @staticmethod
-    def _create_transaction(payment: Payment, request_json: Dict, invoice: Invoice = None):
+    def _create_transaction(payment: Payment, request_json: dict, invoice: Invoice = None):
         # Cannot start transaction on completed payment
         current_app.logger.info(
             f"Creating transactional record {payment.invoice_number}, " f"{payment.payment_status_code}"
@@ -139,7 +138,7 @@ class PaymentTransaction:
         if existing_transaction and existing_transaction.status_code != TransactionStatus.CANCELLED.value:
             current_app.logger.info("Found existing transaction. Setting as CANCELLED.")
             existing_transaction.status_code = TransactionStatus.CANCELLED.value
-            existing_transaction.transaction_end_time = datetime.now(tz=timezone.utc)
+            existing_transaction.transaction_end_time = datetime.now(tz=UTC)
             existing_transaction.save()
         transaction = PaymentTransactionModel()
         transaction.payment_id = payment.id
@@ -295,7 +294,7 @@ class PaymentTransaction:
             transaction_dao.pay_system_reason_code = pay_system_reason_code
 
         # Save response URL
-        transaction_dao.transaction_end_time = datetime.now(tz=timezone.utc)
+        transaction_dao.transaction_end_time = datetime.now(tz=UTC)
         transaction_dao.pay_response_url = pay_response_url
         transaction_dao = transaction_dao.save()
 
@@ -318,7 +317,7 @@ class PaymentTransaction:
     def _update_receipt_details(invoices, payment, receipt_details, transaction_dao):
         """Update receipt details to invoice."""
         payment.paid_amount = receipt_details[2]
-        payment.payment_date = datetime.now(tz=timezone.utc)
+        payment.payment_date = datetime.now(tz=UTC)
         transaction_dao.status_code = TransactionStatus.COMPLETED.value
 
         if float(payment.paid_amount) < float(payment.invoice_amount):
@@ -336,7 +335,7 @@ class PaymentTransaction:
                 PaymentTransaction.__save_receipt(invoice, receipt_details)
                 invoice.paid = invoice.total  # set the paid amount as total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice.payment_date = datetime.now(tz=timezone.utc)
+                invoice.payment_date = datetime.now(tz=UTC)
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
                 # If it's not PAD/EFT, publish message. Refactor and move to pay system service later.

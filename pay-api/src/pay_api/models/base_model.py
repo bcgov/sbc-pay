@@ -13,7 +13,6 @@
 # limitations under the License.
 """Super class to handle all operations related to base model."""
 
-
 from decimal import Decimal
 from typing import Self
 
@@ -64,7 +63,7 @@ class BaseModel(db.Model):
             if value is not None:
                 if isinstance(value, int):
                     result[column.name] = value
-                elif isinstance(value, (Decimal, float)):
+                elif isinstance(value, Decimal | float):
                     result[column.name] = float(value)
                 else:
                     result[column.name] = str(value)

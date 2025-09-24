@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Receipt."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Dict, List
+from datetime import UTC, datetime
 
 from flask import current_app
 
@@ -25,11 +25,10 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Refund as RefundModel
-from pay_api.models import RefundPartialLine
+from pay_api.models import RefundPartialLine, db
 from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
-from pay_api.models import db
-from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.base_payment_system import PaymentSystemService  # noqa: TC001
 from pay_api.services.partner_disbursements import PartnerDisbursements
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
@@ -55,7 +54,7 @@ class RefundService:
 
     @classmethod
     @user_context
-    def create_routing_slip_refund(cls, routing_slip_number: str, request: Dict[str, str], **kwargs) -> Dict[str, str]:
+    def create_routing_slip_refund(cls, routing_slip_number: str, request: dict[str, str], **kwargs) -> dict[str, str]:
         """Create Routing slip refund."""
         current_app.logger.debug("<create Routing slip refund")
         #
@@ -99,10 +98,10 @@ class RefundService:
             # do not update these for approval/rejections
             refund.routing_slip_id = rs_model.id
             refund.requested_by = kwargs["user"].user_name
-            refund.requested_date = datetime.now(tz=timezone.utc)
+            refund.requested_date = datetime.now(tz=UTC)
         else:
             refund.decision_made_by = kwargs["user"].user_name
-            refund.decision_date = datetime.now(tz=timezone.utc)
+            refund.decision_date = datetime.now(tz=UTC)
 
         refund.reason = reason
         if details := request.get("details"):
@@ -147,7 +146,7 @@ class RefundService:
             raise BusinessException(Error.REFUND_AMOUNT_INVALID)
 
     @staticmethod
-    def _validate_partial_refund_lines(refund_revenue: List[RefundPartialLine], invoice: InvoiceModel):
+    def _validate_partial_refund_lines(refund_revenue: list[RefundPartialLine], invoice: InvoiceModel):
         """Validate partial refund line amounts."""
         for refund_line in refund_revenue:
             payment_line: PaymentLineItemModel = next(
@@ -198,20 +197,20 @@ class RefundService:
             raise BusinessException(Error.INVALID_REQUEST)
 
     @classmethod
-    def _initialize_refund(cls, invoice_id: int, request: Dict[str, str], user: UserContext) -> RefundModel:
+    def _initialize_refund(cls, invoice_id: int, request: dict[str, str], user: UserContext) -> RefundModel:
         """Initialize refund."""
         refund = RefundModel()
         refund.invoice_id = invoice_id
         refund.reason = get_str_by_path(request, "reason")
         refund.requested_by = user.original_username or user.user_name
-        refund.requested_date = datetime.now(tz=timezone.utc)
+        refund.requested_date = datetime.now(tz=UTC)
         refund.flush()
 
         return refund
 
     @classmethod
     @user_context
-    def create_refund(cls, invoice_id: int, request: Dict[str, str], **kwargs) -> Dict[str, str]:
+    def create_refund(cls, invoice_id: int, request: dict[str, str], **kwargs) -> dict[str, str]:
         """Create refund."""
         current_app.logger.debug(f"Starting refund : {invoice_id}")
         user: UserContext = kwargs["user"]
@@ -254,7 +253,7 @@ class RefundService:
             InvoiceStatus.CREDITED.value,
             InvoiceStatus.PAID.value,
         ):
-            invoice.refund_date = datetime.now(tz=timezone.utc)
+            invoice.refund_date = datetime.now(tz=UTC)
         invoice.save()
 
         # Exclude PAID because it's for partial refunds.
@@ -276,7 +275,7 @@ class RefundService:
         }
 
     @staticmethod
-    def _save_partial_refund_lines(partial_refund_lines: List[RefundPartialLine], invoice: InvoiceModel):
+    def _save_partial_refund_lines(partial_refund_lines: list[RefundPartialLine], invoice: InvoiceModel):
         """Persist a list of partial refund lines."""
         for line in partial_refund_lines:
             refund_line = RefundPartialModel(
@@ -304,14 +303,14 @@ class RefundService:
 
     @staticmethod
     def _get_partial_refund_lines(
-        refund_revenue: List[Dict],
-    ) -> List[RefundPartialLine]:
+        refund_revenue: list[dict],
+    ) -> list[RefundPartialLine]:
         """Convert Refund revenue data to a list of Partial Refund lines."""
         if not refund_revenue:
             return []
 
         return Converter(camel_to_snake_case=True, enum_to_value=True).structure(
-            refund_revenue, List[RefundPartialLine]
+            refund_revenue, list[RefundPartialLine]
         )
 
     @staticmethod

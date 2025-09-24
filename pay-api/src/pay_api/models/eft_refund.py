@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT REFUNDS, this is picked up by the AP job to mail out."""
-from datetime import datetime, timezone
-from typing import List
+
+from datetime import UTC, datetime
 
 from sqlalchemy import ForeignKey
 
@@ -75,10 +75,10 @@ class EFTRefund(Audit):
     cheque_status = db.Column(db.String(25), nullable=True)
     comment = db.Column(db.String(), nullable=False)
     decline_reason = db.Column(db.String(), nullable=True)
-    created_on = db.Column("created_on", db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc))
+    created_on = db.Column("created_on", db.DateTime, nullable=False, default=lambda: datetime.now(tz=UTC))
     decision_by = db.Column(db.String(50), nullable=True)
     disbursement_date = db.Column(
-        "disbursement_date", db.DateTime, nullable=False, default=lambda: datetime.now(tz=timezone.utc)
+        "disbursement_date", db.DateTime, nullable=False, default=lambda: datetime.now(tz=UTC)
     )
     disbursement_status_code = db.Column(db.String(20), ForeignKey("disbursement_status_codes.code"), nullable=True)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -98,7 +98,7 @@ class EFTRefund(Audit):
     delivery_instructions = db.Column(db.String(), nullable=True)
 
     @classmethod
-    def find_refunds(cls, statuses: List[str], short_name_id: int = None):
+    def find_refunds(cls, statuses: list[str], short_name_id: int = None):
         """Return all refunds by status."""
         query = cls.query
         if statuses:

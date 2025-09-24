@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the Roting slip Class is working as expected.
 """
+
 from faker import Faker
 
 from pay_api.models import RoutingSlip
@@ -69,7 +70,7 @@ def test_routing_slip_find_search(session):
     rs = factory_routing_slip(number=fake.name(), payment_account_id=payment_account.id)
     rs.save()
 
-    for i in range(20):
+    for _i in range(20):
         factory_routing_slip(number=fake.name(), payment_account_id=payment_account.id).save()
 
     routing_slip = RoutingSlip()

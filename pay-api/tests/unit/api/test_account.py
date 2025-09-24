@@ -18,8 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -29,12 +28,8 @@ from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
-from pay_api.models.corp_type import CorpType
-from pay_api.models.credit import Credit
 from pay_api.models.distribution_code import DistributionCodeLink as DistributionCodeLinkModel
-from pay_api.models.fee_code import FeeCode
 from pay_api.models.fee_schedule import FeeSchedule
-from pay_api.models.filing_type import FilingType
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.models.payment_line_item import PaymentLineItem
@@ -96,8 +91,8 @@ def test_account_purchase_history(session, client, jwt, app):
     invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    invoice.disbursement_date = datetime.now(tz=timezone.utc)
-    invoice.disbursement_reversal_date = datetime.now(tz=timezone.utc)
+    invoice.disbursement_date = datetime.now(tz=UTC)
+    invoice.disbursement_reversal_date = datetime.now(tz=UTC)
     invoice.save()
 
     for payload in [{}, {"excludeCounts": True}]:
@@ -163,7 +158,7 @@ def test_account_purchase_history_pagination(session, client, jwt, app, executor
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    for i in range(10):
+    for _i in range(10):
         rv = client.post(
             "/api/v1/payment-requests",
             data=json.dumps(get_payment_request()),
@@ -585,7 +580,7 @@ def test_account_purchase_history_default_list(session, client, jwt, app, execut
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    for i in range(11):
+    for _i in range(11):
         rv = client.post(
             "/api/v1/payment-requests",
             data=json.dumps(get_payment_request()),
@@ -1330,7 +1325,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         is_credit=False,
     )
     partial_refund1.save()
@@ -1343,7 +1338,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         is_credit=True,
     )
     partial_refund2.save()
@@ -1364,31 +1359,31 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
     assert isinstance(applied_credits, list), "appliedCredits should be a list"
     assert len(applied_credits) == 2, "Should have 2 applied credits"
 
-    credit1 = applied_credits[0]
-    assert "id" in credit1, "id field is missing"
-    assert "amountApplied" in credit1, "amountApplied field is missing"
-    assert "cfsIdentifier" in credit1, "cfsIdentifier field is missing"
-    assert "creditId" in credit1, "creditId field is missing"
-    assert "invoiceAmount" in credit1, "invoiceAmount field is missing"
-    assert "invoiceNumber" in credit1, "invoiceNumber field is missing"
-    assert "invoiceId" in credit1, "invoiceId field is missing"
-    assert "createdOn" in credit1, "createdOn field is missing"
-    assert credit1["id"] == applied_credit1.id, "First credit ID should match"
-    assert credit1["amountApplied"] == 25.0, "First credit amount should be 25.0"
-    assert credit1["cfsIdentifier"] == "TEST_CREDIT_001", "First credit identifier should match"
-    assert credit1["creditId"] == 1, "First credit ID should be 1"
-    assert credit1["invoiceAmount"] == 100.0, "First credit invoice amount should be 100.0"
-    assert credit1["invoiceNumber"] == "INV123456", "First credit invoice number should match"
-    assert credit1["invoiceId"] == invoice.id, "First credit invoice ID should match"
+    credit1_data = applied_credits[0]
+    assert "id" in credit1_data, "id field is missing"
+    assert "amountApplied" in credit1_data, "amountApplied field is missing"
+    assert "cfsIdentifier" in credit1_data, "cfsIdentifier field is missing"
+    assert "creditId" in credit1_data, "creditId field is missing"
+    assert "invoiceAmount" in credit1_data, "invoiceAmount field is missing"
+    assert "invoiceNumber" in credit1_data, "invoiceNumber field is missing"
+    assert "invoiceId" in credit1_data, "invoiceId field is missing"
+    assert "createdOn" in credit1_data, "createdOn field is missing"
+    assert credit1_data["id"] == applied_credit1.id, "First credit ID should match"
+    assert credit1_data["amountApplied"] == 25.0, "First credit amount should be 25.0"
+    assert credit1_data["cfsIdentifier"] == "TEST_CREDIT_001", "First credit identifier should match"
+    assert credit1_data["creditId"] == credit1.id, "First credit ID should match credit1.id"
+    assert credit1_data["invoiceAmount"] == 100.0, "First credit invoice amount should be 100.0"
+    assert credit1_data["invoiceNumber"] == "INV123456", "First credit invoice number should match"
+    assert credit1_data["invoiceId"] == invoice.id, "First credit invoice ID should match"
 
-    credit2 = applied_credits[1]
-    assert credit2["id"] == applied_credit2.id, "Second credit ID should match"
-    assert credit2["amountApplied"] == 15.0, "Second credit amount should be 15.0"
-    assert credit2["cfsIdentifier"] == "TEST_CREDIT_002", "Second credit identifier should match"
-    assert credit2["creditId"] == 2, "Second credit ID should be 2"
-    assert credit2["invoiceAmount"] == 100.0, "Second credit invoice amount should be 100.0"
-    assert credit2["invoiceNumber"] == "INV123456", "Second credit invoice number should match"
-    assert credit2["invoiceId"] == invoice.id, "Second credit invoice ID should match"
+    credit2_data = applied_credits[1]
+    assert credit2_data["id"] == applied_credit2.id, "Second credit ID should match"
+    assert credit2_data["amountApplied"] == 15.0, "Second credit amount should be 15.0"
+    assert credit2_data["cfsIdentifier"] == "TEST_CREDIT_002", "Second credit identifier should match"
+    assert credit2_data["creditId"] == credit2.id, "Second credit ID should match credit2.id"
+    assert credit2_data["invoiceAmount"] == 100.0, "Second credit invoice amount should be 100.0"
+    assert credit2_data["invoiceNumber"] == "INV123456", "Second credit invoice number should match"
+    assert credit2_data["invoiceId"] == invoice.id, "Second credit invoice ID should match"
 
     assert "partialRefunds" in invoice_data, "partialRefunds field is missing"
     partial_refunds = invoice_data["partialRefunds"]
@@ -1488,7 +1483,7 @@ def test_search_partially_refunded_invoices(session, client, jwt, app):
         status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         is_credit=False,
     )
     partial_refund.save()
@@ -1537,7 +1532,7 @@ def test_search_partially_credited_invoices(session, client, jwt, app):
         status=PaymentStatus.COMPLETED.value,
         created_by="TEST_USER",
         created_name="Test User",
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         is_credit=True,
     )
     partial_refund.save()

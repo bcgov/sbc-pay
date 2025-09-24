@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage routing slip comments."""
-from __future__ import annotations
 
-from typing import Dict
+from __future__ import annotations
 
 from flask import current_app
 
@@ -29,7 +28,7 @@ class Comment:
     """Service to manage Routing slip comments related operations."""
 
     @classmethod
-    def asdict(cls, dao) -> Dict[str]:
+    def asdict(cls, dao) -> dict[str]:
         """Return the comment as a python dict."""
         comment_schema = CommentSchema()
         d = comment_schema.dump(dao)

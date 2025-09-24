@@ -16,7 +16,8 @@
 
 Test-Suite to ensure that the EFT Short names historical model is working as expected.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from pay_api.models import EFTShortnamesHistorical
 from pay_api.utils.enums import EFTHistoricalTypes
@@ -33,7 +34,7 @@ def test_eft_short_names_historical(session):
     eft_short_name = factory_eft_shortname("TESTSHORTNAME")
     eft_short_name.save()
 
-    now_date = datetime.now(tz=timezone.utc).date()
+    now_date = datetime.now(tz=UTC).date()
     default_historical = EFTShortnamesHistorical(
         amount=151.50,
         created_by="USER1",

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage report generation."""
+
 from dataclasses import dataclass
-from typing import Optional
 
 from flask import current_app
 
 from pay_api.utils.user_context import user_context
 
-from ..utils.enums import AuthHeaderType, ContentType
+from ..utils.enums import AuthHeaderType, ContentType  # noqa: TID252
 from .oauth_service import OAuthService
 
 
@@ -31,7 +31,7 @@ class ReportRequest:
     report_name: str
     template_name: str
     populate_page_number: bool
-    template_vars: Optional[dict] = None
+    template_vars: dict | None = None
 
 
 class ReportService:

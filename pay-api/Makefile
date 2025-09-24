@@ -43,30 +43,26 @@ install: clean
 #################################################################################
 # COMMANDS - CI                                                                 #
 #################################################################################
-ci: isort-ci black-ci lint flake8 test ## CI flow
+ci: ruff-check test ## CI flow
 
-isort: 
-	poetry run isort .
+ruff: ## Format and lint with ruff
+	poetry run ruff format .
+	poetry run ruff check --fix .
 
-isort-ci:
-	poetry run isort --check .
+ruff-check: ## Check formatting and linting with ruff
+	poetry run ruff format --check .
+	poetry run ruff check .
 
-black: ## Linting with black
-	poetry run black .
+lint: ruff ## run all lint type scripts
 
-black-ci:
-	poetry run black --check .
+test: ## Unit testing (parallel)
+	poetry run pytest -n auto
 
-pylint: ## Linting with pylint
-	poetry run pylint src/$(PROJECT_NAME)
+test-fast: ## Unit testing (parallel, stop after 3 failures)
+	poetry run pytest -n auto --maxfail=3
 
-flake8: ## Linting with flake8
-	poetry run flake8 src/$(PROJECT_NAME) tests
-
-lint: isort black pylint flake8 ## run all lint type scripts
-
-test: ## Unit testing
-	poetry run pytest
+test-serial: ## Unit testing (serial - no parallelization)
+	poetry run pytest -n 0
 
 mac-cov: test ## Run the coverage report and display in a browser window (mac)
 	@open -a "Google Chrome" htmlcov/index.html

@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the OAuth Service layer is working as expected.
 """
+
 from unittest.mock import Mock, patch
 
 import pytest

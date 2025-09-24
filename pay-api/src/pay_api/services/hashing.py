@@ -14,6 +14,7 @@
 
 
 """Service for hashing."""
+
 import hashlib
 
 from flask import current_app
@@ -27,10 +28,12 @@ class HashingService:
         """Return a hashed string using the static salt from config."""
         current_app.logger.debug(f"encoding for string {param}")
         api_key = current_app.config.get("PAYBC_DIRECT_PAY_API_KEY")
-        return hashlib.md5(f"{param}{api_key}".encode()).hexdigest()
+        # MD5 required for PayBC API compatibility - not used for cryptographic security
+        return hashlib.md5(f"{param}{api_key}".encode()).hexdigest()  # noqa: S324
 
     @staticmethod
     def is_valid_checksum(param: str, hash_val: str) -> bool:
         """Validate if the checksum matches."""
         api_key = current_app.config.get("PAYBC_DIRECT_PAY_API_KEY")
-        return hashlib.md5(f"{param}{api_key}".encode()).hexdigest() == hash_val
+        # MD5 required for PayBC API compatibility - not used for cryptographic security
+        return hashlib.md5(f"{param}{api_key}".encode()).hexdigest() == hash_val  # noqa: S324

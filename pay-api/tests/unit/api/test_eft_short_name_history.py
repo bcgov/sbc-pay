@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the /eft-shortnames/{id}/history endpoint is working as expected.
 """
+
 from datetime import datetime
 
 import pytest

@@ -15,6 +15,7 @@
 
 Currently this only provides API versioning information
 """
+
 from flask import Blueprint, jsonify
 
 from pay_api.utils.endpoints_enums import EndpointEnum

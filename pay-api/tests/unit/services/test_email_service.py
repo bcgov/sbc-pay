@@ -33,7 +33,7 @@ def test_send_email(app, monkeypatch):
             result = send_email(["recipient@example.com"], "Subject", "Body")
             mock_post.assert_called_with(
                 "http://test_notify_api_endpoint/notify/",
-                token="test",
+                token="test",  # noqa: S106
                 auth_header_type=AuthHeaderType.BEARER,
                 content_type=ContentType.JSON,
                 data={

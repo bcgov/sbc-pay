@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage Receipt."""
 
-from typing import Any, Dict
+from typing import Any
 
 from flask import current_app
 from sbc_common_components.utils.camel_case_response import camelcase_dict
@@ -53,7 +53,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
     @user_context
     def create_receipt(
         invoice_identifier: str,
-        filing_data: Dict[str, Any],
+        filing_data: dict[str, Any],
         skip_auth_check: bool = False,
         **kwargs,
     ):

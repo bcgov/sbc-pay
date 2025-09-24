@@ -13,8 +13,7 @@
 # limitations under the License.
 """Service to manage PayBC interaction."""
 
-from datetime import datetime, timezone
-from typing import Dict, List
+from datetime import UTC, datetime
 
 from flask import current_app
 from requests.exceptions import HTTPError
@@ -50,10 +49,10 @@ class BcolService(PaymentSystemService, OAuthService):
     @skip_invoice_for_sandbox
     def create_invoice(  # pylint: disable=too-many-locals
         self,
-        payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
-        invoice: Invoice,
-        **kwargs,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice: Invoice,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> InvoiceReferenceModel:
         """Create Invoice in PayBC."""
         self.ensure_no_payment_blockers(payment_account)
@@ -84,7 +83,7 @@ class BcolService(PaymentSystemService, OAuthService):
         if filing_types == "CSBPDOC" or force_non_staff_fee_code:
             use_staff_fee_code = False
             force_use_debit_account = True
-        payload: Dict = {
+        payload: dict = {
             "userId": payment_account.bcol_user_id,
             "invoiceNumber": invoice_number,
             "folioNumber": invoice.folio_number,
@@ -146,16 +145,16 @@ class BcolService(PaymentSystemService, OAuthService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,
-        pay_response_url: str,
-        invoice_reference: InvoiceReference,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        pay_response_url: str,  # noqa: ARG002
+        invoice_reference: InvoiceReference,  # noqa: ARG002
     ):
         """Get receipt from bcol for the receipt number or get receipt against invoice number."""
         current_app.logger.debug("<get_receipt")
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return (
             f"{invoice_reference.invoice_number}",
-            datetime.now(tz=timezone.utc),
+            datetime.now(tz=UTC),
             invoice.total,
         )
 
@@ -180,9 +179,9 @@ class BcolService(PaymentSystemService, OAuthService):
 
     def process_cfs_refund(
         self,
-        invoice: InvoiceModel,
-        payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        invoice: InvoiceModel,  # noqa: ARG002
+        payment_account: PaymentAccount,  # noqa: ARG002
+        refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         self._publish_refund_to_mailer(invoice)
@@ -194,9 +193,9 @@ class BcolService(PaymentSystemService, OAuthService):
     @skip_complete_post_invoice_for_sandbox
     def complete_post_invoice(
         self,
-        invoice: Invoice,  # pylint: disable=unused-argument
-        invoice_reference: InvoiceReference,
-        **kwargs,
+        invoice: Invoice,  # pylint: disable=unused-argument  # noqa: ARG002
+        invoice_reference: InvoiceReference,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> None:
         """Complete any post payment activities if needed."""
         self.complete_payment(invoice, invoice_reference)

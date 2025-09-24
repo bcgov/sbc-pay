@@ -2253,8 +2253,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "email_logging_fix"
-resolved_reference = "b07b11fd18941f969af704d03a72abe5007cc8be"
+reference = "30833"
+resolved_reference = "10e5b2a5652d1e6e07e50e565025d062d6a52eec"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3504,4 +3504,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "f19afe76cee0c7c455674b0473c010ba0a4bd796107c425c8a26113466a471f7"
+content-hash = "6efaf485f88a6d8bb6602ace641e770ffbe894d5eb5fda7e8b2f36d5333f1df0"

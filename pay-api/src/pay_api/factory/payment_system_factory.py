@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Factory to manage creation of pay system service."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from flask import current_app
 
@@ -108,7 +109,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         if isinstance(instance, PadService):
             is_in_pad_confirmation_period = (
                 payment_account.pad_activation_date is not None
-                and payment_account.pad_activation_date.replace(tzinfo=timezone.utc) > datetime.now(tz=timezone.utc)
+                and payment_account.pad_activation_date.replace(tzinfo=UTC) > datetime.now(tz=UTC)
             )
             is_cfs_account_in_pending_status = (
                 payment_account.cfs_account_status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value

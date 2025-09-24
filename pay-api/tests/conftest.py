@@ -18,12 +18,10 @@ import os
 
 import pytest
 from flask_migrate import Migrate, upgrade
-from sqlalchemy import event, text
-from sqlalchemy_utils import create_database, database_exists, drop_database
+from sqlalchemy import create_engine, event, text
 
-from pay_api import create_app
+from pay_api import create_app, setup_jwt_manager
 from pay_api import jwt as _jwt
-from pay_api import setup_jwt_manager
 from pay_api.models import db as _db
 from pay_api.services.code import Code as CodeService
 
@@ -40,20 +38,20 @@ def app():
 def mock_pub_sub_call(mocker):
     """Mock pub sub call."""
 
-    class Expando(object):
+    class Expando:
         """Expando class."""
 
     class PublisherMock:
         """Publisher Mock."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs):  # noqa: ARG002
             def result():
                 """Return true for mock."""
                 return True
 
             self.result = result
 
-        def publish(self, *args, **kwargs):
+        def publish(self, *args, **kwargs):  # noqa: ARG002
             """Publish mock."""
             ex = Expando()
             ex.result = self.result
@@ -92,9 +90,13 @@ def client_ctx(app):
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     with app.app_context():
-        if database_exists(_db.engine.url):
-            drop_database(_db.engine.url)
-        create_database(_db.engine.url)
+        # Create worker-specific database
+        c = app.config
+        initial_url = f"postgresql+pg8000://{c['DB_USER']}:{c['DB_PASSWORD']}@{c['DB_HOST']}:{c['DB_PORT']}/pay-test"
+        engine = create_engine(initial_url, isolation_level="AUTOCOMMIT")
+        with engine.connect() as conn:
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{c["DB_NAME"]}"'))
+            conn.execute(text(f'CREATE DATABASE "{c["DB_NAME"]}"'))
         _db.session().execute(text('SET TIME ZONE "UTC";'))
         Migrate(app, _db)
         upgrade()
@@ -107,7 +109,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
     with app.app_context():
         with db.engine.connect() as conn:
             transaction = conn.begin()
-            sess = db._make_scoped_session(dict(bind=conn))  # pylint: disable=protected-access
+            sess = db._make_scoped_session({"bind": conn})  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
             old_session = db.session
@@ -150,7 +152,7 @@ def setup_code_service(session, app):
 @pytest.fixture()
 def auth_mock(monkeypatch):
     """Mock check_auth."""
-    monkeypatch.setattr("pay_api.services.auth.check_auth", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pay_api.services.auth.check_auth", lambda *args, **kwargs: None)  # noqa: ARG005
 
 
 @pytest.fixture()
@@ -203,19 +205,8 @@ def system_user_mock(monkeypatch):
 
 @pytest.fixture(scope="session", autouse=True)
 def auto(docker_services, app):
-    """Spin up a keycloak instance and initialize jwt."""
-    if app.config["USE_TEST_KEYCLOAK_DOCKER"]:
-        docker_services.start("keycloak")
-        docker_services.wait_for_service("keycloak", 8081)
-
+    """Initialize JWT manager."""
     setup_jwt_manager(app, _jwt)
-    if app.config["USE_DOCKER_MOCK"]:
-        docker_services.start("bcol")
-        docker_services.start("auth")
-        docker_services.start("paybc")
-        docker_services.start("reports")
-        docker_services.start("proxy")
-        docker_services.start("gcs-emulator")
 
 
 @pytest.fixture(scope="session")
@@ -258,7 +249,7 @@ def premium_user_mock(monkeypatch):
 @pytest.fixture()
 def rest_call_mock(monkeypatch):
     """Mock rest_call_mock."""
-    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.post", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.post", lambda *args, **kwargs: None)  # noqa: ARG005
 
 
 @pytest.fixture()

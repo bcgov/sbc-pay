@@ -18,8 +18,7 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 """
 
 import json
-from datetime import datetime, timedelta, timezone
-from typing import Dict
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from faker import Faker
@@ -121,8 +120,8 @@ def test_create_routing_slips_search(session, client, jwt, app):
     # search with dates
 
     valid_date_filter = {
-        "startDate": (datetime.now(tz=timezone.utc) - timedelta(1)).strftime(DT_SHORT_FORMAT),
-        "endDate": (datetime.now(tz=timezone.utc) + timedelta(1)).strftime(DT_SHORT_FORMAT),
+        "startDate": (datetime.now(tz=UTC) - timedelta(1)).strftime(DT_SHORT_FORMAT),
+        "endDate": (datetime.now(tz=UTC) + timedelta(1)).strftime(DT_SHORT_FORMAT),
     }
     rv = client.post(
         "/api/v1/fas/routing-slips/queries",
@@ -135,8 +134,8 @@ def test_create_routing_slips_search(session, client, jwt, app):
     assert items[0].get("number") == rs_number
 
     invalid_date_filter = {
-        "startDate": (datetime.now(tz=timezone.utc) + timedelta(100)).strftime(DT_SHORT_FORMAT),
-        "endDate": (datetime.now(tz=timezone.utc) + timedelta(1)).strftime(DT_SHORT_FORMAT),
+        "startDate": (datetime.now(tz=UTC) + timedelta(100)).strftime(DT_SHORT_FORMAT),
+        "endDate": (datetime.now(tz=UTC) + timedelta(1)).strftime(DT_SHORT_FORMAT),
     }
     rv = client.post(
         "/api/v1/fas/routing-slips/queries",
@@ -771,7 +770,7 @@ def test_routing_slip_report(session, client, jwt, app):
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     rv = client.post(
-        f"/api/v1/fas/routing-slips/{datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT)}/reports",
+        f"/api/v1/fas/routing-slips/{datetime.now(tz=UTC).strftime(DT_SHORT_FORMAT)}/reports",
         headers=headers,
     )
     assert rv.status_code == 201
@@ -934,17 +933,17 @@ def test_get_valid_comments(session, client, jwt):
     rs_number = rv.json.get("number")
 
     rv = client.post(
-        "/api/v1/fas/routing-slips/{}/comments".format(rs_number),
+        f"/api/v1/fas/routing-slips/{rs_number}/comments",
         data=json.dumps({"comment": "test_1"}),
         headers=headers,
     )
     rv = client.post(
-        "/api/v1/fas/routing-slips/{}/comments".format(rs_number),
+        f"/api/v1/fas/routing-slips/{rs_number}/comments",
         data=json.dumps({"comment": "test_2"}),
         headers=headers,
     )
 
-    rv = client.get("/api/v1/fas/routing-slips/{}/comments".format(rs_number), headers=headers)
+    rv = client.get(f"/api/v1/fas/routing-slips/{rs_number}/comments", headers=headers)
     assert rv.status_code == 200
     items = rv.json.get("comments")
     assert len(items) == 2
@@ -1040,9 +1039,9 @@ def test_create_routing_slip_null_cheque_date(session, client, jwt, app):
     )
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    routing_slip_payload: Dict[str, any] = {
+    routing_slip_payload: dict[str, any] = {
         "number": "345777543",
-        "routingSlipDate": datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
+        "routingSlipDate": datetime.now(tz=UTC).strftime(DT_SHORT_FORMAT),
         "paymentAccount": {"accountName": "TEST"},
         "payments": [],
     }

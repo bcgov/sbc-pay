@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
+
 from dataclasses import asdict
 from unittest.mock import ANY, MagicMock, patch
 

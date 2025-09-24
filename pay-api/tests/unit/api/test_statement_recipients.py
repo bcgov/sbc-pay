@@ -22,10 +22,8 @@ from unittest.mock import patch
 
 import pytest
 
-from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
-from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.utils.enums import QueueSources
 from tests.utilities.base_test import get_claims, get_payment_request, token_header
 
