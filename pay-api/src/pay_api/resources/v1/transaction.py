@@ -57,13 +57,15 @@ def post_transaction(invoice_id: int = None, payment_id: int = None):
 
     try:
         if invoice_id:
+            dao = TransactionService.create_transaction_for_invoice(invoice_id, request_json)
             response, status = (
-                TransactionService.create_transaction_for_invoice(invoice_id, request_json).asdict(),
+                TransactionService.asdict(dao),
                 HTTPStatus.CREATED,
             )
         elif payment_id:
+            dao = TransactionService.create_transaction_for_payment(payment_id, request_json)
             response, status = (
-                TransactionService.create_transaction_for_payment(payment_id, request_json).asdict(),
+                TransactionService.asdict(dao),
                 HTTPStatus.CREATED,
             )
 
@@ -92,8 +94,9 @@ def get_transaction(invoice_id: int = None, payment_id: int = None, transaction_
         transaction_id,
     )
     try:
+        dao = TransactionService.find_by_id(transaction_id)
         response, status = (
-            TransactionService.find_by_id(transaction_id).asdict(),
+            TransactionService.asdict(dao),
             HTTPStatus.OK,
         )
 
@@ -120,8 +123,9 @@ def patch_transaction(invoice_id: int = None, payment_id: int = None, transactio
     pay_response_url: str = request.get_json().get("payResponseUrl", None)
 
     try:
+        dao = TransactionService.update_transaction(transaction_id, pay_response_url)
         response, status = (
-            TransactionService.update_transaction(transaction_id, pay_response_url).asdict(),
+            TransactionService.asdict(dao),
             HTTPStatus.OK,
         )
     except BusinessException as exception:

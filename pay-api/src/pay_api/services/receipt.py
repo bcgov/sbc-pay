@@ -101,7 +101,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
 
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
-        receipt_details["invoiceNumber"] = invoice_reference.invoice_number
+        receipt_details["invoiceNumber"] = invoice_reference.invoice_number if invoice_reference else None
         if invoice_data.payment_method_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
             receipt_details["routingSlipNumber"] = invoice_data.routing_slip
         receipt_details["receiptNumber"] = None if is_pending_invoice else invoice_data.receipts[0].receipt_number

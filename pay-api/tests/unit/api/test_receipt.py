@@ -145,12 +145,10 @@ def test_create_pad_payment_receipt(session, client, jwt, app):
     )
     auth_account_id = rv.json.get("accountId")
     # Update the payment account as ACTIVE
-    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    payment_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=UTC)
     payment_account.save()
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
-        payment_account.id, PaymentMethod.PAD.value
-    )
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     cfs_account.status = "ACTIVE"
     cfs_account.save()
 

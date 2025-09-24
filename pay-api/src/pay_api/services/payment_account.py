@@ -627,7 +627,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
         if self.payment_method == PaymentMethod.EJV.value:  # include JV details
             dist_code = DistributionCode.find_active_by_account_id(self.id)
-            d["revenueAccount"] = dist_code.asdict()
+            d["revenueAccount"] = DistributionCode.asdict(dist_code)
 
         if account_fees := AccountFeeModel.find_by_account_id(self.id):
             d["accountFees"] = AccountFeeSchema().dump(account_fees, many=True)

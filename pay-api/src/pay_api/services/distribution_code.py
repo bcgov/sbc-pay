@@ -31,6 +31,13 @@ class DistributionCode:
     """Service to manage distribution code related operations."""
 
     @staticmethod
+    def asdict(dao):
+        """Return the distribution code as a python dict."""
+        distribution_schema = DistributionCodeSchema()
+        d = distribution_schema.dump(dao)
+        return d
+
+    @staticmethod
     def find_all():
         """Find all distribution codes valid today."""
         current_app.logger.debug("<find_all")
