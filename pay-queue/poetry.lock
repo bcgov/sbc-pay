@@ -2384,8 +2384,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "30833"
-resolved_reference = "10e5b2a5652d1e6e07e50e565025d062d6a52eec"
+reference = "30548"
+resolved_reference = "79257313b532e796ccf266fd56a964e67f98bf7b"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3648,4 +3648,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "adb7afab50aa9764ed7deae02ef3af2117eea92d7e58304582d1d790809b1abf"
+content-hash = "e6fc5cb45d795c468884250bf538edbe96074663e5e7b0ea55c6d93018fd1798"
