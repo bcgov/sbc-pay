@@ -12,10 +12,12 @@ DOCKER_NAME:=pay-api
 #################################################################################
 # COMMANDS -- Setup                                                             #
 #################################################################################
-setup: install ## Setup the project
+setup: clean install ## Setup the project
+
 
 clean: clean-build clean-pyc clean-test ## Clean the project
 	rm -rf venv/
+
 
 clean-build: ## Clean build files
 	rm -fr build/
@@ -36,9 +38,19 @@ clean-test: ## clean test files
 	rm -f .coverage
 	rm -fr htmlcov/
 
-install: clean
-	pip install poetry==2.1.3;\
-	poetry install
+install: install-poetry install-deps ## Install dependencies
+
+install-poetry: ## Install poetry if not present or wrong version
+	@if ! poetry --version 2>/dev/null | grep -q "2.1.3"; then \
+		echo "Installing poetry 2.1.3..."; \
+		pip install poetry==2.1.3; \
+	else \
+		echo "Poetry 2.1.3 already installed"; \
+	fi
+
+install-deps: ## Install project dependencies
+	poetry install --no-interaction
+
 
 #################################################################################
 # COMMANDS - CI                                                                 #
