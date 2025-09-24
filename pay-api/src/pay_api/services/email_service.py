@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """This manages all of the email notification service."""
+
 import os
 from decimal import Decimal
-from typing import Dict, List
 
 from attrs import define
 from flask import current_app
@@ -86,7 +86,7 @@ class ShortNameRefundEmailContent(Serializable):
         return template.render(self.to_dict())
 
 
-def _render_payment_reversed_template(params: Dict) -> str:
+def _render_payment_reversed_template(params: dict) -> str:
     """Render short name statement reverse payment template."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
@@ -100,7 +100,7 @@ def _render_payment_reversed_template(params: Dict) -> str:
     return template.render(params)
 
 
-def _render_credit_add_notification_template(params: Dict) -> str:
+def _render_credit_add_notification_template(params: dict) -> str:
     """Render credit add notification template."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
@@ -116,7 +116,7 @@ class JobFailureNotification(Serializable):
 
     subject: str
     file_name: str
-    error_messages: List[Dict[str, any]]
+    error_messages: list[dict[str, any]]
     table_name: str
     job_name: str
 

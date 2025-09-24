@@ -1,7 +1,6 @@
 """Module for EFT refunds that go tghrough the AP module via EFT."""
 
 from decimal import Decimal
-from typing import List
 
 from flask import abort, current_app
 
@@ -37,7 +36,7 @@ class EFTRefund:
 
     @staticmethod
     @user_context
-    def create_shortname_refund(refund: EFTShortNameRefundPostRequest, **kwargs):
+    def create_shortname_refund(refund: EFTShortNameRefundPostRequest, **kwargs):  # noqa: ARG004
         """Create refund. This method isn't for invoices, it's for shortname only."""
         refund.validate_for_refund_method()
         current_app.logger.debug(f"Starting shortname refund : {refund.short_name_id}")
@@ -89,7 +88,7 @@ class EFTRefund:
     def handle_invoice_refund(
         invoice: InvoiceModel,
         payment_account: PaymentAccount,
-        cils: List[EFTCreditInvoiceLinkModel],
+        cils: list[EFTCreditInvoiceLinkModel],
         is_partial_refund: bool = False,
     ) -> InvoiceStatus:
         """Create EFT Short name funds received historical record."""

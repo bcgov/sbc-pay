@@ -18,11 +18,11 @@ import base64
 import json
 import os
 import tempfile
-from typing import Iterator, List
+from collections.abc import Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
-from flask import Flask, current_app
+from flask import Flask
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 
@@ -51,7 +51,7 @@ def storage_client(app):
 
 
 @pytest.fixture
-def temp_test_files() -> Iterator[List[str]]:
+def temp_test_files() -> Iterator[list[str]]:
     """Create temporary test files."""
     files = []
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -98,7 +98,7 @@ def test_get_file_bytes_from_bucket_folder(session, storage_client, app) -> None
     bucket.delete(force=True)
 
 
-def test_upload_to_bucket_folder(session, storage_client, temp_test_files: List[str], app: Flask) -> None:
+def test_upload_to_bucket_folder(session, storage_client, temp_test_files: list[str], app: Flask) -> None:
     """Testing upload_to_bucket_folder."""
     bucket = get_bucket(storage_client, "test-bucket-upload-files")
     folder_name = "test-folder"
@@ -112,7 +112,7 @@ def test_upload_to_bucket_folder(session, storage_client, temp_test_files: List[
         assert blob.exists()
 
         downloaded_content = blob.download_as_text()
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             original_content = f.read()
         assert downloaded_content == original_content
         blob.delete()

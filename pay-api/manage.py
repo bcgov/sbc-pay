@@ -13,13 +13,15 @@
 # limitations under the License.
 
 """Manage the database and some other items required to run the API."""
+
 import logging
 
 from flask_migrate import Migrate
 
 # models included so that migrate can build the database migrations
-from pay_api import models  # pylint: disable=unused-import
-from pay_api import create_app
+from pay_api import (
+    create_app,  # pylint: disable=unused-import
+)
 from pay_api.models import db
 
 APP = create_app(run_mode="migration")

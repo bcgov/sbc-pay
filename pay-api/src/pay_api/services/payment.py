@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Payment model related operations."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Dict, List, Optional, Tuple
 
 from dateutil import parser
 from flask import current_app
@@ -54,9 +54,9 @@ from pay_api.utils.util import (
     get_statement_currency_string,
 )
 
-from ..exceptions import BusinessException
-from ..utils.dataclasses import PurchaseHistorySearch
-from ..utils.errors import Error
+from ..exceptions import BusinessException  # noqa: TID252
+from ..utils.dataclasses import PurchaseHistorySearch  # noqa: TID252
+from ..utils.errors import Error  # noqa: TID252
 from .code import Code as CodeService
 from .oauth_service import OAuthService
 from .payment_calculations import (
@@ -76,8 +76,8 @@ class PaymentReportInput:
     report_name: str
     template_name: str
     results: dict
-    statement_summary: Optional[dict] = None
-    eft_transactions: Optional[List[EFTTransactionModel]] = None
+    statement_summary: dict | None = None
+    eft_transactions: list[EFTTransactionModel] | None = None
 
 
 class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -358,7 +358,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return data
 
     @staticmethod
-    def search_all_purchase_history(auth_account_id: str, search_filter: Dict):
+    def search_all_purchase_history(auth_account_id: str, search_filter: dict):
         """Return all results for the purchase history."""
         return Payment.search_purchase_history(
             PurchaseHistorySearch(
@@ -400,7 +400,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
     @staticmethod
     @user_context
-    def check_products_from_role_pattern(role_pattern: str, **kwargs) -> Tuple:
+    def check_products_from_role_pattern(role_pattern: str, **kwargs) -> tuple:
         """Check roles to see if product filtering is applicable and return allowed products list."""
         user: UserContext = kwargs["user"]
         roles = user.roles or []
@@ -413,7 +413,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return products, filter_by_product
 
     @classmethod
-    def create_payment_report_details(cls, purchases: Tuple, data: Dict) -> dict:  # pylint:disable=too-many-locals
+    def create_payment_report_details(cls, purchases: tuple, data: dict) -> dict:  # pylint:disable=too-many-locals
         """Return payment report details by fetching the line items.
 
         purchases is tuple of payment and invoice model records.
@@ -428,7 +428,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return data
 
     @staticmethod
-    def create_payment_report(auth_account_id: str, search_filter: Dict, content_type: str, report_name: str):
+    def create_payment_report(auth_account_id: str, search_filter: dict, content_type: str, report_name: str):
         """Create payment report."""
         current_app.logger.debug(f"<create_payment_report {auth_account_id}")
 
@@ -703,7 +703,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return payment
 
     @staticmethod
-    def get_failed_payments(auth_account_id) -> List[PaymentModel]:
+    def get_failed_payments(auth_account_id) -> list[PaymentModel]:
         """Return active failed payments."""
         return PaymentModel.find_payments_to_consolidate(auth_account_id=auth_account_id)
 
@@ -715,7 +715,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
     @staticmethod
     def create_consolidated_invoices_payment(
-        invoices: List[InvoiceModel],
+        invoices: list[InvoiceModel],
         cfs_account: CfsAccountModel,
         randomize_invoice_number=False,
     ):
@@ -728,7 +728,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             # Earlier we already reversed existing consolidated invoices.
             # We can't really adjust invoices, because we aren't getting the line information back,
             # so we'll have to sort to reversing and recreating the consolidated invoices.
-            inv_no_prefix = f"{str(invoices[-1].id)}-{datetime.now(tz=timezone.utc).strftime('%H%M%S')}-C"
+            inv_no_prefix = f"{str(invoices[-1].id)}-{datetime.now(tz=UTC).strftime('%H%M%S')}-C"
         invoice_number = generate_transaction_number(inv_no_prefix)
         invoice_exists = False
         invoice_total = sum(invoice.total - invoice.paid for invoice in invoices)
@@ -801,7 +801,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             )
 
         outstanding_invoices = InvoiceModel.find_invoices_by_status_for_account(pay_account.id, invoice_statuses)
-        consolidated_invoices: List[InvoiceModel] = []
+        consolidated_invoices: list[InvoiceModel] = []
         reversed_consolidated_invoices = set()
         for invoice in outstanding_invoices:
             for invoice_reference in invoice.references:
@@ -826,7 +826,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return payment
 
     @classmethod
-    def _consolidate_payments(cls, auth_account_id: str, failed_payments: List[PaymentModel]) -> Payment:
+    def _consolidate_payments(cls, auth_account_id: str, failed_payments: list[PaymentModel]) -> Payment:
         # If the payment is for consolidating failed payments,
         # 1. Cancel the invoices in CFS
         # 2. Update status of invoice_reference to CANCELLED
@@ -837,7 +837,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, pay_account.payment_method)
 
-        consolidated_invoices: List[InvoiceModel] = []
+        consolidated_invoices: list[InvoiceModel] = []
         for failed_payment in failed_payments:
             # Note this works for PAD, but wont work for EFT as users could try to consolidate
             # but still pay via EFT instead of going through with credit card.
@@ -862,7 +862,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
     @staticmethod
     @user_context
-    def create_payment_receipt(auth_account_id: str, credit_request: Dict[str, str], **kwargs) -> Payment:
+    def create_payment_receipt(auth_account_id: str, credit_request: dict[str, str], **kwargs) -> Payment:
         """Create a payment record for the account."""
         payment_method = credit_request.get("paymentMethod")
         pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)

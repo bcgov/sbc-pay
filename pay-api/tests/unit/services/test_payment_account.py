@@ -17,8 +17,7 @@
 Test-Suite to ensure that the Payment Account Service is working as expected.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import List
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -120,9 +119,7 @@ def test_create_bcol_account_to_pad(session):
     # Create a DRAWDOWN Account first
     bcol_account = PaymentAccountService.create(get_premium_account_payload())
     # Update to PAD - Keep the pad activation_date in the past.
-    PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(tz=timezone.utc) - timedelta(
-        days=1
-    )
+    PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(tz=UTC) - timedelta(days=1)
     pad_account = PaymentAccountService.update(bcol_account.auth_account_id, get_unlinked_pad_account_payload())
 
     assert bcol_account.auth_account_id == bcol_account.auth_account_id
@@ -133,9 +130,7 @@ def test_create_bcol_account_to_pad(session):
     assert pad_account.cfs_site is None
 
     # Reset activation date.
-    PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(tz=timezone.utc) + timedelta(
-        days=1
-    )
+    PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(tz=UTC) + timedelta(days=1)
     # back to BCOL
     pad_account = PaymentAccountService.update(bcol_account.auth_account_id, get_premium_account_payload())
     assert pad_account.payment_method == PaymentMethod.DRAWDOWN.value
@@ -164,9 +159,7 @@ def test_create_pad_to_bcol_to_pad(session):
     assert bcol_account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Make sure our activation date is past and update to PAD again.
-    PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(tz=timezone.utc) - timedelta(
-        days=1
-    )
+    PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(tz=UTC) - timedelta(days=1)
     pad_account_2 = PaymentAccountService.update(
         pad_account_1.auth_account_id,
         get_unlinked_pad_account_payload(account_id=auth_account_id, bank_number="010"),
@@ -324,14 +317,14 @@ def test_eft_payment_method_settings(session, client, jwt, app, admin_users_mock
     assert payment_account.payment_method == PaymentMethod.EFT.value
 
     statement_settings: StatementSettingsModel = StatementSettingsModel.find_active_settings(
-        str(payment_account.auth_account_id), datetime.now(tz=timezone.utc)
+        str(payment_account.auth_account_id), datetime.now(tz=UTC)
     )
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value
 
     # Validate statement notifications enabled and recipients set up
-    statement_recipients: List[StatementRecipientModel] = StatementRecipientModel.find_all_recipients(
+    statement_recipients: list[StatementRecipientModel] = StatementRecipientModel.find_all_recipients(
         payment_account.auth_account_id
     )
 

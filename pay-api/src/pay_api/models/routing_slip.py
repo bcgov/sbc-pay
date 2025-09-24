@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Routing Slip."""
+
 from __future__ import annotations
 
 from datetime import datetime
 from operator import and_
-from typing import Dict, List
 
 import pytz
 from flask import current_app
@@ -165,7 +165,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(number=number).one_or_none()
 
     @classmethod
-    def find_children(cls, number: str) -> List[RoutingSlip]:
+    def find_children(cls, number: str) -> list[RoutingSlip]:
         """Return children for the routing slip."""
         return cls.query.filter_by(parent_number=number).all()
 
@@ -175,18 +175,18 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(payment_account_id=payment_account_id).one_or_none()
 
     @classmethod
-    def find_all_by_payment_account_id(cls, payment_account_id: str) -> List[RoutingSlip]:
+    def find_all_by_payment_account_id(cls, payment_account_id: str) -> list[RoutingSlip]:
         """Return a routing slip by payment account number."""
         return cls.query.filter_by(payment_account_id=payment_account_id).all()
 
     @classmethod
     def search(  # pylint: disable=too-many-arguments, too-many-locals
         cls,
-        search_filter: Dict,
+        search_filter: dict,
         page: int,
         limit: int,
         return_all: bool,
-    ) -> (List[RoutingSlip], int):
+    ) -> (list[RoutingSlip], int):
         """Search for routing slips by the criteria provided."""
         query = (
             db.session.query(RoutingSlip)

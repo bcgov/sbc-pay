@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import date, datetime, timedelta, timezone
+
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from typing import List
 
 from dateutil.relativedelta import relativedelta
 from flask import current_app
@@ -278,7 +278,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         return data
 
     @staticmethod
-    def get_statement_invoices(statement_id: int) -> List[InvoiceModel]:
+    def get_statement_invoices(statement_id: int) -> list[InvoiceModel]:
         """Find statements by account id."""
         return (
             db.session.query(InvoiceModel)
@@ -291,7 +291,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def is_payment_method_statement(
-        statement: StatementModel, ordered_invoices: List[InvoiceModel], payment_method_code: str
+        statement: StatementModel, ordered_invoices: list[InvoiceModel], payment_method_code: str
     ) -> bool:
         """Return if the statement is for the specified payment method."""
         # Check invoice payment method for statement template
@@ -345,7 +345,7 @@ class Statement:  # pylint:disable=too-many-public-methods
     @staticmethod
     def get_statement_eft_transactions(
         statement: StatementModel,
-    ) -> List[EFTTransactionModel]:
+    ) -> list[EFTTransactionModel]:
         """Get a list of EFT transactions applied to statement invoices."""
         return (
             db.session.query(EFTTransactionModel)
@@ -370,7 +370,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @classmethod
     def _populate_statement_summary(
-        cls, statement: StatementModel, statement_invoices: List[InvoiceModel], payment_method: PaymentMethod
+        cls, statement: StatementModel, statement_invoices: list[InvoiceModel], payment_method: PaymentMethod
     ) -> dict:
         """Populate statement summary with additional information."""
         previous_statement = Statement.get_previous_statement(statement)
@@ -401,7 +401,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def _build_statement_summary_for_methods(
-        statement_dao: StatementModel, statement_purchases: List[InvoiceModel]
+        statement_dao: StatementModel, statement_purchases: list[InvoiceModel]
     ) -> dict:
         """Build statement_summary for EFT and PAD without inflating locals in caller."""
         summary: dict = {}
@@ -581,7 +581,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         return False
 
     @staticmethod
-    def populate_overdue_from_invoices(statements: List[StatementModel]):
+    def populate_overdue_from_invoices(statements: list[StatementModel]):
         """Populate is_overdue field for statements."""
         # Invoice status can change after a statement has been generated.
         statement_ids = select(func.unnest(cast([statements.id for statements in statements], ARRAY(INTEGER))))
@@ -619,7 +619,7 @@ class Statement:  # pylint:disable=too-many-public-methods
     @staticmethod
     def generate_interim_statement(auth_account_id: str, new_frequency: str):
         """Generate interim statement."""
-        today = get_local_time(datetime.now(tz=timezone.utc))
+        today = get_local_time(datetime.now(tz=UTC))
 
         # This can happen during account creation when the default active settings do not exist yet
         # No interim statement is needed in this case
@@ -683,7 +683,7 @@ class Statement:  # pylint:disable=too-many-public-methods
     @staticmethod
     def find_all_payments_and_invoices_for_statement(
         statement_id: str, payment_method: PaymentMethod = None
-    ) -> List[InvoiceModel]:
+    ) -> list[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""
         query = (
             db.session.query(InvoiceModel)

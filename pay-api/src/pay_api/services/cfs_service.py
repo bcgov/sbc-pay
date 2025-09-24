@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to invoke CFS related operations."""
+
 import base64
 import re
 from collections import defaultdict
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from flask import current_app
 from requests import HTTPError
@@ -78,12 +79,12 @@ class CFSService(OAuthService):
     def create_cfs_account(  # pylint: disable=too-many-arguments
         cls,
         identifier: str,
-        contact_info: Dict[str, Any],
-        payment_info: Dict[str, any] = None,
+        contact_info: dict[str, Any],
+        payment_info: dict[str, any] = None,
         receipt_method: str = None,
         site_name=None,
         is_fas: bool = False,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Create a cfs account and return the details."""
         current_app.logger.info(f"Creating CFS Customer Profile Details for : {identifier}")
         party_id = f"{current_app.config.get('CFS_PARTY_PREFIX')}{identifier}"
@@ -110,7 +111,7 @@ class CFSService(OAuthService):
         return account_details
 
     @staticmethod
-    def get_site(cfs_account: CfsAccountModel) -> Dict[str, any]:
+    def get_site(cfs_account: CfsAccountModel) -> dict[str, any]:
         """Get the site details."""
         access_token = CFSService.get_token().json().get("access_token")
         cfs_base: str = current_app.config.get("CFS_BASE_URL")
@@ -149,13 +150,13 @@ class CFSService(OAuthService):
         return site_update_response.json()
 
     @staticmethod
-    def validate_bank_account(bank_details: Tuple[Dict[str, Any]]) -> Dict[str, str]:
+    def validate_bank_account(bank_details: tuple[dict[str, Any]]) -> dict[str, str]:
         """Validate bank details by invoking CFS validation Service."""
         current_app.logger.debug("<Validating bank account details")
         validation_url = current_app.config.get("CFS_BASE_URL") + "/cfs/validatepayins/"
         bank_number = str(bank_details.get("bankInstitutionNumber", None))
         branch_number = str(bank_details.get("bankTransitNumber", None))
-        bank_details: Dict[str, str] = {
+        bank_details: dict[str, str] = {
             "accountNumber": bank_details.get("bankAccountNumber", None),
             "branchNumber": f"{branch_number:0>5}",
             "bankNumber": f"{bank_number:0>4}",
@@ -215,7 +216,7 @@ class CFSService(OAuthService):
         """Create a party record in PayBC."""
         current_app.logger.debug("<Creating party Record")
         party_url = current_app.config.get("CFS_BASE_URL") + "/cfs/parties/"
-        party: Dict[str, Any] = {"customer_name": party_name}
+        party: dict[str, Any] = {"customer_name": party_name}
 
         party_response = OAuthService.post(
             party_url,
@@ -242,7 +243,7 @@ class CFSService(OAuthService):
         """Create account record in PayBC."""
         current_app.logger.debug("<Creating CFS account")
         account_url = current_app.config.get("CFS_BASE_URL") + f"/cfs/parties/{party.get('party_number', None)}/accs/"
-        account: Dict[str, Any] = {
+        account: dict[str, Any] = {
             "account_description": current_app.config.get("CFS_ACCOUNT_DESCRIPTION"),
             "customer_profile_class": (CFS_FAS_CUSTOMER_PROFILE_CLASS if is_fas else CFS_CUSTOMER_PROFILE_CLASS),
         }
@@ -277,7 +278,7 @@ class CFSService(OAuthService):
         )
         country = get_non_null_value(contact_info.get("country"), DEFAULT_COUNTRY)
         province_tag = "province" if country == DEFAULT_COUNTRY else "state"
-        site: Dict[str, Any] = {
+        site: dict[str, Any] = {
             "site_name": site_name or "Site 1",  # Make it dynamic if we ever need multiple sites per account
             "city": get_non_null_value(contact_info.get("city"), DEFAULT_CITY),
             "address_line_1": get_non_null_value(contact_info.get("addressLine1"), DEFAULT_ADDRESS_LINE_1),
@@ -326,7 +327,7 @@ class CFSService(OAuthService):
         party_number: str,
         account_number: str,
         site_number: str,
-        payment_info: Dict[str, str],
+        payment_info: dict[str, str],
     ):
         """Save bank details to the site."""
         current_app.logger.debug("<Creating CFS payment details ")
@@ -341,7 +342,7 @@ class CFSService(OAuthService):
         # bank account name should match legal name
         name = re.sub(r"[^a-zA-Z0-9]+", " ", payment_info.get("bankAccountName", ""))
 
-        payment_details: Dict[str, str] = {
+        payment_details: dict[str, str] = {
             "bank_account_name": name[:30],
             "bank_number": f"{bank_number:0>4}",
             "branch_number": f"{branch_number:0>5}",
@@ -415,12 +416,12 @@ class CFSService(OAuthService):
         )
 
     @classmethod
-    def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
+    def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> dict[str, any]:
         """Apply Invoice to Routing slip receipt from CFS."""
         return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number)
 
     @classmethod
-    def unapply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
+    def unapply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> dict[str, any]:
         """Unapply Invoice to Routing slip receipt from CFS."""
         return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number, verb="unapply")
 
@@ -454,7 +455,7 @@ class CFSService(OAuthService):
         party_number: str,
         account_number: str,
         site_number: str,
-        payment_info: Dict[str, str],
+        payment_info: dict[str, str],
     ):
         """Update bank details to the site."""
         current_app.logger.debug("<Update bank details ")
@@ -493,9 +494,9 @@ class CFSService(OAuthService):
     def create_account_invoice(
         cls,
         transaction_number: str,
-        line_items: List[PaymentLineItemModel],
+        line_items: list[PaymentLineItemModel],
         cfs_account: CfsAccountModel,
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """Create CFS Account Invoice."""
         now = current_local_time()
         curr_time = now.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -538,9 +539,9 @@ class CFSService(OAuthService):
         }.get(operation)
 
     @classmethod
-    def build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
+    def build_lines(cls, payment_line_items: list[PaymentLineItemModel], negate: bool = False):
         """Build lines for the invoice."""
-        distribution_codes: List[DistributionCodeModel] = DistributionCodeModel.find_all()
+        distribution_codes: list[DistributionCodeModel] = DistributionCodeModel.find_all()
         distribution_lookup = {dist.distribution_code_id: dist for dist in distribution_codes}
 
         context = ProcessingContext(defaultdict(dict), 0, negate)
@@ -764,7 +765,7 @@ class CFSService(OAuthService):
         amount: float,
         payment_method: str,
         access_token: str = None,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Create Eft Wire receipt for the account."""
         current_app.logger.debug(f"<create_cfs_receipt : {cfs_account}, {rcpt_number}, {amount}, {payment_method}")
 
@@ -799,7 +800,7 @@ class CFSService(OAuthService):
         ).json()
 
     @classmethod
-    def get_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, return_none_if_404=False) -> Dict[str, any]:
+    def get_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, return_none_if_404=False) -> dict[str, any]:
         """Return receipt details from CFS."""
         current_app.logger.debug(">Getting receipt: %s", receipt_number)
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -823,7 +824,7 @@ class CFSService(OAuthService):
         return receipt_response.json() if receipt_response is not None else None
 
     @classmethod
-    def get_cms(cls, cfs_account: CfsAccountModel, cms_number: str, return_none_if_404=False) -> Dict[str, any]:
+    def get_cms(cls, cfs_account: CfsAccountModel, cms_number: str, return_none_if_404=False) -> dict[str, any]:
         """Return CMS details from CFS."""
         current_app.logger.debug(">Getting CMS: %s", cms_number)
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -847,7 +848,7 @@ class CFSService(OAuthService):
         return cms_response.json() if cms_response is not None else None
 
     @classmethod
-    def create_cms(cls, line_items: List[PaymentLineItemModel], cfs_account: CfsAccountModel) -> Dict[str, any]:
+    def create_cms(cls, line_items: list[PaymentLineItemModel], cfs_account: CfsAccountModel) -> dict[str, any]:
         """Create CM record in CFS."""
         current_app.logger.debug(">Creating CMS")
         access_token: str = CFSService.get_token().json().get("access_token")

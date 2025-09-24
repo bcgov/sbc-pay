@@ -13,7 +13,7 @@
 # limitations under the License.
 """Model to handle Electronic Journal Voucher distributions and payment."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import ForeignKey
 
@@ -56,7 +56,7 @@ class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     completed_on = db.Column("completed_on", db.DateTime, nullable=True)
     file_type = db.Column("file_type", db.String, nullable=True, default=EjvFileType.DISBURSEMENT.value)

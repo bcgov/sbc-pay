@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Fee Calculation."""
+
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
-from typing import Dict
+from datetime import UTC, date, datetime
 
 from dateutil import parser
 from flask import current_app
@@ -377,7 +377,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         return data
 
     @staticmethod
-    def save_or_update(distribution_details: Dict, dist_id: int = None):
+    def save_or_update(distribution_details: dict, dist_id: int = None):
         """Save distribution."""
         current_app.logger.debug("<save_or_update")
 
@@ -392,7 +392,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         if distribution_details.get("startDate", None):
             dist_code_svc.start_date = parser.parse(distribution_details.get("startDate"))
         else:
-            dist_code_svc.start_date = datetime.now(tz=timezone.utc).date()
+            dist_code_svc.start_date = datetime.now(tz=UTC).date()
 
         _has_code_changes: bool = (
             dist_code_svc.client != distribution_details.get("client", None)
@@ -437,7 +437,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         return distribution_code_schema.dump(dist_code_dao, many=False)
 
     @staticmethod
-    def create_link(fee_schedules: Dict, dist_id: int):
+    def create_link(fee_schedules: dict, dist_id: int):
         """Create link between distribution and fee schedule."""
         current_app.logger.debug("<create_link")
         links: list = []

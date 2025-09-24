@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for Account Non-Sufficient Funds endpoints."""
+
 from http import HTTPStatus
 
 from flask import Blueprint, Response, current_app, jsonify

@@ -76,7 +76,7 @@ class _Config:  # pylint: disable=too-few-public-methods
         except Exception:
             LOGGING_OVERRIDE_CONFIG = None
 
-    SECRET_KEY = "a secret"
+    SECRET_KEY = "a secret"  # noqa: S105
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -320,7 +320,7 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
 
     CFS_BASE_URL = "http://localhost:8080/paybc-api"
     CFS_CLIENT_ID = "TEST"
-    CFS_CLIENT_SECRET = "TEST"
+    CFS_CLIENT_SECRET = "TEST"  # noqa: S105
     PAYBC_PORTAL_URL = "https://paydev.gov.bc.ca/public/directpay"
 
     SERVER_NAME = "auth-web.dev.com"
@@ -341,11 +341,11 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     PAYBC_DIRECT_PAY_BASE_URL = "http://localhost:8080/paybc-api"
     PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = PAYBC_DIRECT_PAY_BASE_URL
     PAYBC_DIRECT_PAY_CLIENT_ID = "TEST"
-    PAYBC_DIRECT_PAY_CLIENT_SECRET = "TEST"
+    PAYBC_DIRECT_PAY_CLIENT_SECRET = "TEST"  # noqa: S105
 
     PAD_CONFIRMATION_PERIOD_IN_DAYS = 3
     # Secret key for encrypting bank account
-    ACCOUNT_SECRET_KEY = "mysecretkeyforbank"
+    ACCOUNT_SECRET_KEY = "mysecretkeyforbank"  # noqa: S105
     ALLOW_SKIP_PAYMENT = False
 
     # Google Cloud Storage emulator settings for testing
@@ -359,7 +359,7 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
     if not SECRET_KEY:
         SECRET_KEY = os.urandom(24)
-        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)
+        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)  # noqa: T201
 
     TESTING = False
     DEBUG = False

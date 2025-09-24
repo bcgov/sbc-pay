@@ -20,8 +20,6 @@ Test-Suite to ensure that the PAYBC layer is working as expected.
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from dateutil import parser
-
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.paybc_service import PaybcService
 from tests.utilities.base_test import factory_invoice, factory_invoice_reference, factory_payment_account
@@ -102,7 +100,6 @@ def test_get_receipt_no_receipt_number(mock_get_token, session):
             },
         ),
     ):
-
         result = paybc_service.get_receipt(payment_account, pay_response_url, invoice_reference)
 
         assert result is not None

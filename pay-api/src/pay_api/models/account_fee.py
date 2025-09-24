@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Fee related to accounts."""
+
 from __future__ import annotations
 
 from marshmallow import fields, post_dump
@@ -103,7 +104,7 @@ class AccountFeeSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         exclude = ["service_fee"]
 
     @post_dump(pass_many=True)
-    def _remove_empty(self, data, many):
+    def _remove_empty(self, data, many):  # noqa: ARG002
         return data
 
     service_fee_code = fields.String(data_key="service_fee_code")

@@ -17,10 +17,9 @@
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from random import randrange
-from typing import Dict, List, Tuple
 
 from faker import Faker
 
@@ -97,12 +96,12 @@ def get_claims(
         "aud": "sbc-auth-web",
         "sub": "15099883-3c3f-4b4c-a124-a1824d6cba84",
         "typ": "Bearer",
-        "realm_access": {"roles": ["{}".format(role), *roles]},
+        "realm_access": {"roles": [f"{role}", *roles]},
         "preferred_username": username,
         "name": username,
         "username": username,
         "loginSource": login_source,
-        "roles": ["{}".format(role), *roles],
+        "roles": [f"{role}", *roles],
         "product_code": product_code,
     }
     return claim
@@ -367,7 +366,7 @@ def factory_payment_account(
         name=name,
         branch_name=branch_name,
         payment_method=payment_method_code,
-        pad_activation_date=datetime.now(tz=timezone.utc),
+        pad_activation_date=datetime.now(tz=UTC),
         eft_enable=False,
         has_nsf_invoices=has_nsf_invoices,
         has_overdue_invoices=has_overdue_invoices,
@@ -451,7 +450,7 @@ def factory_routing_slip(
     status: str = RoutingSlipStatus.ACTIVE.value,
     total: int = 0,
     remaining_amount: Decimal = 0.0,
-    routing_slip_date=datetime.now(tz=timezone.utc),
+    routing_slip_date=datetime.now(tz=UTC),
     contact_name="John Doe",
     street="123 Main St",
     street_additional=None,
@@ -488,7 +487,7 @@ def factory_routing_slip_usd(
     status: str = RoutingSlipStatus.ACTIVE.value,
     total: int = 0,
     remaining_amount: int = 0,
-    routing_slip_date=datetime.now(tz=timezone.utc),
+    routing_slip_date=datetime.now(tz=UTC),
     total_usd=0,
     contact_name="John Doe",
     street="123 Main St",
@@ -530,7 +529,7 @@ def factory_invoice(
     total=0,
     paid=0,
     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
     routing_slip=None,
     folio_number=1234567890,
     created_name="test name",
@@ -595,8 +594,8 @@ def factory_payment_transaction(
     status_code: str = "CREATED",
     client_system_url: str = "http://google.com/",
     pay_system_url: str = "http://google.com",
-    transaction_start_time: datetime = datetime.now(tz=timezone.utc),
-    transaction_end_time: datetime = datetime.now(tz=timezone.utc),
+    transaction_start_time: datetime = datetime.now(tz=UTC),
+    transaction_end_time: datetime = datetime.now(tz=UTC),
 ):
     """Return Factory."""
     return PaymentTransaction(
@@ -627,7 +626,7 @@ def factory_invoice_reference(
 def factory_receipt(
     invoice_id: int,
     receipt_number: str = "TEST1234567890",
-    receipt_date: datetime = datetime.now(tz=timezone.utc),
+    receipt_date: datetime = datetime.now(tz=UTC),
     receipt_amount: float = 10.0,
 ):
     """Return Factory."""
@@ -642,7 +641,7 @@ def factory_receipt(
 def factory_statement_settings(
     frequency: str = "WEEKLY",
     payment_account_id: str = None,
-    from_date: datetime = datetime.now(tz=timezone.utc),
+    from_date: datetime = datetime.now(tz=UTC),
     to_date: datetime = None,
 ):
     """Return Factory."""
@@ -657,10 +656,10 @@ def factory_statement_settings(
 def factory_statement(
     frequency: str = "WEEKLY",
     payment_account_id: str = None,
-    from_date: datetime = datetime.now(tz=timezone.utc),
-    to_date: datetime = datetime.now(tz=timezone.utc),
+    from_date: datetime = datetime.now(tz=UTC),
+    to_date: datetime = datetime.now(tz=UTC),
     statement_settings_id: str = None,
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
     payment_methods: str = PaymentMethod.EFT.value,
 ):
     """Return Factory."""
@@ -683,7 +682,7 @@ def factory_statement_invoices(statement_id: str, invoice_id: str):
 def activate_pad_account(auth_account_id: str):
     """Activate the pad account."""
     payment_account = PaymentAccount.find_by_auth_account_id(auth_account_id)
-    payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
+    payment_account.pad_activation_date = datetime.now(tz=UTC)
     payment_account.save()
     cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     cfs_account.status = "ACTIVE"
@@ -887,12 +886,12 @@ def get_gov_account_payload_with_no_revenue_account(
 
 def get_routing_slip_request(
     number: str = "206380875",
-    cheque_receipt_numbers: List[Tuple] = [("1234567890", PaymentMethod.CHEQUE.value, 100)],
+    cheque_receipt_numbers: list[tuple] = [("1234567890", PaymentMethod.CHEQUE.value, 100)],
 ):
     """Return a routing slip request dictionary."""
-    routing_slip_payload: Dict[str, any] = {
+    routing_slip_payload: dict[str, any] = {
         "number": number,
-        "routingSlipDate": datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
+        "routingSlipDate": datetime.now(tz=UTC).strftime(DT_SHORT_FORMAT),
         "paymentAccount": {"accountName": "TEST"},
         "payments": [],
     }
@@ -900,7 +899,7 @@ def get_routing_slip_request(
         routing_slip_payload["payments"].append(
             {
                 "paymentMethod": cheque_detail[1],
-                "paymentDate": datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
+                "paymentDate": datetime.now(tz=UTC).strftime(DT_SHORT_FORMAT),
                 "chequeReceiptNumber": cheque_detail[0],
                 "paidAmount": cheque_detail[2],
             }
@@ -937,7 +936,7 @@ def factory_eft_shortname_link(
     short_name_id: int,
     auth_account_id: str = "1234",
     updated_by: str = None,
-    updated_on: datetime = datetime.now(tz=timezone.utc),
+    updated_on: datetime = datetime.now(tz=UTC),
 ):
     """Return an EFT short name link model."""
     return EFTShortnameLinks(
@@ -953,7 +952,7 @@ def factory_eft_shortname_link(
 def factory_eft_credit(eft_file_id, short_name_id, amount=10.00, remaining_amount=10.00):
     """Return an EFT Credit."""
     return EFTCredit(
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         amount=amount,
         remaining_amount=remaining_amount,
         eft_file_id=eft_file_id,
@@ -970,7 +969,7 @@ def factory_eft_history(short_name_id, refund_id, amount=10.00, credit_balance=1
         eft_refund_id=refund_id,
         is_processing=False,
         hidden=False,
-        transaction_date=datetime.now(tz=timezone.utc),
+        transaction_date=datetime.now(tz=UTC),
         transaction_type=EFTHistoricalTypes.SN_REFUND_PENDING_APPROVAL.value,
     ).save()
 
@@ -1040,7 +1039,7 @@ def factory_distribution_code(
         project_code=project_code,
         service_fee_distribution_code_id=service_fee_dist_id,
         disbursement_distribution_code_id=disbursement_dist_id,
-        start_date=datetime.now(tz=timezone.utc).date(),
+        start_date=datetime.now(tz=UTC).date(),
         created_by="test",
     )
 
@@ -1089,7 +1088,7 @@ def factory_fee_schedule_model(
     filing_type: FilingType,
     corp_type: CorpType,
     fee_code: FeeCode,
-    fee_start_date: date = datetime.now(tz=timezone.utc).date(),
+    fee_start_date: date = datetime.now(tz=UTC).date(),
     fee_end_date: date = None,
     service_fee: FeeCode = None,
     variable=False,
@@ -1121,7 +1120,7 @@ def factory_credit(
     cfs_site: str = "TEST_SITE",
     is_credit_memo: bool = False,
     details: str = None,
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
     created_invoice_id: int = None,
 ):
     """Return a Credit model."""
@@ -1149,7 +1148,7 @@ def factory_applied_credits(
     cfs_identifier: str = "TEST_CREDIT_001",
     cfs_account: str = "TEST_ACCOUNT",
     application_id: int = None,
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
 ):
     """Return an AppliedCredits model."""
     applied_credit = AppliedCredits(
@@ -1175,7 +1174,7 @@ def factory_refunds_partial(
     status: str = "COMPLETED",
     created_by: str = "TEST_USER",
     created_name: str = "Test User",
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
     is_credit: bool = None,
 ):
     """Return a RefundsPartial model."""

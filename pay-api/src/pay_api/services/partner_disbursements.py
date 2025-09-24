@@ -1,6 +1,6 @@
 """Partner Disbursements service."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import current_app
 
@@ -71,7 +71,7 @@ class PartnerDisbursements:
             case DisbursementStatus.WAITING_FOR_JOB.value:
                 # Note we never CANCEL a reversal.
                 latest_active_disbursement.status_code = DisbursementStatus.CANCELLED.value
-                latest_active_disbursement.processed_on = datetime.now(tz=timezone.utc)
+                latest_active_disbursement.processed_on = datetime.now(tz=UTC)
                 latest_active_disbursement.flush()
             case _:
                 # We'll assume errored status should be fixed in the future to COMPLETED hopefully.

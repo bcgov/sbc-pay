@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Direct Pay PAYBC Payments."""
+
 import base64
 import json
 from decimal import Decimal
-from typing import List, Optional
 from urllib.parse import unquote_plus, urlencode
 
 from attrs import define
@@ -48,9 +48,9 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
-from ..exceptions import BusinessException
-from ..utils.errors import Error
-from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
+from ..exceptions import BusinessException  # noqa: TID252
+from ..utils.errors import Error  # noqa: TID252
+from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT  # noqa: TID252
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -73,7 +73,7 @@ class RefundLineRequest:
 class RefundData:
     """Refund data from order status query. From PAYBC."""
 
-    refundglstatus: Optional[PaymentDetailsGlStatus]
+    refundglstatus: PaymentDetailsGlStatus | None
     refundglerrormessage: str
 
 
@@ -85,24 +85,24 @@ class RevenueLine:
     revenueaccount: str
     revenueamount: Decimal
     glstatus: str
-    glerrormessage: Optional[str]
-    refund_data: List[RefundData]
+    glerrormessage: str | None
+    refund_data: list[RefundData]
 
 
 @define
 class OrderStatus:
     """Return from order status query from PAYBC."""
 
-    revenue: List[RevenueLine]
-    postedrefundamount: Optional[Decimal]
-    refundedamount: Optional[Decimal]
-    paymentstatus: Optional[str]
+    revenue: list[RevenueLine]
+    postedrefundamount: Decimal | None
+    refundedamount: Decimal | None
+    paymentstatus: str | None
 
 
 class DirectPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
         """Return the payment system url."""
         today = current_local_time().strftime(PAYBC_DATE_FORMAT)
         url_params_dict = {
@@ -192,10 +192,10 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def create_invoice(
         self,
-        payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
-        invoice: Invoice,
-        **kwargs,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice: Invoice,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
         self.ensure_no_payment_blockers(payment_account)
@@ -206,12 +206,12 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def update_invoice(  # pylint:disable=too-many-arguments
         self,
-        payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
-        invoice_id: int,
-        paybc_inv_number: str,
-        reference_count: int = 0,
-        **kwargs,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice_id: int,  # noqa: ARG002
+        paybc_inv_number: str,  # noqa: ARG002
+        reference_count: int = 0,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ):
         """Do nothing as direct payments cannot be updated as it will be completed on creation."""
         invoice = {"invoice_number": f"{invoice_id}"}
@@ -232,9 +232,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def process_cfs_refund(
         self,
-        invoice: InvoiceModel,
-        payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        invoice: InvoiceModel,  # noqa: ARG002
+        payment_account: PaymentAccount,  # noqa: ARG002
+        refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         current_app.logger.debug(
@@ -281,9 +281,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,
-        pay_response_url: str,
-        invoice_reference: InvoiceReference,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        pay_response_url: str,  # noqa: ARG002
+        invoice_reference: InvoiceReference,  # noqa: ARG002
     ):
         """Get the receipt details by calling PayBC web service."""
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
@@ -385,7 +385,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return token_response
 
     @staticmethod
-    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: List[RefundLineRequest]):
+    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: list[RefundLineRequest]):
         """Build PAYBC refund revenue lines for the refund."""
         if (paybc_invoice.postedrefundamount or 0) > 0 or (paybc_invoice.refundedamount or 0) > 0:
             current_app.logger.error("Refund already detected.")
@@ -420,7 +420,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return lines
 
     @staticmethod
-    def _build_refund_revenue_lines(refund_partial: List[RefundPartialLine]):
+    def _build_refund_revenue_lines(refund_partial: list[RefundPartialLine]):
         """Provide refund lines and total for the refund."""
         total = Decimal("0")
         refund_lines = []
@@ -446,8 +446,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
     @classmethod
     def query_order_status(
         cls,
-        invoice: InvoiceModel,
-        inv_status: InvoiceReferenceStatus = InvoiceReferenceStatus.COMPLETED.value,
+        invoice: InvoiceModel,  # noqa: ARG002
+        inv_status: InvoiceReferenceStatus = InvoiceReferenceStatus.COMPLETED.value,  # noqa: ARG002
     ) -> OrderStatus:
         """Request invoice order status from PAYBC."""
         access_token: str = DirectPayService().get_token().json().get("access_token")
@@ -455,7 +455,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         paybc_svc_base_url = current_app.config.get("PAYBC_DIRECT_PAY_BASE_URL")
         inv_reference = list(
             filter(
-                lambda reference: (reference.status_code == inv_status),
+                lambda reference: (reference.status_code == inv_status),  # noqa: ARG002
                 invoice.references,
             )
         )[0]
@@ -470,7 +470,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return Converter().structure(payment_response, OrderStatus)
 
     @classmethod
-    def build_automated_refund_payload(cls, invoice: InvoiceModel, refund_partial: List[RefundPartialLine]):
+    def build_automated_refund_payload(cls, invoice: InvoiceModel, refund_partial: list[RefundPartialLine]):
         """Build payload to create a refund in PAYBC."""
         receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(

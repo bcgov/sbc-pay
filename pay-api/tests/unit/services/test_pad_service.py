@@ -17,7 +17,7 @@
 Test-Suite to ensure that the PAD Banking layer is working as expected.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -64,7 +64,7 @@ def test_has_no_payment_blockers(session):
 def test_has_payment_blockers(session):
     """Test for payment blockers."""
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
-    payment_account.has_nsf_invoices = datetime.now(tz=timezone.utc)
+    payment_account.has_nsf_invoices = datetime.now(tz=UTC)
     payment_account.save()
 
     with pytest.raises(BusinessException):

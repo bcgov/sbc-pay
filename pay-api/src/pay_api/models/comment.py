@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Routing Slip Comment data."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from marshmallow import fields
 from sqlalchemy import ForeignKey
@@ -59,7 +60,7 @@ class Comment(BaseModel):
     timestamp = db.Column(
         "timestamp",
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     # Parent relationship
     routing_slip_number = db.Column(db.String(), ForeignKey("routing_slips.number"), index=True)

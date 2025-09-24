@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the EFT File model is working as expected.
 """
+
 from datetime import datetime
 
 from pay_api.models.eft_file import EFTFile as EFTFileModel

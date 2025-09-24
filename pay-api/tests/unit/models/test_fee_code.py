@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the FeeCode Class is working as expected.
 """
+
 from pay_api.models import FeeCode
 
 

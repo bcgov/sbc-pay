@@ -18,7 +18,6 @@ Test-Suite to ensure that the /accounts/{accountId}/payments/queries endpoint is
 """
 
 import json
-from typing import Tuple
 from unittest.mock import patch
 
 import pytest
@@ -126,7 +125,7 @@ def test_product_claim_purchase_history(session, client, jwt, app):
             mock_auth.assert_called_once()
 
 
-def setup_tokens(jwt, product_role: str, has_product_refund_viewer: bool) -> Tuple:
+def setup_tokens(jwt, product_role: str, has_product_refund_viewer: bool) -> tuple:
     """Set up different role tokens to verify search results."""
     product_viewer_claim_roles = [product_role]
     if has_product_refund_viewer:

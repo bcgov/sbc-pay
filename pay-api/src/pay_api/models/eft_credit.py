@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to EFT Credits data."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import List, Self
+from typing import Self
 
 from sqlalchemy import ForeignKey, func
 
@@ -57,7 +58,7 @@ class EFTCredit(BaseModel):
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
 
     eft_file_id = db.Column(db.Integer, ForeignKey("eft_files.id"), nullable=False)
@@ -82,7 +83,7 @@ class EFTCredit(BaseModel):
         return Decimal(result.credit_balance) if result else 0
 
     @classmethod
-    def get_eft_credits(cls, short_name_id: int, include_zero_remaining=False) -> List[Self]:
+    def get_eft_credits(cls, short_name_id: int, include_zero_remaining=False) -> list[Self]:
         """Get EFT Credits with a remaining amount."""
         return (
             cls.query.filter(include_zero_remaining or EFTCredit.remaining_amount > 0)

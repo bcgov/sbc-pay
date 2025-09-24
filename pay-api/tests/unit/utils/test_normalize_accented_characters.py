@@ -14,8 +14,6 @@
 
 """Tests for normalize_accented_characters_json function."""
 
-import pytest
-
 from pay_api.utils.util import normalize_accented_characters_json
 
 

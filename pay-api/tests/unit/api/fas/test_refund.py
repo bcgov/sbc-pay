@@ -57,7 +57,7 @@ def test_refund_routing_slips(session, client, jwt):
     }
     rs_number = rv.json.get("number")
     rv = client.post(
-        "/api/v1/fas/routing-slips/{}/refunds".format(rs_number),
+        f"/api/v1/fas/routing-slips/{rs_number}/refunds",
         data=json.dumps(
             {
                 "status": RoutingSlipStatus.REFUND_REQUESTED.value,
@@ -69,7 +69,7 @@ def test_refund_routing_slips(session, client, jwt):
     assert rv.status_code == 202
     assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_REQUESTED"]
 
-    rv = client.get("/api/v1/fas/routing-slips/{}".format(rs_number), headers=headers)
+    rv = client.get(f"/api/v1/fas/routing-slips/{rs_number}", headers=headers)
     assert rv.json.get("status") == RoutingSlipStatus.REFUND_REQUESTED.value
     assert RoutingSlipStatus.REFUND_AUTHORIZED.value not in rv.json.get("allowedStatuses")
     refund = rv.json.get("refunds")[0]
@@ -78,7 +78,7 @@ def test_refund_routing_slips(session, client, jwt):
     assert refund_details.get("mailingAddress") == refund.get("details").get("mailingAddress")
 
     rv = client.post(
-        "/api/v1/fas/routing-slips/{}/refunds".format(rs_number),
+        f"/api/v1/fas/routing-slips/{rs_number}/refunds",
         data=json.dumps(
             {
                 "status": RoutingSlipStatus.REFUND_AUTHORIZED.value,
@@ -101,7 +101,7 @@ def test_refund_routing_slips(session, client, jwt):
     )
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
     rv = client.post(
-        "/api/v1/fas/routing-slips/{}/refunds".format(rs_number),
+        f"/api/v1/fas/routing-slips/{rs_number}/refunds",
         data=json.dumps(
             {
                 "status": RoutingSlipStatus.REFUND_AUTHORIZED.value,
@@ -113,7 +113,7 @@ def test_refund_routing_slips(session, client, jwt):
     assert rv.status_code == 202
     assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_AUTHORIZED"]
 
-    rv = client.get("/api/v1/fas/routing-slips/{}".format(rs_number), headers=headers)
+    rv = client.get(f"/api/v1/fas/routing-slips/{rs_number}", headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "routing_slip")[0]
     assert rv.json.get("status") == RoutingSlipStatus.REFUND_AUTHORIZED.value
@@ -139,7 +139,7 @@ def test_refund_routing_slips_reject(session, client, jwt):
 
     rs_number = rv.json.get("number")
     rv = client.post(
-        "/api/v1/fas/routing-slips/{}/refunds".format(rs_number),
+        f"/api/v1/fas/routing-slips/{rs_number}/refunds",
         data=json.dumps(
             {
                 "status": RoutingSlipStatus.REFUND_REQUESTED.value,
@@ -150,14 +150,14 @@ def test_refund_routing_slips_reject(session, client, jwt):
     assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.REFUND_REQUESTED"]
 
     rv = client.post(
-        "/api/v1/fas/routing-slips/{}/refunds".format(rs_number),
+        f"/api/v1/fas/routing-slips/{rs_number}/refunds",
         data=json.dumps({"status": RoutingSlipStatus.REFUND_REJECTED.value}),
         headers=headers,
     )
     assert rv.status_code == 202
     assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["ROUTINGSLIP.ACTIVE"]
 
-    rv = client.get("/api/v1/fas/routing-slips/{}".format(rs_number), headers=headers)
+    rv = client.get(f"/api/v1/fas/routing-slips/{rs_number}", headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, "routing_slip")[0]
     assert rv.json.get("status") == RoutingSlipStatus.ACTIVE.value
@@ -191,7 +191,7 @@ def test_refund_routing_slips_zero_dollar_error(session, client, jwt):
     }
     rs_number = rv.json.get("number")
     rv = client.post(
-        "/api/v1/fas/routing-slips/{}/refunds".format(rs_number),
+        f"/api/v1/fas/routing-slips/{rs_number}/refunds",
         data=json.dumps(
             {
                 "status": RoutingSlipStatus.REFUND_REQUESTED.value,

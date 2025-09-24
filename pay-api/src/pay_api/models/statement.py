@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
-from __future__ import annotations
 
-from typing import List
+from __future__ import annotations
 
 import pytz
 from attr import define
@@ -138,7 +137,7 @@ class StatementDTO:  # pylint: disable=too-few-public-methods, too-many-instance
         )
 
     @classmethod
-    def dao_to_dict(cls, statement_daos: List[Statement]) -> dict[StatementDTO]:
+    def dao_to_dict(cls, statement_daos: list[Statement]) -> dict[StatementDTO]:
         """Convert from DAO to DTO dict."""
         statements_dto = [StatementDTO.from_row(statement) for statement in statement_daos]
         statements_dict = Converter().unstructure(statements_dto)

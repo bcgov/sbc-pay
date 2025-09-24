@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for code endpoints."""
+
 from http import HTTPStatus
 
 from flask import Blueprint

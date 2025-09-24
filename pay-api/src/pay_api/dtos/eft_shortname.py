@@ -8,7 +8,6 @@ In the near future, will find a library that generates our API spec based off of
 """
 
 from decimal import Decimal
-from typing import Optional
 
 from attrs import define
 from cattrs import ClassValidationError
@@ -65,10 +64,10 @@ class EFTShortNameSummaryGetRequest(Serializable):
 class EFTShortNameRefundPatchRequest(Serializable):
     """EFT Short name refund DTO."""
 
-    status: Optional[str] = None
-    comment: Optional[str] = None
-    decline_reason: Optional[str] = None
-    cheque_status: Optional[str] = None
+    status: str | None = None
+    comment: str | None = None
+    decline_reason: str | None = None
+    cheque_status: str | None = None
 
 
 @define
@@ -80,16 +79,16 @@ class EFTShortNameRefundPostRequest(Serializable):
     refund_email: str
     refund_method: str
     comment: str
-    cas_supplier_number: Optional[str] = None
-    cas_supplier_site: Optional[str] = None
-    entity_name: Optional[str] = None
-    street: Optional[str] = None
-    street_additional: Optional[str] = None
-    city: Optional[str] = None
-    region: Optional[str] = None
-    postal_code: Optional[str] = None
-    country: Optional[str] = None
-    delivery_instructions: Optional[str] = None
+    cas_supplier_number: str | None = None
+    cas_supplier_site: str | None = None
+    entity_name: str | None = None
+    street: str | None = None
+    street_additional: str | None = None
+    city: str | None = None
+    region: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
+    delivery_instructions: str | None = None
 
     def validate_for_refund_method(self):
         """Validate refund request - cheque needs mailing info, eft needs cas info."""

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for Account payments endpoints."""
+
 from http import HTTPStatus
 
 from flask import Blueprint, current_app, g, jsonify, request
@@ -67,7 +68,7 @@ def post_account_payment(account_id: str):
     # Check if user is authorized to perform this action
     check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT)
     # If it's a staff user, then create credits.
-    if set([Role.STAFF.value, Role.CREATE_CREDITS.value]).issubset(set(g.jwt_oidc_token_info.get("roles"))):
+    if {Role.STAFF.value, Role.CREATE_CREDITS.value}.issubset(set(g.jwt_oidc_token_info.get("roles"))):
         credit_request = request.get_json()
         # Valid payment payload.
         valid_format, errors = schema_utils.validate(credit_request, "payment")

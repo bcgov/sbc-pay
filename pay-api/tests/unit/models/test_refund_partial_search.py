@@ -13,12 +13,10 @@
 # limitations under the License.
 
 """Tests for RefundPartialSearch model."""
-from datetime import datetime, timezone
 
-import pytest
 from _decimal import Decimal
 
-from pay_api.models.refunds_partial import RefundPartialSearch, RefundsPartial
+from pay_api.models.refunds_partial import RefundPartialSearch
 from pay_api.utils.enums import RefundsPartialType
 from tests.utilities.base_test import (
     factory_invoice,

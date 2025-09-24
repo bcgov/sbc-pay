@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Data classes."""
+
 from dataclasses import dataclass
-from typing import Dict, List
 
 from attrs import define
 
@@ -25,11 +25,11 @@ class PurchaseHistorySearch:
     """Purchase History search input parameters."""
 
     auth_account_id: str
-    search_filter: Dict
+    search_filter: dict
     page: int
     limit: int
     filter_by_product: bool = False
-    allowed_products: List[str] = None
+    allowed_products: list[str] = None
     return_all: bool = False
     max_no_records: int = 0
 
@@ -54,8 +54,8 @@ class StatementIntervalChangeEvent(BaseActivityEvent):
 class StatementRecipientChangeEvent(BaseActivityEvent):
     """Statement recipient change data class."""
 
-    old_recipients: List[str]
-    new_recipients: List[str]
+    old_recipients: list[str]
+    new_recipients: list[str]
     statement_notification_email: bool
 
 

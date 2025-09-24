@@ -19,10 +19,10 @@ BusinessException - error, status_code - Business rules error
 error - a description of the error {code / description: classname / full text}
 status_code - where possible use HTTP Error Codes
 """
+
 import json
 import logging
 from http import HTTPStatus
-from typing import Dict
 
 from flask import Response
 
@@ -32,7 +32,7 @@ from pay_api.utils.errors import Error
 logger = logging.getLogger("api-exceptions")
 
 
-def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
+def convert_to_response(body: dict, status: int = HTTPStatus.BAD_REQUEST):
     """Convert json error to problem response."""
     return Response(response=json.dumps(body), mimetype="application/problem+json", status=status)
 
@@ -60,7 +60,7 @@ class BusinessException(Exception):  # noqa
 
     def __init__(self, error: Error, *args, **kwargs):
         """Return a valid BusinessException."""
-        super(BusinessException, self).__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
+        super().__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
         self.code = error.code
         self.status = error.status
         # not a part of the object.Used for custom error patterns.
@@ -87,7 +87,7 @@ class ServiceUnavailableException(Exception):  # noqa
 
     def __init__(self, error, *args, **kwargs):
         """Return a valid BusinessException."""
-        super(ServiceUnavailableException, self).__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
+        super().__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
         self.error = error
         self.status = Error.SERVICE_UNAVAILABLE.name
 

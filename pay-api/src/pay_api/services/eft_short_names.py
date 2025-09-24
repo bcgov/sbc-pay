@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage EFT short name model operations."""
+
 from __future__ import annotations
 
+from _decimal import Decimal  # noqa: TC003
 from dataclasses import dataclass
-from datetime import date
-from typing import Dict, List, Optional
+from datetime import date  # noqa: TC003
 
-from _decimal import Decimal
 from flask import current_app
 from sqlalchemy import case, or_
 from sqlalchemy.sql.expression import exists
@@ -27,15 +27,14 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
-from pay_api.models import EFTShortnameSchema
+from pay_api.models import EFTShortnameSchema, db
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import db
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import EFTPaymentActions, EFTShortnameStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.util import unstructure_schema_items
 
-from ..utils.query_util import QueryUtils
+from ..utils.query_util import QueryUtils  # noqa: TID252
 from .eft_service import EftService
 from .eft_statements import EFTStatements
 
@@ -44,31 +43,31 @@ from .eft_statements import EFTStatements
 class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     """Used for searching EFT short name records."""
 
-    id: Optional[int] = None
-    account_id: Optional[str] = None
-    account_id_list: Optional[List[str]] = None
-    allow_partial_account_id: Optional[bool] = True
-    account_name: Optional[str] = None
-    account_branch: Optional[str] = None
-    amount_owing: Optional[Decimal] = None
-    deposit_start_date: Optional[date] = None
-    deposit_end_date: Optional[date] = None
-    credit_remaining: Optional[Decimal] = None
-    linked_accounts_count: Optional[int] = None
-    short_name: Optional[str] = None
-    short_name_type: Optional[str] = None
-    statement_id: Optional[int] = None
-    state: Optional[List[str]] = None
-    page: Optional[int] = 1
-    limit: Optional[int] = 10
-    sort_by: Optional[str] = None
+    id: int | None = None
+    account_id: str | None = None
+    account_id_list: list[str] | None = None
+    allow_partial_account_id: bool | None = True
+    account_name: str | None = None
+    account_branch: str | None = None
+    amount_owing: Decimal | None = None
+    deposit_start_date: date | None = None
+    deposit_end_date: date | None = None
+    credit_remaining: Decimal | None = None
+    linked_accounts_count: int | None = None
+    short_name: str | None = None
+    short_name_type: str | None = None
+    statement_id: int | None = None
+    state: list[str] | None = None
+    page: int | None = 1
+    limit: int | None = 10
+    sort_by: str | None = None
 
 
 class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     """Service to manage EFT short name model operations."""
 
     @classmethod
-    def process_payment_action(cls, short_name_id: int, request: Dict):
+    def process_payment_action(cls, short_name_id: int, request: dict):
         """Process EFT payment action."""
         current_app.logger.debug("<process_payment_action")
         action = request.get("action", None)
@@ -95,7 +94,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug(">process_payment_action")
 
     @classmethod
-    def patch_shortname(cls, short_name_id: int, request: Dict):
+    def patch_shortname(cls, short_name_id: int, request: dict):
         """Patch EFT short name."""
         current_app.logger.debug("<patch_shortname")
         email = request.get("email", None)
@@ -126,7 +125,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         return result
 
     @classmethod
-    def find_by_auth_account_id(cls, auth_account_id: str) -> List[EFTShortnames]:
+    def find_by_auth_account_id(cls, auth_account_id: str) -> list[EFTShortnames]:
         """Find EFT shortname by auth account id."""
         current_app.logger.debug("<find_by_auth_account_id")
         short_name_model: EFTShortnameModel = cls.get_search_query(
@@ -139,7 +138,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         return result
 
     @classmethod
-    def find_by_auth_account_id_state(cls, auth_account_id: str, state: List[str]) -> List[EFTShortnames]:
+    def find_by_auth_account_id_state(cls, auth_account_id: str, state: list[str]) -> list[EFTShortnames]:
         """Find EFT shortname by auth account id that are linked."""
         current_app.logger.debug("<find_by_auth_account_id_state")
         short_name_models: EFTShortnameModel = cls.get_search_query(

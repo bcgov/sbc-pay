@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Credit data."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import Boolean, ForeignKey, func
@@ -64,7 +65,7 @@ class Credit(BaseModel):
         "created_on",
         db.DateTime,
         nullable=True,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     created_invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=True, index=True)
     account_id = db.Column(db.Integer, ForeignKey("payment_accounts.id"), nullable=True, index=True)

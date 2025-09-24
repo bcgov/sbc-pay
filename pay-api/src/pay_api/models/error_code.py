@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Error Code master data."""
+
 from marshmallow import fields
 
 from .code_table import CodeTable

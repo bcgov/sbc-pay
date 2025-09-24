@@ -134,7 +134,7 @@ def test_handle_partial_refund(session, test_name, should_skip, has_existing_dis
     partial_refund = factory_refunds_partial(invoice, payment_line_item.id, refund_amount=5.0)
 
     if should_skip:
-        monkeypatch.setattr(PartnerDisbursements, "_skip_partner_disbursement", lambda *args: True)
+        monkeypatch.setattr(PartnerDisbursements, "_skip_partner_disbursement", lambda *args: True)  # noqa: ARG005
 
     if has_existing_disbursement:
         PartnerDisbursementsModel(

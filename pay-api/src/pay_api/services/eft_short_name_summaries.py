@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to provide summarized information for EFT Short names."""
+
 from __future__ import annotations
 
 from flask import current_app
@@ -27,7 +28,7 @@ from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameRefundStatus, EFTShortnameStatus
 from pay_api.utils.util import unstructure_schema_items
 
-from .eft_short_names import EFTShortnamesSearch
+from .eft_short_names import EFTShortnamesSearch  # noqa: TC001
 
 
 class EFTShortnameSummaries:

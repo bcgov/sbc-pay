@@ -7,8 +7,6 @@
 In the near future, will find a library that generates our API spec based off of these DTOs.
 """
 
-from typing import Optional
-
 from attrs import define
 
 from pay_api.utils.serializable import Serializable
@@ -18,4 +16,4 @@ from pay_api.utils.serializable import Serializable
 class ProductFeeGetRequest(Serializable):
     """Retrieve product fee DTO."""
 
-    product_code: Optional[str] = None
+    product_code: str | None = None

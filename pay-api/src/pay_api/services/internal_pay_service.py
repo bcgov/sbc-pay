@@ -15,9 +15,9 @@
 
 There are conditions where the payment will be handled internally. For e.g, zero $ or staff payments.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from http import HTTPStatus
-from typing import List
 
 from flask import current_app
 
@@ -32,8 +32,8 @@ from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.util import generate_transaction_number, get_quantized
 
-from ..exceptions import BusinessException
-from ..utils.errors import Error
+from ..exceptions import BusinessException  # noqa: TID252
+from ..utils.errors import Error  # noqa: TID252
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -47,10 +47,10 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
     def create_invoice(
         self,
-        payment_account: PaymentAccount,
-        line_items: List[PaymentLineItem],
-        invoice: Invoice,
-        **kwargs,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice: Invoice,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number."""
         # No payment blockers for internal, this is done by staff.
@@ -77,16 +77,16 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,
-        pay_response_url: str,
-        invoice_reference: InvoiceReference,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        pay_response_url: str,  # noqa: ARG002
+        invoice_reference: InvoiceReference,  # noqa: ARG002
     ):
         """Create a static receipt."""
         # Find the invoice using the invoice_number
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return (
             f"{invoice_reference.invoice_number}",
-            datetime.now(tz=timezone.utc),
+            datetime.now(tz=UTC),
             invoice.total,
         )
 
@@ -107,9 +107,9 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
     def process_cfs_refund(
         self,
-        invoice: InvoiceModel,
-        payment_account: PaymentAccount,
-        refund_partial: List[RefundPartialLine],
+        invoice: InvoiceModel,  # noqa: ARG002
+        payment_account: PaymentAccount,  # noqa: ARG002
+        refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         if invoice.total == 0:

@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Installer and setup for this module
-"""
+"""Installer and setup for this module."""
+
 from glob import glob
 from os.path import basename, splitext
 
@@ -20,26 +20,25 @@ from setuptools import find_packages, setup
 
 
 def read_requirements(filename):
-    """
-    Get application requirements from
-    the requirements.txt file.
+    """Get application requirements from the requirements.txt file.
+
     :return: Python requirements
     :rtype: list
     """
-    with open(filename, "r") as req:
+    with open(filename) as req:
         requirements = req.readlines()
     install_requires = [r.strip() for r in requirements if r.find("git+") != 0]
     return install_requires
 
 
 def read(filepath):
-    """
-    Read the contents from a file.
+    """Read the contents from a file.
+
     :param str filepath: path to the file to be read
     :return: file contents
     :rtype: str
     """
-    with open(filepath, "r") as file_handle:
+    with open(filepath) as file_handle:
         content = file_handle.read()
     return content
 

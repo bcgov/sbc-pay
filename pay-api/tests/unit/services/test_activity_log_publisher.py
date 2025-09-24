@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the Activity Log Publisher Service is working as expected.
 """
-from datetime import datetime, timezone
+
 from unittest.mock import patch
 
 import pytest

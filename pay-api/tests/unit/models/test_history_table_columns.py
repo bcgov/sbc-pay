@@ -13,15 +13,11 @@
 # limitations under the License.
 """Unit tests for comparing columns between base tables and their history tables."""
 
-import inspect as py_inspect
-from typing import List, Tuple
-
 import pytest
 from sql_versioning import Versioned
 from sqlalchemy import inspect
 from sqlalchemy.engine import Engine
 
-import pay_api.models
 from pay_api.models import db
 
 
@@ -110,7 +106,7 @@ def test_history_tables_have_composite_primary_keys(session, inspector, versione
     # Tables to skip for this test (they have different primary key structures)
     skip_tables = {"distribution_codes_history"}
 
-    for base_table, history_table in versioned_models:
+    for _base_table, history_table in versioned_models:
         if history_table in skip_tables:
             continue
 
@@ -134,7 +130,7 @@ def test_history_tables_have_same_index_count(session, inspector, versioned_mode
                 f"History table {history_table} should have same number of indexes as base table {base_table} "
                 f"(expected {len(base_indexes)}, got {len(history_indexes)})"
             )
-        except Exception:
+        except Exception:  # noqa: S110
             # Skip tables that don't exist
             pass
 

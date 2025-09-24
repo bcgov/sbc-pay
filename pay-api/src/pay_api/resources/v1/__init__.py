@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Exposes all of the resource endpoints mounted in Flask-Blueprints."""
+
 from typing import Optional
 
-from flask import Flask
+from flask import Flask  # noqa: TC002
 
-from ..ops import bp as ops_bp
+from ..ops import bp as ops_bp  # noqa: TID252
 from .account import bp as account_bp
 from .account_statements import bp as account_statements_bp
 from .account_statements_notifications import bp as account_notifications_bp
@@ -44,7 +45,7 @@ class V1Endpoint:  # pylint: disable=too-few-public-methods,
 
     def __init__(self):
         """Create the endpoint setup, without initializations."""
-        self.app: Optional[Flask] = None
+        self.app: Flask | None = None
 
     def init_app(self, app):
         """Register and initialize the Endpoint setup."""

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from typing import Any, Dict, Tuple
+
+from typing import Any
 
 from flask import current_app
 
@@ -43,7 +44,7 @@ class StatementRecipients:
         return data
 
     @staticmethod
-    def update_statement_notification_details(auth_account_id: str, notification_details: Tuple[Dict[str, Any]]):
+    def update_statement_notification_details(auth_account_id: str, notification_details: tuple[dict[str, Any]]):
         """Update statements notification settings by account id.
 
         Update the payment Account.

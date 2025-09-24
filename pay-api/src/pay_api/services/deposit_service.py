@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT/Wire/Direct Deposit Payments."""
-from typing import Any, Dict, List
+
+from typing import Any
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.base_payment_system import PaymentSystemService
@@ -36,7 +37,11 @@ class DepositService(PaymentSystemService, CFSService):
         return PaymentSystem.PAYBC.value
 
     def create_account(
-        self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs
+        self,
+        identifier: str,  # noqa: ARG002
+        contact_info: dict[str, Any],  # noqa: ARG002
+        payment_info: dict[str, Any],  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> CfsAccountModel:
         """Create an account for the Deposit transactions."""
         cfs_account = CfsAccountModel()
@@ -44,6 +49,6 @@ class DepositService(PaymentSystemService, CFSService):
         raise NotImplementedError("Deposit payment method is not implemented.")
 
     def create_invoice(
-        self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice, **kwargs
+        self, payment_account: PaymentAccount, line_items: list[PaymentLineItem], invoice: Invoice, **kwargs
     ) -> InvoiceReference:
         """Do nothing here as the invoice references are created later."""

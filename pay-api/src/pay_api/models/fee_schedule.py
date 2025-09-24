@@ -13,7 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to fee and fee schedule."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from attr import define
@@ -72,7 +72,7 @@ class FeeSchedule(BaseModel):
     fee_start_date = db.Column(
         "fee_start_date",
         db.Date,
-        default=lambda: datetime.now(tz=timezone.utc).date(),
+        default=lambda: datetime.now(tz=UTC).date(),
         nullable=False,
     )
     fee_end_date = db.Column("fee_end_date", db.Date, default=None, nullable=True)
@@ -114,7 +114,7 @@ class FeeSchedule(BaseModel):
     def find_by_filing_type_and_corp_type(cls, corp_type_code: str, filing_type_code: str, valid_date: datetime = None):
         """Given a filing_type_code and corp_type, this will return fee schedule."""
         if not valid_date:
-            valid_date = datetime.now(tz=timezone.utc).date()
+            valid_date = datetime.now(tz=UTC).date()
         fee_schedule = None
 
         if filing_type_code and corp_type_code:

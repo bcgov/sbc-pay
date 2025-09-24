@@ -13,8 +13,8 @@
 # limitations under the License.
 
 """This manages all of the authorization service."""
+
 import base64
-from typing import List
 
 from flask import abort, current_app, g
 
@@ -158,7 +158,7 @@ def get_account_admin_users(auth_account_id, use_service_account=False, **kwargs
     ).json()
 
 
-def get_emails_with_keycloak_role(role: str) -> List[str]:
+def get_emails_with_keycloak_role(role: str) -> list[str]:
     """Retrieve emails with the specified keycloak role."""
     users = get_users_with_keycloak_role(role)
     # Purpose of this is so our TEST users don't get hammered with emails, also our tester can easily switch this on.

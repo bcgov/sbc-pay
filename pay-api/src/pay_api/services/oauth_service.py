@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to invoke Rest services."""
+
 import json
 import re
 from collections.abc import Iterable
-from typing import Dict
 
 import requests
 from flask import current_app
@@ -42,7 +42,7 @@ class OAuthService:
         content_type: ContentType,
         data,
         raise_for_error: bool = True,
-        additional_headers: Dict = None,
+        additional_headers: dict = None,
         is_put: bool = False,
         auth_header_name: str = "Authorization",
     ):
@@ -128,7 +128,7 @@ class OAuthService:
         content_type: ContentType,
         retry_on_failure: bool = False,
         return_none_if_404: bool = False,
-        additional_headers: Dict = None,
+        additional_headers: dict = None,
         auth_header_name: str = "Authorization",
     ):
         """GET service."""

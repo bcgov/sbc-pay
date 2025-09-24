@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model that is populated from feedback files."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from attrs import define
@@ -66,7 +67,7 @@ class AppliedCredits(BaseModel):
         "created_on",
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     credit_id = db.Column(db.Integer, ForeignKey("credits.id"), nullable=True, index=True)
     invoice_amount = db.Column(db.Numeric, nullable=False)

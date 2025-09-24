@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for Payment account."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from http import HTTPStatus
 
 from flask import Blueprint, Response, abort, current_app, jsonify, request
@@ -298,7 +299,7 @@ def post_search_purchase_history(account_number: str):
     return jsonify(response), status
 
 
-def _check_purchase_history_auth(any_org_transactions: bool, account_number: str, **kwargs):
+def _check_purchase_history_auth(any_org_transactions: bool, account_number: str, **kwargs):  # noqa: ARG001
     products, filter_by_product = Payment.check_products_from_role_pattern(RolePattern.PRODUCT_VIEW_TRANSACTION.value)
     if filter_by_product:
         if not products:
@@ -337,7 +338,7 @@ def post_account_purchase_report(account_number: str):
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    report_name = f"bcregistry-transactions-{datetime.now(tz=timezone.utc).strftime('%m-%d-%Y')}"
+    report_name = f"bcregistry-transactions-{datetime.now(tz=UTC).strftime('%m-%d-%Y')}"
 
     if response_content_type == ContentType.PDF.value:
         report_name = f"{report_name}.pdf"

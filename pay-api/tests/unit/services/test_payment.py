@@ -16,7 +16,8 @@
 
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 import pytest
 import pytz
@@ -132,8 +133,8 @@ def test_payment_with_no_active_invoice(session):
             "date",
             {
                 "dateFilter": {
-                    "createdFrom": datetime.now(tz=timezone.utc).strftime("%m/%d/%Y"),
-                    "createdTo": datetime.now(tz=timezone.utc).strftime("%m/%d/%Y"),
+                    "createdFrom": datetime.now(tz=UTC).strftime("%m/%d/%Y"),
+                    "createdTo": datetime.now(tz=UTC).strftime("%m/%d/%Y"),
                 }
             },
             False,
@@ -324,7 +325,7 @@ def test_search_payment_history_for_all(session):
     payment_account.save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    for i in range(20):
+    for _i in range(20):
         payment = factory_payment(payment_status_code="CREATED")
         payment.save()
         invoice = factory_invoice(payment_account)
@@ -344,7 +345,7 @@ def test_create_payment_report_csv(session):
     payment_account.save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    for i in range(20):
+    for _i in range(20):
         payment = factory_payment(payment_status_code="CREATED")
         payment.save()
         invoice = factory_invoice(payment_account)
@@ -398,7 +399,7 @@ def test_create_payment_report_pdf(session, rest_call_mock):
     payment_account.save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    for i in range(20):
+    for _i in range(20):
         payment = factory_payment(payment_status_code="CREATED")
         payment.save()
         invoice = factory_invoice(payment_account)
@@ -417,7 +418,7 @@ def test_create_payment_report_pdf(session, rest_call_mock):
 def test_search_payment_history_with_tz(session, executor_mock):
     """Assert that the search payment history is working."""
     payment_account = factory_payment_account()
-    invoice_created_on = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    invoice_created_on = datetime.now(tz=UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     invoice_created_on = invoice_created_on.astimezone(pytz.utc)
     payment = factory_payment(payment_status_code="CREATED")
     payment_account.save()
@@ -435,7 +436,7 @@ def test_search_payment_history_with_tz(session, executor_mock):
     assert results.get("total") == 1
 
     # Add one more payment
-    invoice_created_on = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    invoice_created_on = datetime.now(tz=UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     invoice_created_on = invoice_created_on.astimezone(pytz.utc)
     payment = factory_payment(payment_status_code="CREATED")
     payment_account.save()
@@ -760,8 +761,8 @@ def test_get_invoice_totals_for_statements(session):
     assert totals["due"] == 125
 
     # EFT flow
-    statement.from_date = datetime.now(tz=timezone.utc)
-    statement.to_date = datetime.now(tz=timezone.utc) + timedelta(days=30)
+    statement.from_date = datetime.now(tz=UTC)
+    statement.to_date = datetime.now(tz=UTC) + timedelta(days=30)
     statement.save()
 
     # FUTURE - Partial refunds?
@@ -1113,7 +1114,7 @@ def test_generate_payment_report_template_vars_structure(session, monkeypatch):
     class MockUser:
         """Mock user class."""
 
-        bearer_token = "mock_token"
+        bearer_token = "mock_token"  # noqa: S105
 
     class MockResponse:
         """Mock response class."""
@@ -1132,7 +1133,7 @@ def test_generate_payment_report_template_vars_structure(session, monkeypatch):
                 ]
             }
 
-    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.get", lambda *args, **kwargs: MockResponse())
+    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.get", lambda *args, **kwargs: MockResponse())  # noqa: ARG005
 
     captured_template_vars = {}
 

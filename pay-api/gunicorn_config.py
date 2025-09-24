@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The configuration for gunicorn, which picks up the
-   runtime options from environment variables.
-   The best practice so far is For environments with multiple CPU cores, increase the number of workers to be equal to
-   the cores available. Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance
-   scaling. Adjust the number of workers and threads on a per-application basis.
+"""The configuration for gunicorn, which picks up the runtime options from environment variables.
+
+The best practice so far is For environments with multiple CPU cores, increase the number of workers to be equal to
+the cores available. Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance
+scaling. Adjust the number of workers and threads on a per-application basis.
 """
+
 import os
 
 # https://cloud.google.com/run/docs/tips/python#optimize_the_wsgi_server

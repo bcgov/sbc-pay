@@ -12,25 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to support EFT short name link operations."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Dict
+from datetime import UTC, datetime
 
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
-from pay_api.models import EFTShortnameLinkSchema
+from pay_api.models import EFTShortnameLinkSchema, db
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import db
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import EFTShortnameStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
 
-from ..utils.query_util import QueryUtils
+from ..utils.query_util import QueryUtils  # noqa: TID252
 from .eft_service import EftService
 from .eft_statements import EFTStatements
 
@@ -90,7 +89,7 @@ class EFTShortnameLinks:
         return {"items": link_list}
 
     @classmethod
-    def patch_shortname_link(cls, link_id: int, request: Dict):
+    def patch_shortname_link(cls, link_id: int, request: dict):
         """Patch EFT short name link."""
         current_app.logger.debug("<patch_shortname_link")
         valid_statuses = [EFTShortnameStatus.INACTIVE.value]
@@ -132,7 +131,7 @@ class EFTShortnameLinks:
         eft_short_name_link.status_code = EFTShortnameStatus.PENDING.value
         eft_short_name_link.updated_by = kwargs["user"].user_name
         eft_short_name_link.updated_by_name = kwargs["user"].name
-        eft_short_name_link.updated_on = datetime.now(tz=timezone.utc)
+        eft_short_name_link.updated_on = datetime.now(tz=UTC)
 
         db.session.add(eft_short_name_link)
         db.session.flush()
