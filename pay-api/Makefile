@@ -47,6 +47,10 @@ install-poetry: ## Install poetry if not present or wrong version
 	else \
 		echo "Poetry 2.1.3 already installed"; \
 	fi
+	@CORES=$$(nproc); \
+	echo "Detected $$CORES CPU cores, setting max-workers to $$CORES"; \
+	poetry config installer.max-workers $$CORES
+	@poetry config installer.parallel true
 
 install-deps: ## Install project dependencies
 	poetry install --no-interaction
