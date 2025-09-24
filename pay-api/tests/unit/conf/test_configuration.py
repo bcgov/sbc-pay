@@ -63,4 +63,4 @@ def test_prod_config_secret_key(monkeypatch):  # pylint: disable=missing-docstri
     # Assert that the secret_key is set to the assigned environment value
     monkeypatch.setenv(key, "SECRET_KEY")
     reload(config)
-    assert config.ProdConfig().SECRET_KEY == "SECRET_KEY"
+    assert config.ProdConfig().SECRET_KEY == "SECRET_KEY"  # noqa: S105

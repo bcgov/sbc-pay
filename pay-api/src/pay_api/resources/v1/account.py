@@ -299,7 +299,7 @@ def post_search_purchase_history(account_number: str):
     return jsonify(response), status
 
 
-def _check_purchase_history_auth(any_org_transactions: bool, account_number: str, **kwargs):
+def _check_purchase_history_auth(any_org_transactions: bool, account_number: str, **kwargs):  # noqa: ARG001
     products, filter_by_product = Payment.check_products_from_role_pattern(RolePattern.PRODUCT_VIEW_TRANSACTION.value)
     if filter_by_product:
         if not products:

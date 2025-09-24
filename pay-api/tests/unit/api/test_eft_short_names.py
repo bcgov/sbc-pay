@@ -1214,7 +1214,7 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
 @pytest.mark.parametrize(
     "query_string_factory, test_name, count",
     [
-        (lambda short_id: "", "get_all", 3),
+        (lambda short_id: "", "get_all", 3),  # noqa: ARG005
         (
             lambda short_id: f"?short_name_id={short_id}&statuses={EFTShortnameRefundStatus.APPROVED.value},"
             f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
@@ -1227,13 +1227,13 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt):
             1,
         ),
         (
-            lambda short_id: f"?statuses={EFTShortnameRefundStatus.APPROVED.value},"
+            lambda short_id: f"?statuses={EFTShortnameRefundStatus.APPROVED.value},"  # noqa: ARG005
             f"{EFTShortnameRefundStatus.PENDING_APPROVAL.value}",
             "status_filter_multiple",
             2,
         ),
         (
-            lambda short_id: f"?statuses={EFTShortnameRefundStatus.DECLINED.value}",
+            lambda short_id: f"?statuses={EFTShortnameRefundStatus.DECLINED.value}",  # noqa: ARG005
             "status_filter_rejected",
             1,
         ),

@@ -158,7 +158,7 @@ def test_account_purchase_history_pagination(session, client, jwt, app, executor
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    for i in range(10):
+    for _i in range(10):
         rv = client.post(
             "/api/v1/payment-requests",
             data=json.dumps(get_payment_request()),
@@ -580,7 +580,7 @@ def test_account_purchase_history_default_list(session, client, jwt, app, execut
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
-    for i in range(11):
+    for _i in range(11):
         rv = client.post(
             "/api/v1/payment-requests",
             data=json.dumps(get_payment_request()),

@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-import uuid
+import uuid  # noqa: TC003
 from dataclasses import asdict
 from datetime import UTC, datetime
 
@@ -30,7 +30,7 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services import gcp_queue_publisher
-from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.base_payment_system import PaymentSystemService  # noqa: TC001
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference

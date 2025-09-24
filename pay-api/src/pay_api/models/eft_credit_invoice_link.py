@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import ForeignKey, text
 
-from ..utils.enums import EFTCreditInvoiceStatus
+from ..utils.enums import EFTCreditInvoiceStatus  # noqa: TID252
 from .base_model import BaseModel
 from .db import db
 

@@ -37,7 +37,11 @@ class DepositService(PaymentSystemService, CFSService):
         return PaymentSystem.PAYBC.value
 
     def create_account(
-        self, identifier: str, contact_info: dict[str, Any], payment_info: dict[str, Any], **kwargs
+        self,
+        identifier: str,  # noqa: ARG002
+        contact_info: dict[str, Any],  # noqa: ARG002
+        payment_info: dict[str, Any],  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> CfsAccountModel:
         """Create an account for the Deposit transactions."""
         cfs_account = CfsAccountModel()

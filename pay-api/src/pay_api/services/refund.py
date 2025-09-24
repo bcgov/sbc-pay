@@ -28,7 +28,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundPartialLine, db
 from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
-from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.base_payment_system import PaymentSystemService  # noqa: TC001
 from pay_api.services.partner_disbursements import PartnerDisbursements
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES

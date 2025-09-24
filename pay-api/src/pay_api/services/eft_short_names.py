@@ -15,9 +15,9 @@
 
 from __future__ import annotations
 
-from _decimal import Decimal
+from _decimal import Decimal  # noqa: TC003
 from dataclasses import dataclass
-from datetime import date
+from datetime import date  # noqa: TC003
 
 from flask import current_app
 from sqlalchemy import case, or_
@@ -34,7 +34,7 @@ from pay_api.utils.enums import EFTPaymentActions, EFTShortnameStatus, PaymentMe
 from pay_api.utils.errors import Error
 from pay_api.utils.util import unstructure_schema_items
 
-from ..utils.query_util import QueryUtils
+from ..utils.query_util import QueryUtils  # noqa: TID252
 from .eft_service import EftService
 from .eft_statements import EFTStatements
 

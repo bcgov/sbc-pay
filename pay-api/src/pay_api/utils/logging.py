@@ -26,14 +26,14 @@ def setup_logging(conf, logging_override_content=None):
     """Create the services logger."""
     if logging_override_content:
         logging.config.dictConfig(json.loads(logging_override_content))
-        print("Configure logging, from environment variable", file=sys.stdout)
+        print("Configure logging, from environment variable", file=sys.stdout)  # noqa: T201
     elif conf and path.isfile(conf):
         with open(conf) as f:
             config = json.load(f)
         logging.config.dictConfig(config)
-        print(f"Configure logging, from file:{conf}", file=sys.stdout)
+        print(f"Configure logging, from file:{conf}", file=sys.stdout)  # noqa: T201
     else:
-        print(f"Unable to configure logging, attempted conf:{conf}", file=sys.stderr)
+        print(f"Unable to configure logging, attempted conf:{conf}", file=sys.stderr)  # noqa: T201
 
 
 class StructuredLogHandler(logging.Handler):

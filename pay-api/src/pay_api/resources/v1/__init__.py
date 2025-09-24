@@ -15,9 +15,9 @@
 
 from typing import Optional
 
-from flask import Flask
+from flask import Flask  # noqa: TC002
 
-from ..ops import bp as ops_bp
+from ..ops import bp as ops_bp  # noqa: TID252
 from .account import bp as account_bp
 from .account_statements import bp as account_statements_bp
 from .account_statements_notifications import bp as account_notifications_bp

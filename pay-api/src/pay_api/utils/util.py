@@ -79,8 +79,10 @@ def get_str_by_path(payload: dict, path: str) -> str:
         return None
 
 
-def get_week_start_and_end_date(target_date: datetime = datetime.now(tz=UTC), index: int = 0):
+def get_week_start_and_end_date(target_date: datetime = None, index: int = 0):
     """Return first and last dates (sunday and saturday) for the index."""
+    if target_date is None:
+        target_date = datetime.now(tz=UTC)
     # index: 0 (current week), 1 (last week) and so on
     date = target_date - timedelta(days=index * 6)
     rewind_days = date.weekday() + 1
@@ -98,8 +100,10 @@ def get_first_and_last_dates_of_month(month: int, year: int):
     return start_date, end_date
 
 
-def get_previous_month_and_year(target_date=datetime.now(tz=UTC)):
+def get_previous_month_and_year(target_date=None):
     """Return last month and year."""
+    if target_date is None:
+        target_date = datetime.now(tz=UTC)
     last_month = target_date.replace(day=1) - timedelta(days=1)
     return last_month.month, last_month.year
 
@@ -178,8 +182,10 @@ def generate_consolidated_transaction_number(reg_number: str) -> str:
     return f"{reg_number}-C"
 
 
-def get_fiscal_year(date_val: datetime = datetime.now(tz=UTC)) -> int:
+def get_fiscal_year(date_val: datetime = None) -> int:
     """Return fiscal year for the date."""
+    if date_val is None:
+        date_val = datetime.now(tz=UTC)
     fiscal_year: int = date_val.year
     if date_val.month > 3:  # Up to March 31, use the current year.
         fiscal_year = fiscal_year + 1
@@ -322,7 +328,7 @@ def cents_to_decimal(amount: int):
 def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
     # Will fix this promptly and move this away so it doesn't cause circular dependencies.
-    from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+    from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel  # noqa: TID252
 
     if corp_type == CorpType.NRO.value:
         return current_app.config.get("NAMEX_PAY_TOPIC")

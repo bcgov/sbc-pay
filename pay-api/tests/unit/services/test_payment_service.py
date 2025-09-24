@@ -126,7 +126,7 @@ def test_create_payment_record_rollback(session, public_user_mock):
     with patch("pay_api.services.invoice.Invoice.flush", side_effect=Exception("mocked error")):
         with pytest.raises(Exception) as excinfo:
             PaymentService.create_invoice(get_payment_request(), get_auth_basic_user())
-        assert excinfo.type == Exception
+        assert excinfo.type is Exception
 
     with patch(
         "pay_api.services.direct_pay_service.DirectPayService.create_invoice",
@@ -137,7 +137,7 @@ def test_create_payment_record_rollback(session, public_user_mock):
                 get_payment_request_with_payment_method(payment_method=PaymentMethod.DIRECT_PAY.value),
                 get_auth_basic_user(),
             )
-        assert excinfo.type == Exception
+        assert excinfo.type is Exception
 
 
 def test_create_payment_record_rollback_on_paybc_connection_error(session, public_user_mock):

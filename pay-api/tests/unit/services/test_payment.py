@@ -325,7 +325,7 @@ def test_search_payment_history_for_all(session):
     payment_account.save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    for i in range(20):
+    for _i in range(20):
         payment = factory_payment(payment_status_code="CREATED")
         payment.save()
         invoice = factory_invoice(payment_account)
@@ -345,7 +345,7 @@ def test_create_payment_report_csv(session, rest_call_mock):
     payment_account.save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    for i in range(20):
+    for _i in range(20):
         payment = factory_payment(payment_status_code="CREATED")
         payment.save()
         invoice = factory_invoice(payment_account)
@@ -367,7 +367,7 @@ def test_create_payment_report_pdf(session, rest_call_mock):
     payment_account.save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    for i in range(20):
+    for _i in range(20):
         payment = factory_payment(payment_status_code="CREATED")
         payment.save()
         invoice = factory_invoice(payment_account)
@@ -1082,7 +1082,7 @@ def test_generate_payment_report_template_vars_structure(session, monkeypatch):
     class MockUser:
         """Mock user class."""
 
-        bearer_token = "mock_token"
+        bearer_token = "mock_token"  # noqa: S105
 
     class MockResponse:
         """Mock response class."""
@@ -1101,7 +1101,7 @@ def test_generate_payment_report_template_vars_structure(session, monkeypatch):
                 ]
             }
 
-    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.get", lambda *args, **kwargs: MockResponse())
+    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.get", lambda *args, **kwargs: MockResponse())  # noqa: ARG005
 
     captured_template_vars = {}
 

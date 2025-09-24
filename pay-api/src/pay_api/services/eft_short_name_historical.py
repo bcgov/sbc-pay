@@ -172,9 +172,11 @@ class EFTShortnameHistorical:
     def search(
         cls,
         short_name_id: int,
-        search_criteria: EFTShortnameHistorySearch = EFTShortnameHistorySearch(),
+        search_criteria: EFTShortnameHistorySearch = None,
     ):
         """Return EFT Short name history by search criteria."""
+        if search_criteria is None:
+            search_criteria = EFTShortnameHistorySearch()
         history_model = aliased(EFTShortnamesHistoricalModel)
         latest_history_model = aliased(EFTShortnamesHistoricalModel)
 

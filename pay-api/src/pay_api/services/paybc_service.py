@@ -39,7 +39,7 @@ from .payment_line_item import PaymentLineItem
 class PaybcService(PaymentSystemService, CFSService):
     """Service to manage PayBC integration. - for NSF/balance payments, we usually use direct pay service instead."""
 
-    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
         """Return the payment system url."""
         current_app.logger.debug("<get_payment_system_url")
         pay_system_url = self._build_payment_url(inv_ref, return_url)
@@ -57,10 +57,10 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def create_account(
         self,
-        identifier: str,
+        identifier: str,  # noqa: ARG002
         contact_info: dict[str, Any],
-        payment_info: dict[str, Any],
-        **kwargs,
+        payment_info: dict[str, Any],  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> any:
         """Create account in PayBC."""
         cfs_account = CfsAccountModel()
@@ -76,9 +76,9 @@ class PaybcService(PaymentSystemService, CFSService):
     def create_invoice(
         self,
         payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-        line_items: list[PaymentLineItem],
-        invoice: Invoice,
-        **kwargs,
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice: Invoice,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Create Invoice in PayBC."""
         # Build line item model array, as that's needed for CFS Service
@@ -99,12 +99,12 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def update_invoice(  # pylint: disable=too-many-arguments
         self,
-        payment_account: PaymentAccount,
-        line_items: list[PaymentLineItem],
-        invoice_id: int,
-        paybc_inv_number: str,
-        reference_count: int = 0,
-        **kwargs,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice_id: int,  # noqa: ARG002
+        paybc_inv_number: str,  # noqa: ARG002
+        reference_count: int = 0,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ):
         """Update the invoice.
 
@@ -127,9 +127,9 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,
-        pay_response_url: str,
-        invoice_reference: InvoiceReference,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        pay_response_url: str,  # noqa: ARG002
+        invoice_reference: InvoiceReference,  # noqa: ARG002
     ):
         """Get receipt from paybc for the receipt number or get receipt against invoice number."""
         current_app.logger.debug("<paybc_service_Getting token")
@@ -170,9 +170,9 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def _get_receipt_by_number(
         self,
-        access_token: str = None,
-        receipt_url: str = None,
-        receipt_number: str = None,
+        access_token: str = None,  # noqa: ARG002
+        receipt_url: str = None,  # noqa: ARG002
+        receipt_number: str = None,  # noqa: ARG002
     ):
         """Get receipt details by receipt number."""
         if receipt_number:
@@ -188,9 +188,9 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def process_cfs_refund(
         self,
-        invoice: InvoiceModel,
-        payment_account: PaymentAccount,
-        refund_partial: list[RefundPartialLine],
+        invoice: InvoiceModel,  # noqa: ARG002
+        payment_account: PaymentAccount,  # noqa: ARG002
+        refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         return super()._refund_and_create_credit_memo(invoice)
@@ -198,7 +198,7 @@ class PaybcService(PaymentSystemService, CFSService):
     def get_payment_system_url_for_payment(self, payment: Payment, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         current_app.logger.debug(
-            "<get_payment_system_url_for_payment ID: %s, Inv Number: %s",
+            "<get_payment_system_url_for_payment ID: %s, Inv Number: %s",  # noqa: ARG002
             payment.id,
             payment.invoice_number,
         )

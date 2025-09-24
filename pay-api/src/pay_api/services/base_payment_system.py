@@ -67,14 +67,14 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     def __init__(self):  # pylint:disable=useless-super-delegation
         """Initialize."""
-        super(PaymentSystemService, self).__init__()  # pylint:disable=super-with-arguments
+        super().__init__()  # pylint:disable=super-with-arguments
 
     def create_account(
         self,
-        identifier: str,
-        contact_info: dict[str, Any],
-        payment_info: dict[str, Any],
-        **kwargs,
+        identifier: str,  # noqa: ARG002
+        contact_info: dict[str, Any],  # noqa: ARG002
+        payment_info: dict[str, Any],  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> CfsAccountModel:
         # pylint: disable=unused-argument
         """Create account in payment system."""
@@ -82,9 +82,9 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     def update_account(
         self,
-        name: str,
-        cfs_account: CfsAccountModel,  # pylint: disable=unused-argument
-        payment_info: dict[str, Any],
+        name: str,  # noqa: ARG002
+        cfs_account: CfsAccountModel,  # pylint: disable=unused-argument  # noqa: ARG002
+        payment_info: dict[str, Any],  # noqa: ARG002
     ) -> CfsAccountModel:  # pylint: disable=unused-argument
         """Update account in payment system."""
         return None
@@ -101,61 +101,61 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     def update_invoice(  # pylint:disable=too-many-arguments,unused-argument
         self,
-        payment_account: PaymentAccount,  # pylint: disable=unused-argument
-        line_items: list[PaymentLineItem],
-        invoice_id: int,  # pylint: disable=unused-argument
-        paybc_inv_number: str,
-        reference_count: int = 0,  # pylint: disable=unused-argument
-        **kwargs,
+        payment_account: PaymentAccount,  # pylint: disable=unused-argument  # noqa: ARG002
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice_id: int,  # pylint: disable=unused-argument  # noqa: ARG002
+        paybc_inv_number: str,  # noqa: ARG002
+        reference_count: int = 0,  # pylint: disable=unused-argument  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ):
         """Update invoice in payment system."""
         return None
 
     def cancel_invoice(
         self,
-        payment_account: PaymentAccount,  # pylint:disable=unused-argument
-        inv_number: str,
+        payment_account: PaymentAccount,  # pylint:disable=unused-argument  # noqa: ARG002
+        inv_number: str,  # noqa: ARG002
     ):  # pylint: disable=unused-argument
         """Cancel invoice in payment system."""
         return None
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,  # pylint:disable=unused-argument
-        pay_response_url: str,
-        invoice_reference: InvoiceReference,
+        payment_account: PaymentAccount,  # pylint:disable=unused-argument  # noqa: ARG002
+        pay_response_url: str,  # noqa: ARG002
+        invoice_reference: InvoiceReference,  # noqa: ARG002
     ):  # pylint: disable=unused-argument
         """Get receipt from payment system."""
         return None
 
     def get_payment_system_url_for_invoice(
         self,
-        invoice: Invoice,  # pylint:disable=unused-argument
-        inv_ref: InvoiceReference,  # pylint: disable=unused-argument
-        return_url: str,
+        invoice: Invoice,  # pylint:disable=unused-argument  # noqa: ARG002
+        inv_ref: InvoiceReference,  # pylint: disable=unused-argument  # noqa: ARG002
+        return_url: str,  # noqa: ARG002
     ) -> str:  # pylint: disable=unused-argument
         """Return the payment system portal URL for payment."""
         return None
 
     def get_payment_system_url_for_payment(
         self,
-        payment: Payment,  # pylint:disable=unused-argument
-        inv_ref: InvoiceReference,  # pylint: disable=unused-argument
-        return_url: str,
+        payment: Payment,  # pylint:disable=unused-argument  # noqa: ARG002
+        inv_ref: InvoiceReference,  # pylint: disable=unused-argument  # noqa: ARG002
+        return_url: str,  # noqa: ARG002
     ) -> str:  # pylint: disable=unused-argument
         """Return the payment system portal URL for payment."""
         return None
 
     def process_cfs_refund(
         self,
-        invoice: InvoiceModel,  # pylint:disable=unused-argument
-        payment_account: PaymentAccount,  # pylint:disable=unused-argument
-        refund_partial: list[RefundPartialLine],
+        invoice: InvoiceModel,  # pylint:disable=unused-argument  # noqa: ARG002
+        payment_account: PaymentAccount,  # pylint:disable=unused-argument  # noqa: ARG002
+        refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process Refund if any."""
         return None
 
-    def get_pay_system_reason_code(self, pay_response_url: str) -> str:  # pylint:disable=unused-argument
+    def get_pay_system_reason_code(self, pay_response_url: str) -> str:  # pylint:disable=unused-argument  # noqa: ARG002
         """Return the Pay system reason code."""
         return None
 
@@ -177,13 +177,13 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     def complete_post_invoice(
         self,
-        invoice: Invoice,  # pylint: disable=unused-argument
-        invoice_reference: InvoiceReference,
+        invoice: Invoice,  # pylint: disable=unused-argument  # noqa: ARG002
+        invoice_reference: InvoiceReference,  # noqa: ARG002
     ) -> None:  # pylint: disable=unused-argument
         """Complete any post invoice activities if needed."""
         return None
 
-    def apply_credit(self, invoice: Invoice) -> None:  # pylint:disable=unused-argument
+    def apply_credit(self, invoice: Invoice) -> None:  # pylint:disable=unused-argument  # noqa: ARG002
         """Apply credit on invoice."""
         return None
 

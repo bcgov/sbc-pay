@@ -104,7 +104,7 @@ class AccountFeeSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         exclude = ["service_fee"]
 
     @post_dump(pass_many=True)
-    def _remove_empty(self, data, many):
+    def _remove_empty(self, data, many):  # noqa: ARG002
         return data
 
     service_fee_code = fields.String(data_key="service_fee_code")

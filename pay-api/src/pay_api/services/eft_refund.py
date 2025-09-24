@@ -36,7 +36,7 @@ class EFTRefund:
 
     @staticmethod
     @user_context
-    def create_shortname_refund(refund: EFTShortNameRefundPostRequest, **kwargs):
+    def create_shortname_refund(refund: EFTShortNameRefundPostRequest, **kwargs):  # noqa: ARG004
         """Create refund. This method isn't for invoices, it's for shortname only."""
         refund.validate_for_refund_method()
         current_app.logger.debug(f"Starting shortname refund : {refund.short_name_id}")

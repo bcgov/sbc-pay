@@ -49,10 +49,10 @@ class PadService(PaymentSystemService, CFSService):
 
     def create_account(
         self,
-        identifier: str,
-        contact_info: dict[str, Any],
+        identifier: str,  # noqa: ARG002
+        contact_info: dict[str, Any],  # noqa: ARG002
         payment_info: dict[str, Any],
-        **kwargs,
+        **kwargs,  # noqa: ARG002
     ) -> CfsAccountModel:
         """Create an account for the PAD transactions."""
         # Create CFS Account model instance and store the bank details, set the status as PENDING
@@ -65,7 +65,7 @@ class PadService(PaymentSystemService, CFSService):
         cfs_account.payment_method = PaymentMethod.PAD.value
         return cfs_account
 
-    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: dict[str, Any]) -> CfsAccountModel:
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: dict[str, Any]) -> CfsAccountModel:  # noqa: ARG002
         """Update account in CFS."""
         if (
             str(payment_info.get("bankInstitutionNumber")) != cfs_account.bank_number
@@ -116,10 +116,10 @@ class PadService(PaymentSystemService, CFSService):
     @skip_invoice_for_sandbox
     def create_invoice(
         self,
-        payment_account: PaymentAccount,
-        line_items: list[PaymentLineItem],
-        invoice: Invoice,
-        **kwargs,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice: Invoice,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:  # pylint: disable=unused-argument
         """Return a static invoice number for direct pay."""
         self.ensure_no_payment_blockers(payment_account)
@@ -138,9 +138,9 @@ class PadService(PaymentSystemService, CFSService):
     @skip_complete_post_invoice_for_sandbox
     def complete_post_invoice(
         self,
-        invoice: Invoice,  # pylint: disable=unused-argument
-        invoice_reference: InvoiceReference,
-        **kwargs,
+        invoice: Invoice,  # pylint: disable=unused-argument  # noqa: ARG002
+        invoice_reference: InvoiceReference,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> None:
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.
@@ -148,9 +148,9 @@ class PadService(PaymentSystemService, CFSService):
 
     def process_cfs_refund(
         self,
-        invoice: InvoiceModel,
-        payment_account: PaymentAccount,
-        refund_partial: list[RefundPartialLine],
+        invoice: InvoiceModel,  # noqa: ARG002
+        payment_account: PaymentAccount,  # noqa: ARG002
+        refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         # Move invoice to CREDITED or CANCELLED. There are no refunds for PAD, just cancellation or credit.

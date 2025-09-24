@@ -29,7 +29,7 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
 
-from ..utils.query_util import QueryUtils
+from ..utils.query_util import QueryUtils  # noqa: TID252
 from .eft_service import EftService
 from .eft_statements import EFTStatements
 

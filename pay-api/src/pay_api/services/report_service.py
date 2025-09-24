@@ -19,7 +19,7 @@ from flask import current_app
 
 from pay_api.utils.user_context import user_context
 
-from ..utils.enums import AuthHeaderType, ContentType
+from ..utils.enums import AuthHeaderType, ContentType  # noqa: TID252
 from .oauth_service import OAuthService
 
 

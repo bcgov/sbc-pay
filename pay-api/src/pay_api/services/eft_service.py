@@ -55,11 +55,11 @@ from .eft_refund import EFTRefund as EFTRefundService
 from .eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from .eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from .email_service import _render_payment_reversed_template, send_email
-from .invoice import Invoice
-from .invoice_reference import InvoiceReference
+from .invoice import Invoice  # noqa: TC001
+from .invoice_reference import InvoiceReference  # noqa: TC001
 from .partner_disbursements import PartnerDisbursements
-from .payment_account import PaymentAccount
-from .payment_line_item import PaymentLineItem
+from .payment_account import PaymentAccount  # noqa: TC001
+from .payment_line_item import PaymentLineItem  # noqa: TC001
 from .statement import Statement as StatementService
 
 
@@ -76,10 +76,10 @@ class EftService(DepositService):
 
     def create_account(
         self,
-        identifier: str,
-        contact_info: dict[str, Any],
-        payment_info: dict[str, Any],
-        **kwargs,
+        identifier: str,  # noqa: ARG002
+        contact_info: dict[str, Any],  # noqa: ARG002
+        payment_info: dict[str, Any],  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> CfsAccountModel:
         """Create an account for the EFT transactions."""
         # Create CFS Account model instance, set the status as PENDING
@@ -91,16 +91,16 @@ class EftService(DepositService):
 
     def create_invoice(
         self,
-        payment_account: PaymentAccount,
-        line_items: list[PaymentLineItem],
-        invoice: Invoice,
-        **kwargs,
+        payment_account: PaymentAccount,  # noqa: ARG002
+        line_items: list[PaymentLineItem],  # noqa: ARG002
+        invoice: Invoice,  # noqa: ARG002
+        **kwargs,  # noqa: ARG002
     ) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
         PartnerDisbursements.handle_payment(invoice)
 
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:  # noqa: ARG002
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.
         self.release_payment_or_reversal(invoice=invoice)
@@ -111,9 +111,9 @@ class EftService(DepositService):
 
     def create_payment(
         self,
-        payment_account: PaymentAccountModel,
-        invoice: InvoiceModel,
-        payment_date: datetime,
+        payment_account: PaymentAccountModel,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
+        payment_date: datetime,  # noqa: ARG002
         paid_amount,
     ) -> PaymentModel:
         """Create a payment record for an invoice."""
@@ -132,9 +132,9 @@ class EftService(DepositService):
 
     def process_cfs_refund(
         self,
-        invoice: InvoiceModel,
-        payment_account: PaymentAccount,
-        refund_partial: list[RefundPartialLine],
+        invoice: InvoiceModel,  # noqa: ARG002
+        payment_account: PaymentAccount,  # noqa: ARG002
+        refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):
         """Process refund in CFS."""
         is_partial = bool(refund_partial)
@@ -349,11 +349,11 @@ class EftService(DepositService):
 
     @staticmethod
     def _get_shortname_invoice_links(
-        short_name_id: int,
-        payment_account_id: int,
-        statuses: list[str],
-        invoice_id: int = None,
-        statement_id: int = None,
+        short_name_id: int,  # noqa: ARG002
+        payment_account_id: int,  # noqa: ARG002
+        statuses: list[str],  # noqa: ARG002
+        invoice_id: int = None,  # noqa: ARG002
+        statement_id: int = None,  # noqa: ARG002
     ) -> list[EFTCreditInvoiceLinkModel]:
         """Get short name credit invoice links by account."""
         credit_links_query = (
@@ -374,7 +374,7 @@ class EftService(DepositService):
 
     @staticmethod
     @user_context
-    def _send_reversed_payment_notification(statement: StatementModel, reversed_amount: Decimal, **kwargs):
+    def _send_reversed_payment_notification(statement: StatementModel, reversed_amount: Decimal, **kwargs):  # noqa: ARG004
         payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
         summary_dict: dict = StatementService.get_summary(payment_account.auth_account_id)
 

@@ -20,7 +20,7 @@ from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import text
 
-from ..utils.util import date_to_string
+from ..utils.util import date_to_string  # noqa: TID252
 from .base_model import BaseModel
 from .db import db
 

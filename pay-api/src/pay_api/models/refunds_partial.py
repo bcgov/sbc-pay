@@ -20,7 +20,7 @@ from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
-from ..utils.enums import RefundsPartialType
+from ..utils.enums import RefundsPartialType  # noqa: TID252
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db

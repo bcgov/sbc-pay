@@ -39,7 +39,7 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number, get_str_by_path
 
-from .base_payment_system import PaymentSystemService
+from .base_payment_system import PaymentSystemService  # noqa: TC001
 from .fee_schedule import FeeSchedule
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference

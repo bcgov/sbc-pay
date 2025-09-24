@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import Decimal  # noqa: TC003
 
 import pytz
 from attrs import define
@@ -274,7 +274,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     service_fees = fields.Float(data_key="service_fees")
 
     @post_dump
-    def _clean_up(self, data, many):  # pylint: disable=unused-argument
+    def _clean_up(self, data, many):  # pylint: disable=unused-argument  # noqa: ARG002
         """Clean up attributes."""
         # Invoice is always deleted in this scenario:
         if data.get("line_items"):

@@ -33,7 +33,7 @@ from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
-from ..utils.dataclasses import PurchaseHistorySearch
+from ..utils.dataclasses import PurchaseHistorySearch  # noqa: TC001, TID252
 from .applied_credits import AppliedCredits
 from .base_model import BaseModel
 from .base_schema import BaseSchema
