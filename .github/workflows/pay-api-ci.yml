@@ -106,11 +106,6 @@ jobs:
         id: test
         run: |
           make test
-      - name: Stop Docker services
-        if: always()
-        run: |
-          cd tests/docker
-          docker-compose down
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
