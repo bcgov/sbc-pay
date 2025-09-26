@@ -23,12 +23,12 @@ from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.util import generate_transaction_number, get_quantized
 
@@ -47,7 +47,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
     def create_invoice(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
         invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
@@ -77,7 +77,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         pay_response_url: str,  # noqa: ARG002
         invoice_reference: InvoiceReference,  # noqa: ARG002
     ):
@@ -108,7 +108,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def process_cfs_refund(
         self,
         invoice: InvoiceModel,  # noqa: ARG002
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""

@@ -98,7 +98,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     def update_invoice(  # pylint:disable=too-many-arguments,unused-argument
         self,
-        payment_account: PaymentAccount,  # pylint: disable=unused-argument  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # pylint: disable=unused-argument  # noqa: ARG002
         line_items: list[PaymentLineItemModel],  # noqa: ARG002
         invoice_id: int,  # pylint: disable=unused-argument  # noqa: ARG002
         paybc_inv_number: str,  # noqa: ARG002

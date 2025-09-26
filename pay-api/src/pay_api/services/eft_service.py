@@ -58,7 +58,6 @@ from .eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from .email_service import _render_payment_reversed_template, send_email
 from .invoice_reference import InvoiceReference  # noqa: TC001
 from .partner_disbursements import PartnerDisbursements
-from .payment_account import PaymentAccount  # noqa: TC001
 from .payment_line_item import PaymentLineItem  # noqa: TC001
 from .statement import Statement as StatementService
 
@@ -91,7 +90,7 @@ class EftService(PaymentSystemService, CFSService):
 
     def create_invoice(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
         invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
@@ -133,7 +132,7 @@ class EftService(PaymentSystemService, CFSService):
     def process_cfs_refund(
         self,
         invoice: InvoiceModel,  # noqa: ARG002
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):
         """Process refund in CFS."""

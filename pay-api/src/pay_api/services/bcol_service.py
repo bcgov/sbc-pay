@@ -21,6 +21,7 @@ from requests.exceptions import HTTPError
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.corp_type import CorpType
 from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.refunds_partial import RefundPartialLine
@@ -34,7 +35,6 @@ from .base_payment_system import PaymentSystemService, skip_complete_post_invoic
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
-from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 
 
@@ -49,7 +49,7 @@ class BcolService(PaymentSystemService, OAuthService):
     @skip_invoice_for_sandbox
     def create_invoice(  # pylint: disable=too-many-locals
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
         invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
@@ -145,7 +145,7 @@ class BcolService(PaymentSystemService, OAuthService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         pay_response_url: str,  # noqa: ARG002
         invoice_reference: InvoiceReference,  # noqa: ARG002
     ):
@@ -180,7 +180,7 @@ class BcolService(PaymentSystemService, OAuthService):
     def process_cfs_refund(
         self,
         invoice: InvoiceModel,  # noqa: ARG002
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
