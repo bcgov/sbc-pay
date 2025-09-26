@@ -243,6 +243,8 @@ class PaymentTransaction:
         current_app.logger.info(f"Updating transaction record for {transaction_id}, {transaction_dao.status_code}")
         payment = Payment.find_by_id(transaction_dao.payment_id)
         payment_account = PaymentAccount.find_by_id(payment.payment_account_id)
+        if not payment_account:
+            raise BusinessException(Error.INVALID_TRANSACTION)
         current_app.logger.info(
             f"Updating transaction for {payment.invoice_number} ({payment.payment_status_code}), "
             f"Account {payment_account.auth_account_id}"

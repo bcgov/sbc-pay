@@ -71,72 +71,11 @@ class PaymentDetails:
     previous_payment: str = None
 
 
-class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
+class PaymentAccount:
     """Service to manage Payment Account model related operations."""
 
-    def __init__(self):
-        """Initialize service."""
-        self.__dao = None
-        self.cfs_account: str = None
-        self.cfs_party: str = None
-        self.cfs_site: str = None
-        self.bank_number: str = None
-        self.bank_branch_number: str = None
-        self.bank_account_number: str = None
-        self.cfs_account_id: int = None
-        self.cfs_account_status: str = None
-
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = PaymentAccountModel()
-        return self.__dao
-
-    @_dao.setter
-    def _dao(self, value: PaymentAccountModel):
-        self.__dao = value
-        if not hasattr(self.__dao, "id"):
-            return
-        cfs_account = CfsAccountModel.find_effective_by_payment_method(self.__dao.id, self.__dao.payment_method)
-        if not cfs_account:
-            return
-        self.cfs_account: str = cfs_account.cfs_account
-        self.cfs_party: str = cfs_account.cfs_party
-        self.cfs_site: str = cfs_account.cfs_site
-        self.bank_number: str = cfs_account.bank_number
-        self.bank_branch_number: str = cfs_account.bank_branch_number
-        self.bank_account_number: str = cfs_account.bank_account_number
-        self.cfs_account_id: int = cfs_account.id
-        self.cfs_account_status: str = cfs_account.status
-
-    def __getattr__(self, name):
-        """Dynamic way of getting the properties from the DAO, anything not in __init__."""
-        if hasattr(self._dao, name):
-            return getattr(self._dao, name)
-        raise AttributeError(f"Attribute {name} not found.")
-
-    def __setattr__(self, name, value):
-        """Dynamic way of setting the properties from the DAO."""
-        # Prevent recursion by checking if the attribute name starts with '__' (private attribute).
-        if name == "_PaymentAccount__dao":
-            super().__setattr__(name, value)
-        # _dao uses __dao, thus why we need to check before for __dao.
-        elif hasattr(self._dao, name):
-            if getattr(self._dao, name) != value:
-                setattr(self._dao, name, value)
-        else:
-            super().__setattr__(name, value)
-
-    def save(self):
-        """Save the information to the DB."""
-        return self._dao.save()
-
-    def flush(self):
-        """Flush the information to the DB."""
-        return self._dao.flush()
-
     @classmethod
-    def create(cls, account_request: dict[str, Any] = None, is_sandbox: bool = False) -> PaymentAccount:
+    def create(cls, account_request: dict[str, Any] = None, is_sandbox: bool = False) -> PaymentAccountModel:
         """Create new payment account record."""
         current_app.logger.debug("<create payment account")
         auth_account_id = account_request.get("accountId")
@@ -150,13 +89,21 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         PaymentAccount._persist_default_statement_frequency(account.id)
         PaymentAccount._check_and_update_statement_notifications(account)
 
-        payment_account = PaymentAccount()
-        payment_account._dao = account  # pylint: disable=protected-access
-
-        payment_account.publish_account_mailer_event_on_creation()
+        PaymentAccount.publish_account_mailer_event_on_creation(account)
 
         current_app.logger.debug(">create payment account")
-        return payment_account
+        return account
+
+    @classmethod
+    def create_with_cfs_account(
+        cls, account_request: dict[str, Any] = None, is_sandbox: bool = False
+    ) -> tuple[PaymentAccountModel, CfsAccountModel | None]:
+        """Create new payment account record and return both payment account and CFS account."""
+        payment_account = cls.create(account_request, is_sandbox)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(
+            payment_account.id, payment_account.payment_method
+        )
+        return payment_account, cfs_account
 
     @classmethod
     def _check_and_handle_payment_method(cls, account: PaymentAccountModel, target_payment_method: str):
@@ -456,7 +403,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         account_fee.save()
 
     @classmethod
-    def update(cls, auth_account_id: str, account_request: dict[str, Any]) -> PaymentAccount:
+    def update(cls, auth_account_id: str, account_request: dict[str, Any]) -> PaymentAccountModel:
         """Create or update payment account record."""
         current_app.logger.debug("<update payment account")
         try:
@@ -467,7 +414,18 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             raise
 
         current_app.logger.debug(">update payment account")
-        return cls.find_by_id(account.id)
+        return account
+
+    @classmethod
+    def update_with_cfs_account(
+        cls, auth_account_id: str, account_request: dict[str, Any]
+    ) -> tuple[PaymentAccountModel, CfsAccountModel | None]:
+        """Update payment account record and return both payment account and CFS account."""
+        payment_account = cls.update(auth_account_id, account_request)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(
+            payment_account.id, payment_account.payment_method
+        )
+        return payment_account, cfs_account
 
     @staticmethod
     def _get_payment_based_on_pad_activation(account: PaymentAccountModel, previous_payment: str) -> tuple[str, str]:
@@ -517,23 +475,17 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         return PaymentAccount.find_by_auth_account_id(auth_account_id)
 
     @classmethod
-    def find_by_auth_account_id(cls, auth_account_id: str) -> PaymentAccount:
+    def find_by_auth_account_id(cls, auth_account_id: str) -> PaymentAccountModel:
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug("<find_by_auth_account_id")
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        p = None
-        if payment_account:
-            p = PaymentAccount()
-            p._dao = payment_account  # pylint: disable=protected-access
-            current_app.logger.debug(">find_payment_account")
-        return p
+        payment_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        current_app.logger.debug(">find_payment_account")
+        return payment_account
 
     @classmethod
-    def find_by_id(cls, account_id: int):
+    def find_by_id(cls, account_id: int) -> PaymentAccountModel:
         """Find pay account by id."""
-        account = PaymentAccount()
-        account._dao = PaymentAccountModel.find_by_id(account_id)  # pylint: disable=protected-access
-        return account
+        return PaymentAccountModel.find_by_id(account_id)
 
     @classmethod
     def search_eft_accounts(cls, search_text: str):
@@ -584,28 +536,31 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         utc_time = round_to_full_day.astimezone(UTC)
         return utc_time
 
+    @staticmethod
     @user_context
-    def asdict(self, **kwargs):
+    def asdict(payment_account: PaymentAccountModel, **kwargs):
         """Return the Account as a python dict."""
         user: UserContext = kwargs["user"]
         account_schema = PaymentAccountSchema()
-        d = account_schema.dump(self._dao)
+        d = account_schema.dump(payment_account)
         # Add cfs account values based on role and payment method. For system roles, return bank details.
-        is_cfs_payment_method = self.payment_method in (
+        is_cfs_payment_method = payment_account.payment_method in (
             PaymentMethod.PAD.value,
             PaymentMethod.ONLINE_BANKING.value,
             PaymentMethod.EFT.value,
         )
         # to handle PAD 3 day period.. UI needs bank details even if PAD is not activated
-        is_future_pad = (self.payment_method == PaymentMethod.DRAWDOWN.value) and (self._is_pad_in_pending_activation())
+        is_future_pad = (payment_account.payment_method == PaymentMethod.DRAWDOWN.value) and (
+            PaymentAccount._is_pad_in_pending_activation(payment_account)
+        )
         show_cfs_details = is_cfs_payment_method or is_future_pad
 
         if show_cfs_details:
             # If it's PAD show future, if it's ONLINE BANKING or EFT show current.
             # Future - open this up for all payment methods, include a list.
             cfs_info = CfsAccountModel.find_effective_by_payment_method(
-                self.id,
-                PaymentMethod.PAD.value if is_future_pad else self.payment_method,
+                payment_account.id,
+                PaymentMethod.PAD.value if is_future_pad else payment_account.payment_method,
             )
             cfs_account = {
                 "cfsAccountNumber": cfs_info.cfs_account,
@@ -625,34 +580,41 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         if is_future_pad:
             d["futurePaymentMethod"] = PaymentMethod.PAD.value
 
-        if self.payment_method == PaymentMethod.EJV.value:  # include JV details
-            dist_code = DistributionCode.find_active_by_account_id(self.id)
+        if payment_account.payment_method == PaymentMethod.EJV.value:  # include JV details
+            dist_code = DistributionCode.find_active_by_account_id(payment_account.id)
             d["revenueAccount"] = DistributionCode.asdict(dist_code)
 
-        if account_fees := AccountFeeModel.find_by_account_id(self.id):
+        if account_fees := AccountFeeModel.find_by_account_id(payment_account.id):
             d["accountFees"] = AccountFeeSchema().dump(account_fees, many=True)
 
         return d
 
-    def _is_pad_in_pending_activation(self):
+    @staticmethod
+    def _is_pad_in_pending_activation(payment_account: PaymentAccountModel):
         """Find if PAD is awaiting activation."""
-        if self.pad_activation_date and self.pad_activation_date > datetime.now(self.pad_activation_date.tzinfo):
-            if future_cfs := CfsAccountModel.find_effective_by_payment_method(self.id, PaymentMethod.PAD.value):
+        if payment_account.pad_activation_date and payment_account.pad_activation_date > datetime.now(
+            payment_account.pad_activation_date.tzinfo
+        ):
+            if future_cfs := CfsAccountModel.find_effective_by_payment_method(
+                payment_account.id, PaymentMethod.PAD.value
+            ):
                 return future_cfs.status in (
                     CfsAccountStatus.PENDING.value,
                     CfsAccountStatus.PENDING_PAD_ACTIVATION.value,
                 )
         return False
 
-    def publish_account_mailer_event_on_creation(self):
+    @staticmethod
+    def publish_account_mailer_event_on_creation(payment_account: PaymentAccountModel):
         """Publish to account mailer message to send out confirmation email on creation."""
-        if self.payment_method == PaymentMethod.PAD.value:
-            payload = self.create_account_event_payload(
-                QueueMessageTypes.PAD_ACCOUNT_CREATE.value, include_pay_info=True
+        if payment_account.payment_method == PaymentMethod.PAD.value:
+            payload = PaymentAccount.create_account_event_payload(
+                payment_account, QueueMessageTypes.PAD_ACCOUNT_CREATE.value, include_pay_info=True
             )
-            self._publish_queue_message(payload, QueueMessageTypes.PAD_ACCOUNT_CREATE.value)
+            PaymentAccount._publish_queue_message(payment_account, payload, QueueMessageTypes.PAD_ACCOUNT_CREATE.value)
 
-    def _publish_queue_message(self, payload: dict, message_type: str):
+    @staticmethod
+    def _publish_queue_message(payment_account: PaymentAccountModel, payload: dict, message_type: str):
         """Publish to account mailer to send out confirmation email or notification email."""
         try:
             gcp_queue_publisher.publish_to_queue(
@@ -667,15 +629,18 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             current_app.logger.error(e)
             current_app.logger.error(
                 "Notification to Queue failed for the Account Mailer %s - %s",
-                self.auth_account_id,
-                self.name,
+                payment_account.auth_account_id,
+                payment_account.name,
             )
 
-    def create_account_event_payload(self, event_type: str, receipt_info: dict = None, include_pay_info: bool = False):
+    @staticmethod
+    def create_account_event_payload(
+        payment_account: PaymentAccountModel, event_type: str, receipt_info: dict = None, include_pay_info: bool = False
+    ):
         """Return event payload for account."""
         payload: dict[str, any] = {
-            "accountId": self.auth_account_id,
-            "accountName": self.name,
+            "accountId": payment_account.auth_account_id,
+            "accountName": payment_account.name,
         }
 
         if event_type == QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value:
@@ -688,13 +653,16 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                 }
             )
         if event_type == QueueMessageTypes.PAD_ACCOUNT_CREATE.value:
-            payload["padTosAcceptedBy"] = self.pad_tos_accepted_by
+            payload["padTosAcceptedBy"] = payment_account.pad_tos_accepted_by
         if include_pay_info:
+            cfs_info = CfsAccountModel.find_effective_by_payment_method(
+                payment_account.id, payment_account.payment_method
+            )
             payload["paymentInfo"] = {
-                "bankInstitutionNumber": self.bank_number,
-                "bankTransitNumber": self.bank_branch_number,
-                "bankAccountNumber": mask(self.bank_account_number, current_app.config["MASK_LEN"]),
-                "paymentStartDate": get_local_formatted_date(self.pad_activation_date, "%B %d, %y"),
+                "bankInstitutionNumber": cfs_info.bank_number,
+                "bankTransitNumber": cfs_info.bank_branch_number,
+                "bankAccountNumber": mask(cfs_info.bank_account_number, current_app.config["MASK_LEN"]),
+                "paymentStartDate": get_local_formatted_date(payment_account.pad_activation_date, "%B %d, %y"),
             }
         return payload
 
@@ -732,9 +700,9 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             return
 
         receipt_info = ReceiptService.get_nsf_receipt_details(payment_id)
-        pay_account_service = PaymentAccount.find_by_id(payment_account_id)
-        payload = pay_account_service.create_account_event_payload(
-            QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value, receipt_info=receipt_info
+        pay_account = PaymentAccount.find_by_id(payment_account_id)
+        payload = PaymentAccount.create_account_event_payload(
+            pay_account, QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value, receipt_info=receipt_info
         )
 
         try:
@@ -803,14 +771,17 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             pay_account.save()
 
     @classmethod
-    def enable_eft(cls, auth_account_id: str) -> PaymentAccount:
+    def enable_eft(cls, auth_account_id: str) -> PaymentAccountModel:
         """Enable EFT on the payment account."""
         pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         already_has_eft_enabled = pay_account.eft_enable is True
         pay_account.eft_enable = True
         pay_account.save()
-        pa_service = cls.find_by_id(pay_account.id)
         if not already_has_eft_enabled:
-            payload = pa_service.create_account_event_payload(QueueMessageTypes.EFT_AVAILABLE_NOTIFICATION.value)
-            pa_service._publish_queue_message(payload, QueueMessageTypes.EFT_AVAILABLE_NOTIFICATION.value)
-        return pa_service
+            payload = PaymentAccount.create_account_event_payload(
+                pay_account, QueueMessageTypes.EFT_AVAILABLE_NOTIFICATION.value
+            )
+            PaymentAccount._publish_queue_message(
+                pay_account, payload, QueueMessageTypes.EFT_AVAILABLE_NOTIFICATION.value
+            )
+        return pay_account

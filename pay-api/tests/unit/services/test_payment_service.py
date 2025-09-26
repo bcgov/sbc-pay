@@ -142,7 +142,6 @@ def test_create_payment_record_rollback(session, public_user_mock):
 
 def test_create_payment_record_rollback_on_paybc_connection_error(session, public_user_mock):
     """Assert that the payment records are not created."""
-    # Create a payment account
     factory_payment_account()
 
     # Mock here that the invoice update fails here to test the rollback scenario
@@ -213,17 +212,28 @@ def test_create_payment_record_with_rs(session, public_user_mock):
 def test_delete_payment(session, auth_mock, public_user_mock):
     """Assert that the payment records are soft deleted."""
     payment_account = factory_payment_account()
-    # payment = factory_payment()
     payment_account.save()
-    # payment.save()
-    cfs_account = CfsAccount.find_by_account_id(payment_account.id)[0]
+    cfs_accounts = CfsAccount.find_by_account_id(payment_account.id)
+    if not cfs_accounts:
+        cfs_account = CfsAccount(
+            account_id=payment_account.id,
+            cfs_account="4101",
+            cfs_party="11111",
+            cfs_site="29921",
+            payment_method=payment_account.payment_method,
+            status="ACTIVE",
+        )
+        cfs_account.save()
+    else:
+        cfs_account = cfs_accounts[0]
     invoice = factory_invoice(payment_account, total=10)
     invoice.cfs_account_id = cfs_account.id
     invoice.save()
     invoice_reference = factory_invoice_reference(invoice.id, invoice_number="INV-001").save()
 
-    # Create a payment for this reference
-    payment = factory_payment(invoice_number=invoice_reference.invoice_number, invoice_amount=10).save()
+    payment = factory_payment(
+        invoice_number=invoice_reference.invoice_number, invoice_amount=10, payment_account_id=payment_account.id
+    ).save()
 
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)

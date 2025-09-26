@@ -27,7 +27,7 @@ import pytest
 from flask import current_app
 from requests.exceptions import ConnectionError
 
-from pay_api.models import CorpType, FeeCode, FilingType
+from pay_api.models import CfsAccount, CorpType, FeeCode, FilingType
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -35,9 +35,17 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models.tax_rate import TaxRate
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role, RoutingSlipStatus, TransactionStatus
+from pay_api.utils.enums import (
+    CfsAccountStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    Role,
+    RoutingSlipStatus,
+    TransactionStatus,
+)
 from tests.utilities.base_test import (
     activate_pad_account,
+    factory_payment_account,
     get_basic_account_payload,
     get_claims,
     get_gov_account_payload,
@@ -699,6 +707,18 @@ def test_premium_payment_creation_with_payment_method_ob_cc(session, client, jwt
 
 def test_cc_payment_with_no_contact_info(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    cfs_account = CfsAccount(
+        cfs_party="11111",
+        cfs_account="4101",
+        cfs_site="29921",
+        account_id=payment_account.id,
+        status=CfsAccountStatus.ACTIVE.value,
+        payment_method="DIRECT_PAY",
+    )
+    cfs_account.save()
+
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {
         "Authorization": f"Bearer {token}",

@@ -25,6 +25,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
@@ -121,7 +122,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice = InvoiceModel()
             invoice.bcol_account = bcol_account
             invoice.payment_account_id = payment_account.id
-            invoice.cfs_account_id = payment_account.cfs_account_id
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(
+                payment_account.id, payment_account.payment_method
+            )
+            invoice.cfs_account_id = cfs_account.id if cfs_account else None
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
             invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
             invoice.total = sum(fee.total for fee in fees) if fees else 0
@@ -229,7 +233,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return payment_account
 
     @classmethod
-    def _get_bcol_account(cls, account_info, payment_account: PaymentAccount):
+    def _get_bcol_account(cls, account_info, payment_account: PaymentAccountModel):
         if account_info and account_info.get("bcolAccountNumber", None):
             bcol_account = account_info.get("bcolAccountNumber")
         else:
@@ -447,7 +451,7 @@ def _check_if_invoice_can_be_deleted(invoice: InvoiceModel, payment: Payment = N
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
-def _get_payment_method(payment_request: dict, payment_account: PaymentAccount):
+def _get_payment_method(payment_request: dict, payment_account: PaymentAccountModel):
     # If no methodOfPayment is provided, use the one against the payment account table.
     payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
     if not payment_method:
