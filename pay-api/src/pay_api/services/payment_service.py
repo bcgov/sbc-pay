@@ -214,7 +214,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             pay_service.complete_post_invoice(invoice, invoice_reference)
 
     @classmethod
-    def _find_payment_account(cls, authorization):
+    def _find_payment_account(cls, authorization) -> PaymentAccountModel:
         # find payment account
         payment_account = PaymentAccount.find_account(authorization)
 
