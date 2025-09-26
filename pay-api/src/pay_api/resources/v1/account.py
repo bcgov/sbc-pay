@@ -59,16 +59,16 @@ def post_account():
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
-        response = PaymentAccountService.create(request_json, is_sandbox)
+        response, cfs_account = PaymentAccountService.create_with_cfs_account(request_json, is_sandbox)
         status = (
             HTTPStatus.ACCEPTED
-            if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value
+            if cfs_account and cfs_account.status == CfsAccountStatus.PENDING.value
             else HTTPStatus.CREATED
         )
     except BusinessException as exception:
         return exception.response()
     current_app.logger.debug(">post_account")
-    return jsonify(response.asdict()), status
+    return jsonify(PaymentAccountService.asdict(response)), status
 
 
 @bp.route("/search/eft", methods=["GET", "OPTIONS"])
@@ -102,8 +102,9 @@ def get_account(account_number: str):
         account_id=account_number,
         one_of_roles=[EDIT_ROLE, VIEW_ROLE],
     )
+    payment_account = PaymentAccountService.find_by_auth_account_id(account_number)
     response, status = (
-        PaymentAccountService.find_by_auth_account_id(account_number).asdict(),
+        PaymentAccountService.asdict(payment_account),
         HTTPStatus.OK,
     )
     current_app.logger.debug(">get_account")
@@ -118,15 +119,16 @@ def patch_account(account_number: str):
     current_app.logger.info("<patch_account_enable_eft")
 
     try:
+        payment_account = PaymentAccountService.enable_eft(account_number)
         response, status = (
-            PaymentAccountService.enable_eft(account_number),
+            PaymentAccountService.asdict(payment_account),
             HTTPStatus.OK,
         )
     except ServiceUnavailableException as exception:
         return exception.response()
 
     current_app.logger.debug(">patch_account_enable_eft")
-    return jsonify(response.asdict()), status
+    return jsonify(response), status
 
 
 @bp.route("/<string:account_number>", methods=["PUT"])
@@ -143,20 +145,19 @@ def put_account(account_number: str):
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
-        response = PaymentAccountService.update(account_number, request_json)
+        payment_account, cfs_account = PaymentAccountService.update_with_cfs_account(account_number, request_json)
+        status = (
+            HTTPStatus.ACCEPTED
+            if cfs_account and cfs_account.status == CfsAccountStatus.PENDING.value
+            else HTTPStatus.OK
+        )
     except ServiceUnavailableException as exception:
         return exception.response()
     except BusinessException as exception:
         return exception.response()
 
-    status = (
-        HTTPStatus.ACCEPTED
-        if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value
-        else HTTPStatus.OK
-    )
-
     current_app.logger.debug(f">put_account {account_number}")
-    return jsonify(response.asdict()), status
+    return jsonify(PaymentAccountService.asdict(payment_account)), status
 
 
 @bp.route("/<string:account_number>", methods=["DELETE"])

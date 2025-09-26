@@ -80,18 +80,19 @@ def test_premium_account_saved_from_new(session):
 def test_create_pad_account(session):
     """Assert that pad account details are created."""
     pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
-    assert pad_account.bank_number == get_unlinked_pad_account_payload().get("paymentInfo").get("bankInstitutionNumber")
-    assert pad_account.bank_account_number == get_unlinked_pad_account_payload().get("paymentInfo").get(
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pad_account.id, pad_account.payment_method)
+    assert cfs_account.bank_number == get_unlinked_pad_account_payload().get("paymentInfo").get("bankInstitutionNumber")
+    assert cfs_account.bank_account_number == get_unlinked_pad_account_payload().get("paymentInfo").get(
         "bankAccountNumber"
     )
-    assert pad_account.bank_branch_number == get_unlinked_pad_account_payload().get("paymentInfo").get(
+    assert cfs_account.bank_branch_number == get_unlinked_pad_account_payload().get("paymentInfo").get(
         "bankTransitNumber"
     )
     assert pad_account.payment_method == PaymentMethod.PAD.value
-    assert pad_account.cfs_account_id
-    assert pad_account.cfs_account is None
-    assert pad_account.cfs_party is None
-    assert pad_account.cfs_site is None
+    assert cfs_account.id
+    assert cfs_account.cfs_account is None
+    assert cfs_account.cfs_party is None
+    assert cfs_account.cfs_site is None
 
 
 def test_create_pad_account_but_eft_is_active(session, admin_users_mock):
@@ -101,7 +102,8 @@ def test_create_pad_account_but_eft_is_active(session, admin_users_mock):
     # Account should default to EFT because it was the original method and there is a waiting period for pad.
     eft_account = PaymentAccountService.update(eft_account.auth_account_id, get_unlinked_pad_account_payload())
     assert eft_account.payment_method == PaymentMethod.EFT.value
-    assert eft_account.cfs_account_id
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(eft_account.id, eft_account.payment_method)
+    assert cfs_account.id
 
 
 def test_create_pad_account_to_drawdown(session):
@@ -124,10 +126,11 @@ def test_create_bcol_account_to_pad(session):
 
     assert bcol_account.auth_account_id == bcol_account.auth_account_id
     assert pad_account.payment_method == PaymentMethod.PAD.value
-    assert pad_account.cfs_account_id
-    assert pad_account.cfs_account is None
-    assert pad_account.cfs_party is None
-    assert pad_account.cfs_site is None
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pad_account.id, pad_account.payment_method)
+    assert cfs_account.id
+    assert cfs_account.cfs_account is None
+    assert cfs_account.cfs_party is None
+    assert cfs_account.cfs_site is None
 
     # Reset activation date.
     PaymentAccountModel.find_by_id(bcol_account.id).pad_activation_date = datetime.now(tz=UTC) + timedelta(days=1)
@@ -138,7 +141,9 @@ def test_create_bcol_account_to_pad(session):
     pad_account = PaymentAccountService.update(bcol_account.auth_account_id, get_unlinked_pad_account_payload())
     assert pad_account.payment_method == PaymentMethod.DRAWDOWN.value
     # This information wont show in the service, but will show on the get with asdict.
-    assert not pad_account.cfs_account_id
+    # For DRAWDOWN, there should be no CFS account
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pad_account.id, pad_account.payment_method)
+    assert cfs_account is None
 
 
 def test_create_pad_to_bcol_to_pad(session):
@@ -148,7 +153,8 @@ def test_create_pad_to_bcol_to_pad(session):
     pad_account_1 = PaymentAccountService.create(
         get_unlinked_pad_account_payload(account_id=auth_account_id, bank_number="009")
     )
-    assert pad_account_1.bank_number == "009"
+    cfs_account_1 = CfsAccountModel.find_effective_by_payment_method(pad_account_1.id, pad_account_1.payment_method)
+    assert cfs_account_1.bank_number == "009"
 
     # Update this payment account with drawdown and assert payment method
     bcol_account = PaymentAccountService.update(
@@ -164,9 +170,10 @@ def test_create_pad_to_bcol_to_pad(session):
         pad_account_1.auth_account_id,
         get_unlinked_pad_account_payload(account_id=auth_account_id, bank_number="010"),
     )
-    assert pad_account_2.bank_number == "010"
+    cfs_account_2 = CfsAccountModel.find_effective_by_payment_method(pad_account_2.id, pad_account_2.payment_method)
+    assert cfs_account_2.bank_number == "010"
     assert pad_account_2.payment_method == PaymentMethod.PAD.value
-    assert pad_account_2.cfs_account_id != pad_account_1.cfs_account_id
+    assert cfs_account_2.id != cfs_account_1.id
 
 
 def test_create_online_banking_account(session):
@@ -175,11 +182,14 @@ def test_create_online_banking_account(session):
         get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)
     )
     assert online_banking_account.payment_method == PaymentMethod.ONLINE_BANKING.value
-    assert online_banking_account.cfs_account_id
-    assert online_banking_account.cfs_account is None
-    assert online_banking_account.cfs_party is None
-    assert online_banking_account.cfs_site is None
-    assert online_banking_account.bank_number is None
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(
+        online_banking_account.id, online_banking_account.payment_method
+    )
+    assert cfs_account.id
+    assert cfs_account.cfs_account is None
+    assert cfs_account.cfs_party is None
+    assert cfs_account.cfs_site is None
+    assert cfs_account.bank_number is None
     assert online_banking_account.pad_tos_accepted_date is None
 
 
@@ -187,7 +197,9 @@ def test_create_online_credit_account(session):
     """Assert that create credit card account works."""
     credit_account = PaymentAccountService.create(get_basic_account_payload())
     assert credit_account.payment_method == PaymentMethod.DIRECT_PAY.value
-    assert credit_account.cfs_account_id is None
+    # For DIRECT_PAY, there should be no CFS account
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(credit_account.id, credit_account.payment_method)
+    assert cfs_account is None
 
 
 def test_update_credit_to_online_banking(session):
@@ -198,11 +210,14 @@ def test_update_credit_to_online_banking(session):
         get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value),
     )
     assert online_banking_account.payment_method == PaymentMethod.ONLINE_BANKING.value
-    assert online_banking_account.cfs_account_id
-    assert online_banking_account.cfs_account is None
-    assert online_banking_account.cfs_party is None
-    assert online_banking_account.cfs_site is None
-    assert online_banking_account.bank_number is None
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(
+        online_banking_account.id, online_banking_account.payment_method
+    )
+    assert cfs_account.id
+    assert cfs_account.cfs_account is None
+    assert cfs_account.cfs_party is None
+    assert cfs_account.cfs_site is None
+    assert cfs_account.bank_number is None
 
 
 def test_update_online_banking_to_credit(session):
@@ -384,9 +399,12 @@ def test_payment_account_service_with_cfs_account(session):
     ).flush()
 
     payment_account_service = PaymentAccountService.find_by_id(payment_account.id)
-    assert payment_account_service.cfs_account == cfs_account
-    assert payment_account_service.cfs_party == cfs_party
-    assert payment_account_service.cfs_site == cfs_site
-    assert payment_account_service.bank_number == bank_number
-    assert payment_account_service.bank_branch_number == bank_branch_number
-    assert payment_account_service.bank_account_number == bank_account_number
+    cfs_account_model = CfsAccountModel.find_effective_by_payment_method(
+        payment_account_service.id, payment_account_service.payment_method
+    )
+    assert cfs_account_model.cfs_account == cfs_account
+    assert cfs_account_model.cfs_party == cfs_party
+    assert cfs_account_model.cfs_site == cfs_site
+    assert cfs_account_model.bank_number == bank_number
+    assert cfs_account_model.bank_branch_number == bank_branch_number
+    assert cfs_account_model.bank_account_number == bank_account_number

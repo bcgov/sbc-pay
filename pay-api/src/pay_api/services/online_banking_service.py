@@ -19,10 +19,10 @@ from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem
@@ -59,7 +59,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         self,
         payment_account: PaymentAccount,
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number for online banking."""
@@ -70,13 +70,13 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         pay_response_url: str,  # noqa: ARG002
         invoice_reference: InvoiceReference,  # noqa: ARG002
     ):
         """Get the receipt details by calling PayBC web service."""
 
-    def apply_credit(self, invoice: Invoice) -> None:
+    def apply_credit(self, invoice: InvoiceModel) -> None:
         """Apply credit to the invoice."""
         self.release_payment_or_reversal(invoice=invoice)
 
@@ -88,7 +88,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
     def process_cfs_refund(
         self,
         invoice: InvoiceModel,  # noqa: ARG002
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""

@@ -38,7 +38,6 @@ from pay_api.services.auth import get_account_admin_users
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.email_service import _render_credit_add_notification_template, send_email
 from pay_api.services.flags import flags
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
@@ -54,8 +53,6 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
-
-from .payment_line_item import PaymentLineItem
 
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -93,16 +90,16 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def create_invoice(
         self,
         payment_account: PaymentAccount,
-        line_items: list[PaymentLineItem],
-        invoice: Invoice,
+        line_items: list[PaymentLineItemModel],
+        invoice: InvoiceModel,
         **kwargs,
-    ) -> InvoiceReference:
+    ) -> InvoiceReferenceModel:
         """Create invoice in payment system."""
 
     def update_invoice(  # pylint:disable=too-many-arguments,unused-argument
         self,
-        payment_account: PaymentAccount,  # pylint: disable=unused-argument  # noqa: ARG002
-        line_items: list[PaymentLineItem],  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # pylint: disable=unused-argument  # noqa: ARG002
+        line_items: list[PaymentLineItemModel],  # noqa: ARG002
         invoice_id: int,  # pylint: disable=unused-argument  # noqa: ARG002
         paybc_inv_number: str,  # noqa: ARG002
         reference_count: int = 0,  # pylint: disable=unused-argument  # noqa: ARG002
@@ -123,15 +120,15 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         self,
         payment_account: PaymentAccount,  # pylint:disable=unused-argument  # noqa: ARG002
         pay_response_url: str,  # noqa: ARG002
-        invoice_reference: InvoiceReference,  # noqa: ARG002
+        invoice_reference: InvoiceReferenceModel,  # noqa: ARG002
     ):  # pylint: disable=unused-argument
         """Get receipt from payment system."""
         return None
 
     def get_payment_system_url_for_invoice(
         self,
-        invoice: Invoice,  # pylint:disable=unused-argument  # noqa: ARG002
-        inv_ref: InvoiceReference,  # pylint: disable=unused-argument  # noqa: ARG002
+        invoice: InvoiceModel,  # pylint:disable=unused-argument  # noqa: ARG002
+        inv_ref: InvoiceReferenceModel,  # pylint: disable=unused-argument  # noqa: ARG002
         return_url: str,  # noqa: ARG002
     ) -> str:  # pylint: disable=unused-argument
         """Return the payment system portal URL for payment."""
@@ -140,7 +137,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def get_payment_system_url_for_payment(
         self,
         payment: Payment,  # pylint:disable=unused-argument  # noqa: ARG002
-        inv_ref: InvoiceReference,  # pylint: disable=unused-argument  # noqa: ARG002
+        inv_ref: InvoiceReferenceModel,  # pylint: disable=unused-argument  # noqa: ARG002
         return_url: str,  # noqa: ARG002
     ) -> str:  # pylint: disable=unused-argument
         """Return the payment system portal URL for payment."""
@@ -177,13 +174,13 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     def complete_post_invoice(
         self,
-        invoice: Invoice,  # pylint: disable=unused-argument  # noqa: ARG002
-        invoice_reference: InvoiceReference,  # noqa: ARG002
+        invoice: InvoiceModel,  # pylint: disable=unused-argument  # noqa: ARG002
+        invoice_reference: InvoiceReferenceModel,  # noqa: ARG002
     ) -> None:  # pylint: disable=unused-argument
         """Complete any post invoice activities if needed."""
         return None
 
-    def apply_credit(self, invoice: Invoice) -> None:  # pylint:disable=unused-argument  # noqa: ARG002
+    def apply_credit(self, invoice: InvoiceModel) -> None:  # pylint:disable=unused-argument  # noqa: ARG002
         """Apply credit on invoice."""
         return None
 
@@ -197,7 +194,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.EFT_INVOICES_OVERDUE)
 
     @staticmethod
-    def release_payment_or_reversal(invoice: Invoice, transaction_status=TransactionStatus.COMPLETED.value):
+    def release_payment_or_reversal(invoice: InvoiceModel, transaction_status=TransactionStatus.COMPLETED.value):
         """Release record."""
         from .payment_transaction import PaymentTransaction  # pylint:disable=import-outside-toplevel,cyclic-import
 
@@ -446,7 +443,7 @@ def skip_invoice_for_sandbox(function):
         """Complete any post invoice activities if needed."""
         if current_app.config.get("ENVIRONMENT_NAME") == "sandbox":
             current_app.logger.info("Skipping invoice creation as sandbox environment is detected.")
-            invoice: Invoice = func_args[3]  # 3 is invoice from the create_invoice signature
+            invoice: InvoiceModel = func_args[3]  # 3 is invoice from the create_invoice signature
             return InvoiceReference.create(invoice.id, f"SANDBOX-{invoice.id}", f"REF-{invoice.id}")
         return function(*func_args, **func_kwargs)
 

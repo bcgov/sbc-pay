@@ -19,11 +19,10 @@ There are conditions where the payment will be handled for government accounts.
 from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.util import generate_transaction_number
 
@@ -48,9 +47,9 @@ class EjvPayService(PaymentSystemService, OAuthService):
 
     def create_invoice(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number."""
@@ -65,7 +64,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
         # else Do nothing here as the invoice references are created later.
         return invoice_reference
 
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: InvoiceModel, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         if invoice_reference and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value:
             # Create a payment record
@@ -77,7 +76,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
     def process_cfs_refund(
         self,
         invoice: InvoiceModel,  # noqa: ARG002
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ) -> str:  # pylint:disable=unused-argument
         """Do nothing to process refund; as the refund is handled by CRON job.

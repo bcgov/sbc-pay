@@ -77,8 +77,7 @@ def test_line_invalid_lookup(session):
     """Test Invalid lookup."""
     p = PaymentLineService.find_by_id(999)
 
-    assert p is not None
-    assert p.id is None
+    assert p is None
 
 
 @pytest.mark.parametrize(

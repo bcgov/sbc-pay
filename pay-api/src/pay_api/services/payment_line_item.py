@@ -13,8 +13,6 @@
 # limitations under the License.
 """Service to manage Payment Line Items."""
 
-from decimal import Decimal
-
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
@@ -26,263 +24,8 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 
 
-class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
+class PaymentLineItem:
     """Service to manage Payment Line Item operations."""
-
-    def __init__(self):
-        """Return a User Service object."""
-        self.__dao = None
-        self._id: int = None
-        self._invoice_id: int = None
-        self._filing_fees = None
-        self._fee_schedule_id: int = None
-        self._priority_fees = None
-        self._future_effective_fees = None
-        self._description: str = None
-        self._pst = None
-        self._total = None
-        self._quantity: int = 1
-        self._line_item_status_code: str = None
-        self._waived_fees = Decimal("0")
-        self._waived_by: str = None
-        self._fee_distribution_id: int = None
-        self._fee_distribution: DistributionCodeModel = None
-        self._service_fees = None
-        self._statutory_fees_gst = None
-        self._service_fees_gst = None
-
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = PaymentLineItemModel()
-        return self.__dao
-
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao = value
-        self.id: int = self._dao.id
-        self.invoice_id: int = self._dao.invoice_id
-        self.filing_fees: Decimal = self._dao.filing_fees
-        self.fee_schedule_id: int = self._dao.fee_schedule_id
-        self.priority_fees: Decimal = self._dao.priority_fees
-        self.future_effective_fees: Decimal = self._dao.future_effective_fees
-        self.description: str = self._dao.description
-        self.pst: Decimal = self._dao.pst
-        self.total: Decimal = self._dao.total
-        self.quantity: int = self._dao.quantity
-        self.line_item_status_code: str = self._dao.line_item_status_code
-        self.waived_fees: Decimal = self._dao.waived_fees
-        self.waived_by: str = self._dao.waived_by
-        self.fee_distribution_id: int = self._dao.fee_distribution_id
-        self.service_fees: Decimal = self._dao.service_fees
-        self.statutory_fees_gst: Decimal = self._dao.statutory_fees_gst
-        self.service_fees_gst: Decimal = self._dao.service_fees_gst
-
-    @property
-    def id(self):
-        """Return the _id."""
-        return self._id
-
-    @property
-    def invoice_id(self):
-        """Return the _invoice_id."""
-        return self._invoice_id
-
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
-
-    @invoice_id.setter
-    def invoice_id(self, value: int):
-        """Set the invoice_id."""
-        self._invoice_id = value
-        self._dao.invoice_id = value
-
-    @property
-    def filing_fees(self):
-        """Return the _filing_fees."""
-        return self._filing_fees
-
-    @filing_fees.setter
-    def filing_fees(self, value: Decimal):
-        """Set the filing_fees."""
-        self._filing_fees = value
-        self._dao.filing_fees = value
-
-    @property
-    def fee_schedule_id(self):
-        """Return the _fee_schedule_id."""
-        return self._fee_schedule_id
-
-    @property
-    def priority_fees(self):
-        """Return the _priority_fees."""
-        return self._priority_fees
-
-    @fee_schedule_id.setter
-    def fee_schedule_id(self, value: int):
-        """Set the fee_schedule_id."""
-        self._fee_schedule_id = value
-        self._dao.fee_schedule_id = value
-
-    @priority_fees.setter
-    def priority_fees(self, value: Decimal):
-        """Set the priority_fees."""
-        self._priority_fees = value
-        self._dao.priority_fees = value
-
-    @property
-    def future_effective_fees(self):
-        """Return the _future_effective_fees."""
-        return self._future_effective_fees
-
-    @future_effective_fees.setter
-    def future_effective_fees(self, value: Decimal):
-        """Set the future_effective_fees."""
-        self._future_effective_fees = value
-        self._dao.future_effective_fees = value
-
-    @property
-    def description(self):
-        """Return the _description."""
-        return self._description
-
-    @description.setter
-    def description(self, value: str):
-        """Set the description."""
-        self._description = value
-        self._dao.description = value
-
-    @property
-    def pst(self):
-        """Return the _pst."""
-        return self._pst
-
-    @pst.setter
-    def pst(self, value: Decimal):
-        """Set the pst."""
-        self._pst = value
-        self._dao.pst = value
-
-    @property
-    def total(self):
-        """Return the _total."""
-        return self._total
-
-    @property
-    def quantity(self):
-        """Return the _quantity."""
-        return self._quantity
-
-    @total.setter
-    def total(self, value: Decimal):
-        """Set the total."""
-        self._total = value
-        self._dao.total = value
-
-    @quantity.setter
-    def quantity(self, value: int):
-        """Set the quantity."""
-        self._quantity = value
-        self._dao.quantity = value
-
-    @property
-    def line_item_status_code(self):
-        """Return the line_item_status_code."""
-        return self._line_item_status_code
-
-    @line_item_status_code.setter
-    def line_item_status_code(self, value: str):
-        """Set the line_item_status_code."""
-        self._line_item_status_code = value
-        self._dao.line_item_status_code = value
-
-    @property
-    def waived_fees(self):
-        """Return the waived_fees."""
-        return self._waived_fees
-
-    @waived_fees.setter
-    def waived_fees(self, value: Decimal):
-        """Set the waived_fees."""
-        self._waived_fees = value
-        self._dao.waived_fees = value
-
-    @property
-    def waived_by(self):
-        """Return the waived_by."""
-        return self._waived_by
-
-    @waived_by.setter
-    def waived_by(self, value: str):
-        """Set the waived_by."""
-        self._waived_by = value
-        self._dao.waived_by = value
-
-    @property
-    def filing_type_code(self):
-        """Return the filing_type_code."""
-        return self._dao.fee_schedule.filing_type_code
-
-    @property
-    def fee_distribution_id(self):
-        """Return the fee_distribution_id."""
-        return self._fee_distribution_id
-
-    @fee_distribution_id.setter
-    def fee_distribution_id(self, value: int):
-        """Set the fee_distribution_id."""
-        self._fee_distribution_id = value
-        self._dao.fee_distribution_id = value
-
-    @property
-    def fee_distribution(self):
-        """Return the fee_distribution."""
-        return self._fee_distribution
-
-    @fee_distribution.setter
-    def fee_distribution(self, value: DistributionCodeModel):
-        """Set the fee_distribution."""
-        self._fee_distribution = value
-
-    @property
-    def service_fees(self):
-        """Return the service_fees."""
-        return self._service_fees
-
-    @service_fees.setter
-    def service_fees(self, value: Decimal):
-        """Set the service_fees."""
-        self._service_fees = value
-        self._dao.service_fees = value
-
-    @property
-    def statutory_fees_gst(self):
-        """Return the statutory_fees_gst."""
-        return self._statutory_fees_gst
-
-    @statutory_fees_gst.setter
-    def statutory_fees_gst(self, value: Decimal):
-        """Set the statutory_fees_gst."""
-        self._statutory_fees_gst = value
-        self._dao.statutory_fees_gst = value
-
-    @property
-    def service_fees_gst(self):
-        """Return the service_fees_gst."""
-        return self._service_fees_gst
-
-    @service_fees_gst.setter
-    def service_fees_gst(self, value: Decimal):
-        """Set the service_fees_gst."""
-        self._service_fees_gst = value
-        self._dao.service_fees_gst = value
-
-    def flush(self):
-        """Save the information to the DB."""
-        return self._dao.flush()
 
     @staticmethod
     @user_context
@@ -290,7 +33,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         """Create Payment Line Item record."""
         current_app.logger.debug("<create")
         user: UserContext = kwargs["user"]
-        p = PaymentLineItem()
+        p = PaymentLineItemModel()
         p.invoice_id = invoice_id
         p.total = fee.total_excluding_service_fees
         p.fee_schedule_id = fee.fee_schedule_id
@@ -318,10 +61,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
             else:
                 raise BusinessException(Error.FEE_OVERRIDE_NOT_ALLOWED)
 
-        p_dao = p.flush()
-
-        p = PaymentLineItem()
-        p._dao = p_dao  # pylint: disable=protected-access
+        p.flush()
 
         # Set distribution model to avoid more queries to DB
         p.fee_distribution = distribution_code
@@ -331,10 +71,4 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
     @staticmethod
     def find_by_id(line_id: int):
         """Find by line id."""
-        line_dao = PaymentLineItemModel.find_by_id(line_id)
-
-        line = PaymentLineItem()
-        line._dao = line_dao  # pylint: disable=protected-access
-
-        current_app.logger.debug(">find_by_id")
-        return line
+        return PaymentLineItemModel.find_by_id(line_id)
