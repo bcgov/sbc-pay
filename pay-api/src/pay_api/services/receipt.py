@@ -116,6 +116,11 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         receipt_details["invoice"] = camelcase_dict(invoice_data.asdict(), {})
         # Format date to display in report.
         receipt_details["invoice"]["createdOn"] = get_local_formatted_date(invoice_data.created_on)
+
+        # Check if any payment line items have NOCOI filing_type_code, this is for officer and changes receipt.
+        receipt_details["isSubmission"] = any(
+            line_item.fee_schedule.filing_type_code == "NOCOI" for line_item in invoice_data.payment_line_items
+        )
         return receipt_details
 
     @staticmethod

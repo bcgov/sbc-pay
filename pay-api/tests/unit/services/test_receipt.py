@@ -22,11 +22,16 @@ from datetime import UTC, datetime
 import pytest
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule
+from pay_api.models import FeeCode, FeeSchedule, FilingType
+from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
+from pay_api.services.payment_transaction import (
+    PaymentTransaction as PaymentTransactionService,
+)
 from pay_api.services.receipt import Receipt as ReceiptService
 from tests.utilities.base_test import (
+    factory_distribution_code,
+    factory_distribution_link,
     factory_invoice,
     factory_invoice_reference,
     factory_payment,
@@ -101,6 +106,9 @@ def test_create_receipt_with_invoice(session, public_user_mock):
     response = ReceiptService.create_receipt(invoice.id, input_data, skip_auth_check=True)
     assert response is not None
 
+    receipt_details = ReceiptService.get_receipt_details(input_data, invoice.id, skip_auth_check=True)
+    assert receipt_details["isSubmission"] is False
+
 
 def test_create_receipt_with_no_receipt(session, public_user_mock):
     """Try creating a receipt with invoice number."""
@@ -124,3 +132,40 @@ def test_create_receipt_with_no_receipt(session, public_user_mock):
     with pytest.raises(BusinessException) as excinfo:
         ReceiptService.create_receipt(invoice.id, input_data, skip_auth_check=True)
     assert excinfo.type == BusinessException
+
+
+def test_receipt_details_is_submission_true_with_nocoi(session):
+    """Test isSubmission is True when NOCOI filing type exists."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    invoice = factory_invoice(payment_account)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
+    filing_type = FilingType(code="NOCOI", description="No COI Filing")
+    filing_type.save()
+    fee_code = FeeCode(code="NOCOI_FEE", amount=25.00)
+    fee_code.save()
+    # NOCOI is a filing type that's specific for officers it's free so it's considered a submission
+    fee_schedule = FeeScheduleModel(filing_type_code="NOCOI", corp_type_code="CP", fee_code="NOCOI_FEE")
+    fee_schedule.save()
+
+    distribution_code = factory_distribution_code("Test Distribution Code")
+    distribution_code.save()
+    distribution_link = factory_distribution_link(distribution_code.distribution_code_id, fee_schedule.fee_schedule_id)
+    distribution_link.save()
+
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    receipt = ReceiptModel()
+    receipt.receipt_number = "1234567890"
+    receipt.invoice_id = invoice.id
+    receipt.receipt_date = datetime.now(tz=UTC)
+    receipt.receipt_amount = 25.00
+    receipt.save()
+
+    filing_data = {"corpName": "Test Corp"}
+    receipt_details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True)
+    assert receipt_details["isSubmission"] is True
