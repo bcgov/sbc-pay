@@ -119,6 +119,7 @@ def test_payment_line_item_gst_calculation(
         # Mock GST rate for consistent testing (5% = 0.05)
         test_date = datetime.now(tz=UTC).date()
         with patch.object(TaxRate, "get_gst_effective_rate", return_value=Decimal("0.05")):
+            # Note is_priority and is_future_effective aren't set, even though PRI is set on OTANN
             fee_schedule_service = FeeScheduleService.find_by_corp_type_and_filing_type(
                 "CP", "OTANN", test_date, include_service_fees=has_service_fees
             )

@@ -87,7 +87,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         initial_payment_method = _get_payment_method(payment_request, payment_account)
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
-        fees = _calculate_fees(corp_type, filing_info)
+        fees = FeeSchedule.calculate_fees(corp_type, filing_info)
 
         # Create payment system instance from factory
         pay_service: PaymentSystemService = PaymentSystemFactory.create(
@@ -394,38 +394,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         thread = Thread(target=run_delete)
         thread.start()
         current_app.logger.debug(">accept_delete")
-
-
-def _calculate_fees(corp_type, filing_info):
-    """Calculate and return the fees based on the filing type codes."""
-    fees = []
-    service_fee_applied: bool = False
-    for filing_type_info in filing_info.get("filingTypes"):
-        current_app.logger.debug(f"Getting fees for {filing_type_info.get('filingTypeCode')} ")
-        fee = FeeSchedule.find_by_corp_type_and_filing_type(
-            corp_type=corp_type,
-            filing_type_code=filing_type_info.get("filingTypeCode", None),
-            valid_date=filing_info.get("date", None),
-            jurisdiction=None,
-            is_priority=filing_type_info.get("priority"),
-            is_future_effective=filing_type_info.get("futureEffective"),
-            waive_fees=filing_type_info.get("waiveFees"),
-            quantity=filing_type_info.get("quantity"),
-        )
-        # If service fee is already applied, do not charge again.
-        if service_fee_applied:
-            fee.service_fees = 0
-        elif fee.service_fees > 0:
-            service_fee_applied = True
-
-        if fee.variable:
-            fee.fee_amount = Decimal(str(filing_type_info.get("fee", 0)))
-
-        if filing_type_info.get("filingDescription"):
-            fee.description = filing_type_info.get("filingDescription")
-
-        fees.append(fee)
-    return fees
 
 
 def _update_active_transactions(invoice_id: int):

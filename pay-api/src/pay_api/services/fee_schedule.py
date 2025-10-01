@@ -13,9 +13,11 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from operator import or_
+from typing import Self
 
 from flask import current_app
 from sbc_common_components.tracing.service_tracing import ServiceTracing
@@ -27,6 +29,7 @@ from sqlalchemy.sql.expression import and_, case
 from pay_api.exceptions import BusinessException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeDetailsSchema, FeeScheduleSchema, db
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -38,283 +41,167 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 
 
-@ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
-class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance-attributes
-    """Service to manage Fee related operations."""
+@dataclass
+class FeeCalculationParams:
+    """Parameters for fee calculation."""
 
-    def __init__(self):
-        """Return a User Service object."""
-        self.__dao = None
-        self._fee_schedule_id: int = None
-        self._filing_type_code: str = None
-        self._corp_type_code: str = None
-        self._fee_code: str = None
-        self._fee_start_date: date = None
-        self._fee_end_date: date = None
-        self._fee_amount = Decimal("0")
-        self._filing_type: str = None
-        self._priority_fee = Decimal("0")
-        self._future_effective_fee = Decimal("0")
-        self._waived_fee_amount = Decimal("0")
-        self._quantity: int = 1
-        self._service_fees = Decimal("0")
-        self._service_fee_code: str = None
-        self._variable: bool = False
-        self._gst_added: bool = False
+    quantity: int = 1
+    is_priority: bool = False
+    is_future_effective: bool = False
+    waive_fees: bool = False
+    apply_filing_fees: bool = True
+    account_fee: AccountFeeModel = None
+    variable_fee_amount: Decimal = None
+    service_fee_already_applied: bool = False
 
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = FeeScheduleModel()
-        return self.__dao
 
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao = value
-        self.fee_schedule_id: int = self._dao.fee_schedule_id
-        self.filing_type_code: str = self._dao.filing_type_code
-        self.corp_type_code: str = self._dao.corp_type_code
-        self.fee_code: str = self._dao.fee_code
-        self.fee_start_date: date = self._dao.fee_start_date
-        self.fee_end_date: date = self._dao.fee_end_date
-        self._fee_amount: Decimal = self._dao.fee.amount
-        self._filing_type: str = self._dao.filing_type.description
-        self._service_fee_code: str = self._dao.service_fee_code
-        self._variable: bool = self._dao.variable
-        self._gst_added: bool = self._dao.gst_added
+@dataclass
+class CalculatedFeeSchedule:
+    """Calculated fee schedule. This has additional fields to the model calculated on the fly."""
 
-    @property
-    def fee_schedule_id(self):
-        """Return the fee_schedule_id."""
-        return self._fee_schedule_id
+    filing_type: FilingTypeModel
+    filing_type_code: str
+    corp_type_code: str
+    fee_code: str
+    fee_start_date: date
+    fee_end_date: date
+    variable: bool
+    show_on_pricelist: bool
+    gst_added: bool
+    corp_type: CorpTypeModel
+    fee: FeeCodeModel
+    distribution_codes: list[DistributionCodeModel]
+    quantity: int = 1
+    description: str = ""
+    priority_fee: Decimal = Decimal("0.00")
+    future_effective_fee: Decimal = Decimal("0.00")
+    pst: Decimal = Decimal("0.00")
+    total: Decimal = Decimal("0.00")
+    fee_amount: Decimal = Decimal("0.00")
+    total_excluding_service_fees: Decimal = Decimal("0.00")
+    fee_schedule_id: int | None = None
+    waived_fee_amount: Decimal = Decimal("0.00")
+    service_fees_gst: Decimal = Decimal("0.00")
+    statutory_fees_gst: Decimal = Decimal("0.00")
+    service_fees: float = Decimal("0.00")
+    apply_filing_fees: bool = True
 
-    @fee_schedule_id.setter
-    def fee_schedule_id(self, value: int):
-        """Set the fee_schedule_id."""
-        self._fee_schedule_id = value
-        self._dao.fee_schedule_id = value
+    @classmethod
+    def from_dao(cls, row: FeeScheduleModel) -> Self:
+        """Create a CalculatedFeeSchedule from a DAO."""
+        return cls(
+            fee_schedule_id=row.fee_schedule_id,
+            filing_type=row.filing_type,
+            filing_type_code=row.filing_type_code,
+            corp_type_code=row.corp_type_code,
+            fee_code=row.fee_code,
+            fee_start_date=row.fee_start_date,
+            fee_end_date=row.fee_end_date,
+            fee_amount=row.fee.amount if row.fee else 0,
+            pst=0,
+            total=0,
+            variable=row.variable,
+            show_on_pricelist=row.show_on_pricelist,
+            gst_added=row.gst_added,
+            corp_type=row.corp_type,
+            fee=row.fee,
+            distribution_codes=[],
+            # Needs to be loaded in for calculate_service_fees_check
+            service_fees=row.service_fee.amount if row.service_fee else 0,
+            future_effective_fee=row.future_effective_fee.amount if row.future_effective_fee else 0,
+            priority_fee=row.priority_fee.amount if row.priority_fee else 0,
+            waived_fee_amount=0,
+            total_excluding_service_fees=0,
+        )
 
-    @property
-    def filing_type_code(self):
-        """Return the filing_type_code."""
-        return self._filing_type_code
+    def calculate_singular_fee(self, params: FeeCalculationParams = None):
+        """Create a CalculatedFeeSchedule from a row."""
+        if not params.apply_filing_fees:
+            self.fee_amount = 0
+            self.waived_fee_amount = 0
 
-    @filing_type_code.setter
-    def filing_type_code(self, value: str):
-        """Set the filing_type_code."""
-        self._filing_type_code = value
-        self._dao.filing_type_code = value
+        self.service_fees = FeeSchedule.calculate_service_fees(self, params.account_fee)
 
-    @property
-    def corp_type_code(self):
-        """Return the corp_type_code."""
-        return self._corp_type_code
+        if params.is_priority and self.priority_fee and params.apply_filing_fees:
+            self.priority_fee = self.priority_fee
+        else:
+            self.priority_fee = 0
 
-    @corp_type_code.setter
-    def corp_type_code(self, value: str):
-        """Set the corp_type_code."""
-        self._corp_type_code = value
-        self._dao.corp_type_code = value
+        if params.is_future_effective and self.future_effective_fee and params.apply_filing_fees:
+            self.future_effective_fee = self.future_effective_fee
+        else:
+            self.future_effective_fee = 0
 
-    @property
-    def fee_code(self):
-        """Return the fee_code."""
-        return self._fee_code
+        if params.waive_fees:
+            if not self.variable:
+                self.waived_fee_amount = self.fee_amount + self.priority_fee + self.future_effective_fee
+            self.fee_amount = 0
+            self.priority_fee = 0
+            self.future_effective_fee = 0
+            self.service_fees = 0
+            self.service_fees_gst = 0
+            self.statutory_fees_gst = 0
 
-    @fee_code.setter
-    def fee_code(self, value: str):
-        """Set the fee_code."""
-        self._fee_code = value
-        self._dao.fee_code = value
+        self.quantity = params.quantity or 1
 
-    @property
-    def fee_start_date(self):
-        """Return the fee_start_date."""
-        return self._fee_start_date
+        if self.quantity > 1:
+            self.fee_amount = self.fee_amount * self.quantity
 
-    @fee_start_date.setter
-    def fee_start_date(self, value: date):
-        """Set the fee_start_date."""
-        self._fee_start_date = value
-        self._dao.fee_start_date = value
+        if self.variable and params and params.variable_fee_amount is not None:
+            self.fee_amount = params.variable_fee_amount
 
-    @property
-    def fee_end_date(self):
-        """Return the fee_end_date."""
-        return self._fee_end_date
+        self.total_excluding_service_fees = self.fee_amount + self.priority_fee + self.future_effective_fee
 
-    @fee_end_date.setter
-    def fee_end_date(self, value: str):
-        """Set the fee_end_date."""
-        self._fee_end_date = value
-        self._dao.fee_end_date = value
+        if self.gst_added and not params.waive_fees:
+            self.service_fees_gst = round(
+                self.service_fees * TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC)), 2
+            )
+            self.statutory_fees_gst = round(
+                self.total_excluding_service_fees * TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC)), 2
+            )
 
-    @property
-    def description(self):
-        """Return the description."""
-        return self._filing_type
-
-    @property
-    def total(self):
-        """Return the total fees calculated."""
-        return (
-            self._fee_amount
+        self.total = (
+            self.fee_amount
             + self.priority_fee
             + self.future_effective_fee
             + self.service_fees
             + self.service_fees_gst
             + self.statutory_fees_gst
+            + self.pst
         )
 
-    @property
-    def total_excluding_service_fees(self):
-        """Return the total excluding service fees fees calculated."""
-        return self._fee_amount + self.priority_fee + self.future_effective_fee
+        if params.service_fee_already_applied:
+            self.total -= self.service_fees + self.service_fees_gst
+            self.service_fees = 0
+            self.service_fees_gst = 0
+        self.description = self.filing_type.description
+        return self
 
-    @property
-    def fee_amount(self):
-        """Return the fee amount."""
-        return self._fee_amount
-
-    @fee_amount.setter
-    def fee_amount(self, fee_amount):
-        """Override the fee amount."""
-        # set waived fees attribute to original fee amount
-        if fee_amount == 0 and not self._variable:
-            self._waived_fee_amount = self._fee_amount + self._priority_fee + self._future_effective_fee
-        # Override the fee amount
-        self._fee_amount = fee_amount
-
-    @property
-    def waived_fee_amount(self):
-        """Return waived fee amount."""
-        return self._waived_fee_amount
-
-    @waived_fee_amount.setter
-    def waived_fee_amount(self, waived_fee_amount):
-        """Set waived fee amount."""
-        self._waived_fee_amount = waived_fee_amount
-
-    @property
-    def priority_fee(self):
-        """Return the priority fee."""
-        return self._priority_fee
-
-    @priority_fee.setter
-    def priority_fee(self, value: Decimal):
-        """Set the priority fee."""
-        self._priority_fee = value
-
-    @property
-    def future_effective_fee(self):
-        """Return the future_effective_fee."""
-        return self._future_effective_fee
-
-    @future_effective_fee.setter
-    def future_effective_fee(self, value: Decimal):
-        """Set the future_effective_fee."""
-        self._future_effective_fee = value
-
-    @property
-    def service_fees(self):
-        """Return the service_fees."""
-        return self._service_fees
-
-    @service_fees.setter
-    def service_fees(self, value: Decimal):
-        """Set the service_fees."""
-        self._service_fees = value
-
-    @property
-    def service_fees_gst(self):
-        """Return the GST amount calculated."""
-        if self._gst_added:
-            gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC))
-            return round(self.service_fees * gst_rate, 2)
-        return 0
-
-    @property
-    def statutory_fees_gst(self):
-        """Return the GST amount calculated."""
-        if self._gst_added:
-            gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC))
-            return round(self.total_excluding_service_fees * gst_rate, 2)
-        return 0
-
-    @property
-    def pst(self):
-        """Return the fee amount."""
-        return 0
-
-    @property
-    def quantity(self):
-        """Return the quantity."""
-        return self._quantity
-
-    @quantity.setter
-    def quantity(self, value: int):
-        """Set the quantity."""
-        self._quantity = value
-        if self._quantity and self._quantity > 1:
-            self._fee_amount = self._fee_amount * self._quantity
-
-    @description.setter
-    def description(self, value: str):
-        """Set the description."""
-        self._filing_type = value
-
-    @property
-    def service_fee_code(self):
-        """Return the service_fee_code."""
-        return self._service_fee_code
-
-    @service_fee_code.setter
-    def service_fee_code(self, value: int):
-        """Set the service_fee_code."""
-        self._service_fee_code = value
-        self._dao.service_fee_code = value
-
-    @property
-    def gst_added(self):
-        """Return the gst_added flag."""
-        return self._gst_added
-
-    @gst_added.setter
-    def gst_added(self, value: bool):
-        """Set the gst_added flag."""
-        self._gst_added = value
-        self._dao.gst_added = value
-
-    @property
-    def variable(self) -> bool:
-        """Return the service_fee_code."""
-        return self._variable
-
-    @ServiceTracing.disable_tracing
     def asdict(self):
-        """Return the User as a python dict."""
+        """Return the Calculated Fee Schedule as a python dict."""
         d = {
-            "filing_type": self._filing_type,
+            "filing_type": self.filing_type.description,
             "filing_type_code": self.filing_type_code,
             "filing_fees": float(self.fee_amount),
             "priority_fees": float(self.priority_fee),
             "future_effective_fees": float(self.future_effective_fee),
             "tax": {"gst": float(self.service_fees_gst + self.statutory_fees_gst), "pst": float(self.pst)},
             "total": float(self.total),
-            "service_fees": float(self._service_fees),
-            "processing_fees": 0,
+            "service_fees": float(self.service_fees),
+            "processing_fees": 0.0,
         }
         return d
 
-    def save(self):
-        """Save the fee schedule information."""
-        self._dao.save()
+
+@ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
+class FeeSchedule:
+    """Service to manage Fee related operations."""
 
     @classmethod
     @user_context
     def find_by_corp_type_and_filing_type(  # pylint: disable=too-many-arguments
         cls, corp_type: str, filing_type_code: str, valid_date: date, **kwargs
-    ):
+    ) -> CalculatedFeeSchedule:
         """Calculate fees for the filing by using the arguments."""
         current_app.logger.debug(
             f"<get_fees_by_corp_type_and_filing_type : {corp_type}, {filing_type_code}, " f"{valid_date}"
@@ -329,34 +216,25 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         if not fee_schedule_dao:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
 
-        fee_schedule = FeeSchedule()
-        fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
-        fee_schedule.quantity = kwargs.get("quantity")
+        calculated_fs = CalculatedFeeSchedule.from_dao(fee_schedule_dao)
 
-        # Find fee overrides for account.
         account_fee = AccountFeeModel.find_by_auth_account_id_and_corp_type(user.account_id, corp_type)
 
-        apply_filing_fees: bool = account_fee.apply_filing_fees if account_fee else True
-        if not apply_filing_fees:
-            fee_schedule.fee_amount = 0
-            fee_schedule.waived_fee_amount = 0
+        params = FeeCalculationParams(
+            quantity=kwargs.get("quantity", 1),
+            is_priority=kwargs.get("is_priority", False),
+            is_future_effective=kwargs.get("is_future_effective", False),
+            waive_fees=kwargs.get("waive_fees", False),
+            apply_filing_fees=account_fee.apply_filing_fees if account_fee else True,
+            account_fee=account_fee,
+            variable_fee_amount=kwargs.get("variable_fee_amount"),
+            service_fee_already_applied=kwargs.get("service_fee_already_applied", False),
+        )
 
-        # Set transaction fees
-        fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao, account_fee)
-
-        if kwargs.get("is_priority") and fee_schedule_dao.priority_fee and apply_filing_fees:
-            fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount
-        if kwargs.get("is_future_effective") and fee_schedule_dao.future_effective_fee and apply_filing_fees:
-            fee_schedule.future_effective_fee = fee_schedule_dao.future_effective_fee.amount
-
-        if kwargs.get("waive_fees"):
-            fee_schedule.fee_amount = 0
-            fee_schedule.priority_fee = 0
-            fee_schedule.future_effective_fee = 0
-            fee_schedule.service_fees = 0
+        calculated_fs = calculated_fs.calculate_singular_fee(params)
 
         current_app.logger.debug(">get_fees_by_corp_type_and_filing_type")
-        return fee_schedule
+        return calculated_fs
 
     @staticmethod
     def find_all(corp_type_code: str = None, filing_type_code: str = None, description: str = None):
@@ -397,7 +275,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
     @staticmethod
     @user_context
-    def calculate_service_fees(fee_schedule_model: FeeScheduleModel, account_fee: AccountFeeModel, **kwargs):
+    def calculate_service_fees(calculated_fee_schedule: CalculatedFeeSchedule, account_fee: AccountFeeModel, **kwargs):
         """Calculate service_fees fees."""
         current_app.logger.debug("<calculate_service_fees")
         user: UserContext = kwargs["user"]
@@ -407,12 +285,15 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         if (
             not user.is_staff()
             and not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles)
-            and fee_schedule_model.fee.amount > 0
-            and fee_schedule_model.service_fee
+            and calculated_fee_schedule.fee
+            and calculated_fee_schedule.fee.amount > 0
+            and calculated_fee_schedule.service_fees
         ):
-            service_fee = (account_fee.service_fee if account_fee else None) or fee_schedule_model.service_fee
-            if service_fee:
-                service_fees = FeeCodeModel.find_by_code(service_fee.code).amount
+            account_service_fee = account_fee.service_fee if account_fee else None
+            if account_service_fee:
+                service_fees = FeeCodeModel.find_by_code(account_service_fee.code).amount
+            else:
+                service_fees = calculated_fee_schedule.service_fees
 
         return service_fees
 
@@ -441,7 +322,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         return main_fee_gst, service_fee_gst, total_gst
 
     @staticmethod
-    def get_fee_details(product_code: str = None):
+    def get_fee_details(product_code: str = None) -> dict:
         """Get Products Fees -the cost of a filing and the list of filings."""
         current_app.logger.debug("<get_fee_details")
         data = {"items": []}
@@ -503,3 +384,33 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
             data["items"].append(fee_details_schema.to_dict())
         current_app.logger.debug(">get_fee_details")
         return data
+
+    @staticmethod
+    def calculate_fees(corp_type, filing_info) -> list[CalculatedFeeSchedule]:
+        """Calculate and return the fees based on the filing type codes."""
+        fees = []
+        service_fee_already_applied: bool = False
+        for filing_type_info in filing_info.get("filingTypes"):
+            current_app.logger.debug(f"Getting fees for {filing_type_info.get('filingTypeCode')} ")
+            calculated_fee = FeeSchedule.find_by_corp_type_and_filing_type(
+                corp_type=corp_type,
+                filing_type_code=filing_type_info.get("filingTypeCode", None),
+                valid_date=filing_info.get("date", None),
+                service_fee_already_applied=service_fee_already_applied,
+                jurisdiction=None,
+                is_priority=filing_type_info.get("priority"),
+                is_future_effective=filing_type_info.get("futureEffective"),
+                waive_fees=filing_type_info.get("waiveFees"),
+                quantity=filing_type_info.get("quantity"),
+                variable_fee_amount=Decimal(str(filing_type_info.get("fee", 0)))
+                if filing_type_info.get("fee")
+                else None,
+            )
+            if calculated_fee.service_fees > 0:
+                service_fee_already_applied = True
+
+            if filing_type_info.get("filingDescription"):
+                calculated_fee.description = filing_type_info.get("filingDescription")
+
+            fees.append(calculated_fee)
+        return fees

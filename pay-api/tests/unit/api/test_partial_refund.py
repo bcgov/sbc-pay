@@ -48,6 +48,7 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RefundsPartialType,
     Role,
+    TransactionStatus,
 )
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
@@ -90,12 +91,16 @@ def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
         data=json.dumps(data),
         headers=headers,
     )
+    assert rv.status_code == 201
+    assert rv.json.get("id") is not None
     txn_id = rv.json.get("id")
-    client.patch(
+    rv = client.patch(
         f"/api/v1/payment-requests/{inv_id}/transactions/{txn_id}",
         data=json.dumps({"receipt_number": receipt_number}),
         headers=headers,
     )
+    assert rv.status_code == 200
+    assert rv.json.get("statusCode") == TransactionStatus.COMPLETED.value
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}

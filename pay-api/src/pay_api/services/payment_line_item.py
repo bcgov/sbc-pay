@@ -18,7 +18,7 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.services.fee_schedule import FeeSchedule
+from pay_api.services.fee_schedule import CalculatedFeeSchedule
 from pay_api.utils.enums import LineItemStatus, Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -29,7 +29,7 @@ class PaymentLineItem:
 
     @staticmethod
     @user_context
-    def create(invoice_id: int, fee: FeeSchedule, **kwargs):
+    def create(invoice_id: int, fee: CalculatedFeeSchedule, **kwargs):
         """Create Payment Line Item record."""
         current_app.logger.debug("<create")
         user: UserContext = kwargs["user"]

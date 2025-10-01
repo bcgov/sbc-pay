@@ -28,7 +28,7 @@ from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment, PaymentAcc
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services import CFSService
-from pay_api.services.fee_schedule import FeeSchedule as FeeScheduleService
+from pay_api.services.fee_schedule import CalculatedFeeSchedule, FeeCalculationParams
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.services.payment_line_item import PaymentLineItem
@@ -465,18 +465,18 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
         )
         distribution_link.save()
 
-    fees = [FeeScheduleService() for _ in fee_schedules]
+    fees = [None for _ in fee_schedules]
+    calculated_fees = []
     quantities = [1, 1, 1, 1, 1, 1, 3, 7, 3, 7, 2, 5]
     for fee, schedule, qty in zip(fees, fee_schedules, quantities, strict=False):
-        fee._dao = schedule
-        fee.quantity = qty  # Set quantity to ensure total includes quantity * fee_amount
+        fee = CalculatedFeeSchedule.from_dao(schedule)
         if schedule.service_fee_code:
             service_fee_amount = FeeCodeModel.find_by_code(schedule.service_fee_code).amount
             fee.service_fees = service_fee_amount
-
+        calculated_fees.append(fee.calculate_singular_fee(FeeCalculationParams(quantity=qty)))
     with patch("pay_api.models.tax_rate.TaxRate.get_gst_effective_rate", return_value=Decimal("0.05")):
         # Calculate GST using fee_schedule properties
-        invoice_gst_amount = sum(fee.statutory_fees_gst + fee.service_fees_gst for fee in fees)
+        invoice_gst_amount = sum(fee.statutory_fees_gst + fee.service_fees_gst for fee in calculated_fees)
         # GST calculated on all fees (all now have gst_added=True):
         # (25.00 + 50.00 + 10.00 + 75.00 + 100.00 + 150.00 + 130.16 + 1003.74 + 99.75 + 465.50 + 200.50 + 63.75)
         # * 0.05 = 118.68
@@ -491,7 +491,7 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
 
         line_items = [
             PaymentLineItem.create(invoice_id=invoice.id, fee=fee, filing_info={"quantity": qty})
-            for fee, qty in zip(fees, quantities, strict=False)
+            for fee, qty in zip(calculated_fees, quantities, strict=False)
         ]
 
         # Refresh the invoice to get the updated payment_line_items
