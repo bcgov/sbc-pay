@@ -37,7 +37,6 @@ from pay_api.utils.enums import (
     TransactionStatus,
 )
 from pay_api.utils.errors import Error
-from tests import skip_in_pod
 from tests.utilities.base_test import (
     factory_invoice,
     factory_invoice_reference,
@@ -151,7 +150,6 @@ def test_transaction_create_from_invalid_payment(session):
     assert excinfo.value.code == Error.INVALID_INVOICE_ID.name
 
 
-@skip_in_pod
 def test_transaction_update(session, public_user_mock):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
@@ -183,7 +181,6 @@ def test_transaction_update(session, public_user_mock):
     assert payment.receipt_number
 
 
-@skip_in_pod
 def test_transaction_update_with_no_receipt(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
@@ -216,7 +213,6 @@ def test_transaction_update_with_no_receipt(session):
     assert transaction.status_code == TransactionStatus.FAILED.value
 
 
-@skip_in_pod
 def test_transaction_update_completed(session, public_user_mock):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
@@ -385,7 +381,6 @@ def test_no_existing_transaction(session):
     assert transaction is None
 
 
-@skip_in_pod
 def test_transaction_update_on_paybc_connection_error(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
@@ -430,7 +425,6 @@ def test_transaction_update_on_paybc_connection_error(session):
     assert transaction.status_code == TransactionStatus.FAILED.value
 
 
-@skip_in_pod
 def test_update_transaction_for_direct_pay_with_response_url(session):
     """Assert that the receipt records are created."""
     response_url = (
@@ -462,7 +456,6 @@ def test_update_transaction_for_direct_pay_with_response_url(session):
     assert transaction.status_code == TransactionStatus.COMPLETED.value
 
 
-@skip_in_pod
 def test_update_transaction_for_direct_pay_without_response_url(session):
     """Assert that the receipt records are created."""
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
@@ -483,7 +476,6 @@ def test_update_transaction_for_direct_pay_without_response_url(session):
     assert transaction.status_code == TransactionStatus.COMPLETED.value
 
 
-@skip_in_pod
 def test_event_failed_transactions(session, public_user_mock, monkeypatch):
     """Assert that the transaction status is EVENT_FAILED when Q is not available."""
     # 1. Create payment records
