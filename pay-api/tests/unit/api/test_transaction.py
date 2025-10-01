@@ -27,7 +27,6 @@ from requests.exceptions import ConnectionError
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import PaymentMethod, QueueSources
-from tests import skip_in_pod
 from tests.utilities.base_test import (
     factory_invoice,
     factory_invoice_reference,
@@ -270,7 +269,6 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
     assert rv.status_code == 200
 
 
-@skip_in_pod
 def test_transaction_put_completed_payment(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
@@ -349,7 +347,6 @@ def test_transactions_get(session, client, jwt, app):
     assert schema_utils.validate(rv.json, "transactions")[0]
 
 
-@skip_in_pod
 def test_transaction_patch_completed_payment_and_transaction_status(session, client, jwt, app):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     token = jwt.create_jwt(get_claims(), token_header)
@@ -383,7 +380,6 @@ def test_transaction_patch_completed_payment_and_transaction_status(session, cli
     assert rv.json.get("statusCode") == "COMPLETED"
 
 
-@skip_in_pod
 def test_transaction_patch_when_paybc_down(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
@@ -420,7 +416,6 @@ def test_transaction_patch_when_paybc_down(session, client, jwt, app):
         assert rv.json.get("paySystemReasonCode") == "SERVICE_UNAVAILABLE"
 
 
-@skip_in_pod
 def test_transaction_patch_direct_pay(session, client, jwt, app):
     """Assert that the transaction patch updates the payment receipts."""
     token = jwt.create_jwt(get_claims(), token_header)
