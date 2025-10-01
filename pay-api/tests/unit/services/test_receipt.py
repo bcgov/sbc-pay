@@ -22,7 +22,8 @@ from datetime import UTC, datetime
 import pytest
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule
+from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
+from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.receipt import Receipt as ReceiptService
@@ -101,6 +102,9 @@ def test_create_receipt_with_invoice(session, public_user_mock):
     response = ReceiptService.create_receipt(invoice.id, input_data, skip_auth_check=True)
     assert response is not None
 
+    receipt_details = ReceiptService.get_receipt_details(input_data, invoice.id, skip_auth_check=True)
+    assert receipt_details["isSubmission"] is False
+
 
 def test_create_receipt_with_no_receipt(session, public_user_mock):
     """Try creating a receipt with invoice number."""
@@ -124,3 +128,30 @@ def test_create_receipt_with_no_receipt(session, public_user_mock):
     with pytest.raises(BusinessException) as excinfo:
         ReceiptService.create_receipt(invoice.id, input_data, skip_auth_check=True)
     assert excinfo.type == BusinessException
+
+
+def test_receipt_details_is_submission_true_with_nocoi(session):
+    """Test isSubmission is True when NOCOI filing type exists."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    invoice = factory_invoice(payment_account)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
+    filing_type = FilingType(code="NOCOI", description="No COI Filing")
+    filing_type.save()
+    corp_type = CorpType(code="CP", description="Cooperative")
+    corp_type.save()
+    fee_code = FeeCode(code="NOCOI_FEE", amount=25.00)
+    fee_code.save()
+    fee_schedule = FeeScheduleModel(filing_type_code="NOCOI", corp_type_code="CP", fee_code="NOCOI_FEE")
+    fee_schedule.save()
+
+    # Create payment line item with NOCOI filing type
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    filing_data = {"corpName": "Test Corp"}
+    receipt_details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True)
+    assert receipt_details["isSubmission"] is True
