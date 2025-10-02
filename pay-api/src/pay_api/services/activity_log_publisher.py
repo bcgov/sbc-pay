@@ -15,6 +15,7 @@
 
 from datetime import UTC, datetime
 
+import pytz
 from flask import current_app, request
 from sbc_common_components.utils.enums import QueueMessageTypes
 
@@ -96,7 +97,19 @@ class ActivityLogPublisher:
     @staticmethod
     def publish_statement_interval_change_event(params: StatementIntervalChangeEvent):
         """Publish statement interval change event to the activity log queue."""
-        item_value = f"{str(params.old_frequency).title()}|{str(params.new_frequency).title()}"
+        effective_date_formatted = None
+        if params.effective_date:
+            pacific_tz = pytz.timezone("America/Vancouver")
+            effective_date_formatted = params.effective_date.astimezone(pacific_tz).strftime("%Y-%m-%d")
+
+        item_value_parts = [
+            str(params.old_frequency).title(),
+            str(params.new_frequency).title()
+        ]
+        if effective_date_formatted:
+            item_value_parts.append(effective_date_formatted)
+
+        item_value = "|".join(item_value_parts)
         ActivityLogPublisher._create_and_publish_activity_event(
             action=ActivityAction.STATEMENT_INTERVAL_CHANGE.value,
             account_id=params.account_id,

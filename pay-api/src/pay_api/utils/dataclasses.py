@@ -14,6 +14,7 @@
 """Data classes."""
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from attrs import define
 
@@ -48,6 +49,7 @@ class StatementIntervalChangeEvent(BaseActivityEvent):
 
     old_frequency: str
     new_frequency: str
+    effective_date: datetime = None
 
 
 @dataclass

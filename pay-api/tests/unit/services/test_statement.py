@@ -36,7 +36,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
+from pay_api.utils.enums import ActivityAction, ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
 from pay_api.utils.util import get_statement_date_string
 from tests.utilities.base_test import (
     factory_eft_shortname,
@@ -185,7 +185,8 @@ def test_get_weekly_statement_report(session):
     assert report_response is not None
 
 
-def test_get_weekly_interim_statement(session, admin_users_mock):
+@patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
+def test_get_weekly_interim_statement(mock_publish, session, admin_users_mock):
     """Assert that a weekly interim statement is generated."""
     account_create_date = datetime(2023, 10, 1, 12, 0)
     with freeze_time(account_create_date):
@@ -249,7 +250,20 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
     assert len(weekly_invoices) == 1
     assert weekly_invoices[0].invoice_id == weekly_invoice.id
 
+    statement_interval_calls = [
+        call for call in mock_publish.call_args_list if call[0][0].payload["action"] == ActivityAction.STATEMENT_INTERVAL_CHANGE.value
+    ]
+    assert len(statement_interval_calls) == 1
 
+    call_args = statement_interval_calls[0][0][0]
+    payload = call_args.payload
+    assert payload["action"] == ActivityAction.STATEMENT_INTERVAL_CHANGE.value
+    assert payload["orgId"] == account.id
+    assert "None|Monthly|" in payload["itemValue"]
+    assert len(payload["itemValue"].split("|")) == 3
+
+
+@patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
 def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
     """Assert that a payment method update interim statement is generated."""
     account_create_date = datetime(2023, 10, 1, 12, 0)
@@ -316,7 +330,8 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
     assert interim_invoices[0].invoice_id == monthly_invoice.id
 
 
-def test_get_monthly_interim_statement(session, admin_users_mock):
+@patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
+def test_get_monthly_interim_statement(mock_publish, session, admin_users_mock):
     """Assert that a monthly interim statement is generated."""
     account_create_date = datetime(2023, 10, 1, 12, 0)
     with freeze_time(account_create_date):
@@ -383,6 +398,18 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
     assert monthly_invoices is not None
     assert len(monthly_invoices) == 1
     assert monthly_invoices[0].invoice_id == monthly_invoice.id
+
+    statement_interval_calls = [
+        call for call in mock_publish.call_args_list if call[0][0].payload["action"] == ActivityAction.STATEMENT_INTERVAL_CHANGE.value
+    ]
+    assert len(statement_interval_calls) == 1
+
+    call_args = statement_interval_calls[0][0][0]
+    payload = call_args.payload
+    assert payload["action"] == ActivityAction.STATEMENT_INTERVAL_CHANGE.value
+    assert payload["orgId"] == account.id
+    assert "None|Monthly|" in payload["itemValue"]
+    assert len(payload["itemValue"].split("|")) == 3
 
 
 def test_interim_statement_settings_eft(db, session, admin_users_mock):
