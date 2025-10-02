@@ -17,9 +17,11 @@
 Test-Suite to ensure that the Activity Log Publisher Service is working as expected.
 """
 
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+import pytz
 
 from pay_api.services.activity_log_publisher import ActivityLogPublisher
 from pay_api.utils.dataclasses import (
@@ -34,24 +36,28 @@ from pay_api.utils.enums import ActivityAction, PaymentMethod, QueueSources
 
 
 @pytest.mark.parametrize(
-    "old_frequency,new_frequency,expected_value",
+    "old_frequency,new_frequency,effective_date,expected_value",
     [
-        ("WEEKLY", "MONTHLY", "Weekly|Monthly"),
-        ("DAILY", "WEEKLY", "Daily|Weekly"),
-        (None, "MONTHLY", "None|Monthly"),
-        ("WEEKLY", None, "Weekly|None"),
-        ("DAILY", "DAILY", "Daily|Daily"),
+        ("WEEKLY", "MONTHLY", None, "Weekly|Monthly"),
+        ("DAILY", "WEEKLY", None, "Daily|Weekly"),
+        (None, "MONTHLY", None, "None|Monthly"),
+        ("WEEKLY", None, None, "Weekly|None"),
+        ("DAILY", "DAILY", None, "Daily|Daily"),
+        ("WEEKLY", "MONTHLY", datetime(2024, 1, 15, 10, 30, 0, tzinfo=pytz.UTC), "Weekly|Monthly|January 15, 2024"),
+        ("DAILY", "WEEKLY", datetime(2024, 1, 15, 8, 0, 0, tzinfo=pytz.UTC), "Daily|Weekly|January 15, 2024"),
+        (None, "MONTHLY", None, "None|Monthly"),
     ],
 )
 @patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
 def test_statement_interval_change_frequency_combinations(
-    mock_publish, old_frequency, new_frequency, expected_value, session, client, jwt, app
+    mock_publish, old_frequency, new_frequency, effective_date, expected_value, session, client, jwt, app
 ):
     """Test statement interval change with different frequency combinations."""
     params = StatementIntervalChangeEvent(
         account_id="test-account-123",
         old_frequency=old_frequency,
         new_frequency=new_frequency,
+        effective_date=effective_date,
         source=QueueSources.PAY_API.value,
     )
 

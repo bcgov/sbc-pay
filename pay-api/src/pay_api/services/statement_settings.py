@@ -152,18 +152,17 @@ class StatementSettings:
         statements_settings_schema = StatementSettingsModelSchema()
         today = datetime.now(tz=UTC)
         current_statements_settings = StatementSettingsModel.find_active_settings(auth_account_id, today)
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        payment_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
 
         old_frequency = None
         if current_statements_settings is None:
-            # no frequency yet.first time accessing the statement settings.so create a new record
             statements_settings = StatementSettingsModel(frequency=frequency, payment_account_id=payment_account.id)
             statements_settings.save()
 
             ActivityLogPublisher.publish_statement_interval_change_event(
                 StatementIntervalChangeEvent(
                     account_id=payment_account.auth_account_id,
-                    old_frequency=old_frequency,
+                    old_frequency=None,
                     new_frequency=frequency,
                     source=QueueSources.PAY_API.value,
                 )
@@ -183,13 +182,12 @@ class StatementSettings:
         old_frequency = current_statements_settings.frequency
         max_frequency = StatementSettings._find_longest_frequency(current_statements_settings.frequency, frequency)
         last_date = StatementSettings._get_end_of(max_frequency)
+        effective_date = last_date + timedelta(days=1)
         current_statements_settings.to_date = last_date
         current_statements_settings.save()
 
         new_statements_settings = StatementSettingsModel(
-            frequency=frequency,
-            payment_account_id=payment_account.id,
-            from_date=last_date + timedelta(days=1),
+            frequency=frequency, payment_account_id=payment_account.id, from_date=effective_date
         )
 
         new_statements_settings.save()
@@ -200,6 +198,7 @@ class StatementSettings:
                     account_id=payment_account.auth_account_id,
                     old_frequency=old_frequency,
                     new_frequency=frequency,
+                    effective_date=effective_date,
                     source=QueueSources.PAY_API.value,
                 )
             )

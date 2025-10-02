@@ -34,7 +34,9 @@ from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import StatementSchema as StatementModelSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
+from pay_api.services.activity_log_publisher import ActivityLogPublisher
 from pay_api.utils.constants import DT_SHORT_FORMAT
+from pay_api.utils.dataclasses import StatementIntervalChangeEvent
 from pay_api.utils.enums import (
     ContentType,
     EFTFileLineType,
@@ -43,6 +45,7 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     NotificationStatus,
     PaymentMethod,
+    QueueSources,
     StatementFrequency,
     StatementTemplate,
 )
@@ -673,9 +676,20 @@ class Statement:  # pylint:disable=too-many-public-methods
         if latest_settings is None or latest_settings.id == active_settings.id:
             latest_settings = StatementSettingsModel()
 
+        effective_date = today + timedelta(days=1)
+        if latest_settings.frequency != new_frequency:
+            ActivityLogPublisher.publish_statement_interval_change_event(
+                StatementIntervalChangeEvent(
+                    account_id=account.id,
+                    old_frequency=latest_settings.frequency,
+                    new_frequency=new_frequency,
+                    effective_date=effective_date,
+                    source=QueueSources.PAY_API.value,
+                )
+            )
         latest_settings.frequency = new_frequency
         latest_settings.payment_account_id = account.id
-        latest_settings.from_date = today + timedelta(days=1)
+        latest_settings.from_date = effective_date
         latest_settings.save()
 
         return statement

@@ -14,6 +14,7 @@
 """Model to handle statements data."""
 
 from datetime import UTC, datetime
+from typing import Self
 
 from sqlalchemy import ForeignKey
 
@@ -66,7 +67,7 @@ class StatementSettings(BaseModel):
         return query.one_or_none()
 
     @classmethod
-    def find_latest_settings(cls, auth_account_id: str):
+    def find_latest_settings(cls, auth_account_id: str) -> Self:
         """Return latest active statement setting for the account."""
         query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
         query = query.filter(StatementSettings.to_date.is_(None))
