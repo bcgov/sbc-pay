@@ -194,7 +194,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         if payment_account and payment_account.payment_method == PaymentMethod.EFT.value:
             # EFT payment method should automatically set statement frequency to MONTHLY
             auth_account_id = str(payment_account.auth_account_id)
-            statements_settings: StatementSettingsModel = StatementSettingsModel.find_latest_settings(auth_account_id)
+            statements_settings = StatementSettingsModel.find_latest_settings(auth_account_id)
 
             PaymentAccount._check_and_update_statement_notifications(payment_account)
             if statements_settings is not None and statements_settings.frequency != StatementFrequency.MONTHLY.value:
