@@ -39,6 +39,8 @@ def get_invoice_receipt(invoice_id):
     try:
         receipt_details = ReceiptService.get_receipt_details({}, invoice_id, skip_auth_check=False)
         receipt_details.pop("paymentMethodDescription", None)
+        # This is because NAMES isn't flexible
+        receipt_details.pop("isSubmission", None)
 
     except BusinessException as exception:
         return exception.response()
