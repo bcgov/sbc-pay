@@ -676,20 +676,20 @@ class Statement:  # pylint:disable=too-many-public-methods
         if latest_settings is None or latest_settings.id == active_settings.id:
             latest_settings = StatementSettingsModel()
 
-        effective_setting_date = today + timedelta(days=1)
+        effective_date = today + timedelta(days=1)
         if latest_settings.frequency != new_frequency:
             ActivityLogPublisher.publish_statement_interval_change_event(
                 StatementIntervalChangeEvent(
                     account_id=account.id,
                     old_frequency=latest_settings.frequency,
                     new_frequency=new_frequency,
-                    effective_date=effective_setting_date,
+                    effective_date=effective_date,
                     source=QueueSources.PAY_API.value,
                 )
             )
         latest_settings.frequency = new_frequency
         latest_settings.payment_account_id = account.id
-        latest_settings.from_date = effective_setting_date
+        latest_settings.from_date = effective_date
         latest_settings.save()
 
         return statement
