@@ -43,9 +43,9 @@ from pay_api.utils.enums import ActivityAction, PaymentMethod, QueueSources
         (None, "MONTHLY", None, "None|Monthly"),
         ("WEEKLY", None, None, "Weekly|None"),
         ("DAILY", "DAILY", None, "Daily|Daily"),
-        ("WEEKLY", "MONTHLY", datetime(2024, 1, 15, 10, 30, 0, tzinfo=pytz.UTC), "Weekly|Monthly|2024-01-15"),
-        ("DAILY", "WEEKLY", datetime(2024, 1, 15, 8, 0, 0, tzinfo=pytz.UTC), "Daily|Weekly|2024-01-15"),
-        (None, "MONTHLY", datetime(2024, 1, 15, 16, 0, 0, tzinfo=pytz.UTC), "None|Monthly|2024-01-15"),
+        ("WEEKLY", "MONTHLY", datetime(2024, 1, 15, 10, 30, 0, tzinfo=pytz.UTC), "Weekly|Monthly|January 15, 2024"),
+        ("DAILY", "WEEKLY", datetime(2024, 1, 15, 8, 0, 0, tzinfo=pytz.UTC), "Daily|Weekly|January 15, 2024"),
+        (None, "MONTHLY", None, "None|Monthly"),
     ],
 )
 @patch("pay_api.services.activity_log_publisher.gcp_queue_publisher.publish_to_queue")
