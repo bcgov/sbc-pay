@@ -46,7 +46,8 @@ def test_invoice_eft_created_return_completed(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
     line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    invoice = Invoice_service.find_by_id(i.id, skip_auth_check=True).asdict()
+    invoice = Invoice_service.find_by_id(i.id, skip_auth_check=True)
+    invoice = Invoice_service.asdict(invoice)
 
     assert invoice is not None
     assert invoice["payment_method"] == PaymentMethod.EFT.value
@@ -126,5 +127,5 @@ def test_invoice_with_temproary_business_identifier(session):
     assert invoice.payment_line_items is not None
     assert invoice.folio_number is not None
     assert invoice.business_identifier is not None
-    invoice_dict = invoice.asdict()
+    invoice_dict = Invoice_service.asdict(invoice)
     assert invoice_dict.get("business_identifier") is None

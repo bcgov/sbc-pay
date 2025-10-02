@@ -443,9 +443,6 @@ def test_get_fee_with_gst_enabled(client, jwt, session):
     assert response_data["filingFees"] == 100.0
     assert response_data["serviceFees"] == 0.0
 
-    # Get the actual GST rate from the database
-    from pay_api.models.tax_rate import TaxRate
-
     gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     expected_gst = float(round(100.0 * float(gst_rate), 2))
     expected_total = 100.0 + expected_gst
@@ -490,7 +487,6 @@ def test_get_fee_with_gst_and_service_fees(client, jwt, session):
     assert response_data["serviceFees"] == 25.0
 
     # Get the actual GST rate from the database
-    from pay_api.models.tax_rate import TaxRate
 
     gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     expected_filing_gst = float(round(200.0 * float(gst_rate), 2))

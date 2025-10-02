@@ -25,15 +25,14 @@ from requests import HTTPError
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RefundPartialLine
 from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.hashing import HashingService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.cache import cache
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
@@ -102,7 +101,7 @@ class OrderStatus:
 class DirectPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
+    def get_payment_system_url_for_invoice(self, invoice: InvoiceModel, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
         """Return the payment system url."""
         today = current_local_time().strftime(PAYBC_DATE_FORMAT)
         url_params_dict = {
@@ -192,9 +191,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def create_invoice(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
@@ -206,7 +205,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def update_invoice(  # pylint:disable=too-many-arguments
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
         invoice_id: int,  # noqa: ARG002
         paybc_inv_number: str,  # noqa: ARG002
@@ -233,7 +232,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def process_cfs_refund(
         self,
         invoice: InvoiceModel,  # noqa: ARG002
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
@@ -281,7 +280,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         pay_response_url: str,  # noqa: ARG002
         invoice_reference: InvoiceReference,  # noqa: ARG002
     ):

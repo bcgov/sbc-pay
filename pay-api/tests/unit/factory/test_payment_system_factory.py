@@ -25,7 +25,6 @@ from freezegun import freeze_time
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService
-from pay_api.services.deposit_service import DepositService
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.eft_service import EftService
 from pay_api.services.internal_pay_service import InternalPayService
@@ -79,7 +78,6 @@ def test_paybc_system_factory(session, public_user_mock):
     # Test for EFT Service
     instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
     assert isinstance(instance, EftService)
-    assert isinstance(instance, DepositService)
     assert isinstance(instance, PaymentSystemService)
 
 

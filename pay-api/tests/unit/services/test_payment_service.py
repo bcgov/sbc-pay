@@ -28,7 +28,7 @@ from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment, PaymentAcc
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services import CFSService
-from pay_api.services.fee_schedule import FeeSchedule as FeeScheduleService
+from pay_api.services.fee_schedule import CalculatedFeeSchedule, FeeCalculationParams
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.services.payment_line_item import PaymentLineItem
@@ -123,7 +123,7 @@ def test_create_payment_record_with_internal_pay(session, public_user_mock):
 def test_create_payment_record_rollback(session, public_user_mock):
     """Assert that the payment records are created."""
     # Mock here that the invoice update fails here to test the rollback scenario
-    with patch("pay_api.services.invoice.Invoice.flush", side_effect=Exception("mocked error")):
+    with patch("pay_api.models.invoice.Invoice.flush", side_effect=Exception("mocked error")):
         with pytest.raises(Exception) as excinfo:
             PaymentService.create_invoice(get_payment_request(), get_auth_basic_user())
         assert excinfo.type is Exception
@@ -142,7 +142,6 @@ def test_create_payment_record_rollback(session, public_user_mock):
 
 def test_create_payment_record_rollback_on_paybc_connection_error(session, public_user_mock):
     """Assert that the payment records are not created."""
-    # Create a payment account
     factory_payment_account()
 
     # Mock here that the invoice update fails here to test the rollback scenario
@@ -213,17 +212,28 @@ def test_create_payment_record_with_rs(session, public_user_mock):
 def test_delete_payment(session, auth_mock, public_user_mock):
     """Assert that the payment records are soft deleted."""
     payment_account = factory_payment_account()
-    # payment = factory_payment()
     payment_account.save()
-    # payment.save()
-    cfs_account = CfsAccount.find_by_account_id(payment_account.id)[0]
+    cfs_accounts = CfsAccount.find_by_account_id(payment_account.id)
+    if not cfs_accounts:
+        cfs_account = CfsAccount(
+            account_id=payment_account.id,
+            cfs_account="4101",
+            cfs_party="11111",
+            cfs_site="29921",
+            payment_method=payment_account.payment_method,
+            status="ACTIVE",
+        )
+        cfs_account.save()
+    else:
+        cfs_account = cfs_accounts[0]
     invoice = factory_invoice(payment_account, total=10)
     invoice.cfs_account_id = cfs_account.id
     invoice.save()
     invoice_reference = factory_invoice_reference(invoice.id, invoice_number="INV-001").save()
 
-    # Create a payment for this reference
-    payment = factory_payment(invoice_number=invoice_reference.invoice_number, invoice_amount=10).save()
+    payment = factory_payment(
+        invoice_number=invoice_reference.invoice_number, invoice_amount=10, payment_account_id=payment_account.id
+    ).save()
 
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
@@ -455,18 +465,18 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
         )
         distribution_link.save()
 
-    fees = [FeeScheduleService() for _ in fee_schedules]
+    fees = [None for _ in fee_schedules]
+    calculated_fees = []
     quantities = [1, 1, 1, 1, 1, 1, 3, 7, 3, 7, 2, 5]
     for fee, schedule, qty in zip(fees, fee_schedules, quantities, strict=False):
-        fee._dao = schedule
-        fee.quantity = qty  # Set quantity to ensure total includes quantity * fee_amount
+        fee = CalculatedFeeSchedule.from_dao(schedule)
         if schedule.service_fee_code:
             service_fee_amount = FeeCodeModel.find_by_code(schedule.service_fee_code).amount
             fee.service_fees = service_fee_amount
-
+        calculated_fees.append(fee.calculate_singular_fee(FeeCalculationParams(quantity=qty)))
     with patch("pay_api.models.tax_rate.TaxRate.get_gst_effective_rate", return_value=Decimal("0.05")):
         # Calculate GST using fee_schedule properties
-        invoice_gst_amount = sum(fee.statutory_fees_gst + fee.service_fees_gst for fee in fees)
+        invoice_gst_amount = sum(fee.statutory_fees_gst + fee.service_fees_gst for fee in calculated_fees)
         # GST calculated on all fees (all now have gst_added=True):
         # (25.00 + 50.00 + 10.00 + 75.00 + 100.00 + 150.00 + 130.16 + 1003.74 + 99.75 + 465.50 + 200.50 + 63.75)
         # * 0.05 = 118.68
@@ -481,7 +491,7 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
 
         line_items = [
             PaymentLineItem.create(invoice_id=invoice.id, fee=fee, filing_info={"quantity": qty})
-            for fee, qty in zip(fees, quantities, strict=False)
+            for fee, qty in zip(calculated_fees, quantities, strict=False)
         ]
 
         # Refresh the invoice to get the updated payment_line_items

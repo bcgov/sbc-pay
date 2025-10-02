@@ -22,11 +22,11 @@ from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
@@ -39,7 +39,7 @@ from .payment_line_item import PaymentLineItem
 class PaybcService(PaymentSystemService, CFSService):
     """Service to manage PayBC integration. - for NSF/balance payments, we usually use direct pay service instead."""
 
-    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
+    def get_payment_system_url_for_invoice(self, invoice: InvoiceModel, inv_ref: InvoiceReference, return_url: str):  # noqa: ARG002
         """Return the payment system url."""
         current_app.logger.debug("<get_payment_system_url")
         pay_system_url = self._build_payment_url(inv_ref, return_url)
@@ -77,7 +77,7 @@ class PaybcService(PaymentSystemService, CFSService):
         self,
         payment_account: PaymentAccount,  # pylint: disable=too-many-locals
         line_items: list[PaymentLineItem],  # noqa: ARG002
-        invoice: Invoice,  # noqa: ARG002
+        invoice: InvoiceModel,  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> InvoiceReference:
         """Create Invoice in PayBC."""
@@ -87,7 +87,10 @@ class PaybcService(PaymentSystemService, CFSService):
         for line_item in line_items:
             line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
 
-        invoice_response = self.create_account_invoice(invoice.id, line_item_models, payment_account)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(
+            payment_account.id, payment_account.payment_method
+        )
+        invoice_response = self.create_account_invoice(invoice.id, line_item_models, cfs_account)
 
         invoice_reference: InvoiceReference = InvoiceReference.create(
             invoice.id,
@@ -99,7 +102,7 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def update_invoice(  # pylint: disable=too-many-arguments
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         line_items: list[PaymentLineItem],  # noqa: ARG002
         invoice_id: int,  # noqa: ARG002
         paybc_inv_number: str,  # noqa: ARG002
@@ -127,16 +130,19 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def get_receipt(
         self,
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         pay_response_url: str,  # noqa: ARG002
         invoice_reference: InvoiceReference,  # noqa: ARG002
     ):
         """Get receipt from paybc for the receipt number or get receipt against invoice number."""
         current_app.logger.debug("<paybc_service_Getting token")
         current_app.logger.debug("<Getting receipt")
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(
+            payment_account.id, payment_account.payment_method
+        )
         receipt_url = (
-            current_app.config.get("CFS_BASE_URL") + f"/cfs/parties/{payment_account.cfs_party}/accs/"
-            f"{payment_account.cfs_account}/sites/{payment_account.cfs_site}/rcpts/"
+            current_app.config.get("CFS_BASE_URL") + f"/cfs/parties/{cfs_account.cfs_party}/accs/"
+            f"{cfs_account.cfs_account}/sites/{cfs_account.cfs_site}/rcpts/"
         )
         parsed_url = parse_url_params(pay_response_url)
         receipt_number: str = parsed_url.get("receipt_number") if "receipt_number" in parsed_url else None
@@ -189,7 +195,7 @@ class PaybcService(PaymentSystemService, CFSService):
     def process_cfs_refund(
         self,
         invoice: InvoiceModel,  # noqa: ARG002
-        payment_account: PaymentAccount,  # noqa: ARG002
+        payment_account: PaymentAccountModel,  # noqa: ARG002
         refund_partial: list[RefundPartialLine],  # noqa: ARG002
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
