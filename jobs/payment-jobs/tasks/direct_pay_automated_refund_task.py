@@ -30,7 +30,8 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentStatus,
-    TransactionStatus, RefundStatus,
+    RefundStatus,
+    TransactionStatus,
 )
 
 from tasks.common.dataclasses import OrderStatus
@@ -57,8 +58,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     def handle_credit_card_refund_partials(cls):
         """Process credit card partial refunds."""
         invoices: List[InvoiceModel] = (
-            InvoiceModel.query
-            .join(RefundsPartialModel, RefundsPartialModel.invoice_id == Invoice.id)
+            InvoiceModel.query.join(RefundsPartialModel, RefundsPartialModel.invoice_id == Invoice.id)
             .join(RefundModel, RefundModel.id == RefundsPartialModel.refund_id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
@@ -113,8 +113,11 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             InvoiceModel.query.outerjoin(RefundModel, RefundModel.invoice_id == Invoice.id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
             .filter(InvoiceModel.invoice_status_code.in_(include_invoice_statuses))
-            .filter(RefundModel.gl_posted.is_(None) & RefundModel.gl_error.is_(None)
-                    & RefundModel.status.in_([RefundStatus.APPROVAL_NOT_REQUIRED.value, RefundStatus.APPROVED.value]))
+            .filter(
+                RefundModel.gl_posted.is_(None)
+                & RefundModel.gl_error.is_(None)
+                & RefundModel.status.in_([RefundStatus.APPROVAL_NOT_REQUIRED.value, RefundStatus.APPROVED.value])
+            )
             .order_by(InvoiceModel.created_on.asc())
             .all()
         )

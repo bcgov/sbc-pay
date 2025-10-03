@@ -37,7 +37,8 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     RefundsPartialStatus,
-    RefundsPartialType, RefundStatus,
+    RefundsPartialType,
+    RefundStatus,
 )
 from pay_api.utils.util import generate_transaction_number
 
@@ -306,8 +307,7 @@ class EjvPaymentTask(CgiEjv):
     def get_partial_refunds_invoices(cls, account_id: int) -> List[InvoiceModel]:
         """Get credit card partial refunds."""
         invoices: List[InvoiceModel] = (
-            InvoiceModel.query
-            .join(RefundsPartialModel, RefundsPartialModel.invoice_id == InvoiceModel.id)
+            InvoiceModel.query.join(RefundsPartialModel, RefundsPartialModel.invoice_id == InvoiceModel.id)
             .join(RefundModel, RefundModel.id == RefundsPartialModel.refund_id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EJV.value)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)

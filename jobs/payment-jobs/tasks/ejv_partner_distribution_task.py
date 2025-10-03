@@ -475,7 +475,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 )
                 .join(
                     RefundModel,
-                        and_(
+                    and_(
                         RefundModel.id == RefundsPartialModel.refund_id,
                         RefundModel.status.in_([RefundStatus.APPROVAL_NOT_REQUIRED.value, RefundStatus.APPROVED.value]),
                     ),

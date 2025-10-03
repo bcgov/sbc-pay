@@ -46,7 +46,8 @@ from .factory import (
     factory_distribution,
     factory_invoice,
     factory_payment_line_item,
-    factory_refund_partial, factory_refund_invoice,
+    factory_refund_invoice,
+    factory_refund_partial,
 )
 
 

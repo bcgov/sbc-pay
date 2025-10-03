@@ -60,7 +60,9 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     RefundsPartialStatus,
-    RoutingSlipStatus, RefundStatus, RefundType,
+    RefundStatus,
+    RefundType,
+    RoutingSlipStatus,
 )
 
 
