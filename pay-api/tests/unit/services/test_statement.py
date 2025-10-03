@@ -36,7 +36,14 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import ActivityAction, ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
+from pay_api.utils.enums import (
+    ActivityAction,
+    ContentType,
+    InvoiceStatus,
+    PaymentMethod,
+    StatementFrequency,
+    StatementTemplate,
+)
 from pay_api.utils.util import get_statement_date_string
 from tests.utilities.base_test import (
     factory_eft_shortname,
@@ -251,7 +258,9 @@ def test_get_weekly_interim_statement(mock_publish, session, admin_users_mock):
     assert weekly_invoices[0].invoice_id == weekly_invoice.id
 
     statement_interval_calls = [
-        call for call in mock_publish.call_args_list if call[0][0].payload["action"] == ActivityAction.STATEMENT_INTERVAL_CHANGE.value
+        call
+        for call in mock_publish.call_args_list
+        if call[0][0].payload["action"] == ActivityAction.STATEMENT_INTERVAL_CHANGE.value
     ]
     assert len(statement_interval_calls) == 1
 
@@ -400,7 +409,9 @@ def test_get_monthly_interim_statement(mock_publish, session, admin_users_mock):
     assert monthly_invoices[0].invoice_id == monthly_invoice.id
 
     statement_interval_calls = [
-        call for call in mock_publish.call_args_list if call[0][0].payload["action"] == ActivityAction.STATEMENT_INTERVAL_CHANGE.value
+        call
+        for call in mock_publish.call_args_list
+        if call[0][0].payload["action"] == ActivityAction.STATEMENT_INTERVAL_CHANGE.value
     ]
     assert len(statement_interval_calls) == 1
 

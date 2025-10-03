@@ -30,6 +30,7 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentStatus,
+    RefundStatus,
     TransactionStatus,
 )
 
@@ -58,8 +59,10 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Process credit card partial refunds."""
         invoices: List[InvoiceModel] = (
             InvoiceModel.query.join(RefundsPartialModel, RefundsPartialModel.invoice_id == Invoice.id)
+            .join(RefundModel, RefundModel.id == RefundsPartialModel.refund_id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
+            .filter(RefundModel.status.in_([RefundStatus.APPROVAL_NOT_REQUIRED.value, RefundStatus.APPROVED.value]))
             .filter(RefundsPartialModel.gl_posted.is_(None))
             .order_by(InvoiceModel.id, RefundsPartialModel.id)
             .distinct(InvoiceModel.id)
@@ -110,7 +113,11 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             InvoiceModel.query.outerjoin(RefundModel, RefundModel.invoice_id == Invoice.id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
             .filter(InvoiceModel.invoice_status_code.in_(include_invoice_statuses))
-            .filter(RefundModel.gl_posted.is_(None) & RefundModel.gl_error.is_(None))
+            .filter(
+                RefundModel.gl_posted.is_(None)
+                & RefundModel.gl_error.is_(None)
+                & RefundModel.status.in_([RefundStatus.APPROVAL_NOT_REQUIRED.value, RefundStatus.APPROVED.value])
+            )
             .order_by(InvoiceModel.created_on.asc())
             .all()
         )
@@ -172,7 +179,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             ]
         )[:250]
         current_app.logger.error(f"Refund error - Invoice: {invoice.id} - glerrormessage: {errors}")
-        refund = RefundModel.find_by_invoice_id(invoice.id)
+        refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         refund.gl_error = errors
         refund.save()
 
@@ -192,7 +199,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         else:
             cls._set_refund_partials_posted(invoice)
         current_app.logger.info("Refund complete - GL was posted - setting refund.gl_posted to now.")
-        refund = RefundModel.find_by_invoice_id(invoice.id)
+        refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         refund.gl_posted = datetime.now(tz=timezone.utc)
         refund.save()
 

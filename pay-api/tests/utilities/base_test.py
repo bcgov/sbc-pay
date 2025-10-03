@@ -1077,9 +1077,13 @@ def factory_fee_model(fee_code: str, amount: float):
     return fee_code_master
 
 
-def factory_corp_type_model(corp_type_code: str, corp_type_description: str, product_code: str = None):
+def factory_corp_type_model(
+    corp_type_code: str, corp_type_description: str, product_code: str = None, refund_approval: bool = False
+):
     """Return the corp type model."""
-    corp_type = CorpType(code=corp_type_code, description=corp_type_description, product=product_code)
+    corp_type = CorpType(
+        code=corp_type_code, description=corp_type_description, product=product_code, refund_approval=refund_approval
+    )
     corp_type.save()
     return corp_type
 

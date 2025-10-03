@@ -23,6 +23,7 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException, e
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.fas import CommentService, RoutingSlipService
 from pay_api.utils.auth import jwt as _jwt  # noqa: I005
+from pay_api.utils.dataclasses import RoutingSlipSearch
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
@@ -74,7 +75,9 @@ def post_search_routing_slips():
     page: int = int(request_json.get("page", "1"))
     limit: int = int(request_json.get("limit", "10"))
     response, status = (
-        RoutingSlipService.search(request_json, page, limit, return_all=return_all),
+        RoutingSlipService.search(
+            RoutingSlipSearch(search_filter=request_json, page=page, limit=limit, return_all=return_all)
+        ),
         HTTPStatus.OK,
     )
     current_app.logger.debug(">post_search_routing_slips")

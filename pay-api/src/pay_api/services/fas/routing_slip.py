@@ -17,18 +17,25 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from operator import and_
 
+import pytz
 from flask import abort, current_app
+from sqlalchemy import Numeric, cast, func
+from sqlalchemy.orm import contains_eager, lazyload, load_only
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Comment as CommentModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
-from pay_api.models import RoutingSlipSchema
+from pay_api.models import RoutingSlipSchema, db
 from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.services.oauth_service import OAuthService
+from pay_api.utils.constants import DT_SHORT_FORMAT
+from pay_api.utils.dataclasses import RoutingSlipSearch
 from pay_api.utils.enums import (
     AuthHeaderType,
     CfsAccountStatus,
@@ -42,7 +49,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_local_time, get_quantized, string_to_date
+from pay_api.utils.util import get_local_time, get_quantized, get_str_by_path, string_to_date
 
 
 class RoutingSlip:
@@ -56,13 +63,101 @@ class RoutingSlip:
         return d
 
     @classmethod
-    def search(cls, search_filter: dict, page: int, limit: int, return_all: bool = False):
+    def _generate_search_query(cls, search_criteria: RoutingSlipSearch):
+        """Generate routing slip search base query."""
+        search_filter = search_criteria.search_filter
+        query = (
+            db.session.query(RoutingSlipModel)
+            .outerjoin(RoutingSlipModel.payments)
+            .outerjoin(RoutingSlipModel.payment_account)
+            .outerjoin(RoutingSlipModel.invoices)
+            .options(
+                # This lazy loads all the invoice relationships.
+                lazyload("*"),
+                # load_only only loads the desired columns.
+                load_only(
+                    RoutingSlipModel.created_name,
+                    RoutingSlipModel.status,
+                    RoutingSlipModel.number,
+                    RoutingSlipModel.routing_slip_date,
+                    RoutingSlipModel.remaining_amount,
+                    RoutingSlipModel.total,
+                ),
+                contains_eager(RoutingSlipModel.payments).load_only(
+                    PaymentModel.cheque_receipt_number,
+                    PaymentModel.receipt_number,
+                    PaymentModel.payment_method_code,
+                    PaymentModel.payment_status_code,
+                ),
+                contains_eager(RoutingSlipModel.payment_account).load_only(
+                    PaymentAccountModel.name, PaymentAccountModel.payment_method
+                ),
+                contains_eager(RoutingSlipModel.invoices).load_only(
+                    InvoiceModel.routing_slip,
+                    InvoiceModel.folio_number,
+                    InvoiceModel.business_identifier,
+                    InvoiceModel.corp_type_code,
+                ),
+            )
+        )
+
+        if rs_number := search_filter.get("routingSlipNumber", None):
+            query = query.filter(RoutingSlipModel.number.ilike("%" + rs_number + "%"))
+
+        if status := search_filter.get("status", None):
+            query = query.filter(RoutingSlipModel.status == status)
+
+        if refund_status := search_filter.get("refundStatus", None):
+            query = query.filter(RoutingSlipModel.refund_status == refund_status)
+
+        if exclude_statuses := search_filter.get("excludeStatuses", None):
+            query = query.filter(~RoutingSlipModel.status.in_(exclude_statuses))
+
+        if total_amount := search_filter.get("totalAmount", None):
+            query = query.filter(RoutingSlipModel.total == total_amount)
+
+        if remaining_amount := search_filter.get("remainingAmount", None):
+            query = query.filter(RoutingSlipModel.remaining_amount == cast(remaining_amount.replace("$", ""), Numeric))
+
+        query = cls._add_date_filter(query, search_filter)
+
+        if initiator := search_filter.get("initiator", None):
+            # pylint: disable=no-member
+            query = query.filter(RoutingSlipModel.created_name.ilike("%" + initiator + "%"))
+
+        if business_identifier := search_filter.get("businessIdentifier", None):
+            query = query.filter(InvoiceModel.business_identifier == business_identifier)
+
+        query = cls._add_receipt_number(query, search_filter)
+
+        query = cls._add_folio_filter(query, search_filter)
+
+        query = cls._add_entity_filter(query, search_filter)
+
+        # Add ordering
+        query = query.order_by(RoutingSlipModel.created_on.desc())
+
+        if not search_criteria.return_all:
+            sub_query = (
+                query.with_entities(RoutingSlipModel.id)
+                .group_by(RoutingSlipModel.id)
+                .limit(search_criteria.limit)
+                .offset((search_criteria.page - 1) * search_criteria.limit)
+                .subquery()
+            )
+            query = query.filter(RoutingSlipModel.id.in_(sub_query.select()))
+
+        return query
+
+    @classmethod
+    def search(cls, search_criteria: RoutingSlipSearch):
         """Search for routing slip."""
-        routing_slips, total = RoutingSlipModel.search(search_filter, page, limit, return_all)
+        routing_slips = cls._generate_search_query(search_criteria).all()
+
         data = {
-            "total": total,
-            "page": page,
-            "limit": limit,
+            "total": len(routing_slips),
+            "page": search_criteria.page,
+            "limit": search_criteria.limit,
             # Future: Use CATTRS
             # We need these fields, to populate the UI.
             "items": RoutingSlipSchema(
@@ -89,22 +184,100 @@ class RoutingSlip:
         return data
 
     @classmethod
+    def _add_date_filter(cls, query, search_filter):
+        # Find start and end dates for folio search
+        created_from: datetime = None
+        created_to: datetime = None
+
+        if end_date := get_str_by_path(search_filter, "dateFilter/endDate"):
+            created_to = datetime.strptime(end_date, DT_SHORT_FORMAT)
+        if start_date := get_str_by_path(search_filter, "dateFilter/startDate"):
+            created_from = datetime.strptime(start_date, DT_SHORT_FORMAT)
+        # if passed in details
+        if created_to and created_from:
+            # Truncate time for from date and add max time for to date
+            tz_name = current_app.config["LEGISLATIVE_TIMEZONE"]
+            tz_local = pytz.timezone(tz_name)
+
+            created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
+            created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
+
+            # If the dateFilter/target is provided then filter on that column, else filter on routing_slip_date
+            target_date = getattr(
+                RoutingSlipModel,
+                get_str_by_path(search_filter, "dateFilter/target") or "routing_slip_date",
+            )
+
+            query = query.filter(
+                func.timezone(tz_name, func.timezone("UTC", target_date)).between(created_from, created_to)
+            )
+        return query
+
+    @classmethod
+    def _add_receipt_number(cls, query, search_filter):
+        conditions = []
+        if receipt_number := search_filter.get("receiptNumber", None):
+            conditions.append(
+                and_(
+                    PaymentModel.payment_account_id == PaymentAccountModel.id,
+                    and_(
+                        PaymentModel.cheque_receipt_number == receipt_number,
+                        PaymentModel.payment_method_code == PaymentMethod.CASH.value,
+                    ),
+                )
+            )
+        if cheque_receipt_number := search_filter.get("chequeReceiptNumber", None):
+            conditions.append(
+                and_(
+                    PaymentModel.payment_account_id == PaymentAccountModel.id,
+                    and_(
+                        PaymentModel.cheque_receipt_number == cheque_receipt_number,
+                        PaymentModel.payment_method_code == PaymentMethod.CHEQUE.value,
+                    ),
+                )
+            )
+        if conditions:
+            query = query.filter(*conditions)
+        return query
+
+    @classmethod
+    def _add_folio_filter(cls, query, search_filter):
+        if folio_number := search_filter.get("folioNumber", None):
+            query = query.filter(InvoiceModel.routing_slip == RoutingSlipModel.number).filter(
+                InvoiceModel.folio_number == folio_number
+            )
+        return query
+
+    @classmethod
+    def _add_entity_filter(cls, query, search_filter):
+        if account_name := search_filter.get("accountName", None):
+            query = query.filter(
+                and_(
+                    PaymentAccountModel.id == RoutingSlipModel.payment_account_id,
+                    PaymentAccountModel.name.ilike("%" + account_name + "%"),
+                )
+            )
+        return query
+
+    @classmethod
     @user_context
     def create_daily_reports(cls, date: str, **kwargs):
         """Create and return daily report for the day provided."""
-        routing_slips: list[RoutingSlipModel] = RoutingSlipModel.search(
-            {
-                "dateFilter": {
-                    "endDate": date,
-                    "startDate": date,
-                    "target": "created_on",
+        routing_slips: list[RoutingSlipModel] = cls._generate_search_query(
+            RoutingSlipSearch(
+                search_filter={
+                    "dateFilter": {
+                        "endDate": date,
+                        "startDate": date,
+                        "target": "created_on",
+                    },
+                    "excludeStatuses": [RoutingSlipStatus.VOID.value],
                 },
-                "excludeStatuses": [RoutingSlipStatus.VOID.value],
-            },
-            page=1,
-            limit=0,
-            return_all=True,
-        )[0]
+                page=1,
+                limit=0,
+                return_all=True,
+            )
+        ).all()
 
         total: float = 0
         no_of_cash: int = 0

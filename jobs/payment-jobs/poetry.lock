@@ -2252,9 +2252,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "30833"
-resolved_reference = "10e5b2a5652d1e6e07e50e565025d062d6a52eec"
+url = "https://github.com/ochiu/sbc-pay.git"
+reference = "30357-Refund-Approval-Flow-2"
+resolved_reference = "7116c69527c3c46d5dc522b2150ba203b5bbfa0f"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2716,8 +2716,6 @@ files = [
 ]
 
 [package.dependencies]
-astroid = ">=1.0"
-pylint = ">=1.0"
 pylint-plugin-utils = ">=0.2.1"
 
 [[package]]
@@ -3504,4 +3502,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "6efaf485f88a6d8bb6602ace641e770ffbe894d5eb5fda7e8b2f36d5333f1df0"
+content-hash = "d0031a5b3633c895b1f62051600bd9bebeb2b7abe3472c19e96c665da4466f1f"

@@ -23,6 +23,7 @@ import pytest
 import pytz
 
 from pay_api.models.payment_account import PaymentAccount
+from pay_api.services.invoice_search import InvoiceSearch
 from pay_api.services.payment import Payment as PaymentService
 from pay_api.services.payment import PaymentReportInput
 from pay_api.services.payment_calculations import (
@@ -281,7 +282,7 @@ def test_search_payment_history(
     limit = 2
     for additional_payload in [{}, {"excludeCounts": True}]:
         search_filter.update(additional_payload)
-        results = PaymentService.search_purchase_history(
+        results = InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
                 auth_account_id=auth_account_id,
                 search_filter=search_filter,
@@ -303,7 +304,7 @@ def test_search_payment_history(
                 assert item[expected_key] == expected_value
         if return_all:
             return
-        results = PaymentService.search_purchase_history(
+        results = InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
                 auth_account_id=auth_account_id,
                 search_filter=search_filter,
@@ -332,7 +333,7 @@ def test_search_payment_history_for_all(session):
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
-    results = PaymentService.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
+    results = InvoiceSearch.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
     assert results is not None
     assert results.get("items") is not None
     # Returns only the default number if payload is empty
@@ -353,11 +354,11 @@ def test_create_payment_report_csv(session):
         factory_invoice_reference(invoice.id).save()
         factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
 
-    search_results = PaymentService.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
+    search_results = InvoiceSearch.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
     assert search_results is not None
     assert len(search_results.get("items")) > 0
 
-    csv_rows = PaymentService._prepare_csv_data(search_results)
+    csv_rows = InvoiceSearch._prepare_csv_data(search_results)
     assert csv_rows is not None
     assert len(csv_rows) == len(search_results.get("items"))
 
@@ -384,7 +385,7 @@ def test_create_payment_report_csv(session):
     assert first_row[14] == first_invoice.get("id")
     assert first_row[15] == first_invoice.get("invoice_number")
 
-    PaymentService.create_payment_report(
+    InvoiceSearch.create_payment_report(
         auth_account_id=auth_account_id,
         search_filter={},
         content_type="text/csv",
@@ -406,7 +407,7 @@ def test_create_payment_report_pdf(session, rest_call_mock):
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
-    PaymentService.create_payment_report(
+    InvoiceSearch.create_payment_report(
         auth_account_id=auth_account_id,
         search_filter={},
         content_type="application/pdf",
@@ -428,7 +429,7 @@ def test_search_payment_history_with_tz(session, executor_mock):
     factory_invoice_reference(invoice.id).save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
-    results = PaymentService.search_purchase_history(
+    results = InvoiceSearch.search_purchase_history(
         PurchaseHistorySearch(auth_account_id=auth_account_id, search_filter={}, limit=1, page=1)
     )
     assert results is not None
@@ -445,7 +446,7 @@ def test_search_payment_history_with_tz(session, executor_mock):
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
-    results = PaymentService.search_purchase_history(
+    results = InvoiceSearch.search_purchase_history(
         PurchaseHistorySearch(auth_account_id=auth_account_id, search_filter={}, limit=1, page=1)
     )
     assert results is not None
@@ -743,7 +744,7 @@ def test_get_invoice_totals_for_statements(session):
     statement = factory_statement()
     payment_account = factory_payment_account().save()
     # Old flow there due = total - paid - for non EFT invoices.
-    data = PaymentService.create_payment_report_details(
+    data = InvoiceSearch.create_payment_report_details(
         [
             factory_invoice(payment_account, total=100, service_fees=50).save(),
             factory_invoice(payment_account, paid=75, total=100, service_fees=50).save(),
@@ -753,7 +754,7 @@ def test_get_invoice_totals_for_statements(session):
         ],
         {"items": []},
     )
-    totals = PaymentService.get_invoices_totals(data["items"], {"to_date": statement.to_date})
+    totals = InvoiceSearch.get_invoices_totals(data["items"], {"to_date": statement.to_date})
     assert totals["statutoryFees"] == 190
     assert totals["serviceFees"] == 120
     assert totals["fees"] == 310
@@ -766,7 +767,7 @@ def test_get_invoice_totals_for_statements(session):
     statement.save()
 
     # FUTURE - Partial refunds?
-    data = PaymentService.create_payment_report_details(
+    data = InvoiceSearch.create_payment_report_details(
         [
             factory_invoice(
                 payment_account, paid=0, refund=0, total=100, payment_method_code=PaymentMethod.EFT.value
@@ -821,7 +822,7 @@ def test_get_invoice_totals_for_statements(session):
         {"items": []},
     )
 
-    totals = PaymentService.get_invoices_totals(data["items"], {"to_date": statement.to_date.strftime("%Y-%m-%d")})
+    totals = InvoiceSearch.get_invoices_totals(data["items"], {"to_date": statement.to_date.strftime("%Y-%m-%d")})
     assert totals["fees"] == 650
     assert totals["paid"] == 200
     # fees - paid - refund
@@ -1152,7 +1153,7 @@ def test_generate_payment_report_template_vars_structure(session, monkeypatch):
         statement_summary=None,
     )
 
-    response = PaymentService.generate_payment_report(
+    response = InvoiceSearch.generate_payment_report(
         report_inputs, auth=auth_data, user=MockUser(), statement=statement
     )
 

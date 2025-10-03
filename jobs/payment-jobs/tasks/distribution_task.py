@@ -174,7 +174,7 @@ class DistributionTask:
         """Update the invoice status."""
         if invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value:
             # No more work is needed to ensure it was posted to gl.
-            refund = RefundModel.find_by_invoice_id(invoice.id)
+            refund = RefundModel.find_latest_by_invoice_id(invoice.id)
             refund.gl_posted = datetime.now(tz=timezone.utc)
             refund.save()
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value

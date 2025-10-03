@@ -52,6 +52,7 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
             "is_credit",
             "payment_line_item_id",
             "refund_amount",
+            "refund_id",
             "refund_type",
             "status",
             "updated_by",
@@ -66,6 +67,7 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     refund_type = db.Column(db.String(50), nullable=True)
     gl_posted = db.Column(db.DateTime, nullable=True)
     invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=True)
+    refund_id = db.Column(db.Integer, ForeignKey("refunds.id"), nullable=True)
     is_credit = db.Column(db.Boolean, nullable=False, server_default="f", default=False)
     status = db.Column(db.String(20), nullable=True)
     gl_error = db.Column(db.String(250), nullable=True)
@@ -74,6 +76,11 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     def get_partial_refunds_for_invoice(cls, invoice_id: int) -> list[Self]:
         """Get all partial refunds for a specific invoice."""
         return cls.query.filter_by(invoice_id=invoice_id).all()
+
+    @classmethod
+    def get_partial_refunds_by_refund_id(cls, refund_id: int) -> list[Self]:
+        """Get all partial refunds for a specific invoice."""
+        return cls.query.filter_by(refund_id=refund_id).all()
 
 
 @define

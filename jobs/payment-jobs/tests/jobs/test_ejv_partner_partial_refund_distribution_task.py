@@ -39,6 +39,7 @@ from .factory import (
     factory_invoice_reference,
     factory_payment,
     factory_payment_line_item,
+    factory_refund_invoice,
     factory_refund_partial,
 )
 
@@ -93,9 +94,11 @@ def test_partial_refund_disbursement_with_payment_method(
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
 
+    refund = factory_refund_invoice(invoice.id)
     refund_partial = factory_refund_partial(
-        pli.id,
+        payment_line_item_id=pli.id,
         invoice_id=invoice.id,
+        refund_id=refund.id,
         refund_amount=1.5,
         created_by="test",
         refund_type=RefundsPartialType.SERVICE_FEES.value,

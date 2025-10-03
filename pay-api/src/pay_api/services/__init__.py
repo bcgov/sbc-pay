@@ -29,6 +29,7 @@ from .gcp_queue import GcpQueue
 from .hashing import HashingService
 from .internal_pay_service import InternalPayService
 from .invoice import Invoice as InvoiceService
+from .invoice_search import InvoiceSearch as InvoiceSearchService
 from .non_sufficient_funds import NonSufficientFundsService
 from .partner_disbursements import PartnerDisbursements
 from .payment import Payment
@@ -36,6 +37,7 @@ from .payment_service import PaymentService
 from .payment_transaction import PaymentTransaction as TransactionService
 from .receipt import Receipt as ReceiptService
 from .refund import RefundService
+from .refund_request import RefundRequestService
 from .report_service import ReportService
 from .statement import Statement
 from .statement_recipients import StatementRecipients
