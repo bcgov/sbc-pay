@@ -37,6 +37,7 @@ from .meta import bp as meta_bp
 from .non_sufficient_funds import bp as non_sufficient_funds_bp
 from .payment import bp as payment_bp
 from .refund import bp as refund_bp
+from .refund_requests import bp as refund_requests_bp
 from .transaction import bp as transaction_bp
 
 
@@ -74,6 +75,7 @@ class V1Endpoint:  # pylint: disable=too-few-public-methods,
         self.app.register_blueprint(ops_bp)
         self.app.register_blueprint(payment_bp)
         self.app.register_blueprint(refund_bp)
+        self.app.register_blueprint(refund_requests_bp)
         self.app.register_blueprint(transaction_bp)
 
 

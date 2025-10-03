@@ -1932,9 +1932,10 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
             fee_dist_id=dist_code.distribution_code_id,
         )
         inv_ids.append(inv.id)
-
+        refund = factory_refund(invoice_id=inv.id)
         partial_refund = RefundsPartialModel(
             invoice_id=inv.id,
+            refund_id=refund.id,
             status=RefundsPartialStatus.REFUND_PROCESSING.value,
             payment_line_item_id=line.id,
             refund_amount=refund_amount,

@@ -18,7 +18,10 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal  # noqa: TC003
 
-from flask import current_app
+import pytz
+from flask import abort, current_app
+from sqlalchemy import and_, cast, func, or_, select
+from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -27,12 +30,28 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSchema, db
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.auth import check_auth
-from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.constants import ALL_ALLOWED_ROLES, DT_SHORT_FORMAT
+from pay_api.utils.enums import (
+    AuthHeaderType,
+    Code,
+    ContentType,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    Role,
+    RolePattern,
+)
 from pay_api.utils.errors import Error
-from pay_api.utils.user_context import user_context
-from pay_api.utils.util import generate_transaction_number, get_local_formatted_date
+from pay_api.utils.user_context import UserContext, user_context
+from pay_api.utils.util import (
+    generate_transaction_number,
+    get_first_and_last_dates_of_month,
+    get_local_formatted_date,
+    get_str_by_path,
+    get_week_start_and_end_date,
+)
 
+from ..utils.product_auth_util import ProductAuthUtil
 from .code import Code as CodeService
 from .oauth_service import OAuthService
 
@@ -390,15 +409,24 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_by_id(identifier: int, skip_auth_check: bool = False, one_of_roles=ALL_ALLOWED_ROLES):
+    @user_context
+    def find_by_id(identifier: int, skip_auth_check: bool = False, one_of_roles=ALL_ALLOWED_ROLES, **kwargs):
         """Find invoice by id."""
+        user: UserContext = kwargs["user"]
         invoice_dao = InvoiceModel.find_by_id(identifier)
 
         if not invoice_dao:
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
-        if not skip_auth_check:
-            Invoice._check_for_auth(invoice_dao, one_of_roles)
+        if not skip_auth_check and not user.has_role(Role.VIEW_ALL_TRANSACTIONS.value):
+            products, filter_by_product = ProductAuthUtil.check_products_from_role_pattern(
+                role_pattern=RolePattern.PRODUCT_VIEW_TRANSACTION.value,
+                all_products_role=Role.VIEW_ALL_TRANSACTIONS.value,
+            )
+            if not filter_by_product:
+                Invoice._check_for_auth(invoice_dao, one_of_roles)
+            elif invoice_dao.corp_type.product not in products:
+                abort(403)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
@@ -593,3 +621,68 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             .order_by(InvoiceModel.id.desc())
             .all()
         )
+
+    @staticmethod
+    def get_invoices_and_payment_accounts_for_statements(search_filter: Dict):
+        """Slimmed down version for statements."""
+        auth_account_ids = select(func.unnest(cast(search_filter.get("authAccountIds", []), ARRAY(TEXT))))
+        query = (
+            db.session.query(InvoiceModel)
+            .join(PaymentAccountModel, InvoiceModel.payment_account_id == PaymentAccountModel.id)
+            .filter(PaymentAccountModel.auth_account_id.in_(auth_account_ids))
+        )
+        # If an account is within these payment methods - limit invoices to these payment methods.
+        # Used for transitioning payment method and an interim statement is created (There could be different payment
+        # methods for the transition day and we don't want it on both statements)
+        if search_filter.get("matchPaymentMethods", None):
+            query = query.filter(
+                or_(
+                    and_(
+                        PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
+                        InvoiceModel.payment_method_code == PaymentAccountModel.payment_method,
+                    ),
+                    and_(
+                        PaymentAccountModel.payment_method != PaymentMethod.EFT.value,
+                        InvoiceModel.payment_method_code != PaymentMethod.EFT.value,
+                    ),
+                )
+            )
+
+        query = Invoice.filter_date(query, search_filter).with_entities(
+            InvoiceModel.id,
+            InvoiceModel.payment_method_code,
+            PaymentAccountModel.auth_account_id,
+            PaymentAccountModel.id.label("payment_account_id"),
+        )
+        return query.all()
+
+    @classmethod
+    def filter_date(cls, query, search_filter: dict):
+        """Filter by date."""
+        # Find start and end dates
+        created_from: datetime = None
+        created_to: datetime = None
+        if get_str_by_path(search_filter, "dateFilter/startDate"):
+            created_from = datetime.strptime(get_str_by_path(search_filter, "dateFilter/startDate"), DT_SHORT_FORMAT)
+        if get_str_by_path(search_filter, "dateFilter/endDate"):
+            created_to = datetime.strptime(get_str_by_path(search_filter, "dateFilter/endDate"), DT_SHORT_FORMAT)
+        if get_str_by_path(search_filter, "weekFilter/index"):
+            created_from, created_to = get_week_start_and_end_date(
+                index=int(get_str_by_path(search_filter, "weekFilter/index"))
+            )
+        if get_str_by_path(search_filter, "monthFilter/month") and get_str_by_path(search_filter, "monthFilter/year"):
+            month = int(get_str_by_path(search_filter, "monthFilter/month"))
+            year = int(get_str_by_path(search_filter, "monthFilter/year"))
+            created_from, created_to = get_first_and_last_dates_of_month(month=month, year=year)
+
+        if created_from and created_to:
+            # Truncate time for from date and add max time for to date
+            tz_name = current_app.config["LEGISLATIVE_TIMEZONE"]
+            tz_local = pytz.timezone(tz_name)
+
+            created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
+            created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
+            query = query.filter(
+                func.timezone(tz_name, func.timezone("UTC", InvoiceModel.created_on)).between(created_from, created_to)
+            )
+        return query

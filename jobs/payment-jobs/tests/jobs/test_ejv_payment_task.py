@@ -46,7 +46,7 @@ from .factory import (
     factory_distribution,
     factory_invoice,
     factory_payment_line_item,
-    factory_refund_partial,
+    factory_refund_partial, factory_refund_invoice,
 )
 
 
@@ -220,8 +220,10 @@ def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
         fee_dist_id=dist_code.distribution_code_id,
     )
 
+    refund = factory_refund_invoice(partial_refund_invoice.id)
     refund_partial = factory_refund_partial(
         invoice_id=partial_refund_invoice.id,
+        refund_id=refund.id,
         payment_line_item_id=line_item.id,
         refund_amount=50.0,
         refund_type=RefundsPartialType.BASE_FEES.value,

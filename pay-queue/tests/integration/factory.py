@@ -49,7 +49,7 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     RoutingSlipStatus,
-    TransactionStatus,
+    TransactionStatus, RefundStatus, RefundType,
 )
 
 
@@ -404,7 +404,7 @@ def factory_routing_slip_account(
     return payment_account
 
 
-def factory_refund(routing_slip_id: int = None, details={}, invoice_id: int = None):
+def factory_refund(routing_slip_id: int = None, details={}, invoice_id: int = None, status=RefundStatus.APPROVAL_NOT_REQUIRED.value):
     """Return Factory."""
     return Refund(
         invoice_id=invoice_id,
@@ -413,4 +413,6 @@ def factory_refund(routing_slip_id: int = None, details={}, invoice_id: int = No
         reason="TEST",
         requested_by="TEST",
         details=details,
+        status=status,
+        type=RefundType.ROUTING_SLIP.value if routing_slip_id else RefundType.INVOICE.value,
     ).save()

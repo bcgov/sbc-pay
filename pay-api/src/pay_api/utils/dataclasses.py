@@ -22,6 +22,16 @@ from pay_api.utils.serializable import Serializable
 
 
 @dataclass
+class RoutingSlipSearch:
+    """Routing slip search input parameters."""
+
+    search_filter: dict
+    page: int
+    limit: int
+    return_all: bool = False
+
+
+@dataclass
 class PurchaseHistorySearch:
     """Purchase History search input parameters."""
 

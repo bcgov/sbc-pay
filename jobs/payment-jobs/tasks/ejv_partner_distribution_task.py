@@ -31,10 +31,11 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.services.email_service import JobFailureNotification
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod, RefundStatus
 from sqlalchemy import Date, and_, cast, or_
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -470,6 +471,13 @@ class EjvPartnerDistributionTask(CgiEjv):
                     and_(
                         RefundsPartialModel.id == PartnerDisbursementsModel.target_id,
                         PartnerDisbursementsModel.target_type == EJVLinkType.PARTIAL_REFUND.value,
+                    ),
+                )
+                .join(
+                    RefundModel,
+                        and_(
+                        RefundModel.id == RefundsPartialModel.refund_id,
+                        RefundModel.status.in_([RefundStatus.APPROVAL_NOT_REQUIRED.value, RefundStatus.APPROVED.value]),
                     ),
                 )
                 .join(

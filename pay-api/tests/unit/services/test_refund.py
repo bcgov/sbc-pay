@@ -62,7 +62,7 @@ def test_create_refund_for_unpaid_invoice(session):
     factory_invoice_reference(i.id).save()
 
     with pytest.raises(Exception) as excinfo:
-        RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
+        RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
     assert excinfo.type == BusinessException
 
 
@@ -150,7 +150,7 @@ def test_create_refund_for_paid_invoice(
     factory_receipt(invoice_id=i.id, receipt_number="1234569546456").save()
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
-    message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
+    message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
     i = InvoiceModel.find_by_id(i.id)
 
     assert i.invoice_status_code == expected_inv_status
@@ -199,14 +199,14 @@ def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
 
     factory_receipt(invoice_id=i.id, receipt_number="953959345343").save()
 
-    RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
+    RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
     i = InvoiceModel.find_by_id(i.id)
     payment: PaymentModel = PaymentModel.find_by_id(payment.id)
 
     assert i.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
     with pytest.raises(Exception) as excinfo:
-        RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"})
+        RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
     assert excinfo.type == BusinessException
 
 
@@ -288,7 +288,7 @@ def test_create_eft_refund(
             invoice_id=invoice.id, invoice_number=invoice_number, status_code=inv_ref_status
         ).save()
 
-    RefundService.create_refund(invoice_id=invoice.id, request={"reason": "Test"})
+    RefundService.create_refund(invoice_id=invoice.id, request={"reason": "Test"}, products=None)
     invoice = InvoiceModel.find_by_id(invoice.id)
     cils = EFTCreditInvoiceModel.find_by_invoice_id(invoice.id)
 

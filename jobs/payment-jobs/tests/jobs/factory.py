@@ -60,7 +60,7 @@ from pay_api.utils.enums import (
     PaymentStatus,
     PaymentSystem,
     RefundsPartialStatus,
-    RoutingSlipStatus,
+    RoutingSlipStatus, RefundStatus, RefundType,
 )
 
 
@@ -580,7 +580,7 @@ def factory_receipt(
     )
 
 
-def factory_refund(routing_slip_id: int, details={}):
+def factory_refund(routing_slip_id: int, details={}, status=RefundStatus.APPROVAL_NOT_REQUIRED.value):
     """Return Factory."""
     return Refund(
         routing_slip_id=routing_slip_id,
@@ -588,10 +588,12 @@ def factory_refund(routing_slip_id: int, details={}):
         reason="TEST",
         requested_by="TEST",
         details=details,
+        status=status,
+        type=RefundType.ROUTING_SLIP.value if routing_slip_id else RefundType.INVOICE.value,
     ).save()
 
 
-def factory_refund_invoice(invoice_id: int, details={}):
+def factory_refund_invoice(invoice_id: int, details={}, status=RefundStatus.APPROVAL_NOT_REQUIRED.value):
     """Return Factory."""
     return Refund(
         invoice_id=invoice_id,
@@ -599,12 +601,15 @@ def factory_refund_invoice(invoice_id: int, details={}):
         reason="TEST",
         requested_by="TEST",
         details=details,
+        status=status,
+        type=RefundType.INVOICE.value,
     ).save()
 
 
 def factory_refund_partial(
     payment_line_item_id: int,
     invoice_id: int,
+    refund_id: int,
     refund_amount: float,
     refund_type: str,
     created_by="test",
@@ -614,6 +619,7 @@ def factory_refund_partial(
     """Return Factory."""
     return RefundsPartial(
         invoice_id=invoice_id,
+        refund_id=refund_id,
         payment_line_item_id=payment_line_item_id,
         refund_amount=refund_amount,
         refund_type=refund_type,
