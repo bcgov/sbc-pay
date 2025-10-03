@@ -40,7 +40,7 @@ from pay_api.services.payment import PaymentReportInput
 from pay_api.services.payment_calculations import (
     build_grouped_invoice_context,
     build_statement_context,
-    build_statement_summary_context,
+    build_statement_summary_context, build_summary_page_context,
 )
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
@@ -494,6 +494,9 @@ class InvoiceSearch:
     def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
         labels = [
+            "Product",
+            "Corp Type",
+            "Transaction Type",
             "Transaction",
             "Transaction Details",
             "Folio Number",
@@ -561,6 +564,7 @@ class InvoiceSearch:
                 "total": formatted_totals,
                 "account": account_info,
                 "statement": build_statement_context(kwargs.get("statement")),
+                "summaryPage": build_summary_page_context(grouped_invoices),
             }
 
             if has_payment_instructions:
@@ -592,6 +596,9 @@ class InvoiceSearch:
             service_fee = float(invoice.get("service_fees", 0))
             total_fees = float(invoice.get("total", 0))
             row_value = [
+                invoice.get("product"),
+                invoice.get("corp_type_code"),
+                ",".join([line_item.get("filing_type_code") for line_item in invoice.get("line_items")]),
                 ",".join([line_item.get("description") for line_item in invoice.get("line_items")]),
                 (
                     ",".join([f"{detail.get('label')} {detail.get('value')}" for detail in invoice.get("details")])
@@ -612,6 +619,6 @@ class InvoiceSearch:
                 invoice.get("business_identifier"),
                 invoice.get("id"),
                 invoice.get("invoice_number"),
-            ]
+                ]
             cells.append(row_value)
         return cells
