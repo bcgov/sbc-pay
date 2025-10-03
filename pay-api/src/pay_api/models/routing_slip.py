@@ -15,10 +15,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from operator import and_
-from typing import List
-
 from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship

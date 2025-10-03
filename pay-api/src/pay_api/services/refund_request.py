@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Receipt."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
-from typing import List, Optional
+from decimal import Decimal  # noqa: TC003
 
 from flask import current_app
 from sqlalchemy import case, func
@@ -37,20 +37,20 @@ from pay_api.utils.user_context import UserContext, user_context
 class RefundRequestsSearch:
     """Used for searching refund requests records."""
 
-    refund_type: Optional[str] = RefundType.INVOICE.value
-    payment_method: Optional[str] = None
-    refund_reason: Optional[str] = None
-    refund_amount: Optional[Decimal] = None
-    refund_method: Optional[str] = None
-    requested_by: Optional[str] = None
-    requested_start_date: Optional[str] = None
-    requested_end_date: Optional[str] = None
-    status: Optional[str] = None
-    transaction_amount: Optional[Decimal] = None
+    refund_type: str | None = RefundType.INVOICE.value
+    payment_method: str | None = None
+    refund_reason: str | None = None
+    refund_amount: Decimal | None = None
+    refund_method: str | None = None
+    requested_by: str | None = None
+    requested_start_date: str | None = None
+    requested_end_date: str | None = None
+    status: str | None = None
+    transaction_amount: Decimal | None = None
     filter_by_product: bool = False
-    allowed_products: List[str] = None
-    page: Optional[int] = 1
-    limit: Optional[int] = 10
+    allowed_products: list[str] = None
+    page: int | None = 1
+    limit: int | None = 10
 
 
 class RefundRequestService:
@@ -58,7 +58,7 @@ class RefundRequestService:
 
     @staticmethod
     @user_context
-    def find_by_id(refund_id: int, filter_by_product: bool, products: List[str], **kwargs):
+    def find_by_id(refund_id: int, filter_by_product: bool, products: list[str], **kwargs):
         """Find refund by refund id."""
         user: UserContext = kwargs["user"]
         refund = RefundModel.find_by_id(refund_id)

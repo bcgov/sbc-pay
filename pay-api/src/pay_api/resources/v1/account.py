@@ -314,7 +314,7 @@ def _check_purchase_history_auth(any_org_transactions: bool, account_number: str
     products, filter_by_product = ProductAuthUtil.check_products_from_role_pattern(
         role_pattern=RolePattern.PRODUCT_VIEW_TRANSACTION.value, all_products_role=Role.VIEW_ALL_TRANSACTIONS.value
     )
-    
+
     if filter_by_product:
         if not products:
             abort(403)

@@ -16,8 +16,9 @@
 
 Test-Suite to ensure that the refund approval flow is working as expected.
 """
+
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -126,7 +127,7 @@ def setup_paid_invoice_data(app, jwt, client, cfs_account, payment_method):
     else:
         invoice_model = InvoiceModel.find_by_id(inv_id)
         invoice_model.invoice_status_code = InvoiceStatus.PAID.value
-        invoice_model.payment_date = datetime.now(tz=timezone.utc)
+        invoice_model.payment_date = datetime.now(tz=UTC)
         invoice_model.paid = invoice_model.total
         invoice_model.cfs_account_id = cfs_account.id
         invoice_model.save()
@@ -402,4 +403,4 @@ def assert_equal_refunds(search_result: dict, refund_result: dict):
 
 def assert_date_now(date_string: str, date_format: str):
     """Assert date string against current UTC date."""
-    assert datetime.strptime(date_string, date_format).date() == datetime.now(tz=timezone.utc).date()
+    assert datetime.strptime(date_string, date_format).date() == datetime.now(tz=UTC).date()

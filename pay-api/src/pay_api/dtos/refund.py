@@ -8,7 +8,6 @@ In the near future, will find a library that generates our API spec based off of
 """
 
 from decimal import Decimal
-from typing import Optional
 
 from attrs import define
 
@@ -19,8 +18,8 @@ from pay_api.utils.serializable import Serializable
 class RefundPatchRequest(Serializable):
     """Refund patch status DTO."""
 
-    status: Optional[str] = None
-    decline_reason: Optional[str] = None
+    status: str | None = None
+    decline_reason: str | None = None
 
 
 @define

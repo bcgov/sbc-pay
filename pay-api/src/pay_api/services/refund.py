@@ -15,15 +15,12 @@
 
 from __future__ import annotations
 
-
-from datetime import UTC
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Dict, List
 
 from flask import abort, current_app
 
-from pay_api.dtos.refund import RefundPatchRequest
+from pay_api.dtos.refund import RefundPatchRequest  # noqa: TC001
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import Invoice as InvoiceModel
@@ -33,11 +30,8 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundPartialLine, db
 from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
-
-from pay_api.models import db
 from pay_api.models.refund import PartialRefundLineDTO, RefundDTO
 from pay_api.services.base_payment_system import PaymentSystemService
-
 from pay_api.services.partner_disbursements import PartnerDisbursements
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
@@ -222,13 +216,13 @@ class RefundService:
             raise BusinessException(Error.INVALID_REQUEST)
 
     @staticmethod
-    def validate_product_authorization(invoice: InvoiceModel, allowed_products: List[str], is_system: bool):
+    def validate_product_authorization(invoice: InvoiceModel, allowed_products: list[str], is_system: bool):
         """Validate if the invoice product is in the allowed product list."""
         if not is_system and allowed_products and invoice.corp_type.product not in allowed_products:
             raise BusinessException(Error.REFUND_INSUFFICIENT_PRODUCT_AUTHORIZATION)
 
     @classmethod
-    def _validate_refund_approval_flow(cls, invoice: InvoiceModel, products: List[str], is_system: bool):
+    def _validate_refund_approval_flow(cls, invoice: InvoiceModel, products: list[str], is_system: bool):
         requires_approval = invoice.corp_type.refund_approval
         if not requires_approval:
             return
@@ -261,7 +255,7 @@ class RefundService:
 
     @classmethod
     def _complete_refund(
-        cls, invoice: InvoiceModel, refund: RefundModel, refund_partial_lines: List[RefundPartialLine]
+        cls, invoice: InvoiceModel, refund: RefundModel, refund_partial_lines: list[RefundPartialLine]
     ):
         is_partial_refund = len(refund_partial_lines) > 0
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
@@ -312,7 +306,7 @@ class RefundService:
 
     @classmethod
     @user_context
-    def create_refund(cls, invoice_id: int, request: dict[str, str], products: List[str], **kwargs) -> dict[str, str]:
+    def create_refund(cls, invoice_id: int, request: dict[str, str], products: list[str], **kwargs) -> dict[str, str]:
         """Create refund."""
         current_app.logger.debug(f"Starting refund : {invoice_id}")
         user: UserContext = kwargs["user"]
@@ -426,7 +420,7 @@ class RefundService:
 
     @staticmethod
     @user_context
-    def approve_or_decline_refund(refund: RefundModel, data: RefundPatchRequest, products: List[str], **kwargs):
+    def approve_or_decline_refund(refund: RefundModel, data: RefundPatchRequest, products: list[str], **kwargs):
         """Approve or decline an EFT Refund."""
         user: UserContext = kwargs["user"]
         RefundService._validate_approve_or_decline_refund(refund, data, user)
@@ -436,7 +430,7 @@ class RefundService:
 
         refund.status = data.status
         refund.decision_made_by = user.user_name
-        refund.decision_date = datetime.now(tz=timezone.utc)
+        refund.decision_date = datetime.now(tz=UTC)
         refund.decline_reason = data.decline_reason if data.status == RefundStatus.DECLINED.value else None
 
         refund_partial_lines = RefundPartialModel.get_partial_refunds_by_refund_id(refund.id) or []
@@ -457,9 +451,9 @@ class RefundService:
         )
 
     @staticmethod
-    def normalize_partial_refund_lines(partial_refund_lines: List[RefundPartialModel]):
+    def normalize_partial_refund_lines(partial_refund_lines: list[RefundPartialModel]):
         """Convert refund partial models to schema DTO."""
-        payment_line_items: Dict[int, List[RefundPartialModel]] = {}
+        payment_line_items: dict[int, list[RefundPartialModel]] = {}
         refund_lines = []
         refund_total = Decimal(0)
         for partial_refund_line in partial_refund_lines:

@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to support invoice searches."""
-from typing import Dict, Tuple
 
 from dateutil import parser
 from flask import current_app
 from sqlalchemy import String, and_, cast, exists, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, with_expression
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import (
     AppliedCredits,
     CorpType,
@@ -31,27 +31,25 @@ from pay_api.models import (
     RefundsPartial,
     db,
 )
-from pay_api.utils.enums import AuthHeaderType, Code, ContentType, PaymentMethod
-from pay_api.utils.sqlalchemy import JSONPath
-from pay_api.utils.user_context import user_context
-
-from ..exceptions import BusinessException
-from ..models.payment import TransactionSearchParams
-from ..models.search.invoice_composite_model import InvoiceCompositeModel
-from ..utils.converter import Converter
-from ..utils.dataclasses import PurchaseHistorySearch
-from ..utils.enums import InvoiceStatus
-from ..utils.errors import Error
-from ..utils.util import get_local_formatted_date, get_local_formatted_date_time, get_statement_currency_string
-from .code import Code as CodeService
-from .invoice import Invoice as InvoiceService
-from .oauth_service import OAuthService
-from .payment import PaymentReportInput
-from .payment_calculations import (
+from pay_api.models.payment import TransactionSearchParams
+from pay_api.models.search.invoice_composite_model import InvoiceCompositeModel
+from pay_api.services.code import Code as CodeService
+from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.services.oauth_service import OAuthService
+from pay_api.services.payment import PaymentReportInput
+from pay_api.services.payment_calculations import (
     build_grouped_invoice_context,
     build_statement_context,
     build_statement_summary_context,
 )
+from pay_api.utils.converter import Converter
+from pay_api.utils.dataclasses import PurchaseHistorySearch
+from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus, PaymentMethod
+from pay_api.utils.errors import Error
+from pay_api.utils.sqlalchemy import JSONPath
+from pay_api.utils.user_context import user_context
+from pay_api.utils.util import get_local_formatted_date, get_local_formatted_date_time, get_statement_currency_string
+
 from .report_service import ReportRequest, ReportService
 
 
@@ -153,7 +151,7 @@ class InvoiceSearch:
         return subquery
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict, include_joins=False):
+    def filter(cls, query, auth_account_id: str, search_filter: dict, include_joins=False):
         """For filtering queries."""
         query = cls.filter_payment_account(query, auth_account_id, search_filter, include_joins)
         if status_code := search_filter.get("statusCode", None):
@@ -304,7 +302,7 @@ class InvoiceSearch:
         return query
 
     @classmethod
-    def get_count(cls, auth_account_id: str, search_filter: Dict):
+    def get_count(cls, auth_account_id: str, search_filter: dict):
         """Slimmed downed version for count (less joins)."""
         query = db.session.query(func.distinct(Invoice.id))
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
@@ -403,7 +401,7 @@ class InvoiceSearch:
         return data
 
     @classmethod
-    def create_payment_report_details(cls, purchases: Tuple, data: Dict) -> dict:  # pylint:disable=too-many-locals
+    def create_payment_report_details(cls, purchases: tuple, data: dict) -> dict:  # pylint:disable=too-many-locals
         """Return payment report details by fetching the line items.
 
         purchases is tuple of payment and invoice model records.
@@ -419,7 +417,7 @@ class InvoiceSearch:
         return data
 
     @staticmethod
-    def search_all_purchase_history(auth_account_id: str, search_filter: Dict):
+    def search_all_purchase_history(auth_account_id: str, search_filter: dict):
         """Return all results for the purchase history."""
         return InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
@@ -428,7 +426,7 @@ class InvoiceSearch:
         )
 
     @staticmethod
-    def create_payment_report(auth_account_id: str, search_filter: Dict, content_type: str, report_name: str):
+    def create_payment_report(auth_account_id: str, search_filter: dict, content_type: str, report_name: str):
         """Create payment report."""
         current_app.logger.debug(f"<create_payment_report {auth_account_id}")
 

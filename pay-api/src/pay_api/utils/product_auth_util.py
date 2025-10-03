@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility for product authorizations helpers."""
-from typing import Tuple
 
 from pay_api.utils.enums import Role
 from pay_api.utils.user_context import UserContext, user_context
@@ -23,7 +22,7 @@ class ProductAuthUtil:
 
     @staticmethod
     @user_context
-    def check_products_from_role_pattern(role_pattern: str, all_products_role: str, **kwargs) -> Tuple:
+    def check_products_from_role_pattern(role_pattern: str, all_products_role: str, **kwargs) -> tuple:
         """Check roles to see if product filtering is applicable and return allowed products list."""
         user: UserContext = kwargs["user"]
         roles = user.roles or []

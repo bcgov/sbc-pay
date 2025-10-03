@@ -15,27 +15,13 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 from attrs import define
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, or_
 from sqlalchemy.orm import relationship
 
-from pay_api.exceptions import BusinessException
-from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
-from pay_api.utils.errors import Error
-from pay_api.utils.sqlalchemy import JSONPath
-from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
-
-from ..utils.dataclasses import PurchaseHistorySearch  # noqa: TC001, TID252
-from .applied_credits import AppliedCredits
-
-from pay_api.utils.enums import InvoiceReferenceStatus
-from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
-from pay_api.utils.enums import PaymentStatus
 
 from .base_model import BaseModel
 from .base_schema import BaseSchema
@@ -247,6 +233,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         )
 
         return query.all()
+
 
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment."""

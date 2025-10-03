@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the Roting slip Class is working as expected.
 """
+
 from faker import Faker
 
 from pay_api.models import RoutingSlip

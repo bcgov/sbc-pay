@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to invoice refund."""
+
 from decimal import Decimal
-from typing import List, Self
+from typing import Self
 
 from attrs import define
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.schema import CheckConstraint
 
-from ..utils.enums import RefundStatus
-from ..utils.util import date_to_string
+from pay_api.utils.enums import RefundStatus
+from pay_api.utils.util import date_to_string
+
 from .base_model import BaseModel
 from .db import db, ma
 
@@ -167,7 +169,7 @@ class RefundDTO:  # pylint: disable=too-few-public-methods, too-many-instance-at
     refund_amount: Decimal
     transaction_amount: Decimal
     payment_method: str
-    partial_refund_lines: List[PartialRefundLineDTO]
+    partial_refund_lines: list[PartialRefundLineDTO]
 
     @classmethod
     def from_row(  # pylint: disable=too-many-arguments

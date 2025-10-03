@@ -17,10 +17,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal
-
 from operator import and_
-from typing import Dict, List, Set
-
 
 import pytz
 from flask import abort, current_app
@@ -266,7 +263,7 @@ class RoutingSlip:
     @user_context
     def create_daily_reports(cls, date: str, **kwargs):
         """Create and return daily report for the day provided."""
-        routing_slips: List[RoutingSlipModel] = cls._generate_search_query(
+        routing_slips: list[RoutingSlipModel] = cls._generate_search_query(
             RoutingSlipSearch(
                 search_filter={
                     "dateFilter": {

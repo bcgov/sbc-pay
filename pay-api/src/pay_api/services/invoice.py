@@ -30,6 +30,8 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSchema, db
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.auth import check_auth
+from pay_api.services.code import Code as CodeService
+from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import ALL_ALLOWED_ROLES, DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     AuthHeaderType,
@@ -42,6 +44,7 @@ from pay_api.utils.enums import (
     RolePattern,
 )
 from pay_api.utils.errors import Error
+from pay_api.utils.product_auth_util import ProductAuthUtil
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
     generate_transaction_number,
@@ -50,10 +53,6 @@ from pay_api.utils.util import (
     get_str_by_path,
     get_week_start_and_end_date,
 )
-
-from ..utils.product_auth_util import ProductAuthUtil
-from .code import Code as CodeService
-from .oauth_service import OAuthService
 
 
 class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -623,7 +622,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         )
 
     @staticmethod
-    def get_invoices_and_payment_accounts_for_statements(search_filter: Dict):
+    def get_invoices_and_payment_accounts_for_statements(search_filter: dict):
         """Slimmed down version for statements."""
         auth_account_ids = select(func.unnest(cast(search_filter.get("authAccountIds", []), ARRAY(TEXT))))
         query = (
