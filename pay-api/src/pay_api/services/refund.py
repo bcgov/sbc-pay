@@ -242,7 +242,7 @@ class RefundService:
             reason=get_str_by_path(request, "reason"),
             notification_email=get_str_by_path(request, "notificationEmail"),
             staff_comment=get_str_by_path(request, "staffComment"),
-            requested_by=user.user_name,
+            requested_by=user.original_username if user.original_username else user.user_name,
             requested_date=datetime.now(tz=UTC),
             status=(
                 RefundStatus.PENDING_APPROVAL.value

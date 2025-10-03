@@ -333,12 +333,11 @@ def test_initialize_refund_requested_by(
             mock_request.headers = headers
             mock_user = UserContext()
 
-            with patch("pay_api.services.refund.RefundModel") as mock_refund_model:
-                mock_refund_instance = mock_refund_model.return_value
-                mock_refund_instance.flush = lambda: None
+            payment_account = factory_payment_account().save()
+            invoice = factory_invoice(payment_account,
+            ).save()
+            result = RefundService._initialize_refund(  # pylint: disable=protected-access
+                invoice=invoice, request={"reason": "Test refund"}, user=mock_user
+            )
 
-                result = RefundService._initialize_refund(  # pylint: disable=protected-access
-                    invoice_id=123, request={"reason": "Test refund"}, user=mock_user
-                )
-
-                assert result.requested_by == expected_requested_by
+            assert result.requested_by == expected_requested_by
