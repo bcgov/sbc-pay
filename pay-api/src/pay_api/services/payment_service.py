@@ -24,6 +24,8 @@ from flask import copy_current_request_context, current_app
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
@@ -85,7 +87,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         initial_payment_method = _get_payment_method(payment_request, payment_account)
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
-        fees = _calculate_fees(corp_type, filing_info)
+        fees = FeeSchedule.calculate_fees(corp_type, filing_info)
 
         # Create payment system instance from factory
         pay_service: PaymentSystemService = PaymentSystemFactory.create(
@@ -114,13 +116,16 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.info(f"Created Pay System Instance : {pay_service}")
 
         pay_system_invoice: dict[str, any] = None
-        invoice: Invoice = None
+        invoice: InvoiceModel = None
 
         try:
-            invoice = Invoice()
+            invoice = InvoiceModel()
             invoice.bcol_account = bcol_account
             invoice.payment_account_id = payment_account.id
-            invoice.cfs_account_id = payment_account.cfs_account_id
+            cfs_account = CfsAccountModel.find_effective_by_payment_method(
+                payment_account.id, payment_account.payment_method
+            )
+            invoice.cfs_account_id = cfs_account.id if cfs_account else None
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
             invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
             invoice.total = sum(fee.total for fee in fees) if fees else 0
@@ -173,7 +178,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         current_app.logger.debug(">Finished creating payment request")
 
-        return invoice.asdict(include_dynamic_fields=True)
+        return Invoice.asdict(invoice, include_dynamic_fields=True)
 
     @classmethod
     def _handle_invoice(cls, invoice, invoice_reference, pay_service, skip_payment):
@@ -209,7 +214,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             pay_service.complete_post_invoice(invoice, invoice_reference)
 
     @classmethod
-    def _find_payment_account(cls, authorization):
+    def _find_payment_account(cls, authorization) -> PaymentAccountModel:
         # find payment account
         payment_account = PaymentAccount.find_account(authorization)
 
@@ -228,7 +233,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return payment_account
 
     @classmethod
-    def _get_bcol_account(cls, account_info, payment_account: PaymentAccount):
+    def _get_bcol_account(cls, account_info, payment_account: PaymentAccountModel):
         if account_info and account_info.get("bcolAccountNumber", None):
             bcol_account = account_info.get("bcolAccountNumber")
         else:
@@ -236,7 +241,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return bcol_account
 
     @classmethod
-    def _apply_credit(cls, invoice: Invoice):
+    def _apply_credit(cls, invoice: InvoiceModel):
         """Apply credit to invoice and update payment account for online banking only."""
         credit_balance = Decimal("0")
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
@@ -270,7 +275,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account.save()
 
     @classmethod
-    def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
+    def _convert_invoice_to_credit_card(cls, invoice: InvoiceModel, payment_request: tuple[dict[str, Any]]):
         """Handle conversion of invoice to credit card payment method."""
         payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
 
@@ -320,7 +325,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         else:
             cls._convert_invoice_to_credit_card(invoice, payment_request)
         current_app.logger.debug(">update_invoice")
-        return invoice.asdict()
+        return Invoice.asdict(invoice)
 
     @classmethod
     def delete_invoice(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
@@ -391,38 +396,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug(">accept_delete")
 
 
-def _calculate_fees(corp_type, filing_info):
-    """Calculate and return the fees based on the filing type codes."""
-    fees = []
-    service_fee_applied: bool = False
-    for filing_type_info in filing_info.get("filingTypes"):
-        current_app.logger.debug(f"Getting fees for {filing_type_info.get('filingTypeCode')} ")
-        fee = FeeSchedule.find_by_corp_type_and_filing_type(
-            corp_type=corp_type,
-            filing_type_code=filing_type_info.get("filingTypeCode", None),
-            valid_date=filing_info.get("date", None),
-            jurisdiction=None,
-            is_priority=filing_type_info.get("priority"),
-            is_future_effective=filing_type_info.get("futureEffective"),
-            waive_fees=filing_type_info.get("waiveFees"),
-            quantity=filing_type_info.get("quantity"),
-        )
-        # If service fee is already applied, do not charge again.
-        if service_fee_applied:
-            fee.service_fees = 0
-        elif fee.service_fees > 0:
-            service_fee_applied = True
-
-        if fee.variable:
-            fee.fee_amount = Decimal(str(filing_type_info.get("fee", 0)))
-
-        if filing_type_info.get("filingDescription"):
-            fee.description = filing_type_info.get("filingDescription")
-
-        fees.append(fee)
-    return fees
-
-
 def _update_active_transactions(invoice_id: int):
     # update active transactions
     current_app.logger.debug("<_update_active_transactions")
@@ -432,7 +405,7 @@ def _update_active_transactions(invoice_id: int):
         PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
 
 
-def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
+def _check_if_invoice_can_be_deleted(invoice: InvoiceModel, payment: Payment = None):
     if invoice.invoice_status_code in (
         InvoiceStatus.PAID.value,
         InvoiceStatus.DELETED.value,
@@ -446,7 +419,7 @@ def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
-def _get_payment_method(payment_request: dict, payment_account: PaymentAccount):
+def _get_payment_method(payment_request: dict, payment_account: PaymentAccountModel):
     # If no methodOfPayment is provided, use the one against the payment account table.
     payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
     if not payment_method:

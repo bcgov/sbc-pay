@@ -25,6 +25,7 @@ import pytest
 from pay_api import services
 from pay_api.models import CorpType, FeeCode, FilingType, TaxRate
 from pay_api.models import FeeSchedule as FeesScheduleModel
+from pay_api.services.fee_schedule import FeeCalculationParams
 from pay_api.utils.errors import Error
 
 CORP_TYPE_CODE = "CPX"
@@ -36,7 +37,7 @@ FEE_CODE = "EN101X"
 def test_fee_schedule_saved_from_new(session):
     """Assert that the fee schedule is saved to the table."""
     create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
-    fee_schedule = services.FeeSchedule()
+    fee_schedule = FeesScheduleModel()
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
@@ -51,32 +52,32 @@ def test_fee_schedule_saved_from_new(session):
 def test_find_by_corp_type_and_filing_type_from_new(session):
     """Assert that the fee schedule is saved to the table."""
     create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
-    fee_schedule = services.FeeSchedule()
+    fee_schedule = FeesScheduleModel()
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
     fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.save()
 
-    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
+    calculated_fs = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
 
-    assert fee_schedule.fee_schedule_id is not None
-    assert fee_schedule.fee_start_date == datetime.now(tz=UTC).date()
-    assert fee_schedule.fee_end_date is None
-    assert fee_schedule.fee_code == FEE_CODE
-    assert fee_schedule.corp_type_code == CORP_TYPE_CODE
-    assert fee_schedule.filing_type_code == FILING_TYPE_CODE
+    assert calculated_fs.fee_schedule_id is not None
+    assert calculated_fs.fee_start_date == datetime.now(tz=UTC).date()
+    assert calculated_fs.fee_end_date is None
+    assert calculated_fs.fee_code == FEE_CODE
+    assert calculated_fs.corp_type_code == CORP_TYPE_CODE
+    assert calculated_fs.filing_type_code == FILING_TYPE_CODE
 
-    assert fee_schedule.asdict() == {
+    assert calculated_fs.asdict() == {
         "filing_type": "TEST",
         "filing_type_code": FILING_TYPE_CODE,
-        "filing_fees": 100,
-        "service_fees": 0,
-        "total": 100,
-        "tax": {"gst": 0, "pst": 0},
-        "priority_fees": 0,
-        "future_effective_fees": 0,
-        "processing_fees": 0,
+        "filing_fees": 100.0,
+        "service_fees": 0.0,
+        "total": 100.0,
+        "tax": {"gst": 0.0, "pst": 0.0},
+        "priority_fees": 0.0,
+        "future_effective_fees": 0.0,
+        "processing_fees": 0.0,
     }
 
 
@@ -101,7 +102,7 @@ def test_find_by_corp_type_and_filing_type_invalid(session):
 def test_find_by_corp_type_and_filing_type_and_valid_date(session):
     """Assert that the fee schedule is saved to the table."""
     create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
-    fee_schedule = services.FeeSchedule()
+    fee_schedule = FeesScheduleModel()
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
@@ -120,7 +121,7 @@ def test_find_by_corp_type_and_filing_type_and_invalid_date(session):
     from pay_api.exceptions import BusinessException
 
     create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
-    fee_schedule = services.FeeSchedule()
+    fee_schedule = FeesScheduleModel()
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
@@ -168,7 +169,7 @@ def test_fee_schedule_with_priority_and_future_effective_filing_rates(session):
 def test_fee_schedule_with_waive_fees(session):
     """Assert that the fee schedule is saved to the table."""
     create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
-    fee_schedule = services.FeeSchedule()
+    fee_schedule = FeesScheduleModel()
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
@@ -201,7 +202,7 @@ def test_fee_schedule_with_service_fees(session):
     filing_type = FilingType(code=FILING_TYPE_CODE, description="TEST")
     filing_type.save()
 
-    fee_schedule = services.FeeSchedule()
+    fee_schedule = FeesScheduleModel()
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = corp_type_code
     fee_schedule.fee_code = fee_code
@@ -236,7 +237,7 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
     filing_type = FilingType(code=FILING_TYPE_CODE, description="TEST")
     filing_type.save()
 
-    fee_schedule = services.FeeSchedule()
+    fee_schedule = FeesScheduleModel()
     fee_schedule.filing_type_code = FILING_TYPE_CODE
     fee_schedule.corp_type_code = corp_type_code
     fee_schedule.fee_code = fee_code
@@ -302,20 +303,21 @@ def test_fee_schedule_gst_properties(session):
     )
     fee_schedule_model.save()
 
-    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
+    calculated_fs = services.FeeSchedule.find_by_corp_type_and_filing_type(
         corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
     )
 
-    fee_schedule.service_fees = Decimal("10.00")
-    fee_schedule.priority_fee = Decimal("5.00")
-    fee_schedule.future_effective_fee = Decimal("15.00")
+    calculated_fs.priority_fee = Decimal("5.00")
+    calculated_fs.future_effective_fee = Decimal("15.00")
+    calculated_fs.service_fees = Decimal("10.00")
+    calculated_fs.calculate_singular_fee(FeeCalculationParams(is_priority=True, is_future_effective=True))
 
     gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     expected_service_gst = round(Decimal("10.00") * gst_rate, 2)
     expected_statutory_gst = round((Decimal("100.00") + Decimal("5.00") + Decimal("15.00")) * gst_rate, 2)
 
-    assert fee_schedule.service_fees_gst == expected_service_gst
-    assert fee_schedule.statutory_fees_gst == expected_statutory_gst
+    assert calculated_fs.service_fees_gst == expected_service_gst
+    assert calculated_fs.statutory_fees_gst == expected_statutory_gst
 
     expected_total = (
         Decimal("100.00")
@@ -325,7 +327,7 @@ def test_fee_schedule_gst_properties(session):
         + expected_service_gst
         + expected_statutory_gst
     )
-    assert fee_schedule.total == expected_total
+    assert calculated_fs.total == expected_total
 
 
 def test_fee_schedule_gst_properties_disabled(session):
@@ -345,14 +347,17 @@ def test_fee_schedule_gst_properties_disabled(session):
         corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
     )
 
-    fee_schedule.service_fees = Decimal("10.00")
     fee_schedule.priority_fee = Decimal("5.00")
     fee_schedule.future_effective_fee = Decimal("15.00")
+    fee_schedule.service_fees = Decimal("10.00")
+    calculated_fs = fee_schedule.calculate_singular_fee(
+        FeeCalculationParams(is_priority=True, is_future_effective=True)
+    )
 
-    assert fee_schedule.service_fees_gst == 0
-    assert fee_schedule.statutory_fees_gst == 0
+    assert calculated_fs.service_fees_gst == 0
+    assert calculated_fs.statutory_fees_gst == 0
     expected_total = Decimal("100.00") + Decimal("5.00") + Decimal("15.00") + Decimal("10.00")
-    assert fee_schedule.total == expected_total
+    assert calculated_fs.total == expected_total
 
 
 def test_fee_schedule_gst_properties_with_zero_fees(session):
@@ -372,14 +377,15 @@ def test_fee_schedule_gst_properties_with_zero_fees(session):
         corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
     )
 
-    fee_schedule.service_fees = Decimal("0.00")
     fee_schedule.priority_fee = Decimal("0.00")
     fee_schedule.future_effective_fee = Decimal("0.00")
+    calculated_fs = fee_schedule.calculate_singular_fee(FeeCalculationParams())
+    calculated_fs.service_fees = Decimal("0.00")
 
     gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
-    assert fee_schedule.service_fees_gst == Decimal("0.00")
+    assert calculated_fs.service_fees_gst == Decimal("0.00")
     expected_statutory_gst = round(Decimal("100.00") * gst_rate, 2)
-    assert fee_schedule.statutory_fees_gst == expected_statutory_gst
+    assert calculated_fs.statutory_fees_gst == expected_statutory_gst
 
 
 def test_fee_schedule_gst_properties_rounding(session):
@@ -399,14 +405,15 @@ def test_fee_schedule_gst_properties_rounding(session):
         corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
     )
 
-    fee_schedule.service_fees = Decimal("11.11")  # This will result in 0.5555 when multiplied by 0.05
     fee_schedule.priority_fee = Decimal("7.77")  # This will result in 0.3885 when multiplied by 0.05
+    fee_schedule.service_fees = Decimal("11.11")  # This will result in 0.5555 when multiplied by 0.05
+    calculated_fs = fee_schedule.calculate_singular_fee(FeeCalculationParams(is_priority=True))
 
     gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     expected_service_gst = round(Decimal("11.11") * gst_rate, 2)
-    assert fee_schedule.service_fees_gst == expected_service_gst
+    assert calculated_fs.service_fees_gst == expected_service_gst
     expected_statutory_gst = round((Decimal("100.00") + Decimal("7.77")) * gst_rate, 2)
-    assert fee_schedule.statutory_fees_gst == expected_statutory_gst
+    assert calculated_fs.statutory_fees_gst == expected_statutory_gst
 
 
 def create_linked_data(

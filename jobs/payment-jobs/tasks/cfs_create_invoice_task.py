@@ -308,7 +308,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             ):
                 current_app.logger.info(
                     f"CFS status for account {payment_account.auth_account_id} "
-                    f"is {payment_account.cfs_account_status} skipping."
+                    f"is {cfs_account.status} skipping."
                 )
                 continue
 
@@ -450,7 +450,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             ):
                 current_app.logger.info(
                     f"CFS status for account {payment_account.auth_account_id} "
-                    f"is {payment_account.cfs_account_status} skipping."
+                    f"is {cfs_account.status} skipping."
                 )
                 continue
 
@@ -570,7 +570,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 reference_number=invoice_response.get("pbc_ref_number", None),
             )
 
-            invoice.cfs_account_id = payment_account.cfs_account_id
+            invoice.cfs_account_id = cfs_account.id
             invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
             invoice.save()
 

@@ -23,7 +23,7 @@ from .eft_short_name_links import EFTShortnameLinks as EFTShortNameLinkService
 from .eft_short_name_summaries import EFTShortnameSummaries as EFTShortNameSummaryService
 from .eft_short_names import EFTShortnames as EFTShortNamesService
 from .eft_statements import EFTStatements as EFTStatementService
-from .fee_schedule import FeeSchedule
+from .fee_schedule import CalculatedFeeSchedule, FeeCalculationParams, FeeSchedule
 from .flags import Flags
 from .gcp_queue import GcpQueue
 from .hashing import HashingService

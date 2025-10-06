@@ -15,142 +15,43 @@
 
 from flask import current_app
 
-from pay_api.models import InvoiceReference as ReferenceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.utils.enums import InvoiceReferenceStatus
 
 
-class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
+class InvoiceReference:
     """Service to manage Invoice Reference related operations."""
 
-    def __init__(self):
-        """Initialize the service."""
-        self.__dao = None
-        self._id: int = None
-        self._invoice_id: int = None
-        self._invoice_number: str = None
-        self._reference_number: str = None
-        self._status_code: str = None
-
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = ReferenceModel()
-        return self.__dao
-
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao = value
-        self.id: int = self._dao.id
-        self.invoice_id: int = self._dao.invoice_id
-        self.invoice_number: str = self._dao.invoice_number
-        self.reference_number: str = self._dao.reference_number
-        self.status_code: str = self._dao.status_code
-
-    @property
-    def id(self):
-        """Return the _id."""
-        return self._id
-
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
-
-    @property
-    def invoice_number(self):
-        """Return the payment_method_code."""
-        return self._invoice_number
-
-    @invoice_number.setter
-    def invoice_number(self, value: str):
-        """Set the invoice_number."""
-        self._invoice_number = value
-        self._dao.invoice_number = value
-
-    @property
-    def reference_number(self):
-        """Return the reference_number."""
-        return self._reference_number
-
-    @reference_number.setter
-    def reference_number(self, value: str):
-        """Set the reference_number."""
-        self._reference_number = value
-        self._dao.reference_number = value
-
-    @property
-    def status_code(self):
-        """Return the status_code."""
-        return self._status_code
-
-    @status_code.setter
-    def status_code(self, value: str):
-        """Set the status_code."""
-        self._status_code = value
-        self._dao.status_code = value
-
-    @property
-    def invoice_id(self):
-        """Return the invoice_id."""
-        return self._invoice_id
-
-    @invoice_id.setter
-    def invoice_id(self, value: int):
-        """Set the invoice_id."""
-        self._invoice_id = value
-        self._dao.invoice_id = value
-
-    def save(self):
-        """Save the information to the DB and commit."""
-        return self._dao.save()
-
-    def flush(self):
-        """Save the information to the DB and flush."""
-        return self._dao.flush()
-
     @staticmethod
-    def create(invoice_id: int, invoice_number: str, reference_number: str):
+    def create(invoice_id: int, invoice_number: str, reference_number: str) -> InvoiceReferenceModel:
         """Create invoice reference record."""
         current_app.logger.debug("<create")
-        i = InvoiceReference()
+        i = InvoiceReferenceModel()
         i.invoice_id = invoice_id
         i.status_code = InvoiceReferenceStatus.ACTIVE.value
         i.invoice_number = invoice_number
         i.reference_number = reference_number
-
-        i._dao = i.save()  # pylint: disable=protected-access
+        i.save()
         current_app.logger.debug(">create")
         return i
 
     @staticmethod
-    def find_active_reference_by_invoice_id(inv_id: int):
+    def find_active_reference_by_invoice_id(inv_id: int) -> InvoiceReferenceModel:
         """Find invoice reference by invoice id."""
-        ref_dao = ReferenceModel.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.ACTIVE.value)
-        invoice_reference = None
-        if ref_dao:
-            invoice_reference = InvoiceReference()
-            invoice_reference._dao = ref_dao  # pylint: disable=protected-access
-
+        dao = InvoiceReferenceModel.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.ACTIVE.value)
         current_app.logger.debug(">find_reference_by_invoice_id")
-        return invoice_reference
+        return dao
 
     @staticmethod
-    def find_completed_reference_by_invoice_id(inv_id: int):
+    def find_completed_reference_by_invoice_id(inv_id: int) -> InvoiceReferenceModel:
         """Find invoice reference by invoice id."""
-        ref_dao = ReferenceModel.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.COMPLETED.value)
-        invoice_reference = InvoiceReference()
-        invoice_reference._dao = ref_dao  # pylint: disable=protected-access
-
+        dao = InvoiceReferenceModel.find_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.COMPLETED.value)
         current_app.logger.debug(">find_reference_by_invoice_id")
-        return invoice_reference
+        return dao
 
     @staticmethod
-    def find_any_active_reference_by_invoice_number(inv_number: str):
+    def find_any_active_reference_by_invoice_number(inv_number: str) -> InvoiceReferenceModel:
         """Find invoice reference by invoice id."""
-        ref_dao = ReferenceModel.find_any_active_reference_by_invoice_number(inv_number)
-        invoice_reference = InvoiceReference()
-        invoice_reference._dao = ref_dao  # pylint: disable=protected-access
-
+        dao = InvoiceReferenceModel.find_any_active_reference_by_invoice_number(inv_number)
         current_app.logger.debug(">find_any_active_reference_by_invoice_number")
-        return invoice_reference
+        return dao
