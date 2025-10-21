@@ -298,9 +298,8 @@ def test_create_revenue_string_with_all_fee_types(session, public_user_mock):
     assert len(lines) == 4
     assert lines[0] == "1:100.22222.20244.9000.1111111.000000.0000:100.00"
     assert lines[1] == "2:100.22222.20244.9000.1111111.000000.0000:5.00"
-    assert lines[1] == "3:100.22222.20244.9000.1111111.000000.0000:25.00"
-    assert lines[2] == "4:100.22222.20244.9000.1111111.000000.0000:3.75"
-
+    assert lines[2] == "3:100.22222.20244.9000.1111111.000000.0000:25.00"
+    assert lines[3] == "4:100.22222.20244.9000.1111111.000000.0000:3.75"
 
 
 def test_create_revenue_string_with_empty_service_fees(session, public_user_mock):
@@ -321,9 +320,7 @@ def test_create_revenue_string_with_empty_service_fees(session, public_user_mock
     )
     line.save()
 
-    line = factory_payment_line_item(
-        invoice.id, fee_schedule_id=None, total=Decimal("0.00"), service_fees=Decimal("0")
-    )
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=None, total=Decimal("0.00"), service_fees=Decimal("0"))
     line.save()
 
     result = DirectPayService._create_revenue_string(invoice)
