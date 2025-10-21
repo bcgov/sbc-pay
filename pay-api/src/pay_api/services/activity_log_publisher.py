@@ -102,10 +102,7 @@ class ActivityLogPublisher:
             pacific_tz = pytz.timezone("America/Vancouver")
             effective_date_formatted = params.effective_date.astimezone(pacific_tz).strftime("%B %-d, %Y")
 
-        item_value_parts = [
-            str(params.old_frequency).title(),
-            str(params.new_frequency).title()
-        ]
+        item_value_parts = [str(params.old_frequency).title(), str(params.new_frequency).title()]
         if effective_date_formatted:
             item_value_parts.append(effective_date_formatted)
 
