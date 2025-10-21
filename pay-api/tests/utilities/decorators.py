@@ -13,12 +13,8 @@
 # limitations under the License.
 """decorators used to skip/run pytests based on local setup."""
 
-import os
 
-import pytest
 from dotenv import find_dotenv, load_dotenv
 
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
-
-skip_in_pod = pytest.mark.skipif(os.getenv("POD_TESTING", False), reason="Skip test when running in pod")

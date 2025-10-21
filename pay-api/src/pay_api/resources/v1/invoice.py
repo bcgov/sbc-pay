@@ -89,7 +89,7 @@ def get_invoice(invoice_id):
     """Get the invoice records."""
     try:
         response, status = (
-            InvoiceService.find_by_id(invoice_id).asdict(include_dynamic_fields=True),
+            InvoiceService.asdict(InvoiceService.find_by_id(invoice_id), include_dynamic_fields=True),
             HTTPStatus.OK,
         )
     except BusinessException as exception:
