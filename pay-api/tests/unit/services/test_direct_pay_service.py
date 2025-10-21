@@ -320,7 +320,10 @@ def test_create_revenue_string_with_empty_service_fees(session, public_user_mock
     )
     line.save()
 
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=None, total=Decimal("0.00"), service_fees=Decimal("0"))
+    line = factory_payment_line_item(
+        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=Decimal("0.00"), service_fees=Decimal("0")
+    )
+    line.fee_distribution_id = None
     line.save()
 
     result = DirectPayService._create_revenue_string(invoice)
