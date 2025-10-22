@@ -498,7 +498,7 @@ def test_gap_statements(session, test_name, admin_users_mock):
 
     weekly_statements = Statement.query.filter(StatementFrequency.WEEKLY.value == Statement.frequency).all()
     sorted_statements = sorted(weekly_statements, key=lambda x: x.from_date)
-    for prev, current in zip(sorted_statements, sorted_statements[1:], strict=True):
+    for prev, current in zip(sorted_statements, sorted_statements[1:]):  # noqa: B905
         # Monthly can overlap with weekly, think of switching from PAD -> EFT on the Jan 24th.
         # we'd still need to generate EFT for the entire month of January 1 -> 31st.
         # Ensure weekly doesn't overlap with other weekly (interim or gap or weekly).
@@ -508,7 +508,7 @@ def test_gap_statements(session, test_name, admin_users_mock):
 
     monthly_statements = Statement.query.filter(StatementFrequency.MONTHLY.value == Statement.frequency).all()
     sorted_statements = sorted(monthly_statements, key=lambda x: x.from_date)
-    for prev, current in zip(sorted_statements, sorted_statements[1:], strict=True):
+    for prev, current in zip(sorted_statements, sorted_statements[1:]):  # noqa: B905
         # Monthly should never overlap with monthly.
         assert prev.to_date < current.from_date, f"Overlap detected between monthly statements {prev.id} - {current.id}"
 
