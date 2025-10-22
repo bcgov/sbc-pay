@@ -26,7 +26,7 @@ class FeeCodeConfig(SecuredView):
     # Keep everything sorted, although realistically also we need to sort the values within a row before it is saved.
     column_default_sort = "code"
 
-    def on_form_prefill(self, form, id):  # pylint:disable=redefined-builtin
+    def on_form_prefill(self, form, id):  # noqa: ARG002
         """Prefill overrides."""
         form.code.render_kw = {"readonly": True}
 

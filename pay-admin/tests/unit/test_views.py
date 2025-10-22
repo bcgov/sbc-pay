@@ -15,14 +15,15 @@
 
 Test Views module.
 """
+
 import pytest
-from pay_api.models import FilingType
 
 from admin.views.code import CodeConfig
 from admin.views.corp_type import CorpType, CorpTypeConfig
 from admin.views.distribution_code import DistributionCode, DistributionCodeConfig
 from admin.views.fee_code import FeeCode, FeeCodeConfig
 from admin.views.fee_schedule import FeeSchedule, FeeScheduleConfig
+from pay_api.models import FilingType
 
 
 @pytest.mark.parametrize(
