@@ -13,8 +13,6 @@
 # limitations under the License.
 """Service to manage BCOL Payments."""
 
-from typing import Dict
-
 import zeep
 from flask import current_app
 
@@ -26,9 +24,9 @@ from bcol_api.utils.errors import Error
 class BcolPayment:  # pylint:disable=too-few-public-methods
     """Service to manage BCOL Payments."""
 
-    def create_payment(self, pay_request: Dict, is_apply_charge: bool):
+    def create_payment(self, pay_request: dict, is_apply_charge: bool):
         """Create payment record in BCOL."""
-        current_app.logger.debug(f'<create_payment {pay_request.get("invoiceNumber")}')
+        current_app.logger.debug(f"<create_payment {pay_request.get('invoiceNumber')}")
         padded_amount = self._pad_zeros(pay_request.get("amount", "0"))
         # Call the query profile service to fetch profile
         data = {
@@ -102,12 +100,12 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             return value[key].strip() if isinstance(value[key], str) else value[key]
         return None
 
-    def debit_account(self, data: Dict):  # pragma: no cover
+    def debit_account(self, data: dict):  # pragma: no cover
         """Debit BCOL account."""
         client = BcolSoap().get_payment_client()
         return zeep.helpers.serialize_object(client.service.debitAccount(req=data))
 
-    def apply_charge(self, data: Dict):  # pragma: no cover
+    def apply_charge(self, data: dict):  # pragma: no cover
         """Debit BCOL account as a staff user."""
         client = BcolSoap().get_applied_chg_client()
         return zeep.helpers.serialize_object(client.service.appliedCharge(req=data))
@@ -124,5 +122,5 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
         ts_fee = -float(ts_fee) / 100 if ts_fee else 0
         if ts_fee != float(invoice_service_fees):
             current_app.logger.error(
-                f"TSFee {ts_fee} from BCOL doesn't match" f" SBC-PAY invoice service fees: {invoice_service_fees}"
+                f"TSFee {ts_fee} from BCOL doesn't match SBC-PAY invoice service fees: {invoice_service_fees}"
             )

@@ -58,7 +58,8 @@ def _get_config(config_key: str, **kwargs):
         value = os.getenv(config_key, kwargs.get("default"))
     else:
         value = os.getenv(config_key)
-        assert value
+        if not value:
+            raise ValueError(f"Required configuration '{config_key}' is not set")
     return value
 
 
@@ -67,7 +68,7 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-    SECRET_KEY = "a secret"
+    SECRET_KEY = "a secret"  # noqa: S105
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -175,7 +176,7 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
     if not SECRET_KEY:
         SECRET_KEY = os.urandom(24)
-        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)
+        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)  # noqa: T201
 
     TESTING = False
     DEBUG = False

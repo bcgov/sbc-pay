@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Manage the database and some other items required to run the API
-"""
+"""Manage the database and some other items required to run the API."""
+
 import logging
 
+from bcol_api.models import db
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager  # class for handling a set of commands
 
 # models included so that migrate can build the database migrations
-from bcol_api import models  # pylint: disable=unused-import
-from bcol_api import create_app
-from bcol_api.models import db
+from bcol_api import (
+    create_app,  # pylint: disable=unused-import
+)
 
 APP = create_app()
 MIGRATE = Migrate(APP, db)

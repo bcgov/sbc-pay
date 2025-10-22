@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the version utilities are working as expected.
 """
+
 from bcol_api import utils
 from bcol_api.version import __version__
 from tests import skip_in_pod
