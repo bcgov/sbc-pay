@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to activate accounts with pending activation.Mostly for PAD with 3 day activation period."""
+
 from dataclasses import dataclass
 from datetime import datetime
 
 from flask import current_app
+from sbc_common_components.utils.enums import QueueMessageTypes
+
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.utils.enums import QueueSources
-from sbc_common_components.utils.enums import QueueMessageTypes
 
 from .enums import StatementNotificationAction
 
@@ -60,7 +62,7 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, a
                 topic=current_app.config.get("ACCOUNT_MAILER_TOPIC"),
             )
         )
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception:  # pylint: disable=broad-except
         current_app.logger.error(
             "Notification to Queue failed for the Account Mailer %s - %s",
             pay_account.auth_account_id,

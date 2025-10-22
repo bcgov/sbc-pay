@@ -15,12 +15,14 @@
 
 This module is a one time job to update the names.
 """
+
 import os
 import re
 import sys
-from typing import Dict, List
 
 from flask import Flask, current_app
+
+import config
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db, ma
@@ -30,13 +32,14 @@ from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_CURRENCY
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
 from pay_api.utils.logging import setup_logging
 
-import config
-
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.conf"))  # important to do this first
 
 
-def create_app(run_mode=os.getenv("FLASK_ENV", "production")):
+def create_app(run_mode=None):
     """Return a configured Flask App using the Factory method."""
+    if run_mode is None:
+        run_mode = os.getenv("FLASK_ENV", "production")
+
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
@@ -61,7 +64,7 @@ def register_shellcontext(app):
 def run_update(pay_account_id, num_records):
     """Update bank info."""
     current_app.logger.info(f"<<<< Running Update for account id from :{pay_account_id} and total:{num_records} >>>>")
-    pad_accounts: List[PaymentAccountModel] = (
+    pad_accounts: list[PaymentAccountModel] = (
         db.session.query(PaymentAccountModel)
         .filter(PaymentAccountModel.payment_method == PaymentMethod.PAD.value)
         .filter(PaymentAccountModel.id >= pay_account_id)
@@ -85,7 +88,7 @@ def run_update(pay_account_id, num_records):
 
         name = re.sub(r"[^a-zA-Z0-9]+", " ", payment_account.name)
 
-        payment_info: Dict[str, any] = {
+        payment_info: dict[str, any] = {
             "bankInstitutionNumber": cfs_account.bank_number,
             "bankTransitNumber": cfs_account.bank_branch_number,
             "bankAccountNumber": cfs_account.bank_account_number,
@@ -132,7 +135,7 @@ def save_bank_details(
     party_number: str,  # pylint: disable=too-many-arguments
     account_number: str,
     site_number: str,
-    payment_info: Dict[str, str],
+    payment_info: dict[str, str],
 ):
     """Update bank details to the site."""
     current_app.logger.debug("<Creating CFS payment details ")
@@ -147,7 +150,7 @@ def save_bank_details(
     # bank account name should match legal name
     name = re.sub(r"[^a-zA-Z0-9]+", " ", payment_info.get("bankAccountName", ""))
 
-    payment_details: Dict[str, str] = {
+    payment_details: dict[str, str] = {
         "bank_account_name": name,
         "bank_number": f"{bank_number:0>4}",
         "branch_number": f"{branch_number:0>5}",
@@ -174,9 +177,9 @@ def save_bank_details(
 if __name__ == "__main__":
     # first arg is account id to start with. Pay Account ID
     # second argument is how many records should it update.Just a stepper for reducing CFS load
-    print("len:", len(sys.argv))
+    print("len:", len(sys.argv))  # noqa: T201
     if len(sys.argv) <= 2:
-        print("No valid args passed.Exiting job without running any actions***************")
+        print("No valid args passed.Exiting job without running any actions***************")  # noqa: T201
     COUNT = sys.argv[2] if len(sys.argv) == 3 else 10
     application = create_app()
     application.app_context().push()

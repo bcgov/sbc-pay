@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to notify user for any outstanding invoice for online banking."""
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 from flask import current_app
+from sbc_common_components.utils.enums import QueueMessageTypes
+from sqlalchemy import Date, and_, cast, func
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
-from sbc_common_components.utils.enums import QueueMessageTypes
-from sqlalchemy import Date, and_, cast, func
-
 from utils import mailer
 
 
@@ -52,7 +53,7 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
             InvoiceStatus.PARTIAL.value,
             InvoiceStatus.CREATED.value,
         )
-        notification_date = datetime.now(tz=timezone.utc) - timedelta(days=current_app.config.get("NOTIFY_AFTER_DAYS"))
+        notification_date = datetime.now(tz=UTC) - timedelta(days=current_app.config.get("NOTIFY_AFTER_DAYS"))
         # Get distinct accounts with pending invoices for that exact day
         notification_pending_accounts = (
             db.session.query(InvoiceModel.payment_account_id)

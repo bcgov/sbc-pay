@@ -16,16 +16,16 @@
 
 Test-Suite to ensure that the StalePaymentTask is working as expected.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
-
 from tasks.stale_payment_task import StalePaymentTask
 
 from .factory import factory_create_pad_account, factory_invoice, factory_invoice_reference, factory_payment
@@ -61,7 +61,7 @@ def test_verify_created_credit_card_invoices(
     account = factory_create_pad_account(auth_account_id="1234", payment_method=payment_method)
 
     if account_locked:
-        account.has_nsf_invoices = datetime.now(tz=timezone.utc) - timedelta(days=15)
+        account.has_nsf_invoices = datetime.now(tz=UTC) - timedelta(days=15)
         account.save()
 
     cfs_account = CfsAccountModel.find_by_account_id(account.id)[0]
@@ -70,7 +70,7 @@ def test_verify_created_credit_card_invoices(
         payment_account=account,
         status_code=InvoiceStatus.CREATED.value,
         payment_method_code=payment_method,
-        created_on=datetime.now(tz=timezone.utc) - timedelta(days=1),
+        created_on=datetime.now(tz=UTC) - timedelta(days=1),
         total=50.0,
         paid=0.0,
         cfs_account_id=cfs_account.id,
@@ -95,7 +95,7 @@ def test_verify_created_credit_card_invoices(
     ).save()
 
     with patch("pay_api.services.paybc_service.PaybcService.get_receipt") as mock_get_receipt:
-        mock_receipt = ("TEST123", datetime.now(tz=timezone.utc), 50.0)
+        mock_receipt = ("TEST123", datetime.now(tz=UTC), 50.0)
         mock_get_receipt.return_value = mock_receipt
 
         StalePaymentTask._verify_created_credit_card_invoices(daily_run=True)

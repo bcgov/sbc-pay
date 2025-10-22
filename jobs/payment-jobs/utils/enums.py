@@ -1,6 +1,6 @@
-import dataclasses
+"""Enum definitions for payment jobs."""
+
 from enum import Enum
-from typing import Any, Dict, List, Optional
 
 
 class StatementNotificationAction(Enum):

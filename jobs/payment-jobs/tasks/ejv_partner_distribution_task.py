@@ -15,11 +15,12 @@
 
 import time
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Dict, List
 
 from flask import current_app
+from sqlalchemy import Date, and_, cast, or_
+
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
@@ -35,8 +36,6 @@ from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.services.email_service import JobFailureNotification
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
-from sqlalchemy import Date, and_, cast, or_
-
 from tasks.common.cgi_ejv import CgiEjv
 from tasks.common.dataclasses import Disbursement, DisbursementLineItem
 
@@ -44,7 +43,7 @@ from tasks.common.dataclasses import Disbursement, DisbursementLineItem
 # to do a side by side file comparison to previous versions to ensure that the changes are correct.
 
 
-def _process_error(row, error_msg: str, error_messages: List[Dict[str, any]], ex: Exception = None):
+def _process_error(row, error_msg: str, error_messages: list[dict[str, any]], ex: Exception = None):
     """Handle errors in EJV file processing."""
     if ex:
         formatted_traceback = "".join(traceback.TracebackException.from_exception(ex).format())
@@ -106,7 +105,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             PaymentMethod.DRAWDOWN.value,
             PaymentMethod.EFT.value,
         ]
-        disbursement_date = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(
+        disbursement_date = datetime.now(tz=UTC).replace(tzinfo=None) - timedelta(
             days=current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS")
         )
         base_query = (
@@ -239,7 +238,7 @@ class EjvPartnerDistributionTask(CgiEjv):
     def _create_ejv_file_for_partner(cls, batch_type: str):  # pylint:disable=too-many-locals, too-many-statements
         """Create EJV file for the partner and upload."""
         ejv_content, batch_total, control_total = "", Decimal("0"), Decimal("0")
-        today = datetime.now(tz=timezone.utc)
+        today = datetime.now(tz=UTC)
         disbursement_desc = current_app.config.get("CGI_DISBURSEMENT_DESC").format(
             today.strftime("%B").upper(), f"{today.day:0>2}"
         )[:100]
@@ -280,7 +279,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                             disbursement.bcreg_distribution_code.distribution_code_id
                         ]
                         ejv_content = "{}{}".format(
-                            ejv_content,  # pylint:disable=consider-using-f-string
+                            ejv_content,  # noqa: PLR6104
                             cls.get_jv_header(
                                 batch_type,
                                 cls.get_journal_batch_name(batch_number),
@@ -318,7 +317,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                             line_number,
                             credit_debit,
                         )
-                        ejv_content = "{}{}".format(ejv_content, jv_line)  # pylint:disable=consider-using-f-string
+                        ejv_content = "{}{}".format(ejv_content, jv_line)  # noqa: PLR6104
                         line_number += 1
                         control_total += 1
 
@@ -365,7 +364,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             # is used to track disbursements, instead of just the three column approach that
             # doesn't work when there are multiple reversals etc.
             disbursement.target.status_code = DisbursementStatus.UPLOADED.value
-            disbursement.target.processed_on = datetime.now(tz=timezone.utc)
+            disbursement.target.processed_on = datetime.now(tz=UTC)
         else:
             raise NotImplementedError("Unknown disbursement type")
 
@@ -392,7 +391,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         )
 
     @classmethod
-    def _get_partners_by_batch_type(cls, batch_type) -> List[CorpTypeModel]:
+    def _get_partners_by_batch_type(cls, batch_type) -> list[CorpTypeModel]:
         """Return partners by batch type."""
         # CREDIT : Ministry GL code -> disbursement_distribution_code_id on distribution_codes table
         # DEBIT : BC Registry GL Code -> distribution_code on fee_schedule, starts with 112

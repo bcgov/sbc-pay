@@ -20,32 +20,32 @@ from unittest.mock import Mock
 
 import pytest
 from flask_migrate import Migrate, upgrade
-from pay_api.models import db as _db
-from pay_api.utils.logging import setup_logging
 from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from invoke_jobs import create_app
+from pay_api.models import db as _db
+from pay_api.utils.logging import setup_logging
 
 
 @pytest.fixture(autouse=True)
 def mock_pub_sub_call(mocker):
     """Mock pub sub call."""
 
-    class Expando(object):
+    class Expando:
         """Expando class."""
 
     class PublisherMock:
         """Publisher Mock."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *_args, **_kwargs):
             def result():
                 """Return true for mock."""
                 return True
 
             self.result = result
 
-        def publish(self, *args, **kwargs):
+        def publish(self, *_args, **_kwargs):
             """Publish mock."""
             ex = Expando()
             ex.result = self.result
@@ -102,7 +102,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
     with app.app_context():
         with db.engine.connect() as conn:
             transaction = conn.begin()
-            sess = db._make_scoped_session(dict(bind=conn))  # pylint: disable=protected-access
+            sess = db._make_scoped_session({"bind": conn})  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
             db.session = sess

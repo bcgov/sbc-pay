@@ -42,14 +42,9 @@ jobs:
       - name: Install dependencies
         run: |
           make setup
-      - name: Lint with pylint
-        id: pylint
+      - name: Lint with ruff
         run: |
-          make pylint
-      - name: Lint with flake8
-        id: flake8
-        run: |
-          make flake8
+          make lint
 
   testing:
     needs: setup-job

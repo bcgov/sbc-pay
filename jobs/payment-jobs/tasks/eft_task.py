@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task for linking electronic funds transfers."""
+
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import List
 
 from flask import current_app
+from sqlalchemy import func
+from sqlalchemy.orm import lazyload, registry
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnamesHistorical as EFTShortnameHistoryModel
@@ -41,8 +44,6 @@ from pay_api.utils.enums import (
     ReverseOperation,
     TransactionStatus,
 )
-from sqlalchemy import func
-from sqlalchemy.orm import lazyload, registry
 
 
 class EFTTask:  # pylint:disable=too-few-public-methods
@@ -54,7 +55,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def get_eft_credit_invoice_links_by_status(
         cls, status: str
-    ) -> List[tuple[InvoiceModel, EFTCreditInvoiceLinkModel, CfsAccountModel]]:
+    ) -> list[tuple[InvoiceModel, EFTCreditInvoiceLinkModel, CfsAccountModel]]:
         """Get electronic funds transfer by state."""
         latest_cfs_account = (
             db.session.query(func.max(CfsAccountModel.id).label("max_id_per_payment_account"))
@@ -102,7 +103,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice_id: int
             status_code: str
             receipt_number: str
-            link_ids: List[int]
+            link_ids: list[int]
             rollup_amount: Decimal
 
         registry().map_imperatively(
@@ -169,7 +170,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 db.session.commit()
             except Exception:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(
-                    f"Error Account id={invoice.payment_account_id} - " f"EFT Credit invoice Link : {cil_rollup.id}",
+                    f"Error Account id={invoice.payment_account_id} - EFT Credit invoice Link : {cil_rollup.id}",
                     exc_info=True,
                 )
                 db.session.rollback()
@@ -316,7 +317,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
                 cil_rollup.invoice_id, InvoiceReferenceStatus.ACTIVE.value
             )
         ):
-            raise LookupError(f"Active Invoice reference not " f"found for invoice id: {invoice.id}")
+            raise LookupError(f"Active Invoice reference not found for invoice id: {invoice.id}")
         if invoice_reference.is_consolidated:
             original_invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 cil_rollup.invoice_id,
@@ -325,7 +326,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             )
             if not original_invoice_reference:
                 raise LookupError(
-                    f"Non consolidated cancelled invoice reference not " f"found for invoice id: {invoice.id}"
+                    f"Non consolidated cancelled invoice reference not found for invoice id: {invoice.id}"
                 )
             invoice_response = CFSService.get_invoice(
                 cfs_account=cfs_account,
@@ -347,8 +348,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             ):
                 # Note we do the opposite of this in payment_account.
                 current_app.logger.info(
-                    f"Consolidated invoice found, reversing consolidated "
-                    f"invoice {invoice_reference.invoice_number}."
+                    f"Consolidated invoice found, reversing consolidated invoice {invoice_reference.invoice_number}."
                 )
                 CFSService.reverse_invoice(invoice_reference.invoice_number)
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
@@ -362,7 +362,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
         CFSService.create_cfs_receipt(
             cfs_account=cfs_account,
             rcpt_number=receipt_number,
-            rcpt_date=datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
+            rcpt_date=datetime.now(tz=UTC).strftime("%Y-%m-%d"),
             amount=cil_rollup.rollup_amount,
             payment_method=PaymentMethod.EFT.value,
             access_token=CFSService.get_token(PaymentSystem.FAS).json().get("access_token"),
@@ -372,7 +372,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             receipt_number=receipt_number,
             receipt_amount=cil_rollup.rollup_amount,
             invoice_id=invoice_reference.invoice_id,
-            receipt_date=datetime.now(tz=timezone.utc),
+            receipt_date=datetime.now(tz=UTC),
         ).flush()
         PaymentModel(
             payment_method_code=PaymentMethod.EFT.value,
@@ -381,13 +381,13 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice_number=invoice.id,
             invoice_amount=invoice.total,
             payment_account_id=cfs_account.account_id,
-            payment_date=datetime.now(tz=timezone.utc),
+            payment_date=datetime.now(tz=UTC),
             paid_amount=cil_rollup.rollup_amount,
             receipt_number=receipt_number,
         ).flush()
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.paid = cil_rollup.rollup_amount
-        invoice.payment_date = datetime.now(tz=timezone.utc)
+        invoice.payment_date = datetime.now(tz=UTC)
         invoice.flush()
 
     @classmethod
@@ -447,7 +447,7 @@ class EFTTask:  # pylint:disable=too-few-public-methods
             invoice_reference.flush()
 
         invoice.invoice_status_code = invoice_status_code
-        invoice.refund_date = datetime.now(tz=timezone.utc)
+        invoice.refund_date = datetime.now(tz=UTC)
         invoice.refund = invoice.total
         invoice.flush()
         return invoice

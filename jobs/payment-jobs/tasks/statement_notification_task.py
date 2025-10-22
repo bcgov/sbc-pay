@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage PAYBC services."""
+
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
+
 from pay_api.models.payment import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.services import Statement as StatementService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType, NotificationStatus, PaymentMethod
-
 from utils.auth import get_token
 from utils.mailer import publish_statement_notification
 
@@ -62,16 +63,16 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
         template = ENV.get_template("statement_notification.html")
         for statement in statements_with_pending_notifications:
             statement.notification_status_code = NotificationStatus.PROCESSING.value
-            statement.notification_date = datetime.now(tz=timezone.utc)
+            statement.notification_date = datetime.now(tz=UTC)
             statement.commit()
             payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(statement.payment_account_id)
             recipients = StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)
             if len(recipients) < 1:
                 current_app.logger.info(
-                    f"No recipients found for statement: " f"{statement.payment_account_id}.Skipping sending"
+                    f"No recipients found for statement: {statement.payment_account_id}.Skipping sending"
                 )
                 statement.notification_status_code = NotificationStatus.SKIP.value
-                statement.notification_date = datetime.now(tz=timezone.utc)
+                statement.notification_date = datetime.now(tz=UTC)
                 statement.commit()
                 continue
 
@@ -99,11 +100,11 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
             if not notification_success:
                 current_app.logger.error("<notification failed")
                 statement.notification_status_code = NotificationStatus.FAILED.value
-                statement.notification_date = datetime.now(tz=timezone.utc)
+                statement.notification_date = datetime.now(tz=UTC)
                 statement.commit()
             else:
                 statement.notification_status_code = NotificationStatus.SUCCESS.value
-                statement.notification_date = datetime.now(tz=timezone.utc)
+                statement.notification_date = datetime.now(tz=UTC)
                 statement.commit()
 
     @classmethod

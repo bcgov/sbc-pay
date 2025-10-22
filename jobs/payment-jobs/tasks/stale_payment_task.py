@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module is being invoked from a job and it cleans up the stale records."""
+
 import datetime
-from typing import List
 
 from flask import current_app
+from requests import HTTPError
+
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
@@ -24,7 +26,6 @@ from pay_api.models import db
 from pay_api.services import InvoiceService, PaymentService, TransactionService
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod, PaymentStatus, TransactionStatus
-from requests import HTTPError
 
 STATUS_PAID = ("PAID", "CMPLT")
 
@@ -35,7 +36,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def update_stale_payments(cls, daily_run=False):
         """Update stale payments."""
-        current_app.logger.info(f"StalePaymentTask Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}")
+        current_app.logger.info(f"StalePaymentTask Ran at {datetime.datetime.now(tz=datetime.UTC)}")
         cls._update_stale_payments()
         cls._delete_marked_payments()
         cls._verify_created_credit_card_invoices(daily_run)
@@ -59,17 +60,15 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         )
 
         if len(stale_transactions) == 0 and len(service_unavailable_transactions) == 0:
-            current_app.logger.info(
-                f"Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}." "But No records found!"
-            )
+            current_app.logger.info(f"Ran at {datetime.datetime.now(tz=datetime.UTC)}.But No records found!")
         for transaction in [*stale_transactions, *service_unavailable_transactions]:
             try:
                 current_app.logger.info(
-                    f"Found records.Payment Id: {transaction.payment_id}, " f"Transaction Id : {transaction.id}"
+                    f"Found records.Payment Id: {transaction.payment_id}, Transaction Id : {transaction.id}"
                 )
                 TransactionService.update_transaction(transaction.id, pay_response_url=None)
                 current_app.logger.info(
-                    f"Updated records.Payment Id: {transaction.payment_id}, " f"Transaction Id : {transaction.id}"
+                    f"Updated records.Payment Id: {transaction.payment_id}, Transaction Id : {transaction.id}"
                 )
             except BusinessException as err:  # just catch and continue .Don't stop
                 # If the error is for COMPLETED PAYMENT, then mark the transaction as CANCELLED
@@ -92,7 +91,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         invoices_to_delete = InvoiceModel.find_invoices_marked_for_delete()
         if len(invoices_to_delete) == 0:
             current_app.logger.info(
-                f"Delete Invoice Job Ran at {datetime.datetime.now(tz=datetime.timezone.utc)}." "But No records found!"
+                f"Delete Invoice Job Ran at {datetime.datetime.now(tz=datetime.UTC)}.But No records found!"
             )
         for invoice in invoices_to_delete:
             try:
@@ -117,7 +116,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             cls._handle_direct_pay_invoice(invoice)
 
     @classmethod
-    def _should_process_transaction(cls, invoice_id: int, status_codes: List[str]):
+    def _should_process_transaction(cls, invoice_id: int, status_codes: list[str]):
         """Check if a transaction should be processed."""
         for status_code in status_codes:
             transaction = TransactionService.find_by_invoice_id_and_status(invoice_id, status_code)

@@ -16,11 +16,14 @@
 
 Test-Suite to ensure that the UpdateStalePayment is working as expected.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 import pytest
 import pytz
 from freezegun import freeze_time
+from sqlalchemy import insert
+
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Statement, StatementInvoices, StatementSettings, db
 from pay_api.services import Statement as StatementService
@@ -28,8 +31,6 @@ from pay_api.services import StatementSettings as StatementSettingsService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import get_previous_day
-from sqlalchemy import insert
-
 from tasks.statement_task import StatementTask
 
 from .factory import (
@@ -104,7 +105,7 @@ def test_statements_for_empty_results(session):
     2) Mark the account settings as DAILY settlement starting yesterday
     3) Generate statement and assert that the statement does not contains payment records
     """
-    day_before_yday = get_previous_day(datetime.now(tz=timezone.utc)) - timedelta(days=1)
+    day_before_yday = get_previous_day(datetime.now(tz=UTC)) - timedelta(days=1)
     bcol_account = factory_premium_payment_account()
     invoice = factory_invoice(payment_account=bcol_account, created_on=day_before_yday)
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
@@ -484,7 +485,7 @@ def test_gap_statements(session, test_name, admin_users_mock):
             with freeze_time(localize_date(datetime(2024, 1, 28, 8))):
                 # Update to PAD - Keep the pad activation_date in the past, otherwise we wont switch over to PAD.
                 # If we can't switch to PAD, no invoices would be created until activation date was hit.
-                account.pad_activation_date = datetime.now(tz=timezone.utc) - timedelta(days=1)
+                account.pad_activation_date = datetime.now(tz=UTC) - timedelta(days=1)
                 account.save()
                 PaymentAccountService.update(account.auth_account_id, factory_pad_account_payload())
             # The default for PAD is weekly, need extra days because no to_date set for gap_statements.
@@ -497,17 +498,17 @@ def test_gap_statements(session, test_name, admin_users_mock):
 
     weekly_statements = Statement.query.filter(StatementFrequency.WEEKLY.value == Statement.frequency).all()
     sorted_statements = sorted(weekly_statements, key=lambda x: x.from_date)
-    for prev, current in zip(sorted_statements, sorted_statements[1:]):
+    for prev, current in zip(sorted_statements, sorted_statements[1:], strict=True):
         # Monthly can overlap with weekly, think of switching from PAD -> EFT on the Jan 24th.
         # we'd still need to generate EFT for the entire month of January 1 -> 31st.
         # Ensure weekly doesn't overlap with other weekly (interim or gap or weekly).
-        assert (
-            prev.to_date < current.from_date
-        ), f"Overlap detected between weekly/gap/interim statements {prev.id} - {current.id}"
+        assert prev.to_date < current.from_date, (
+            f"Overlap detected between weekly/gap/interim statements {prev.id} - {current.id}"
+        )
 
     monthly_statements = Statement.query.filter(StatementFrequency.MONTHLY.value == Statement.frequency).all()
     sorted_statements = sorted(monthly_statements, key=lambda x: x.from_date)
-    for prev, current in zip(sorted_statements, sorted_statements[1:]):
+    for prev, current in zip(sorted_statements, sorted_statements[1:], strict=True):
         # Monthly should never overlap with monthly.
         assert prev.to_date < current.from_date, f"Overlap detected between monthly statements {prev.id} - {current.id}"
 

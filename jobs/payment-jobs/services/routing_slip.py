@@ -13,9 +13,8 @@
 # limitations under the License.
 """Service to help with different routing slip operations."""
 
-from typing import Dict
-
 from flask import current_app
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
@@ -27,7 +26,7 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
     """Create CFS account for routing slip."""
     routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_payment_account_id(pay_account.id)
     try:
-        cfs_account_details: Dict[str, any] = CFSService.create_cfs_account(
+        cfs_account_details: dict[str, any] = CFSService.create_cfs_account(
             identifier=pay_account.name,
             contact_info={},
             site_name=routing_slip.number,

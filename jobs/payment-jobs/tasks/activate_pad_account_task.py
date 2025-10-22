@@ -13,17 +13,17 @@
 # limitations under the License.
 """Task to activate accounts with pending activation.Mostly for PAD with 3 day activation period."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from flask import current_app
+from sbc_common_components.utils.enums import QueueMessageTypes
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import ActivityLogPublisher
 from pay_api.services.flags import flags
 from pay_api.utils.dataclasses import PaymentMethodChangeEvent
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, QueueSources
-from sbc_common_components.utils.enums import QueueMessageTypes
-
 from utils import mailer
 
 
@@ -52,7 +52,7 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
 
             # check is still in the pad activation period
             is_activation_period_over = pay_account.pad_activation_date - timedelta(hours=1) < datetime.now(
-                tz=timezone.utc
+                tz=UTC
             ).replace(tzinfo=None)
             current_app.logger.info(f"Account {pay_account.id} ready for activation:{is_activation_period_over}")
 

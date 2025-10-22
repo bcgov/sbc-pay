@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS invoices offline."""
+
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import List
 
 from flask import current_app
+from sbc_common_components.utils.enums import QueueMessageTypes
+from sqlalchemy import select
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Credit as CreditModel
@@ -42,9 +45,6 @@ from pay_api.utils.enums import (
     PaymentSystem,
 )
 from pay_api.utils.util import generate_transaction_number
-from sbc_common_components.utils.enums import QueueMessageTypes
-from sqlalchemy import select
-
 from utils import mailer
 
 from .routing_slip_task import RoutingSlipTask
@@ -88,7 +88,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _cancel_rs_invoices(cls):
         """Cancel routing slip invoices in CFS."""
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             InvoiceModel.query.filter(InvoiceModel.payment_method_code == PaymentMethod.INTERNAL.value)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value)
             .filter(InvoiceModel.routing_slip is not None)
@@ -113,7 +113,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             if invoice_reference:
                 current_app.logger.debug(f"Found invoice reference - {invoice_reference.invoice_number}")
                 try:
-                    receipts: List[ReceiptModel] = ReceiptModel.find_all_receipts_for_invoice(invoice_id=invoice.id)
+                    receipts: list[ReceiptModel] = ReceiptModel.find_all_receipts_for_invoice(invoice_id=invoice.id)
                     for receipt in receipts:
                         CFSService.unapply_receipt(
                             cfs_account,
@@ -138,7 +138,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
 
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-            invoice.refund_date = datetime.now(tz=timezone.utc)
+            invoice.refund_date = datetime.now(tz=UTC)
             invoice.save()
 
     @classmethod
@@ -149,7 +149,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         # find all routing slip invoices [cash or cheque]
         # create invoices in csf
         # do the receipt apply
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             db.session.query(InvoiceModel)
             .join(RoutingSlipModel, RoutingSlipModel.number == InvoiceModel.routing_slip)
             .join(
@@ -255,7 +255,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # leave the status as PAID
 
             invoice.invoice_status_code = InvoiceStatus.PAID.value
-            invoice.payment_date = datetime.now(tz=timezone.utc)
+            invoice.payment_date = datetime.now(tz=UTC)
             invoice.paid = invoice.total
             invoice.save()
 
@@ -269,7 +269,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             .subquery()
         )
 
-        pad_accounts: List[PaymentAccountModel] = (
+        pad_accounts: list[PaymentAccountModel] = (
             db.session.query(PaymentAccountModel)
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id)
             .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value)
@@ -357,7 +357,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     msg = (
                         f"Error on creating PAD invoice: account id={payment_account.id}, "
                         f"auth account : {payment_account.auth_account_id}, Invoice {invoice_number} exists: "
-                        f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}'
+                        f" CAS total: {invoice_response.get('total', 0)}, PAY-BC total: {invoice_total}"
                     )
                     current_app.logger.error(
                         msg,
@@ -372,7 +372,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             additional_params = {
                 "credit_total": float(credit_total),
                 "invoice_total": float(invoice_total),
-                "invoice_process_date": f"{datetime.now(tz=timezone.utc)}",
+                "invoice_process_date": f"{datetime.now(tz=UTC)}",
                 "invoice_number": invoice_response.get("invoice_number"),
             }
 
@@ -403,7 +403,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             .subquery()
         )
 
-        eft_accounts: List[PaymentAccountModel] = (
+        eft_accounts: list[PaymentAccountModel] = (
             db.session.query(PaymentAccountModel)
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id)
             .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value)
@@ -496,7 +496,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                         msg = (
                             f"Error on creating EFT invoice: account id={payment_account.id}, "
                             f"auth account : {payment_account.auth_account_id}, Invoice {invoice_number} exists: "
-                            f' CAS total: {invoice_response.get("total", 0)}, '
+                            f" CAS total: {invoice_response.get('total', 0)}, "
                             f"PAY-BC total: {invoice.total}, ERROR : {str(e)}"
                         )
                         current_app.logger.error(
@@ -524,7 +524,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_single_invoice_per_purchase(cls, payment_method: PaymentMethod):
         """Create one CFS invoice per purchase."""
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             InvoiceModel.query.filter_by(payment_method_code=payment_method.value)
             .filter_by(invoice_status_code=InvoiceStatus.CREATED.value)
             .order_by(InvoiceModel.created_on.asc())

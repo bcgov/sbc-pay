@@ -17,7 +17,7 @@
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from random import randrange
 
 from pay_api.models import (
@@ -100,10 +100,10 @@ def factory_statement_invoices(statement_id: str, invoice_id: str):
 def factory_statement(
     frequency: str = "WEEKLY",
     payment_account_id: str = None,
-    from_date: datetime = datetime.now(tz=timezone.utc),
-    to_date: datetime = datetime.now(tz=timezone.utc),
+    from_date: datetime = datetime.now(tz=UTC),
+    to_date: datetime = datetime.now(tz=UTC),
     statement_settings_id: str = None,
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
     payment_methods: str = PaymentMethod.EFT.value,
 ):
     """Return Factory."""
@@ -121,7 +121,7 @@ def factory_statement(
 def factory_statement_settings(
     pay_account_id: str,
     frequency="DAILY",
-    from_date=datetime.now(tz=timezone.utc),
+    from_date=datetime.now(tz=UTC),
     to_date=None,
 ) -> StatementSettings:
     """Return Factory."""
@@ -137,7 +137,7 @@ def factory_payment(
     payment_system_code: str = "PAYBC",
     payment_method_code: str = "CC",
     payment_status_code: str = PaymentStatus.CREATED.value,
-    payment_date: datetime = datetime.now(tz=timezone.utc),
+    payment_date: datetime = datetime.now(tz=UTC),
     invoice_number: str = None,
     payment_account_id: int = None,
     invoice_amount: float = None,
@@ -163,7 +163,7 @@ def factory_invoice(
     total=0,
     paid=0,
     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
     cfs_account_id: int = 0,
     routing_slip=None,
     disbursement_status_code=None,
@@ -265,7 +265,7 @@ def factory_create_pad_account(
     confirmation_period: int = 3,
 ):
     """Return Factory."""
-    date_after_wait_period = datetime.now(tz=timezone.utc) + timedelta(confirmation_period)
+    date_after_wait_period = datetime.now(tz=UTC) + timedelta(confirmation_period)
     account = PaymentAccount(
         auth_account_id=auth_account_id,
         payment_method=payment_method,
@@ -298,7 +298,7 @@ def factory_routing_slip_account(
     status: str = CfsAccountStatus.PENDING.value,
     total: int = 0,
     remaining_amount: int = 0,
-    routing_slip_date=datetime.now(tz=timezone.utc),
+    routing_slip_date=datetime.now(tz=UTC),
     payment_method=PaymentMethod.CASH.value,
     auth_account_id="1234",
     routing_slip_status=RoutingSlipStatus.ACTIVE.value,
@@ -364,7 +364,7 @@ def factory_eft_shortname_link(
     short_name_id: int,
     auth_account_id: str = "1234",
     updated_by: str = None,
-    updated_on: datetime = datetime.now(tz=timezone.utc),
+    updated_on: datetime = datetime.now(tz=UTC),
     status_code: str = EFTShortnameStatus.LINKED.value,
 ):
     """Return an EFT short name link model."""
@@ -445,7 +445,7 @@ def factory_create_eft_shortname_historical(
         related_group_link_id=related_group_link_id,
         short_name_id=short_name_id,
         statement_number=statement_number,
-        transaction_date=datetime.now(tz=timezone.utc),
+        transaction_date=datetime.now(tz=UTC),
         transaction_type=transaction_type,
     ).save()
     return eft_historical
@@ -478,7 +478,7 @@ def factory_create_eft_refund(
         refund_email=refund_email,
         short_name_id=short_name_id,
         status=status,
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
         refund_method=refund_method,
         entity_name=entity_name,
         street=street,
@@ -529,7 +529,7 @@ def factory_create_ejv_account(
         stob=stob,
         project_code=project_code,
         account_id=account.id,
-        start_date=datetime.now(tz=timezone.utc).date(),
+        start_date=datetime.now(tz=UTC).date(),
         created_by="test",
     ).save()
     return account
@@ -555,7 +555,7 @@ def factory_distribution(
         project_code=project_code,
         service_fee_distribution_code_id=service_fee_dist_id,
         disbursement_distribution_code_id=disbursement_dist_id,
-        start_date=datetime.now(tz=timezone.utc).date(),
+        start_date=datetime.now(tz=UTC).date(),
         created_by="test",
     ).save()
 
@@ -568,7 +568,7 @@ def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
 def factory_receipt(
     invoice_id: int,
     receipt_number: str = "TEST1234567890",
-    receipt_date: datetime = datetime.now(tz=timezone.utc),
+    receipt_date: datetime = datetime.now(tz=UTC),
     receipt_amount: float = 10.0,
 ):
     """Return Factory."""
@@ -584,7 +584,7 @@ def factory_refund(routing_slip_id: int, details={}):
     """Return Factory."""
     return Refund(
         routing_slip_id=routing_slip_id,
-        requested_date=datetime.now(tz=timezone.utc),
+        requested_date=datetime.now(tz=UTC),
         reason="TEST",
         requested_by="TEST",
         details=details,
@@ -595,7 +595,7 @@ def factory_refund_invoice(invoice_id: int, details={}):
     """Return Factory."""
     return Refund(
         invoice_id=invoice_id,
-        requested_date=datetime.now(tz=timezone.utc),
+        requested_date=datetime.now(tz=UTC),
         reason="TEST",
         requested_by="TEST",
         details=details,
@@ -608,7 +608,7 @@ def factory_refund_partial(
     refund_amount: float,
     refund_type: str,
     created_by="test",
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
     status: str = RefundsPartialStatus.REFUND_REQUESTED.value,
 ):
     """Return Factory."""

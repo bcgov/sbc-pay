@@ -16,20 +16,21 @@
 
 Test-Suite to ensure that the StatementNotificationTask is working as expected.
 """
+
 import decimal
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import ANY, patch
 
 import pytest
 from faker import Faker
 from flask import Flask
 from freezegun import freeze_time
+
+import config
 from pay_api.models import Statement, StatementInvoices
 from pay_api.services import Statement as StatementService
 from pay_api.utils.enums import InvoiceStatus, NotificationStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import get_previous_month_and_year
-
-import config
 from tasks.statement_notification_task import StatementNotificationTask
 from tasks.statement_task import StatementTask
 from tests.jobs.factory import (
@@ -119,7 +120,7 @@ def test_send_monthly_notifications(setup, session, payment_method_code):  # pyl
     assert account.payment_method == payment_method_code
 
     # Generate statement for previous month - freeze time to the 1st of the current month
-    with freeze_time(datetime.now(tz=timezone.utc).replace(day=1, hour=8)):
+    with freeze_time(datetime.now(tz=UTC).replace(day=1, hour=8)):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
@@ -172,7 +173,7 @@ def test_send_monthly_notifications_failed(setup, session, payment_method_code):
     assert account.payment_method == payment_method_code
 
     # Generate statement for previous month - freeze time to the 1st of the current month
-    with freeze_time(datetime.now(tz=timezone.utc).replace(day=1, hour=8)):
+    with freeze_time(datetime.now(tz=UTC).replace(day=1, hour=8)):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
@@ -215,7 +216,7 @@ def test_send_eft_notifications(setup, session):  # pylint: disable=unused-argum
     assert account.payment_method == PaymentMethod.EFT.value
 
     # Generate statement for previous month - freeze time to the 1st of the current month
-    with freeze_time(datetime.now(tz=timezone.utc).replace(day=1, hour=8)):
+    with freeze_time(datetime.now(tz=UTC).replace(day=1, hour=8)):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
@@ -257,7 +258,7 @@ def test_send_eft_notifications_failure(setup, session):  # pylint: disable=unus
     assert account.payment_method == PaymentMethod.EFT.value
 
     # Generate statement for previous month - freeze time to the 1st of the current month
-    with freeze_time(datetime.now(tz=timezone.utc).replace(day=1, hour=8)):
+    with freeze_time(datetime.now(tz=UTC).replace(day=1, hour=8)):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created

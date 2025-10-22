@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Base class for CGI AP."""
+
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import current_app
+
 from pay_api.models.eft_refund import EFTRefund
 from pay_api.utils.enums import DisbursementMethod
 from pay_api.utils.util import get_fiscal_year
-
 from tasks.common.dataclasses import APFlow, APHeader, APLine, APSupplier
 
 from .cgi_ejv import CgiEjv
@@ -33,7 +34,7 @@ class CgiAP(CgiEjv):
         """Return batch header string."""
         return (
             f"{cls._feeder_number()}{batch_type}BH{cls.DELIMITER}{cls._feeder_number()}"
-            f"{get_fiscal_year(datetime.now(tz=timezone.utc))}"
+            f"{get_fiscal_year(datetime.now(tz=UTC))}"
             f"{batch_number}{cls._message_version()}{cls.DELIMITER}{os.linesep}"
         )
 
@@ -42,7 +43,7 @@ class CgiAP(CgiEjv):
         """Return batch trailer string."""
         return (
             f"{cls._feeder_number()}{batch_type}BT{cls.DELIMITER}{cls._feeder_number()}"
-            f"{get_fiscal_year(datetime.now(tz=timezone.utc))}{batch_number}"
+            f"{get_fiscal_year(datetime.now(tz=UTC))}{batch_number}"
             f"{control_total:0>15}{cls.format_amount(batch_total)}{cls.DELIMITER}{os.linesep}"
         )
 
@@ -52,7 +53,7 @@ class CgiAP(CgiEjv):
         invoice_type = "ST"
         remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
         currency = "CAD"
-        effective_date = cls._get_date(datetime.now(tz=timezone.utc))
+        effective_date = cls._get_date(datetime.now(tz=UTC))
         invoice_date = cls._get_date(ap_header.invoice_date)
         oracle_invoice_batch_name = cls._get_oracle_invoice_batch_name(ap_header.ap_flow, ap_header.invoice_number)
         ap_flow_to_disbursement_method = {
@@ -81,7 +82,7 @@ class CgiAP(CgiEjv):
         commit_line_number = f"{cls.EMPTY:<4}"
         # Pad Zeros to four digits. EG. 0001
         line_number = f"{ap_line.line_number:04}"
-        effective_date = cls._get_date(datetime.now(tz=timezone.utc))
+        effective_date = cls._get_date(datetime.now(tz=UTC))
         line_code = cls._get_line_code(ap_line)
         supplier_number = cls._supplier_number(ap_line.ap_flow, ap_line.ap_supplier.supplier_number)
         dist_vendor = cls._dist_vendor(ap_line.ap_flow, ap_line.ap_supplier.supplier_number)
@@ -142,7 +143,7 @@ class CgiAP(CgiEjv):
             address_3 = f"{cls.EMPTY:<40}"
         ap_address = (
             f"{cls._feeder_number()}APNA{cls.DELIMITER}{cls._supplier_number(ap_flow)}{cls._supplier_location(ap_flow)}"
-            f"{ap_invoice_number:<50}{f"{name[:40]:<40}"}{f"{name[40:80]:<40}"}{address_1}{address_2}{address_3}"
+            f"{ap_invoice_number:<50}{f'{name[:40]:<40}'}{f'{name[40:80]:<40}'}{address_1}{address_2}{address_3}"
             f"{city}{region}{postal_code}{country}{cls.DELIMITER}{os.linesep}"
         )
         return ap_address

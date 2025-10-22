@@ -13,8 +13,10 @@
 # limitations under the License.
 
 """Test-Suite to ensure that the Flag Service is working as expected."""
+
 import pytest
 from flask import Flask
+
 from pay_api.services import Flags
 
 app = None

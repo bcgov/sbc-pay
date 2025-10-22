@@ -16,10 +16,10 @@
 
 Test-Suite to ensure that the DistributionTask is working as expected.
 """
+
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import FeeSchedule
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus
-
 from tasks.distribution_task import DistributionTask
 
 from .factory import (
@@ -80,7 +80,7 @@ def test_update_failed_distributions_refunds(session, monkeypatch):
         paybc_token_response,
     )
     # Mock POST until obtain OAS spec from PayBC for updating GL.
-    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.post", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.post", lambda *_args, **_kwargs: None)
     # Mock refund payload response.
     monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.get", refund_payload_response)
 
@@ -126,7 +126,7 @@ def test_update_failed_distribution_payments(session, monkeypatch):
         paybc_token_response,
     )
     # Mock POST until obtain OAS spec from PayBC for updating GL.
-    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.post", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.post", lambda *_args, **_kwargs: None)
 
     DistributionTask.update_failed_distributions()
     assert invoice.invoice_status_code == InvoiceStatus.PAID.value

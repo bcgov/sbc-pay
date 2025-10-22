@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to update refunded invoices that have been processed by BCOL."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Dict, List
 
 from flask import current_app
+from sqlalchemy import column, select, text
+
 from pay_api.models import Invoice, InvoiceReference, Payment, db
 from pay_api.services.bcol_service import BcolService
 from pay_api.utils.enums import InvoiceStatus, PaymentSystem, TransactionStatus
-from sqlalchemy import text
-
 from services import data_warehouse
 
 
@@ -53,7 +53,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
             current_app.logger.debug("No BCOL refunds to confirm.")
 
     @classmethod
-    def _get_paydb_invoice_refs_for_update(cls) -> List[InvoiceReference]:
+    def _get_paydb_invoice_refs_for_update(cls) -> list[InvoiceReference]:
         """Get outstanding refund requested BCOL invoice references."""
         current_app.logger.debug("Collecting refund requested BCOL invoices...")
         return (
@@ -66,7 +66,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         )
 
     @classmethod
-    def _get_data_warehouse_bcol_records_for_invoices(cls, invoice_refs: List[InvoiceReference]) -> Dict[str, Decimal]:
+    def _get_data_warehouse_bcol_records_for_invoices(cls, invoice_refs: list[InvoiceReference]) -> dict[str, Decimal]:
         """Get BCOL refund records for the given invoice references from the Data Warehouse."""
         current_app.logger.debug("Refund requested BCOL invoice references: %s", invoice_refs)
         # Split invoice refs into groups of 5000
@@ -78,16 +78,15 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         current_app.logger.debug("Connecting to data_warehouse...")
         with data_warehouse.session() as session:
             for invoice_ref_grp in invoice_ref_chunks:
-                invoice_numbers_str = ", ".join("'" + str(x.invoice_number) + "'" for x in invoice_ref_grp)
+                invoice_numbers = [str(x.invoice_number) for x in invoice_ref_grp]
 
                 current_app.logger.debug("Collecting Data Warehouse BCOL refund records...")
-                query = text(
-                    f"""
-                            SELECT key, total_amt
-                            FROM colin.bconline_billing_record
-                            WHERE key IN ({invoice_numbers_str})
-                                AND qty = -1
-                        """
+                # Use SQLAlchemy's in_() method for safe parameterized queries
+                query = (
+                    select(column("key"), column("total_amt"))
+                    .select_from(text("colin.bconline_billing_record"))
+                    .where(column("key").in_(invoice_numbers))
+                    .where(column("qty") == -1)
                 )
 
                 results = session.execute(query).fetchall()
@@ -98,7 +97,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         return bcol_refunds_all
 
     @classmethod
-    def _compare_and_update_records(cls, invoice_refs: List[InvoiceReference], bcol_records: dict):
+    def _compare_and_update_records(cls, invoice_refs: list[InvoiceReference], bcol_records: dict):
         """Update the invoices statuses that have been refunded by BCOL."""
         refund_invoices = []
         for invoice_ref in invoice_refs:
@@ -118,7 +117,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
 
             # refund was processed and value is correct. Update invoice state and refund date
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-            invoice.refund_date = datetime.now(tz=timezone.utc)
+            invoice.refund_date = datetime.now(tz=UTC)
             refund_invoices.append(invoice)
             db.session.add(invoice)
 

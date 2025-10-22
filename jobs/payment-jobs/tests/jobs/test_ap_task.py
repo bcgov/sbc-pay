@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the AP Refund Job is working as expected.
 """
+
 from unittest.mock import MagicMock, patch
 
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -29,7 +30,6 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RoutingSlipStatus,
 )
-
 from tasks.ap_task import ApTask
 
 from .factory import (

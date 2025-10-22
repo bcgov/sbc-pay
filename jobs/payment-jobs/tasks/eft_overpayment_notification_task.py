@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to notify staff user for short name over payments."""
-from datetime import datetime, timedelta, timezone
-from typing import List
+
+from datetime import UTC, datetime, timedelta
 
 from flask import current_app
+from sqlalchemy import and_, func
+
 from pay_api.models import db
 from pay_api.models.eft_credit import EFTCredit as EFTCreditModel
 from pay_api.models.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinkModel
@@ -23,8 +25,6 @@ from pay_api.models.eft_short_names import EFTShortnames as EFTShortnameModel
 from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.email_service import send_email
 from pay_api.utils.enums import EFTShortnameStatus, Role
-from sqlalchemy import and_, func
-
 from services.email_service import _render_eft_overpayment_template
 
 
@@ -53,7 +53,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def _get_today_overpaid_linked_short_names(cls):
         """Get linked short names that have received a payment today and overpaid."""
-        filter_date = cls.date_override if cls.date_override is not None else datetime.now(tz=timezone.utc).date()
+        filter_date = cls.date_override if cls.date_override is not None else datetime.now(tz=UTC).date()
         query = (
             cls._get_short_names_with_credits_remaining()
             .join(
@@ -75,7 +75,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def _get_unlinked_short_names_for_duration(cls, days_duration: int = 30):
         """Get short names that have been unlinked for a duration in days."""
-        execution_date = cls.date_override if cls.date_override is not None else datetime.now(tz=timezone.utc).date()
+        execution_date = cls.date_override if cls.date_override is not None else datetime.now(tz=UTC).date()
         duration_date = execution_date - timedelta(days=days_duration)
         query = (
             cls._get_short_names_with_credits_remaining()
@@ -98,7 +98,7 @@ class EFTOverpaymentNotificationTask:  # pylint: disable=too-few-public-methods
         return query.all()
 
     @classmethod
-    def _update_short_name_dict(cls, short_name_models: List[EFTShortnameModel]):
+    def _update_short_name_dict(cls, short_name_models: list[EFTShortnameModel]):
         for short_name in short_name_models:
             cls.short_names[short_name.id] = short_name.short_name
 

@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to notify user for any outstanding statement."""
+
 from calendar import monthrange
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytz
 from flask import current_app
+from sqlalchemy import select
+
 from pay_api.models import db
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.models.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksModel
@@ -33,8 +36,6 @@ from pay_api.services.statement_settings import StatementSettings as StatementSe
 from pay_api.utils.auth_event import AuthEvent, LockAccountDetails
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources, StatementFrequency, SuspensionReasonCodes
 from pay_api.utils.util import current_local_time
-from sqlalchemy import select
-
 from utils.enums import StatementNotificationAction
 from utils.mailer import StatementNotificationInfo, publish_payment_notification
 
@@ -103,7 +104,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
             offset_hours = -now.astimezone(pytz.timezone("America/Vancouver")).utcoffset().total_seconds() / 60 / 60
             now = now.replace(hour=int(offset_hours), minute=0, second=0)
         else:
-            now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+            now = datetime.now(tz=UTC).replace(tzinfo=None)
         query = db.session.query(InvoiceModel).filter(
             InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
             InvoiceModel.overdue_date.isnot(None),
@@ -148,7 +149,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
         # Update statement overdue_notification_date and collect accounts so we don't lock it multiple times
         for payment_account, overdue_statement in overdue_results:
             accounts_to_lock[payment_account.id] = payment_account
-            overdue_statement.overdue_notification_date = datetime.now(tz=timezone.utc)
+            overdue_statement.overdue_notification_date = datetime.now(tz=UTC)
             overdue_statement.save()
             overdue_statement_ids.setdefault(payment_account.id, [])
             overdue_statement_ids[payment_account.id].append(overdue_statement.id)
@@ -175,7 +176,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
 
             # Even if the account is locked, there is a new overdue statement that needs NSF invoices added and
             # set the most recent date for has_overdue_invoices
-            payment_account.has_overdue_invoices = datetime.now(tz=timezone.utc)
+            payment_account.has_overdue_invoices = datetime.now(tz=UTC)
             payment_account.save()
             cls.add_to_non_sufficient_funds(payment_account)
 
@@ -308,7 +309,7 @@ class EFTStatementDueTask:  # pylint: disable=too-few-public-methods
         if cls.action_date_override:
             now_date = cls.action_date_override
         else:
-            now_date = datetime.now(tz=timezone.utc).replace(tzinfo=None).date()
+            now_date = datetime.now(tz=UTC).replace(tzinfo=None).date()
 
         if day_invoice_due == now_date:
             return StatementNotificationAction.DUE, day_invoice_due
