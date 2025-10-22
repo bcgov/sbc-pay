@@ -13,9 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import logging
+
 from pay_api.models import DistributionCode, PaymentAccount, db
 
 from .secured_view import SecuredView
+
+logger = logging.getLogger(__name__)
 
 
 class DistributionCodeConfig(SecuredView):
@@ -108,7 +112,7 @@ class DistributionCodeConfig(SecuredView):
                 is not None
             )
         except Exception as e:
-            print(f"Error checking distribution code usage: {e}")
+            logger.error("Error checking distribution code usage: %s", e)
             return False
 
     def _disable_field(self, field, message):
@@ -137,7 +141,7 @@ class DistributionCodeConfig(SecuredView):
         form = super().create_form(obj)
         return form
 
-    def on_model_change(self, form, model, is_created):
+    def on_model_change(self, model, is_created):
         """Trigger on model change."""
         model.created_by = model.created_by or "SYSTEM"
         if is_created:

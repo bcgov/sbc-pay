@@ -53,8 +53,7 @@ class Keycloak:
         return access
 
     def get_redirect_url(self) -> str:
-        """
-        Get the redirect URL that is used to transfer the browser to the identity provider.
+        """Get the redirect URL that is used to transfer the browser to the identity provider.
 
         :rtype: object
         """
