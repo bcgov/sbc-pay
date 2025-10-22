@@ -317,7 +317,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                             line_number,
                             credit_debit,
                         )
-                        ejv_content = "{}{}".format(ejv_content, jv_line)  # noqa: PLR6104
+                        ejv_content = f"{ejv_content}{jv_line}"
                         line_number += 1
                         control_total += 1
 
