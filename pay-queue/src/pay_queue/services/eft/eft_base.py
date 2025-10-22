@@ -56,9 +56,9 @@
 # In a money field, the rightmost character is either blank or a minus sign.
 
 """This manages the EFT base class."""
+
 import decimal
-from datetime import datetime, timezone
-from typing import List, Tuple
+from datetime import UTC, datetime
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from pay_queue.services.eft.eft_errors import EFTError
@@ -72,7 +72,7 @@ class EFTBase:
     record_type: str  # Always 1 for header, 2 for transaction, 7 for trailer
     content: str
     index: int
-    errors: List[EFTParseError]
+    errors: list[EFTParseError]
 
     def __init__(self, content: str, index: int):
         """Return an EFT Base record."""
@@ -135,14 +135,14 @@ class EFTBase:
         try:
             result = datetime.strptime(datetime_str, EFTConstants.DATE_TIME_FORMAT.value)
             if tz:
-                result = tz.localize(result).astimezone(timezone.utc)
+                result = tz.localize(result).astimezone(UTC)
         except (ValueError, TypeError):
             result = None
             self.add_error(EFTParseError(error))
 
         return result
 
-    def find_matching_pattern(self, patterns: Tuple, value: str) -> str:
+    def find_matching_pattern(self, patterns: tuple, value: str) -> str:
         """Find matching pattern for a value."""
         for pattern in patterns:
             if value.startswith(pattern):
@@ -158,6 +158,6 @@ class EFTBase:
         """Return true if the error array has elements."""
         return len(self.errors) > 0
 
-    def get_error_messages(self) -> List[str]:
+    def get_error_messages(self) -> list[str]:
         """Return a string array of the error messages."""
         return [error.message for error in self.errors]

@@ -16,7 +16,13 @@
 from datetime import datetime
 
 from pay_api.models import CfsAccount, Invoice, InvoiceReference, Payment, PaymentAccount
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.utils.enums import (
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    PaymentStatus,
+    PaymentSystem,
+)
 
 
 def factory_payment_account(

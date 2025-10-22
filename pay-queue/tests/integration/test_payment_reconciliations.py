@@ -16,11 +16,14 @@
 
 Test-Suite to ensure that the Payment Reconciliation queue service is working as expected.
 """
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
+from sbc_common_components.utils.enums import QueueMessageTypes
+
 from pay_api.models import AppliedCredits as AppliedCreditsModel
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -37,8 +40,6 @@ from pay_api.utils.enums import (
     PaymentStatus,
     QueueSources,
 )
-from sbc_common_components.utils.enums import QueueMessageTypes
-
 from pay_queue.enums import RecordType, SourceTransaction, Status, TargetTransaction
 
 from .factory import (
@@ -62,7 +63,8 @@ def test_online_banking_reconciliations(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = "1234"
     pay_account = factory_create_online_banking_account(
-        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+        status=CfsAccountStatus.ACTIVE.value,
+        cfs_account=cfs_account_number,
     )
     invoice = factory_invoice(
         payment_account=pay_account,
@@ -124,7 +126,8 @@ def test_online_banking_reconciliations_over_payment(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = "1234"
     pay_account = factory_create_online_banking_account(
-        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+        status=CfsAccountStatus.ACTIVE.value,
+        cfs_account=cfs_account_number,
     )
     invoice = factory_invoice(
         payment_account=pay_account,
@@ -201,7 +204,8 @@ def test_online_banking_reconciliations_with_credit(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = "1234"
     pay_account = factory_create_online_banking_account(
-        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+        status=CfsAccountStatus.ACTIVE.value,
+        cfs_account=cfs_account_number,
     )
     invoice = factory_invoice(
         payment_account=pay_account,
@@ -278,7 +282,8 @@ def test_online_banking_reconciliations_overflows_credit(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = "1234"
     pay_account = factory_create_online_banking_account(
-        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+        status=CfsAccountStatus.ACTIVE.value,
+        cfs_account=cfs_account_number,
     )
     invoice = factory_invoice(
         payment_account=pay_account,
@@ -371,7 +376,8 @@ def test_online_banking_under_payment(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = "1234"
     pay_account = factory_create_online_banking_account(
-        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+        status=CfsAccountStatus.ACTIVE.value,
+        cfs_account=cfs_account_number,
     )
     invoice = factory_invoice(
         payment_account=pay_account,
@@ -692,7 +698,8 @@ def test_pad_nsf_reconciliations(mock_auth_event, session, app, client):
     assert payment.invoice_number == invoice_number
 
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
-        pay_account_id, PaymentMethod.PAD.value
+        pay_account_id,
+        PaymentMethod.PAD.value,
     )
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
     assert pay_account.has_nsf_invoices
@@ -822,7 +829,8 @@ async def test_eft_wire_reconciliations(session, app, client):
     # 4. Create a CFS settlement file, and verify the records
     cfs_account_number = "1234"
     pay_account = factory_create_online_banking_account(
-        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+        status=CfsAccountStatus.ACTIVE.value,
+        cfs_account=cfs_account_number,
     )
 
     invoice = factory_invoice(
@@ -910,15 +918,18 @@ def test_credits(session, app, client, monkeypatch, payment_method):
     match payment_method:
         case PaymentMethod.PAD.value:
             pay_account = factory_create_pad_account(
-                status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number
+                status=CfsAccountStatus.ACTIVE.value,
+                account_number=cfs_account_number,
             )
         case PaymentMethod.ONLINE_BANKING.value:
             pay_account = factory_create_online_banking_account(
-                status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+                status=CfsAccountStatus.ACTIVE.value,
+                cfs_account=cfs_account_number,
             )
         case PaymentMethod.EFT.value:
             pay_account = factory_create_eft_account(
-                status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+                status=CfsAccountStatus.ACTIVE.value,
+                cfs_account=cfs_account_number,
             )
     assert pay_account, f"Payment account set up failed for payment method {payment_method}"
 
@@ -965,21 +976,17 @@ def test_credits(session, app, client, monkeypatch, payment_method):
     ).save()
     credit_id = credit.id
 
-    def mock_receipt(
-        cfs_account: CfsAccountModel, receipt_number: str, return_none_if_404: bool = False
-    ):  # pylint: disable=unused-argument; mocks of library methods
+    def mock_receipt(cfs_account: CfsAccountModel, receipt_number: str, return_none_if_404: bool = False):  # pylint: disable=unused-argument; mocks of library methods
         return {"receipt_amount": onac_amount}
 
-    def mock_cms(
-        cfs_account: CfsAccountModel, cms_number: str, return_none_if_404: bool = False
-    ):  # pylint: disable=unused-argument; mocks of library methods
+    def mock_cms(cfs_account: CfsAccountModel, cms_number: str, return_none_if_404: bool = False):  # pylint: disable=unused-argument; mocks of library methods
         return {"amount_due": cm_amount - cm_used_amount}
 
     monkeypatch.setattr("pay_api.services.cfs_service.CFSService.get_receipt", mock_receipt)
     monkeypatch.setattr("pay_api.services.cfs_service.CFSService.get_cms", mock_cms)
 
     file_name = "cas_settlement_file.csv"
-    date = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+    date = datetime.now(tz=UTC).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
     date_str = date.strftime("%d-%b-%y")
 
     row = [
@@ -1052,7 +1059,7 @@ def test_credits(session, app, client, monkeypatch, payment_method):
             assert pay_account.ob_credit == 0
             assert pay_account.pad_credit == 0
         case _:
-            assert False, f"Implement missing expected_credit assert for payment method {payment_method}"
+            raise AssertionError(f"Implement missing expected_credit assert for payment method {payment_method}")
 
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
@@ -1094,7 +1101,8 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     """Test error scenarios for unconsolidated invoices in the reconciliation worker."""
     cfs_account_number = "1234"
     pay_account = factory_create_online_banking_account(
-        status=CfsAccountStatus.ACTIVE.value, cfs_account=cfs_account_number
+        status=CfsAccountStatus.ACTIVE.value,
+        cfs_account=cfs_account_number,
     )
 
     invoice = factory_invoice(
@@ -1119,7 +1127,7 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     mock_send_error_email = mocker.patch("pay_queue.services.payment_reconciliations.send_error_email")
 
     file_name: str = "BCR_PAYMENT_APPL_20240619.csv"
-    date = datetime.now(tz=timezone.utc).isoformat()
+    date = datetime.now(tz=UTC).isoformat()
     receipt_number = "1234567890"
     row = [
         RecordType.BOLP.value,
@@ -1151,7 +1159,7 @@ def test_unconsolidated_invoices_errors(session, app, client, mocker):
     email_params = call_args[0][0]
     assert email_params.subject == "Payment Reconciliation Failure"
     assert email_params.file_name == file_name
-    assert email_params.google_bucket_name == f"{app.config.get("GOOGLE_BUCKET_NAME")}/test-folder"
+    assert email_params.google_bucket_name == f"{app.config.get('GOOGLE_BUCKET_NAME')}/test-folder"
     assert email_params.error_messages == error_messages
     assert email_params.table_name == CasSettlementModel.__tablename__
 
@@ -1177,7 +1185,9 @@ def test_pad_reconciliation_skips_paid_base_invoice_with_completed_consolidated(
 
     # - Base invoice reference is CANCELLED
     factory_invoice_reference(
-        invoice_id=invoice.id, invoice_number=base_invoice_number, status_code=InvoiceReferenceStatus.CANCELLED.value
+        invoice_id=invoice.id,
+        invoice_number=base_invoice_number,
+        status_code=InvoiceReferenceStatus.CANCELLED.value,
     )
     # - Consolidated invoice reference (-C) is COMPLETED (linking to the same invoice)
     factory_invoice_reference(

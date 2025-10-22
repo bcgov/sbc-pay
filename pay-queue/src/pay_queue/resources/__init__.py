@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource package for the pay-queue service."""
-from flask import Flask
-from pay_api.resources.ops import bp as ops_bp
 
+from flask import Flask
+
+from pay_api.resources.ops import bp as ops_bp
 from pay_queue.resources.worker import bp as worker_endpoint
 
 

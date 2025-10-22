@@ -15,8 +15,12 @@
 
 from pay_api.models import Invoice
 from pay_api.utils.enums import PaymentMethod, PaymentSystem
-
-from tests.integration import factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account
+from tests.integration import (
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment,
+    factory_payment_account,
+)
 
 from .utils import helper_add_identifier_event_to_queue
 

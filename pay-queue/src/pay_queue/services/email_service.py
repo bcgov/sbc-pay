@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """EFT reconciliation file."""
+
 import dataclasses
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
+
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
@@ -29,12 +31,12 @@ from pay_api.utils.enums import AuthHeaderType, ContentType
 class EmailParams:
     """Params required to send error email."""
 
-    subject: Optional[str] = ""
-    file_name: Optional[str] = None
-    google_bucket_name: Optional[str] = None
-    error_messages: Optional[List[Dict[str, Any]]] = dataclasses.field(default_factory=list)
-    ce: Optional[Any] = None
-    table_name: Optional[str] = None
+    subject: str | None = ""
+    file_name: str | None = None
+    google_bucket_name: str | None = None
+    error_messages: list[dict[str, Any]] | None = dataclasses.field(default_factory=list)
+    ce: Any | None = None
+    table_name: str | None = None
 
 
 def send_error_email(params: EmailParams):

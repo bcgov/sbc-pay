@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common setup and fixtures for the pytest suite used by this service."""
+
 import os
 from concurrent.futures import CancelledError
 
@@ -19,11 +20,11 @@ import pytest
 from flask_migrate import Migrate, upgrade
 from google.api_core.exceptions import NotFound
 from google.cloud import pubsub
-from pay_api.models import db as _db
-from pay_api.services.gcp_queue import GcpQueue
 from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
+from pay_api.models import db as _db
+from pay_api.services.gcp_queue import GcpQueue
 from pay_queue import create_app
 from pay_queue.config import get_comma_delimited_string_as_tuple
 from tests.integration.utils import get_test_bucket
@@ -76,7 +77,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
     with app.app_context():
         with db.engine.connect() as conn:
             transaction = conn.begin()
-            sess = db._make_scoped_session(dict(bind=conn))  # pylint: disable=protected-access
+            sess = db._make_scoped_session({"bind": conn})  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
             old_session = db.session
@@ -119,12 +120,12 @@ def auto(docker_services, app):
         docker_services.start("gcs-emulator")
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_publish(monkeypatch):
     """Mock check_auth."""
     monkeypatch.setattr(
         "pay_api.services.gcp_queue_publisher.publish_to_queue",
-        lambda *args, **kwargs: None,
+        lambda *_, **__: None,
     )
 
 
@@ -161,7 +162,7 @@ def initialize_pubsub(app):
                     "name": subscription_path,
                     "topic": topic_path,
                     "push_config": push_config,
-                }
+                },
             )
 
 
@@ -175,7 +176,7 @@ def mock_pub_sub_call(mocker):
         def __init__(self, *args, **kwargs):
             pass
 
-        def publish(self, *args, **kwargs):
+        def publish(self, *_, **__):
             """Publish mock."""
             raise CancelledError("This is a mock")
 
@@ -188,7 +189,7 @@ def set_eft_configuration(app):
     app.config["EFT_TDI17_LOCATION_ID"] = "85004"
     app.config["EFT_WIRE_PATTERNS"] = get_comma_delimited_string_as_tuple("FUNDS TRANSFER CR TT")
     app.config["EFT_PATTERNS"] = get_comma_delimited_string_as_tuple(
-        "ACCOUNT PAYABLE PMT,BILL PAYMENT,COMM BILL PAYMENT,MISC PAYMENT,PAYROLL DEPOSIT"
+        "ACCOUNT PAYABLE PMT,BILL PAYMENT,COMM BILL PAYMENT,MISC PAYMENT,PAYROLL DEPOSIT",
     )
 
 
