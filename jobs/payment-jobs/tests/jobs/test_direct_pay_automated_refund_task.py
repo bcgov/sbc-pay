@@ -13,16 +13,17 @@
 # limitations under the License.
 
 """Tests for direct pay automated refund task."""
+
 import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from freezegun import freeze_time
+
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentStatus, RefundsPartialType
-
 from tasks.common.enums import PaymentDetailsGlStatus
 from tasks.direct_pay_automated_refund_task import DirectPayAutomatedRefundTask
 
@@ -86,9 +87,7 @@ def test_successful_completed_refund(session, monkeypatch, mocker):
 
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
-    with freeze_time(
-        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
-    ):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
@@ -131,9 +130,7 @@ def test_bad_cfs_refund(session, monkeypatch):
     target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(
-        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
-    ):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         assert refund.gl_error == "BAD BAD"
         assert refund.gl_posted is None
@@ -142,7 +139,7 @@ def test_bad_cfs_refund(session, monkeypatch):
 def test_complete_refund_partial(session, monkeypatch):
     """Test partial refund GL complete."""
     invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.PAID.value)
-    invoice.refund_date = datetime.datetime.now(tz=datetime.timezone.utc)
+    invoice.refund_date = datetime.datetime.now(tz=datetime.UTC)
     invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
     payment = factory_payment("PAYBC", invoice_number=invoice.id, payment_status_code=PaymentStatus.COMPLETED.value)
@@ -168,9 +165,7 @@ def test_complete_refund_partial(session, monkeypatch):
     target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(
-        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
-    ):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
@@ -193,7 +188,7 @@ def test_complete_refund_partial(session, monkeypatch):
 def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_message):
     """Test partial refund GL error."""
     invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.PAID.value)
-    invoice.refund_date = datetime.datetime.now(tz=datetime.timezone.utc)
+    invoice.refund_date = datetime.datetime.now(tz=datetime.UTC)
     invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
     payment = factory_payment("PAYBC", invoice_number=invoice.id, payment_status_code=PaymentStatus.COMPLETED.value)
@@ -221,9 +216,7 @@ def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_mess
     target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(
-        datetime.datetime.combine(datetime.datetime.now(tz=datetime.timezone.utc).date(), datetime.time(6, 00))
-    ):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value

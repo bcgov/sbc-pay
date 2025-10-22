@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
+
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum
 from sqlite3 import Date
-from typing import List, Optional
 
 from dataclass_wizard import JSONWizard
+
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PartnerDisbursements as PartnerDisbursementModel
 from pay_api.models import PaymentLineItem as LineItemModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.utils.enums import InvoiceStatus
-
 from tasks.common.enums import PaymentDetailsGlStatus
 
 
@@ -85,7 +85,7 @@ class Disbursement:
 class RefundData(JSONWizard):
     """Refund data from order status query."""
 
-    refundglstatus: Optional[PaymentDetailsGlStatus]
+    refundglstatus: PaymentDetailsGlStatus | None
     refundglerrormessage: str
 
 
@@ -93,14 +93,14 @@ class RefundData(JSONWizard):
 class RevenueLine(JSONWizard):
     """Revenue line from order status query."""
 
-    refund_data: List[RefundData]
+    refund_data: list[RefundData]
 
 
 @dataclass
 class OrderStatus(JSONWizard):  # pylint:disable=too-many-instance-attributes
     """Return from order status query."""
 
-    revenue: List[RevenueLine]
+    revenue: list[RevenueLine]
 
 
 @dataclass
@@ -130,8 +130,8 @@ class APLine:
     total: float
     invoice_number: str
     line_number: int
-    is_reversal: Optional[bool] = None
-    distribution: Optional[str] = None
+    is_reversal: bool | None = None
+    distribution: str | None = None
     ap_supplier: APSupplier = field(default_factory=APSupplier)
 
     @classmethod

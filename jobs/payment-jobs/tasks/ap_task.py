@@ -15,11 +15,12 @@
 
 import time
 import traceback
-from datetime import date, datetime, timedelta, timezone
-from typing import Dict, List
+from datetime import UTC, date, datetime, timedelta
 
 from flask import current_app
 from more_itertools import batched
+from sqlalchemy import Date, cast
+
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EFTRefund as EFTRefundModel
@@ -42,13 +43,11 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RoutingSlipStatus,
 )
-from sqlalchemy import Date, cast
-
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APFlow, APHeader, APLine, APSupplier
 
 
-def _process_error(row, error_msg: str, error_messages: List[Dict[str, any]], ex: Exception = None):
+def _process_error(row, error_msg: str, error_messages: list[dict[str, any]], ex: Exception = None):
     """Handle errors in AP file processing."""
     if ex:
         formatted_traceback = "".join(traceback.TracebackException.from_exception(ex).format())
@@ -208,7 +207,7 @@ class ApTask(CgiAP):
         cls,
     ):  # pylint:disable=too-many-locals, too-many-statements
         """Create AP file for routing slip refunds (unapplied routing slip amounts) and upload to CGI."""
-        routing_slips_dao: List[RoutingSlipModel] = (
+        routing_slips_dao: list[RoutingSlipModel] = (
             db.session.query(RoutingSlipModel)
             .filter(RoutingSlipModel.status == RoutingSlipStatus.REFUND_AUTHORIZED.value)
             .filter(RoutingSlipModel.refund_amount > 0)
@@ -238,7 +237,7 @@ class ApTask(CgiAP):
                 ap_header = APHeader(
                     total=rs.refund_amount,
                     invoice_number=rs.number,
-                    invoice_date=datetime.now(tz=timezone.utc),
+                    invoice_date=datetime.now(tz=UTC),
                     ap_flow=APFlow.ROUTING_SLIP_TO_CHEQUE,
                 )
                 content = f"{content}{cls.get_ap_header(ap_header)}"
@@ -263,10 +262,10 @@ class ApTask(CgiAP):
     @classmethod
     def get_invoices_for_disbursement(cls, partner):
         """Return invoices for disbursement. Used by EJV and AP."""
-        disbursement_date = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(
+        disbursement_date = datetime.now(tz=UTC).replace(tzinfo=None) - timedelta(
             days=current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS")
         )
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             db.session.query(InvoiceModel)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
             .filter(
@@ -299,7 +298,7 @@ class ApTask(CgiAP):
             InvoiceStatus.CREDITED.value,
         )
 
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             db.session.query(InvoiceModel)
             .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses))
             .filter(
@@ -324,7 +323,7 @@ class ApTask(CgiAP):
         ap_flow = APFlow.NON_GOV_TO_EFT
         bca_partner = CorpTypeModel.find_by_code("BCA")
         # TODO these two functions need to be reworked when we onboard BCA again.
-        total_invoices: List[InvoiceModel] = cls.get_invoices_for_disbursement(
+        total_invoices: list[InvoiceModel] = cls.get_invoices_for_disbursement(
             bca_partner
         ) + cls.get_invoices_for_refund_reversal(bca_partner)
 

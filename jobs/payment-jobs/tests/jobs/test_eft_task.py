@@ -16,19 +16,25 @@
 
 Test-Suite to ensure that the EFTTask for electronic funds transfer is working as expected.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus
+from pay_api.utils.enums import (
+    CfsAccountStatus,
+    DisbursementStatus,
+    EFTHistoricalTypes,
+    InvoiceStatus,
+    PaymentMethod,
+    QueueSources,
+)
 from pay_api.utils.enums import EFTCreditInvoiceStatus as EFTCilStatus
-from pay_api.utils.enums import EFTHistoricalTypes
 from pay_api.utils.enums import InvoiceReferenceStatus as InvoiceRefStatus
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources
-
 from tasks.eft_task import EFTTask
 
 from .factory import (
@@ -249,7 +255,7 @@ def test_eft_credit_invoice_links_by_status(
 
     results = EFTTask.get_eft_credit_invoice_links_by_status(EFTCilStatus.PENDING.value)
     if max_cfs_account_id:
-        for invoice, cfs_account, _ in results:
+        for _invoice, cfs_account, _ in results:
             assert cfs_account.id == max_cfs_account_id
     assert len(results) == pending_count
     results = EFTTask.get_eft_credit_invoice_links_by_status(EFTCilStatus.PENDING_REFUND.value)
@@ -418,7 +424,7 @@ def test_reverse_electronic_funds_transfers(
         status_code=inv_status,
         payment_method_code=PaymentMethod.EFT.value,
     )
-    invoice.payment_date = datetime.now(tz=timezone.utc)
+    invoice.payment_date = datetime.now(tz=UTC)
     invoice.save()
 
     factory_payment(
@@ -507,7 +513,7 @@ def test_unlock_overdue_accounts(session):
     """Test unlock overdue account events."""
     auth_account_id, eft_file, short_name_id, eft_transaction_id = setup_eft_credit_invoice_links_test()
     payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
-    payment_account.has_overdue_invoices = datetime.now(tz=timezone.utc)
+    payment_account.has_overdue_invoices = datetime.now(tz=UTC)
     invoice_1 = factory_invoice(
         payment_account=payment_account,
         payment_method_code=PaymentMethod.EFT.value,
@@ -604,7 +610,7 @@ def test_handle_unlinked_refund_requested_invoices(
         status_code=inv_status,
         payment_method_code=PaymentMethod.EFT.value,
     )
-    invoice.payment_date = datetime.now(tz=timezone.utc)
+    invoice.payment_date = datetime.now(tz=UTC)
     invoice.save()
 
     invoice_reference = None

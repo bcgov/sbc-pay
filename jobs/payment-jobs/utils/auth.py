@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Jobs uses service accounts to retrieve the token."""
+
 import base64
 
 from flask import current_app
+
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 
 def get_token():
+    """Get authentication token for service account."""
     issuer_url = current_app.config.get("JWT_OIDC_ISSUER")
 
     token_url = (

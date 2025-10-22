@@ -16,9 +16,11 @@
 
 Test-Suite to ensure that the CreateAccountTask for routing slip is working as expected.
 """
+
 from unittest.mock import patch
 
 import pytest
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
@@ -35,7 +37,6 @@ from pay_api.utils.enums import (
     ReverseOperation,
     RoutingSlipStatus,
 )
-
 from tasks.routing_slip_task import RoutingSlipTask
 
 from .factory import (

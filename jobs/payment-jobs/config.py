@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""All of the configuration for the service is captured here. All items are loaded, or have Constants defined here that are loaded into the Flask configuration. All modules and lookups get their configuration from the Flask config, rather than reading environment variables directly or by accessing this configuration directly.
-"""
+"""All of the configuration for the service is captured here. All items are loaded, or have Constants defined here that are loaded into the Flask configuration. All modules and lookups get their configuration from the Flask config, rather than reading environment variables directly or by accessing this configuration directly."""
 
 import os
 import sys
@@ -31,7 +30,7 @@ CONFIGURATION = {
 
 
 def get_named_config(config_name: str = "production"):
-    """Return the configuration object based on the name
+    """Return the configuration object based on the name.
 
     :raise: KeyError: if an unknown configuration is requested
     """
@@ -46,12 +45,12 @@ def get_named_config(config_name: str = "production"):
     return config
 
 
-class _Config(object):  # pylint: disable=too-few-public-methods
+class _Config:  # pylint: disable=too-few-public-methods
     """Base class configuration that should set reasonable defaults for all the other configurations."""
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-    SECRET_KEY = "a secret"
+    SECRET_KEY = "a secret"  # noqa: S105 - test configuration
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -206,6 +205,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
+    """Development environment configuration."""
+
     TESTING = False
     DEBUG = True
 
@@ -223,13 +224,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_PORT = os.getenv("DATABASE_TEST_PORT", "5432")
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_TEST_URL",
-        "postgresql+pg8000://{user}:{password}@{host}:{port}/{name}".format(
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST,
-            port=int(DB_PORT),
-            name=DB_NAME,
-        ),
+        f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}",
     )
 
     SERVER_NAME = "localhost:5001"
@@ -238,11 +233,11 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     CFS_BASE_URL = "http://localhost:8080/paybc-api"
     CFS_CLIENT_ID = "TEST"
-    CFS_CLIENT_SECRET = "TEST"
+    CFS_CLIENT_SECRET = "TEST"  # noqa: S105 - test configuration
     USE_DOCKER_MOCK = os.getenv("USE_DOCKER_MOCK", None)
 
     PAYBC_DIRECT_PAY_CLIENT_ID = "abc"
-    PAYBC_DIRECT_PAY_CLIENT_SECRET = "123"
+    PAYBC_DIRECT_PAY_CLIENT_SECRET = "123"  # noqa: S105 - test configuration
     PAYBC_DIRECT_PAY_BASE_URL = "http://localhost:8080/paybc-api"
     PAYBC_DIRECT_PAY_REF_NUMBER = "123"
 
@@ -255,7 +250,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     # Setting values from the sftp docker container
     CGI_SFTP_VERIFY_HOST = "false"
     CGI_SFTP_USERNAME = "ftp_user"
-    CGI_SFTP_PASSWORD = "ftp_pass"
+    CGI_SFTP_PASSWORD = "ftp_pass"  # noqa: S105 - test configuration
     CGI_SFTP_PORT = 2222
     CGI_SFTP_DIRECTORY = "/data/"
     CGI_SFTP_HOST = "localhost"
@@ -272,7 +267,7 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
     if not SECRET_KEY:
         SECRET_KEY = os.urandom(24)
-        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)
+        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)  # noqa: T201
 
     TESTING = False
     DEBUG = False

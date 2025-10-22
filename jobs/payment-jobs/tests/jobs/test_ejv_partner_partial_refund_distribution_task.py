@@ -16,17 +16,17 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from flask import current_app
 from freezegun import freeze_time
-from pay_api.models import CorpType as CorpTypeModel
-from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule
-from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
-from pay_api.models import db
-from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, EJVLinkType, PaymentMethod, RefundsPartialType
 
+from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, db
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
+from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, EJVLinkType, PaymentMethod, RefundsPartialType
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 from .factory import (
@@ -55,7 +55,7 @@ def test_partial_refund_disbursement_with_payment_method(
     session, monkeypatch, account_factory, payment_method, cfs_account_status, google_bucket_mock
 ):
     """Test partial refund disbursement for different payment methods."""
-    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pysftp.Connection.put", lambda *_args, **_kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code("VS")
 
     if cfs_account_status:
@@ -115,7 +115,7 @@ def test_partial_refund_disbursement_with_payment_method(
     refund_partial_link = EjvLink.find_ejv_link_by_link_id(refund_partial.id)
     assert refund_partial_link is None
 
-    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+    day_after_time_delay = datetime.now(tz=UTC) + timedelta(
         days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
     )
 

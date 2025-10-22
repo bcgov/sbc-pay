@@ -133,6 +133,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         revenue_item = []
 
         for payment_line_item in payment_line_items:
+            # It's possible this could be None as well, in the scenario total and service fees are $0
             distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                 payment_line_item.fee_distribution_id
             )

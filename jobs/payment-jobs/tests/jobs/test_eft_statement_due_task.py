@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the UnpaidStatementNotifyTask is working as expected.
 """
+
 import decimal
 from datetime import datetime
 from unittest.mock import ANY, call, patch
@@ -25,14 +26,14 @@ from dateutil.relativedelta import relativedelta
 from faker import Faker
 from flask import Flask
 from freezegun import freeze_time
+
+import config
 from pay_api.models import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.services import Statement as StatementService
 from pay_api.utils.auth_event import LockAccountDetails
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources, StatementFrequency
 from pay_api.utils.util import current_local_time
-
-import config
 from tasks.eft_statement_due_task import EFTStatementDueTask
 from tasks.statement_task import StatementTask
 from utils.enums import StatementNotificationAction
@@ -340,7 +341,7 @@ def test_multi_account_lock(setup, session):
     with patch("pay_api.utils.auth_event.AuthEvent.publish_lock_account_event") as mock_auth_event:
         with patch("tasks.eft_statement_due_task.publish_payment_notification"):
             EFTStatementDueTask.process_unpaid_statements()
-            mock_auth_event.call_count == 2
+            assert mock_auth_event.call_count == 2
             expected_calls = [
                 call(
                     LockAccountDetails(

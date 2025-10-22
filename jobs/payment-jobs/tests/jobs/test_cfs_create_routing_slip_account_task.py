@@ -18,9 +18,9 @@ Test-Suite to ensure that the CreateAccountTask for routing slip is working as e
 """
 
 from freezegun import freeze_time
+
 from pay_api.models import CfsAccount
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
-
 from tasks.cfs_create_account_task import CreateAccountTask
 
 from .factory import factory_routing_slip_account

@@ -13,13 +13,14 @@
 # limitations under the License.
 
 """Tests to assure the BCOL Refund Confirmation Job."""
+
 from decimal import Decimal
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
+
 from pay_api.models import Invoice
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
-
 from tasks.bcol_refund_confirmation_task import BcolRefundConfirmationTask
 
 from .factory import (

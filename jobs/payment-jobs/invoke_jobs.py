@@ -15,17 +15,18 @@
 
 This module will create statement records for each account.
 """
+
 import os
 import sys
 
 from flask import Flask
+
+import config
 from pay_api import build_cache
 from pay_api.services import Flags
 from pay_api.services.email_service import JobFailureNotification
 from pay_api.services.gcp_queue import queue
 from pay_api.utils.logging import setup_logging
-
-import config
 from services import data_warehouse
 from tasks.eft_overpayment_notification_task import EFTOverpaymentNotificationTask
 from tasks.eft_statement_due_task import EFTStatementDueTask
@@ -36,12 +37,14 @@ setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.
 
 
 def create_app(
-    run_mode=os.getenv("DEPLOYMENT_ENV", "production"),
-    job_name="unknown",
+    run_mode=None,
     init_data_warehouse=False,
 ):
     """Return a configured Flask App using the Factory method."""
     from pay_api.models import db, ma
+
+    if run_mode is None:
+        run_mode = os.getenv("DEPLOYMENT_ENV", "production")
 
     app = Flask(__name__)
     app.env = run_mode
@@ -74,6 +77,7 @@ def register_shellcontext(app):
 
 
 def run(job_name, argument=None):
+    """Run the specified job with optional arguments."""
     from tasks.activate_pad_account_task import ActivatePadAccountTask
     from tasks.ap_task import ApTask
     from tasks.bcol_refund_confirmation_task import BcolRefundConfirmationTask
@@ -90,7 +94,7 @@ def run(job_name, argument=None):
 
     jobs_with_data_warehouse_connections = ["BCOL_REFUND_CONFIRMATION"]
 
-    application = create_app(job_name=job_name, init_data_warehouse=job_name in jobs_with_data_warehouse_connections)
+    application = create_app(init_data_warehouse=job_name in jobs_with_data_warehouse_connections)
     application.app_context().push()
 
     try:
@@ -187,7 +191,7 @@ def send_notification(error_message: str, job_name: str):
 
 
 if __name__ == "__main__":
-    print("----------------------------Scheduler Ran With Argument--", sys.argv[1])
+    print("----------------------------Scheduler Ran With Argument--", sys.argv[1])  # noqa: T201
     if len(sys.argv) > 2:
         params = sys.argv[2 : len(sys.argv)]
         run(sys.argv[1], params)

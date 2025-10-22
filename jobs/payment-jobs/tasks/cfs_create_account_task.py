@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS account offline."""
+
 import re
-from datetime import datetime, time, timezone
-from typing import Dict
+from datetime import UTC, datetime, time
 
 import pytz
 from flask import current_app
+from sbc_common_components.utils.enums import QueueMessageTypes
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import CFS_RCPT_EFT_WIRE, RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod
-from sbc_common_components.utils.enums import QueueMessageTypes
-
 from services import routing_slip
 from utils import mailer
 from utils.auth import get_token
@@ -88,7 +88,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                     cls._create_cfs_account(pending_account, pay_account, auth_token)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(
-                    f"Error on creating cfs_account={pending_account.account_id}, " f"ERROR : {str(e)}", exc_info=True
+                    f"Error on creating cfs_account={pending_account.account_id}, ERROR : {str(e)}", exc_info=True
                 )
                 continue
 
@@ -114,7 +114,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         try:
             account_contact = cls._get_account_contact(auth_token, pay_account.auth_account_id)
 
-            contact_info: Dict[str, str] = {
+            contact_info: dict[str, str] = {
                 "city": account_contact.get("city"),
                 "postalCode": account_contact.get("postalCode"),
                 "province": account_contact.get("region"),
@@ -122,7 +122,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 "country": account_contact.get("country"),
             }
 
-            payment_info: Dict[str, any] = {
+            payment_info: dict[str, any] = {
                 "bankInstitutionNumber": pending_account.bank_number,
                 "bankTransitNumber": pending_account.bank_branch_number,
                 "bankAccountNumber": pending_account.bank_account_number,
@@ -203,7 +203,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         # If the account has an activation time set it should have PENDING_PAD_ACTIVATION status.
         is_account_in_pad_confirmation_period = (
             pay_account.pad_activation_date is not None
-            and pay_account.pad_activation_date > datetime.now(tz=timezone.utc).replace(tzinfo=None)
+            and pay_account.pad_activation_date > datetime.now(tz=UTC).replace(tzinfo=None)
         )
         pending_account.status = (
             CfsAccountStatus.PENDING_PAD_ACTIVATION.value

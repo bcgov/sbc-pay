@@ -15,9 +15,10 @@
 
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import current_app
+
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.services.google_bucket_service import GoogleBucketService
 from pay_api.utils.util import get_fiscal_year, get_nearest_business_day
@@ -32,7 +33,7 @@ class CgiEjv:
     @classmethod
     def get_file_name(cls):
         """Return file name."""
-        date_time = get_nearest_business_day(datetime.now(tz=timezone.utc)).strftime("%Y%m%d%H%M%S")
+        date_time = get_nearest_business_day(datetime.now(tz=UTC)).strftime("%Y%m%d%H%M%S")
         return f"INBOX.F{cls._feeder_number()}.{date_time}"
 
     @classmethod
@@ -86,14 +87,14 @@ class CgiEjv:
         """Return batch header string."""
         return (
             f"{cls._feeder_number()}{batch_type}BH{cls.DELIMITER}{cls._feeder_number()}"
-            f"{get_fiscal_year(datetime.now(tz=timezone.utc))}"
+            f"{get_fiscal_year(datetime.now(tz=UTC))}"
             f"{batch_number}{cls._message_version()}{cls.DELIMITER}{os.linesep}"
         )
 
     @classmethod
     def get_effective_date(cls):
         """Return effective date.."""
-        return get_nearest_business_day(datetime.now(tz=timezone.utc)).strftime("%Y%m%d")
+        return get_nearest_business_day(datetime.now(tz=UTC)).strftime("%Y%m%d")
 
     @classmethod
     def format_amount(cls, amount: float):
@@ -134,7 +135,7 @@ class CgiEjv:
         """Return batch trailer string."""
         return (
             f"{cls._feeder_number()}{batch_type}BT{cls.DELIMITER}{cls._feeder_number()}"
-            f"{get_fiscal_year(datetime.now(tz=timezone.utc))}{batch_number}"
+            f"{get_fiscal_year(datetime.now(tz=UTC))}{batch_number}"
             f"{control_total:0>15}{cls.format_amount(batch_total)}{cls.DELIMITER}{os.linesep}"
         )
 

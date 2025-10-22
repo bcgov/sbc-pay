@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """tests/services/test_data_warehouse_connection.py."""
+
 from unittest.mock import MagicMock, patch
 
 import pytest

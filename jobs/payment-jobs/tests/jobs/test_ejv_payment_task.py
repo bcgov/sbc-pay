@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
+
 from decimal import Decimal
 
 from pay_api.models import (
@@ -38,7 +39,6 @@ from pay_api.utils.enums import (
     RefundsPartialStatus,
     RefundsPartialType,
 )
-
 from tasks.ejv_payment_task import EjvPaymentTask
 
 from .factory import (
@@ -62,7 +62,7 @@ def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
     6) Test refund reversal for these payments
     7) Test partial refunds
     """
-    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pysftp.Connection.put", lambda *_args, **_kwargs: None)
 
     corp_type = "BEN"
     filing_type = "BCINC"
@@ -262,7 +262,7 @@ def test_payments_for_gov_accounts(session, monkeypatch, google_bucket_mock):
 
 def test_gst_transactions_creation(session, monkeypatch, google_bucket_mock):
     """Test that GST transactions are created when service_fees_gst and statutory_fees_gst are present."""
-    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pysftp.Connection.put", lambda *_args, **_kwargs: None)
 
     corp_type = "BEN"
     filing_type = "BCINC"
