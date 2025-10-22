@@ -19,16 +19,16 @@ BusinessException - error, status_code - Business rules error
 error - a description of the error {code / description: classname / full text}
 status_code - where possible use HTTP Error Codes
 """
+
 import json
 from http import HTTPStatus
-from typing import Dict
 
 from flask import Response
 
 from bcol_api.utils.errors import Error
 
 
-def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
+def convert_to_response(body: dict, status: int = HTTPStatus.BAD_REQUEST):
     """Convert json error to problem response."""
     return Response(response=json.dumps(body), mimetype="application/problem+json", status=status)
 

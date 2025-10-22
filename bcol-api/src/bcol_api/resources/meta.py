@@ -15,6 +15,7 @@
 
 Currently this only provides API versioning information
 """
+
 from flask import jsonify
 from flask_restx import Namespace, Resource
 

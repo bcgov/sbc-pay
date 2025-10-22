@@ -13,8 +13,6 @@
 # limitations under the License.
 """Service to manage PayBC interaction."""
 
-from typing import Dict
-
 import ldap
 import pycountry
 import zeep
@@ -137,7 +135,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             return value[key].strip() if isinstance(value[key], str) else value[key]
         return None
 
-    def get_profile_response(self, data: Dict):  # pragma: no cover
+    def get_profile_response(self, data: dict):  # pragma: no cover
         """Get Query Profile Response."""
         client = BcolSoap().get_profile_client()
         return zeep.helpers.serialize_object(client.service.queryProfile(req=data))

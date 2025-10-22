@@ -32,8 +32,10 @@ from bcol_api.utils.run_version import get_run_version
 setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"))  # important to do this first
 
 
-def create_app(run_mode=os.getenv("FLASK_ENV", "production")):
+def create_app(run_mode=None):
     """Return a configured Flask App using the Factory method."""
+    if run_mode is None:
+        run_mode = os.getenv("FLASK_ENV", "production")
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
 

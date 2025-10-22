@@ -43,27 +43,17 @@ install: clean
 #################################################################################
 # COMMANDS - CI                                                                 #
 #################################################################################
-ci: isort-ci black-ci lint flake8 test ## CI flow
+ci: ruff-check test
 
-isort: 
-	poetry run isort .
+ruff: ## Format and lint with ruff
+	poetry run ruff format .
+	poetry run ruff check --fix .
 
-isort-ci:
-	poetry run isort --check .
+ruff-check: ## Check formatting and linting with ruff
+	poetry run ruff format --check .
+	poetry run ruff check .
 
-black: ## Linting with black
-	poetry run black .
-
-black-ci:
-	poetry run black --check .
-
-pylint: ## Linting with pylint
-	poetry run pylint src/$(PROJECT_NAME)
-
-flake8: ## Linting with flake8
-	poetry run flake8 src/$(PROJECT_NAME) tests
-
-lint: isort black pylint flake8 ## run all lint type scripts
+lint: ruff
 
 test: ## Unit testing
 	poetry run pytest

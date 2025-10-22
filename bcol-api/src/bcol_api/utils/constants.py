@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Constants."""
+
 from enum import Enum
-from typing import Dict
 
 
 class Role(Enum):
@@ -25,7 +25,7 @@ class Role(Enum):
     SYSTEM = "system"
 
 
-def auth_code_mapping() -> Dict:
+def auth_code_mapping() -> dict:
     """Return Auth code mapping from BCOL."""
     return {
         "G": "GDSA",
@@ -37,11 +37,11 @@ def auth_code_mapping() -> Dict:
     }
 
 
-def account_type_mapping() -> Dict:
+def account_type_mapping() -> dict:
     """Return Account type mapping from BCOL."""
     return {"B": "Billable", "N": "Non-Billable", "I": "Internal"}
 
 
-def tax_status_mapping() -> Dict:
+def tax_status_mapping() -> dict:
     """Return Tax status mapping from BCOL."""
     return {"E": "Exempt", "Z": "Zero-rate", "": "Must-Pay"}

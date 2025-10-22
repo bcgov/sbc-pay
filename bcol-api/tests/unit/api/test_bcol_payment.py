@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
+
 import json
 
 from tests.utilities.base_test import get_claims, get_token_header

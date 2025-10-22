@@ -13,11 +13,12 @@
 # limitations under the License.
 
 """Mock LDAP Class to be used in unit tests."""
+
 import sys
 from collections import defaultdict
 
 
-class MockLDAP(object):
+class MockLDAP:
     """Mock LDAP Class. It just passes everything, no fancy dynamic stuff here!!."""
 
     def __init__(self):
@@ -36,6 +37,6 @@ class MockLDAP(object):
     def unbind_s(self):
         """Unbind."""
 
-    def search_s(self, base, scope, filterstr="(objectClass=*)", attrlist=None, attrsonly=0):
+    def search_s(self, _base, _scope, _filterstr="(objectClass=*)", _attrlist=None, _attrsonly=0):  #
         """Search."""
         return "TEST_USER"

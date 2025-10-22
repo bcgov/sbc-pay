@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the /accounts/<id>/users/<user_id> endpoint is working as expected.
 """
+
 import json
 
 from bcol_api.utils.errors import Error

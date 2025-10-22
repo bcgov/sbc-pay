@@ -34,7 +34,7 @@ def get_claims(
         "aud": "sbc-auth-web",
         "sub": "15099883-3c3f-4b4c-a124-a1824d6cba84",
         "typ": "Bearer",
-        "realm_access": {"roles": ["{}".format(role)]},
+        "realm_access": {"roles": [f"{role}"]},
         "preferred_username": username,
         "username": username,
         "loginSource": login_source,

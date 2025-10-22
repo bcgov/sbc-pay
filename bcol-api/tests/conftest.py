@@ -19,9 +19,8 @@ from unittest.mock import patch
 
 import pytest
 
-from bcol_api import create_app
+from bcol_api import create_app, setup_jwt_manager
 from bcol_api import jwt as _jwt
-from bcol_api import setup_jwt_manager
 from tests.utilities.ldap_mock import MockLDAP
 
 
