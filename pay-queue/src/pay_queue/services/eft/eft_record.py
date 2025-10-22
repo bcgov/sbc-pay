@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This manages the EFT Transaction record."""
+
 import decimal
 from datetime import datetime
-from typing import Tuple
 
 import pytz
 from flask import current_app
-from pay_api.utils.enums import EFTShortnameType
 
+from pay_api.utils.enums import EFTShortnameType
 from pay_queue.services.eft.eft_base import EFTBase
 from pay_queue.services.eft.eft_enums import EFTConstants
 from pay_queue.services.eft.eft_errors import EFTError
@@ -29,8 +29,8 @@ from pay_queue.services.eft.eft_parse_error import EFTParseError
 class EFTRecord(EFTBase):
     """Defines the structure of the transaction record of a received EFT file."""
 
-    eft_patterns: Tuple
-    eft_wire_patterns: Tuple
+    eft_patterns: tuple
+    eft_wire_patterns: tuple
 
     ministry_code: str
     program_code: str
@@ -55,7 +55,7 @@ class EFTRecord(EFTBase):
         """Return an EFT Transaction record."""
         super().__init__(content, index)
         self.eft_patterns = current_app.config.get("EFT_PATTERNS")
-        self.eft_wire_patterns: Tuple = current_app.config.get("EFT_WIRE_PATTERNS")
+        self.eft_wire_patterns: tuple = current_app.config.get("EFT_WIRE_PATTERNS")
         self._process()
 
     @staticmethod
@@ -84,7 +84,9 @@ class EFTRecord(EFTBase):
         deposit_time = "0000" if len(deposit_time) == 0 else deposit_time  # default to 0000 if time not provided
 
         self.deposit_datetime = self.parse_datetime(
-            self.extract_value(7, 15) + deposit_time, EFTError.INVALID_DEPOSIT_DATETIME, self.file_timezone
+            self.extract_value(7, 15) + deposit_time,
+            EFTError.INVALID_DEPOSIT_DATETIME,
+            self.file_timezone,
         )
         self.location_id = self.extract_value(15, 20)
         self.transaction_sequence = self.extract_value(24, 27)

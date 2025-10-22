@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """CGI reconciliation file."""
+
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
 
 from flask import current_app
+from sqlalchemy import inspect
+
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EjvFile as EjvFileModel
@@ -50,8 +52,6 @@ from pay_api.utils.enums import (
     RoutingSlipStatus,
     TransactionStatus,
 )
-from sqlalchemy import inspect
-
 from pay_queue import config
 from pay_queue.services.email_service import EmailParams, send_error_email
 from pay_queue.util import get_object_from_bucket_folder
@@ -72,19 +72,19 @@ def reconcile_distributions(cloud_event, is_feedback: bool = False):
         _update_acknowledgement(msg)
 
 
-def _update_acknowledgement(msg: Dict[str, any]):
+def _update_acknowledgement(msg: dict[str, any]):
     """Log the ack file, we don't know which batch it's for."""
     current_app.logger.info("Ack file received: %s", msg.get("fileName"))
 
 
-def _update_feedback(msg: Dict[str, any], cloud_event):  # pylint:disable=too-many-locals, too-many-statements
+def _update_feedback(msg: dict[str, any], cloud_event):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
 
     file_name: str = msg.get("fileName")
     bucket_folder_name: str = msg.get("location")
     file = get_object_from_bucket_folder(bucket_folder_name, file_name)
     content = file.decode("utf-8-sig")
-    group_batches: Dict[str, List[str]] = _group_batches(content)
+    group_batches: dict[str, list[str]] = _group_batches(content)
 
     if _is_processed_or_processing(group_batches["EJV"], file_name):
         return
@@ -96,7 +96,7 @@ def _update_feedback(msg: Dict[str, any], cloud_event):  # pylint:disable=too-ma
         email_service_params = EmailParams(
             subject="Payment Reconciliation Failure - GL disbursement failure for EJV",
             file_name=file_name,
-            google_bucket_name=f"{current_app.config.get("GOOGLE_BUCKET_NAME")}/{bucket_folder_name}",
+            google_bucket_name=f"{current_app.config.get('GOOGLE_BUCKET_NAME')}/{bucket_folder_name}",
             error_messages="The GL disbursement failed for the electronic journal voucher batch. "
             "It maybe necessary to contact the ministry to get the correct GL and update in the "
             "BC Registries application. Unless this is an error is unrelated to the GL correctness."
@@ -111,7 +111,7 @@ def _update_feedback(msg: Dict[str, any], cloud_event):  # pylint:disable=too-ma
 def _is_processed_or_processing(group_batches, file_name) -> bool:
     """Check to see if file has already been processed. Mark them as processing."""
     for group_batch in group_batches:
-        ejv_file: Optional[EjvFileModel] = None
+        ejv_file: EjvFileModel | None = None
         for line in group_batch.splitlines():
             is_batch_group: bool = line[2:4] == "BG"
             if is_batch_group:
@@ -133,8 +133,8 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
     """Process EJV Feedback contents."""
     has_errors = False
     for group_batch in group_batches:
-        ejv_file: Optional[EjvFileModel] = None
-        receipt_number: Optional[str] = None
+        ejv_file: EjvFileModel | None = None
+        receipt_number: str | None = None
         for line in group_batch.splitlines():
             # For all these indexes refer the sharepoint docs refer : https://github.com/bcgov/entity/issues/6226
             is_batch_group = line[2:4] == "BG"
@@ -198,10 +198,10 @@ class JVDetailsFeedback:
     line: str
     receipt_number: str
     is_partial_refund: bool = False
-    invoice: Optional[InvoiceModel] = None
-    partial_refund: Optional[RefundsPartialModel] = None
-    invoice_link: Optional[EjvLinkModel] = None
-    partner_disbursement: Optional[PartnerDisbursementsModel] = None
+    invoice: InvoiceModel | None = None
+    partial_refund: RefundsPartialModel | None = None
+    invoice_link: EjvLinkModel | None = None
+    partner_disbursement: PartnerDisbursementsModel | None = None
 
 
 def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number) -> bool:
@@ -271,7 +271,7 @@ def _build_jv_details(line, receipt_number) -> JVDetailsFeedback:
     return details
 
 
-def parse_flowthrough(flowthrough: str) -> tuple[int, Optional[int], Optional[int], bool]:
+def parse_flowthrough(flowthrough: str) -> tuple[int, int | None, int | None, bool]:
     """Parse flowthrough string into components.
 
     Args:
@@ -279,6 +279,7 @@ def parse_flowthrough(flowthrough: str) -> tuple[int, Optional[int], Optional[in
 
     Returns:
         Tuple of (invoice_id, partner_disbursement_id, partial_refund_id, is_partial_refund)
+
     """
     is_partial_refund = False
     partial_refund_id = None
@@ -317,14 +318,14 @@ def _handle_jv_disbursement_feedback(details: JVDetailsFeedback, has_errors: boo
         has_errors = True
         if details.partner_disbursement:
             details.partner_disbursement.status_code = DisbursementStatus.ERRORED.value
-            details.partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
+            details.partner_disbursement.processed_on = datetime.now(tz=UTC)
 
         if details.is_partial_refund:
             details.partial_refund.gl_error = DisbursementStatus.ERRORED.value
             line_items = [PaymentLineItemModel.find_by_id(details.partial_refund.payment_line_item_id)]
         else:
             details.invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
-            line_items: List[PaymentLineItemModel] = details.invoice.payment_line_items
+            line_items: list[PaymentLineItemModel] = details.invoice.payment_line_items
         _mark_distribution_codes_as_stopped(line_items)
     else:
         effective_date = datetime.strptime(details.line[22:30], "%Y%m%d")
@@ -347,7 +348,8 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) ->
     details.invoice_link.message = details.invoice_return_message.strip()
     current_app.logger.info("Invoice ID %s", details.invoice.id)
     inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
-        details.invoice.id, InvoiceReferenceStatus.ACTIVE.value
+        details.invoice.id,
+        InvoiceReferenceStatus.ACTIVE.value,
     )
     current_app.logger.info(
         "invoice_link.disbursement_status_code %s",
@@ -380,7 +382,8 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) ->
         # Find receipt and add total to it, as single invoice can be multiple rows in the file
         if not is_reversal:
             receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(
-                invoice_id=details.invoice.id, receipt_number=details.receipt_number
+                invoice_id=details.invoice.id,
+                receipt_number=details.receipt_number,
             )
             if receipt:
                 receipt.receipt_amount += float(details.line[89:104])
@@ -388,7 +391,7 @@ def _handle_jv_payment_feedback(details: JVDetailsFeedback, has_errors: bool) ->
                 ReceiptModel(
                     invoice_id=details.invoice.id,
                     receipt_number=details.receipt_number,
-                    receipt_date=datetime.now(tz=timezone.utc),
+                    receipt_date=datetime.now(tz=UTC),
                     receipt_amount=float(details.line[89:104]),
                 ).flush()
     return has_errors
@@ -428,7 +431,7 @@ def _update_partner_disbursement(partner_disbursement, status_code, effective_da
     elif status_code == DisbursementStatus.REVERSED.value and not partner_disbursement.is_reversal:
         current_app.logging.error("Marking as reversed when it was not a reversal.")
     partner_disbursement.status_code = status_code
-    partner_disbursement.processed_on = datetime.now(tz=timezone.utc)
+    partner_disbursement.processed_on = datetime.now(tz=UTC)
     partner_disbursement.feedback_on = effective_date
 
 
@@ -468,10 +471,10 @@ def _create_payment_record(amount, ejv_header, receipt_number):
     ).flush()
 
 
-def _group_batches(content: str) -> Dict[str, List]:
+def _group_batches(content: str) -> dict[str, list]:
     """Group batches based on the group and trailer."""
     # A batch starts from BG to BT.
-    group_batches: Dict[str, List] = {"EJV": [], "AP": []}
+    group_batches: dict[str, list] = {"EJV": [], "AP": []}
     batch_content = ""
 
     is_ejv = True
@@ -504,7 +507,7 @@ def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-loca
     """Process AP Feedback contents."""
     has_errors = False
     for group_batch in group_batches:
-        ejv_file: Optional[EjvFileModel] = None
+        ejv_file: EjvFileModel | None = None
         for line in group_batch.splitlines():
             # For all these indexes refer the sharepoint docs refer : https://github.com/bcgov/entity/issues/6226
             is_batch_group: bool = line[2:4] == "BG"
@@ -571,7 +574,7 @@ def _process_ap_header_eft(line) -> bool:
     else:
         eft_refund.status = EFTShortnameRefundStatus.COMPLETED.value
         eft_refund.disbursement_status_code = DisbursementStatus.COMPLETED.value
-        eft_refund.disbursement_date = datetime.now(tz=timezone.utc)
+        eft_refund.disbursement_date = datetime.now(tz=UTC)
         if eft_refund.refund_method == APRefundMethod.CHEQUE.value:
             eft_refund.cheque_status = ChequeRefundStatus.PROCESSED.value
     eft_refund.save()
@@ -600,7 +603,7 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
         invoice.disbursement_status_code = disbursement_status
         has_errors = True
         current_app.logger.error(
-            f"AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}"
+            f"AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}",
         )
     else:
         # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.

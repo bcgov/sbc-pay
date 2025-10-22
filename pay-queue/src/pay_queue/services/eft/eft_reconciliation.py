@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """EFT reconciliation file."""
+
 from datetime import datetime
-from typing import Dict, List
 
 from flask import current_app
+
 from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTFile as EFTFileModel
@@ -25,8 +26,12 @@ from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as
 from pay_api.services.eft_short_name_historical import EFTShortnameHistory as EFTHistory
 from pay_api.services.eft_short_name_links import EFTShortnameLinks as EFTShortnameLinksService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnamesService
-from pay_api.utils.enums import EFTFileLineType, EFTPaymentActions, EFTProcessStatus, EFTShortnameType
-
+from pay_api.utils.enums import (
+    EFTFileLineType,
+    EFTPaymentActions,
+    EFTProcessStatus,
+    EFTShortnameType,
+)
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
 from pay_queue.services.email_service import EmailParams, send_error_email
 from pay_queue.util import get_object_from_bucket_folder
@@ -41,7 +46,7 @@ class EFTReconciliation:  # pylint: disable=too-few-public-methods
         self.msg = ce.data
         self.file_name: str = self.msg.get("fileName")
         self.bucket_folder_name: str = self.msg.get("location")
-        self.error_messages: List[Dict[str, any]] = []
+        self.error_messages: list[dict[str, any]] = []
 
     def eft_error_handling(self, row, error_msg: str, capture_error: bool = True, table_name: str = None):
         """Handle EFT errors by logging, capturing messages, and optionally sending an email."""
@@ -52,7 +57,7 @@ class EFTReconciliation:  # pylint: disable=too-few-public-methods
             email_service_params = EmailParams(
                 subject="EFT TDI17 Reconciliation Failure",
                 file_name=self.file_name,
-                google_bucket_name=f"{current_app.config.get("GOOGLE_BUCKET_NAME")}/{self.bucket_folder_name}",
+                google_bucket_name=f"{current_app.config.get('GOOGLE_BUCKET_NAME')}/{self.bucket_folder_name}",
                 error_messages=self.error_messages,
                 ce=self.ce,
                 table_name=table_name,
@@ -189,11 +194,11 @@ def reconcile_eft_payments(ce):  # pylint: disable=too-many-locals
     _apply_eft_pending_payments(context, shortname_balance)
 
 
-def _parse_tdi17_lines(eft_lines: List[str]):
+def _parse_tdi17_lines(eft_lines: list[str]):
     """Parse EFT file header, trailer, transactions."""
     eft_header: EFTHeader = None
     eft_trailer: EFTTrailer = None
-    eft_transactions: List[EFTRecord] = []
+    eft_transactions: list[EFTRecord] = []
     for index, line in enumerate(eft_lines):
         if index == 0:
             eft_header = EFTHeader(line, index)
@@ -332,9 +337,9 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                         amount=deposit_amount,
                         credit_balance=credit_balance,
                         transaction_date=history_transaction_date,
-                    )
+                    ),
                 ).flush()
-        except Exception as e:  # NOQA pylint: disable=broad-exception-caught
+        except Exception as e:
             has_credit_errors = True
             current_app.logger.error(e, exc_info=True)
     return has_credit_errors
@@ -408,7 +413,10 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
 
     if eft_record.transaction_description and eft_record.short_name_type:
         eft_short_name: EFTShortnameModel = _get_shortname(
-            eft_record.transaction_description, eft_record.short_name_type, eft_record.generate_short_name, eft_record
+            eft_record.transaction_description,
+            eft_record.short_name_type,
+            eft_record.generate_short_name,
+            eft_record,
         )
         eft_transaction_model.short_name_id = eft_short_name.id
 
@@ -422,8 +430,8 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
     eft_transaction_model.jv_type = getattr(eft_record, "jv_type", None)
     eft_transaction_model.jv_number = getattr(eft_record, "jv_number", None)
     deposit_amount_cad = getattr(eft_record, "deposit_amount_cad", None)
-    eft_transaction_model.deposit_date = getattr(eft_record, "deposit_datetime")
-    eft_transaction_model.transaction_date = getattr(eft_record, "transaction_date")
+    eft_transaction_model.deposit_date = eft_record.deposit_datetime
+    eft_transaction_model.transaction_date = eft_record.transaction_date
     eft_transaction_model.deposit_amount_cents = deposit_amount_cad
     eft_transaction_model.save()
 
@@ -467,7 +475,10 @@ def _update_transactions_to_complete(eft_file_model: EFTFileModel) -> int:
 
 
 def _get_shortname(
-    short_name: str, short_name_type: str, generate_short_name: bool = False, eft_record: EFTRecord = None
+    short_name: str,
+    short_name_type: str,
+    generate_short_name: bool = False,
+    eft_record: EFTRecord = None,
 ) -> EFTShortnameModel:
     """Save short name if it doesn't exist."""
     eft_short_name = (
@@ -495,7 +506,7 @@ def _get_shortname(
     return eft_short_name
 
 
-def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
+def _shortname_balance_as_dict(eft_transactions: list[EFTRecord]) -> dict:
     """Create a dictionary mapping for shortname and total deposits from TDI17 file."""
     shortname_balance = {}
 
@@ -518,7 +529,7 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
     return shortname_balance
 
 
-def _filter_eft_transactions(eft_transactions: List[EFTRecord], eft_location_id: str) -> List[EFTRecord]:
+def _filter_eft_transactions(eft_transactions: list[EFTRecord], eft_location_id: str) -> list[EFTRecord]:
     """Filter down EFT Transactions."""
     eft_transactions = [
         transaction

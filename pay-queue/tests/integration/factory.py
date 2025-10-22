@@ -17,7 +17,7 @@
 Test-Suite to ensure that the service is working as expected.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pay_api.models import (
     CfsAccount,
@@ -64,7 +64,10 @@ def factory_premium_payment_account(bcol_user_id="PB25020", bcol_account_id="123
 
 
 def factory_statement_settings(
-    pay_account_id: str, frequency="DAILY", from_date=datetime.now(), to_date=None
+    pay_account_id: str,
+    frequency="DAILY",
+    from_date=datetime.now(),
+    to_date=None,
 ) -> StatementSettings:
     """Return Factory."""
     return StatementSettings(
@@ -78,10 +81,10 @@ def factory_statement_settings(
 def factory_statement(
     frequency: str = "WEEKLY",
     payment_account_id: str = None,
-    from_date: datetime = datetime.now(tz=timezone.utc),
-    to_date: datetime = datetime.now(tz=timezone.utc),
+    from_date: datetime = datetime.now(tz=UTC),
+    to_date: datetime = datetime.now(tz=UTC),
     statement_settings_id: str = None,
-    created_on: datetime = datetime.now(tz=timezone.utc),
+    created_on: datetime = datetime.now(tz=UTC),
     payment_methods: str = PaymentMethod.EFT.value,
 ):
     """Return Factory."""
@@ -114,7 +117,8 @@ def factory_invoice(
 ):
     """Return Factory."""
     cfs_account = CfsAccount.find_effective_by_payment_method(
-        payment_account.id, payment_method_code or payment_account.payment_method
+        payment_account.id,
+        payment_method_code or payment_account.payment_method,
     )
     cfs_account_id = cfs_account.id if cfs_account else None
     return Invoice(
@@ -238,7 +242,7 @@ def factory_create_eft_refund(
         refund_email=refund_email,
         short_name_id=short_name_id,
         status=status,
-        created_on=datetime.now(tz=timezone.utc),
+        created_on=datetime.now(tz=UTC),
     ).save()
     return eft_refund
 
@@ -260,7 +264,9 @@ def factory_create_eft_account(auth_account_id="1234", status=CfsAccountStatus.A
 
 
 def factory_create_online_banking_account(
-    auth_account_id="1234", status=CfsAccountStatus.PENDING.value, cfs_account="1234"
+    auth_account_id="1234",
+    status=CfsAccountStatus.PENDING.value,
+    cfs_account="1234",
 ):
     """Return Factory."""
     account = PaymentAccount(
@@ -327,7 +333,7 @@ def factory_create_ejv_account(
         stob=stob,
         project_code=project_code,
         account_id=account.id,
-        start_date=datetime.now(tz=timezone.utc).date(),
+        start_date=datetime.now(tz=UTC).date(),
         created_by="test",
     ).save()
     return account
@@ -353,7 +359,7 @@ def factory_distribution(
         project_code=project_code,
         service_fee_distribution_code_id=service_fee_dist_id,
         disbursement_distribution_code_id=disbursement_dist_id,
-        start_date=datetime.now(tz=timezone.utc).date(),
+        start_date=datetime.now(tz=UTC).date(),
         created_by="test",
     ).save()
 

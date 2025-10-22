@@ -16,8 +16,11 @@
 
 Test-Suite to ensure that the EFT Reconciliation queue service and parser is working as expected.
 """
+
 from datetime import datetime
-from typing import List
+
+from sbc_common_components.utils.enums import QueueMessageTypes
+from sqlalchemy import text
 
 from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -29,7 +32,7 @@ from pay_api.models import EFTShortnamesHistorical as EFTHistoryModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.services import EFTShortNameLinkService, EFTShortNamesService
+from pay_api.services import EFTShortNameLinkService
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus,
     EFTFileLineType,
@@ -41,10 +44,6 @@ from pay_api.utils.enums import (
     PaymentMethod,
     StatementFrequency,
 )
-from sbc_common_components.utils.enums import QueueMessageTypes
-from sqlalchemy import text
-
-from pay_queue.services.eft import EFTRecord
 from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import (
     factory_create_eft_account,
@@ -54,7 +53,11 @@ from tests.integration.factory import (
     factory_statement_settings,
 )
 from tests.integration.utils import add_file_event_to_queue_and_process, create_and_upload_eft_file
-from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
+from tests.utilities.factory_utils import (
+    factory_eft_header,
+    factory_eft_record,
+    factory_eft_trailer,
+)
 
 
 def test_eft_tdi17_fail_header(session, app, client, mocker):
@@ -351,10 +354,10 @@ def test_eft_tdi17_all_patterns_process(session, app, client):
     assert eft_trailer_transaction is None
 
     # Expecting no credit links as they have not been applied to invoices
-    eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
+    eft_credit_invoice_links: list[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
     assert not eft_credit_invoice_links
 
-    eft_transactions: List[EFTTransactionModel] = (
+    eft_transactions: list[EFTTransactionModel] = (
         db.session.query(EFTTransactionModel)
         .filter(EFTTransactionModel.file_id == eft_file_model.id)
         .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value)
@@ -370,18 +373,18 @@ def test_eft_tdi17_all_patterns_process(session, app, client):
     assert eft_shortnames is not None
     assert len(eft_shortnames) == transactions_count
 
-    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
+    eft_credits: list[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
     assert eft_credits is not None
     assert len(eft_credits) == transactions_count
 
-    history_list: List[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
+    history_list: list[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
     assert history_list
     assert len(history_list) == transactions_count
 
     for index, transaction in enumerate(eft_transactions):
-        assert (
-            transaction.short_name_id is not None
-        ), f"Transaction missing short name on line {transaction.line_number}"
+        assert transaction.short_name_id is not None, (
+            f"Transaction missing short name on line {transaction.line_number}"
+        )
         short_name_link = EFTShortnameLinksModel.find_by_short_name_id(transaction.short_name_id)
         short_name = EFTShortnameModel.find_by_id(transaction.short_name_id)
         assert not short_name_link
@@ -404,7 +407,7 @@ def test_eft_tdi17_all_patterns_process(session, app, client):
         assert eft_credit.remaining_amount == 135
         assert eft_credit.eft_transaction_id == transaction.id
 
-        history: List[EFTHistoryModel] = (
+        history: list[EFTHistoryModel] = (
             db.session.query(EFTHistoryModel).filter(EFTHistoryModel.short_name_id == transaction.short_name_id).all()
         )
         assert history
@@ -507,8 +510,8 @@ def test_eft_tdi17_process(session, app, client):
     assert not short_name_link_2
     assert eft_shortnames[1].short_name == "ABC123"
 
-    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
-    history: List[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
+    eft_credits: list[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.id).all()
+    history: list[EFTHistoryModel] = db.session.query(EFTHistoryModel).order_by(EFTHistoryModel.id).all()
     assert_funds_received_history(eft_credits[0], eft_transactions[0], history[0])
     assert_funds_received_history(eft_credits[1], eft_transactions[1], history[1], False)
     assert history[1].credit_balance == eft_credits[0].amount + eft_credits[1].amount
@@ -653,7 +656,7 @@ def test_eft_tdi17_rerun(session, app, client):
 
     assert eft_header_transaction is None
 
-    eft_transactions: List[EFTTransactionModel] = (
+    eft_transactions: list[EFTTransactionModel] = (
         db.session.query(EFTTransactionModel)
         .filter(EFTTransactionModel.file_id == eft_file_model.id)
         .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value)
@@ -998,10 +1001,11 @@ def create_generated_short_names_file(file_name: str):
     )
 
 
-def create_statement_from_invoices(account: PaymentAccountModel, invoices: List[InvoiceModel]):
+def create_statement_from_invoices(account: PaymentAccountModel, invoices: list[InvoiceModel]):
     """Generate a statement from a list of invoices."""
     statement_settings = factory_statement_settings(
-        pay_account_id=account.id, frequency=StatementFrequency.MONTHLY.value
+        pay_account_id=account.id,
+        frequency=StatementFrequency.MONTHLY.value,
     )
     statement = factory_statement(
         payment_account_id=account.id,

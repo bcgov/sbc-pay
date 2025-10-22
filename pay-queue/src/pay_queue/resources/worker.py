@@ -19,9 +19,9 @@ import traceback
 from http import HTTPStatus
 
 from flask import Blueprint, current_app, request
-from pay_api.services.gcp_queue_publisher import queue
 from sbc_common_components.utils.enums import QueueMessageTypes
 
+from pay_api.services.gcp_queue_publisher import queue
 from pay_queue.external.gcp_auth import ensure_authorized_queue_user
 from pay_queue.services import update_temporary_identifier
 from pay_queue.services.cgi_reconciliations import reconcile_distributions
@@ -60,5 +60,5 @@ def worker():
         return {}, HTTPStatus.OK
     except Exception as e:  # NOQA # pylint: disable=broad-except
         # Catch Exception so that any error is still caught and the message is removed from the queue
-        current_app.logger.error(f"{{error: {str(e)}, stack_trace: {traceback.format_exc()}}}")
+        current_app.logger.error(f"{{error: {e!s}, stack_trace: {traceback.format_exc()}}}")
         return {}, HTTPStatus.OK
