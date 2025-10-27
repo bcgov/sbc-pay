@@ -298,11 +298,11 @@ class Statement:  # pylint:disable=too-many-public-methods
     ) -> bool:
         """Return if the statement is for the specified payment method."""
         # Check invoice payment method for statement template
-        if ordered_invoices and ordered_invoices[0].payment_method_code == payment_method_code:
+        if ordered_invoices and ordered_invoices[0].payment_method_code == PaymentMethod.EFT.value:
             return True
 
         # In the event of an empty statement check statement payment methods, could be more than one on transition days
-        if payment_method_code in (statement.payment_methods or ""):
+        if PaymentMethod.EFT.value in statement.payment_methods:
             return True
 
         return False
@@ -453,9 +453,8 @@ class Statement:  # pylint:disable=too-many-public-methods
             results=result_items,
         )
 
-        summary = Statement._build_statement_summary_for_methods(statement_dao, statement_purchases)
-        if summary:
-            report_inputs.statement_summary = summary
+        if Statement.is_eft_statement(statement_dao, statement_purchases):
+            report_inputs.statement_summary = Statement._populate_statement_summary(statement_dao, statement_purchases)
 
         report_response = PaymentService.generate_payment_report(
             report_inputs, auth=kwargs.get("auth", None), statement=statement
@@ -705,7 +704,5 @@ class Statement:  # pylint:disable=too-many-public-methods
             .filter(StatementInvoicesModel.statement_id == cast(statement_id, Integer))
             .order_by(InvoiceModel.id.asc())
         )
-        if payment_method:
-            query = query.filter(InvoiceModel.payment_method_code == payment_method.value)
 
         return query.all()
