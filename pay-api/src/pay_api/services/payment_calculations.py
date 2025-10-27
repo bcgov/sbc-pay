@@ -25,8 +25,7 @@ from sqlalchemy import and_, case, func
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import db
-from pay_api.services.code import Code as CodeService
-from pay_api.utils.enums import Code, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
 
