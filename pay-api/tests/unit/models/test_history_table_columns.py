@@ -80,7 +80,10 @@ def get_table_columns(inspector, table_name: str) -> dict:
 
 def test_history_table_columns(session, inspector, versioned_models):
     """Test that history tables have the same columns as base tables (plus version/changed)."""
+    skip_tables = {"test_versioned_history"}
     for base_table, history_table in versioned_models:
+        if history_table in skip_tables:
+            continue
         base_columns = get_table_columns(inspector, base_table)
         history_columns = get_table_columns(inspector, history_table)
 
@@ -104,7 +107,7 @@ def test_history_table_columns(session, inspector, versioned_models):
 def test_history_tables_have_composite_primary_keys(session, inspector, versioned_models):
     """Test that all history tables have composite primary keys with id and version."""
     # Tables to skip for this test (they have different primary key structures)
-    skip_tables = {"distribution_codes_history"}
+    skip_tables = {"distribution_codes_history", "test_versioned_history"}
 
     for _base_table, history_table in versioned_models:
         if history_table in skip_tables:
@@ -120,7 +123,10 @@ def test_history_tables_have_composite_primary_keys(session, inspector, versione
 
 def test_history_tables_have_same_index_count(session, inspector, versioned_models):
     """Test that history tables have the same number of indexes as their base tables."""
+    skip_tables = {"test_versioned_history"}
     for base_table, history_table in versioned_models:
+        if history_table in skip_tables:
+            continue
         try:
             base_indexes = inspector.get_indexes(base_table)
             history_indexes = inspector.get_indexes(history_table)
@@ -146,7 +152,10 @@ def test_history_tables_exist(session, inspector, versioned_models):
 
 def test_base_tables_have_version_column(session, inspector, versioned_models):
     """Test that base tables have version column added."""
+    skip_tables = {"test_versioned"}
     for base_table, _ in versioned_models:
+        if base_table in skip_tables:
+            continue
         columns = get_table_columns(inspector, base_table)
         assert "version" in columns, f"Base table {base_table} should have version column"
         assert not columns["version"]["nullable"], f"Version column in {base_table} should not be nullable"
@@ -155,7 +164,10 @@ def test_base_tables_have_version_column(session, inspector, versioned_models):
 
 def test_history_table_column_types_match_base_tables(session, inspector, versioned_models):
     """Test that column types in history tables match their base tables."""
+    skip_tables = {"test_versioned_history"}
     for base_table, history_table in versioned_models:
+        if history_table in skip_tables:
+            continue
         base_columns = get_table_columns(inspector, base_table)
         history_columns = get_table_columns(inspector, history_table)
 
