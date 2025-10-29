@@ -26,14 +26,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from admin import config
 from admin.config import _Config
-from admin.views import (
-    CodeConfig,
-    CorpTypeView,
-    DistributionCodeView,
-    FeeCodeView,
-    FeeScheduleView,
-    IndexView,
-)
+from admin.views import CodeConfig, CorpTypeView, DistributionCodeView, FeeCodeView, FeeScheduleView, IndexView
 from pay_api.models import FilingType, db, ma
 from pay_api.utils.logging import setup_logging
 
@@ -48,8 +41,10 @@ def create_app(run_mode=None):
         run_mode = os.getenv("DEPLOYMENT_ENV", "production")
 
     app = Flask(__name__)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=0)
     app.config.from_object(config.CONFIGURATION[run_mode])
+
+    app.secret_key = os.getenv("SECRET_KEY", os.urandom(24))
 
     app.logger.info("init db.")
     db.init_app(app)
