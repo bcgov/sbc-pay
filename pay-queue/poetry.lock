@@ -2101,7 +2101,7 @@ marshmallow = "3.21.1"
 marshmallow-sqlalchemy = "1.0.0"
 opentracing = "2.4.0"
 packaging = "24.0"
-pg8000 = "^1.30.5"
+pg8000 = "^1.31.5"
 proto-plus = "1.23.0"
 protobuf = "4.25.8"
 psycopg2-binary = "2.9.9"
@@ -2134,20 +2134,20 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "30833"
-resolved_reference = "10e5b2a5652d1e6e07e50e565025d062d6a52eec"
+reference = "pg8000_update"
+resolved_reference = "d21511802a3132d3d230e85ab1460c13c5e31e21"
 subdirectory = "pay-api"
 
 [[package]]
 name = "pg8000"
-version = "1.31.4"
+version = "1.31.5"
 description = "PostgreSQL interface library"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pg8000-1.31.4-py3-none-any.whl", hash = "sha256:d14fb2054642ee80f9a216721892e99e19db60a005358460ffa48872351423d4"},
-    {file = "pg8000-1.31.4.tar.gz", hash = "sha256:e7ecce4339891f27b0b22e2f79eb9efe44118bd384207359fc18350f788ace00"},
+    {file = "pg8000-1.31.5-py3-none-any.whl", hash = "sha256:0af2c1926b153307639868d2ee5cef6cd3a7d07448e12736989b10e1d491e201"},
+    {file = "pg8000-1.31.5.tar.gz", hash = "sha256:46ebb03be52b7a77c03c725c79da2ca281d6e8f59577ca66b17c9009618cae78"},
 ]
 
 [package.dependencies]
@@ -3303,4 +3303,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "2eec45bd86b1602c1c0dd4b8bd5a9fe082690bb1f60b56fa2bcafcc09e7612e9"
+content-hash = "fba9024cdc0d051595f8aaa39e3fc95b3d7c6910937fc510f12dcb0f299ffe40"
