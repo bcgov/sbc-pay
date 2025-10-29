@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "pay-admin-prod",
+          "region": "northamerica-northeast1"
+        }
+      }
+    ]
+  }
+}
