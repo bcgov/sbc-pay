@@ -32,6 +32,7 @@ serialPipeline:
       container-name: "pay-admin-dev"
       cloudsql-instances: "gtksf3-dev:northamerica-northeast1:pay-db-dev"
       service-account: "sa-job@gtksf3-dev.iam.gserviceaccount.com"
+      container-concurrency: "8"
  - targetId: gtksf3-test
    profiles: [test]
    strategy:
@@ -45,6 +46,7 @@ serialPipeline:
       container-name: "pay-admin-test"
       cloudsql-instances: "gtksf3-test:northamerica-northeast1:pay-db-test"
       service-account: "sa-api@gtksf3-test.iam.gserviceaccount.com"
+      container-concurrency: "8"
  - targetId: gtksf3-sandbox
    profiles: [sandbox]
    strategy:
@@ -63,6 +65,7 @@ serialPipeline:
       container-port: "8080"
       resources-cpu: 4000m
       resources-memory: 8Gi
+      container-concurrency: "8"
  - targetId: gtksf3-prod
    profiles: [prod]
    strategy:
@@ -81,3 +84,4 @@ serialPipeline:
       container-port: "8080"
       resources-cpu: 4000m
       resources-memory: 8Gi
+      container-concurrency: "8"
