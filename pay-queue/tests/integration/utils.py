@@ -12,24 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utilities used by the integration tests."""
+
 import base64
 import csv
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from socket import SO_REUSEADDR, SOL_SOCKET, socket
 from time import sleep
-from typing import List
 
 from flask import current_app
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
+from sbc_common_components.utils.enums import QueueMessageTypes
+from simple_cloudevent import SimpleCloudEvent, to_queue_message
+
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.google_bucket_service import GoogleBucketService
 from pay_api.utils.enums import QueueSources
-from sbc_common_components.utils.enums import QueueMessageTypes
-from simple_cloudevent import SimpleCloudEvent, to_queue_message
 
 
 def build_request_for_queue_push(message_type, payload):
@@ -39,10 +40,10 @@ def build_request_for_queue_push(message_type, payload):
             id=str(uuid.uuid4()),
             source="pay-queue",
             subject=None,
-            time=datetime.now(tz=timezone.utc).isoformat(),
+            time=datetime.now(tz=UTC).isoformat(),
             type=message_type,
             data=payload,
-        )
+        ),
     )
 
     return {
@@ -61,7 +62,7 @@ def post_to_queue(client, request_payload):
     assert response.status_code == 200
 
 
-def create_and_upload_settlement_file(file_name: str, rows: List[List]):
+def create_and_upload_settlement_file(file_name: str, rows: list[list]):
     """Create settlement file, upload to google bucket and send event."""
     headers = [
         "Record type",
@@ -89,7 +90,7 @@ def create_and_upload_settlement_file(file_name: str, rows: List[List]):
         upload_to_google_bucket(f.read(), file_name)
 
 
-def create_and_upload_eft_file(file_name: str, rows: List[List]):
+def create_and_upload_eft_file(file_name: str, rows: list[list]):
     """Create eft file, upload to google bucket and send event."""
     with open(file_name, mode="w", encoding="utf-8") as eft_file:
         for row in rows:
@@ -130,7 +131,7 @@ def forward_incoming_message_to_test_instance(session, app, client):
     with socket() as server_socket:
         server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         server_socket.settimeout(2)
-        server_socket.bind(("0.0.0.0", current_app.config.get("TEST_PUSH_ENDPOINT_PORT")))
+        server_socket.bind(("0.0.0.0", current_app.config.get("TEST_PUSH_ENDPOINT_PORT")))  # noqa: S104
         server_socket.listen(10)
         tries = 100
         while tries > 0:
@@ -139,7 +140,7 @@ def forward_incoming_message_to_test_instance(session, app, client):
                 body = socket_data.decode("utf8").split("\r\n")[-1]
                 payload = json.loads(body)
                 post_to_queue(client, payload)
-                client_socket.send("HTTP/1.1 200 OK\n\n".encode("utf8"))
+                client_socket.send(b"HTTP/1.1 200 OK\n\n")
                 break
             sleep(0.01)
             tries -= 1
@@ -158,8 +159,8 @@ def add_file_event_to_queue_and_process(client, file_name: str, message_type: st
                 source=QueueSources.FTP_POLLER.value,
                 message_type=message_type,
                 payload=queue_payload,
-                topic=f'projects/{current_app.config["TEST_GCP_PROJECT_NAME"]}/topics/ftp-poller-dev',
-            )
+                topic=f"projects/{current_app.config['TEST_GCP_PROJECT_NAME']}/topics/ftp-poller-dev",
+            ),
         )
         forward_incoming_message_to_test_instance(client)
     else:
@@ -168,7 +169,9 @@ def add_file_event_to_queue_and_process(client, file_name: str, message_type: st
 
 
 def helper_add_identifier_event_to_queue(
-    client, old_identifier: str = "T1234567890", new_identifier: str = "BC1234567890"
+    client,
+    old_identifier: str = "T1234567890",
+    new_identifier: str = "BC1234567890",
 ):
     """Add event to the Queue."""
     message_type = QueueMessageTypes.INCORPORATION.value

@@ -20,6 +20,7 @@ All services have 2 defaults sets of endpoints:
  - meta
 That are used to expose operational health information about the service, and meta information.
 """
+
 from flask import Blueprint
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 

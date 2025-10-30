@@ -2,6 +2,7 @@
 # flake8: noqa
 # This will get moved to an external library, which is linted by black (different than our rules)
 """Move this to external library."""
+
 import functools
 from http import HTTPStatus
 

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage PAYBC services."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from flask import current_app
+
 from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.payment import Payment as PaymentModel
@@ -175,7 +177,7 @@ class DistributionTask:
         if invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value:
             # No more work is needed to ensure it was posted to gl.
             refund = RefundModel.find_latest_by_invoice_id(invoice.id)
-            refund.gl_posted = datetime.now(tz=timezone.utc)
+            refund.gl_posted = datetime.now(tz=UTC)
             refund.save()
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         else:

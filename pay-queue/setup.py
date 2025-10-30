@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Installer and setup for this module
-"""
+"""Installer and setup for this module."""
+
 import ast
 import re
 from glob import glob
@@ -24,29 +24,28 @@ _version_re = re.compile(r"__version__\s+=\s+(.*)")  # pylint: disable=invalid-n
 
 with open("src/pay_queue/version.py", "rb") as f:
     version = str(
-        ast.literal_eval(_version_re.search(f.read().decode("utf-8")).group(1))  # pylint: disable=invalid-name
+        ast.literal_eval(_version_re.search(f.read().decode("utf-8")).group(1)),  # pylint: disable=invalid-name
     )
 
 
 def read_requirements(filename):
-    """
-    Get application requirements from
-    the requirements.txt file.
+    """Get application requirements from the requirements.txt file.
+
     :return: Python requirements
     """
-    with open(filename, "r") as req:
+    with open(filename) as req:
         requirements = req.readlines()
     install_requires = [r.strip() for r in requirements if (r.find("git+") != 0 and r.find("-e git+") != 0)]
     return install_requires
 
 
 def read(filepath):
-    """
-    Read the contents from a file.
+    """Read the contents from a file.
+
     :param str filepath: path to the file to be read
     :return: file contents
     """
-    with open(filepath, "r") as file_handle:
+    with open(filepath) as file_handle:
         content = file_handle.read()
     return content
 

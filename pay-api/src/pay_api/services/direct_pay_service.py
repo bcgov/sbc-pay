@@ -133,6 +133,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         revenue_item = []
 
         for payment_line_item in payment_line_items:
+            # It's possible this could be None as well, in the scenario total and service fees are $0
             distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                 payment_line_item.fee_distribution_id
             )
@@ -141,24 +142,27 @@ class DirectPayService(PaymentSystemService, OAuthService):
                 index += 1
                 revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
                 revenue_item.append(f"{index}:{revenue_string}")
+                index = DirectPayService._append_revenue_item(
+                    index,
+                    distribution_code.statutory_fees_gst_distribution_code_id,
+                    payment_line_item.statutory_fees_gst,
+                    revenue_item,
+                )
 
-            index = DirectPayService._append_revenue_item(
-                index, distribution_code.service_fee_distribution_code_id, payment_line_item.service_fees, revenue_item
-            )
+            if payment_line_item.service_fees > 0:
+                index = DirectPayService._append_revenue_item(
+                    index,
+                    distribution_code.service_fee_distribution_code_id,
+                    payment_line_item.service_fees,
+                    revenue_item,
+                )
 
-            index = DirectPayService._append_revenue_item(
-                index,
-                distribution_code.service_fee_gst_distribution_code_id,
-                payment_line_item.service_fees_gst,
-                revenue_item,
-            )
-
-            index = DirectPayService._append_revenue_item(
-                index,
-                distribution_code.statutory_fees_gst_distribution_code_id,
-                payment_line_item.statutory_fees_gst,
-                revenue_item,
-            )
+                index = DirectPayService._append_revenue_item(
+                    index,
+                    distribution_code.service_fee_gst_distribution_code_id,
+                    payment_line_item.service_fees_gst,
+                    revenue_item,
+                )
 
         return PAYBC_REVENUE_SEPARATOR.join(revenue_item)
 

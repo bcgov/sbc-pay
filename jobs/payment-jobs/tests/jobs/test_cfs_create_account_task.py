@@ -16,18 +16,17 @@
 
 Test-Suite to ensure that the CreateAccountTask is working as expected.
 """
-from datetime import datetime
+
 from unittest.mock import patch
 
-import pytz
 import requests
 from freezegun import freeze_time
+from requests.exceptions import HTTPError
+
 from pay_api.models import CfsAccount, PaymentAccount
 from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.pad_service import PadService
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
-from requests.exceptions import HTTPError
-
 from tasks.cfs_create_account_task import CreateAccountTask
 from utils import mailer
 
@@ -85,7 +84,7 @@ def test_create_pad_account_user_error(session):
         with patch.object(mailer, "publish_mailer_events") as mock_mailer:
             with patch("pay_api.services.CFSService.create_cfs_account", side_effect=side_effect):
                 CreateAccountTask.create_accounts()
-                mock_mailer.assert_called
+                mock_mailer.assert_called()
 
         account = PaymentAccount.find_by_id(account.id)
         cfs_account = CfsAccount.find_by_id(cfs_account.id)

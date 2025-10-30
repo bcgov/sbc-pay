@@ -15,18 +15,19 @@
 
 The service worker for applying payments, receipts and account balance to payment system.
 """
+
 from __future__ import annotations
 
 import os
 
 from flask import Flask
+
 from pay_api.models import db
 from pay_api.services.flags import flags
 from pay_api.services.gcp_queue import queue
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
-
 from pay_queue import config
 from pay_queue.version import __version__
 
@@ -35,8 +36,10 @@ from .resources import register_endpoints
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.conf"))  # important to do this first
 
 
-def create_app(run_mode=os.getenv("DEPLOYMENT_ENV", "production")) -> Flask:
+def create_app(run_mode=None) -> Flask:
     """Return a configured Flask App using the Factory method."""
+    if run_mode is None:
+        run_mode = os.getenv("DEPLOYMENT_ENV", "production")
     app = Flask(__name__)
     app.env = run_mode
     app.config.from_object(config.CONFIGURATION[run_mode])
@@ -58,7 +61,9 @@ def build_cache(app):
         cache.clear()
         if not app.config.get("TESTING", False):
             try:
-                from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+                from pay_api.services.code import (
+                    Code as CodeService,  # pylint: disable=import-outside-toplevel
+                )
 
                 CodeService.build_all_codes_cache()
             except Exception as e:  # NOQA pylint:disable=broad-except

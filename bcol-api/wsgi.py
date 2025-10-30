@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
-"""
+"""Provides the WSGI entry point for running the application."""
+
 from bcol_api import create_app
 
 # Openshift s2i expects a lower case name of application

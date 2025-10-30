@@ -84,7 +84,7 @@ class SecuredView(sqla.ModelView):
             return False
         return kc.has_access(role)
 
-    def inaccessible_callback(self, name, **kwargs):
+    def inaccessible_callback(self, name, **kwargs):  # noqa: ARG002
         """Handle if view is not accessible."""
         if not self.connected:
             self.connected = True

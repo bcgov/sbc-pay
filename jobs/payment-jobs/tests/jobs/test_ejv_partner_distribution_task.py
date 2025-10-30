@@ -16,18 +16,18 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
 from flask import current_app
 from freezegun import freeze_time
-from pay_api.models import CorpType as CorpTypeModel
-from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice
-from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
-from pay_api.models import db
-from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, EJVLinkType, InvoiceStatus, PaymentMethod
 
+from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, db
+from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
+from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, EJVLinkType, InvoiceStatus, PaymentMethod
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 from .factory import (
@@ -51,7 +51,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     2) Create paid invoices for these partners.
     3) Run the job and assert results.
     """
-    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pysftp.Connection.put", lambda *_args, **_kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code("VS")
     corp_type.has_partner_disbursements = True
     corp_type.save()
@@ -96,7 +96,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
-    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=UTC)).save()
 
     eft_invoice = factory_invoice(
         payment_account=pad_account,
@@ -117,7 +117,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 
     inv_ref = factory_invoice_reference(invoice_id=eft_invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
-    factory_receipt(invoice_id=eft_invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+    factory_receipt(invoice_id=eft_invoice.id, receipt_date=datetime.now(tz=UTC)).save()
     partner_disbursement = PartnerDisbursementsModel(
         amount=10,
         is_reversal=False,
@@ -160,7 +160,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice = Invoice.find_by_id(invoice.id)
     assert invoice.disbursement_status_code is None
 
-    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+    day_after_time_delay = datetime.now(tz=UTC) + timedelta(
         days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
     )
     with freeze_time(day_after_time_delay):
@@ -192,7 +192,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
     ejv_file.disbursement_status_code = DisbursementStatus.COMPLETED.value
     invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-    invoice.refund_date = datetime.now(tz=timezone.utc)
+    invoice.refund_date = datetime.now(tz=UTC)
     invoice.save()
     partner_disbursement.status = DisbursementStatus.WAITING_FOR_JOB.value
     partner_disbursement.is_reversal = True
@@ -209,7 +209,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 @pytest.mark.parametrize("client_code, batch_type", [("112", "GA"), ("113", "GI")])
 def test_disbursement_error_handling(session, monkeypatch, client_code, batch_type, google_bucket_mock):
     """Test error handling in disbursement task."""
-    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pysftp.Connection.put", lambda *_args, **_kwargs: None)
     mock_notification = MagicMock()
     monkeypatch.setattr("pay_api.services.email_service.JobFailureNotification.send_notification", mock_notification)
 
@@ -256,9 +256,9 @@ def test_disbursement_error_handling(session, monkeypatch, client_code, batch_ty
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
-    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=UTC)).save()
 
-    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+    day_after_time_delay = datetime.now(tz=UTC) + timedelta(
         days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
     )
 
@@ -297,7 +297,7 @@ def test_disbursement_error_handling(session, monkeypatch, client_code, batch_ty
 
 def test_amount_calculation_with_statutory_fees_gst(session, monkeypatch, google_bucket_mock):
     """Test amount calculation includes both total and statutory_fees_gst for payment line items."""
-    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pysftp.Connection.put", lambda *_args, **_kwargs: None)
 
     corp_type = CorpTypeModel.find_by_code("VS")
     corp_type.has_partner_disbursements = True
@@ -343,7 +343,7 @@ def test_amount_calculation_with_statutory_fees_gst(session, monkeypatch, google
 
     inv_ref1 = factory_invoice_reference(invoice_id=invoice1.id)
     factory_payment(invoice_number=inv_ref1.invoice_number, payment_status_code="COMPLETED")
-    factory_receipt(invoice_id=invoice1.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+    factory_receipt(invoice_id=invoice1.id, receipt_date=datetime.now(tz=UTC)).save()
 
     invoice2 = factory_invoice(
         payment_account=pad_account,
@@ -364,9 +364,9 @@ def test_amount_calculation_with_statutory_fees_gst(session, monkeypatch, google
 
     inv_ref2 = factory_invoice_reference(invoice_id=invoice2.id)
     factory_payment(invoice_number=inv_ref2.invoice_number, payment_status_code="COMPLETED")
-    factory_receipt(invoice_id=invoice2.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+    factory_receipt(invoice_id=invoice2.id, receipt_date=datetime.now(tz=UTC)).save()
 
-    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+    day_after_time_delay = datetime.now(tz=UTC) + timedelta(
         days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
     )
     with freeze_time(day_after_time_delay):
@@ -404,7 +404,7 @@ def test_amount_calculation_with_statutory_fees_gst(session, monkeypatch, google
 )
 def test_statutory_fees_gst_distribution_code_validation(session, monkeypatch, google_bucket_mock, should_log_error):
     """Test error logging when statutory fees GST GL doesn't point to Partner Disbursement Code GL."""
-    monkeypatch.setattr("pysftp.Connection.put", lambda *args, **kwargs: None)
+    monkeypatch.setattr("pysftp.Connection.put", lambda *_args, **_kwargs: None)
 
     corp_type = CorpTypeModel.find_by_code("VS")
     corp_type.has_partner_disbursements = True
@@ -468,9 +468,9 @@ def test_statutory_fees_gst_distribution_code_validation(session, monkeypatch, g
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code="COMPLETED")
-    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=timezone.utc)).save()
+    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.now(tz=UTC)).save()
 
-    day_after_time_delay = datetime.now(tz=timezone.utc) + timedelta(
+    day_after_time_delay = datetime.now(tz=UTC) + timedelta(
         days=(current_app.config.get("DISBURSEMENT_DELAY_IN_DAYS") + 1)
     )
     with freeze_time(day_after_time_delay):

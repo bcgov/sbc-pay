@@ -19,6 +19,7 @@ All modules and lookups get their configuration from the
 Flask config, rather than reading environment variables directly
 or by accessing this configuration directly.
 """
+
 import os
 
 from dotenv import find_dotenv, load_dotenv
@@ -121,7 +122,7 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
 
     # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
     PAY_AUDIENCE_SUB = os.getenv("PAY_AUDIENCE_SUB", None)
-    VERIFY_PUBSUB_EMAILS = f'{os.getenv("AUTHPAY_SERVICE_ACCOUNT")},{os.getenv("BUSINESS_SERVICE_ACCOUNT")}'.split(",")
+    VERIFY_PUBSUB_EMAILS = f"{os.getenv('AUTHPAY_SERVICE_ACCOUNT')},{os.getenv('BUSINESS_SERVICE_ACCOUNT')}".split(",")
     SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT = os.getenv("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT", "").lower() == "true"
 
     # Google Cloud Storage settings
@@ -163,8 +164,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     USE_DOCKER_MOCK = os.getenv("USE_DOCKER_MOCK", None)
 
     CFS_BASE_URL = "http://localhost:8080/paybc-api"
-    CFS_CLIENT_ID = "TEST"
-    CFS_CLIENT_SECRET = "TEST"
+    CFS_CLIENT_ID = "TEST"  # Test value only
+    CFS_CLIENT_SECRET = "TEST"  # noqa: S105  # Test value only
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv("ACCOUNT_SECRET_KEY", "test")
@@ -180,7 +181,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     TEST_PUSH_ENDPOINT_PORT = 5020
     TEST_PUSH_ENDPOINT = os.getenv(
         "TEST_PUSH_ENDPOINT",
-        f"http://host.docker.internal:{str(TEST_PUSH_ENDPOINT_PORT)}/",
+        f"http://host.docker.internal:{TEST_PUSH_ENDPOINT_PORT!s}/",
     )
     GCP_AUTH_KEY = None
     DISABLE_EJV_ERROR_EMAIL = False

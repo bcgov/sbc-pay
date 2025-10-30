@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Defines the structure of EFT Errors."""
+
 from pay_queue.services.eft.eft_errors import EFTError
 
 

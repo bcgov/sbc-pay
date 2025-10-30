@@ -13,8 +13,8 @@
 # limitations under the License.
 
 """This manages all of the email notification service."""
+
 import os
-from typing import Dict
 
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
@@ -29,7 +29,7 @@ def _get_template(template_file_name: str):
     return env.get_template(template_file_name)
 
 
-def _render_eft_overpayment_template(params: Dict) -> str:
+def _render_eft_overpayment_template(params: dict) -> str:
     """Render eft overpayment template."""
     template = _get_template("eft_overpayment.html")
     short_name_detail_url = f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{params['shortNameId']}"

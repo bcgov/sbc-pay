@@ -15,9 +15,10 @@
 
 import time
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any
 
 from flask import current_app
+
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
@@ -41,7 +42,6 @@ from pay_api.utils.enums import (
     RefundStatus,
 )
 from pay_api.utils.util import generate_transaction_number
-
 from tasks.common.cgi_ejv import CgiEjv
 from tasks.common.dataclasses import EjvTransaction, TransactionLineItem
 
@@ -265,7 +265,7 @@ class EjvPaymentTask(CgiEjv):
         return sequence
 
     @classmethod
-    def _get_account_ids_for_payment(cls, batch_type) -> List[int]:
+    def _get_account_ids_for_payment(cls, batch_type) -> list[int]:
         """Return account IDs for payment."""
         # CREDIT : Distribution code against fee schedule
         # DEBIT : Distribution code against account.
@@ -283,7 +283,7 @@ class EjvPaymentTask(CgiEjv):
         return [account_id_tuple[0] for account_id_tuple in account_ids]
 
     @classmethod
-    def _get_invoices_for_payment(cls, account_id: int) -> List[InvoiceModel]:
+    def _get_invoices_for_payment(cls, account_id: int) -> list[InvoiceModel]:
         """Return invoices for payments."""
         valid_statuses = (
             InvoiceStatus.APPROVED.value,
@@ -293,7 +293,7 @@ class EjvPaymentTask(CgiEjv):
             InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,))
         )
 
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             db.session.query(InvoiceModel)
             .filter(InvoiceModel.invoice_status_code.in_(valid_statuses))
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EJV.value)
@@ -304,9 +304,9 @@ class EjvPaymentTask(CgiEjv):
         return invoices
 
     @classmethod
-    def get_partial_refunds_invoices(cls, account_id: int) -> List[InvoiceModel]:
+    def get_partial_refunds_invoices(cls, account_id: int) -> list[InvoiceModel]:
         """Get credit card partial refunds."""
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             InvoiceModel.query.join(RefundsPartialModel, RefundsPartialModel.invoice_id == InvoiceModel.id)
             .join(RefundModel, RefundModel.id == RefundsPartialModel.refund_id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EJV.value)
@@ -321,7 +321,7 @@ class EjvPaymentTask(CgiEjv):
         return invoices
 
     @classmethod
-    def _get_ejv_account_transactions(cls, account_id: int) -> List[EjvTransaction]:
+    def _get_ejv_account_transactions(cls, account_id: int) -> list[EjvTransaction]:
         """Return unified payment transactions for both invoices and partial refunds."""
         transactions = []
         invoices = cls._get_invoices_for_payment(account_id)

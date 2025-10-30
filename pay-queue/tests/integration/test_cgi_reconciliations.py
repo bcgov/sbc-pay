@@ -16,10 +16,14 @@
 
 Test-Suite to ensure that the Payment Reconciliation queue service is working as expected.
 """
-from datetime import datetime, timezone
-from unittest.mock import Mock, patch
+
+from datetime import UTC, datetime
+from unittest.mock import Mock
 
 import pytest
+from sbc_common_components.utils.enums import QueueMessageTypes
+from sqlalchemy import text
+
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EFTShortnames as EftShortNameModel
@@ -52,9 +56,6 @@ from pay_api.utils.enums import (
     RefundsPartialStatus,
     RoutingSlipStatus,
 )
-from sbc_common_components.utils.enums import QueueMessageTypes
-from sqlalchemy import text
-
 from tests.integration.utils import add_file_event_to_queue_and_process
 
 from .factory import (
@@ -81,7 +82,8 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
     cfs_account_number = "1234"
     partner_code = "VS"
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
-        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+        corp_type_code=partner_code,
+        filing_type_code="WILLSEARCH",
     )
 
     pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
@@ -250,7 +252,8 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
     cfs_account_number = "1234"
     partner_code = "VS"
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
-        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+        corp_type_code=partner_code,
+        filing_type_code="WILLSEARCH",
     )
 
     pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
@@ -423,7 +426,8 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     cfs_account_number = "1234"
     partner_code = "VS"
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
-        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+        corp_type_code=partner_code,
+        filing_type_code="WILLSEARCH",
     )
 
     pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
@@ -783,7 +787,8 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert invoice.payment_date == datetime(2023, 5, 29)
         invoice_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
-            inv_id, InvoiceReferenceStatus.COMPLETED.value
+            inv_id,
+            InvoiceReferenceStatus.COMPLETED.value,
         )
         assert invoice_ref
         receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=inv_id)
@@ -847,7 +852,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
 
     # Now create JV records.
     # Create EJV File model
-    file_ref = f"INBOX.{datetime.now(tz=timezone.utc)}"
+    file_ref = f"INBOX.{datetime.now(tz=UTC)}"
     ejv_file = EjvFileModel(
         file_ref=file_ref,
         disbursement_status_code=DisbursementStatus.UPLOADED.value,
@@ -999,7 +1004,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
         assert invoice.refund_date == datetime(2023, 5, 29)
         invoice_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
-            inv_id, InvoiceReferenceStatus.COMPLETED.value
+            inv_id,
+            InvoiceReferenceStatus.COMPLETED.value,
         )
         assert invoice_ref
 
@@ -1891,7 +1897,7 @@ def test_successful_partial_refund_ejv_reconciliations(session, app, client, moc
     jv_account_4 = factory_create_ejv_account(auth_account_id="4", client="111")
 
     # Create EJV File
-    file_ref = f"INBOX.{datetime.now(tz=timezone.utc)}"
+    file_ref = f"INBOX.{datetime.now(tz=UTC)}"
     ejv_file = EjvFileModel(
         file_ref=file_ref,
         disbursement_status_code=DisbursementStatus.UPLOADED.value,
@@ -2031,7 +2037,8 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
     cfs_account_number = "1234"
     partner_code = "VS"
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(
-        corp_type_code=partner_code, filing_type_code="WILLSEARCH"
+        corp_type_code=partner_code,
+        filing_type_code="WILLSEARCH",
     )
 
     pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
@@ -2175,7 +2182,7 @@ def test_ejv_batch_failure_sends_error_email(session, app, client, mocker):
     email_params = call_args[0][0]
     assert email_params.subject == "Payment Reconciliation Failure - GL disbursement failure for EJV"
     assert email_params.file_name == feedback_file_name
-    assert email_params.google_bucket_name == f"{app.config.get("GOOGLE_BUCKET_NAME")}/test-folder"
+    assert email_params.google_bucket_name == f"{app.config.get('GOOGLE_BUCKET_NAME')}/test-folder"
     assert email_params.table_name == EjvFileModel.__tablename__
     assert "The GL disbursement failed for the electronic journal voucher batch" in email_params.error_messages
 

@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to handle Direct Pay automated refunds."""
-from datetime import datetime, timezone
-from typing import List
+
+from datetime import UTC, datetime
 
 from flask import current_app
+
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import Refund as RefundModel
@@ -33,14 +34,12 @@ from pay_api.utils.enums import (
     RefundStatus,
     TransactionStatus,
 )
-
 from tasks.common.dataclasses import OrderStatus
 from tasks.common.enums import PaymentDetailsGlStatus
 
 
 class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
-    """
-    Task to query CAS for order statuses of invoices.
+    """Task to query CAS for order statuses of invoices.
 
     Ensures invoices have been processed correctly by the GL.
     This handles payment reconciliation for automated credit card refunds via REST
@@ -57,7 +56,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def handle_credit_card_refund_partials(cls):
         """Process credit card partial refunds."""
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             InvoiceModel.query.join(RefundsPartialModel, RefundsPartialModel.invoice_id == Invoice.id)
             .join(RefundModel, RefundModel.id == RefundsPartialModel.refund_id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
@@ -89,8 +88,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def handle_non_complete_credit_card_refunds(cls):
-        """
-        Process non complete credit card refunds.
+        """Process non complete credit card refunds.
 
         1. Find all invoices that use Direct Pay (Credit Card) in REFUND_REQUESTED or REFUNDED
            excluding invoices with refunds that have gl_posted or gl_error.
@@ -109,7 +107,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             InvoiceStatus.REFUND_REQUESTED.value,
             InvoiceStatus.REFUNDED.value,
         ]
-        invoices: List[InvoiceModel] = (
+        invoices: list[InvoiceModel] = (
             InvoiceModel.query.outerjoin(RefundModel, RefundModel.invoice_id == Invoice.id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value)
             .filter(InvoiceModel.invoice_status_code.in_(include_invoice_statuses))
@@ -169,7 +167,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     def _refund_error(cls, status: OrderStatus, invoice: Invoice):
         """Log error for rejected GL status."""
         current_app.logger.error(
-            f"Refund error - Invoice: {invoice.id} - detected RJCT/DECLINED on refund," "contact PAYBC if it's RJCT."
+            f"Refund error - Invoice: {invoice.id} - detected RJCT/DECLINED on refund,contact PAYBC if it's RJCT."
         )
         errors = " ".join(
             [
@@ -200,7 +198,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             cls._set_refund_partials_posted(invoice)
         current_app.logger.info("Refund complete - GL was posted - setting refund.gl_posted to now.")
         refund = RefundModel.find_latest_by_invoice_id(invoice.id)
-        refund.gl_posted = datetime.now(tz=timezone.utc)
+        refund.gl_posted = datetime.now(tz=UTC)
         refund.save()
 
     @staticmethod
@@ -239,7 +237,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Set invoice and payment to REFUNDED."""
         current_app.logger.info("Invoice & Payment set to REFUNDED, add refund_date.")
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-        invoice.refund_date = datetime.now(tz=timezone.utc)
+        invoice.refund_date = datetime.now(tz=UTC)
         invoice.save()
         payment = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
@@ -251,11 +249,11 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Set Refund partials gl_posted."""
         refund_partials = cls._find_refund_partials_by_invoice_id(invoice.id)
         for refund_partial in refund_partials:
-            refund_partial.gl_posted = datetime.now(tz=timezone.utc)
+            refund_partial.gl_posted = datetime.now(tz=UTC)
             refund_partial.save()
 
     @staticmethod
-    def _find_refund_partials_by_invoice_id(invoice_id: int) -> List[RefundsPartialModel]:
+    def _find_refund_partials_by_invoice_id(invoice_id: int) -> list[RefundsPartialModel]:
         """Retrieve Refunds partials by invoice id to be processed."""
         return (
             RefundsPartialModel.query.filter(RefundsPartialModel.invoice_id == invoice_id)

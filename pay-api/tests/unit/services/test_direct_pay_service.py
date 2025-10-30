@@ -297,9 +297,39 @@ def test_create_revenue_string_with_all_fee_types(session, public_user_mock):
     lines = result.split("|")
     assert len(lines) == 4
     assert lines[0] == "1:100.22222.20244.9000.1111111.000000.0000:100.00"
-    assert lines[1] == "2:100.22222.20244.9000.1111111.000000.0000:25.00"
-    assert lines[2] == "3:100.22222.20244.9000.1111111.000000.0000:3.75"
-    assert lines[3] == "4:100.22222.20244.9000.1111111.000000.0000:5.00"
+    assert lines[1] == "2:100.22222.20244.9000.1111111.000000.0000:5.00"
+    assert lines[2] == "3:100.22222.20244.9000.1111111.000000.0000:25.00"
+    assert lines[3] == "4:100.22222.20244.9000.1111111.000000.0000:3.75"
+
+
+def test_create_revenue_string_with_empty_service_fees(session, public_user_mock):
+    """Test _create_revenue_string with empty service fees."""
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account, total=Decimal("100.00"))
+    invoice.save()
+
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
+    distribution_code_svc = DistributionCode()
+    distribution_code_payload = get_distribution_code_payload()
+    distribution_code_payload.update({"serviceFeeDistributionCodeId": distribution_code.distribution_code_id})
+    distribution_code_svc.save_or_update(distribution_code_payload, distribution_code.distribution_code_id)
+
+    line = factory_payment_line_item(
+        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=Decimal("100.00"), service_fees=Decimal("0")
+    )
+    line.save()
+
+    line = factory_payment_line_item(
+        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=Decimal("0.00"), service_fees=Decimal("0")
+    )
+    line.fee_distribution_id = None
+    line.save()
+
+    result = DirectPayService._create_revenue_string(invoice)
+    lines = result.split("|")
+    assert len(lines) == 1
+    assert lines[0] == "1:100.22222.20244.9000.1111111.000000.0000:100.00"
 
 
 def test_get_receipt(session, public_user_mock):

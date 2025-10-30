@@ -39,6 +39,7 @@ class DataWarehouseDB:
     """Data Warehouse connection using IAM authentication."""
 
     def __init__(self, app=None):
+        """Initialize the DataWarehouseDB instance."""
         self.connector = None
         self.engine = None
         if app:
@@ -102,9 +103,9 @@ class DataWarehouseDB:
         with self.engine.connect() as conn:
             # Wrap the SQL string in text() for proper execution
             result = conn.execute(text("SELECT version()")).fetchone()
-            print(f"Connection successful. Database version: {result[0]}")
+            print(f"Connection successful. Database version: {result[0]}")  # noqa: T201
 
-    def teardown(self, exception=None):
+    def teardown(self, exception=None):  # noqa: ARG002 - required by Flask interface
         """Clean up resources."""
         if self.connector:
             self.connector.close()

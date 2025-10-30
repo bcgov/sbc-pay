@@ -52,7 +52,7 @@ class CorpTypeConfig(SecuredView):
         "product",
     ]
 
-    def on_form_prefill(self, form, id):  # pylint:disable=redefined-builtin
+    def on_form_prefill(self, form, id):  # noqa: ARG002
         """Prefill overrides."""
         form.code.render_kw = {"readonly": True}
 

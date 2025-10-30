@@ -13,10 +13,13 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from dateutil.parser import parse
 from flask import current_app
+from sqlalchemy import cast, delete, func, select
+from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
+
 from pay_api.models.base_model import db
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
@@ -31,8 +34,6 @@ from pay_api.utils.util import (
     get_previous_month_and_year,
     get_week_start_and_end_date,
 )
-from sqlalchemy import cast, delete, func, select
-from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 
 class StatementTask:  # pylint:disable=too-few-public-methods
@@ -54,7 +55,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         auth_account_override = arguments[1] if arguments and len(arguments) > 1 else None
 
         target_time = (
-            get_local_time(datetime.now(tz=timezone.utc))
+            get_local_time(datetime.now(tz=UTC))
             if date_override is None
             else datetime.strptime(date_override, "%Y-%m-%d") + timedelta(days=1)
         )
@@ -177,7 +178,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             payment_methods = StatementService.determine_payment_methods(
                 invoice_detail_tuple, pay_account, existing_statement
             )
-            created_on = get_local_time(datetime.now(tz=timezone.utc))
+            created_on = get_local_time(datetime.now(tz=UTC))
             if existing_statement:
                 current_app.logger.debug(f"Reusing existing statement already exists for {cls.statement_from.date()}")
                 existing_statement.notification_status_code = notification_status
@@ -210,7 +211,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.debug(f"Statements for day: {cls.statement_from.date()}")
             else:
                 current_app.logger.debug(
-                    f"Statements for week: {cls.statement_from.date()} to " f"{cls.statement_to.date()}"
+                    f"Statements for week: {cls.statement_from.date()} to {cls.statement_to.date()}"
                 )
         elif search_filter.get("monthFilter", None):
             cls.statement_from, cls.statement_to = get_first_and_last_dates_of_month(
@@ -241,7 +242,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.debug("Inserting statement invoices.")
         statement_invoices = []
-        for statement, auth_account_id in zip(statements, auth_account_ids):
+        for statement, auth_account_id in zip(statements, auth_account_ids):  # noqa: B905
             invoices = [i for i in invoice_detail_tuple if i.auth_account_id == auth_account_id]
             statement_invoices = statement_invoices + [
                 StatementInvoicesModel(statement_id=statement.id, invoice_id=invoice.id) for invoice in invoices

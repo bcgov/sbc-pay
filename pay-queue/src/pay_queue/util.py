@@ -14,6 +14,7 @@
 """Google bucket util functions."""
 
 from flask import current_app
+
 from pay_api.services.google_bucket_service import GoogleBucketService
 
 

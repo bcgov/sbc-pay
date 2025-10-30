@@ -9,7 +9,7 @@ class FakeOidc:
 
     user_loggedin = True
 
-    def user_getfield(self, key):
+    def user_getfield(self, key):  # noqa: ARG002
         """Get user."""
         return "Joe"
 
@@ -25,6 +25,6 @@ class FakeOidc:
         """Get access token."""
         return "any"
 
-    def _get_token_info(self, token):
+    def _get_token_info(self, token):  # noqa: ARG002
         """Get token info."""
         return {"roles": ["admin_view"]}

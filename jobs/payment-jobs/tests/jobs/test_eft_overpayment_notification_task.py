@@ -16,13 +16,14 @@
 
 Test-Suite to ensure that the EFTOverpaymentNotificationTask is working as expected.
 """
+
 from datetime import datetime, timedelta
 from unittest.mock import ANY, call, patch
 
 import pytest
 from freezegun import freeze_time
-from pay_api.utils.enums import EFTShortnameStatus
 
+from pay_api.utils.enums import EFTShortnameStatus
 from tasks.eft_overpayment_notification_task import EFTOverpaymentNotificationTask
 
 from .factory import (

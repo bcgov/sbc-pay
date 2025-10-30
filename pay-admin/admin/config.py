@@ -67,7 +67,7 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-    SECRET_KEY = "my secret"
+    SECRET_KEY = "my secret"  # noqa: S105
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -98,7 +98,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     PREFERRED_URL_SCHEME = "https"
     SESSION_TYPE = "cachelib"
     SESSION_SERIALIZATION_FORMAT = "json"
-    SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir="/tmp/sessions")
+    SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir="/tmp/sessions")  # noqa: S108
     CACHE_TYPE = "simple"
 
     TESTING = False
@@ -134,7 +134,7 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
     if not SECRET_KEY:
         SECRET_KEY = os.urandom(24)
-        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)
+        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)  # noqa: T201
 
     TESTING = False
     DEBUG = False
