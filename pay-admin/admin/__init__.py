@@ -41,11 +41,12 @@ def create_app(run_mode=None):
         run_mode = os.getenv("DEPLOYMENT_ENV", "production")
 
     app = Flask(__name__)
-    app.wsgi_app = ProxyFix(app.wsgi_app,
-        x_for=2,      # 2 IPs in X-Forwarded-For
-        x_proto=1,    # X-Forwarded-Proto is present
-        x_host=1,     # X-Forwarded-Host is present
-        x_port=0,     # No X-Forwarded-Port
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_for=3,
+        x_proto=3, 
+        x_host=3,
+        x_port=0,
         x_prefix=1
     )
     app.config.from_object(config.CONFIGURATION[run_mode])
