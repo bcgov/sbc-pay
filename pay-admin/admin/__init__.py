@@ -45,6 +45,14 @@ def create_app(run_mode=None):
 
     app.config.from_object(config.CONFIGURATION[run_mode])
 
+    app.config.update(
+        SECRET_KEY=os.environ.get("SECRET_KEY", "test-secret-value"),
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_SAMESITE="None",
+        SESSION_COOKIE_HTTPONLY=True,
+        PREFERRED_URL_SCHEME="https"
+    )
+
     app.logger.info("init db.")
     db.init_app(app)
     ma.init_app(app)
