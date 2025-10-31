@@ -18,7 +18,7 @@ This module is the API for the Legal Entity system.
 
 import os
 
-from flask import Flask, redirect
+from flask import Flask, redirect, request
 from flask_admin import Admin
 from flask_caching import Cache
 from flask_session import Session
@@ -63,6 +63,23 @@ def create_app(run_mode=None):
     @app.route("/")
     def index():
         return redirect("/admin/feecode/")
+
+    @app.route('/debug/headers')
+    def debug_headers():
+        """See what headers Firebase is sending."""
+        headers_info = {
+            'host': request.headers.get('Host'),
+            'x-forwarded-for': request.headers.get('X-Forwarded-For'),
+            'x-forwarded-proto': request.headers.get('X-Forwarded-Proto'), 
+            'x-forwarded-host': request.headers.get('X-Forwarded-Host'),
+            'x-forwarded-port': request.headers.get('X-Forwarded-Port'),
+            'x-original-host': request.headers.get('X-Original-Host'),
+            'forwarded': request.headers.get('Forwarded'),
+            'all_headers': dict(request.headers)
+        }
+        print("DEBUG HEADERS:", headers_info)
+        return headers_info
+
 
     app.logger.info("create_app is complete.")
     return app
