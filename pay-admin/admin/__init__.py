@@ -18,7 +18,7 @@ This module is the API for the Legal Entity system.
 
 import os
 
-from flask import Flask, redirect, request
+from flask import Flask, redirect, request, jsonify
 from flask_admin import Admin
 from flask_caching import Cache
 from flask_session import Session
@@ -41,14 +41,8 @@ def create_app(run_mode=None):
         run_mode = os.getenv("DEPLOYMENT_ENV", "production")
 
     app = Flask(__name__)
-    app.wsgi_app = ProxyFix(
-        app.wsgi_app,
-        x_for=3,
-        x_proto=3, 
-        x_host=3,
-        x_port=0,
-        x_prefix=1
-    )
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1)
+
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     app.logger.info("init db.")
@@ -87,6 +81,22 @@ def create_app(run_mode=None):
         print("DEBUG HEADERS:", headers_info)
         return headers_info
 
+
+    @app.route("/_proxy_debug")
+    def proxy_debug():
+        env = request.environ
+        return jsonify({
+            "request.scheme": request.scheme,
+            "request.host": request.host,
+            "request.url_root": request.url_root,
+            "remote_addr": request.remote_addr,
+            "http_x_forwarded_for": env.get("HTTP_X_FORWARDED_FOR"),
+            "http_x_forwarded_host": env.get("HTTP_X_FORWARDED_HOST"),
+            "http_x_forwarded_proto": env.get("HTTP_X_FORWARDED_PROTO"),
+            "http_forwarded": env.get("HTTP_FORWARDED"),
+            "server_name": env.get("SERVER_NAME"),
+            "wsgi_url_scheme": env.get("wsgi.url_scheme")
+        })
 
     app.logger.info("create_app is complete.")
     return app
