@@ -46,11 +46,10 @@ def create_app(run_mode=None):
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     app.config.update(
-        SECRET_KEY=os.environ.get("SECRET_KEY", "test-secret-value"),
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_SAMESITE="None",
         SESSION_COOKIE_HTTPONLY=True,
-        PREFERRED_URL_SCHEME="https"
+        SESSION_COOKIE_DOMAIN=".bcregistry.gov.bc.ca"
     )
 
     app.logger.info("init db.")
@@ -105,6 +104,10 @@ def create_app(run_mode=None):
             "server_name": env.get("SERVER_NAME"),
             "wsgi_url_scheme": env.get("wsgi.url_scheme")
         })
+
+    @app.before_request
+    def log_request_host():
+        app.logger.warning("REQ HOST %s URL %s", request.host, request.url)
 
     app.logger.info("create_app is complete.")
     return app
