@@ -109,6 +109,12 @@ def create_app(run_mode=None):
     def log_request_host():
         app.logger.warning("REQ HOST %s URL %s", request.host, request.url)
 
+    @app.before_request
+    def block_runapp_direct():
+        if request.host.endswith(".a.run.app"):
+            # always redirect to firebase custom domain
+            return redirect(f"https://dev.admin.pay.bcregistry.gov.bc.ca{request.full_path}", code=301)
+
     app.logger.info("create_app is complete.")
     return app
 
