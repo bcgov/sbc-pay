@@ -41,7 +41,7 @@ def create_app(run_mode=None):
         run_mode = os.getenv("DEPLOYMENT_ENV", "production")
 
     app = Flask(__name__)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=2)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
 
@@ -49,7 +49,7 @@ def create_app(run_mode=None):
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_SAMESITE="None",
         SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_DOMAIN=".bcregistry.gov.bc.ca"
+        PREFERRED_URL_SCHEME="https"
     )
 
     app.logger.info("init db.")
