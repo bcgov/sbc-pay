@@ -2101,7 +2101,7 @@ marshmallow = "3.21.1"
 marshmallow-sqlalchemy = "1.0.0"
 opentracing = "2.4.0"
 packaging = "24.0"
-pg8000 = "^1.30.5"
+pg8000 = "^1.31.5"
 proto-plus = "1.23.0"
 protobuf = "4.25.8"
 psycopg2-binary = "2.9.9"
@@ -2134,8 +2134,8 @@ werkzeug = "^3.0.3"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "main"
-resolved_reference = "7b00d51abe4ec95609bf1b9ff211f19e06fa0a90"
+reference = "update_deps_2"
+resolved_reference = "d8bb4b6384ff2847fe458f99d863e0d642d917cf"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3303,4 +3303,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "b2f1f1c58fd8980813a95cc250793f86d386a3b452d6fd9f44a3d5c91dad7cb5"
+content-hash = "edc106312059e42be7d77d633ab69e67816699e9b5f9161c0f84b153ba221603"
