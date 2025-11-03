@@ -191,7 +191,7 @@ if __name__ == "__main__":
     temp_dir = create_temporary_directory()
     process_partner_notebooks(temp_dir)
     # Monday is 1 and Sunday is 7 - Run Pay report weekly.
-    if date.today().isoweekday() in Config.WEEKLY_REPORT_DATES:
-        execute_notebook(ReportFiles.WEEKLY_PAY.value, temp_dir)
+    # if date.today().isoweekday() in Config.WEEKLY_REPORT_DATES:
+        #execute_notebook(ReportFiles.WEEKLY_PAY.value, temp_dir)
     logging.info("Jupyter notebook report completed in: %s", datetime.now(tz=timezone.utc) - start_time)
     sys.exit()
