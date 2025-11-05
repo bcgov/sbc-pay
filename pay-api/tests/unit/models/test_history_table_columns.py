@@ -50,6 +50,8 @@ def get_all_model_classes(base_class):
 def versioned_models():
     """Discover versioned models and their corresponding history tables."""
     all_models = get_all_model_classes(db.Model)
+    # This is intended for a unit test only not for prod code.
+    skip_tables = {"test_versioned"}
     versioned_models = []
     for model_class in all_models:
         if (
@@ -58,6 +60,8 @@ def versioned_models():
             and Versioned in model_class.__mro__
         ):
             base_table = model_class.__tablename__
+            if base_table in skip_tables:
+                continue
             history_table = f"{base_table}_history"
             versioned_models.append((base_table, history_table))
     print("Discovered versioned models (by class scan):", versioned_models)

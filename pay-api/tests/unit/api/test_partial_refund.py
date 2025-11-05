@@ -654,8 +654,8 @@ def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
 
         pay_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         assert pay_account.eft_credit == refund_amount
-        assert pay_account.ob_credit is None
-        assert pay_account.pad_credit is None
+        assert pay_account.ob_credit == 0
+        assert pay_account.pad_credit == 0
 
 
 def set_payment_method_partial_refund(payment_method_code: str, enabled: bool):

@@ -83,9 +83,9 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
     # when this is enabled , send out the  notifications
     statement_notification_enabled = db.Column("statement_notification_enabled", Boolean(), default=False)
 
-    eft_credit = db.Column(db.Numeric(19, 2), nullable=True)
-    ob_credit = db.Column(db.Numeric(19, 2), nullable=True)
-    pad_credit = db.Column(db.Numeric(19, 2), nullable=True)
+    eft_credit = db.Column(db.Numeric(19, 2), nullable=True, default=0)
+    ob_credit = db.Column(db.Numeric(19, 2), nullable=True, default=0)
+    pad_credit = db.Column(db.Numeric(19, 2), nullable=True, default=0)
     billable = db.Column(Boolean(), default=True)
     eft_enable = db.Column(Boolean(), nullable=False, default=False)
 

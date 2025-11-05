@@ -19,6 +19,7 @@ from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
@@ -131,8 +132,10 @@ class PadService(PaymentSystemService, CFSService):
             current_app.logger.info(
                 f"Account PAD credit {pad_account_credit}, found for {payment_account.auth_account_id}"
             )
-        payment_account.pad_credit = 0 if pad_account_credit < invoice.total else pad_account_credit - invoice.total
-        payment_account.flush()
+            payment_account = PaymentAccountModel.find_by_id_for_update(payment_account.id)
+            pad_account_credit = payment_account.pad_credit or 0
+            payment_account.pad_credit = 0 if pad_account_credit < invoice.total else pad_account_credit - invoice.total
+            payment_account.flush()
 
     @user_context
     @skip_complete_post_invoice_for_sandbox

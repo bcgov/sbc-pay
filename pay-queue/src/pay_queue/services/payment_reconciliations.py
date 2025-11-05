@@ -393,7 +393,7 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
 
         inv_references = _find_invoice_reference_by_number_and_status(inv_number, InvoiceReferenceStatus.ACTIVE.value)
 
-        payment_account: PaymentAccountModel = _get_payment_account(row)
+        payment_account = _get_payment_account(row)
 
         if target_txn_status.lower() == Status.PAID.value.lower():
             current_app.logger.debug("Fully PAID payment.")
@@ -694,7 +694,8 @@ def _process_failed_payments(row):
     # 6. Create invoice reference for the newly created NSF invoice.
     # 7. Adjust invoice in CFS to include NSF fees.
     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
-    payment_account: PaymentAccountModel = _get_payment_account(row)
+    payment_account = _get_payment_account(row)
+    payment_account = PaymentAccountModel.find_by_auth_account_id(payment_account.auth_account_id)
 
     # If there is a FAILED payment record for this; it means it's a duplicate event. Ignore it.
     payment = PaymentModel.find_payment_by_invoice_number_and_status(inv_number, PaymentStatus.FAILED.value)
@@ -929,7 +930,7 @@ def _rollup_credits(account_ids):
                         f" for credit {account_credit.cfs_identifier}",
                     )
 
-        pay_account = PaymentAccountModel.find_by_id(account_id)
+        pay_account = PaymentAccountModel.find_by_id_for_update(account_id)
         pay_account.eft_credit = eft_credit_total
         pay_account.ob_credit = ob_credit_total
         pay_account.pad_credit = pad_credit_total
