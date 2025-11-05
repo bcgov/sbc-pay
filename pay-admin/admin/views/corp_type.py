@@ -21,7 +21,7 @@ from .secured_view import SecuredView
 class CorpTypeConfig(SecuredView):
     """Corp Type config."""
 
-    column_list = ["code", "description"]
+    column_list = ["code", "description", "refund_approval"]
 
     column_labels = {
         "code": "Code",
@@ -33,6 +33,7 @@ class CorpTypeConfig(SecuredView):
         "bcol_staff_fee_code": "BCOL Fee Code used for Staff transactions. (starts with 'C')",
         "is_online_banking_allowed": "Is Online Banking allowed",
         "product": "Product to map in account products",
+        "refund_approval": "Refund Approval required"
     }
     column_searchable_list = ("code",)
     column_sortable_list = ("code",)
@@ -50,6 +51,7 @@ class CorpTypeConfig(SecuredView):
         "bcol_staff_fee_code",
         "is_online_banking_allowed",
         "product",
+        "refund_approval"
     ]
 
     def on_form_prefill(self, form, id):  # noqa: ARG002
