@@ -276,6 +276,8 @@ def post_search_purchase_history(account_number: str):
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
+    # view all could be users with no org, so this is set explicitly with custom check based on products for auth
+    # as the usual check_auth depends on an associated org
     any_org_transactions = request.args.get("viewAll", None) == "true"
     if any_org_transactions:
         account_number = None

@@ -98,7 +98,7 @@ class Refund(BaseModel):
         return (
             cls.query.filter(cls.invoice_id == invoice_id, cls.status.in_(statuses))
             .order_by(cls.requested_date.desc())
-            .one_or_none()
+            .first()
         )
 
     @classmethod

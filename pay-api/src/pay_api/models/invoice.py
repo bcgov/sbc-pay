@@ -387,6 +387,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             disbursement_date=row.disbursement_date,
             disbursement_reversal_date=row.disbursement_reversal_date,
             invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None,
+            # refund fields that are optional, this might not be returned if not using the invoice composite model
             latest_refund_id=getattr(row, "latest_refund_id", None),
             latest_refund_status=getattr(row, "latest_refund_status", None),
             partial_refundable=getattr(row, "partial_refundable", None),
