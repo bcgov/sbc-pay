@@ -1,8 +1,8 @@
 """30357 Refund Approval flow updates
 
 Revision ID: 725543789c2a
-Revises: b313916b778a
-Create Date: 2025-10-03 06:11:33.519859
+Revises: 51d45022f722
+Create Date: 2025-11-05 09:15:33.519859
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from pay_api.utils.enums import RefundStatus, RefundType
 
 revision = '725543789c2a'
-down_revision = 'c1e2b8b9384f'
+down_revision = '51d45022f722'
 branch_labels = None
 depends_on = None
 
