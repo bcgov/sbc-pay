@@ -89,7 +89,7 @@ def test_successful_completed_refund(session, monkeypatch, mocker):
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
     with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
-        refund = RefundModel.find_by_invoice_id(invoice.id)
+        refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
         assert invoice.refund_date is not None
         assert payment.payment_status_code == PaymentStatus.REFUNDED.value
@@ -143,7 +143,7 @@ def test_complete_refund_partial(session, monkeypatch):
     invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
     payment = factory_payment("PAYBC", invoice_number=invoice.id, payment_status_code=PaymentStatus.COMPLETED.value)
-    factory_refund_invoice(invoice.id)
+    refund = factory_refund_invoice(invoice.id)
 
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
@@ -151,6 +151,7 @@ def test_complete_refund_partial(session, monkeypatch):
 
     factory_refund_partial(
         invoice_id=invoice.id,
+        refund_id=refund.id,
         payment_line_item_id=line.id,
         refund_amount=line.filing_fees - 1,
         created_by="test",
@@ -167,7 +168,7 @@ def test_complete_refund_partial(session, monkeypatch):
 
     with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
-        refund = RefundModel.find_by_invoice_id(invoice.id)
+        refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert invoice.refund_date is not None
         assert payment.payment_status_code == PaymentStatus.COMPLETED.value
@@ -192,7 +193,7 @@ def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_mess
     invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
     payment = factory_payment("PAYBC", invoice_number=invoice.id, payment_status_code=PaymentStatus.COMPLETED.value)
-    factory_refund_invoice(invoice.id)
+    refund = factory_refund_invoice(invoice.id)
 
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
@@ -200,6 +201,7 @@ def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_mess
 
     factory_refund_partial(
         invoice_id=invoice.id,
+        refund_id=refund.id,
         payment_line_item_id=line.id,
         refund_amount=line.filing_fees - 1,
         created_by="test",
@@ -218,7 +220,7 @@ def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_mess
 
     with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
-        refund = RefundModel.find_by_invoice_id(invoice.id)
+        refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert invoice.refund_date is not None
         assert payment.payment_status_code == PaymentStatus.COMPLETED.value

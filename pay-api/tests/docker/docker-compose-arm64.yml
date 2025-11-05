@@ -67,3 +67,10 @@ services:
     command: >
       mock -p 4010 --host 0.0.0.0
       https://raw.githubusercontent.com/bcgov/sbc-auth/main/docs/docs/api_contract/notify-api-1.0.0.yaml
+  gcs-emulator:
+    image: fsouza/fake-gcs-server:1.52.2
+    ports:
+      - "4443:4443"
+    command: ["-scheme", "http", "-host", "0.0.0.0", "-port", "4443"]
+    volumes:
+      - ./gcs-data:/data

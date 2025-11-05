@@ -28,6 +28,7 @@ from sqlalchemy.orm import relationship
 
 from pay_api.models.applied_credits import AppliedCreditsSearchModel
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 from .audit import Audit, AuditSchema
@@ -338,6 +339,10 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     disbursement_reversal_date: datetime
     partial_refunds: list[RefundPartialSearch] | None
     applied_credits: list[AppliedCreditsSearchModel] | None
+    partial_refundable: bool | None
+    full_refundable: bool | None
+    latest_refund_id: int | None
+    latest_refund_status: str | None
 
     @classmethod
     def from_row(
@@ -382,6 +387,11 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             disbursement_date=row.disbursement_date,
             disbursement_reversal_date=row.disbursement_reversal_date,
             invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None,
+            # refund fields that are optional, this might not be returned if not using the invoice composite model
+            latest_refund_id=getattr(row, "latest_refund_id", None),
+            latest_refund_status=getattr(row, "latest_refund_status", None),
+            partial_refundable=getattr(row, "partial_refundable", None),
+            full_refundable=getattr(row, "full_refundable", None),
             # Remove these for CSO, as we don't pull back this information for CSO route.
             partial_refunds=(
                 [RefundPartialSearch.from_row(x) for x in row.partial_refunds] if row.partial_refunds else None
@@ -390,3 +400,9 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
                 [AppliedCreditsSearchModel.from_row(x) for x in row.applied_credits] if row.applied_credits else None
             ),
         )
+
+    @classmethod
+    def dao_to_dict(cls, invoice_dao: Invoice) -> dict:
+        """Convert from DAO to Schema dict."""
+        invoice_dict = Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao))
+        return invoice_dict

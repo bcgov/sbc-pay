@@ -79,7 +79,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch):
     )
     assert rv.status_code == 202
     assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["DIRECT_PAY.PAID"]
-    assert RefundModel.find_by_invoice_id(inv_id) is not None
+    assert RefundModel.find_latest_by_invoice_id(inv_id) is not None
 
 
 def test_create_drawdown_refund(session, client, jwt, app):
@@ -465,7 +465,7 @@ def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     )
     assert rv.status_code == 400
     assert rv.json.get("type") == Error.FULL_REFUND_INVOICE_INVALID_STATE.name
-    assert RefundModel.find_by_invoice_id(inv_id) is None
+    assert RefundModel.find_latest_by_invoice_id(inv_id) is None
 
 
 def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):

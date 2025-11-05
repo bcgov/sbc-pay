@@ -51,6 +51,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
+    _get_base_paybc_response,
     factory_eft_credit,
     factory_eft_credit_invoice_link,
     factory_eft_file,
@@ -139,10 +140,12 @@ def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
         )
         assert rv.status_code == 202
         assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["DIRECT_PAY.PAID"]
-        assert RefundModel.find_by_invoice_id(inv_id) is not None
+
+        refund = RefundModel.find_latest_by_invoice_id(inv_id)
+        assert refund is not None
         mock_publish.assert_called()
 
-        refunds_partial = RefundService.get_refund_partials_by_invoice_id(inv_id)
+        refunds_partial = RefundService.get_refund_partials_by_refund_id(refund.id)
         assert refunds_partial
         assert len(refunds_partial) == 1
 
@@ -232,9 +235,10 @@ def test_create_pad_partial_refund(session, client, jwt, app, account_admin_mock
         assert rv.status_code == 202
         assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["PAD.PAID"]
 
-        assert RefundModel.find_by_invoice_id(inv_id) is not None
+        refund = RefundModel.find_latest_by_invoice_id(inv_id)
+        assert refund is not None
 
-        refunds_partial = RefundService.get_refund_partials_by_invoice_id(inv_id)
+        refunds_partial = RefundService.get_refund_partials_by_refund_id(refund.id)
         assert refunds_partial
         assert len(refunds_partial) == 1
 
@@ -323,7 +327,7 @@ def test_create_partial_refund_fails(session, client, jwt, app, monkeypatch):
     )
     assert rv.status_code == 400
     assert rv.json.get("type") == Error.PARTIAL_REFUND_INVOICE_NOT_PAID.name
-    assert RefundModel.find_by_invoice_id(inv_id) is None
+    assert RefundModel.find_latest_by_invoice_id(inv_id) is None
 
     refunds_partial = RefundService.get_refund_partials_by_invoice_id(inv_id)
     assert not refunds_partial
@@ -409,60 +413,7 @@ def test_create_refund_validation(session, client, jwt, app, monkeypatch, fee_ty
 
         assert rv.status_code == 400
         assert rv.json.get("type") == error_name
-        assert RefundModel.find_by_invoice_id(inv_id) is None
-
-
-def _get_base_paybc_response():
-    return {
-        "pbcrefnumber": "10007",
-        "trnnumber": "1",
-        "trndate": "2023-03-06",
-        "description": "Direct_Sale",
-        "trnamount": "31.5",
-        "paymentmethod": "CC",
-        "currency": "CAD",
-        "gldate": "2023-03-06",
-        "paymentstatus": "CMPLT",
-        "trnorderid": "23525252",
-        "paymentauthcode": "TEST",
-        "cardtype": "VI",
-        "revenue": [
-            {
-                "linenumber": "1",
-                "revenueaccount": "None.None.None.None.None.000000.0000",
-                "revenueamount": "30",
-                "glstatus": "CMPLT",
-                "glerrormessage": None,
-                "refund_data": [
-                    {
-                        "txn_refund_distribution_id": 103570,
-                        "revenue_amount": 30,
-                        "refund_date": "2023-04-15T20:13:36Z",
-                        "refundglstatus": "CMPLT",
-                        "refundglerrormessage": None,
-                    }
-                ],
-            },
-            {
-                "linenumber": "2",
-                "revenueaccount": "None.None.None.None.None.000000.0001",
-                "revenueamount": "1.5",
-                "glstatus": "CMPLT",
-                "glerrormessage": None,
-                "refund_data": [
-                    {
-                        "txn_refund_distribution_id": 103182,
-                        "revenue_amount": 1.5,
-                        "refund_date": "2023-04-15T20:13:36Z",
-                        "refundglstatus": "CMPLT",
-                        "refundglerrormessage": None,
-                    }
-                ],
-            },
-        ],
-        "postedrefundamount": None,
-        "refundedamount": None,
-    }
+        assert RefundModel.find_latest_by_invoice_id(inv_id) is None
 
 
 def test_invalid_payment_method_partial_refund(session, client, jwt, app, monkeypatch):
@@ -502,7 +453,7 @@ def test_invalid_payment_method_partial_refund(session, client, jwt, app, monkey
 
     assert rv.status_code == 400
     assert rv.json.get("type") == Error.PARTIAL_REFUND_PAYMENT_METHOD_UNSUPPORTED.name
-    assert RefundModel.find_by_invoice_id(inv_id) is None
+    assert RefundModel.find_latest_by_invoice_id(inv_id) is None
     assert not RefundPartialModel.get_partial_refunds_for_invoice(inv_id)
 
 
@@ -659,51 +610,52 @@ def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
 
         assert rv.status_code == 202
         assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES["EFT.PAID"]
-        assert RefundModel.find_by_invoice_id(inv_id) is not None
+        refund = RefundModel.find_latest_by_invoice_id(inv_id)
+        assert refund is not None
 
-    refunds_partial = RefundService.get_refund_partials_by_invoice_id(inv_id)
-    assert refunds_partial
-    assert len(refunds_partial) == 1
+        refunds_partial = RefundService.get_refund_partials_by_refund_id(refund.id)
+        assert refunds_partial
+        assert len(refunds_partial) == 1
 
-    refund = refunds_partial[0]
-    assert refund.id is not None
-    assert refund.payment_line_item_id == payment_line_items[0].id
-    assert refund.refund_amount == refund_amount
-    assert refund.refund_type == RefundsPartialType.BASE_FEES.value
-    assert refund.is_credit is True
+        refund = refunds_partial[0]
+        assert refund.id is not None
+        assert refund.payment_line_item_id == payment_line_items[0].id
+        assert refund.refund_amount == refund_amount
+        assert refund.refund_type == RefundsPartialType.BASE_FEES.value
+        assert refund.is_credit is True
 
-    inv = InvoiceModel.find_by_id(inv_id)
-    assert inv.invoice_status_code == InvoiceStatus.PAID.value
-    assert inv.refund_date.date() == datetime.now(tz=UTC).date()
-    assert inv.refund == refund_amount
+        inv = InvoiceModel.find_by_id(inv_id)
+        assert inv.invoice_status_code == InvoiceStatus.PAID.value
+        assert inv.refund_date.date() == datetime.now(tz=UTC).date()
+        assert inv.refund == refund_amount
 
-    credit = CreditModel.query.filter_by(account_id=inv.payment_account_id).first()
-    assert credit is not None
-    assert credit.amount == Decimal(str(refund_amount))
-    assert credit.remaining_amount == Decimal(str(refund_amount))
-    assert credit.is_credit_memo is True
+        credit = CreditModel.query.filter_by(account_id=inv.payment_account_id).first()
+        assert credit is not None
+        assert credit.amount == Decimal(str(refund_amount))
+        assert credit.remaining_amount == Decimal(str(refund_amount))
+        assert credit.is_credit_memo is True
 
-    eft_credits = EFTCredit.get_eft_credits(short_name.id)
-    assert eft_credits
-    assert len(eft_credits) == 1
-    assert eft_credits[0].amount == invoice.total
-    assert eft_credits[0].remaining_amount == Decimal(str(refund_amount))
+        eft_credits = EFTCredit.get_eft_credits(short_name.id)
+        assert eft_credits
+        assert len(eft_credits) == 1
+        assert eft_credits[0].amount == invoice.total
+        assert eft_credits[0].remaining_amount == Decimal(str(refund_amount))
 
-    partial_refund = refunds_partial[0]
-    disbursements = PartnerDisbursementsModel.query.filter_by(
-        target_id=partial_refund.id, target_type=EJVLinkType.PARTIAL_REFUND.value
-    ).all()
+        partial_refund = refunds_partial[0]
+        disbursements = PartnerDisbursementsModel.query.filter_by(
+            target_id=partial_refund.id, target_type=EJVLinkType.PARTIAL_REFUND.value
+        ).all()
 
-    assert len(disbursements) == 1
-    assert disbursements[0].amount == partial_refund.refund_amount
-    assert disbursements[0].is_reversal is True
-    assert disbursements[0].partner_code == inv.corp_type_code
-    assert disbursements[0].status_code == DisbursementStatus.WAITING_FOR_JOB.value
+        assert len(disbursements) == 1
+        assert disbursements[0].amount == partial_refund.refund_amount
+        assert disbursements[0].is_reversal is True
+        assert disbursements[0].partner_code == inv.corp_type_code
+        assert disbursements[0].status_code == DisbursementStatus.WAITING_FOR_JOB.value
 
-    pay_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
-    assert pay_account.eft_credit == refund_amount
-    assert pay_account.ob_credit == 0
-    assert pay_account.pad_credit == 0
+        pay_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+        assert pay_account.eft_credit == refund_amount
+        assert pay_account.ob_credit == 0
+        assert pay_account.pad_credit == 0
 
 
 def set_payment_method_partial_refund(payment_method_code: str, enabled: bool):

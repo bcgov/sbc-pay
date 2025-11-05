@@ -144,6 +144,21 @@ def patch_invoice(invoice_id: int = None):
     return jsonify(response), status
 
 
+@bp.route("/<int:invoice_id>/composite", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", methods=["GET", "DELETE", "PATCH"])
+@_jwt.requires_auth
+def get_invoice_composite(invoice_id):
+    """Get the invoice records."""
+    try:
+        response, status = (
+            InvoiceService.find_composite_by_id(invoice_id),
+            HTTPStatus.OK,
+        )
+    except BusinessException as exception:
+        return exception.response()
+    return jsonify(response), status
+
+
 @bp.route("/<int:invoice_id>/reports", methods=["POST", "OPTIONS"])
 @cross_origin(origins="*", methods=["POST"])
 @_jwt.requires_auth

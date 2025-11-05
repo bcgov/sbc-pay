@@ -21,9 +21,9 @@ from sqlalchemy import cast, delete, func, select
 from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
 
 from pay_api.models.base_model import db
-from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
+from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
 from pay_api.utils.enums import NotificationStatus, StatementFrequency
@@ -230,7 +230,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # must match the account payment method. Used for EFT so the statements only show EFT invoices and interim
         # statement logic when transitioning payment methods
         search_filter["matchPaymentMethods"] = True
-        invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(search_filter)
+        invoice_detail_tuple = InvoiceService.get_invoices_and_payment_accounts_for_statements(search_filter)
         reuse_statements = []
         if cls.has_date_override and statement_settings:
             reuse_statements = cls._clean_up_old_statements(statement_settings)
