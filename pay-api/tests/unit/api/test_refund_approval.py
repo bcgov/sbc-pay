@@ -19,13 +19,22 @@ Test-Suite to ensure that the refund approval flow is working as expected.
 
 import json
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import RefundsPartial as RefundsPartialModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, RefundStatus, RefundType, Role
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.utils.enums import (
+    CfsAccountStatus,
+    InvoiceStatus,
+    PaymentMethod,
+    RefundsPartialType,
+    RefundStatus,
+    RefundType,
+    Role,
+)
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_corp_type_model,
@@ -105,7 +114,7 @@ def setup_paid_invoice_data(app, jwt, client, cfs_account, payment_method):
     inv_payment_method = rv.json.get("paymentMethod")
     assert inv_payment_method == payment_method
 
-    if payment_method in [PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value]:
+    if payment_method == PaymentMethod.DIRECT_PAY.value:
         data = {
             "clientSystemUrl": "http://localhost:8080/transactions/transaction_id=abcd",
             "payReturnUrl": "http://localhost:8080/pay-web",
@@ -135,11 +144,15 @@ def setup_paid_invoice_data(app, jwt, client, cfs_account, payment_method):
     return InvoiceModel.find_by_id(inv_id)
 
 
-def request_refund(client, invoice, requester_headers):
+def request_refund(client, invoice, requester_headers, refund_revenue: list[dict] = None):
     """Create refund request."""
+    payload = {"reason": "Test", "notificationEmail": "test@test.com", "staffComment": "staff comment"}
+    if refund_revenue:
+        payload["refundRevenue"] = refund_revenue
+
     rv = client.post(
         f"/api/v1/payment-requests/{invoice.id}/refunds",
-        data=json.dumps({"reason": "Test", "notificationEmail": "test@test.com", "staffComment": "staff comment"}),
+        data=json.dumps(payload),
         headers=requester_headers,
     )
     return rv
@@ -147,15 +160,11 @@ def request_refund(client, invoice, requester_headers):
 
 def get_refund_token_headers(app, jwt, token_config: dict):
     """Return refund request token headers by refund flow user type."""
-    requester_name = token_config["requester_name"]
-    requester_roles = token_config["requester_roles"]
-    approver_name = token_config["approver_name"]
-    approver_roles = token_config["approver_roles"]
     token = jwt.create_jwt(
         get_claims(
             app_request=app,
-            username=requester_name,
-            roles=requester_roles,
+            username=token_config["requester_name"],
+            roles=token_config["requester_roles"],
         ),
         token_header,
     )
@@ -164,8 +173,8 @@ def get_refund_token_headers(app, jwt, token_config: dict):
     token = jwt.create_jwt(
         get_claims(
             app_request=app,
-            username=approver_name,
-            roles=approver_roles,
+            username=token_config["approver_name"],
+            roles=token_config["approver_roles"],
         ),
         token_header,
     )
@@ -177,7 +186,6 @@ def get_refund_token_headers(app, jwt, token_config: dict):
 @pytest.mark.parametrize(
     "payment_method",
     [
-        # (PaymentMethod.CC.value), # TODO Mock fix
         (PaymentMethod.DIRECT_PAY.value),
         (PaymentMethod.DRAWDOWN.value),
         (PaymentMethod.EFT.value),
@@ -271,14 +279,16 @@ def test_full_refund_approval_flow(
     assert len(result["partialRefundLines"]) == 0
     assert result["declineReason"] is None
 
-    refund_partials = RefundsPartialModel.get_partial_refunds_by_refund_id(refund_id)
-    assert not refund_partials
+    rv = client.get(f"/api/v1/payment-requests/{invoice.id}/composite", headers=requester_headers)
+    assert rv.status_code == 200
+    assert rv.json
+    assert rv.json["id"] == invoice.id
+    assert rv.json["partialRefunds"] is None
 
 
 @pytest.mark.parametrize(
     "payment_method",
     [
-        # (PaymentMethod.CC.value),
         (PaymentMethod.DIRECT_PAY.value),
         (PaymentMethod.DRAWDOWN.value),
         (PaymentMethod.EFT.value),
@@ -376,13 +386,195 @@ def test_full_refund_decline_flow(session, client, jwt, app, monkeypatch, paymen
     assert len(result["partialRefundLines"]) == 0
     assert result["declineReason"] == decline_payload["declineReason"]
 
-    refund_partials = RefundsPartialModel.get_partial_refunds_by_refund_id(refund_id)
-    assert not refund_partials
+    rv = client.get(f"/api/v1/payment-requests/{invoice.id}/composite", headers=requester_headers)
+    assert rv.status_code == 200
+    assert rv.json
+    assert rv.json["id"] == invoice.id
+    assert rv.json["partialRefunds"] is None
 
     # Confirm we can create a new refund request after a previous decline
     rv = request_refund(client, invoice, requester_headers)
     assert rv.status_code == 202
     assert rv.json.get("message") == expected_message
+
+
+@pytest.mark.parametrize(
+    "payment_method",
+    [
+        (PaymentMethod.DIRECT_PAY.value),
+    ],
+)
+def test_partial_refund_approval_flow(
+    session, client, jwt, app, monkeypatch, account_admin_mock, send_email_mock, payment_method
+):
+    """Assert partial refund approval flow works correctly."""
+    cfs_account = setup_filing_and_account_data("TEST_PRODUCT", payment_method)
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, payment_method)
+    token_config = {
+        "requester_name": "TEST_REQUESTER",
+        "requester_roles": [
+            Role.PRODUCT_REFUND_REQUESTER.value,
+            Role.PRODUCT_REFUND_VIEWER.value,
+            Role.VIEW_ALL_TRANSACTIONS.value,
+        ],
+        "approver_name": "TEST_APPROVER",
+        "approver_roles": [
+            Role.PRODUCT_REFUND_APPROVER.value,
+            Role.PRODUCT_REFUND_VIEWER.value,
+            Role.VIEW_ALL_TRANSACTIONS.value,
+        ],
+    }
+    requester_headers, approver_headers = get_refund_token_headers(app, jwt, token_config)
+    payment_line_items: list[PaymentLineItemModel] = invoice.payment_line_items
+    refund_amount = float(payment_line_items[0].filing_fees / 2)
+
+    refund_revenue = [
+        {
+            "paymentLineItemId": payment_line_items[0].id,
+            "refundAmount": refund_amount,
+            "refundType": RefundsPartialType.BASE_FEES.value,
+        }
+    ]
+
+    rv = request_refund(client, invoice, requester_headers, refund_revenue)
+    assert rv.status_code == 202
+    expected_message = (
+        f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} " f"is pending refund approval."
+    )
+    assert rv.json.get("message") == expected_message
+
+    refund_id = rv.json["refundId"]
+    rv = client.get(f"/api/v1/refunds/{refund_id}", headers=requester_headers)
+    assert rv.status_code == 200
+    assert rv.json
+    refund_result = rv.json
+
+    assert refund_result["refundStatus"] == RefundStatus.PENDING_APPROVAL.value
+    assert refund_result["refundReason"] == "Test"
+    assert refund_result["staffComment"] == "staff comment"
+    assert refund_result["notificationEmail"] == "test@test.com"
+    assert refund_result["refundType"] == RefundType.INVOICE.value
+    assert refund_result["requestedBy"] == token_config["requester_name"]
+    assert refund_result["requestedDate"] is not None
+    assert refund_result["decisionBy"] is None
+    assert refund_result["decisionDate"] is None
+    assert refund_result["declineReason"] is None
+    assert refund_result["refundAmount"] == refund_amount
+
+    rv = client.get(f"/api/v1/refunds?refundStatus={RefundStatus.PENDING_APPROVAL.value}", headers=requester_headers)
+    assert rv.status_code == 200
+    assert rv.json
+    assert len(rv.json["items"]) == 1
+    assert rv.json["statusTotal"] == 1
+    search_result = rv.json["items"][0]
+    assert len(search_result["partialRefundLines"]) == 1
+    assert_equal_refunds(search_result, refund_result)
+
+    rv = client.get(f"/api/v1/payment-requests/{invoice.id}/composite", headers=requester_headers)
+    assert rv.status_code == 200
+    assert rv.json
+    assert rv.json["id"] == invoice.id
+    assert rv.json["partialRefunds"]
+    assert len(rv.json["partialRefunds"]) == 1
+
+    with patch("pay_api.services.direct_pay_service.DirectPayService.get") as mock_get:
+        mock_get.return_value.ok = True
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
+            "pbcrefnumber": "10007",
+            "trnnumber": "1",
+            "trndate": "2023-03-06",
+            "description": "Direct_Sale",
+            "trnamount": "31.5",
+            "paymentmethod": "CC",
+            "currency": "CAD",
+            "gldate": "2023-03-06",
+            "paymentstatus": "CMPLT",
+            "trnorderid": "23525252",
+            "paymentauthcode": "TEST",
+            "cardtype": "VI",
+            "revenue": [
+                {
+                    "linenumber": "1",
+                    "revenueaccount": "100.22222.33333.4444.5555555.000000.0000",
+                    "revenueamount": "30",
+                    "glstatus": "CMPLT",
+                    "glerrormessage": None,
+                    "refund_data": [
+                        {
+                            "txn_refund_distribution_id": 103570,
+                            "revenue_amount": 25,
+                            "refund_date": "2023-04-15T20:13:36Z",
+                            "refundglstatus": "CMPLT",
+                            "refundglerrormessage": None,
+                        }
+                    ],
+                },
+            ],
+            "postedrefundamount": None,
+            "refundedamount": None,
+        }
+        rv = client.patch(
+            f"/api/v1/payment-requests/{invoice.id}/refunds/{refund_id}",
+            data=json.dumps(
+                {
+                    "status": RefundStatus.APPROVED.value,
+                }
+            ),
+            headers=approver_headers,
+        )
+
+        assert rv.status_code == 200
+        result = rv.json
+
+        date_format = "%Y-%m-%dT%H:%M:%S.%f"
+        assert result["refundId"] is not None
+        assert result["refundStatus"] == RefundStatus.APPROVED.value
+        assert result["notificationEmail"] == "test@test.com"
+        assert result["refundReason"] == "Test"
+        assert result["staffComment"] == "staff comment"
+        assert result["requestedBy"] == token_config["requester_name"]
+        assert result["requestedDate"] is not None
+        assert_date_now(result["requestedDate"], date_format)
+        assert result["decisionBy"] == token_config["approver_name"]
+        assert result["decisionDate"] is not None
+        assert_date_now(result["decisionDate"], date_format)
+        assert result["refundAmount"] == refund_amount
+        assert result["partialRefundLines"] is not None
+        assert len(result["partialRefundLines"]) == 1
+        assert result["declineReason"] is None
+
+        rv = client.get(f"/api/v1/payment-requests/{invoice.id}/composite", headers=requester_headers)
+        assert rv.status_code == 200
+        assert rv.json
+        assert rv.json["id"] == invoice.id
+        assert rv.json["partialRefunds"]
+        assert len(rv.json["partialRefunds"]) == 1
+
+
+def test_cc_refund_should_reject(session, client, jwt, app, monkeypatch, account_admin_mock, send_email_mock):
+    """Assert full refund approval flow works correctly."""
+    cfs_account = setup_filing_and_account_data("TEST_PRODUCT", PaymentMethod.CC.value)
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.CC.value)
+    token_config = {
+        "requester_name": "TEST_REQUESTER",
+        "requester_roles": [
+            Role.PRODUCT_REFUND_REQUESTER.value,
+            Role.PRODUCT_REFUND_VIEWER.value,
+            Role.VIEW_ALL_TRANSACTIONS.value,
+        ],
+        "approver_name": "TEST_APPROVER",
+        "approver_roles": [
+            Role.PRODUCT_REFUND_APPROVER.value,
+            Role.PRODUCT_REFUND_VIEWER.value,
+            Role.VIEW_ALL_TRANSACTIONS.value,
+        ],
+    }
+    requester_headers, approver_headers = get_refund_token_headers(app, jwt, token_config)
+
+    rv = request_refund(client, invoice, requester_headers)
+    assert rv.status_code == 400
+    assert rv.json["type"] == Error.FULL_REFUND_INVOICE_INVALID_STATE.name
 
 
 def assert_equal_refunds(search_result: dict, refund_result: dict):
@@ -404,3 +596,58 @@ def assert_equal_refunds(search_result: dict, refund_result: dict):
 def assert_date_now(date_string: str, date_format: str):
     """Assert date string against current UTC date."""
     assert datetime.strptime(date_string, date_format).date() == datetime.now(tz=UTC).date()
+
+
+def test_invoice_composite_full_refund(session, client, jwt, app, monkeypatch, account_admin_mock, send_email_mock):
+    """Assert full refund approval flow works correctly."""
+    payment_method = PaymentMethod.DIRECT_PAY.value
+    cfs_account = setup_filing_and_account_data("TEST_PRODUCT", payment_method)
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, payment_method)
+    token_config = {
+        "requester_name": "TEST_REQUESTER",
+        "requester_roles": [
+            Role.PRODUCT_REFUND_REQUESTER.value,
+            Role.PRODUCT_REFUND_VIEWER.value,
+            Role.VIEW_ALL_TRANSACTIONS.value,
+        ],
+        "approver_name": "TEST_APPROVER",
+        "approver_roles": [
+            Role.PRODUCT_REFUND_APPROVER.value,
+            Role.PRODUCT_REFUND_VIEWER.value,
+            Role.VIEW_ALL_TRANSACTIONS.value,
+        ],
+    }
+    requester_headers, approver_headers = get_refund_token_headers(app, jwt, token_config)
+    rv = client.get(
+        f"/api/v1/payment-requests/{invoice.id}/composite",
+        headers=requester_headers,
+    )
+
+    assert rv.status_code == 200
+    assert rv.json
+    invoice_composite = rv.json
+    assert invoice_composite["id"] == invoice.id
+    assert invoice_composite["latestRefundId"] is None
+    assert invoice_composite["latestRefundStatus"] is None
+    assert invoice_composite["partialRefundable"] is True
+    assert invoice_composite["partialRefunds"] is None
+    assert invoice_composite["fullRefundable"] is True
+
+    rv = request_refund(client, invoice, requester_headers)
+    assert rv.status_code == 202
+    refund = rv.json
+
+    rv = client.get(
+        f"/api/v1/payment-requests/{invoice.id}/composite",
+        headers=requester_headers,
+    )
+    assert rv.status_code == 200
+    assert rv.json
+    invoice_composite = rv.json
+
+    assert invoice_composite["id"] == invoice.id
+    assert invoice_composite["latestRefundId"] == refund["refundId"]
+    assert invoice_composite["latestRefundStatus"] == RefundStatus.PENDING_APPROVAL.value
+    assert invoice_composite["partialRefundable"] is True
+    assert invoice_composite["partialRefunds"] is None
+    assert invoice_composite["fullRefundable"] is True

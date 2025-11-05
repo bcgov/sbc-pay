@@ -334,7 +334,8 @@ def test_initialize_refund_requested_by(
             mock_user = UserContext()
 
             payment_account = factory_payment_account().save()
-            invoice = factory_invoice(payment_account,
+            invoice = factory_invoice(
+                payment_account,
             ).save()
             result = RefundService._initialize_refund(  # pylint: disable=protected-access
                 invoice=invoice, request={"reason": "Test refund"}, user=mock_user

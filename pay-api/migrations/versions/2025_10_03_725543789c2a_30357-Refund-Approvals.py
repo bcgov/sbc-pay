@@ -41,6 +41,10 @@ def upgrade():
     # Update refund type for invoices
     op.execute(f"UPDATE refunds SET type='{RefundType.INVOICE.value}' WHERE routing_slip_id is null")
 
+    # Fix full refund validation - should not allow CC it will error as we don't support the credits, but it could cause
+    # a credit memo to be created in error
+    op.execute(f"UPDATE payment_methods SET full_refund_statuses=null where code='CC'")
+
     with op.batch_alter_table('refunds', schema=None) as batch_op:
         batch_op.alter_column('status', nullable=False)
         batch_op.alter_column('type', nullable=False)

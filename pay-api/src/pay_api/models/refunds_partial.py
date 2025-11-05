@@ -20,7 +20,6 @@ from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
-from ..utils.enums import RefundsPartialType  # noqa: TID252
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db
@@ -89,7 +88,7 @@ class RefundPartialLine:
 
     payment_line_item_id: int
     refund_amount: Decimal
-    refund_type: RefundsPartialType
+    refund_type: str
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -100,6 +99,11 @@ class RefundPartialLine:
         return cls(
             payment_line_item_id=row.payment_line_item_id, refund_amount=row.refund_amount, refund_type=row.refund_type
         )
+
+    @classmethod
+    def to_schema(cls, lines: list[RefundsPartial]):
+        """Return list of schemas."""
+        return [cls.from_row(partial_line) for partial_line in lines]
 
 
 @define

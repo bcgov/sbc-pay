@@ -57,7 +57,6 @@ from pay_api.utils.util import (
     get_str_by_path,
     is_string_empty,
     normalize_accented_characters_json,
-    unstructure_schema_items,
 )
 
 
@@ -435,9 +434,7 @@ class RefundService:
 
         refund_partial_lines = RefundPartialModel.get_partial_refunds_by_refund_id(refund.id) or []
         if refund.status == RefundStatus.APPROVED.value:
-            RefundService._complete_refund(
-                invoice, refund, unstructure_schema_items(RefundPartialLine, refund_partial_lines)
-            )
+            RefundService._complete_refund(invoice, refund, RefundPartialLine.to_schema(refund_partial_lines))
         refund.save()
 
         normalized_refund_lines, refund_total = RefundService.normalize_partial_refund_lines(refund_partial_lines)

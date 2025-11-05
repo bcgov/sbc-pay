@@ -33,6 +33,7 @@ from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.models.payment_line_item import PaymentLineItem
+from pay_api.models.refund import Refund
 from pay_api.models.refunds_partial import RefundsPartial
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
@@ -44,6 +45,8 @@ from pay_api.utils.enums import (
     PaymentStatus,
     QueueSources,
     RefundsPartialType,
+    RefundStatus,
+    RefundType,
     Role,
 )
 from tests.utilities.base_test import (
@@ -1317,6 +1320,12 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         cfs_identifier="TEST_CREDIT_002",
     )
 
+    refund = Refund(
+        invoice_id=invoice.id,
+        type=RefundType.INVOICE.value,
+        status=RefundStatus.APPROVAL_NOT_REQUIRED.value,
+    ).save()
+
     partial_refund1 = RefundsPartial(
         invoice_id=invoice.id,
         payment_line_item_id=line_item.id,
@@ -1327,6 +1336,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         created_name="Test User",
         created_on=datetime.now(tz=UTC),
         is_credit=False,
+        refund_id=refund.id,
     )
     partial_refund1.save()
 
@@ -1340,6 +1350,7 @@ def test_invoice_search_model_with_exclude_counts_and_credits_refunds(session, c
         created_name="Test User",
         created_on=datetime.now(tz=UTC),
         is_credit=True,
+        refund_id=refund.id,
     )
     partial_refund2.save()
 

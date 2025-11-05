@@ -28,6 +28,7 @@ from pay_api.models import (
     InvoiceSearchModel,
     PaymentAccount,
     PaymentLineItem,
+    Refund,
     RefundsPartial,
     db,
 )
@@ -40,11 +41,12 @@ from pay_api.services.payment import PaymentReportInput
 from pay_api.services.payment_calculations import (
     build_grouped_invoice_context,
     build_statement_context,
-    build_statement_summary_context, build_summary_page_context,
+    build_statement_summary_context,
+    build_summary_page_context,
 )
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
-from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus, PaymentMethod, RefundStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import user_context
@@ -118,7 +120,25 @@ class InvoiceSearch:
 
         if include_credits_and_partial_refunds:
             options.extend(
-                [joinedload(InvoiceCompositeModel.applied_credits), joinedload(InvoiceCompositeModel.partial_refunds)]
+                [
+                    joinedload(InvoiceCompositeModel.applied_credits),
+                    joinedload(
+                        InvoiceCompositeModel.partial_refunds.and_(
+                            exists().where(
+                                and_(
+                                    Refund.id == RefundsPartial.refund_id,
+                                    Refund.status.in_(
+                                        [
+                                            RefundStatus.APPROVED.value,
+                                            RefundStatus.PENDING_APPROVAL.value,
+                                            RefundStatus.APPROVAL_NOT_REQUIRED.value,
+                                        ]
+                                    ),
+                                )
+                            )
+                        )
+                    ),
+                ]
             )
 
         return (
@@ -619,6 +639,6 @@ class InvoiceSearch:
                 invoice.get("business_identifier"),
                 invoice.get("id"),
                 invoice.get("invoice_number"),
-                ]
+            ]
             cells.append(row_value)
         return cells

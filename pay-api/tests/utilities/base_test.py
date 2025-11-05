@@ -1204,3 +1204,56 @@ def factory_refunds_partial(
     )
     refund_partial.save()
     return refund_partial
+
+
+def _get_base_paybc_response():
+    return {
+        "pbcrefnumber": "10007",
+        "trnnumber": "1",
+        "trndate": "2023-03-06",
+        "description": "Direct_Sale",
+        "trnamount": "31.5",
+        "paymentmethod": "CC",
+        "currency": "CAD",
+        "gldate": "2023-03-06",
+        "paymentstatus": "CMPLT",
+        "trnorderid": "23525252",
+        "paymentauthcode": "TEST",
+        "cardtype": "VI",
+        "revenue": [
+            {
+                "linenumber": "1",
+                "revenueaccount": "None.None.None.None.None.000000.0000",
+                "revenueamount": "30",
+                "glstatus": "CMPLT",
+                "glerrormessage": None,
+                "refund_data": [
+                    {
+                        "txn_refund_distribution_id": 103570,
+                        "revenue_amount": 30,
+                        "refund_date": "2023-04-15T20:13:36Z",
+                        "refundglstatus": "CMPLT",
+                        "refundglerrormessage": None,
+                    }
+                ],
+            },
+            {
+                "linenumber": "2",
+                "revenueaccount": "None.None.None.None.None.000000.0001",
+                "revenueamount": "1.5",
+                "glstatus": "CMPLT",
+                "glerrormessage": None,
+                "refund_data": [
+                    {
+                        "txn_refund_distribution_id": 103182,
+                        "revenue_amount": 1.5,
+                        "refund_date": "2023-04-15T20:13:36Z",
+                        "refundglstatus": "CMPLT",
+                        "refundglerrormessage": None,
+                    }
+                ],
+            },
+        ],
+        "postedrefundamount": None,
+        "refundedamount": None,
+    }

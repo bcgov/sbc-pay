@@ -26,8 +26,8 @@ from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceCompositeModel, InvoiceSchema, InvoiceSearchModel, db
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import InvoiceSchema, db
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.auth import check_auth
 from pay_api.services.code import Code as CodeService
@@ -408,30 +408,42 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    @user_context
-    def find_by_id(identifier: int, skip_auth_check: bool = False, one_of_roles=ALL_ALLOWED_ROLES, **kwargs):
+    def find_by_id(identifier: int, skip_auth_check: bool = False, one_of_roles=ALL_ALLOWED_ROLES):
         """Find invoice by id."""
-        user: UserContext = kwargs["user"]
         invoice_dao = InvoiceModel.find_by_id(identifier)
 
         if not invoice_dao:
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
-        if not skip_auth_check and not user.has_role(Role.VIEW_ALL_TRANSACTIONS.value):
-            products, filter_by_product = ProductAuthUtil.check_products_from_role_pattern(
-                role_pattern=RolePattern.PRODUCT_VIEW_TRANSACTION.value,
-                all_products_role=Role.VIEW_ALL_TRANSACTIONS.value,
-            )
-            if not filter_by_product:
-                Invoice._check_for_auth(invoice_dao, one_of_roles)
-            elif invoice_dao.corp_type.product not in products:
-                abort(403)
+        if not skip_auth_check:
+            Invoice._check_for_auth(invoice_dao, one_of_roles)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
 
         current_app.logger.debug(">find_by_id")
         return invoice
+
+    @staticmethod
+    @user_context
+    def find_composite_by_id(identifier: int, **kwargs):
+        """Find the invoice composite by id."""
+        user: UserContext = kwargs["user"]
+        invoice_composite = InvoiceCompositeModel.find_by_id(identifier)
+
+        if not invoice_composite:
+            raise BusinessException(Error.INVALID_INVOICE_ID)
+
+        if not user.has_role(Role.VIEW_ALL_TRANSACTIONS.value):
+            products, filter_by_product = ProductAuthUtil.check_products_from_role_pattern(
+                role_pattern=RolePattern.PRODUCT_VIEW_TRANSACTION.value,
+                all_products_role=Role.VIEW_ALL_TRANSACTIONS.value,
+            )
+            if invoice_composite.corp_type.product not in products:
+                abort(403)
+
+        current_app.logger.debug(">find_composite_by_id")
+        return InvoiceSearchModel.dao_to_dict(invoice_composite)
 
     @staticmethod
     def find_invoices_for_payment(
@@ -446,7 +458,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             invoice._dao = invoice_dao  # pylint: disable=protected-access
             invoices.append(invoice)
 
-        current_app.logger.debug(">find_by_id")
+        current_app.logger.debug(">find_invoices_for_payment")
         return invoices
 
     @staticmethod

@@ -28,6 +28,7 @@ from sqlalchemy.orm import relationship
 
 from pay_api.models.applied_credits import AppliedCreditsSearchModel
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 from .audit import Audit, AuditSchema
@@ -398,3 +399,9 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
                 [AppliedCreditsSearchModel.from_row(x) for x in row.applied_credits] if row.applied_credits else None
             ),
         )
+
+    @classmethod
+    def dao_to_dict(cls, invoice_dao: Invoice) -> dict:
+        """Convert from DAO to Schema dict."""
+        invoice_dict = Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao))
+        return invoice_dict

@@ -51,6 +51,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
+    _get_base_paybc_response,
     factory_eft_credit,
     factory_eft_credit_invoice_link,
     factory_eft_file,
@@ -413,59 +414,6 @@ def test_create_refund_validation(session, client, jwt, app, monkeypatch, fee_ty
         assert rv.status_code == 400
         assert rv.json.get("type") == error_name
         assert RefundModel.find_latest_by_invoice_id(inv_id) is None
-
-
-def _get_base_paybc_response():
-    return {
-        "pbcrefnumber": "10007",
-        "trnnumber": "1",
-        "trndate": "2023-03-06",
-        "description": "Direct_Sale",
-        "trnamount": "31.5",
-        "paymentmethod": "CC",
-        "currency": "CAD",
-        "gldate": "2023-03-06",
-        "paymentstatus": "CMPLT",
-        "trnorderid": "23525252",
-        "paymentauthcode": "TEST",
-        "cardtype": "VI",
-        "revenue": [
-            {
-                "linenumber": "1",
-                "revenueaccount": "None.None.None.None.None.000000.0000",
-                "revenueamount": "30",
-                "glstatus": "CMPLT",
-                "glerrormessage": None,
-                "refund_data": [
-                    {
-                        "txn_refund_distribution_id": 103570,
-                        "revenue_amount": 30,
-                        "refund_date": "2023-04-15T20:13:36Z",
-                        "refundglstatus": "CMPLT",
-                        "refundglerrormessage": None,
-                    }
-                ],
-            },
-            {
-                "linenumber": "2",
-                "revenueaccount": "None.None.None.None.None.000000.0001",
-                "revenueamount": "1.5",
-                "glstatus": "CMPLT",
-                "glerrormessage": None,
-                "refund_data": [
-                    {
-                        "txn_refund_distribution_id": 103182,
-                        "revenue_amount": 1.5,
-                        "refund_date": "2023-04-15T20:13:36Z",
-                        "refundglstatus": "CMPLT",
-                        "refundglerrormessage": None,
-                    }
-                ],
-            },
-        ],
-        "postedrefundamount": None,
-        "refundedamount": None,
-    }
 
 
 def test_invalid_payment_method_partial_refund(session, client, jwt, app, monkeypatch):
