@@ -16,6 +16,7 @@
 from datetime import UTC, datetime
 
 from flask import current_app
+from sqlalchemy import func
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -29,6 +30,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.email_service import JobFailureNotification
 from pay_api.utils.enums import (
     CfsAccountStatus,
     CfsReceiptStatus,
@@ -297,7 +299,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     payment_account.id, PaymentMethod.INTERNAL.value
                 )
 
-                # 2. Validate and calculate adjustment amount (may raise ValueError)
+                # may raise ValueError
                 cls._validate_and_calculate_adjustment_amount(routing_slip, cfs_account)
 
                 # reverse routing slip receipt
@@ -346,21 +348,16 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _get_applied_invoices_amount(cls, routing_slip: RoutingSlipModel) -> float:
         """Get total amount of applied invoices in SBC-PAY for routing slip."""
-        paid_invoices = (
-            db.session.query(InvoiceModel)
+        total_applied = (
+            db.session.query(func.sum(InvoiceModel.total))
             .filter(
                 InvoiceModel.routing_slip == routing_slip.number,
                 InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value
             )
-            .all()
-        )
-        total_applied = sum(inv.total for inv in paid_invoices)
-        #current_app.logger.debug(
-        #    f"Routing slip {routing_slip.number} has "
-        #    f"{len(paid_invoices)} paid invoices "
-        #    f"totaling ${total_applied:.2f}"
-        #)
-        return total_applied
+            .scalar()
+        ) or 0.0
+
+        return float(total_applied)
 
     @classmethod
     def _check_data_consistency(
@@ -383,7 +380,15 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 f"invoices, but CFS shows no applied invoices. "
                 f"Manual intervention required to apply invoices in CFS."
             )
-            #TODO: email out an error?
+            if not current_app.config.get("DISABLE_RS_ADJUSTMENT_ERROR_EMAIL"):
+                notification = JobFailureNotification(
+                    subject="Routing Slip Adjustment Job Failure",
+                    file_name="routing_slip_adjustment",
+                    error_messages=[{"error": error_msg}],
+                    table_name=None,
+                    job_name="Routing Slip Adjustment Job",
+                )
+            notification.send_notification()
             raise ValueError(error_msg)
 
     @classmethod
@@ -412,8 +417,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             has_applied_invoices = len(receipt_data.get('invoices', [])) > 0
             receipt_details.append({'has_applied_invoices': has_applied_invoices})
             cfs_unapplied_total += unapplied_amount
-        
-        # Check data consistency (may raise ValueError)
+
+        # may raise ValueError
         cls._check_data_consistency(
             routing_slip,
             sbc_pay_applied,
@@ -431,7 +436,6 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 f"but CFS unapplied amount is ${cfs_unapplied_total:.2f}. "
                 f"Difference: ${amount_diff:.2f}"
             )
-            current_app.logger.error(error_msg)
             raise ValueError(error_msg)
 
     @classmethod
