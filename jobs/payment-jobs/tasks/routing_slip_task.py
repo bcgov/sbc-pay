@@ -269,8 +269,9 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         """Adjust routing slips.
 
         Steps:
-        1. Adjust routing slip receipts for any Write off routing slips.
-        2. Adjust routing slip receipts for any Refund approved routing slips.
+        1. Validate adjustment amounts before adjusting.
+        2. Check data consistency between SBC-PAY and CFS.
+        3. Adjust routing slip receipts for Write off or Refund authorized.
         """
         current_app.logger.info("<<adjust_routing_slips")
         adjust_statuses = [
@@ -287,17 +288,18 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             .all()
         )
         current_app.logger.info(f"Found {len(routing_slips)} to write off or refund authorized.")
+        failed_validations = []
         for routing_slip in routing_slips:
             try:
-                # 1.Adjust the routing slip and it's child routing slips for the remaining balance.
                 current_app.logger.debug(f"Adjusting routing slip {routing_slip.number}")
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(routing_slip.payment_account_id)
                 cfs_account = CfsAccountModel.find_effective_by_payment_method(
                     payment_account.id, PaymentMethod.INTERNAL.value
                 )
 
-                # reverse routing slip receipt
-                # Find all child routing slip and reverse it, as all linked routing slips are also considered as NSF.
+                # Validate and calculate adjustment amount (may raise DataMismatchError or AmountMismatchError)
+                cls._validate_and_calculate_adjustment_amount(routing_slip, cfs_account)
+
                 child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
                 for rs in (routing_slip, *child_routing_slips):
                     is_refund = routing_slip.status == RoutingSlipStatus.REFUND_AUTHORIZED.value
@@ -308,6 +310,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.refund_amount = routing_slip.remaining_amount
                 routing_slip.remaining_amount = 0
                 routing_slip.save()
+
+            except ValueError as e:
+                failed_validations.append(routing_slip.number)
+                current_app.logger.error(
+                    f"Skipping adjustment for routing slip {routing_slip.number}: {str(e)}"
+                )
+                continue
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(
@@ -332,6 +341,97 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value)
             .all()
         )
+
+    @classmethod
+    def _get_applied_invoices_amount(cls, routing_slip: RoutingSlipModel) -> float:
+        """Get total amount of applied invoices in SBC-PAY for routing slip."""
+        paid_invoices = (
+            db.session.query(InvoiceModel)
+            .filter(
+                InvoiceModel.routing_slip == routing_slip.number,
+                InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value
+            )
+            .all()
+        )
+        total_applied = sum(inv.total for inv in paid_invoices)
+        #current_app.logger.debug(
+        #    f"Routing slip {routing_slip.number} has "
+        #    f"{len(paid_invoices)} paid invoices "
+        #    f"totaling ${total_applied:.2f}"
+        #)
+        return total_applied
+
+    @classmethod
+    def _check_data_consistency(
+        cls,
+        routing_slip: RoutingSlipModel,
+        sbc_pay_applied_amount: float,
+        cfs_receipt_details: list[dict]
+    ) -> None:
+        """Check data consistency between SBC-PAY and CFS."""
+        sbc_pay_has_invoices = sbc_pay_applied_amount > 0
+        cfs_has_invoices = any(
+            receipt['has_applied_invoices'] 
+            for receipt in cfs_receipt_details
+        )
+
+        if sbc_pay_has_invoices and not cfs_has_invoices:
+            error_msg = (
+                f"Data mismatch for routing slip {routing_slip.number}: "
+                f"SBC-PAY shows ${sbc_pay_applied_amount:.2f} in applied "
+                f"invoices, but CFS shows no applied invoices. "
+                f"Manual intervention required to apply invoices in CFS."
+            )
+            #TODO: email out an error?
+            raise ValueError(error_msg)
+
+    @classmethod
+    def _validate_and_calculate_adjustment_amount(
+        cls,
+        routing_slip: RoutingSlipModel,
+        cfs_account: CfsAccountModel
+    ) -> None:
+        """Validate adjustment amount for routing slip.
+
+        Raises:
+            ValueError: If validation fails (data mismatch or amount mismatch)
+        """
+        child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
+        all_routing_slips = [routing_slip] + child_routing_slips
+
+        sbc_pay_applied = cls._get_applied_invoices_amount(routing_slip)
+
+        receipt_details = []
+        cfs_unapplied_total = 0.0
+
+        for rs in all_routing_slips:
+            receipt_number = rs.generate_cas_receipt_number()
+            receipt_data = CFSService.get_receipt(cfs_account, receipt_number)
+            unapplied_amount = float(receipt_data.get('unapplied_amount', 0))
+            has_applied_invoices = len(receipt_data.get('invoices', [])) > 0
+            receipt_details.append({'has_applied_invoices': has_applied_invoices})
+            cfs_unapplied_total += unapplied_amount
+        
+        # Check data consistency (may raise ValueError)
+        cls._check_data_consistency(
+            routing_slip,
+            sbc_pay_applied,
+            receipt_details
+        )
+
+        expected_adjustment = routing_slip.total - sbc_pay_applied
+        
+        # Validate CFS unapplied amount matches expected adjustment (may raise ValueError)
+        amount_diff = abs(cfs_unapplied_total - expected_adjustment)
+        if amount_diff > 0.01:
+            error_msg = (
+                f"Amount mismatch for routing slip {routing_slip.number}: "
+                f"Expected adjustment ${expected_adjustment:.2f}, "
+                f"but CFS unapplied amount is ${cfs_unapplied_total:.2f}. "
+                f"Difference: ${amount_diff:.2f}"
+            )
+            current_app.logger.error(error_msg)
+            raise ValueError(error_msg)
 
     @classmethod
     def _reset_invoices_and_references_to_created(cls, routing_slip: RoutingSlipModel):
