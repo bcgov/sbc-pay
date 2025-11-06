@@ -425,7 +425,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             receipt_details
         )
 
-        expected_adjustment = routing_slip.total - sbc_pay_applied
+        expected_adjustment = float(routing_slip.total) - sbc_pay_applied
         
         # Validate CFS unapplied amount matches expected adjustment (may raise ValueError)
         amount_diff = abs(cfs_unapplied_total - expected_adjustment)

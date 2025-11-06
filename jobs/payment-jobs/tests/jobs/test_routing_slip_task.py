@@ -319,12 +319,12 @@ def test_receipt_adjustments(session, rs_status):
     """Test routing slip adjustments."""
     child_rs_number = "1234"
     parent_rs_number = "89799"
-    factory_routing_slip_account(number=child_rs_number, status=CfsAccountStatus.ACTIVE.value)
+    factory_routing_slip_account(number=child_rs_number, status=CfsAccountStatus.ACTIVE.value, total=10)
     factory_routing_slip_account(
         number=parent_rs_number,
         status=CfsAccountStatus.ACTIVE.value,
-        total=10,
-        remaining_amount=10,
+        total=20,
+        remaining_amount=20,
     )
     child_rs = RoutingSlipModel.find_by_number(child_rs_number)
     parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
@@ -340,7 +340,7 @@ def test_receipt_adjustments(session, rs_status):
     with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
          patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
         mock_get_receipt.return_value = {
-            'unapplied_amount': 10.0,
+            'unapplied_amount': 0.0,
             'receipt_amount': 10.0,
             'invoices': []
         }
@@ -348,7 +348,7 @@ def test_receipt_adjustments(session, rs_status):
         RoutingSlipTask.adjust_routing_slips()
 
     parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
-    assert parent_rs.remaining_amount == 10
+    assert parent_rs.remaining_amount == 20
 
     with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
          patch("pay_api.services.CFSService.adjust_receipt_to_zero"):
@@ -403,18 +403,10 @@ def test_receipt_adjustments_data_mismatch(session):
         total=100,
         remaining_amount=85,
     )
-    
+
     rs = RoutingSlipModel.find_by_number(rs_number)
     rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
     rs.save()
-
-    # Create a PAID invoice to simulate SBC-PAY having applied invoices
-    invoice = factory_invoice(
-        payment_account=rs.payment_account,
-        routing_slip=rs_number,
-        total=15,
-        status_code=InvoiceStatus.PAID.value
-    )
 
     # data mismatch
     with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
