@@ -408,20 +408,12 @@ def test_receipt_adjustments_data_mismatch(session):
     rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
     rs.save()
 
-    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('BCR', 'OTANN')
-    factory_distribution(name='Test Distribution', distribution_code_id=1)
-    factory_distribution_link(distribution_code_id=1, fee_schedule_id=fee_schedule.fee_schedule_id)
-    
+    # Create a PAID invoice to simulate SBC-PAY having applied invoices
     invoice = factory_invoice(
         payment_account=rs.payment_account,
         routing_slip=rs_number,
         total=15,
         status_code=InvoiceStatus.PAID.value
-    )
-    factory_payment_line_item(
-        invoice_id=invoice.id,
-        fee_schedule_id=fee_schedule.fee_schedule_id,
-        total=15
     )
 
     # data mismatch
