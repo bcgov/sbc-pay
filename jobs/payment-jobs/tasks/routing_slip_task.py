@@ -303,7 +303,6 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 # reverse routing slip receipt
                 # Find all child routing slip and reverse it, as all linked routing slips are also considered as NSF.
                 child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
-                # 3. Adjust the routing slip and it's child routing slips for the remaining balance.
                 for rs in (routing_slip, *child_routing_slips):
                     is_refund = routing_slip.status == RoutingSlipStatus.REFUND_AUTHORIZED.value
                     receipt_number = rs.generate_cas_receipt_number()
