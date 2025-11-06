@@ -288,19 +288,22 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             .all()
         )
         current_app.logger.info(f"Found {len(routing_slips)} to write off or refund authorized.")
-        failed_validations = []
         for routing_slip in routing_slips:
             try:
+                # 1.Adjust the routing slip and it's child routing slips for the remaining balance.
                 current_app.logger.debug(f"Adjusting routing slip {routing_slip.number}")
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(routing_slip.payment_account_id)
                 cfs_account = CfsAccountModel.find_effective_by_payment_method(
                     payment_account.id, PaymentMethod.INTERNAL.value
                 )
 
-                # Validate and calculate adjustment amount (may raise DataMismatchError or AmountMismatchError)
+                # 2. Validate and calculate adjustment amount (may raise ValueError)
                 cls._validate_and_calculate_adjustment_amount(routing_slip, cfs_account)
 
+                # reverse routing slip receipt
+                # Find all child routing slip and reverse it, as all linked routing slips are also considered as NSF.
                 child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
+                # 3. Adjust the routing slip and it's child routing slips for the remaining balance.
                 for rs in (routing_slip, *child_routing_slips):
                     is_refund = routing_slip.status == RoutingSlipStatus.REFUND_AUTHORIZED.value
                     receipt_number = rs.generate_cas_receipt_number()
@@ -312,7 +315,6 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.save()
 
             except ValueError as e:
-                failed_validations.append(routing_slip.number)
                 current_app.logger.error(
                     f"Skipping adjustment for routing slip {routing_slip.number}: {str(e)}"
                 )
