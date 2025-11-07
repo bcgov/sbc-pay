@@ -286,6 +286,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             .filter(
                 RoutingSlipModel.status.in_(adjust_statuses),
                 RoutingSlipModel.remaining_amount > 0,
+                RoutingSlipModel.cas_mismatch.is_not(True),
             )
             .all()
         )
@@ -316,6 +317,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.save()
 
             except ValueError as e:
+                routing_slip.cas_mismatch = True
+                routing_slip.save()
                 current_app.logger.error(
                     f"Skipping adjustment for routing slip {routing_slip.number}: {str(e)}"
                 )
@@ -385,7 +388,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     subject="Routing Slip Adjustment Job Failure",
                     file_name="routing_slip_adjustment",
                     error_messages=[{"error": error_msg}],
-                    table_name=None,
+                    table_name="routing_slips",
                     job_name="Routing Slip Adjustment Job",
                 )
             notification.send_notification()

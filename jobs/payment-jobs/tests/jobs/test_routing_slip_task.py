@@ -349,6 +349,10 @@ def test_receipt_adjustments(session, rs_status):
 
     parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
     assert parent_rs.remaining_amount == 20
+    assert parent_rs.cas_mismatch is True
+
+    parent_rs.cas_mismatch = False
+    parent_rs.save()
 
     with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
          patch("pay_api.services.CFSService.adjust_receipt_to_zero"):
@@ -361,6 +365,7 @@ def test_receipt_adjustments(session, rs_status):
 
     parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
     assert parent_rs.remaining_amount == 0
+    assert parent_rs.cas_mismatch is not True
 
 
 def test_receipt_adjustments_amount_mismatch(session):
@@ -392,6 +397,7 @@ def test_receipt_adjustments_amount_mismatch(session):
         rs = RoutingSlipModel.find_by_number(rs_number)
         assert rs.remaining_amount == 50
         assert not mock_adjust.called
+        assert rs.cas_mismatch is True
 
 
 def test_receipt_adjustments_data_mismatch(session):
@@ -423,3 +429,32 @@ def test_receipt_adjustments_data_mismatch(session):
         rs = RoutingSlipModel.find_by_number(rs_number)
         assert rs.remaining_amount == 85
         assert not mock_adjust.called
+        assert rs.cas_mismatch is True
+
+
+def test_receipt_adjustments_skip_cas_mismatch(session):
+    """Test routing slip adjustment skips routing slips with cas_mismatch = True."""
+    rs_number = "12348"
+    factory_routing_slip_account(
+        number=rs_number,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=100,
+        remaining_amount=50,
+    )
+    
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
+    rs.cas_mismatch = True
+    rs.save()
+
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+        
+        RoutingSlipTask.adjust_routing_slips()
+
+        assert not mock_get_receipt.called
+        assert not mock_adjust.called
+        
+        rs = RoutingSlipModel.find_by_number(rs_number)
+        assert rs.remaining_amount == 50
+        assert rs.cas_mismatch is True
