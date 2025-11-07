@@ -23,7 +23,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import AuthHeaderType, ContentType, RefundStatus
 from pay_api.utils.serializable import Serializable
 
 
@@ -142,3 +142,38 @@ class JobFailureNotification(Serializable):
             return
         html_body = template.render(email_params)
         send_email(recipients=recipients, subject=self.subject, body=html_body)
+
+
+@define
+class ProductRefundEmailContent(Serializable):
+    """Product refund email."""
+
+    account_name: str
+    account_number: str
+    decline_reason: str
+    invoice_id: int
+    invoice_reference_number: str
+    staff_comment: str
+    status: str
+    reason: str
+    refund_amount: Decimal
+    url: str
+
+    def render_body(self, status: str, is_for_client: bool) -> str:
+        """Render the email body using the provided template."""
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root_dir = os.path.dirname(current_dir)
+        templates_dir = os.path.join(project_root_dir, "templates")
+        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+        match status:
+            case RefundStatus.APPROVED.value | RefundStatus.DECLINED.value:
+                if is_for_client:
+                    template = env.get_template("product_refund_client_notification.html")
+                else:
+                    template = env.get_template("product_refund_notification.html")
+            case RefundStatus.PENDING_APPROVAL.value:
+                template = env.get_template("product_pending_refund_notification.html")
+            case _:
+                raise ValueError(f"Unsupported refund request status template: {status}")
+
+        return template.render(self.to_dict())

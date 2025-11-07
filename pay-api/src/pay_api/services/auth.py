@@ -15,6 +15,7 @@
 """This manages all of the authorization service."""
 
 import base64
+from urllib.parse import quote
 
 from flask import abort, current_app, g
 
@@ -170,6 +171,13 @@ def get_emails_with_keycloak_role(role: str) -> list[str]:
 def get_users_with_keycloak_role(role: str) -> dict:
     """Retrieve users with the specified keycloak role."""
     url = current_app.config.get("AUTH_API_ENDPOINT") + f"keycloak/users?role={role}"
+    return RestService.get(url, get_service_account_token(), AuthHeaderType.BEARER, ContentType.JSON).json()
+
+
+def get_auth_user(user_name: str) -> dict:
+    """Retrieve auth user by username."""
+    encoded_user_name = quote(user_name.lower(), safe="")
+    url = current_app.config.get("AUTH_API_ENDPOINT") + f"users/{encoded_user_name}"
     return RestService.get(url, get_service_account_token(), AuthHeaderType.BEARER, ContentType.JSON).json()
 
 
