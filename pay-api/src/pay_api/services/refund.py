@@ -245,7 +245,7 @@ class RefundService:
 
     @classmethod
     def _initialize_refund(
-        cls, invoice: InvoiceModel, request: dict[str, str], user: UserContext, requester_email: str = None
+        cls, invoice: InvoiceModel, request: dict[str, str], user: UserContext, auth_user: dict = None
     ) -> RefundModel:
         """Initialize refund."""
         refund = RefundModel(
@@ -256,7 +256,7 @@ class RefundService:
             staff_comment=get_str_by_path(request, "staffComment"),
             requested_by=user.original_username if user.original_username else user.user_name,
             requested_date=datetime.now(tz=UTC),
-            requester_email=requester_email,
+            requester_email=auth_user.get("email") if auth_user else None,
             status=(
                 RefundStatus.PENDING_APPROVAL.value
                 if invoice.corp_type.refund_approval and not user.is_system()
@@ -323,22 +323,24 @@ class RefundService:
         """Create refund."""
         current_app.logger.debug(f"Starting refund : {invoice_id}")
         user: UserContext = kwargs["user"]
-        auth_user = get_auth_user(user.original_username or user.user_name)
         refund_revenue = (request or {}).get("refundRevenue", None)
         is_partial_refund = bool(refund_revenue)
         refund_partial_lines = []
+        auth_user = None
 
         invoice = InvoiceModel.find_by_id(invoice_id)
         requires_approval = invoice.corp_type.refund_approval
         cls._validate_corp_type_role(invoice, user.roles)
         cls._validate_refundable_state(invoice, is_partial_refund)
-        cls._validate_refund_approval_flow(invoice, products, user.is_system(), auth_user)
+        if requires_approval:
+            auth_user = get_auth_user(user.original_username or user.user_name)
+            cls._validate_refund_approval_flow(invoice, products, user.is_system(), auth_user)
 
         if is_partial_refund:
             refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
             cls._validate_partial_refund_lines(refund_partial_lines, invoice)
 
-        refund = cls._initialize_refund(invoice, request, user, auth_user.get("email"))
+        refund = cls._initialize_refund(invoice, request, user, auth_user)
         cls._save_partial_refund_lines(refund_partial_lines, invoice, refund)
         refund.save()
 
