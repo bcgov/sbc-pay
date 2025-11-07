@@ -85,7 +85,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         nullable=True,
         index=True,
     )
-    cas_mismatch = db.Column(db.Boolean(), nullable=True)
+    cas_mismatch = db.Column(db.Boolean(), nullable=False, default=False)
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
     routing_slip_date = db.Column(db.Date, nullable=False)

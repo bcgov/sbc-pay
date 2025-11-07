@@ -14,6 +14,7 @@
 """Task to for linking routing slips."""
 
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from flask import current_app
 from sqlalchemy import func
@@ -349,7 +350,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         )
 
     @classmethod
-    def _get_applied_invoices_amount(cls, routing_slip: RoutingSlipModel) -> float:
+    def _get_applied_invoices_amount(cls, routing_slip: RoutingSlipModel) -> Decimal:
         """Get total amount of applied invoices in SBC-PAY for routing slip."""
         total_applied = (
             db.session.query(func.sum(InvoiceModel.total))
@@ -358,30 +359,29 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value
             )
             .scalar()
-        ) or 0.0
-
-        return float(total_applied)
+        )
+        return total_applied or Decimal("0.0")
 
     @classmethod
     def _check_data_consistency(
         cls,
         routing_slip: RoutingSlipModel,
-        sbc_pay_applied_amount: float,
+        sbc_pay_applied_amount: Decimal,
         cfs_receipt_details: list[dict]
     ) -> None:
         """Check data consistency between SBC-PAY and CFS."""
         sbc_pay_has_invoices = sbc_pay_applied_amount > 0
         cfs_has_invoices = any(
-            receipt['has_applied_invoices'] 
+            receipt['has_applied_invoices']
             for receipt in cfs_receipt_details
         )
 
-        if sbc_pay_has_invoices and not cfs_has_invoices:
+        if sbc_pay_has_invoices != cfs_has_invoices:
             error_msg = (
                 f"Data mismatch for routing slip {routing_slip.number}: "
-                f"SBC-PAY shows ${sbc_pay_applied_amount:.2f} in applied "
-                f"invoices, but CFS shows no applied invoices. "
-                f"Manual intervention required to apply invoices in CFS."
+                f"SBC-PAY applied amount: ${sbc_pay_applied_amount:.2f}, "
+                f"CFS has applied invoices: {cfs_has_invoices}. "
+                f"Manual intervention required."
             )
             if not current_app.config.get("DISABLE_RS_ADJUSTMENT_ERROR_EMAIL"):
                 notification = JobFailureNotification(
@@ -391,7 +391,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     table_name="routing_slips",
                     job_name="Routing Slip Adjustment Job",
                 )
-            notification.send_notification()
+                notification.send_notification(error_msg)
             raise ValueError(error_msg)
 
     @classmethod
@@ -400,23 +400,19 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         routing_slip: RoutingSlipModel,
         cfs_account: CfsAccountModel
     ) -> None:
-        """Validate adjustment amount for routing slip.
-
-        Raises:
-            ValueError: If validation fails (data mismatch or amount mismatch)
-        """
+        """Validate adjustment amount for routing slip."""
         child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
         all_routing_slips = [routing_slip] + child_routing_slips
 
         sbc_pay_applied = cls._get_applied_invoices_amount(routing_slip)
 
         receipt_details = []
-        cfs_unapplied_total = 0.0
+        cfs_unapplied_total = Decimal("0.0")
 
         for rs in all_routing_slips:
             receipt_number = rs.generate_cas_receipt_number()
             receipt_data = CFSService.get_receipt(cfs_account, receipt_number)
-            unapplied_amount = float(receipt_data.get('unapplied_amount', 0))
+            unapplied_amount = Decimal(str(receipt_data.get('unapplied_amount', 0)))
             has_applied_invoices = len(receipt_data.get('invoices', [])) > 0
             receipt_details.append({'has_applied_invoices': has_applied_invoices})
             cfs_unapplied_total += unapplied_amount
@@ -428,10 +424,10 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             receipt_details
         )
 
-        expected_adjustment = float(routing_slip.total) - sbc_pay_applied
+        expected_adjustment = routing_slip.total - sbc_pay_applied
 
         amount_diff = abs(cfs_unapplied_total - expected_adjustment)
-        if amount_diff > 0.01:
+        if amount_diff > 0:
             error_msg = (
                 f"Amount mismatch for routing slip {routing_slip.number}: "
                 f"Expected adjustment ${expected_adjustment:.2f}, "

@@ -22,9 +22,11 @@ depends_on = None
 
 def upgrade():
     op.add_column(
-        "routing_slips", sa.Column("cas_mismatch", sa.Boolean(), nullable=True)
+        'routing_slips', 
+        sa.Column('cas_mismatch', sa.Boolean(), nullable=False, server_default='f')
     )
+    op.execute("UPDATE routing_slips SET cas_mismatch = false WHERE cas_mismatch IS NULL")
 
 
 def downgrade():
-    op.drop_column("routing_slips", "cas_mismatch")
+    op.drop_column('routing_slips', 'cas_mismatch')
