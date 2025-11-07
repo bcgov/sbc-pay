@@ -21,8 +21,8 @@ from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
-from pay_api.services import Payment
 from pay_api.services.auth import check_auth
+from pay_api.services.invoice_search import InvoiceSearch
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
@@ -30,6 +30,8 @@ from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import CfsAccountStatus, ContentType, PaymentMethod, Role, RolePattern
 from pay_api.utils.errors import Error
+from pay_api.utils.product_auth_util import ProductAuthUtil
+from pay_api.utils.user_context import UserContext, user_context
 
 bp = Blueprint("ACCOUNTS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/accounts")
 
@@ -273,17 +275,24 @@ def post_search_purchase_history(account_number: str):
     valid_format, errors = schema_utils.validate(request_json, "purchase_history_request")
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+    # view all could be users with no org, so this is set explicitly with custom check based on products for auth
+    # as the usual check_auth depends on an associated org
+    any_org_transactions = request.args.get("viewAll", None) == "true"
+    if any_org_transactions:
+        account_number = None
+
     if account_number == "undefined":
         return error_to_response(Error.INVALID_REQUEST, invalid_params="account_number")
 
-    any_org_transactions = request.args.get("viewAll", None) == "true"
     products, filter_by_product = _check_purchase_history_auth(any_org_transactions, account_number)
 
     account_to_search = None if any_org_transactions else account_number
     page: int = int(request.args.get("page", "1"))
     limit: int = int(request.args.get("limit", "10"))
+
     response, status = (
-        Payment.search_purchase_history(
+        InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
                 auth_account_id=account_to_search,
                 search_filter=request_json,
@@ -299,22 +308,31 @@ def post_search_purchase_history(account_number: str):
     return jsonify(response), status
 
 
-def _check_purchase_history_auth(any_org_transactions: bool, account_number: str, **kwargs):  # noqa: ARG001
-    products, filter_by_product = Payment.check_products_from_role_pattern(RolePattern.PRODUCT_VIEW_TRANSACTION.value)
+@user_context
+def _check_purchase_history_auth(any_org_transactions: bool, account_number: str, **kwargs):
+    user: UserContext = kwargs["user"]
+    roles = user.roles or []
+
+    products, filter_by_product = ProductAuthUtil.check_products_from_role_pattern(
+        role_pattern=RolePattern.PRODUCT_VIEW_TRANSACTION.value, all_products_role=Role.VIEW_ALL_TRANSACTIONS.value
+    )
+
     if filter_by_product:
         if not products:
             abort(403)
         return products, filter_by_product
 
     if any_org_transactions:
-        check_auth(
-            business_identifier=None,
-            account_id=account_number,
-            one_of_role_sets=[
+        # Authorized if there is one of any the defined role sets
+        is_authorized = any(
+            set(role_set).issubset(set(roles))
+            for role_set in [
                 [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value],
                 [Role.VIEW_ALL_TRANSACTIONS.value],
-            ],
+            ]
         )
+        if not is_authorized:
+            abort(403)
     else:
         check_auth(
             business_identifier=None,
@@ -352,7 +370,7 @@ def post_account_purchase_report(account_number: str):
         one_of_roles=[EDIT_ROLE, Role.VIEW_ACCOUNT_TRANSACTIONS.value],
     )
     try:
-        report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
+        report = InvoiceSearch.create_payment_report(account_number, request_json, response_content_type, report_name)
         response = Response(report, 201)
         response.headers.set("Content-Disposition", "attachment", filename=report_name)
         response.headers.set("Content-Type", response_content_type)

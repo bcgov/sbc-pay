@@ -93,7 +93,10 @@ def test_product_purchase_history(
                     data=json.dumps(payload),
                     headers=staff_headers,
                 )
-                mock_auth.assert_called_once()
+
+                # view_all_transactions with viewAll does a manual role check not using check_auth as there
+                # may be no specific account_number
+                mock_auth.assert_not_called()
                 assert rv.status_code == response_status_code
                 assert rv.json
                 assert len(rv.json["items"]) == 2
@@ -103,7 +106,7 @@ def test_product_claim_purchase_history(session, client, jwt, app):
     """Assert account transaction filter by product claim is working."""
     product_code = "BCA"
     product_claim_token = jwt.create_jwt(
-        get_claims(product_code=product_code),
+        get_claims(roles=[Role.VIEW_ALL_TRANSACTIONS.value], product_code=product_code),
         token_header,
     )
 
@@ -122,7 +125,7 @@ def test_product_claim_purchase_history(session, client, jwt, app):
             assert rv.json
             assert len(rv.json["items"]) == 1
             assert rv.json["items"][0]["product"] == product_code
-            mock_auth.assert_called_once()
+            mock_auth.assert_not_called()
 
 
 def setup_tokens(jwt, product_role: str, has_product_refund_viewer: bool) -> tuple:

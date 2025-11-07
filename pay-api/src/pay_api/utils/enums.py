@@ -453,6 +453,23 @@ class EFTShortnameStatus(Enum):
     PENDING = "PENDING"
 
 
+class RefundStatus(Enum):
+    """Refund approval flow statuses."""
+
+    APPROVAL_NOT_REQUIRED = "APPROVAL_NOT_REQUIRED"
+    APPROVED = "APPROVED"
+    DECLINED = "DECLINED"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+
+
+class RefundType(Enum):
+    """Refund types."""
+
+    EFT = "EFT"
+    INVOICE = "INVOICE"
+    ROUTING_SLIP = "ROUTING_SLIP"
+
+
 class EFTShortnameRefundStatus(Enum):
     """EFT Short name refund statuses."""
 

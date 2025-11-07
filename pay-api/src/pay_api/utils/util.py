@@ -393,3 +393,8 @@ def get_statement_currency_string(value):
         return f"{float(value):,.2f}"
     except (TypeError, ValueError):
         return "0.00"
+
+
+def is_string_empty(val: str):
+    """Check if a string has a value."""
+    return not (val and val.strip())

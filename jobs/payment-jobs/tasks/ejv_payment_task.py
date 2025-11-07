@@ -27,6 +27,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.utils.enums import (
@@ -38,6 +39,7 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RefundsPartialStatus,
     RefundsPartialType,
+    RefundStatus,
 )
 from pay_api.utils.util import generate_transaction_number
 from tasks.common.cgi_ejv import CgiEjv
@@ -306,9 +308,11 @@ class EjvPaymentTask(CgiEjv):
         """Get credit card partial refunds."""
         invoices: list[InvoiceModel] = (
             InvoiceModel.query.join(RefundsPartialModel, RefundsPartialModel.invoice_id == InvoiceModel.id)
+            .join(RefundModel, RefundModel.id == RefundsPartialModel.refund_id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EJV.value)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
             .filter(RefundsPartialModel.status == RefundsPartialStatus.REFUND_REQUESTED.value)
+            .filter(RefundModel.status.in_([RefundStatus.APPROVAL_NOT_REQUIRED.value, RefundStatus.APPROVED.value]))
             .filter(InvoiceModel.payment_account_id == account_id)
             .order_by(InvoiceModel.id, RefundsPartialModel.id)
             .distinct(InvoiceModel.id)

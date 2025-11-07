@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.fas.routing_slip import RoutingSlip as RoutingSlip_service
 from pay_api.utils.constants import DT_SHORT_FORMAT
+from pay_api.utils.dataclasses import RoutingSlipSearch
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, RoutingSlipStatus
 from tests.utilities.base_test import factory_payment_account, factory_routing_slip
 
@@ -50,7 +51,9 @@ def test_get_links(session):
     assert child.get("remaining_amount") == 0
 
     # do a search for parent
-    results = RoutingSlip_service.search({"routingSlipNumber": parent_rs.number}, page=1, limit=1)
+    results = RoutingSlip_service.search(
+        RoutingSlipSearch(search_filter={"routingSlipNumber": parent_rs.number}, page=1, limit=1)
+    )
     parent_rs_from_search = results.get("items")[0]
     assert parent_rs_from_search.get("remaining_amount") == child_rs.remaining_amount + parent_rs.remaining_amount
     assert parent_rs_from_search.get("total") == parent_rs.total

@@ -20,7 +20,6 @@ from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
-from ..utils.enums import RefundsPartialType  # noqa: TID252
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db
@@ -52,6 +51,7 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
             "is_credit",
             "payment_line_item_id",
             "refund_amount",
+            "refund_id",
             "refund_type",
             "status",
             "updated_by",
@@ -66,6 +66,7 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     refund_type = db.Column(db.String(50), nullable=True)
     gl_posted = db.Column(db.DateTime, nullable=True)
     invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=True)
+    refund_id = db.Column(db.Integer, ForeignKey("refunds.id"), nullable=True)
     is_credit = db.Column(db.Boolean, nullable=False, server_default="f", default=False)
     status = db.Column(db.String(20), nullable=True)
     gl_error = db.Column(db.String(250), nullable=True)
@@ -75,6 +76,11 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
         """Get all partial refunds for a specific invoice."""
         return cls.query.filter_by(invoice_id=invoice_id).all()
 
+    @classmethod
+    def get_partial_refunds_by_refund_id(cls, refund_id: int) -> list[Self]:
+        """Get all partial refunds for a specific invoice."""
+        return cls.query.filter_by(refund_id=refund_id).all()
+
 
 @define
 class RefundPartialLine:
@@ -82,7 +88,7 @@ class RefundPartialLine:
 
     payment_line_item_id: int
     refund_amount: Decimal
-    refund_type: RefundsPartialType
+    refund_type: str
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -93,6 +99,11 @@ class RefundPartialLine:
         return cls(
             payment_line_item_id=row.payment_line_item_id, refund_amount=row.refund_amount, refund_type=row.refund_type
         )
+
+    @classmethod
+    def to_schema(cls, lines: list[RefundsPartial]):
+        """Return list of schemas."""
+        return [cls.from_row(partial_line) for partial_line in lines]
 
 
 @define

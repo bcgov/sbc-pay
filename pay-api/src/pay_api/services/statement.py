@@ -27,7 +27,6 @@ from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
@@ -51,7 +50,8 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.util import get_first_and_last_of_frequency, get_local_time
 
-from .payment import Payment as PaymentService
+from .invoice import Invoice
+from .invoice_search import InvoiceSearch
 from .payment import PaymentReportInput
 
 
@@ -382,9 +382,10 @@ class Statement:  # pylint:disable=too-many-public-methods
             previous_invoices = Statement.find_all_payments_and_invoices_for_statement(
                 previous_statement.id, payment_method
             )
-            previous_items = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
+            previous_items = InvoiceSearch.create_payment_report_details(purchases=previous_invoices, data=None)
+
             # Skip passing statement, we need the totals independent of the statement/payment date.
-            previous_totals = PaymentService.get_invoices_totals(previous_items.get("items", None), None)
+            previous_totals = InvoiceSearch.get_invoices_totals(previous_items.get("items", None), None)
 
         latest_payment_date = None
         for invoice in statement_invoices:
@@ -441,7 +442,7 @@ class Statement:  # pylint:disable=too-many-public-methods
 
         statement_purchases = Statement.find_all_payments_and_invoices_for_statement(statement_id)
 
-        result_items = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
+        result_items = InvoiceSearch.create_payment_report_details(purchases=statement_purchases, data=None)
         statement = statement_svc.asdict()
         statement["from_date"] = from_date_string
         statement["to_date"] = to_date_string
@@ -457,7 +458,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         if summary:
             report_inputs.statement_summary = summary
 
-        report_response = PaymentService.generate_payment_report(
+        report_response = InvoiceSearch.generate_payment_report(
             report_inputs, auth=kwargs.get("auth", None), statement=statement
         )
         current_app.logger.debug(">get_statement_report")
@@ -644,7 +645,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             "authAccountIds": [account.auth_account_id],
         }
 
-        invoice_detail_tuple = PaymentModel.get_invoices_and_payment_accounts_for_statements(statement_filter)
+        invoice_detail_tuple = Invoice.get_invoices_and_payment_accounts_for_statements(statement_filter)
         invoice_ids = list(invoice_detail_tuple)
         payment_methods_string = Statement.determine_payment_methods(invoice_detail_tuple, account)
 

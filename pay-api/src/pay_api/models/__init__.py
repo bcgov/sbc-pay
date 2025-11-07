@@ -70,6 +70,7 @@ from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .tax_rate import TaxRate
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
+from .search.invoice_composite_model import InvoiceCompositeModel
 
 from .comment import Comment, CommentSchema  # isort: skip - This has to be at the bottom otherwise FeeSchedule errors
 

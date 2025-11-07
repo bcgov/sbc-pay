@@ -2133,9 +2133,9 @@ werkzeug = "^3.0.3"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "update_deps_2"
-resolved_reference = "d8bb4b6384ff2847fe458f99d863e0d642d917cf"
+url = "https://github.com/ochiu/sbc-pay.git"
+reference = "30357-Refund-Approval-Flow-2"
+resolved_reference = "12733e1e54a2360598ca29a5ea86b42599f9019e"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3303,4 +3303,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "edc106312059e42be7d77d633ab69e67816699e9b5f9161c0f84b153ba221603"
+content-hash = "cf0b2bed2729ec7bfff8232f63b704e3390969641fcd2f4fc39a2dd20c97cee6"
