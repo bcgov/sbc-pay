@@ -153,6 +153,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     DISABLE_EJV_ERROR_EMAIL = os.getenv("DISABLE_EJV_ERROR_EMAIL", "true").lower() == "true"
     DISABLE_CSV_ERROR_EMAIL = os.getenv("DISABLE_CSV_ERROR_EMAIL", "true").lower() == "true"
     DISABLE_AP_ERROR_EMAIL = os.getenv("DISABLE_AP_ERROR_EMAIL", "true").lower() == "true"
+    DISABLE_RS_ADJUSTMENT_ERROR_EMAIL = os.getenv("DISABLE_RS_ADJUSTMENT_ERROR_EMAIL", "true").lower() == "true"
 
     # the day on which mail to get.put 1 to get mail next day of creation.put 2 to get mails day after tomorrow.
     NOTIFY_AFTER_DAYS = int(os.getenv("NOTIFY_AFTER_DAYS", 8))  # to get full 7 days tp pass, u need to put 8.

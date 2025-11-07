@@ -47,6 +47,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     __mapper_args__ = {
         "include_properties": [
             "cas_version_suffix",
+            "cas_mismatch",
             "created_by",
             "created_name",
             "created_on",
@@ -84,6 +85,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         nullable=True,
         index=True,
     )
+    cas_mismatch = db.Column(db.Boolean(), nullable=False, default=False)
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
     routing_slip_date = db.Column(db.Date, nullable=False)
