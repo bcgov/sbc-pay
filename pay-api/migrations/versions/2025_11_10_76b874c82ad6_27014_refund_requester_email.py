@@ -1,4 +1,4 @@
-"""empty message
+"""Add requester email for refunds
 
 Revision ID: 76b874c82ad6
 Revises: 725543789c2a
