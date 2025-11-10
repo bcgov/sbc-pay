@@ -379,12 +379,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         )
 
     @classmethod
-    def _get_applied_invoices_amount(cls, routing_slip: RoutingSlipModel) -> Decimal:
-        """Get total amount of applied invoices in SBC-PAY for routing slip."""
+    def _get_applied_invoices_amount(cls, routing_slips: list[RoutingSlipModel]) -> Decimal:
+        """Get total amount of applied invoices in SBC-PAY for routing slips."""
+        routing_slip_numbers = [rs.number for rs in routing_slips]
         total_applied = (
             db.session.query(func.sum(InvoiceModel.total))
             .filter(
-                InvoiceModel.routing_slip == routing_slip.number,
+                InvoiceModel.routing_slip.in_(routing_slip_numbers),
                 InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value
             )
             .scalar()
