@@ -3,13 +3,18 @@
 Account Number: {{ accountNumber }}
 Account Name: {{ accountName }}
 Transaction ID: {{ invoiceId }}
-Invoice Reference: {{ invoiceReference }}
+{% if status == 'DECLINED' %}
+Invoice Reference: {{ invoiceReferenceNumber }}
+{% endif %}
+
 
 A refund amount of ${{ '%.2f'|format(refundAmount) }} has been issued to you by {{ refundMethod }}.
 The processing time will be 3-5 business days.
 
 Reason for Refund: {{ reason }}
 
+
+---
 **Business Registry**
 BC Registries and Online Services
 Toll Free: [1-877-526-1526](1-877-526-1526)

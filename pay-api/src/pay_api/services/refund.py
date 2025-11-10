@@ -365,7 +365,7 @@ class RefundService:
                 reason=refund.reason,
                 refund_amount=refund_amount,
                 invoice_id=invoice.id,
-                invoice_reference_number="",
+                invoice_reference_number=invoice.references[0].invoice_number if len(invoice.references) > 0 else None,
                 url=f"{current_app.config.get('PAY_WEB_URL')}/refund-request/{invoice.id}",
             ).render_body(status=refund.status, is_for_client=False)
             send_email(product_recipients, subject, html_body)
@@ -490,7 +490,7 @@ class RefundService:
                 reason=refund.reason,
                 refund_amount=refund_total,
                 invoice_id=invoice.id,
-                invoice_reference_number="",
+                invoice_reference_number=invoice.references[0].invoice_number if len(invoice.references) > 0 else None,
                 url=f"{current_app.config.get('PAY_WEB_URL')}/refund-request/{invoice.id}",
             )
             staff_html_body = email_config.render_body(status=refund.status, is_for_client=False)
