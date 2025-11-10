@@ -294,6 +294,16 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(f"Found {len(routing_slips)} to write off or refund authorized.")
         for routing_slip in routing_slips:
             try:
+                child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
+
+                has_pending, pending_count = cls._has_pending_invoices(routing_slip, child_routing_slips)
+                if has_pending:
+                    current_app.logger.warning(
+                        f"Skipping routing slip {routing_slip.number} - has {pending_count} pending invoices "
+                        f"that need to be processed first"
+                    )
+                    continue
+
                 # 1.Adjust the routing slip and it's child routing slips for the remaining balance.
                 current_app.logger.debug(f"Adjusting routing slip {routing_slip.number}")
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(routing_slip.payment_account_id)
@@ -302,11 +312,9 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 )
 
                 # may raise ValueError
-                cls._validate_and_calculate_adjustment_amount(routing_slip, cfs_account)
+                cls._validate_and_calculate_adjustment_amount(routing_slip, cfs_account, child_routing_slips)
 
                 # reverse routing slip receipt
-                # Find all child routing slip and reverse it, as all linked routing slips are also considered as NSF.
-                child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
                 for rs in (routing_slip, *child_routing_slips):
                     is_refund = routing_slip.status == RoutingSlipStatus.REFUND_AUTHORIZED.value
                     receipt_number = rs.generate_cas_receipt_number()
@@ -332,6 +340,27 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     exc_info=True,
                 )
                 continue
+
+    @classmethod
+    def _has_pending_invoices(
+        cls, 
+        routing_slip: RoutingSlipModel, 
+        child_routing_slips: list[RoutingSlipModel]
+    ) -> tuple[bool, int]:
+        """Check if routing slip or its children have pending invoices."""
+        all_routing_slips = [routing_slip] + child_routing_slips
+        all_routing_slip_numbers = [rs.number for rs in all_routing_slips]
+        
+        pending_invoice_count = (
+            db.session.query(InvoiceModel)
+            .filter(
+                InvoiceModel.routing_slip.in_(all_routing_slip_numbers),
+                InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.CREATED.value])
+            )
+            .count()
+        )
+        
+        return (pending_invoice_count > 0, pending_invoice_count)
 
     @classmethod
     def _get_routing_slip_by_status(cls, status: RoutingSlipStatus) -> list[RoutingSlipModel]:
@@ -398,13 +427,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
     def _validate_and_calculate_adjustment_amount(
         cls,
         routing_slip: RoutingSlipModel,
-        cfs_account: CfsAccountModel
+        cfs_account: CfsAccountModel,
+        child_routing_slips: list[RoutingSlipModel]
     ) -> None:
         """Validate adjustment amount for routing slip."""
-        child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
         all_routing_slips = [routing_slip] + child_routing_slips
 
-        sbc_pay_applied = cls._get_applied_invoices_amount(routing_slip)
+        sbc_pay_applied = cls._get_applied_invoices_amount(all_routing_slips)
 
         receipt_details = []
         cfs_unapplied_total = Decimal("0.0")

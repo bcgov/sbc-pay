@@ -556,3 +556,53 @@ def test_receipt_adjustments_with_multiple_invoices_consistent(session):
         assert mock_adjust.called
 
         assert rs.cas_mismatch is False
+
+
+def test_receipt_adjustments_skip_child_pending_invoices(session):
+    """Test routing slip adjustment skips when child routing slips have pending invoices."""
+    child_rs_number = "12352"
+    parent_rs_number = "12353"
+
+    child_pay_account = factory_routing_slip_account(
+        number=child_rs_number, 
+        status=CfsAccountStatus.ACTIVE.value, 
+        total=10
+    )
+    factory_routing_slip_account(
+        number=parent_rs_number,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=20,
+        remaining_amount=20,
+    )
+
+    child_rs = RoutingSlipModel.find_by_number(child_rs_number)
+    parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
+
+    child_rs.status = RoutingSlipStatus.LINKED.value
+    child_rs.parent_number = parent_rs.number
+    child_rs.save()
+
+    parent_rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
+    parent_rs.cas_mismatch = False
+    parent_rs.save()
+
+    factory_invoice(
+        payment_account=child_pay_account,
+        total=10,
+        status_code=InvoiceStatus.CREATED.value,
+        payment_method_code=PaymentMethod.INTERNAL.value,
+        routing_slip=child_rs_number,
+    )
+
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+
+        RoutingSlipTask.adjust_routing_slips()
+
+        assert not mock_get_receipt.called
+        assert not mock_adjust.called
+
+        parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
+        assert parent_rs.remaining_amount == 20
+
+        assert parent_rs.cas_mismatch is False
