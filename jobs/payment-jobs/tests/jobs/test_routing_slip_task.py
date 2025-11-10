@@ -319,12 +319,12 @@ def test_receipt_adjustments(session, rs_status):
     """Test routing slip adjustments."""
     child_rs_number = "1234"
     parent_rs_number = "89799"
-    factory_routing_slip_account(number=child_rs_number, status=CfsAccountStatus.ACTIVE.value)
+    factory_routing_slip_account(number=child_rs_number, status=CfsAccountStatus.ACTIVE.value, total=10)
     factory_routing_slip_account(
         number=parent_rs_number,
         status=CfsAccountStatus.ACTIVE.value,
-        total=10,
-        remaining_amount=10,
+        total=20,
+        remaining_amount=20,
     )
     child_rs = RoutingSlipModel.find_by_number(child_rs_number)
     parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
@@ -334,17 +334,225 @@ def test_receipt_adjustments(session, rs_status):
     child_rs.save()
 
     parent_rs.status = rs_status
+    parent_rs.save()
 
     # Test exception path first.
-    with patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock:
-        mock.side_effect = Exception("ERROR!")
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+        mock_get_receipt.return_value = {
+            'unapplied_amount': 0.0,
+            'receipt_amount': 10.0,
+            'invoices': []
+        }
+        mock_adjust.side_effect = Exception("ERROR!")
         RoutingSlipTask.adjust_routing_slips()
 
     parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
-    assert parent_rs.remaining_amount == 10
+    assert parent_rs.remaining_amount == 20
+    assert parent_rs.cas_mismatch is True
 
-    with patch("pay_api.services.CFSService.adjust_receipt_to_zero"):
+    parent_rs.cas_mismatch = False
+    parent_rs.save()
+
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero"):
+        mock_get_receipt.return_value = {
+            'unapplied_amount': 10.0,
+            'receipt_amount': 10.0,
+            'invoices': []
+        }
         RoutingSlipTask.adjust_routing_slips()
 
     parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
     assert parent_rs.remaining_amount == 0
+    assert parent_rs.cas_mismatch is False
+
+
+def test_receipt_adjustments_amount_mismatch(session):
+    """Test routing slip adjustment fails when CFS amount doesn't match."""
+    rs_number = "12346"
+    factory_routing_slip_account(
+        number=rs_number,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=100,
+        remaining_amount=50,
+    )
+    
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
+    rs.cas_mismatch = False
+    rs.save()
+
+    # doesn't match remaining_amount
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+        
+        mock_get_receipt.return_value = {
+            'unapplied_amount': 30.0,
+            'receipt_amount': 100.0,
+            'invoices': []
+        }
+        
+        RoutingSlipTask.adjust_routing_slips()
+
+        rs = RoutingSlipModel.find_by_number(rs_number)
+        assert rs.remaining_amount == 50
+        assert not mock_adjust.called
+        assert rs.cas_mismatch is True
+
+
+def test_receipt_adjustments_data_mismatch(session):
+    """Test routing slip adjustment fails when SBC-PAY and CFS data don't match."""
+    rs_number = "12347"
+    factory_routing_slip_account(
+        number=rs_number,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=100,
+        remaining_amount=85,
+    )
+
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
+    rs.cas_mismatch = False
+    rs.save()
+
+    # data mismatch
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+        
+        mock_get_receipt.return_value = {
+            'unapplied_amount': 85.0,
+            'receipt_amount': 100.0,
+            'invoices': []
+        }
+        
+        RoutingSlipTask.adjust_routing_slips()
+
+        rs = RoutingSlipModel.find_by_number(rs_number)
+        assert rs.remaining_amount == 85
+        assert not mock_adjust.called
+        assert rs.cas_mismatch is True
+
+
+def test_receipt_adjustments_skip_cas_mismatch(session):
+    """Test routing slip adjustment skips routing slips with cas_mismatch = True."""
+    rs_number = "12348"
+    factory_routing_slip_account(
+        number=rs_number,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=100,
+        remaining_amount=50,
+    )
+    
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
+    rs.cas_mismatch = True
+    rs.save()
+
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+        
+        RoutingSlipTask.adjust_routing_slips()
+
+        assert not mock_get_receipt.called
+        assert not mock_adjust.called
+        
+        rs = RoutingSlipModel.find_by_number(rs_number)
+        assert rs.remaining_amount == 50
+        assert rs.cas_mismatch is True
+
+
+def test_receipt_adjustments_cfs_has_invoices_sbc_pay_doesnt(session):
+    """Test routing slip adjustment fails when CFS has invoices but SBC-PAY doesn't."""
+    rs_number = "12349"
+    factory_routing_slip_account(
+        number=rs_number,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=100,
+        remaining_amount=100,
+    )
+
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
+    rs.cas_mismatch = False
+    rs.save()
+
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+        
+        mock_get_receipt.return_value = {
+            'unapplied_amount': 100.0,
+            'receipt_amount': 100.0,
+            'invoices': [{'invoice_number': 'INV123', 'amount': 50.0}]
+        }
+        
+        RoutingSlipTask.adjust_routing_slips()
+
+        rs = RoutingSlipModel.find_by_number(rs_number)
+        assert rs.remaining_amount == 100
+        assert not mock_adjust.called
+        assert rs.cas_mismatch is True
+
+
+def test_receipt_adjustments_with_multiple_invoices_consistent(session):
+    """Test routing slip adjustment succeeds when both SBC-PAY and CFS have consistent invoice data."""
+    rs_number = "12350"
+    pay_account = factory_routing_slip_account(
+        number=rs_number,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=100.33,
+        remaining_amount=67.11,
+    )
+
+    # These will be queried by _get_applied_invoices_amount() to calculate total applied: 33.22
+    factory_invoice(
+        payment_account=pay_account,
+        total=22.11,
+        status_code=InvoiceStatus.PAID.value,
+        payment_method_code=PaymentMethod.INTERNAL.value,
+        routing_slip=rs_number,
+    )
+    factory_invoice(
+        payment_account=pay_account,
+        total=11.11,
+        status_code=InvoiceStatus.PAID.value,
+        payment_method_code=PaymentMethod.INTERNAL.value,
+        routing_slip=rs_number,
+    )
+
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
+    rs.cas_mismatch = False
+    rs.save()
+
+    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
+         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+
+        # total: 100.33, applied: 33.22 (22.11 + 11.11), unapplied: 67.11
+        mock_get_receipt.return_value = {
+            'unapplied_amount': 67.11,
+            'receipt_amount': 100.33,
+            'invoices': [
+                {
+                    'invoice_number': 'REG01036828',
+                    'total': 22.11,
+                    'amount_applied': 22.11,
+                    'links': [{'rel': 'self', 'href': 'https://xxx/invs/REG01036828/'}]
+                },
+                {
+                    'invoice_number': 'REG01036829',
+                    'total': 11.11,
+                    'amount_applied': 11.11,
+                    'links': [{'rel': 'self', 'href': 'https://xxx/invs/REG01036829/'}]
+                }
+            ]
+        }
+
+        RoutingSlipTask.adjust_routing_slips()
+
+        rs = RoutingSlipModel.find_by_number(rs_number)
+
+        assert rs.remaining_amount == 0
+        assert mock_adjust.called
+
+        assert rs.cas_mismatch is False
