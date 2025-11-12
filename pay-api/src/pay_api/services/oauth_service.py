@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to invoke Rest services."""
 
+import gzip
 import json
 import re
 from collections.abc import Iterable
@@ -46,6 +47,7 @@ class OAuthService:
         is_put: bool = False,
         auth_header_name: str = "Authorization",
         stream: bool = False,
+        gzip_body: bool = False,
     ):
         """POST service."""
         current_app.logger.debug("<post")
@@ -60,6 +62,12 @@ class OAuthService:
 
         if content_type == ContentType.JSON:
             data = json.dumps(data, cls=DecimalEncoder)
+
+        if gzip_body:
+            if isinstance(data, str):
+                data = data.encode("utf-8")
+            data = gzip.compress(data)
+            headers["Content-Encoding"] = "gzip"
 
         safe_headers = headers.copy()
         safe_headers.pop("Authorization", None)

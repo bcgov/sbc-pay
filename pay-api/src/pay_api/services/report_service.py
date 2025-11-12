@@ -62,4 +62,5 @@ class ReportService:
             additional_headers={"Accept": request.content_type},
             data=report_payload,
             stream=request.stream,
+            gzip_body=True,
         )
