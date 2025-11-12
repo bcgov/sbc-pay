@@ -13,6 +13,10 @@
 # limitations under the License.
 """Utility for product authorizations helpers."""
 
+import traceback
+
+from flask import current_app
+
 from pay_api.models import Refund
 from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.utils.enums import RefundStatus, Role, RolePattern
@@ -39,11 +43,16 @@ class ProductAuthUtil:
     @staticmethod
     def get_product_approver_recipients(product_code: str):
         """Return recipients for product approver."""
-        all_products_recipient = get_emails_with_keycloak_role(Role.PRODUCT_REFUND_APPROVER.value)
-        product_code_recipient = get_emails_with_keycloak_role(
-            f"{product_code.lower()}{RolePattern.PRODUCT_REFUND_APPROVER.value}"
-        )
-        return list(set(all_products_recipient + product_code_recipient))
+        try:
+            all_products_recipient = get_emails_with_keycloak_role(Role.PRODUCT_REFUND_APPROVER.value)
+            product_code_recipient = get_emails_with_keycloak_role(
+                f"{product_code.lower()}{RolePattern.PRODUCT_REFUND_APPROVER.value}"
+            )
+            return list(set(all_products_recipient + product_code_recipient))
+        except Exception as e:
+            current_app.logger.error(
+                f"{{Error retrieving product notification: recipients {str(e)} stack_trace: {traceback.format_exc()}}}"
+            )
 
     @staticmethod
     def get_product_refund_recipients(product_code: str, refund: Refund):
