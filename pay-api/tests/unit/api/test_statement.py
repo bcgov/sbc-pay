@@ -178,6 +178,7 @@ def test_get_weekly_statement_report_as_pdf(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 200
+    assert "Content-Length" not in rv.headers
 
 
 def test_get_monthly_statement_report_as_pdf(session, client, jwt, app):
@@ -214,6 +215,7 @@ def test_get_monthly_statement_report_as_pdf(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 200
+    assert "Content-Length" not in rv.headers
 
 
 def test_get_daily_statement_report_as_pdf(session, client, jwt, app):
@@ -250,6 +252,7 @@ def test_get_daily_statement_report_as_pdf(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 200
+    assert "Content-Length" not in rv.headers
 
 
 def test_get_monthly_statement_report_as_csv(session, client, jwt, app):
@@ -286,6 +289,7 @@ def test_get_monthly_statement_report_as_csv(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 200
+    assert "Content-Length" not in rv.headers
 
 
 def test_statement_summary(session, client, jwt, app):

@@ -32,6 +32,7 @@ class ReportRequest:
     template_name: str
     populate_page_number: bool
     template_vars: dict | None = None
+    stream: bool = False
 
 
 class ReportService:
@@ -60,4 +61,5 @@ class ReportService:
             content_type=ContentType.JSON,
             additional_headers={"Accept": request.content_type},
             data=report_payload,
+            stream=request.stream,
         )
