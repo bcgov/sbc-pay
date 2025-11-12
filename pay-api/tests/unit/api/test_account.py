@@ -518,8 +518,7 @@ def test_account_purchase_history_export_as_csv(session, client, jwt, app):
     )
 
     assert rv.status_code == 201
-    if headers.get("Accept") == "text/csv":
-        assert "Content-Length" not in rv.headers
+    assert "Content-Length" not in rv.headers
 
 
 def test_account_purchase_history_export_as_pdf(session, client, jwt, app):
@@ -549,8 +548,7 @@ def test_account_purchase_history_export_as_pdf(session, client, jwt, app):
     )
 
     assert rv.status_code == 201
-    if headers.get("Accept") == "text/csv":
-        assert "Content-Length" not in rv.headers
+    assert "Content-Length" not in rv.headers
 
 
 def test_account_purchase_history_export_invalid_request(session, client, jwt, app):
