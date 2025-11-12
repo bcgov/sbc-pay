@@ -15,6 +15,7 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
+from unittest.mock import DEFAULT, patch
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -354,3 +355,14 @@ def mock_is_payment_method_valid_for_corp_type(monkeypatch):
         return True
 
     monkeypatch.setattr("pay_api.services.code.Code.is_payment_method_valid_for_corp_type", mock_is_valid)
+
+
+@pytest.fixture
+def refund_service_mocks():
+    """Mock for refund service supporting service calls."""
+    with patch.multiple(
+        "pay_api.services.refund", send_email=DEFAULT, get_auth_user=DEFAULT, get_product_refund_recipients=DEFAULT
+    ) as mocks:
+        mocks["get_auth_user"].return_value = {"email": "test@test.com"}
+        mocks["send_email"].return_value = ["test@test.com"]
+        yield mocks

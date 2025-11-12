@@ -13,7 +13,13 @@
 # limitations under the License.
 """Utility for product authorizations helpers."""
 
-from pay_api.utils.enums import Role
+import traceback
+
+from flask import current_app
+
+from pay_api.models import Refund
+from pay_api.services.auth import get_emails_with_keycloak_role
+from pay_api.utils.enums import RefundStatus, Role, RolePattern
 from pay_api.utils.user_context import UserContext, user_context
 
 
@@ -33,3 +39,28 @@ class ProductAuthUtil:
         filter_by_product = Role.PRODUCT_REFUND_VIEWER.value in roles
         products = [s[: -len(role_pattern)].upper() for s in roles if s.endswith(role_pattern)]
         return products, filter_by_product
+
+    @staticmethod
+    def get_product_approver_recipients(product_code: str):
+        """Return recipients for product approver."""
+        try:
+            all_products_recipient = get_emails_with_keycloak_role(Role.PRODUCT_REFUND_APPROVER.value)
+            product_code_recipient = get_emails_with_keycloak_role(
+                f"{product_code.lower()}{RolePattern.PRODUCT_REFUND_APPROVER.value}"
+            )
+            return list(set(all_products_recipient + product_code_recipient))
+        except Exception as e:
+            current_app.logger.error(
+                f"{{Error retrieving product notification: recipients {str(e)} stack_trace: {traceback.format_exc()}}}"
+            )
+
+    @staticmethod
+    def get_product_refund_recipients(product_code: str, refund: Refund):
+        """Return recipients for product approver."""
+        all_recipients = []
+        match refund.status:
+            case RefundStatus.PENDING_APPROVAL.value | RefundStatus.APPROVED.value:
+                all_recipients = ProductAuthUtil.get_product_approver_recipients(product_code)
+            case RefundStatus.DECLINED.value:
+                all_recipients = [refund.requester_email]
+        return all_recipients

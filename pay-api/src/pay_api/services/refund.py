@@ -31,7 +31,9 @@ from pay_api.models import RefundPartialLine, db
 from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models.refund import PartialRefundLineDTO, RefundDTO
+from pay_api.services.auth import get_auth_user
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.email_service import ProductRefundEmailContent, send_email
 from pay_api.services.partner_disbursements import PartnerDisbursements
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
@@ -58,6 +60,9 @@ from pay_api.utils.util import (
     is_string_empty,
     normalize_accented_characters_json,
 )
+
+# Easier to make a full refund service mock for all the notifications
+get_product_refund_recipients = ProductAuthUtil.get_product_refund_recipients
 
 
 class RefundService:
@@ -221,19 +226,27 @@ class RefundService:
             raise BusinessException(Error.REFUND_INSUFFICIENT_PRODUCT_AUTHORIZATION)
 
     @classmethod
-    def _validate_refund_approval_flow(cls, invoice: InvoiceModel, products: list[str], is_system: bool):
+    def _validate_refund_approval_flow(
+        cls, invoice: InvoiceModel, products: list[str], is_system: bool, auth_user: dict = None
+    ):
         requires_approval = invoice.corp_type.refund_approval
         if not requires_approval:
             return
         else:
             cls.validate_product_authorization(invoice, products, is_system)
 
+        if not is_system:
+            if not auth_user or "email" not in auth_user:
+                raise BusinessException(Error.INVALID_REQUEST)
+
         refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         if refund and refund.status != RefundStatus.DECLINED.value:
             raise BusinessException(Error.REFUND_ALREADY_EXISTS)
 
     @classmethod
-    def _initialize_refund(cls, invoice: InvoiceModel, request: dict[str, str], user: UserContext) -> RefundModel:
+    def _initialize_refund(
+        cls, invoice: InvoiceModel, request: dict[str, str], user: UserContext, auth_user: dict = None
+    ) -> RefundModel:
         """Initialize refund."""
         refund = RefundModel(
             type=RefundType.INVOICE.value,
@@ -243,6 +256,7 @@ class RefundService:
             staff_comment=get_str_by_path(request, "staffComment"),
             requested_by=user.original_username if user.original_username else user.user_name,
             requested_date=datetime.now(tz=UTC),
+            requester_email=auth_user.get("email") if auth_user else None,
             status=(
                 RefundStatus.PENDING_APPROVAL.value
                 if invoice.corp_type.refund_approval and not user.is_system()
@@ -312,32 +326,55 @@ class RefundService:
         refund_revenue = (request or {}).get("refundRevenue", None)
         is_partial_refund = bool(refund_revenue)
         refund_partial_lines = []
+        auth_user = None
 
         invoice = InvoiceModel.find_by_id(invoice_id)
         requires_approval = invoice.corp_type.refund_approval
         cls._validate_corp_type_role(invoice, user.roles)
         cls._validate_refundable_state(invoice, is_partial_refund)
-        cls._validate_refund_approval_flow(invoice, products, user.is_system())
+        if requires_approval:
+            auth_user = get_auth_user(user.original_username or user.user_name)
+            cls._validate_refund_approval_flow(invoice, products, user.is_system(), auth_user)
 
         if is_partial_refund:
             refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
             cls._validate_partial_refund_lines(refund_partial_lines, invoice)
 
-        refund = cls._initialize_refund(invoice, request, user)
+        refund = cls._initialize_refund(invoice, request, user, auth_user)
         cls._save_partial_refund_lines(refund_partial_lines, invoice, refund)
         refund.save()
+
+        refund_amount = (
+            PaymentSystemService.get_total_partial_refund_amount(refund_partial_lines)
+            if is_partial_refund
+            else invoice.total
+        )
         if not requires_approval or user.is_system():
             return cls._complete_refund(invoice, refund, refund_partial_lines)
+
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        product_recipients = get_product_refund_recipients(product_code=invoice.corp_type.product, refund=refund)
+        if product_recipients:
+            subject = f"Pending Refund Request for {invoice.corp_type.description}"
+            html_body = ProductRefundEmailContent(
+                account_number=payment_account.auth_account_id,
+                account_name=payment_account.name,
+                decline_reason=refund.decline_reason,
+                staff_comment=refund.staff_comment,
+                status=refund.status,
+                reason=refund.reason,
+                refund_amount=refund_amount,
+                invoice_id=invoice.id,
+                invoice_reference_number=invoice.references[0].invoice_number if len(invoice.references) > 0 else None,
+                url=f"{current_app.config.get('PAY_WEB_URL')}/refund-request/{invoice.id}",
+            ).render_body(status=refund.status, is_for_client=False)
+            send_email(product_recipients, subject, html_body)
 
         return {
             "message": f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} "
             f"is pending refund approval.",
             "refundId": refund.id,
-            "refundAmount": (
-                PaymentSystemService.get_total_partial_refund_amount(refund_partial_lines)
-                if is_partial_refund
-                else invoice.total
-            ),
+            "refundAmount": refund_amount,
             "isPartialRefund": is_partial_refund,
         }
 
@@ -440,6 +477,36 @@ class RefundService:
         normalized_refund_lines, refund_total = RefundService.normalize_partial_refund_lines(refund_partial_lines)
         if not refund_partial_lines:
             refund_total = invoice.total
+
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        product_recipients = get_product_refund_recipients(product_code=invoice.corp_type.product, refund=refund)
+        if product_recipients:
+            email_config = ProductRefundEmailContent(
+                account_number=payment_account.auth_account_id,
+                account_name=payment_account.name,
+                decline_reason=refund.decline_reason,
+                staff_comment=refund.staff_comment,
+                status=refund.status,
+                reason=refund.reason,
+                refund_amount=refund_total,
+                invoice_id=invoice.id,
+                invoice_reference_number=invoice.references[0].invoice_number if len(invoice.references) > 0 else None,
+                url=f"{current_app.config.get('PAY_WEB_URL')}/refund-request/{refund.id}",
+            )
+            staff_html_body = email_config.render_body(status=refund.status, is_for_client=False)
+            send_email(
+                product_recipients,
+                f"Refund Request {refund.status} for {invoice.corp_type.description}",
+                staff_html_body,
+            )
+
+            if refund.status == RefundStatus.APPROVED.value:
+                client_html_body = email_config.render_body(status=refund.status, is_for_client=True)
+                send_email(
+                    [refund.notification_email],
+                    f"Refund Notice for {payment_account._dao.auth_account_id}: {payment_account._dao.name} ",
+                    client_html_body,
+                )
 
         return Converter().unstructure(
             RefundDTO.from_row(

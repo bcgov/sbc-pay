@@ -64,6 +64,7 @@ class Refund(BaseModel):
             "refund_method",
             "requested_by",
             "requested_date",
+            "requester_email",
             "routing_slip_id",
             "staff_comment",
             "status",
@@ -77,6 +78,7 @@ class Refund(BaseModel):
     requested_date = db.Column(db.DateTime)
     reason = db.Column(db.String(250))
     requested_by = db.Column(db.String(50))
+    requester_email = db.Column(db.String(100), nullable=True)
     decision_made_by = db.Column(db.String(50))
     decision_date = db.Column(db.DateTime)
     decline_reason = db.Column(db.String(), nullable=True)

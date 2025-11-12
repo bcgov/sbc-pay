@@ -1,0 +1,17 @@
+{% set status_display = {
+    'APPROVED': 'Approved',
+    'DECLINED': 'Declined' }
+%}
+
+# Refund Request {{ status_display.get(status) }} for {{ accountNumber }}: {{ accountName }}
+
+The refund request of ${{ '%.2f'|format(refundAmount) }} for {{ accountNumber }} : {{ accountName }} {% if status == 'APPROVED' %}is now approved.{% elif status == 'DECLINED' %}is declined with the following message:{% else %}.{% endif %}
+
+{# Login link is duplicated here with conditionals to deal with white spacing handling in gc notify #}
+{% if status == 'DECLINED' %}
+^{{ declineReason }}
+
+{% endif %}
+
+
+[Log in to view details]({{ url }}) 
