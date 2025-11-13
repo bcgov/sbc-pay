@@ -342,11 +342,19 @@ def test_receipt_adjustments(session, rs_status):
     # Test exception path first.
     with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
          patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
-        mock_get_receipt.return_value = {
-            'unapplied_amount': 0.0,
-            'receipt_amount': 10.0,
-            'invoices': []
-        }
+        # Return different values for parent and child receipts
+        mock_get_receipt.side_effect = [
+            {
+                'unapplied_amount': 0.0,  # parent
+                'receipt_amount': 20.0,
+                'invoices': []
+            },
+            {
+                'unapplied_amount': 0.0,  # child
+                'receipt_amount': 10.0,
+                'invoices': []
+            }
+        ]
         mock_adjust.side_effect = Exception("ERROR!")
         RoutingSlipTask.adjust_routing_slips()
 
@@ -359,11 +367,19 @@ def test_receipt_adjustments(session, rs_status):
 
     with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
          patch("pay_api.services.CFSService.adjust_receipt_to_zero"):
-        mock_get_receipt.return_value = {
-            'unapplied_amount': 10.0,
-            'receipt_amount': 10.0,
-            'invoices': []
-        }
+        # Return different values for parent and child receipts
+        mock_get_receipt.side_effect = [
+            {
+                'unapplied_amount': 20.0,  # parent
+                'receipt_amount': 20.0,
+                'invoices': []
+            },
+            {
+                'unapplied_amount': 10.0,  # child
+                'receipt_amount': 10.0,
+                'invoices': []
+            }
+        ]
         RoutingSlipTask.adjust_routing_slips()
 
     parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
