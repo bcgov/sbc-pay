@@ -42,7 +42,6 @@ from pay_api.services.payment_calculations import (
     build_grouped_invoice_context,
     build_statement_context,
     build_statement_summary_context,
-    build_summary_page_context,
 )
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
@@ -584,7 +583,6 @@ class InvoiceSearch:
                 "total": formatted_totals,
                 "account": account_info,
                 "statement": build_statement_context(kwargs.get("statement")),
-                "summaryPage": build_summary_page_context(grouped_invoices),
             }
 
             if has_payment_instructions:

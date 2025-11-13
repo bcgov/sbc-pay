@@ -25,8 +25,7 @@ from sqlalchemy import and_, case, func
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import db
-from pay_api.services.code import Code as CodeService
-from pay_api.utils.enums import Code, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
 
@@ -404,40 +403,3 @@ def build_statement_summary_context(statement_summary: dict) -> list[dict]:
     if summary_row_dict.get("cancelledTransactions") is None:
         summary_row_dict.pop("cancelledTransactions")
     return summary_row_dict
-
-
-def build_summary_page_context(grouped_invoices: list[dict]) -> dict:
-    """Build summary context from grouped_invoices for the summary page.
-
-    Summary page needs context because of chunked rendering in the report API.
-    """
-    if len(grouped_invoices or []) <= 1:
-        return {"display_summary_page": False}
-
-    grouped_summary: list[dict] = []
-
-    summary_fields = ["totals_summary", "due_summary", "refunds_summary", "credits_summary"]
-
-    for invoice in grouped_invoices or []:
-        summary_item = {field: invoice.get(field, 0.00) for field in summary_fields}
-        payment_method = invoice.get("payment_method")
-        summary_item.update(
-            {
-                "refunds_total": invoice.get("refunds_total", 0.00),
-                "credits_total": invoice.get("credits_total", 0.00),
-                "refunds_credits_total": invoice.get("refunds_total", 0.00) + invoice.get("credits_total", 0.00),
-                "payment_method": CodeService.find_code_value_by_type_and_code(
-                    Code.PAYMENT_METHODS.value, payment_method
-                ).get("description", payment_method),
-            }
-        )
-        grouped_summary.append(summary_item)
-
-    totals = {field: sum(item[field] for item in grouped_summary) for field in summary_fields}
-    totals["refunds_credits_total"] = sum(item["refunds_credits_total"] for item in grouped_summary)
-
-    return {
-        "grouped_summary": grouped_summary,
-        "display_summary_page": True,
-        "total": totals,
-    }
