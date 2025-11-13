@@ -122,6 +122,7 @@ def test_process_nsf(session):
     invoice = factory_invoice(
         payment_account=pay_account,
         total=30,
+        paid=30,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=parent_rs.number,
@@ -210,6 +211,7 @@ def test_process_correction(session):
     invoice = factory_invoice(
         payment_account=pay_account,
         total=30,
+        paid=30,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=number,
@@ -265,6 +267,7 @@ def test_link_to_nsf_rs(session):
     invoice = factory_invoice(
         payment_account=pay_account,
         total=30,
+        paid=30,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=parent_rs.number,
@@ -508,6 +511,7 @@ def test_receipt_adjustments_with_multiple_invoices_consistent(session):
     factory_invoice(
         payment_account=pay_account,
         total=22.11,
+        paid=22.11,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=rs_number,
@@ -515,6 +519,7 @@ def test_receipt_adjustments_with_multiple_invoices_consistent(session):
     factory_invoice(
         payment_account=pay_account,
         total=11.11,
+        paid=11.11,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=rs_number,
