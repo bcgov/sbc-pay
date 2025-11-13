@@ -164,6 +164,7 @@ def factory_invoice(
     service_fees: float = 0.0,
     total=0,
     paid=0,
+    refund=None,
     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
     created_on: datetime = datetime.now(tz=UTC),
     cfs_account_id: int = 0,
@@ -190,6 +191,8 @@ def factory_invoice(
         payment_date=None,
         refund_date=None,
     )
+    if refund is not None:
+        invoice.refund = refund
     if cfs_account_id != 0:
         invoice.cfs_account_id = cfs_account_id
 

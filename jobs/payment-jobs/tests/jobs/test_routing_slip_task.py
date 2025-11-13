@@ -122,6 +122,7 @@ def test_process_nsf(session):
     invoice = factory_invoice(
         payment_account=pay_account,
         total=30,
+        paid=30,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=parent_rs.number,
@@ -210,6 +211,7 @@ def test_process_correction(session):
     invoice = factory_invoice(
         payment_account=pay_account,
         total=30,
+        paid=30,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=number,
@@ -265,6 +267,7 @@ def test_link_to_nsf_rs(session):
     invoice = factory_invoice(
         payment_account=pay_account,
         total=30,
+        paid=30,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=parent_rs.number,
@@ -339,11 +342,19 @@ def test_receipt_adjustments(session, rs_status):
     # Test exception path first.
     with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
          patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
-        mock_get_receipt.return_value = {
-            'unapplied_amount': 0.0,
-            'receipt_amount': 10.0,
-            'invoices': []
-        }
+        # Return different values for parent and child receipts
+        mock_get_receipt.side_effect = [
+            {
+                'unapplied_amount': 0.0,  # parent
+                'receipt_amount': 20.0,
+                'invoices': []
+            },
+            {
+                'unapplied_amount': 0.0,  # child
+                'receipt_amount': 10.0,
+                'invoices': []
+            }
+        ]
         mock_adjust.side_effect = Exception("ERROR!")
         RoutingSlipTask.adjust_routing_slips()
 
@@ -356,11 +367,19 @@ def test_receipt_adjustments(session, rs_status):
 
     with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
          patch("pay_api.services.CFSService.adjust_receipt_to_zero"):
-        mock_get_receipt.return_value = {
-            'unapplied_amount': 10.0,
-            'receipt_amount': 10.0,
-            'invoices': []
-        }
+        # Return different values for parent and child receipts
+        mock_get_receipt.side_effect = [
+            {
+                'unapplied_amount': 20.0,  # parent
+                'receipt_amount': 20.0,
+                'invoices': []
+            },
+            {
+                'unapplied_amount': 10.0,  # child
+                'receipt_amount': 10.0,
+                'invoices': []
+            }
+        ]
         RoutingSlipTask.adjust_routing_slips()
 
     parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
@@ -508,6 +527,7 @@ def test_receipt_adjustments_with_multiple_invoices_consistent(session):
     factory_invoice(
         payment_account=pay_account,
         total=22.11,
+        paid=22.11,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=rs_number,
@@ -515,6 +535,7 @@ def test_receipt_adjustments_with_multiple_invoices_consistent(session):
     factory_invoice(
         payment_account=pay_account,
         total=11.11,
+        paid=11.11,
         status_code=InvoiceStatus.PAID.value,
         payment_method_code=PaymentMethod.INTERNAL.value,
         routing_slip=rs_number,
