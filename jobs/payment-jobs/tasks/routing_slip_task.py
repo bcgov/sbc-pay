@@ -383,7 +383,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         """Get total amount of applied invoices in SBC-PAY for routing slips."""
         routing_slip_numbers = [rs.number for rs in routing_slips]
         total_applied = (
-            db.session.query(func.sum(InvoiceModel.paid - InvoiceModel.refund))
+            db.session.query(func.sum(InvoiceModel.paid - func.coalesce(InvoiceModel.refund, 0)))
             .filter(
                 InvoiceModel.routing_slip.in_(routing_slip_numbers),
                 InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value
