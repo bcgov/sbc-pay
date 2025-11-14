@@ -26,6 +26,8 @@ import pytest
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import Refund as RefundModel
+from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import (
     CfsAccountStatus,
     InvoiceStatus,
@@ -34,6 +36,7 @@ from pay_api.utils.enums import (
     RefundStatus,
     RefundType,
     Role,
+    RolePattern,
 )
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
@@ -50,7 +53,9 @@ from tests.utilities.base_test import (
 )
 
 
-def setup_filing_and_account_data(product_code: str, payment_method: str):
+def setup_filing_and_account_data(
+    product_code: str, payment_method: str, refund_approval: bool = True
+) -> CfsAccountModel:
     """Set up supporting filing and account data for refund approval flow."""
     test_code = "REFUNDTEST"
     distribution_code = factory_distribution_code(
@@ -68,7 +73,7 @@ def setup_filing_and_account_data(product_code: str, payment_method: str):
         corp_type_code=test_code,
         corp_type_description=f"{test_code} description",
         product_code=product_code.upper(),
-        refund_approval=True,
+        refund_approval=refund_approval,
     )
     filing_type = factory_filing_type_model(filing_type_code=test_code, filing_description=f"{test_code} filing")
 
@@ -160,25 +165,30 @@ def request_refund(client, invoice, requester_headers, refund_revenue: list[dict
 
 def get_refund_token_headers(app, jwt, token_config: dict):
     """Return refund request token headers by refund flow user type."""
-    token = jwt.create_jwt(
-        get_claims(
-            app_request=app,
-            username=token_config["requester_name"],
-            roles=token_config["requester_roles"],
-        ),
-        token_header,
-    )
-    requester_headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    requester_headers = None
+    approver_headers = None
 
-    token = jwt.create_jwt(
-        get_claims(
-            app_request=app,
-            username=token_config["approver_name"],
-            roles=token_config["approver_roles"],
-        ),
-        token_header,
-    )
-    approver_headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    if token_config.get("requester_name") and token_config.get("requester_roles"):
+        token = jwt.create_jwt(
+            get_claims(
+                app_request=app,
+                username=token_config["requester_name"],
+                roles=token_config["requester_roles"],
+            ),
+            token_header,
+        )
+        requester_headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    if token_config.get("approver_name") and token_config.get("approver_roles"):
+        token = jwt.create_jwt(
+            get_claims(
+                app_request=app,
+                username=token_config["approver_name"],
+                roles=token_config["approver_roles"],
+            ),
+            token_header,
+        )
+        approver_headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     return requester_headers, approver_headers
 
@@ -669,3 +679,124 @@ def test_invoice_composite_full_refund(
     assert invoice_composite["partialRefundable"] is True
     assert invoice_composite["partialRefunds"] is None
     assert invoice_composite["fullRefundable"] is True
+
+
+@pytest.mark.parametrize(
+    "role",
+    [
+        ("bca" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("btr" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("business" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("business_search" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("cso" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("esra" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("mhr" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("ppr" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("rppr" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("rpt" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("sofi" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("strr" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("vs" + RolePattern.PRODUCT_REFUND_REQUESTER.value),
+        ("test_product" + RolePattern.PRODUCT_REFUND_APPROVER.value),
+        Role.PRODUCT_REFUND_APPROVER.value,
+    ],
+)
+def test_refund_requester_unauthorized(session, client, jwt, app, monkeypatch, refund_service_mocks, role):
+    """Assert allowed products still properly checked when refund approval is not True."""
+    cfs_account = setup_filing_and_account_data(
+        product_code="TEST_PRODUCT", payment_method=PaymentMethod.DIRECT_PAY.value, refund_approval=False
+    )
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.DIRECT_PAY.value)
+    token_config = {"requester_name": "TEST_REQUESTER", "requester_roles": [Role.PRODUCT_REFUND_VIEWER.value, role]}
+    requester_headers, approver_headers = get_refund_token_headers(app, jwt, token_config)
+    rv = request_refund(client, invoice, requester_headers)
+    assert rv.status_code == 403
+    if rv.json.get("type"):
+        assert rv.json.get("type") == Error.REFUND_INSUFFICIENT_PRODUCT_AUTHORIZATION.name
+
+
+@pytest.mark.parametrize(
+    "role,refund_approval,expect_pending_approval",
+    [
+        (Role.SYSTEM.value, True, False),
+        (Role.SYSTEM.value, False, False),
+        (Role.FAS_REFUND.value, True, True),
+        (Role.FAS_REFUND.value, False, False),
+        (Role.CREATE_CREDITS.value, True, True),
+        (Role.CREATE_CREDITS.value, False, False),
+    ],
+)
+def test_regression_roles_create_refund_request(
+    session,
+    client,
+    jwt,
+    app,
+    monkeypatch,
+    refund_service_mocks,
+    send_email_mock,
+    role,
+    refund_approval,
+    expect_pending_approval,
+):
+    """Assert backwards compatibility for existing roles on refund creation."""
+    cfs_account = setup_filing_and_account_data(
+        product_code="TEST_PRODUCT", payment_method=PaymentMethod.DIRECT_PAY.value, refund_approval=refund_approval
+    )
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.DIRECT_PAY.value)
+    token_config = {"requester_name": "requester", "requester_roles": [role]}
+    system_headers, _ = get_refund_token_headers(app, jwt, token_config)
+    rv = request_refund(client, invoice, system_headers)
+
+    assert rv.status_code == 202
+    refund = RefundModel.find_by_id(rv.json["refundId"])
+    assert refund
+    if expect_pending_approval:
+        assert refund.status == RefundStatus.PENDING_APPROVAL.value
+        assert (
+            rv.json.get("message")
+            == f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} is pending refund approval."
+        )
+        refund_service_mocks["send_email"].assert_called_once()
+    else:
+        assert refund.status == RefundStatus.APPROVAL_NOT_REQUIRED.value
+        assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES[f"{PaymentMethod.DIRECT_PAY.value}.PAID"]
+        refund_service_mocks["send_email"].assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "role,refund_approval",
+    [
+        (Role.SYSTEM.value, True),
+        (Role.SYSTEM.value, False),
+        (Role.FAS_REFUND.value, True),
+        (Role.FAS_REFUND.value, False),
+        (Role.CREATE_CREDITS.value, True),
+        (Role.CREATE_CREDITS.value, False),
+    ],
+)
+def test_regression_roles_approval_decline_unauthorized(
+    session, client, jwt, app, monkeypatch, refund_service_mocks, send_email_mock, role, refund_approval
+):
+    """Assert allowed products check allows refund creation when refund approval is not True."""
+    cfs_account = setup_filing_and_account_data(
+        product_code="TEST_PRODUCT", payment_method=PaymentMethod.DIRECT_PAY.value, refund_approval=refund_approval
+    )
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.DIRECT_PAY.value)
+    token_config = {"requester_name": "requester", "requester_roles": [role]}
+    system_headers, _ = get_refund_token_headers(app, jwt, token_config)
+    rv = request_refund(client, invoice, system_headers)
+    assert rv.status_code == 202
+
+    refund_id = rv.json["refundId"]
+    refund = RefundModel.find_by_id(refund_id)
+    assert refund
+    refund.status = RefundStatus.PENDING_APPROVAL.value
+    refund.save()
+
+    rv = client.patch(
+        f"/api/v1/payment-requests/{invoice.id}/refunds/{refund_id}",
+        data=json.dumps({"status": RefundStatus.DECLINED.value, "declineReason": "Test reason"}),
+        headers=system_headers,
+    )
+
+    assert rv.status_code == 403

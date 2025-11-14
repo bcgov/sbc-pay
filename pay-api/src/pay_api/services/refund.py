@@ -220,20 +220,19 @@ class RefundService:
             raise BusinessException(Error.INVALID_REQUEST)
 
     @staticmethod
-    def validate_product_authorization(invoice: InvoiceModel, allowed_products: list[str], is_system: bool):
+    def validate_product_authorization(
+        invoice: InvoiceModel, allowed_products: list[str], is_system: bool, allow_system: bool
+    ):
         """Validate if the invoice product is in the allowed product list."""
-        if not is_system and allowed_products and invoice.corp_type.product not in allowed_products:
+        # For refund request creation the system is allowed to create one but not approve or decline
+        if (is_system and not allow_system) or (allowed_products and invoice.corp_type.product not in allowed_products):
             raise BusinessException(Error.REFUND_INSUFFICIENT_PRODUCT_AUTHORIZATION)
 
     @classmethod
-    def _validate_refund_approval_flow(
-        cls, invoice: InvoiceModel, products: list[str], is_system: bool, auth_user: dict = None
-    ):
+    def _validate_refund_approval_flow(cls, invoice: InvoiceModel, is_system: bool, auth_user: dict = None):
         requires_approval = invoice.corp_type.refund_approval
         if not requires_approval:
             return
-        else:
-            cls.validate_product_authorization(invoice, products, is_system)
 
         if not is_system:
             if not auth_user or "email" not in auth_user:
@@ -332,9 +331,12 @@ class RefundService:
         requires_approval = invoice.corp_type.refund_approval
         cls._validate_corp_type_role(invoice, user.roles)
         cls._validate_refundable_state(invoice, is_partial_refund)
+        cls.validate_product_authorization(
+            invoice=invoice, allowed_products=products, is_system=user.is_system(), allow_system=True
+        )
         if requires_approval:
             auth_user = get_auth_user(user.original_username or user.user_name)
-            cls._validate_refund_approval_flow(invoice, products, user.is_system(), auth_user)
+            cls._validate_refund_approval_flow(invoice, user.is_system(), auth_user)
 
         if is_partial_refund:
             refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
@@ -462,7 +464,9 @@ class RefundService:
         RefundService._validate_approve_or_decline_refund(refund, data, user)
 
         invoice = InvoiceModel.find_by_id(refund.invoice_id)
-        RefundService.validate_product_authorization(invoice, products, user.is_system())
+        RefundService.validate_product_authorization(
+            invoice=invoice, allowed_products=products, is_system=user.is_system(), allow_system=False
+        )
 
         refund.status = data.status
         refund.decision_made_by = user.user_name
@@ -549,7 +553,7 @@ class RefundService:
 
     @staticmethod
     @user_context
-    def check_refund_auth(role_pattern: str, all_products_role: str, **kwargs):
+    def check_refund_auth(role_pattern: str, all_products_role: str, all_product_role_only: bool = False, **kwargs):
         """Check refund authorizations based on product roles."""
         products, filter_by_product = ProductAuthUtil.check_products_from_role_pattern(
             role_pattern=role_pattern, all_products_role=all_products_role
@@ -562,16 +566,12 @@ class RefundService:
         user: UserContext = kwargs["user"]
         roles = user.roles or []
 
+        valid_auth_roles = {Role.SYSTEM.value, Role.CREATE_CREDITS.value, Role.FAS_REFUND.value, all_products_role}
+        if all_product_role_only:
+            valid_auth_roles = {all_products_role}
+
         # Authorized if there is one of the defined roles
-        is_authorized = (
-            len(
-                list(
-                    {Role.SYSTEM.value, Role.CREATE_CREDITS.value, Role.FAS_REFUND.value, all_products_role}
-                    & set(roles)
-                )
-            )
-            > 0
-        )
+        is_authorized = len(list(valid_auth_roles & set(roles))) > 0
         if not is_authorized:
             abort(403)
 

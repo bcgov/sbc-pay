@@ -65,7 +65,9 @@ class RefundRequestService:
         invoice = InvoiceModel.find_by_id(refund.invoice_id)
 
         if filter_by_product:
-            RefundService.validate_product_authorization(invoice, products, user.is_system())
+            RefundService.validate_product_authorization(
+                invoice=invoice, allowed_products=products, is_system=user.is_system(), allow_system=True
+            )
 
         refund_partial_lines = RefundPartialModel.get_partial_refunds_by_refund_id(refund.id) or []
         normalized_refund_lines, refund_total = RefundService.normalize_partial_refund_lines(refund_partial_lines)
