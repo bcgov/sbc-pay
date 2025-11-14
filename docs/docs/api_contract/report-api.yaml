@@ -3,40 +3,14 @@ info:
   title: report-api.yaml
   version: '1.1'
   description: Report API
+
 paths:
   /reports:
     post:
       summary: Create pdf report.
-      responses:
-        '200':
-          description: OK
-          headers:
-            Content-Encoding:
-              description: Content encoding of the response body. When set to 'gzip', the response body is compressed and must be decompressed before parsing as JSON. When set to 'identity' or omitted, the response body is uncompressed JSON.
-              schema:
-                type: string
-                enum:
-                  - gzip
-                  - identity
-                default: identity
-          content:
-            application/json:
-              schema:
-                type: object
-                description: JSON response body. When Content-Encoding is gzip, this schema describes the decompressed content.
-              examples:
-                example1:
-                  value:
-                    test: test
-            # text/csv:
-            #   schema:
-            #     type: object
-            #   examples:
-            #     example1:
-            #       value:
-            #         test: test
       description: Create pdf report.
       operationId: post_report
+
       parameters:
         - name: Content-Encoding
           in: header
@@ -44,12 +18,12 @@ paths:
           required: false
           schema:
             type: string
-            enum:
-              - gzip
-              - identity
+            enum: [gzip, identity]
+
       requestBody:
-        description: ''
+        required: false
         content:
+
           application/json:
             schema:
               type: object
@@ -64,8 +38,30 @@ paths:
                   type: string
                 template:
                   type: string
-            examples: {}
-        required: false
-components:
-  schemas: {}
 
+          application/gzip:
+            description: Gzipped JSON body
+            schema:
+              type: string
+              format: binary
+
+      responses:
+        '200':
+          description: OK
+          headers:
+            Content-Encoding:
+              description: Content encoding of the response body.
+              schema:
+                type: string
+                enum: [gzip, identity]
+                default: identity
+
+          content:
+            application/json:
+              schema:
+                type: object
+                description: JSON response body (decompressed if gzip).
+              examples:
+                example1:
+                  value:
+                    test: test
