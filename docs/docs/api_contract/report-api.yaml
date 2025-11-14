@@ -1,44 +1,43 @@
-openapi: 3.0.0
-info:
-  title: report-api.yaml
-  version: "1.1"
-  description: Report API
-
-paths:
-  /reports:
-    post:
-      summary: Create pdf report.
-      description: Create pdf report.
-      operationId: post_report
-
-      parameters:
-        - name: Content-Encoding
-          in: header
-          required: false
-          schema:
-            type: string
-            enum: [gzip, identity]
-
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema: {}
-            description: Accepts any JSON object. No validation is performed on the request body structure.
-
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-              examples:
-                default:
-                  value:
-                    message: "mocked response"
-            application/gzip:
-              schema:
-                type: string
-                format: binary
-                description: Gzip-compressed JSON response. The binary data must be decompressed to obtain the JSON object.
+openapi: 3.0.0	
+info:	
+  title: report-api.yaml	
+  version: '1.1'	
+  description: Report API	
+paths:	
+  /reports:	
+    post:	
+      summary: Create pdf report.	
+      responses:	
+        '200':	
+          description: OK	
+          content:	
+            application/json:	
+              schema:	
+                type: object	
+              examples:	
+                example1:	
+                  value:	
+                    test: test	
+      description: Create pdf report.	
+      operationId: post_report	
+      requestBody:	
+        description: ''	
+        content:	
+          application/json:	
+            schema:	
+              type: object	
+              properties:	
+                reportName:	
+                  type: string	
+                templateVars:	
+                  type: object	
+                populatePageNumber:	
+                  type: boolean	
+                templateName:	
+                  type: string	
+                template:	
+                  type: string	
+            examples: {}	
+    parameters: []	
+components:	
+  schemas: {}
