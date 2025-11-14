@@ -100,12 +100,14 @@ class EjvPaymentTask(CgiEjv):
         batch_total: float = 0
         control_total: int = 0
 
-        file_name = cls.get_file_name()
-        ejv_file_model: EjvFileModel = EjvFileModel(
+        ejv_file_model = EjvFileModel(
             file_type=EjvFileType.PAYMENT.value,
-            file_ref=file_name,
+            file_ref="TEMP_FILE_NAME",
             disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).flush()
+        file_name = cls.get_file_name(ejv_file_model.id)
+        ejv_file_model.file_ref = file_name
+        ejv_file_model.flush()
         current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
         batch_number = cls.get_batch_number(ejv_file_model.id)
 
@@ -121,7 +123,7 @@ class EjvPaymentTask(CgiEjv):
                 continue
 
             effective_date: str = cls.get_effective_date()
-            ejv_header_model: EjvFileModel = EjvHeaderModel(
+            ejv_header_model = EjvHeaderModel(
                 payment_account_id=account_id,
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
                 ejv_file_id=ejv_file_model.id,
