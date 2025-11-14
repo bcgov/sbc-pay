@@ -1,26 +1,55 @@
 openapi: 3.0.0
 info:
-  title: test
-  version: "1.0"
+  title: report-api.yaml
+  version: "1.1"
+  description: Report API
 
 paths:
   /reports:
     post:
-      summary: test
+      summary: Create pdf report.
+      description: Create pdf report.
+      operationId: post_report
+
+      parameters:
+        - name: Content-Encoding
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [gzip, identity]
+
       requestBody:
         required: false
         content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reportName:
+                  type: string
+                templateVars:
+                  type: object
+                populatePageNumber:
+                  type: boolean
+                templateName:
+                  type: string
+                template:
+                  type: string
+
           application/gzip:
             schema:
               type: string
               format: binary
-          application/json:
-            schema:
-              type: object
+
       responses:
         "200":
-          description: ok
+          description: OK
           content:
             application/json:
               schema:
                 type: object
+              examples:
+                default:
+                  value:
+                    message: "mocked response"
