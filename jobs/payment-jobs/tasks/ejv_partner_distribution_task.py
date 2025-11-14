@@ -246,12 +246,14 @@ class EjvPartnerDistributionTask(CgiEjv):
             today.strftime("%B").upper(), f"{today.day:0>2}"
         )[:100]
         disbursement_desc = f"{disbursement_desc:<100}"
-        file_name = cls.get_file_name()
         ejv_file_model = EjvFileModel(
             file_type=EjvFileType.DISBURSEMENT.value,
-            file_ref=file_name,
+            file_ref="TEMP_FILE_NAME",
             disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).flush()
+        file_name = cls.get_file_name(ejv_file_model.id)
+        ejv_file_model.file_ref = file_name
+        ejv_file_model.flush()
         current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
         batch_number = cls.get_batch_number(ejv_file_model.id)
         batch_header = cls.get_batch_header(batch_number, batch_type)

@@ -154,12 +154,14 @@ class ApTask(CgiAP):
         current_app.logger.info(f"Found {len(eft_refunds_dao)} to refund.")
 
         for refunds in list(batched(eft_refunds_dao, 250)):
-            file_name = cls.get_file_name()
             ejv_file_model = EjvFileModel(
                 file_type=EjvFileType.EFT_REFUND.value,
-                file_ref=file_name,
+                file_ref="TEMP_FILE_NAME",
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
             ).flush()
+            file_name = cls.get_file_name(ejv_file_model.id)
+            ejv_file_model.file_ref = file_name
+            ejv_file_model.flush()
             current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
             content: str = cls.get_batch_header(batch_number)
@@ -219,13 +221,14 @@ class ApTask(CgiAP):
             return
 
         for routing_slips in list(batched(routing_slips_dao, 250)):
-            file_name = cls.get_file_name()
-            ejv_file_model: EjvFileModel = EjvFileModel(
+            ejv_file_model = EjvFileModel(
                 file_type=EjvFileType.REFUND.value,
-                file_ref=file_name,
+                file_ref="TEMP_FILE_NAME",
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
             ).flush()
-
+            file_name = cls.get_file_name(ejv_file_model.id)
+            ejv_file_model.file_ref = file_name
+            ejv_file_model.flush()
             current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
             batch_number: str = cls.get_batch_number(ejv_file_model.id)
             content: str = cls.get_batch_header(batch_number)
@@ -334,16 +337,18 @@ class ApTask(CgiAP):
         # 250 MAX is all the transactions the feeder can take per batch.
         for invoices in list(batched(total_invoices, 250)):
             bca_distribution = cls._get_bca_distribution_string()
-            file_name = cls.get_file_name()
-            ejv_file_model: EjvFileModel = EjvFileModel(
+            ejv_file_model = EjvFileModel(
                 file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
-                file_ref=file_name,
+                file_ref="TEMP_FILE_NAME",
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
             ).flush()
+            file_name = cls.get_file_name(ejv_file_model.id)
+            ejv_file_model.file_ref = file_name
+            ejv_file_model.flush()
             current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
             # Create a single header record for this file, provides query ejv_file -> ejv_header -> ejv_invoice_links
             # Note the inbox file doesn't include ejv_header when submitting.
-            ejv_header_model: EjvFileModel = EjvHeaderModel(
+            ejv_header_model = EjvHeaderModel(
                 partner_code="BCA",
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
                 ejv_file_id=ejv_file_model.id,

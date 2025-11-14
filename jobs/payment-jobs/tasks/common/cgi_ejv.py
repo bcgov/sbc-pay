@@ -31,10 +31,10 @@ class CgiEjv:
     EMPTY = ""
 
     @classmethod
-    def get_file_name(cls):
+    def get_file_name(cls, file_id):
         """Return file name."""
         date_time = get_nearest_business_day(datetime.now(tz=UTC)).strftime("%Y%m%d%H%M%S")
-        return f"INBOX.F{cls._feeder_number()}.{date_time}"
+        return f"INBOX.F{cls._feeder_number()}.{date_time}.{file_id}"
 
     @classmethod
     def get_journal_batch_name(cls, batch_number: str):
