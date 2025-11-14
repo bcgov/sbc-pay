@@ -12,25 +12,18 @@ paths:
           description: OK
           headers:
             Content-Encoding:
-              description: Content encoding of the response. This header is optional and may not be present.
+              description: Content encoding of the response body. When set to 'gzip', the response body is compressed and must be decompressed before parsing as JSON. When set to 'identity' or omitted, the response body is uncompressed JSON.
               schema:
                 type: string
                 enum:
                   - gzip
                   - identity
+                default: identity
           content:
             application/json:
               schema:
                 type: object
-              encoding:
-                contentType: application/json
-                headers:
-                  Content-Encoding:
-                    schema:
-                      type: string
-                      enum:
-                        - gzip
-                        - identity
+                description: JSON response body. When Content-Encoding is gzip, this schema describes the decompressed content.
               examples:
                 example1:
                   value:
