@@ -22,6 +22,15 @@ paths:
             application/json:
               schema:
                 type: object
+              encoding:
+                contentType: application/json
+                headers:
+                  Content-Encoding:
+                    schema:
+                      type: string
+                      enum:
+                        - gzip
+                        - identity
               examples:
                 example1:
                   value:
