@@ -41,6 +41,7 @@ paths:
             schema:
               type: string
               format: binary
+              description: Gzip-compressed JSON request body. The binary data contains compressed JSON matching the application/json schema.
 
       responses:
         "200":
@@ -53,3 +54,8 @@ paths:
                 default:
                   value:
                     message: "mocked response"
+            application/gzip:
+              schema:
+                type: string
+                format: binary
+                description: Gzip-compressed JSON response. The binary data must be decompressed to obtain the JSON object.
