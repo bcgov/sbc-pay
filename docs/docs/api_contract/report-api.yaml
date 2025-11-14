@@ -23,25 +23,8 @@ paths:
         required: false
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                reportName:
-                  type: string
-                templateVars:
-                  type: object
-                populatePageNumber:
-                  type: boolean
-                templateName:
-                  type: string
-                template:
-                  type: string
-
-          application/gzip:
-            schema:
-              type: string
-              format: binary
-              description: Gzip-compressed JSON request body. The binary data contains compressed JSON matching the application/json schema.
+            schema: {}
+            description: Accepts any JSON object. No validation is performed on the request body structure.
 
       responses:
         "200":
