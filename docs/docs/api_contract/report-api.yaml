@@ -14,33 +14,20 @@ paths:
       parameters:
         - name: Content-Encoding
           in: header
-          description: Content encoding of the request body. Supports gzip encoding.
+          description: Content encoding of the request body.
           required: false
           schema:
             type: string
             enum: [gzip, identity]
 
       requestBody:
-        required: false
+        required: true
         content:
-
           application/json:
             schema:
               type: object
-              properties:
-                reportName:
-                  type: string
-                templateVars:
-                  type: object
-                populatePageNumber:
-                  type: boolean
-                templateName:
-                  type: string
-                template:
-                  type: string
 
           application/gzip:
-            description: Gzipped JSON body
             schema:
               type: string
               format: binary
@@ -48,20 +35,10 @@ paths:
       responses:
         '200':
           description: OK
-          headers:
-            Content-Encoding:
-              description: Content encoding of the response body.
-              schema:
-                type: string
-                enum: [gzip, identity]
-                default: identity
-
           content:
             application/json:
               schema:
                 type: object
-                description: JSON response body (decompressed if gzip).
-              examples:
-                example1:
-                  value:
-                    test: test
+                properties:
+                  test:
+                    type: string
