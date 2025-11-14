@@ -35,6 +35,16 @@ paths:
             #         test: test
       description: Create pdf report.
       operationId: post_report
+      parameters:
+        - name: Content-Encoding
+          in: header
+          description: Content encoding of the request body. Supports gzip encoding.
+          required: false
+          schema:
+            type: string
+            enum:
+              - gzip
+              - identity
       requestBody:
         description: ''
         content:
@@ -53,7 +63,7 @@ paths:
                 template:
                   type: string
             examples: {}
-    parameters: []
+        required: false
 components:
   schemas: {}
 
