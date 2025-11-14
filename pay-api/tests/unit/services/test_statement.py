@@ -649,6 +649,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             template_vars=expected_template_vars,
             populate_page_number=True,
             content_type=ContentType.PDF.value,
+            stream=True,
         )
         mock_report.assert_called_with(expected_report_inputs)
 
@@ -1065,6 +1066,7 @@ def test_get_eft_statement_with_invoices(session):
             template_vars=expected_template_vars,
             populate_page_number=True,
             content_type=ContentType.PDF.value,
+            stream=True,
         )
 
         mock_report.assert_called_with(expected_report_inputs)

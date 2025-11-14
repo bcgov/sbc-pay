@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to invoke Rest services."""
 
+import gzip
 import json
 import re
 from collections.abc import Iterable
@@ -45,6 +46,8 @@ class OAuthService:
         additional_headers: dict = None,
         is_put: bool = False,
         auth_header_name: str = "Authorization",
+        stream: bool = False,
+        gzip_body: bool = False,
     ):
         """POST service."""
         current_app.logger.debug("<post")
@@ -60,6 +63,12 @@ class OAuthService:
         if content_type == ContentType.JSON:
             data = json.dumps(data, cls=DecimalEncoder)
 
+        if gzip_body and current_app.config.get('ENABLE_GZIP_BODY') is True:
+            if isinstance(data, str):
+                data = data.encode("utf-8")
+            data = gzip.compress(data)
+            headers["Content-Encoding"] = "gzip"
+
         safe_headers = headers.copy()
         safe_headers.pop("Authorization", None)
         safe_headers.pop("Pay-Connector", None)
@@ -73,6 +82,7 @@ class OAuthService:
                     endpoint,
                     data=data,
                     headers=headers,
+                    stream=stream,
                     timeout=current_app.config.get("CONNECT_TIMEOUT"),
                 )
             else:
@@ -80,10 +90,16 @@ class OAuthService:
                     endpoint,
                     data=data,
                     headers=headers,
+                    stream=stream,
                     timeout=current_app.config.get("CONNECT_TIMEOUT"),
                 )
             if raise_for_error:
                 response.raise_for_status()
+
+            if stream:
+                current_app.logger.debug(">post")
+                return response.iter_content()
+
         except (ReqConnectionError, ConnectTimeout) as exc:
             current_app.logger.error("---Error on POST---")
             current_app.logger.error(exc)
@@ -96,7 +112,8 @@ class OAuthService:
                 raise ServiceUnavailableException(exc) from exc
             raise exc
         finally:
-            OAuthService.__log_response(response)
+            if not stream:
+                OAuthService.__log_response(response)
 
         current_app.logger.debug(">post")
         return response
@@ -165,8 +182,7 @@ class OAuthService:
         except HTTPError as exc:
             if exc.response is None or exc.response.status_code != 404:
                 current_app.logger.error(
-                    "HTTPError on GET with status code "
-                    f"{exc.response.status_code if exc.response is not None else ''}"
+                    f"HTTPError on GET with status code {exc.response.status_code if exc.response is not None else ''}"
                 )
             if exc.response is not None:
                 if exc.response.status_code >= 500:

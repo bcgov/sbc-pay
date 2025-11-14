@@ -218,6 +218,9 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     EXECUTOR_PROPAGATE_EXCEPTIONS = True
 
+    # To bypass 25MB limit for CloudRun on HTTP/1.1 requests.
+    ENABLE_GZIP_BODY = _get_config("ENABLE_GZIP_BODY", default="True").lower() == "true"
+
     TESTING = False
     DEBUG = True
 
@@ -347,6 +350,9 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
 
     # Google Cloud Storage emulator settings for testing
     GCS_EMULATOR_HOST = "http://localhost:4443"
+
+    # Prism does not support gzip body to decompress to validate JSON.
+    ENABLE_GZIP_BODY = False
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

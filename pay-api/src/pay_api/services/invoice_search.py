@@ -595,6 +595,7 @@ class InvoiceSearch:
                 template_vars=template_vars,
                 populate_page_number=True,
                 content_type=content_type,
+                stream=True,
             )
         )
         return report_response
