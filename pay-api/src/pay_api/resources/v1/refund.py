@@ -65,7 +65,9 @@ def patch_refund(invoice_id: int, refund_id: int):
     """Patch refund."""
     current_app.logger.info("<patch_refund")
     products, _ = RefundService.check_refund_auth(
-        role_pattern=RolePattern.PRODUCT_REFUND_APPROVER.value, all_products_role=Role.PRODUCT_REFUND_APPROVER.value
+        role_pattern=RolePattern.PRODUCT_REFUND_APPROVER.value,
+        all_products_role=Role.PRODUCT_REFUND_APPROVER.value,
+        all_product_role_only=True,
     )
     request_json = request.get_json()
     refund_request = RefundPatchRequest.from_dict(request_json)
