@@ -1,66 +1,26 @@
 openapi: 3.0.0
 info:
-  title: report-api.yaml
-  version: '1.1'
-  description: Report API
+  title: test
+  version: "1.0"
 
 paths:
   /reports:
     post:
-      summary: Create pdf report.
-      description: Create pdf report.
-      operationId: post_report
-
-      parameters:
-        - name: Content-Encoding
-          in: header
-          description: Content encoding of the request body. Supports gzip encoding.
-          required: false
-          schema:
-            type: string
-            enum: [gzip, identity]
-
+      summary: test
       requestBody:
         required: false
         content:
-
-          # Normal JSON request body
-          application/json:
-            schema:
-              type: object
-              properties:
-                reportName:
-                  type: string
-                templateVars:
-                  type: object
-                populatePageNumber:
-                  type: boolean
-                templateName:
-                  type: string
-                template:
-                  type: string
-
-          # Gzipped request body (raw bytes)
           application/gzip:
             schema:
               type: string
               format: binary
-
+          application/json:
+            schema:
+              type: object
       responses:
-        '200':
-          description: OK
-          headers:
-            Content-Encoding:
-              description: Content encoding of the response. Optional.
-              schema:
-                type: string
-                enum: [gzip, identity]
-
+        "200":
+          description: ok
           content:
             application/json:
               schema:
                 type: object
-              examples:
-                example1:
-                  value:
-                    test: test
