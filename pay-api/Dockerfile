@@ -57,11 +57,15 @@ RUN apt-get update && apt-get upgrade -y \
   && poetry --version
 
 # Install SSL certificates for paybc.gov.bc.ca
+# Old certificates (deprecated, will be removed after Nov 24, 2025)
 COPY ./certs/root.cer /usr/local/share/ca-certificates/root.crt
 COPY ./certs/inter.cer /usr/local/share/ca-certificates/inter.crt
+# New 2025 certificates
+COPY ./certs/root_2025.cer /usr/local/share/ca-certificates/root_2025.crt
+COPY ./certs/inter_2025.cer /usr/local/share/ca-certificates/inter_2025.crt
 
 RUN update-ca-certificates \
-  && for cert in /usr/local/share/ca-certificates/root.crt /usr/local/share/ca-certificates/inter.crt; do \
+  && for cert in /usr/local/share/ca-certificates/root.crt /usr/local/share/ca-certificates/inter.crt /usr/local/share/ca-certificates/root_2025.crt /usr/local/share/ca-certificates/inter_2025.crt; do \
       echo "Checking certificate: $cert"; \
       echo -n "Certificate expiration date: "; \
       openssl x509 -in "$cert" -noout -enddate | cut -d= -f2; \
