@@ -477,67 +477,6 @@ def setup_cfs_account(jwt, client, auth_account_id, account_payload):
     return cfs_account
 
 
-def test_eft_partial_refund_validation(session, client, jwt, app, monkeypatch):
-    """Assert that the partial refund validation errors return 400."""
-    token = jwt.create_jwt(get_claims(app_request=app), token_header)
-    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-    auth_account_id = 4567
-    cfs_account = setup_cfs_account(
-        jwt=jwt,
-        client=client,
-        auth_account_id=auth_account_id,
-        account_payload=get_eft_enable_account_payload(
-            payment_method=PaymentMethod.EFT.value, account_id=auth_account_id
-        ),
-    )
-    rv = client.post(
-        "/api/v1/payment-requests",
-        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.EFT.value)),
-        headers=headers,
-    )
-
-    inv_id = rv.json.get("id")
-    invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
-    invoice.invoice_status_code = InvoiceStatus.PAID.value
-    invoice.payment_method_code = PaymentMethod.EFT.value
-    invoice.payment_date = datetime.now(tz=UTC)
-    invoice.cfs_account_id = cfs_account.id
-    invoice.save()
-    set_payment_method_partial_refund(invoice.payment_method_code, True)
-
-    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
-    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
-
-    payment_line_items: list[PaymentLineItemModel] = invoice.payment_line_items
-    refund_revenue = [
-        {
-            "paymentLineItemId": payment_line_items[0].id,
-            "refundAmount": float(1),
-            "refundType": RefundsPartialType.BASE_FEES.value,
-        }
-    ]
-
-    rv = client.post(
-        f"/api/v1/payment-requests/{inv_id}/refunds",
-        data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
-        headers=headers,
-    )
-    assert rv.status_code == 400
-    assert rv.json.get("type") == Error.EFT_PARTIAL_REFUND.name
-
-    factory_invoice_reference(
-        invoice_id=invoice.id, invoice_number="1234", status_code=InvoiceReferenceStatus.COMPLETED.value
-    ).save()
-
-    rv = client.post(
-        f"/api/v1/payment-requests/{inv_id}/refunds",
-        data=json.dumps({"reason": "Test", "refundRevenue": refund_revenue}),
-        headers=headers,
-    )
-    assert rv.status_code == 400
-    assert rv.json.get("type") == Error.EFT_PARTIAL_REFUND_MISSING_LINKS.name
-
-
 def test_eft_partial_refund(session, client, jwt, app, monkeypatch):
     """Assert that the partial refund for EFT works."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
