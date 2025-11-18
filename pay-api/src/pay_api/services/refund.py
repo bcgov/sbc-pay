@@ -212,7 +212,15 @@ class RefundService:
         else:
             cls._validate_allow_full_refund(invoice)
 
-        if invoice.refund_date is not None:
+        existing_refund = RefundModel.find_latest_by_invoice_id(
+            invoice.id,
+            (
+                RefundStatus.PENDING_APPROVAL.value,
+                RefundStatus.APPROVAL_NOT_REQUIRED.value,
+                RefundStatus.APPROVED.value,
+            ),
+        )
+        if invoice.refund_date is not None or existing_refund is not None:
             current_app.logger.info(
                 f"Cannot process refund as status of {invoice.id} is {invoice.invoice_status_code}."
                 "Refund date already set."

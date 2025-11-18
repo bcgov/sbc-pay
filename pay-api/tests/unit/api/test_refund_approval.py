@@ -194,6 +194,49 @@ def get_refund_token_headers(app, jwt, token_config: dict):
 
 
 @pytest.mark.parametrize(
+    "refund_status",
+    [
+        (RefundStatus.PENDING_APPROVAL.value),
+        (RefundStatus.APPROVED.value),
+        (RefundStatus.APPROVAL_NOT_REQUIRED.value),
+    ],
+)
+def test_refund_state_validation(
+    session, client, jwt, app, monkeypatch, refund_service_mocks, account_admin_mock, send_email_mock, refund_status
+):
+    """Assert refund state validation works correctly."""
+    cfs_account = setup_filing_and_account_data("TEST_PRODUCT", PaymentMethod.DIRECT_PAY.value)
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.DIRECT_PAY.value)
+    token_config = {
+        "requester_name": "TEST_REQUESTER",
+        "requester_roles": [
+            Role.PRODUCT_REFUND_REQUESTER.value,
+            Role.PRODUCT_REFUND_VIEWER.value,
+            Role.VIEW_ALL_TRANSACTIONS.value,
+        ],
+        "approver_name": "TEST_APPROVER",
+        "approver_roles": [
+            Role.PRODUCT_REFUND_APPROVER.value,
+            Role.PRODUCT_REFUND_VIEWER.value,
+            Role.VIEW_ALL_TRANSACTIONS.value,
+        ],
+    }
+    requester_headers, approver_headers = get_refund_token_headers(app, jwt, token_config)
+    rv = request_refund(client, invoice, requester_headers)
+    assert rv.status_code == 202
+    refund_id = rv.json["refundId"]
+
+    refund = RefundModel.find_by_id(refund_id)
+    if refund.status != refund_status:
+        refund.status = refund.status
+        refund.save()
+
+    rv = request_refund(client, invoice, requester_headers)
+    assert rv.status_code == 400
+    assert rv.json.get("type") == Error.INVALID_REQUEST.name
+
+
+@pytest.mark.parametrize(
     "payment_method",
     [
         (PaymentMethod.DIRECT_PAY.value),
