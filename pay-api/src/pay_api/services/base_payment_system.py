@@ -217,8 +217,9 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
         payload = PaymentTransaction.create_event_payload(invoice, transaction_status)
         try:
-            current_app.logger.info(f"Releasing record for invoice {invoice.id} with status {transaction_status}")
             PaymentSystemService.execute_after_request(
+                invoice.id,
+                transaction_status,
                 lambda: gcp_queue_publisher.publish_to_queue(
                     gcp_queue_publisher.QueueMessage(
                         source=QueueSources.PAY_API.value,
@@ -227,20 +228,20 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                         topic=get_topic_for_corp_type(invoice.corp_type_code),
                         corp_type=invoice.corp_type_code,
                     )
-                )
+                ),
             )
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(f"error: {str(e)}", exc_info=True)
             current_app.logger.error("Notification to Queue failed for the Payment Event %s", payload)
 
     @staticmethod
-    def execute_after_request(fn):
+    def execute_after_request(invoice_id: int, transaction_status: str, fn):
         """Run fn after the request finishes, or immediately if no request."""
         app = current_app._get_current_object()  # pylint: disable=protected-access
 
         def run_with_context():
             with app.app_context():
-                app.logger.info("Releasing payment or reversal for invoice on another thread.")
+                app.logger.info(f"Releasing record for invoice {invoice_id} with status {transaction_status}")
                 fn()
 
         if not has_request_context():
