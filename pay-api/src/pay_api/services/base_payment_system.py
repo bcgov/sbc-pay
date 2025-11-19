@@ -15,12 +15,13 @@
 
 import copy
 import functools
+import threading
 import traceback
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import current_app
+from flask import current_app, has_request_context, request_finished
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException
@@ -217,18 +218,34 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         payload = PaymentTransaction.create_event_payload(invoice, transaction_status)
         try:
             current_app.logger.info(f"Releasing record for invoice {invoice.id} with status {transaction_status}")
-            gcp_queue_publisher.publish_to_queue(
-                gcp_queue_publisher.QueueMessage(
-                    source=QueueSources.PAY_API.value,
-                    message_type=QueueMessageTypes.PAYMENT.value,
-                    payload=payload,
-                    topic=get_topic_for_corp_type(invoice.corp_type_code),
-                    corp_type=invoice.corp_type_code,
+            PaymentSystemService.execute_after_request(
+                lambda: gcp_queue_publisher.publish_to_queue(
+                    gcp_queue_publisher.QueueMessage(
+                        source=QueueSources.PAY_API.value,
+                        message_type=QueueMessageTypes.PAYMENT.value,
+                        payload=payload,
+                        topic=get_topic_for_corp_type(invoice.corp_type_code),
+                        corp_type=invoice.corp_type_code,
+                    )
                 )
             )
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(f"error: {str(e)}", exc_info=True)
             current_app.logger.error("Notification to Queue failed for the Payment Event %s", payload)
+
+    @staticmethod
+    def execute_after_request(fn):
+        """Run fn after the request finishes, or immediately if no request."""
+        if not has_request_context():
+            threading.Thread(target=fn, daemon=True).start()
+            return
+
+        def _run_after_request(*_args, **_kwargs):
+            current_app.logger.info("Running release payment or reversal after request.")
+            threading.Thread(target=fn, daemon=True).start()
+            request_finished.disconnect(_run_after_request)
+
+        request_finished.connect(_run_after_request)
 
     @staticmethod
     def validate_refund_amount(refund_amount, max_amount):
