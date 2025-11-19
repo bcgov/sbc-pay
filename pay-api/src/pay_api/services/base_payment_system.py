@@ -240,6 +240,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
         def run_with_context():
             with app.app_context():
+                app.logger.info("Releasing payment or reversal for invoice on another thread.")
                 fn()
 
         if not has_request_context():
