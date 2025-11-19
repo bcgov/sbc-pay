@@ -236,13 +236,18 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def execute_after_request(fn):
         """Run fn after the request finishes, or immediately if no request."""
+        app = current_app._get_current_object()  # pylint: disable=protected-access
+
+        def run_with_context():
+            with app.app_context():
+                fn()
+
         if not has_request_context():
-            threading.Thread(target=fn, daemon=True).start()
+            threading.Thread(target=run_with_context, daemon=True).start()
             return
 
         def _run_after_request(*_args, **_kwargs):
-            current_app.logger.info("Running release payment or reversal after request.")
-            threading.Thread(target=fn, daemon=True).start()
+            threading.Thread(target=run_with_context, daemon=True).start()
             request_finished.disconnect(_run_after_request)
 
         request_finished.connect(_run_after_request)

@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
+from flask import request_finished
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceModel
@@ -116,6 +117,7 @@ def test_create_refund_for_paid_invoice(
     expected_inv_status,
     account_admin_mock,
     mocker,
+    app,
 ):
     """Assert that the create refund succeeds for paid invoices."""
     expected = REFUND_SUCCESS_MESSAGES[f"{payment_method}.{invoice_status}"]
@@ -150,7 +152,9 @@ def test_create_refund_for_paid_invoice(
     factory_receipt(invoice_id=i.id, receipt_number="1234569546456").save()
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
-    message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
+    with app.test_request_context():
+        message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
+        request_finished.send()
     i = InvoiceModel.find_by_id(i.id)
 
     assert i.invoice_status_code == expected_inv_status
