@@ -149,16 +149,21 @@ def setup_paid_invoice_data(app, jwt, client, cfs_account, payment_method):
     return InvoiceModel.find_by_id(inv_id)
 
 
-def request_refund(client, invoice, requester_headers, refund_revenue: list[dict] = None):
+def request_refund(
+    client, invoice, request_headers, refund_revenue: list[dict] = None, use_original_user_header: bool = False
+):
     """Create refund request."""
     payload = {"reason": "Test", "notificationEmail": "test@test.com", "staffComment": "staff comment"}
     if refund_revenue:
         payload["refundRevenue"] = refund_revenue
 
+    if use_original_user_header:
+        request_headers["original_user"] = "ORIGINAL_USER"
+
     rv = client.post(
         f"/api/v1/payment-requests/{invoice.id}/refunds",
         data=json.dumps(payload),
-        headers=requester_headers,
+        headers=request_headers,
     )
     return rv
 
@@ -274,6 +279,8 @@ def test_full_refund_approval_flow(
         f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} " f"is pending refund approval."
     )
     assert rv.json.get("message") == expected_message
+    refund_service_mocks["get_auth_user"].assert_called_once()
+    refund_service_mocks["get_auth_user"].reset_mock()
     refund_service_mocks["send_email"].assert_called_once()
     refund_service_mocks["send_email"].reset_mock()
 
@@ -759,14 +766,17 @@ def test_refund_requester_unauthorized(session, client, jwt, app, monkeypatch, r
 
 
 @pytest.mark.parametrize(
-    "role,refund_approval,expect_pending_approval",
+    "role,refund_approval,expect_pending_approval,use_original_user_header",
     [
-        (Role.SYSTEM.value, True, False),
-        (Role.SYSTEM.value, False, False),
-        (Role.FAS_REFUND.value, True, True),
-        (Role.FAS_REFUND.value, False, False),
-        (Role.CREATE_CREDITS.value, True, True),
-        (Role.CREATE_CREDITS.value, False, False),
+        (Role.SYSTEM.value, True, False, False),
+        (Role.SYSTEM.value, True, False, True),
+        (Role.SYSTEM.value, False, False, False),
+        (Role.FAS_REFUND.value, True, True, False),
+        (Role.FAS_REFUND.value, True, True, True),
+        (Role.FAS_REFUND.value, False, False, False),
+        (Role.CREATE_CREDITS.value, True, True, False),
+        (Role.CREATE_CREDITS.value, True, True, True),
+        (Role.CREATE_CREDITS.value, False, False, False),
     ],
 )
 def test_regression_roles_create_refund_request(
@@ -780,6 +790,7 @@ def test_regression_roles_create_refund_request(
     role,
     refund_approval,
     expect_pending_approval,
+    use_original_user_header,
 ):
     """Assert backwards compatibility for existing roles on refund creation."""
     cfs_account = setup_filing_and_account_data(
@@ -800,10 +811,15 @@ def test_regression_roles_create_refund_request(
             == f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} is pending refund approval."
         )
         refund_service_mocks["send_email"].assert_called_once()
+        if role == Role.SYSTEM.value and not use_original_user_header:
+            refund_service_mocks["get_auth_user"].assert_not_called()
+        else:
+            refund_service_mocks["get_auth_user"].assert_called_once()
     else:
         assert refund.status == RefundStatus.APPROVAL_NOT_REQUIRED.value
         assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES[f"{PaymentMethod.DIRECT_PAY.value}.PAID"]
         refund_service_mocks["send_email"].assert_not_called()
+        refund_service_mocks["get_auth_user"].assert_not_called()
 
 
 @pytest.mark.parametrize(
