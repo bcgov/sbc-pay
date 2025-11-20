@@ -833,18 +833,18 @@ def test_get_eft_statement_with_invoices(session):
                     "due_date": get_statement_date_string(
                         StatementService.calculate_due_date(statement_to_date.date())
                     ),  # pylint: disable=protected-access
-                    "due_summary": 450.0,
-                    "fees_total": 468.75,
-                    "gst_total": 6.25,
+                    "due": 450.0,
+                    "fees": 468.75,
+                    "gst": 6.25,
                     "include_service_provided": True,
                     "is_index_0": True,
-                    "paid_summary": 50.0,
+                    "paid": 50.0,
                     "payment_method": "EFT",
-                    "refunds_total": 0.0,
-                    "service_fees_total": 25.0,
+                    "refunds": 0.0,
+                    "serviceFees": 25.0,
                     "statement_header_text": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
                     "total_paid": "100.00",
-                    "totals_summary": 500.0,
+                    "totals": 500.0,
                     "transactions": [
                         {
                             "bcol_account": "TEST",

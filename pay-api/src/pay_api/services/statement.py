@@ -20,6 +20,7 @@ from dateutil.relativedelta import relativedelta
 from flask import current_app
 from sqlalchemy import Integer, and_, case, cast, distinct, exists, func, literal, literal_column, select
 from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
+from sqlalchemy.orm import subqueryload, with_expression
 from sqlalchemy.sql.functions import coalesce
 
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -28,11 +29,11 @@ from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import RefundsPartial, db
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import StatementSchema as StatementModelSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.models import db
 from pay_api.services.activity_log_publisher import ActivityLogPublisher
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.dataclasses import StatementIntervalChangeEvent
@@ -440,7 +441,9 @@ class Statement:  # pylint:disable=too-many-public-methods
         else:
             report_name = f"{report_name}-{from_date_string}-to-{to_date_string}.{extension}"
 
-        statement_purchases = Statement.find_all_payments_and_invoices_for_statement(statement_id)
+        statement_purchases = Statement.find_all_payments_and_invoices_for_statement(
+            statement_id, include_partial_refunds_credits=True
+        )
 
         result_items = InvoiceSearch.create_payment_report_details(purchases=statement_purchases, data=None)
         statement = statement_svc.asdict()
@@ -697,16 +700,51 @@ class Statement:  # pylint:disable=too-many-public-methods
 
     @staticmethod
     def find_all_payments_and_invoices_for_statement(
-        statement_id: str, payment_method: PaymentMethod = None
+        statement_id: str, payment_method: PaymentMethod = None, include_partial_refunds_credits: bool = False
     ) -> list[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""
         query = (
             db.session.query(InvoiceModel)
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
             .filter(StatementInvoicesModel.statement_id == cast(statement_id, Integer))
-            .order_by(InvoiceModel.id.asc())
         )
+
         if payment_method:
             query = query.filter(InvoiceModel.payment_method_code == payment_method.value)
 
+        if include_partial_refunds_credits:
+            query = Statement._apply_partial_refunds_and_credits(query)
+
         return query.all()
+
+    @staticmethod
+    def _apply_partial_refunds_and_credits(query):
+        """Apply partial refunds and credits subquery and computed status to the query."""
+        partial_refund_subquery = (
+            db.session.query(RefundsPartial.invoice_id, func.bool_or(RefundsPartial.is_credit).label("is_credit"))
+            .filter(RefundsPartial.status == "REFUND_PROCESSED")
+            .group_by(RefundsPartial.invoice_id)
+            .subquery()
+        )
+
+        computed_status = case(
+            (
+                and_(
+                    InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
+                    InvoiceModel.refund != 0,
+                    partial_refund_subquery.c.is_credit.isnot(None),
+                ),
+                case(
+                    (partial_refund_subquery.c.is_credit.is_(True), InvoiceStatus.PARTIALLY_CREDITED.value),
+                    else_=InvoiceStatus.PARTIALLY_REFUNDED.value,
+                ),
+            ),
+            else_=InvoiceModel.invoice_status_code,
+        )
+
+        return query.outerjoin(
+            partial_refund_subquery, InvoiceModel.id == partial_refund_subquery.c.invoice_id
+        ).options(
+            with_expression(InvoiceModel.invoice_status_code, computed_status),
+            subqueryload(InvoiceModel.applied_credits),
+        )
