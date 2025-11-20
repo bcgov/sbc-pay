@@ -37,8 +37,6 @@ from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import db
 from pay_api.services.email_service import JobFailureNotification
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod, RefundStatus
-from sqlalchemy import Date, and_, cast, or_
-
 from tasks.common.cgi_ejv import CgiEjv
 from tasks.common.dataclasses import Disbursement, DisbursementLineItem
 
@@ -251,7 +249,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             file_ref="TEMP_FILE_NAME",
             disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).flush()
-        file_name = cls.get_file_name(ejv_file_model.id)
+        file_name = cls.get_file_name()
         ejv_file_model.file_ref = file_name
         ejv_file_model.flush()
         current_app.logger.info(f"Creating EJV File Id: {ejv_file_model.id}, File Name: {file_name}")
