@@ -21,12 +21,76 @@ from decimal import Decimal
 import cattrs
 import humps
 from dateutil import parser
-from sqlalchemy import and_, case, func
 
-from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import db
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
-from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
+from pay_api.utils.util import get_local_formatted_date, get_statement_currency_string, get_statement_date_string
+
+
+def invoice_totals_helper(invoice: dict, statement: dict, totals: dict) -> None:
+    """Process a single invoice and update totals based on payment method and statement dates."""
+    if "created_on" in invoice and isinstance(invoice["created_on"], str):
+        invoice["created_on"] = get_local_formatted_date(parser.parse(invoice["created_on"]))
+
+    total = invoice.get("total", 0)
+    service_fees = invoice.get("service_fees", 0)
+    paid = invoice.get("paid", 0)
+    refund = invoice.get("refund", 0)
+    gst = invoice.get("gst", 0)
+    payment_method = invoice.get("payment_method")
+    payment_date = invoice.get("payment_date")
+    refund_date = invoice.get("refund_date")
+    status_code = invoice.get("status_code")
+
+    basic_updates = {
+        "fees": total - service_fees - gst,
+        "totals": total,
+        "statutoryFees": total - service_fees,
+        "serviceFees": service_fees,
+        "due": total,
+        "gst": gst,
+    }
+
+    for key, value in basic_updates.items():
+        if key in totals:
+            totals[key] += value
+
+    # Track refunds and credits by status (only for calculate_invoice_summaries)
+    if "refunds" in totals or "credits" in totals:
+        if status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.PARTIALLY_REFUNDED.value):
+            if "refunds" in totals:
+                totals["refunds"] += refund
+        elif status_code in (InvoiceStatus.CREDITED.value, InvoiceStatus.PARTIALLY_CREDITED.value):
+            if "credits" in totals:
+                totals["credits"] += refund
+
+    is_eft = payment_method == PaymentMethod.EFT.value
+    should_count_paid = False
+    should_count_refund = False
+
+    if not statement or not is_eft:
+        should_count_paid = True
+        should_count_refund = paid == 0 and refund > 0
+    else:
+        if payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
+            should_count_paid = True
+        # Scenario where payment was refunded, paid $0, refund = invoice total
+        if (
+            paid == 0
+            and refund > 0
+            and refund_date
+            and parser.parse(refund_date) <= parser.parse(statement.get("to_date", ""))
+        ):
+            should_count_refund = True
+
+    if should_count_paid:
+        if "due" in totals:
+            totals["due"] -= paid
+        if "paid" in totals:
+            totals["paid"] += paid
+
+    if should_count_refund:
+        if "due" in totals:
+            totals["due"] -= refund
 
 
 def determine_service_provision_status(status_code: str, payment_method: str) -> bool:
@@ -132,93 +196,25 @@ def build_grouped_invoice_context(invoices: list[dict], statement: dict, stateme
 
 
 def calculate_invoice_summaries(invoices: list[dict], payment_method: str, statement: dict) -> dict:
-    """Calculate invoice summaries for a payment method using database aggregation."""
-    invoice_ids = [inv.get("id") for inv in invoices if inv.get("payment_method") == payment_method and inv.get("id")]
-    statement_to_date = statement.get("to_date")
+    """Calculate invoice summaries for a payment method from invoice data."""
+    totals = {
+        "paid": 0.0,
+        "due": 0.0,
+        "totals": 0.0,
+        "fees": 0.0,
+        "serviceFees": 0.0,
+        "gst": 0.0,
+        "refunds": 0.0,
+        "credits": 0.0,
+    }
 
-    if not invoice_ids:
-        return {
-            "paid_summary": 0.0,
-            "due_summary": 0.0,
-            "totals_summary": 0.0,
-            "fees_total": 0.0,
-            "service_fees_total": 0.0,
-            "gst_total": 0.0,
-            "refunds_total": 0.0,
-            "credits_total": 0.0,
-        }
+    for inv in invoices:
+        if inv.get("payment_method") != payment_method:
+            continue
 
-    if payment_method not in [PaymentMethod.EFT.value, PaymentMethod.PAD.value]:
-        # For non-EFT: refund applies if paid == 0 and refund > 0
-        refund_condition = case((and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund), else_=0)
-    else:
-        # For EFT: refund applies if paid == 0 and refund > 0 and refund_date <= statement.to_date
-        if statement_to_date:
-            refund_condition = case(
-                (
-                    and_(
-                        InvoiceModel.paid == 0,
-                        InvoiceModel.refund > 0,
-                        InvoiceModel.refund_date.isnot(None),
-                        InvoiceModel.refund_date <= func.cast(statement_to_date, db.Date),
-                    ),
-                    InvoiceModel.refund,
-                ),
-                else_=0,
-            )
-        else:
-            # Fallback if no statement_to_date provided
-            refund_condition = case(
-                (and_(InvoiceModel.paid == 0, InvoiceModel.refund > 0), InvoiceModel.refund), else_=0
-            )
+        invoice_totals_helper(inv, statement, totals)
 
-    if payment_method in [PaymentMethod.EFT.value, PaymentMethod.PAD.value] and statement_to_date:
-        paid_condition = case(
-            (
-                and_(
-                    InvoiceModel.payment_date.isnot(None),
-                    InvoiceModel.payment_date <= func.cast(statement_to_date, db.Date),
-                ),
-                InvoiceModel.paid,
-            ),
-            else_=0,
-        )
-    else:
-        paid_condition = InvoiceModel.paid
-
-    result = (
-        db.session.query(
-            func.coalesce(func.sum(paid_condition), 0).label("paid_summary"),
-            func.coalesce(func.sum(InvoiceModel.total - refund_condition), 0).label("totals_summary"),
-            func.coalesce(func.sum(InvoiceModel.total - paid_condition - refund_condition), 0).label("due_summary"),
-            func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.service_fees - InvoiceModel.gst), 0).label(
-                "fees_total"
-            ),
-            func.coalesce(func.sum(InvoiceModel.service_fees), 0).label("service_fees_total"),
-            func.coalesce(func.sum(InvoiceModel.gst), 0).label("gst_total"),
-            func.coalesce(
-                func.sum(
-                    case(
-                        (InvoiceModel.invoice_status_code == InvoiceStatus.REFUNDED.value, InvoiceModel.refund),
-                        else_=0,
-                    )
-                ),
-                0,
-            ).label("refunds_total"),
-            func.coalesce(
-                func.sum(
-                    case(
-                        (InvoiceModel.invoice_status_code == InvoiceStatus.CREDITED.value, InvoiceModel.refund),
-                        else_=0,
-                    )
-                ),
-                0,
-            ).label("credits_total"),
-        ).filter(and_(InvoiceModel.id.in_(invoice_ids), InvoiceModel.payment_method_code == payment_method))
-    ).first()
-
-    summary = {k: float(v or 0) for k, v in result._asdict().items()}
-    return summary
+    return totals
 
 
 def get_statement_status_for_invoice(inv: dict, payment_method: str, statement: dict) -> str:

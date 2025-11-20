@@ -875,12 +875,12 @@ def test_build_grouped_invoice_context_basic():
     # 50 + 20 paid, 10 refund, total 2 invoices
     assert cc_item["total_paid"] == "70.00"
     # FUTURE - Partial refunds: check due/paid/total summary
-    assert "paid_summary" in cc_item
-    assert "due_summary" in cc_item
-    assert "totals_summary" in cc_item
-    # Partial refund: paid_summary/due_summary/total_summary basic check
-    assert float(cc_item["paid_summary"]) >= 0
-    assert float(cc_item["totals_summary"]) >= 0
+    assert "paid" in cc_item
+    assert "due" in cc_item
+    assert "totals" in cc_item
+    # Partial refund: paid/due/totals basic check
+    assert float(cc_item["paid"]) >= 0
+    assert float(cc_item["totals"]) >= 0
 
 
 def test_calculate_invoice_summaries(session):
@@ -928,9 +928,9 @@ def test_calculate_invoice_summaries(session):
     ]
     statement = {"to_date": "2024-06-01"}
     summary = calculate_invoice_summaries(invoices, PaymentMethod.EFT.value, statement)
-    assert summary["paid_summary"] == 100.00
-    assert summary["due_summary"] == 0.00
-    assert summary["totals_summary"] == 100.00
+    assert summary["paid"] == 100.00
+    assert summary["due"] == 0.00
+    assert summary["totals"] == 100.00
 
 
 def test_build_transaction_rows():
