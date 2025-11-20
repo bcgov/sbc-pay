@@ -343,7 +343,8 @@ class RefundService:
             invoice=invoice, allowed_products=products, is_system=user.is_system(), allow_system=True
         )
         if requires_approval:
-            auth_user = get_auth_user(user.original_username or user.user_name)
+            if user.original_username or (user.user_name and not user.is_system()):
+                auth_user = get_auth_user(user.original_username or user.user_name)
             cls._validate_refund_approval_flow(invoice, user.is_system(), auth_user)
 
         if is_partial_refund:
@@ -512,7 +513,8 @@ class RefundService:
                 staff_html_body,
             )
 
-            if refund.status == RefundStatus.APPROVED.value:
+            # There may be no notification email populated for SYSTEM created refund requests
+            if refund.status == RefundStatus.APPROVED.value and refund.notification_email is not None:
                 client_html_body = email_config.render_body(status=refund.status, is_for_client=True)
                 send_email(
                     [refund.notification_email],
