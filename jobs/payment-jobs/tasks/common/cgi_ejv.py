@@ -45,7 +45,6 @@ class CgiEjv:
                 return file_name
 
             ts += timedelta(seconds=1)
-            ts = get_nearest_business_day(ts)
 
     @classmethod
     def get_journal_batch_name(cls, batch_number: str):
