@@ -15,11 +15,13 @@
 
 import os
 import tempfile
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from flask import current_app
 
 from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import EjvFile as EjvFileModel
+from pay_api.models import db
 from pay_api.services.google_bucket_service import GoogleBucketService
 from pay_api.utils.util import get_fiscal_year, get_nearest_business_day
 
@@ -31,10 +33,18 @@ class CgiEjv:
     EMPTY = ""
 
     @classmethod
-    def get_file_name(cls, file_id):
-        """Return file name."""
-        date_time = get_nearest_business_day(datetime.now(tz=UTC)).strftime("%Y%m%d%H%M%S")
-        return f"INBOX.F{cls._feeder_number()}.{date_time}.{file_id}"
+    def get_file_name(cls):
+        """Return file name, important to be on a business day and can't overlap otherwise files will overwrite."""
+        ts = get_nearest_business_day(datetime.now(tz=UTC))
+
+        while True:
+            date_str = ts.strftime("%Y%m%d%H%M%S")
+            file_name = f"INBOX.F{cls._feeder_number()}.{date_str}"
+
+            if not db.session.query(EjvFileModel).filter_by(file_ref=file_name).first():
+                return file_name
+
+            ts += timedelta(seconds=1)
 
     @classmethod
     def get_journal_batch_name(cls, batch_number: str):
