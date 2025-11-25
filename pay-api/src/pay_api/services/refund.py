@@ -353,7 +353,6 @@ class RefundService:
 
         refund = cls._initialize_refund(invoice, request, user, auth_user)
         cls._save_partial_refund_lines(refund_partial_lines, invoice, refund)
-        refund.save()
 
         refund_amount = (
             PaymentSystemService.get_total_partial_refund_amount(refund_partial_lines)
@@ -362,7 +361,8 @@ class RefundService:
         )
         if not requires_approval or user.is_system():
             return cls._complete_refund(invoice, refund, refund_partial_lines)
-
+        
+        refund.save()
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         product_recipients = get_product_refund_recipients(product_code=invoice.corp_type.product, refund=refund)
         if product_recipients:
