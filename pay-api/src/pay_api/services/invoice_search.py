@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to support invoice searches."""
 
+from collections import defaultdict
 import json
 from datetime import datetime
 
@@ -41,20 +42,30 @@ from pay_api.services.code import Code as CodeService
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment import PaymentReportInput
-from pay_api.services.payment_calculations import (
-    build_grouped_invoice_context,
-    build_statement_context,
-    build_statement_summary_context,
-    invoice_totals_helper,
-)
 from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
-from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus, PaymentMethod, RefundStatus
+from pay_api.utils.enums import (
+    AuthHeaderType,
+    Code,
+    ContentType,
+    InvoiceStatus,
+    PaymentMethod,
+    RefundStatus,
+    StatementTemplate,
+)
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
+from pay_api.utils.statement_dtos import (
+  GroupedInvoicesDTO,
+  StatementContextDTO,
+  StatementPDFContextDTO,
+  StatementSummaryDTO,
+  StatementTotalsDTO,
+  SummariesGroupedByPaymentMethodDTO
+)
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date_time, get_statement_currency_string
+from pay_api.utils.util import get_local_formatted_date, get_local_formatted_date_time
 
 
 class InvoiceSearch:
@@ -478,7 +489,36 @@ class InvoiceSearch:
         }
 
         for invoice in invoices:
-            invoice_totals_helper(invoice, statement, totals)
+            invoice["created_on"] = get_local_formatted_date(parser.parse(invoice["created_on"]))
+            total = invoice.get("total", 0)
+            service_fees = invoice.get("service_fees", 0)
+            paid = invoice.get("paid", 0)
+            refund = invoice.get("refund", 0)
+            payment_method = invoice.get("payment_method")
+            payment_date = invoice.get("payment_date")
+            refund_date = invoice.get("refund_date")
+
+            totals["fees"] += total
+            totals["statutoryFees"] += total - service_fees
+            totals["serviceFees"] += service_fees
+            totals["due"] += total
+            if not statement or payment_method != PaymentMethod.EFT.value:
+                totals["due"] -= paid
+                totals["paid"] += paid
+                if paid == 0 and refund > 0:
+                    totals["due"] -= refund
+            elif payment_method == PaymentMethod.EFT.value:
+                if payment_date and parser.parse(payment_date) <= parser.parse(statement.get("to_date", "")):
+                    totals["due"] -= paid
+                    totals["paid"] += paid
+                # Scenario where payment was refunded, paid $0, refund = invoice total
+                if (
+                    paid == 0
+                    and refund > 0
+                    and refund_date
+                    and parser.parse(refund_date) <= parser.parse(statement.get("to_date", ""))
+                ):
+                    totals["due"] -= refund
 
         return totals
 
@@ -510,19 +550,17 @@ class InvoiceSearch:
         report_name = report_inputs.report_name
         template_name = report_inputs.template_name
 
+        # Use the status_code_description instead of status_code.
+        InvoiceSearch._replace_status_codes_with_descriptions(results.get("items", []))
         if content_type == ContentType.CSV.value:
-            # Use the status_code_description instead of status_code.
-            InvoiceSearch._replace_status_codes_with_descriptions(results.get("items", []))
             template_vars = {
                 "columns": labels,
                 "values": InvoiceSearch._prepare_csv_data(results),
             }
         else:
-            invoices = results.get("items", [])
+            invoices = results.get("items", None)
             statement = kwargs.get("statement", {})
-            statement_to_date = parser.parse(statement.get("to_date"))
             totals = InvoiceSearch.get_invoices_totals(invoices, statement)
-
             account_info = None
             if kwargs.get("auth", None):
                 account_id = kwargs.get("auth")["account"]["id"]
@@ -533,46 +571,114 @@ class InvoiceSearch:
                     auth_header_type=AuthHeaderType.BEARER,
                     content_type=ContentType.JSON,
                 ).json()
-
                 account_info = kwargs.get("auth").get("account")
                 account_info["contact"] = contact["contacts"][0]  # Get the first one from the list
-
-            InvoiceSearch._adjust_invoice_statuses_for_statement(invoices, statement_to_date)
-            statement_summary = report_inputs.statement_summary
-            grouped_invoices: list[dict] = build_grouped_invoice_context(invoices, statement, statement_summary)
-
-            has_payment_instructions = any(item.get("payment_method") == "EFT" for item in grouped_invoices)
-
-            formatted_totals = {}
-            for key, value in totals.items():
-                formatted_totals[key] = get_statement_currency_string(value)
-
             template_vars = {
-                "statementSummary": build_statement_summary_context(statement_summary),
-                "groupedInvoices": grouped_invoices,
-                "total": formatted_totals,
+                "statementSummary": report_inputs.statement_summary,
+                "invoices": results.get("items", None),
+                "total": totals,
                 "account": account_info,
-                "statement": build_statement_context(kwargs.get("statement")),
+                "statement": kwargs.get("statement"),
             }
-
-            if has_payment_instructions:
-                template_vars["hasPaymentInstructions"] = True
-
-        request_payload = {
-            "reportName": report_name,
-            "templateName": template_name,
-            "templateVars": template_vars,
-            "populatePageNumber": True,
-            "contentType": content_type,
-        }
-
-        with open(f"{report_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json", "w", encoding="utf-8") as f:
-            json.dump(request_payload, f, indent=4, ensure_ascii=False)
 
         report_response = ReportService.get_report_response(
             ReportRequest(
                 report_name=report_name,
                 template_name=template_name,
+                template_vars=template_vars,
+                populate_page_number=True,
+                content_type=content_type,
+            )
+        )
+
+        return report_response
+
+    @staticmethod
+    @user_context
+    def generate_statement_pdf_report(
+        invoices_orm: list[Invoice],
+        db_summaries: SummariesGroupedByPaymentMethodDTO,
+        statement: dict,
+        statement_summary: dict,
+        report_name: str,
+        content_type: str,
+        **kwargs,
+    ):
+        """Generate PDF statement report using ORM objects and database summaries."""
+        db_summaries = db_summaries.summaries
+
+        statement_to_date = parser.parse(statement.get("to_date"))
+
+        # Get account info
+        account_info = {}
+        if kwargs.get("auth", None):
+            account_id = kwargs.get("auth")["account"]["id"]
+            contact_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}/contacts"
+            contact = OAuthService.get(
+                endpoint=contact_url,
+                token=kwargs["user"].bearer_token,
+                auth_header_type=AuthHeaderType.BEARER,
+                content_type=ContentType.JSON,
+            ).json()
+      
+            account_info = kwargs.get("auth").get("account")
+            account_info["contact"] = contact["contacts"][0]
+
+        grouped_by_method = defaultdict(list)
+        for invoice in invoices_orm:
+            grouped_by_method[invoice.payment_method_code].append(invoice)
+
+        grouped_invoices = []
+        for idx, method in enumerate([m.value for m in PaymentMethod.Order]):
+            if method not in grouped_by_method:
+                continue
+
+            items = grouped_by_method[method]
+            summary = db_summaries.get(method, {})
+
+            group_dto = GroupedInvoicesDTO.from_invoices_and_summary(
+                payment_method=method,
+                invoices_orm=items,
+                db_summary=summary,
+                statement=statement,
+                statement_summary=statement_summary,
+                statement_to_date=statement_to_date,
+                is_first=(len(grouped_invoices) == 0),
+            )
+
+            grouped_invoices.append(group_dto)
+
+        totals_dto = StatementTotalsDTO.from_db_summaries(db_summaries)
+
+        statement_summary_dto = StatementSummaryDTO.from_dict(statement_summary)
+        statement_dto = StatementContextDTO.from_dict(statement)
+
+        context_dto = StatementPDFContextDTO(
+            statement_summary=statement_summary_dto,
+            grouped_invoices=grouped_invoices,
+            total=totals_dto,
+            account=account_info,
+            statement=statement_dto,
+            has_payment_instructions=any(g.payment_method == PaymentMethod.EFT.value for g in grouped_invoices),
+        )
+
+        template_vars = context_dto.to_dict()
+
+        request_payload = {
+            "reportName": report_name,
+            "templateName": StatementTemplate.STATEMENT_REPORT.value,
+            "templateVars": template_vars,
+            "populatePageNumber": True,
+            "contentType": content_type,
+        }
+
+        with open(f"1-{report_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json", "w", encoding="utf-8") as f:
+            json.dump(request_payload, f, indent=4, ensure_ascii=False)
+
+        report_response = ReportService.get_report_response(
+            ReportRequest(
+                report_name=report_name,
+                template_name=StatementTemplate.STATEMENT_REPORT.value,
                 template_vars=template_vars,
                 populate_page_number=True,
                 content_type=content_type,
@@ -589,6 +695,35 @@ class InvoiceSearch:
             filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
             if filtered_codes:
                 invoice["status_code"] = filtered_codes[0]["description"]
+
+    @staticmethod
+    def _adjust_invoice_status_for_statement_orm(invoice_orm, payment_method: str, statement_to_date) -> str:
+        """Adjust single invoice ORM status for statement display."""
+        refund_statuses = {
+            InvoiceStatus.REFUNDED.value,
+            InvoiceStatus.CREDITED.value,
+            InvoiceStatus.PARTIALLY_CREDITED.value,
+            InvoiceStatus.PARTIALLY_REFUNDED.value,
+        }
+
+        paid_statuses = {
+            InvoiceStatus.PAID.value,
+            *refund_statuses,
+        }
+
+        status_code = invoice_orm.invoice_status_code
+        refund_date = invoice_orm.refund_date
+        payment_date = invoice_orm.payment_date
+
+        if status_code in refund_statuses:
+            if refund_date and refund_date > statement_to_date:
+                return InvoiceStatus.PAID.value
+
+        if status_code in paid_statuses:
+            if payment_date and payment_date > statement_to_date:
+                return InvoiceStatus.APPROVED.value
+
+        return status_code
 
     @staticmethod
     def _adjust_invoice_statuses_for_statement(invoices, statement_to_date):
@@ -667,3 +802,53 @@ class InvoiceSearch:
             ]
             cells.append(row_value)
         return cells
+
+    @staticmethod
+    def determine_service_provision_status(status_code: str, payment_method: str) -> bool:
+        """Determine if service was provided based on invoice status code and payment method."""
+        status_code = status_code.upper().replace(" ", "_")
+        if status_code in InvoiceStatus.__members__:
+            status_enum = InvoiceStatus[status_code]
+        else:
+            status_enum = next((s for s in InvoiceStatus if s.value == status_code), status_code)
+
+        if status_enum is None:
+            return False
+
+        default_statuses = {
+            InvoiceStatus.PAID,
+            InvoiceStatus.CANCELLED,
+            InvoiceStatus.CREDITED,
+            InvoiceStatus.REFUND_REQUESTED,
+            InvoiceStatus.REFUNDED,
+            InvoiceStatus.COMPLETED,
+        }
+
+        if status_enum in default_statuses:
+            return True
+
+        match payment_method:
+            case PaymentMethod.PAD.value:
+                return status_enum in {
+                    InvoiceStatus.APPROVED,
+                    InvoiceStatus.SETTLEMENT_SCHEDULED,
+                }
+
+            case PaymentMethod.EFT.value:
+                return status_enum in {
+                    InvoiceStatus.APPROVED,
+                    InvoiceStatus.OVERDUE,
+                }
+
+            case PaymentMethod.EJV.value:
+                return status_enum in {
+                    InvoiceStatus.APPROVED,
+                }
+
+            case PaymentMethod.INTERNAL.value:
+                return status_enum in {
+                    InvoiceStatus.APPROVED,
+                }
+
+            case _:
+                return False
