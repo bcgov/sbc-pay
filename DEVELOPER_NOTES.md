@@ -239,7 +239,8 @@ Account Id: The auth account id to run the job against.
 
 Here: https://drive.google.com/file/d/12WqEis2rQMyKHFNitZRukXWlSLKTa-x1/view?usp=drive_link
 
-25. How do I quickly grab the feedfack files for inspection?
+25. How do I quickly grab the feedfack files for inspection? Fill in the {bucketName} and {desintationFolder} without brackets
 
 gsutil -m cp -r gs://{bucketName}/* {destinationFolder}
+
 
