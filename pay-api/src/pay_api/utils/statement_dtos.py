@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 
 import cattrs
 
@@ -122,28 +123,28 @@ class PaymentMethodSummaryRawDTO:
     COUNTED_REFUND = "counted_refund"
     INVOICE_COUNT = "invoice_count"
 
-    totals: float
-    fees: float
-    service_fees: float
-    gst: float
-    paid: float
-    due: float
+    totals: Decimal
+    fees: Decimal
+    service_fees: Decimal
+    gst: Decimal
+    paid: Decimal
+    due: Decimal
     invoice_count: int
 
     @classmethod
     def from_db_row(cls, row) -> PaymentMethodSummaryRawDTO:
         """Create from database query row."""
-        totals = float(getattr(row, cls.TOTALS))
-        paid = float(getattr(row, cls.PAID))
-        counted_refund = float(getattr(row, cls.COUNTED_REFUND))
+        totals = Decimal(str(getattr(row, cls.TOTALS)))
+        paid = Decimal(str(getattr(row, cls.PAID)))
+        counted_refund = Decimal(str(getattr(row, cls.COUNTED_REFUND)))
 
         due = totals - paid - counted_refund
 
         return cls(
             totals=totals,
-            fees=float(getattr(row, cls.FEES)),
-            service_fees=float(getattr(row, cls.SERVICE_FEES)),
-            gst=float(getattr(row, cls.GST)),
+            fees=Decimal(str(getattr(row, cls.FEES))),
+            service_fees=Decimal(str(getattr(row, cls.SERVICE_FEES))),
+            gst=Decimal(str(getattr(row, cls.GST))),
             paid=paid,
             due=due,
             invoice_count=getattr(row, cls.INVOICE_COUNT),
