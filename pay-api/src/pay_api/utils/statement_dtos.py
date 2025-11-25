@@ -18,19 +18,23 @@ This module contains all DTOs used in the statement PDF generation process.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-import cattrs
+from attrs import define
 
-from pay_api.models.invoice import Invoice
 from pay_api.utils.enums import PaymentMethod, StatementTitles
+from pay_api.utils.serializable import Serializable
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
+if TYPE_CHECKING:
+    from datetime import datetime
 
-@dataclass
-class StatementTransactionDTO:
+    from pay_api.models.invoice import Invoice
+
+
+@define
+class StatementTransactionDTO(Serializable):
     """DTO for a single invoice transaction in PDF statement.
 
     Represents a formatted transaction row with all display-ready values.
@@ -87,8 +91,8 @@ class StatementTransactionDTO:
         )
 
 
-@dataclass
-class PaymentMethodSummaryDTO:
+@define
+class PaymentMethodSummaryDTO(Serializable):
     """DTO for payment method summary totals in PDF statement."""
 
     totals: str
@@ -106,8 +110,8 @@ class PaymentMethodSummaryDTO:
         return cls(**{f: get_statement_currency_string(getattr(source, f)) for f in fields})
 
 
-@dataclass
-class PaymentMethodSummaryRawDTO:
+@define
+class PaymentMethodSummaryRawDTO(Serializable):
     """DTO for raw payment method summary from database aggregation.
 
     This represents the raw numeric values from database queries,
@@ -151,8 +155,8 @@ class PaymentMethodSummaryRawDTO:
         )
 
 
-@dataclass
-class GroupedInvoicesDTO:
+@define
+class GroupedInvoicesDTO(Serializable):
     """DTO for invoices grouped by payment method in PDF statement."""
 
     payment_method: str
@@ -232,8 +236,8 @@ class GroupedInvoicesDTO:
         return dto
 
 
-@dataclass
-class StatementTotalsDTO:
+@define
+class StatementTotalsDTO(Serializable):
     """DTO for overall statement totals across all payment methods in PDF statement."""
 
     fees: str
@@ -254,8 +258,8 @@ class StatementTotalsDTO:
         return cls(**{field: get_statement_currency_string(totals[field]) for field in fields})
 
 
-@dataclass
-class StatementContextDTO:
+@define
+class StatementContextDTO(Serializable):
     """DTO for statement metadata in PDF rendering."""
 
     duration: str | None = None
@@ -317,8 +321,8 @@ class StatementContextDTO:
         )
 
 
-@dataclass
-class StatementSummaryDTO:
+@define
+class StatementSummaryDTO(Serializable):
     """DTO for statement summary in PDF rendering."""
 
     last_statement_total: str | None = None
@@ -358,10 +362,11 @@ class StatementSummaryDTO:
         )
 
 
-@dataclass
-class SummariesGroupedByPaymentMethodDTO:
+@define
+class SummariesGroupedByPaymentMethodDTO(Serializable):
     """DTO for payment method summaries from database aggregation.
-    Key: payment_method (e.g., 'EFT', 'PAD', 'INTERNAL')
+
+    Key: payment_method (e.g., 'EFT', 'PAD', 'INTERNAL').
     """
 
     summaries: dict[str, PaymentMethodSummaryRawDTO]
@@ -380,8 +385,8 @@ class SummariesGroupedByPaymentMethodDTO:
         return list(self.summaries.keys())
 
 
-@dataclass
-class StatementPDFContextDTO:
+@define
+class StatementPDFContextDTO(Serializable):
     """DTO for complete PDF statement rendering context."""
 
     statement_summary: StatementSummaryDTO | None
@@ -390,7 +395,3 @@ class StatementPDFContextDTO:
     account: dict | None
     statement: StatementContextDTO
     has_payment_instructions: bool = False
-
-    def to_dict(self) -> dict:
-        """Convert DTO to dictionary for template rendering."""
-        return cattrs.unstructure(self)

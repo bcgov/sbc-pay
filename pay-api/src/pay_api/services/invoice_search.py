@@ -13,8 +13,8 @@
 # limitations under the License.
 """Service to support invoice searches."""
 
-from collections import defaultdict
 import json
+from collections import defaultdict
 from datetime import datetime
 
 from dateutil import parser
@@ -57,12 +57,12 @@ from pay_api.utils.enums import (
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.statement_dtos import (
-  GroupedInvoicesDTO,
-  StatementContextDTO,
-  StatementPDFContextDTO,
-  StatementSummaryDTO,
-  StatementTotalsDTO,
-  SummariesGroupedByPaymentMethodDTO
+    GroupedInvoicesDTO,
+    StatementContextDTO,
+    StatementPDFContextDTO,
+    StatementSummaryDTO,
+    StatementTotalsDTO,
+    SummariesGroupedByPaymentMethodDTO,
 )
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date, get_local_formatted_date_time
@@ -620,7 +620,7 @@ class InvoiceSearch:
                 auth_header_type=AuthHeaderType.BEARER,
                 content_type=ContentType.JSON,
             ).json()
-      
+
             account_info = kwargs.get("auth").get("account")
             account_info["contact"] = contact["contacts"][0]
 
@@ -629,7 +629,7 @@ class InvoiceSearch:
             grouped_by_method[invoice.payment_method_code].append(invoice)
 
         grouped_invoices = []
-        for idx, method in enumerate([m.value for m in PaymentMethod.Order]):
+        for method in [m.value for m in PaymentMethod.Order]:
             if method not in grouped_by_method:
                 continue
 
@@ -697,7 +697,7 @@ class InvoiceSearch:
                 invoice["status_code"] = filtered_codes[0]["description"]
 
     @staticmethod
-    def _adjust_invoice_status_for_statement_orm(invoice_orm, payment_method: str, statement_to_date) -> str:
+    def _adjust_invoice_status_for_statement_orm(invoice_orm, _payment_method: str, statement_to_date) -> str:
         """Adjust single invoice ORM status for statement display."""
         refund_statuses = {
             InvoiceStatus.REFUNDED.value,
