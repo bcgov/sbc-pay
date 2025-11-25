@@ -241,4 +241,5 @@ Here: https://drive.google.com/file/d/12WqEis2rQMyKHFNitZRukXWlSLKTa-x1/view?usp
 
 25. How do I quickly grab the feedfack files for inspection?
 
-gsutil -m cp -r gs://<bucketName>/* <destination>
+gsutil -m cp -r gs://{bucketName}/* {destinationFolder}
+
