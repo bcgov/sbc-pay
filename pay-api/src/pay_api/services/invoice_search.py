@@ -403,7 +403,7 @@ class InvoiceSearch:
             # This is to maintain backwards compat for CSO, also for other functions like exporting to CSV etc.
             query, count_query = cls.search(search_params)
             count = count_query.count()
-            if search_params.max_no_records > 0:
+            if not search_params.return_all and search_params.max_no_records > 0:
                 count = search_params.max_no_records if search_params.max_no_records < count else count
             if count > 100000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
