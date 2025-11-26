@@ -873,6 +873,7 @@ def test_get_eft_statement_with_invoices(session):
                             "serviceProvided": True,
                             "statusCode": "APPROVED",
                             "total": "200.00",
+                            "appliedCredits": None,
                         },
                         {
                             "id": invoice_2.id,
@@ -900,6 +901,7 @@ def test_get_eft_statement_with_invoices(session):
                             "serviceProvided": True,
                             "statusCode": "APPROVED",
                             "total": "50.00",
+                            "appliedCredits": None,
                         },
                         {
                             "id": invoice_3.id,
@@ -927,6 +929,7 @@ def test_get_eft_statement_with_invoices(session):
                             "serviceProvided": True,
                             "statusCode": "APPROVED",
                             "total": "50.00",
+                            "appliedCredits": None,
                         },
                         {
                             "id": invoice_4.id,
@@ -954,6 +957,7 @@ def test_get_eft_statement_with_invoices(session):
                             "serviceProvided": True,
                             "statusCode": "PAID",
                             "total": "50.00",
+                            "appliedCredits": None,
                         },
                         {
                             "id": invoice_5.id,
@@ -981,6 +985,7 @@ def test_get_eft_statement_with_invoices(session):
                             "serviceProvided": True,
                             "statusCode": "APPROVED",
                             "total": "150.00",
+                            "appliedCredits": None,
                         },
                     ],
                 }
