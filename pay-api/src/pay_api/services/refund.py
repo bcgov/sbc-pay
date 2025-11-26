@@ -361,7 +361,7 @@ class RefundService:
         )
         if not requires_approval or user.is_system():
             return cls._complete_refund(invoice, refund, refund_partial_lines)
-        
+
         refund.save()
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         product_recipients = get_product_refund_recipients(product_code=invoice.corp_type.product, refund=refund)
