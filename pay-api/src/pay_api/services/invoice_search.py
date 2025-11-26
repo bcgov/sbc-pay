@@ -48,6 +48,7 @@ from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus, PaymentMethod, RefundStatus
 from pay_api.utils.errors import Error
+from pay_api.utils.query_util import QueryUtils
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date, get_statement_currency_string
@@ -617,19 +618,17 @@ class InvoiceSearch:
         formatted_date = func.to_char(
             func.timezone("America/Los_Angeles", Invoice.created_on), "YYYY-MM-DD HH12:MI:SS AM"
         ).op("||")(" Pacific Time")
+        query = results_query
+        stmt = query.statement
 
-        # We need this because there are a wackload of filters that can be applied to the query.
-        invoice_subq = results_query.with_entities(Invoice.id).distinct().subquery()
+        if not QueryUtils.statement_has_join(stmt, CorpType.__table__):
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)
+
+        if not QueryUtils.statement_has_join(query.statement, InvoiceStatusCode.__table__):
+            query = query.join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
 
         query = (
-            db.session.query(Invoice)
-            .join(invoice_subq, invoice_subq.c.id == Invoice.id)
-            .join(CorpType, CorpType.code == Invoice.corp_type_code)
-            .join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
-            .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            .outerjoin(FeeSchedule, FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id)
-            .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-            .with_entities(
+            query.with_entities(
                 CorpType.product,
                 Invoice.corp_type_code,
                 func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
