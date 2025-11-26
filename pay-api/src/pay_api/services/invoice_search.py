@@ -323,12 +323,11 @@ class InvoiceSearch:
         return query
 
     @classmethod
-    def get_count(cls, auth_account_id: str, search_filter: dict):
-        """Slimmed downed version for count (less joins)."""
+    def get_count_query(cls, auth_account_id: str, search_filter: dict):
+        """Get count query without materializing."""
         query = db.session.query(func.distinct(Invoice.id))
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
-        count = query.count()
-        return count
+        return query
 
     @classmethod
     def search_without_counts(cls, params: TransactionSearchParams):
@@ -347,12 +346,12 @@ class InvoiceSearch:
         cls, search_params: PurchaseHistorySearch
     ):
         """Search for purchase history."""
-        executor = current_app.extensions["flask_executor"]
         search_filter = search_params.search_filter
         query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=False)
         query = cls.filter(query, search_params.auth_account_id, search_filter)
+        count_query = cls.get_count_query(search_params.auth_account_id, search_filter)
+
         if not search_params.return_all:
-            count_future = executor.submit(cls.get_count, search_params.auth_account_id, search_filter)
             sub_query = cls.generate_subquery(
                 TransactionSearchParams(
                     auth_account_id=search_params.auth_account_id,
@@ -362,14 +361,7 @@ class InvoiceSearch:
                 )
             )
             query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
-            result_future = executor.submit(query.all)
-            count = count_future.result()
-            result = result_future.result()
-            # If maximum number of records is provided, return it as total
-            if search_params.max_no_records > 0:
-                count = search_params.max_no_records if search_params.max_no_records < count else count
         elif search_params.max_no_records > 0:
-            # If maximum number of records is provided, set the page with that number
             sub_query = cls.generate_subquery(
                 TransactionSearchParams(
                     auth_account_id=search_params.auth_account_id,
@@ -378,22 +370,9 @@ class InvoiceSearch:
                     page=None,
                 )
             )
-            query, count = (
-                query.filter(Invoice.id.in_(sub_query.subquery().select())),
-                sub_query.count(),
-            )
-            if search_params.query_only:
-                return query, count
-            else:
-                return query.all(), count
-        else:
-            count = cls.get_count(search_params.auth_account_id, search_filter)
-            if count > 100000:
-                raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
-            if search_params.query_only:
-                return query, count
-            result = query.all()
-        return result, count
+            query = query.filter(Invoice.id.in_(sub_query.subquery().select()))
+
+        return query, count_query
 
     @classmethod
     @user_context
@@ -422,9 +401,16 @@ class InvoiceSearch:
             )
         else:
             # This is to maintain backwards compat for CSO, also for other functions like exporting to CSV etc.
-            purchases, data["total"] = cls.search(search_params)
+            query, count_query = cls.search(search_params)
+            count = count_query.count()
+            if search_params.max_no_records > 0:
+                count = search_params.max_no_records if search_params.max_no_records < count else count
+            if count > 100000:
+                raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
             if search_params.query_only:
-                return purchases
+                return query
+            purchases = query.all()
+            data["total"] = count
         data = cls.create_payment_report_details(purchases, data)
         current_app.logger.debug(">search_purchase_history")
         return data
