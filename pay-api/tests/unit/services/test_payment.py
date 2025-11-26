@@ -35,7 +35,7 @@ from pay_api.services.payment_calculations import (
     determine_service_provision_status,
 )
 from pay_api.utils.dataclasses import PurchaseHistorySearch
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import (
     factory_invoice,
@@ -354,7 +354,9 @@ def test_create_payment_report_csv(session):
         factory_invoice_reference(invoice.id).save()
         factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
 
-    search_results = InvoiceSearch.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
+    search_results = InvoiceSearch.search_all_purchase_history(
+        auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.CSV.value
+    )
     assert search_results is not None
     assert len(search_results.get("items")) > 0
 
