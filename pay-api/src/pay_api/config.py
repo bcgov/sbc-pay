@@ -216,8 +216,6 @@ class _Config:  # pylint: disable=too-few-public-methods
     # To differentiate between local, dev, test, sandbox, prod
     ENVIRONMENT_NAME = os.getenv("ENVIRONMENT_NAME", "local")
 
-    EXECUTOR_PROPAGATE_EXCEPTIONS = True
-
     # To bypass 25MB limit for CloudRun on HTTP/1.1 requests.
     ENABLE_GZIP_BODY = _get_config("ENABLE_GZIP_BODY", default="True").lower() == "true"
 
