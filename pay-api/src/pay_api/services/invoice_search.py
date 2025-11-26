@@ -26,6 +26,7 @@ from pay_api.models import (
     Invoice,
     InvoiceReference,
     InvoiceSearchModel,
+    InvoiceStatusCode,
     PaymentAccount,
     PaymentLineItem,
     Refund,
@@ -49,7 +50,7 @@ from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date, get_local_formatted_date_time, get_statement_currency_string
+from pay_api.utils.util import get_local_formatted_date, get_statement_currency_string
 
 from .report_service import ReportRequest, ReportService
 
@@ -384,6 +385,8 @@ class InvoiceSearch:
             count = cls.get_count(search_params.auth_account_id, search_filter)
             if count > 100000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
+            if search_params.query_only:
+                return query, count
             result = query.all()
         return result, count
 
@@ -436,11 +439,16 @@ class InvoiceSearch:
         return data
 
     @staticmethod
-    def search_all_purchase_history(auth_account_id: str, search_filter: dict):
+    def search_all_purchase_history(auth_account_id: str, search_filter: dict, content_type: str):
         """Return all results for the purchase history."""
         return InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
-                auth_account_id=auth_account_id, search_filter=search_filter, page=0, limit=0, return_all=True
+                auth_account_id=auth_account_id,
+                search_filter=search_filter,
+                page=0,
+                limit=0,
+                return_all=True,
+                query_only=content_type == ContentType.CSV.value,
             )
         )
 
@@ -449,7 +457,7 @@ class InvoiceSearch:
         """Create payment report."""
         current_app.logger.debug(f"<create_payment_report {auth_account_id}")
 
-        results = InvoiceSearch.search_all_purchase_history(auth_account_id, search_filter)
+        results = InvoiceSearch.search_all_purchase_history(auth_account_id, search_filter, content_type)
 
         report_response = InvoiceSearch.generate_payment_report(
             PaymentReportInput(
@@ -512,43 +520,42 @@ class InvoiceSearch:
     @user_context
     def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
-        labels = [
-            "Product",
-            "Corp Type",
-            "Transaction Type",
-            "Transaction",
-            "Transaction Details",
-            "Folio Number",
-            "Initiated By",
-            "Date",
-            "Purchase Amount",
-            "GST",
-            "Statutory Fee",
-            "BCOL Fee",
-            "Status",
-            "Corp Number",
-            "Transaction ID",
-            "Invoice Reference Number",
-        ]
-
         content_type = report_inputs.content_type
         results = report_inputs.results
         report_name = report_inputs.report_name
         template_name = report_inputs.template_name
 
-        # Use the status_code_description instead of status_code.
-        invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
-        for invoice in results.get("items", None):
-            filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
-            if filtered_codes:
-                invoice["status_code"] = filtered_codes[0]["description"]
-
         if content_type == ContentType.CSV.value:
+            labels = [
+                "Product",
+                "Corp Type",
+                "Transaction Type",
+                "Transaction",
+                "Transaction Details",
+                "Folio Number",
+                "Initiated By",
+                "Date",
+                "Purchase Amount",
+                "GST",
+                "Statutory Fee",
+                "BCOL Fee",
+                "Status",
+                "Corp Number",
+                "Transaction ID",
+                "Invoice Reference Number",
+            ]
             template_vars = {
                 "columns": labels,
                 "values": InvoiceSearch._prepare_csv_data(results),
             }
         else:
+            # Use the status_code_description instead of status_code.
+            # Future: move this into something more specialized.
+            invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
+            for invoice in results.get("items", None):
+                filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
+                if filtered_codes:
+                    invoice["status_code"] = filtered_codes[0]["description"]
             invoices = results.get("items", None)
             statement = kwargs.get("statement", {})
             totals = InvoiceSearch.get_invoices_totals(invoices, statement)
@@ -601,43 +608,49 @@ class InvoiceSearch:
         return report_response
 
     @staticmethod
-    def _prepare_csv_data(results):
+    def _prepare_csv_data(results_query):
         """Prepare data for creating a CSV report."""
-        cells = []
-        for invoice in results.get("items"):
-            txn_description = ""
-            total_gst = 0
-            total_pst = 0
-            for line_item in invoice.get("line_items"):
-                txn_description += "," + line_item.get("description")
-                total_gst += line_item.get("gst")
-                total_pst += line_item.get("pst")
-            service_fee = float(invoice.get("service_fees", 0))
-            total_fees = float(invoice.get("total", 0))
-            row_value = [
-                invoice.get("product"),
-                invoice.get("corp_type_code"),
-                ",".join([line_item.get("filing_type_code") for line_item in invoice.get("line_items")]),
-                ",".join([line_item.get("description") for line_item in invoice.get("line_items")]),
-                (
-                    ",".join([f"{detail.get('label')} {detail.get('value')}" for detail in invoice.get("details")])
-                    if invoice.get("details")
-                    else None
-                ),
-                invoice.get("folio_number"),
-                invoice.get("created_name"),
-                get_local_formatted_date_time(
-                    parser.parse(invoice.get("created_on")),
-                    "%Y-%m-%d %I:%M:%S %p Pacific Time",
-                ),
-                total_fees,
-                total_gst + total_pst,
-                total_fees - service_fee,
-                service_fee,
-                invoice.get("status_code"),
-                invoice.get("business_identifier"),
-                invoice.get("id"),
-                invoice.get("invoice_number"),
-            ]
-            cells.append(row_value)
-        return cells
+        formatted_date = func.to_char(
+            func.timezone("America/Los_Angeles", Invoice.created_on), "YYYY-MM-DD HH12:MI:SS AM"
+        ).op("||")(" Pacific Time")
+
+        query = (
+            results_query.join(CorpType, CorpType.code == Invoice.corp_type_code)
+            .join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
+            .with_entities(
+                CorpType.product,
+                Invoice.corp_type_code,
+                func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
+                func.string_agg(PaymentLineItem.description, ",").label("descriptions"),
+                cast(None, db.String).label("details_formatted"),
+                Invoice.folio_number,
+                Invoice.created_name,
+                formatted_date.label("created_on_formatted"),
+                cast(Invoice.total, db.Float),
+                cast(
+                    func.sum(PaymentLineItem.statutory_fees_gst + PaymentLineItem.service_fees_gst)
+                    + func.sum(PaymentLineItem.pst),
+                    db.Float,
+                ).label("total_tax"),
+                cast(Invoice.total - func.coalesce(Invoice.service_fees, 0), db.Float).label("statutory_fee"),
+                cast(func.coalesce(Invoice.service_fees, 0), db.Float).label("service_fee"),
+                InvoiceStatusCode.description.label("invoice_status_code"),
+                Invoice.business_identifier,
+                Invoice.id,
+                func.string_agg(InvoiceReference.invoice_number, ",").label("invoice_number"),
+            )
+            .group_by(
+                CorpType.product,
+                Invoice.corp_type_code,
+                Invoice.folio_number,
+                Invoice.created_name,
+                Invoice.created_on,
+                Invoice.total,
+                Invoice.service_fees,
+                InvoiceStatusCode.description,
+                Invoice.business_identifier,
+                Invoice.id,
+            )
+        )
+
+        return [list(row) for row in query.all()]

@@ -381,7 +381,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         if previous_statement:
             previous_invoices = Statement.find_all_payments_and_invoices_for_statement(
                 previous_statement.id, payment_method
-            )
+            ).all()
             previous_items = InvoiceSearch.create_payment_report_details(purchases=previous_invoices, data=None)
 
             # Skip passing statement, we need the totals independent of the statement/payment date.
@@ -441,8 +441,11 @@ class Statement:  # pylint:disable=too-many-public-methods
             report_name = f"{report_name}-{from_date_string}-to-{to_date_string}.{extension}"
 
         statement_purchases = Statement.find_all_payments_and_invoices_for_statement(statement_id)
-
-        result_items = InvoiceSearch.create_payment_report_details(purchases=statement_purchases, data=None)
+        if extension == "pdf":
+            statement_purchases = statement_purchases.all()
+            result_items = InvoiceSearch.create_payment_report_details(purchases=statement_purchases, data=None)
+        else:
+            result_items = statement_purchases
         statement = statement_svc.asdict()
         statement["from_date"] = from_date_string
         statement["to_date"] = to_date_string
@@ -709,4 +712,4 @@ class Statement:  # pylint:disable=too-many-public-methods
         if payment_method:
             query = query.filter(InvoiceModel.payment_method_code == payment_method.value)
 
-        return query.all()
+        return query
