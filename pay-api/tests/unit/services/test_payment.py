@@ -333,7 +333,9 @@ def test_search_payment_history_for_all(session):
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
-    results = InvoiceSearch.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
+    results = InvoiceSearch.search_all_purchase_history(
+        auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.PDF.value
+    )
     assert results is not None
     assert results.get("items") is not None
     # Returns only the default number if payload is empty
