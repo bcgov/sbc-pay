@@ -377,10 +377,14 @@ class InvoiceSearch:
                     page=None,
                 )
             )
-            result, count = (
-                query.filter(Invoice.id.in_(sub_query.subquery().select())).all(),
+            query, count = (
+                query.filter(Invoice.id.in_(sub_query.subquery().select())),
                 sub_query.count(),
             )
+            if search_params.query_only:
+                return query, count
+            else:
+                return query.all(), count
         else:
             count = cls.get_count(search_params.auth_account_id, search_filter)
             if count > 100000:
@@ -418,6 +422,8 @@ class InvoiceSearch:
         else:
             # This is to maintain backwards compat for CSO, also for other functions like exporting to CSV etc.
             purchases, data["total"] = cls.search(search_params)
+            if search_params.query_only:
+                return purchases
         data = cls.create_payment_report_details(purchases, data)
         current_app.logger.debug(">search_purchase_history")
         return data
@@ -526,28 +532,7 @@ class InvoiceSearch:
         template_name = report_inputs.template_name
 
         if content_type == ContentType.CSV.value:
-            labels = [
-                "Product",
-                "Corp Type",
-                "Transaction Type",
-                "Transaction",
-                "Transaction Details",
-                "Folio Number",
-                "Initiated By",
-                "Date",
-                "Purchase Amount",
-                "GST",
-                "Statutory Fee",
-                "BCOL Fee",
-                "Status",
-                "Corp Number",
-                "Transaction ID",
-                "Invoice Reference Number",
-            ]
-            template_vars = {
-                "columns": labels,
-                "values": InvoiceSearch._prepare_csv_data(results),
-            }
+            template_vars = InvoiceSearch._prepare_csv_data(results)
         else:
             # Use the status_code_description instead of status_code.
             # Future: move this into something more specialized.
@@ -610,47 +595,80 @@ class InvoiceSearch:
     @staticmethod
     def _prepare_csv_data(results_query):
         """Prepare data for creating a CSV report."""
+        labels = [
+            "Product",
+            "Corp Type",
+            "Transaction Type",
+            "Transaction",
+            "Transaction Details",
+            "Folio Number",
+            "Initiated By",
+            "Date",
+            "Purchase Amount",
+            "GST",
+            "Statutory Fee",
+            "BCOL Fee",
+            "Status",
+            "Corp Number",
+            "Transaction ID",
+            "Invoice Reference Number",
+        ]
+
         formatted_date = func.to_char(
             func.timezone("America/Los_Angeles", Invoice.created_on), "YYYY-MM-DD HH12:MI:SS AM"
         ).op("||")(" Pacific Time")
+        try:
+            invoice_subq = results_query.with_entities(Invoice.id).distinct().subquery()
 
-        query = (
-            results_query.join(CorpType, CorpType.code == Invoice.corp_type_code)
-            .join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
-            .with_entities(
-                CorpType.product,
-                Invoice.corp_type_code,
-                func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
-                func.string_agg(PaymentLineItem.description, ",").label("descriptions"),
-                cast(None, db.String).label("details_formatted"),
-                Invoice.folio_number,
-                Invoice.created_name,
-                formatted_date.label("created_on_formatted"),
-                cast(Invoice.total, db.Float),
-                cast(
-                    func.sum(PaymentLineItem.statutory_fees_gst + PaymentLineItem.service_fees_gst)
-                    + func.sum(PaymentLineItem.pst),
-                    db.Float,
-                ).label("total_tax"),
-                cast(Invoice.total - func.coalesce(Invoice.service_fees, 0), db.Float).label("statutory_fee"),
-                cast(func.coalesce(Invoice.service_fees, 0), db.Float).label("service_fee"),
-                InvoiceStatusCode.description.label("invoice_status_code"),
-                Invoice.business_identifier,
-                Invoice.id,
-                func.string_agg(InvoiceReference.invoice_number, ",").label("invoice_number"),
+            query = (
+                db.session.query(Invoice)
+                .join(invoice_subq, invoice_subq.c.id == Invoice.id)
+                .join(CorpType, CorpType.code == Invoice.corp_type_code)
+                .join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
+                .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+                .outerjoin(FeeSchedule, FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id)
+                .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+                .with_entities(
+                    CorpType.product,
+                    Invoice.corp_type_code,
+                    func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
+                    func.string_agg(PaymentLineItem.description, ",").label("descriptions"),
+                    cast(None, db.String).label("details_formatted"),
+                    Invoice.folio_number,
+                    Invoice.created_name,
+                    formatted_date.label("created_on_formatted"),
+                    cast(Invoice.total, db.Float),
+                    cast(
+                        func.sum(PaymentLineItem.statutory_fees_gst + PaymentLineItem.service_fees_gst)
+                        + func.sum(PaymentLineItem.pst),
+                        db.Float,
+                    ).label("total_tax"),
+                    cast(Invoice.total - func.coalesce(Invoice.service_fees, 0), db.Float).label("statutory_fee"),
+                    cast(func.coalesce(Invoice.service_fees, 0), db.Float).label("service_fee"),
+                    InvoiceStatusCode.description.label("invoice_status_code"),
+                    Invoice.business_identifier,
+                    Invoice.id,
+                    func.string_agg(InvoiceReference.invoice_number, ",").label("invoice_number"),
+                )
+                .group_by(
+                    CorpType.product,
+                    Invoice.corp_type_code,
+                    Invoice.folio_number,
+                    Invoice.created_name,
+                    Invoice.created_on,
+                    Invoice.total,
+                    Invoice.service_fees,
+                    InvoiceStatusCode.description,
+                    Invoice.business_identifier,
+                    Invoice.id,
+                )
+                .order_by(Invoice.id.desc())
             )
-            .group_by(
-                CorpType.product,
-                Invoice.corp_type_code,
-                Invoice.folio_number,
-                Invoice.created_name,
-                Invoice.created_on,
-                Invoice.total,
-                Invoice.service_fees,
-                InvoiceStatusCode.description,
-                Invoice.business_identifier,
-                Invoice.id,
-            )
-        )
 
-        return [list(row) for row in query.all()]
+            return {
+                "columns": labels,
+                "values": [list(row) for row in query.all()],
+            }
+        except Exception as e:
+            current_app.logger.error(f"Error preparing CSV data: {e}")
+            raise e

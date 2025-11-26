@@ -22,6 +22,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 import pytz
 
+from pay_api.models.invoice_status_code import InvoiceStatusCode
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.invoice_search import InvoiceSearch
 from pay_api.services.payment import Payment as PaymentService
@@ -360,34 +361,37 @@ def test_create_payment_report_csv(session):
         auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.CSV.value
     )
     assert search_results is not None
-    assert len(search_results.get("items")) > 0
+    assert search_results.count() == 10
 
-    csv_rows = InvoiceSearch._prepare_csv_data(search_results)
-    assert csv_rows is not None
-    assert len(csv_rows) == len(search_results.get("items"))
+    csv_data = InvoiceSearch._prepare_csv_data(search_results)
+    assert csv_data is not None
+    assert "columns" in csv_data
+    assert "values" in csv_data
+    csv_rows = csv_data["values"]
+    assert len(csv_rows) == 10
 
-    first_invoice = search_results.get("items")[0]
+    first_invoice = search_results.first()
     first_row = csv_rows[0]
     assert isinstance(first_row, list)
     assert len(first_row) == 16
 
-    assert first_row[0] == first_invoice.get("product")
-    assert first_row[1] == first_invoice.get("corp_type_code")
+    assert first_row[0] == first_invoice.corp_type.product
+    assert first_row[1] == first_invoice.corp_type.code
     assert first_row[2] is None or isinstance(first_row[2], str)
     assert first_row[3] is None or isinstance(first_row[3], str)
     assert first_row[4] is None or isinstance(first_row[4], str)
-    assert first_row[5] == first_invoice.get("folio_number")
-    assert first_row[6] == first_invoice.get("created_name")
+    assert first_row[5] == first_invoice.folio_number
+    assert first_row[6] == first_invoice.created_name
     assert isinstance(first_row[7], str) and "Pacific Time" in first_row[7]
-    expected_total = float(first_invoice.get("total", 0))
-    expected_service_fee = float(first_invoice.get("service_fees", 0))
+    expected_total = float(first_invoice.total)
+    expected_service_fee = float(first_invoice.service_fees)
     assert float(first_row[8]) == expected_total
     assert float(first_row[10]) == expected_total - expected_service_fee
     assert float(first_row[11]) == expected_service_fee
-    assert first_row[12] == first_invoice.get("status_code")
-    assert first_row[13] == first_invoice.get("business_identifier")
-    assert first_row[14] == first_invoice.get("id")
-    assert first_row[15] == first_invoice.get("invoice_number")
+    assert first_row[12] == InvoiceStatusCode.find_by_code(first_invoice.invoice_status_code).description
+    assert first_row[13] == first_invoice.business_identifier
+    assert first_row[14] == first_invoice.id
+    assert first_row[15] == first_invoice.references[0].invoice_number
 
     InvoiceSearch.create_payment_report(
         auth_account_id=auth_account_id,
