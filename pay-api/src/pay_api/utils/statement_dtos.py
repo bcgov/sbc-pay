@@ -18,18 +18,21 @@ This module contains all DTOs used in the statement PDF generation process.
 
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from attrs import define
+from dateutil import parser
 
+from pay_api.models.applied_credits import AppliedCreditsSearchModel
+from pay_api.models.payment_line_item import PaymentLineItemSearchModel
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import PaymentMethod, StatementTitles
 from pay_api.utils.serializable import Serializable
 from pay_api.utils.util import get_statement_currency_string, get_statement_date_string
 
 if TYPE_CHECKING:
-    from datetime import datetime
-
     from pay_api.models.invoice import Invoice
 
 
@@ -40,6 +43,7 @@ class StatementTransactionDTO(Serializable):
     Represents a formatted transaction row with all display-ready values.
     """
 
+    id: int
     products: list[str]
     details: list[str]
     folio: str
@@ -50,8 +54,10 @@ class StatementTransactionDTO(Serializable):
     total: str
     status_code: str
     service_provided: bool
+    line_items: list[dict]
     payment_date: str | None = None
     refund_date: str | None = None
+    applied_credits: list[dict] | None = None
 
     @classmethod
     def from_orm(
@@ -75,7 +81,25 @@ class StatementTransactionDTO(Serializable):
 
         service_provided = InvoiceSearch.determine_service_provision_status(invoice.invoice_status_code, payment_method)
 
+        line_items = [
+            Converter().unstructure(PaymentLineItemSearchModel.from_row(item)) for item in invoice.payment_line_items
+        ]
+
+        applied_credits = None
+        if invoice.applied_credits:
+            filtered_credits = [
+                c
+                for c in invoice.applied_credits
+                if (c.created_on if isinstance(c.created_on, datetime) else parser.parse(c.created_on))
+                <= statement_to_date
+            ]
+            if filtered_credits:
+                applied_credits = [
+                    Converter().unstructure(AppliedCreditsSearchModel.from_row(c)) for c in filtered_credits
+                ]
+
         return cls(
+            id=invoice.id,
             products=products,
             details=details,
             folio=invoice.folio_number or "-",
@@ -86,8 +110,10 @@ class StatementTransactionDTO(Serializable):
             total=get_statement_currency_string(invoice.total),
             status_code=status_code,
             service_provided=service_provided,
+            line_items=line_items,
             payment_date=get_statement_date_string(invoice.payment_date, "%b %d, %Y") or None,
             refund_date=get_statement_date_string(invoice.refund_date, "%b %d, %Y") or None,
+            applied_credits=applied_credits,
         )
 
 

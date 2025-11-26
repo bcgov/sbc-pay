@@ -18,22 +18,15 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
+from pay_api.utils.statement_dtos import GroupedInvoicesDTO, PaymentMethodSummaryDTO, PaymentMethodSummaryRawDTO, StatementContextDTO, StatementSummaryDTO, StatementTotalsDTO, StatementTransactionDTO
 import pytest
 import pytz
 
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.invoice_search import InvoiceSearch
 from pay_api.services.payment import Payment as PaymentService
-from pay_api.services.payment import PaymentReportInput
-from pay_api.services.payment_calculations import (
-    build_grouped_invoice_context,
-    build_statement_context,
-    build_statement_summary_context,
-    build_transaction_rows,
-    calculate_invoice_summaries,
-    determine_service_provision_status,
-)
 from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.util import current_local_time
@@ -829,140 +822,116 @@ def test_get_invoice_totals_for_statements(session):
     assert totals["due"] == 650 - 200 - 100
 
 
-def test_build_grouped_invoice_context_basic():
-    """Test grouped invoices."""
-    invoices = [
-        {
-            "payment_method": PaymentMethod.EFT.value,
-            "paid": 100,
-            "total": 200,
-            "line_items": [],
-            "details": [],
-            "status_code": InvoiceStatus.PAID.value,
-        },
-        {
-            "payment_method": PaymentMethod.CC.value,
-            "paid": 50,
-            "total": 50,
-            "line_items": [],
-            "details": [],
-            "status_code": InvoiceStatus.PAID.value,
-        },
-        # FUTURE - Partial refunds
-        {
-            "payment_method": PaymentMethod.CC.value,
-            "paid": 20,
-            "refund": 10,
-            "total": 50,
-            "line_items": [],
-            "details": [],
-            "status_code": InvoiceStatus.PAID.value,
-        },
-    ]
-    statement = {"amount_owing": 100, "to_date": "2024-06-01"}
-    summary = {"latestStatementPaymentDate": "2024-06-01", "dueDate": "2024-06-10"}
+def test_statement_transaction_dto_from_orm(session):
+    """Test StatementTransactionDTO.from_orm creates correct DTO."""
+    payment_account = factory_payment_account()
+    payment_account.save()
 
-    grouped = build_grouped_invoice_context(invoices, statement, summary)
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=100,
+        service_fees=10,
+        paid=0,
+    )
+    invoice.save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
 
-    assert any(item["payment_method"] == PaymentMethod.EFT.value for item in grouped)
-    assert any(item["payment_method"] == PaymentMethod.CC.value for item in grouped)
+    statement_to_date = datetime.now(tz=UTC)
+    dto = StatementTransactionDTO.from_orm(invoice, PaymentMethod.EFT.value, statement_to_date)
 
-    eft_item = next(item for item in grouped if item["payment_method"] == PaymentMethod.EFT.value)
-    assert eft_item["total_paid"] == "100.00"
-    assert "transactions" in eft_item
-
-    cc_item = next(item for item in grouped if item["payment_method"] == PaymentMethod.CC.value)
-    # 50 + 20 paid, 10 refund, total 2 invoices
-    assert cc_item["total_paid"] == "70.00"
-    # FUTURE - Partial refunds: check due/paid/total summary
-    assert "paid" in cc_item
-    assert "due" in cc_item
-    assert "totals" in cc_item
-    # Partial refund: paid/due/totals basic check
-    assert float(cc_item["paid"]) >= 0
-    assert float(cc_item["totals"]) >= 0
+    assert dto.id == invoice.id
+    assert dto.products == ["test"]
+    assert dto.folio == invoice.folio_number
+    assert dto.fee == "90.00"  # 100 - 10 service_fees - 0 gst
+    assert dto.service_fee == "10.00"
+    assert dto.total == "100.00"
+    assert dto.status_code == "APPROVED"
+    assert dto.service_provided is True
+    assert len(dto.line_items) == 1
 
 
-def test_calculate_invoice_summaries(session):
-    """Test invoice summaries."""
+def test_grouped_invoices_dto_from_invoices_and_summary(session):
+    """Test GroupedInvoicesDTO.from_invoices_and_summary creates correct DTO."""
     payment_account = factory_payment_account()
     payment_account.save()
 
     invoice1 = factory_invoice(
         payment_account,
-        paid=0.00,
-        refund=100.00,
-        total=100.00,
         payment_method_code=PaymentMethod.EFT.value,
-        refund_date="2024-06-01",
+        status_code=InvoiceStatus.APPROVED.value,
+        total=100,
+        paid=0,
     )
     invoice1.save()
+    factory_payment_line_item(invoice_id=invoice1.id, fee_schedule_id=1).save()
 
     invoice2 = factory_invoice(
         payment_account,
-        paid=100.00,
-        refund=0.00,
-        total=100.00,
         payment_method_code=PaymentMethod.EFT.value,
-        payment_date="2024-05-31",
+        status_code=InvoiceStatus.PAID.value,
+        total=50,
+        paid=50,
     )
     invoice2.save()
+    factory_payment_line_item(invoice_id=invoice2.id, fee_schedule_id=1).save()
 
-    invoices = [
-        {
-            "id": invoice1.id,
-            "payment_method": PaymentMethod.EFT.value,
-            "paid": 0,
-            "refund": 100,
-            "total": 100,
-            "refund_date": "2024-06-01",
-        },
-        {
-            "id": invoice2.id,
-            "payment_method": PaymentMethod.EFT.value,
-            "paid": 100,
-            "refund": 0,
-            "total": 100,
-            "refund_date": None,
-        },
-    ]
-    statement = {"to_date": "2024-06-01"}
-    summary = calculate_invoice_summaries(invoices, PaymentMethod.EFT.value, statement)
-    assert summary["paid"] == 100.00
-    assert summary["due"] == 0.00
-    assert summary["totals"] == 100.00
+    db_summary = PaymentMethodSummaryRawDTO(
+        totals=Decimal("150"),
+        fees=Decimal("150"),
+        service_fees=Decimal("0"),
+        gst=Decimal("0"),
+        paid=Decimal("50"),
+        due=Decimal("100"),
+        invoice_count=2,
+    )
 
+    statement = {"amount_owing": 100, "to_date": "2024-06-01"}
+    statement_summary = {"dueDate": "2024-07-01"}
+    statement_to_date = datetime.now(tz=UTC)
 
-def test_build_transaction_rows():
-    """Test transaction rows."""
-    invoices = [
-        {
-            "line_items": [{"description": "Service Fee"}],
-            "details": [{"label": "Folio", "value": "123"}],
-            "folio_number": "F123",
-            "created_on": datetime.now().isoformat(),
-            "total": 100,
-            "service_fees": 10,
-            "gst": 5,
-            "status_code": InvoiceStatus.PAID.value,
-        }
-    ]
-    rows = build_transaction_rows(invoices)
-    assert rows[0]["products"] == ["Service Fee"]
-    assert rows[0]["details"][0].startswith("Folio")
-    assert rows[0]["fee"] == "85.00"
+    dto = GroupedInvoicesDTO.from_invoices_and_summary(
+        payment_method=PaymentMethod.EFT.value,
+        invoices_orm=[invoice1, invoice2],
+        db_summary=db_summary,
+        statement=statement,
+        statement_summary=statement_summary,
+        statement_to_date=statement_to_date,
+        is_first=True,
+    )
+
+    assert dto.payment_method == PaymentMethod.EFT.value
+    assert dto.totals == "150.00"
+    assert dto.paid == "50.00"
+    assert dto.due == "100.00"
+    assert dto.is_index_0 is True
+    assert len(dto.transactions) == 2
+    assert dto.include_service_provided is True
 
 
-def test_build_statement_context():
-    """Test statement."""
-    statement = {"from_date": "2024-06-01", "to_date": "2024-06-30", "frequency": "MONTHLY", "amount_owing": 123.45}
-    ctx = build_statement_context(statement)
-    assert "duration" in ctx
-    assert ctx["amount_owing"] == "123.45"
+def test_statement_context_dto_from_dict():
+    """Test StatementContextDTO.from_dict creates correct DTO."""
+    statement = {
+        "from_date": "2024-06-01",
+        "to_date": "2024-06-30",
+        "frequency": "MONTHLY",
+        "amount_owing": 123.45,
+        "id": 1,
+        "is_interim_statement": False,
+    }
+
+    dto = StatementContextDTO.from_dict(statement)
+
+    assert dto.duration == "June 01, 2024 - June 30, 2024"
+    assert dto.amount_owing == "123.45"
+    assert dto.frequency == "MONTHLY"
+    assert dto.id == 1
+    assert dto.is_interim_statement is False
 
 
-def test_build_statement_summary_context():
-    """Test statement summary."""
+def test_statement_summary_dto_from_dict():
+    """Test StatementSummaryDTO.from_dict creates correct DTO."""
     summary = {
         "lastStatementTotal": 100,
         "lastStatementPaidAmount": 50,
@@ -970,12 +939,14 @@ def test_build_statement_summary_context():
         "latestStatementPaymentDate": "2024-06-01",
         "dueDate": "2024-06-10",
     }
-    ctx = build_statement_summary_context(summary)
-    assert ctx["lastStatementTotal"] == "100.00"
-    assert ctx["lastStatementPaidAmount"] == "50.00"
-    assert ctx["cancelledTransactions"] == "10.00"
-    assert "latestStatementPaymentDate" in ctx
-    assert "dueDate" in ctx
+
+    dto = StatementSummaryDTO.from_dict(summary)
+
+    assert dto.last_statement_total == "100.00"
+    assert dto.last_statement_paid_amount == "50.00"
+    assert dto.cancelled_transactions == "10.00"
+    assert dto.latest_statement_payment_date is not None
+    assert dto.due_date is not None
 
 
 @pytest.mark.parametrize(
@@ -1009,295 +980,290 @@ def test_build_statement_summary_context():
 )
 def test_determine_service_provision_status(status_code, payment_method, expected):
     """Test service provision status determination based on status and payment method."""
-    assert determine_service_provision_status(status_code, payment_method) == expected
+    assert InvoiceSearch.determine_service_provision_status(status_code, payment_method) == expected
 
 
-def test_generate_payment_report_template_vars_structure(session, monkeypatch):
-    """Test that generate_payment_report creates correct templateVars structure."""
-    payment_account = factory_payment_account().save()
+def test_payment_method_summary_raw_dto_from_db_row():
+    """Test PaymentMethodSummaryRawDTO.from_db_row() calculates due correctly."""
+    class MockRow:
+        def __init__(self):
+            self.totals = 500.00
+            self.fees = 450.00
+            self.service_fees = 25.00
+            self.gst = 25.00
+            self.paid = 100.00
+            self.counted_refund = 0.00
+            self.invoice_count = 5
 
-    pad_invoice = factory_invoice(
-        payment_account,
-        status_code="SETTLEMENT_SCHED",
-        payment_method_code=PaymentMethod.PAD.value,
-        total=6.00,
-        service_fees=1.50,
-        business_identifier="SA5393",
-        corp_type_code="CSO",
-        created_name="PAUL ANTHONY",
-        details=[{"label": "View File", "value": "VIC-S-S-251093"}],
-    ).save()
+    row = MockRow()
+    dto = PaymentMethodSummaryRawDTO.from_db_row(row)
 
-    factory_payment_line_item(
-        invoice_id=pad_invoice.id,
-        fee_schedule_id=1,
-        filing_fees=4.50,
-        service_fees=1.50,
-        total=6.00,
-        description="View Supreme File",
-    ).save()
+    assert dto.totals == Decimal("500.00")
+    assert dto.fees == Decimal("450.00")
+    assert dto.service_fees == Decimal("25.00")
+    assert dto.gst == Decimal("25.00")
+    assert dto.paid == Decimal("100.00")
+    assert dto.due == Decimal("400.00")  # totals - paid - counted_refund
+    assert dto.invoice_count == 5
 
-    cc_invoice = factory_invoice(
-        payment_account,
-        status_code="CREATED",
-        payment_method_code=PaymentMethod.CC.value,
-        total=30.00,
-        service_fees=0.00,
-        corp_type_code="BCR",
-        created_name="SYSTEM",
-        details=[],
-    ).save()
+    row.counted_refund = 50.00
+    dto_with_refund = PaymentMethodSummaryRawDTO.from_db_row(row)
+    assert dto_with_refund.due == Decimal("350.00")  # 500 - 100 - 50
 
-    factory_payment_line_item(
-        invoice_id=cc_invoice.id,
-        fee_schedule_id=1,
-        filing_fees=30.00,
-        service_fees=0.00,
-        total=30.00,
-        description="NSF",
-    ).save()
 
-    factory_invoice_reference(pad_invoice.id, invoice_number="REG08145451").save()
-    factory_invoice_reference(cc_invoice.id, invoice_number="REG08172926").save()
+def test_payment_method_summary_dto_from_db_summary():
+    """Test PaymentMethodSummaryDTO.from_db_summary() formats currency correctly."""
+    raw_dto = PaymentMethodSummaryRawDTO(
+        totals=Decimal("500.00"),
+        fees=Decimal("450.00"),
+        service_fees=Decimal("25.00"),
+        gst=Decimal("25.00"),
+        paid=Decimal("100.00"),
+        due=Decimal("400.00"),
+        invoice_count=5,
+    )
 
-    invoices = [pad_invoice, cc_invoice]
-    results = {"items": []}
+    dto = PaymentMethodSummaryDTO.from_db_summary(raw_dto)
 
-    for invoice in invoices:
-        invoice_dict = {
-            "id": invoice.id,
-            "business_identifier": invoice.business_identifier,
-            "corp_type_code": invoice.corp_type_code,
-            "created_by": invoice.created_by,
-            "created_name": invoice.created_name,
-            "created_on": invoice.created_on.isoformat(),
-            "paid": float(invoice.paid or 0),
-            "refund": float(invoice.refund or 0),
-            "status_code": invoice.invoice_status_code,
-            "total": float(invoice.total),
-            "gst": float(invoice.gst or 0),
-            "service_fees": float(invoice.service_fees or 0),
-            "payment_method": invoice.payment_method_code,
-            "folio_number": invoice.folio_number,
-            "details": invoice.details or [],
-            "line_items": [],
-        }
+    assert dto.totals == "500.00"
+    assert dto.fees == "450.00"
+    assert dto.service_fees == "25.00"
+    assert dto.gst == "25.00"
+    assert dto.paid == "100.00"
+    assert dto.due == "400.00"
 
-        for line_item in invoice.payment_line_items:
-            invoice_dict["line_items"].append(
-                {
-                    "total": float(line_item.total),
-                    "pst": float(line_item.pst or 0),
-                    "statutory_fees_gst": float(line_item.statutory_fees_gst or 0),
-                    "service_fees_gst": float(line_item.service_fees_gst or 0),
-                    "service_fees": float(line_item.service_fees or 0),
-                    "description": line_item.description,
-                    "filing_type_code": "CSBSRCH" if "View" in line_item.description else "NSF",
-                }
-            )
+    dto_none = PaymentMethodSummaryDTO.from_db_summary(None)
+    assert dto_none.totals == "0.00"
+    assert dto_none.fees == "0.00"
+    assert dto_none.service_fees == "0.00"
+    assert dto_none.gst == "0.00"
+    assert dto_none.paid == "0.00"
+    assert dto_none.due == "0.00"
 
-        results["items"].append(invoice_dict)
 
-    statement = {
-        "from_date": "May 04, 2025",
-        "to_date": "May 10, 2025",
-        "is_overdue": False,
-        "payment_methods": ["PAD", "CC"],
-        "amount_owing": "0.00",
-        "statement_total": 36.0,
-        "id": 10289501,
-        "frequency": "WEEKLY",
-        "is_interim_statement": False,
+def test_statement_totals_dto_from_db_summaries():
+    """Test StatementTotalsDTO.from_db_summaries() aggregates multiple payment methods."""
+    eft_summary = PaymentMethodSummaryRawDTO(
+        totals=Decimal("500.00"),
+        fees=Decimal("450.00"),
+        service_fees=Decimal("25.00"),
+        gst=Decimal("25.00"),
+        paid=Decimal("100.00"),
+        due=Decimal("400.00"),
+        invoice_count=5,
+    )
+
+    pad_summary = PaymentMethodSummaryRawDTO(
+        totals=Decimal("300.00"),
+        fees=Decimal("280.00"),
+        service_fees=Decimal("10.00"),
+        gst=Decimal("10.00"),
+        paid=Decimal("50.00"),
+        due=Decimal("250.00"),
+        invoice_count=3,
+    )
+
+    db_summaries = {
+        PaymentMethod.EFT.value: eft_summary,
+        PaymentMethod.PAD.value: pad_summary,
     }
 
-    auth_data = {"account": {"id": payment_account.auth_account_id, "name": "PAUL", "accountType": "PREMIUM"}}
+    dto = StatementTotalsDTO.from_db_summaries(db_summaries)
 
-    class MockUser:
-        """Mock user class."""
+    assert dto.totals == "800.00"  # 500 + 300
+    assert dto.fees == "730.00"  # 450 + 280
+    assert dto.service_fees == "35.00"  # 25 + 10
+    assert dto.gst == "35.00"  # 25 + 10
+    assert dto.paid == "150.00"  # 100 + 50
+    assert dto.due == "650.00"  # 400 + 250
 
-        bearer_token = "mock_token"  # noqa: S105
 
-    class MockResponse:
-        """Mock response class."""
+def test_grouped_invoices_dto_with_internal_payment_method(session):
+    """Test GroupedInvoicesDTO handles INTERNAL payment method with staff payments."""
+    payment_account = factory_payment_account()
+    payment_account.save()
 
-        def json(self):
-            """Return mock contact data."""
-            return {
-                "contacts": [
-                    {
-                        "city": "Victoria",
-                        "country": "CA",
-                        "postalCode": "V8P2P2",
-                        "region": "BC",
-                        "street": "123 Main St",
-                    }
-                ]
-            }
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.INTERNAL.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=100,
+        paid=0,
+    )
+    invoice.save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
 
-    monkeypatch.setattr("pay_api.services.oauth_service.OAuthService.get", lambda *args, **kwargs: MockResponse())  # noqa: ARG005
-
-    captured_template_vars = {}
-
-    def mock_get_report_response(request):
-        """Mock report service and capture template vars."""
-        captured_template_vars.update(request.template_vars)
-        return "mock_report_response"
-
-    monkeypatch.setattr("pay_api.services.report_service.ReportService.get_report_response", mock_get_report_response)
-
-    report_inputs = PaymentReportInput(
-        content_type="application/pdf",
-        report_name="test-statement.pdf",
-        template_name="statement_report",
-        results=results,
-        statement_summary=None,
+    db_summary = PaymentMethodSummaryRawDTO(
+        totals=Decimal("100"),
+        fees=Decimal("100"),
+        service_fees=Decimal("0"),
+        gst=Decimal("0"),
+        paid=Decimal("0"),
+        due=Decimal("100"),
+        invoice_count=1,
     )
 
-    response = InvoiceSearch.generate_payment_report(
-        report_inputs, auth=auth_data, user=MockUser(), statement=statement
-    )
-
-    assert response == "mock_report_response"
-
-    assert "groupedInvoices" in captured_template_vars
-    assert "account" in captured_template_vars
-    assert "statement" in captured_template_vars
-    assert "total" in captured_template_vars
-
-    grouped_invoices = captured_template_vars["groupedInvoices"]
-    assert len(grouped_invoices) == 2  # PAD and CC
-
-    pad_group = next(g for g in grouped_invoices if g["payment_method"] == "PAD")
-    assert pad_group["total_paid"] == "0.00"
-    assert len(pad_group["transactions"]) == 1
-    assert "ACCOUNT STATEMENT - PRE-AUTHORIZED DEBIT" in pad_group["statement_header_text"]
-
-    cc_group = next(g for g in grouped_invoices if g["payment_method"] == "CC")
-    assert cc_group["total_paid"] == "0.00"
-    assert len(cc_group["transactions"]) == 1
-    assert "ACCOUNT STATEMENT - CREDIT CARD" in cc_group["statement_header_text"]
-
-    account = captured_template_vars["account"]
-    assert account["name"] == "PAUL"
-    assert account["id"] == payment_account.auth_account_id
-    assert "contact" in account
-
-    statement_info = captured_template_vars["statement"]
-    assert statement_info["from_date"] == "May 04, 2025"
-    assert statement_info["to_date"] == "May 10, 2025"
-
-    totals = captured_template_vars["total"]
-    assert "fees" in totals
-    assert "paid" in totals
-    assert "due" in totals
-
-
-def test_build_grouped_invoice_context_with_additional_notes():
-    """Test that grouped invoice context includes additional notes based on invoice statuses."""
-    invoices = [
-        {
-            "payment_method": PaymentMethod.PAD.value,
-            "paid": 0,
-            "total": 6,
-            "line_items": [{"description": "View Supreme File"}],
-            "details": [],
-            "status_code": InvoiceStatus.SETTLEMENT_SCHEDULED.value,
-        },
-        {
-            "payment_method": PaymentMethod.PAD.value,
-            "paid": 0,
-            "total": 6,
-            "line_items": [{"description": "File Summary Report"}],
-            "details": [],
-            "status_code": InvoiceStatus.SETTLEMENT_SCHEDULED.value,
-        },
-        {
-            "payment_method": PaymentMethod.CC.value,
-            "paid": 0,
-            "total": 30,
-            "line_items": [{"description": "NSF"}],
-            "details": [],
-            "status_code": InvoiceStatus.CREATED.value,
-        },
-        {
-            "payment_method": PaymentMethod.EFT.value,
-            "paid": 100,
-            "total": 100,
-            "line_items": [{"description": "Business Registration"}],
-            "details": [],
-            "status_code": InvoiceStatus.PAID.value,
-        },
-        {
-            "payment_method": PaymentMethod.EFT.value,
-            "paid": 0,
-            "total": 50,
-            "line_items": [{"description": "Name Change"}],
-            "details": [],
-            "status_code": InvoiceStatus.CANCELLED.value,
-        },
-    ]
-
-    statement = {"amount_owing": 0, "to_date": "2025-05-10"}
+    statement = {"to_date": "2024-06-01"}
     statement_summary = {}
+    statement_to_date = datetime.now(tz=UTC)
 
-    grouped = build_grouped_invoice_context(invoices, statement, statement_summary)
+    dto = GroupedInvoicesDTO.from_invoices_and_summary(
+        payment_method=PaymentMethod.INTERNAL.value,
+        invoices_orm=[invoice],
+        db_summary=db_summary,
+        statement=statement,
+        statement_summary=statement_summary,
+        statement_to_date=statement_to_date,
+        is_first=True,
+    )
 
-    # Should have 3 payment method groups: EFT, PAD, CC (in PaymentMethod.Order)
-    assert len(grouped) == 3
-
-    eft_group = next(g for g in grouped if g["payment_method"] == PaymentMethod.EFT.value)
-    pad_group = next(g for g in grouped if g["payment_method"] == PaymentMethod.PAD.value)
-    cc_group = next(g for g in grouped if g["payment_method"] == PaymentMethod.CC.value)
-
-    assert "include_service_provided" in eft_group
-    assert eft_group["include_service_provided"] is True
-
-    assert "include_service_provided" in pad_group
-    assert pad_group["include_service_provided"] is True
-
-    assert "include_service_provided" in cc_group
-    assert cc_group["include_service_provided"] is False
-
-    for group in grouped:
-        assert "include_service_provided" in group
-        assert isinstance(group["include_service_provided"], bool)
-
-        for transaction in group["transactions"]:
-            assert "service_provided" in transaction
-            assert isinstance(transaction["service_provided"], bool)
+    assert dto.payment_method == PaymentMethod.INTERNAL.value
+    assert dto.is_staff_payment is True
+    assert "STAFF" in dto.statement_header_text
 
 
-def test_build_transaction_rows_includes_service_provided():
-    """Test that build_transaction_rows includes service_provided for each transaction."""
-    invoices = [
-        {
-            "status_code": InvoiceStatus.PAID.value,
-            "line_items": [{"description": "Service 1"}],
-            "details": [],
-            "folio_number": "F001",
-            "created_on": "2025-05-07T00:00:00",
-            "total": 100,
-            "service_fees": 10,
-            "gst": 5,
-        },
-        {
-            "status_code": InvoiceStatus.CANCELLED.value,
-            "line_items": [{"description": "Service 2"}],
-            "details": [],
-            "folio_number": "F002",
-            "created_on": "2025-05-08T00:00:00",
-            "total": 50,
-            "service_fees": 5,
-            "gst": 2.5,
-        },
-    ]
+def test_grouped_invoices_dto_with_eft_interim_statement(session):
+    """Test GroupedInvoicesDTO handles EFT interim statement correctly."""
+    payment_account = factory_payment_account()
+    payment_account.save()
 
-    transactions = build_transaction_rows(invoices, PaymentMethod.PAD.value)
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=100,
+        paid=0,
+    )
+    invoice.save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
 
-    assert len(transactions) == 2
+    db_summary = PaymentMethodSummaryRawDTO(
+        totals=Decimal("100"),
+        fees=Decimal("100"),
+        service_fees=Decimal("0"),
+        gst=Decimal("0"),
+        paid=Decimal("0"),
+        due=Decimal("100"),
+        invoice_count=1,
+    )
 
-    assert transactions[0]["service_provided"] is True
-    assert "Service 1" in transactions[0]["products"][0]
+    statement = {"amount_owing": 100, "to_date": "2024-06-01", "is_interim_statement": True}
+    statement_summary = {"latestStatementPaymentDate": "2024-05-15"}
+    statement_to_date = datetime.now(tz=UTC)
 
-    assert transactions[1]["service_provided"] is True
-    assert "(Cancelled) Service 2" in transactions[1]["products"][0]
+    dto = GroupedInvoicesDTO.from_invoices_and_summary(
+        payment_method=PaymentMethod.EFT.value,
+        invoices_orm=[invoice],
+        db_summary=db_summary,
+        statement=statement,
+        statement_summary=statement_summary,
+        statement_to_date=statement_to_date,
+        is_first=True,
+    )
+
+    assert dto.payment_method == PaymentMethod.EFT.value
+    assert dto.amount_owing == "100.00"
+    assert dto.latest_payment_date == "2024-05-15"
+    assert dto.due_date is None  # Not set for interim statements
+
+
+def test_grouped_invoices_dto_with_eft_regular_statement(session):
+    """Test GroupedInvoicesDTO handles EFT regular statement with due date."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=100,
+        paid=0,
+    )
+    invoice.save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
+
+    db_summary = PaymentMethodSummaryRawDTO(
+        totals=Decimal("100"),
+        fees=Decimal("100"),
+        service_fees=Decimal("0"),
+        gst=Decimal("0"),
+        paid=Decimal("0"),
+        due=Decimal("100"),
+        invoice_count=1,
+    )
+
+    statement = {"amount_owing": 100, "to_date": "2024-06-01", "is_interim_statement": False}
+    statement_summary = {"dueDate": "2024-07-01"}
+    statement_to_date = datetime.now(tz=UTC)
+
+    dto = GroupedInvoicesDTO.from_invoices_and_summary(
+        payment_method=PaymentMethod.EFT.value,
+        invoices_orm=[invoice],
+        db_summary=db_summary,
+        statement=statement,
+        statement_summary=statement_summary,
+        statement_to_date=statement_to_date,
+        is_first=True,
+    )
+
+    assert dto.payment_method == PaymentMethod.EFT.value
+    assert dto.amount_owing == "100.00"
+    assert dto.latest_payment_date is None  # Not set for regular statements
+    assert dto.due_date is not None  # Should be formatted date
+
+
+def test_statement_transaction_dto_with_multiple_line_items(session):
+    """Test StatementTransactionDTO handles multiple line items correctly."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.EFT.value,
+        status_code=InvoiceStatus.APPROVED.value,
+        total=200,
+        service_fees=20,
+        paid=0,
+    )
+    invoice.save()
+
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description="Filing Fee", total=100).save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=2, description="Service Fee", total=100).save()
+
+    statement_to_date = datetime.now(tz=UTC)
+    dto = StatementTransactionDTO.from_orm(invoice, PaymentMethod.EFT.value, statement_to_date)
+
+    assert len(dto.products) == 2
+    assert "Filing Fee" in dto.products
+    assert "Service Fee" in dto.products
+    assert len(dto.line_items) == 2
+
+
+def test_statement_context_dto_with_daily_frequency():
+    """Test StatementContextDTO handles DAILY frequency correctly."""
+    statement = {
+        "from_date": "2024-06-01",
+        "to_date": "2024-06-01",
+        "frequency": "DAILY",
+        "amount_owing": 100,
+    }
+
+    dto = StatementContextDTO.from_dict(statement)
+
+    assert dto.duration == "June 01, 2024"
+    assert dto.frequency == "DAILY"
+
+
+def test_statement_summary_dto_with_zero_cancelled_transactions():
+    """Test StatementSummaryDTO handles zero cancelled transactions correctly."""
+    summary = {
+        "lastStatementTotal": 100,
+        "lastStatementPaidAmount": 50,
+        "cancelledTransactions": 0,  # Should be None in output
+    }
+
+    dto = StatementSummaryDTO.from_dict(summary)
+
+    assert dto.last_statement_total == "100.00"
+    assert dto.last_statement_paid_amount == "50.00"
+    assert dto.cancelled_transactions is None  # Zero should become None
