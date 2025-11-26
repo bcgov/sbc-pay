@@ -617,58 +617,56 @@ class InvoiceSearch:
         formatted_date = func.to_char(
             func.timezone("America/Los_Angeles", Invoice.created_on), "YYYY-MM-DD HH12:MI:SS AM"
         ).op("||")(" Pacific Time")
-        try:
-            invoice_subq = results_query.with_entities(Invoice.id).distinct().subquery()
 
-            query = (
-                db.session.query(Invoice)
-                .join(invoice_subq, invoice_subq.c.id == Invoice.id)
-                .join(CorpType, CorpType.code == Invoice.corp_type_code)
-                .join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
-                .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-                .outerjoin(FeeSchedule, FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id)
-                .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-                .with_entities(
-                    CorpType.product,
-                    Invoice.corp_type_code,
-                    func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
-                    func.string_agg(PaymentLineItem.description, ",").label("descriptions"),
-                    cast(None, db.String).label("details_formatted"),
-                    Invoice.folio_number,
-                    Invoice.created_name,
-                    formatted_date.label("created_on_formatted"),
-                    cast(Invoice.total, db.Float),
-                    cast(
-                        func.sum(PaymentLineItem.statutory_fees_gst + PaymentLineItem.service_fees_gst)
-                        + func.sum(PaymentLineItem.pst),
-                        db.Float,
-                    ).label("total_tax"),
-                    cast(Invoice.total - func.coalesce(Invoice.service_fees, 0), db.Float).label("statutory_fee"),
-                    cast(func.coalesce(Invoice.service_fees, 0), db.Float).label("service_fee"),
-                    InvoiceStatusCode.description.label("invoice_status_code"),
-                    Invoice.business_identifier,
-                    Invoice.id,
-                    func.string_agg(InvoiceReference.invoice_number, ",").label("invoice_number"),
-                )
-                .group_by(
-                    CorpType.product,
-                    Invoice.corp_type_code,
-                    Invoice.folio_number,
-                    Invoice.created_name,
-                    Invoice.created_on,
-                    Invoice.total,
-                    Invoice.service_fees,
-                    InvoiceStatusCode.description,
-                    Invoice.business_identifier,
-                    Invoice.id,
-                )
-                .order_by(Invoice.id.desc())
+        # We need this because there are a wackload of filters that can be applied to the query.
+        invoice_subq = results_query.with_entities(Invoice.id).distinct().subquery()
+
+        query = (
+            db.session.query(Invoice)
+            .join(invoice_subq, invoice_subq.c.id == Invoice.id)
+            .join(CorpType, CorpType.code == Invoice.corp_type_code)
+            .join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
+            .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            .outerjoin(FeeSchedule, FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id)
+            .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+            .with_entities(
+                CorpType.product,
+                Invoice.corp_type_code,
+                func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
+                func.string_agg(PaymentLineItem.description, ",").label("descriptions"),
+                cast(None, db.String).label("details_formatted"),
+                Invoice.folio_number,
+                Invoice.created_name,
+                formatted_date.label("created_on_formatted"),
+                cast(Invoice.total, db.Float),
+                cast(
+                    func.sum(PaymentLineItem.statutory_fees_gst + PaymentLineItem.service_fees_gst)
+                    + func.sum(PaymentLineItem.pst),
+                    db.Float,
+                ).label("total_tax"),
+                cast(Invoice.total - func.coalesce(Invoice.service_fees, 0), db.Float).label("statutory_fee"),
+                cast(func.coalesce(Invoice.service_fees, 0), db.Float).label("service_fee"),
+                InvoiceStatusCode.description.label("invoice_status_code"),
+                Invoice.business_identifier,
+                Invoice.id,
+                func.string_agg(InvoiceReference.invoice_number, ",").label("invoice_number"),
             )
+            .group_by(
+                CorpType.product,
+                Invoice.corp_type_code,
+                Invoice.folio_number,
+                Invoice.created_name,
+                Invoice.created_on,
+                Invoice.total,
+                Invoice.service_fees,
+                InvoiceStatusCode.description,
+                Invoice.business_identifier,
+                Invoice.id,
+            )
+            .order_by(Invoice.id.desc())
+        )
 
-            return {
-                "columns": labels,
-                "values": [list(row) for row in query.all()],
-            }
-        except Exception as e:
-            current_app.logger.error(f"Error preparing CSV data: {e}")
-            raise e
+        return {
+            "columns": labels,
+            "values": [list(row) for row in query.all()],
+        }
