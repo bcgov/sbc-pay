@@ -525,7 +525,11 @@ class InvoiceSearch:
     @staticmethod
     @user_context
     def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
-        """Prepare data and generate payment report by calling report api."""
+        """Prepare data and generate payment report by calling report api.
+        1. Payment transactions report (CSV/PDF) - uses payment_transactions template
+        2. Statement CSV export - uses statement_report template
+        Note: PDF statement generation uses generate_statement_pdf_report instead.
+        """
         labels = [
             "Product",
             "Corp Type",
@@ -552,34 +556,12 @@ class InvoiceSearch:
 
         # Use the status_code_description instead of status_code.
         InvoiceSearch._replace_status_codes_with_descriptions(results.get("items", []))
-        if content_type == ContentType.CSV.value:
-            template_vars = {
-                "columns": labels,
-                "values": InvoiceSearch._prepare_csv_data(results),
-            }
-        else:
-            invoices = results.get("items", None)
-            statement = kwargs.get("statement", {})
-            totals = InvoiceSearch.get_invoices_totals(invoices, statement)
-            account_info = None
-            if kwargs.get("auth", None):
-                account_id = kwargs.get("auth")["account"]["id"]
-                contact_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}/contacts"
-                contact = OAuthService.get(
-                    endpoint=contact_url,
-                    token=kwargs["user"].bearer_token,
-                    auth_header_type=AuthHeaderType.BEARER,
-                    content_type=ContentType.JSON,
-                ).json()
-                account_info = kwargs.get("auth").get("account")
-                account_info["contact"] = contact["contacts"][0]  # Get the first one from the list
-            template_vars = {
-                "statementSummary": report_inputs.statement_summary,
-                "invoices": results.get("items", None),
-                "total": totals,
-                "account": account_info,
-                "statement": kwargs.get("statement"),
-            }
+
+        # Both CSV and PDF use the same simple format: columns + values
+        template_vars = {
+            "columns": labels,
+            "values": InvoiceSearch._prepare_csv_data(results),
+        }
 
         report_response = ReportService.get_report_response(
             ReportRequest(
