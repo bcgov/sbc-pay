@@ -22,7 +22,7 @@ from sql_versioning import Versioned, versioned_session
 from pay_api.models import db
 
 
-class TestVersionedModel(Versioned, db.Model):
+class VersionedTestModel(Versioned, db.Model):
     """Simple test model inheriting from Versioned."""
 
     __tablename__ = "test_versioned"
@@ -39,7 +39,7 @@ def test_concurrent_versioned_updates(
     should_fail,  # noqa: ARG001
 ):
     """Test concurrent updates don't create duplicate history."""
-    TestVersionedModel.__table__.create(db.engine, checkfirst=True)
+    VersionedTestModel.__table__.create(db.engine, checkfirst=True)
     with db.engine.begin() as conn:
         conn.execute(
             db.text("""
@@ -73,7 +73,7 @@ def test_concurrent_versioned_updates(
                     versioned_session(session)
                     try:
                         barrier.wait()
-                        query = session.query(TestVersionedModel).filter_by(id=test_id)
+                        query = session.query(VersionedTestModel).filter_by(id=test_id)
                         if use_lock:
                             query = query.with_for_update()
                         record = query.first()
@@ -112,4 +112,4 @@ def test_concurrent_versioned_updates(
         assert not errors, f"Errors: {errors}"
         assert len(history) == 2, f"History should have 2 rows, got {len(history)}: {history}"
 
-    TestVersionedModel.__table__.drop(db.engine)
+    VersionedTestModel.__table__.drop(db.engine)
