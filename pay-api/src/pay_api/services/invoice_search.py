@@ -524,10 +524,14 @@ class InvoiceSearch:
 
     @staticmethod
     @user_context
-    def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
+    def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # noqa: ARG004 pylint: disable=too-many-locals,unused-argument
         """Prepare data and generate payment report by calling report api.
+
+        This method is used for:
         1. Payment transactions report (CSV/PDF) - uses payment_transactions template
         2. Statement CSV export - uses statement_report template
+
+        Both CSV and PDF use the same simple format: columns + values.
         Note: PDF statement generation uses generate_statement_pdf_report instead.
         """
         labels = [
