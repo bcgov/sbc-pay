@@ -371,6 +371,7 @@ class InvoiceSearch:
                 )
             )
             query = query.filter(Invoice.id.in_(sub_query.subquery().select()))
+            count_query = sub_query
 
         return query, count_query
 
