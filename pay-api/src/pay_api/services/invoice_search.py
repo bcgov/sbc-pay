@@ -49,8 +49,9 @@ from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date, get_local_formatted_date_time, get_statement_currency_string
+from pay_api.utils.util import get_local_formatted_date, get_statement_currency_string
 
+from .csv_service import CsvService
 from .report_service import ReportRequest, ReportService
 
 
@@ -321,12 +322,11 @@ class InvoiceSearch:
         return query
 
     @classmethod
-    def get_count(cls, auth_account_id: str, search_filter: dict):
-        """Slimmed downed version for count (less joins)."""
+    def get_count_query(cls, auth_account_id: str, search_filter: dict):
+        """Get count query without materializing."""
         query = db.session.query(func.distinct(Invoice.id))
         query = cls.filter(query, auth_account_id, search_filter, include_joins=True)
-        count = query.count()
-        return count
+        return query
 
     @classmethod
     def search_without_counts(cls, params: TransactionSearchParams):
@@ -345,12 +345,12 @@ class InvoiceSearch:
         cls, search_params: PurchaseHistorySearch
     ):
         """Search for purchase history."""
-        executor = current_app.extensions["flask_executor"]
         search_filter = search_params.search_filter
         query = cls.generate_base_transaction_query(include_credits_and_partial_refunds=False)
         query = cls.filter(query, search_params.auth_account_id, search_filter)
+        count_query = cls.get_count_query(search_params.auth_account_id, search_filter)
+
         if not search_params.return_all:
-            count_future = executor.submit(cls.get_count, search_params.auth_account_id, search_filter)
             sub_query = cls.generate_subquery(
                 TransactionSearchParams(
                     auth_account_id=search_params.auth_account_id,
@@ -360,14 +360,7 @@ class InvoiceSearch:
                 )
             )
             query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
-            result_future = executor.submit(query.all)
-            count = count_future.result()
-            result = result_future.result()
-            # If maximum number of records is provided, return it as total
-            if search_params.max_no_records > 0:
-                count = search_params.max_no_records if search_params.max_no_records < count else count
         elif search_params.max_no_records > 0:
-            # If maximum number of records is provided, set the page with that number
             sub_query = cls.generate_subquery(
                 TransactionSearchParams(
                     auth_account_id=search_params.auth_account_id,
@@ -376,16 +369,10 @@ class InvoiceSearch:
                     page=None,
                 )
             )
-            result, count = (
-                query.filter(Invoice.id.in_(sub_query.subquery().select())).all(),
-                sub_query.count(),
-            )
-        else:
-            count = cls.get_count(search_params.auth_account_id, search_filter)
-            if count > 100000:
-                raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
-            result = query.all()
-        return result, count
+            query = query.filter(Invoice.id.in_(sub_query.subquery().select()))
+            count_query = sub_query
+
+        return query, count_query
 
     @classmethod
     @user_context
@@ -414,7 +401,16 @@ class InvoiceSearch:
             )
         else:
             # This is to maintain backwards compat for CSO, also for other functions like exporting to CSV etc.
-            purchases, data["total"] = cls.search(search_params)
+            query, count_query = cls.search(search_params)
+            count = count_query.count()
+            if not search_params.return_all and search_params.max_no_records > 0:
+                count = search_params.max_no_records if search_params.max_no_records < count else count
+            if (search_params.return_all or search_params.max_no_records == 0) and count > 100000:
+                raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
+            if search_params.query_only:
+                return query
+            purchases = query.all()
+            data["total"] = count
         data = cls.create_payment_report_details(purchases, data)
         current_app.logger.debug(">search_purchase_history")
         return data
@@ -436,11 +432,16 @@ class InvoiceSearch:
         return data
 
     @staticmethod
-    def search_all_purchase_history(auth_account_id: str, search_filter: dict):
+    def search_all_purchase_history(auth_account_id: str, search_filter: dict, content_type: str):
         """Return all results for the purchase history."""
         return InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
-                auth_account_id=auth_account_id, search_filter=search_filter, page=0, limit=0, return_all=True
+                auth_account_id=auth_account_id,
+                search_filter=search_filter,
+                page=0,
+                limit=0,
+                return_all=True,
+                query_only=content_type == ContentType.CSV.value,
             )
         )
 
@@ -449,7 +450,7 @@ class InvoiceSearch:
         """Create payment report."""
         current_app.logger.debug(f"<create_payment_report {auth_account_id}")
 
-        results = InvoiceSearch.search_all_purchase_history(auth_account_id, search_filter)
+        results = InvoiceSearch.search_all_purchase_history(auth_account_id, search_filter, content_type)
 
         report_response = InvoiceSearch.generate_payment_report(
             PaymentReportInput(
@@ -512,43 +513,22 @@ class InvoiceSearch:
     @user_context
     def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
-        labels = [
-            "Product",
-            "Corp Type",
-            "Transaction Type",
-            "Transaction",
-            "Transaction Details",
-            "Folio Number",
-            "Initiated By",
-            "Date",
-            "Purchase Amount",
-            "GST",
-            "Statutory Fee",
-            "BCOL Fee",
-            "Status",
-            "Corp Number",
-            "Transaction ID",
-            "Invoice Reference Number",
-        ]
-
         content_type = report_inputs.content_type
         results = report_inputs.results
         report_name = report_inputs.report_name
         template_name = report_inputs.template_name
 
-        # Use the status_code_description instead of status_code.
-        invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
-        for invoice in results.get("items", None):
-            filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
-            if filtered_codes:
-                invoice["status_code"] = filtered_codes[0]["description"]
-
         if content_type == ContentType.CSV.value:
-            template_vars = {
-                "columns": labels,
-                "values": InvoiceSearch._prepare_csv_data(results),
-            }
+            csv_data = CsvService.prepare_csv_data(results)
+            return CsvService.create_report(csv_data)
         else:
+            # Use the status_code_description instead of status_code.
+            # Future: move this into something more specialized.
+            invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
+            for invoice in results.get("items", None):
+                filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
+                if filtered_codes:
+                    invoice["status_code"] = filtered_codes[0]["description"]
             invoices = results.get("items", None)
             statement = kwargs.get("statement", {})
             totals = InvoiceSearch.get_invoices_totals(invoices, statement)
@@ -599,45 +579,3 @@ class InvoiceSearch:
             )
         )
         return report_response
-
-    @staticmethod
-    def _prepare_csv_data(results):
-        """Prepare data for creating a CSV report."""
-        cells = []
-        for invoice in results.get("items"):
-            txn_description = ""
-            total_gst = 0
-            total_pst = 0
-            for line_item in invoice.get("line_items"):
-                txn_description += "," + line_item.get("description")
-                total_gst += line_item.get("gst")
-                total_pst += line_item.get("pst")
-            service_fee = float(invoice.get("service_fees", 0))
-            total_fees = float(invoice.get("total", 0))
-            row_value = [
-                invoice.get("product"),
-                invoice.get("corp_type_code"),
-                ",".join([line_item.get("filing_type_code") for line_item in invoice.get("line_items")]),
-                ",".join([line_item.get("description") for line_item in invoice.get("line_items")]),
-                (
-                    ",".join([f"{detail.get('label')} {detail.get('value')}" for detail in invoice.get("details")])
-                    if invoice.get("details")
-                    else None
-                ),
-                invoice.get("folio_number"),
-                invoice.get("created_name"),
-                get_local_formatted_date_time(
-                    parser.parse(invoice.get("created_on")),
-                    "%Y-%m-%d %I:%M:%S %p Pacific Time",
-                ),
-                total_fees,
-                total_gst + total_pst,
-                total_fees - service_fee,
-                service_fee,
-                invoice.get("status_code"),
-                invoice.get("business_identifier"),
-                invoice.get("id"),
-                invoice.get("invoice_number"),
-            ]
-            cells.append(row_value)
-        return cells
