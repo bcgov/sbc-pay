@@ -127,10 +127,8 @@ class StatementTransactionDTO(Serializable):
         applied_credits = None
         if invoice.applied_credits:
             filtered_credits = [
-                c
-                for c in invoice.applied_credits
-                if (c.created_on if isinstance(c.created_on, datetime) else parser.parse(c.created_on))
-                <= statement_to_date
+                c for c in invoice.applied_credits
+                if c.created_on <= statement_to_date
             ]
             if filtered_credits:
                 applied_credits = [
