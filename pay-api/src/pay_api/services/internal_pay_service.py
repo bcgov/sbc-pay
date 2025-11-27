@@ -55,7 +55,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return a static invoice number."""
         # No payment blockers for internal, this is done by staff.
         routing_slip = None
-        is_zero_dollar_invoice = get_quantized(invoice.total) == 0
+        is_zero_dollar_invoice = invoice.total == 0
         invoice_reference: InvoiceReference = None
         if routing_slip_number := invoice.routing_slip:
             current_app.logger.info(f"Routing slip number {routing_slip_number}, for invoice {invoice.id}")
@@ -64,8 +64,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if not is_zero_dollar_invoice and routing_slip is not None:
             # creating invoice in cfs is done in job
             current_app.logger.info(f"FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}")
-            routing_slip.remaining_amount -= get_quantized(invoice.total)
-            if routing_slip.status == RoutingSlipStatus.ACTIVE.value and routing_slip.remaining_amount < 0.01:
+            routing_slip.remaining_amount -= invoice.total
+            if routing_slip.status == RoutingSlipStatus.ACTIVE.value and routing_slip.remaining_amount == 0:
                 routing_slip.status = RoutingSlipStatus.COMPLETE.value
             routing_slip.flush()
         else:
