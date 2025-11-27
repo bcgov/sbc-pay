@@ -368,6 +368,7 @@ def test_create_payment_report_csv(session):
     assert "columns" in csv_data
     assert "values" in csv_data
     csv_rows = csv_data["values"]
+    # TRANSACTION_REPORT_DEFAULT_TOTAL is 10 in the config for tests
     assert len(csv_rows) == 10
 
     first_invoice = search_results.first()
