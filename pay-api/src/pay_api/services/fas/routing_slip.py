@@ -416,10 +416,10 @@ class RoutingSlip:
             status=CfsAccountStatus.PENDING.value,
         ).flush()
 
-        total = sum(Decimal(str(payment.get("paidAmount")) for payment in request_json.get("payments")))
+        total = sum(Decimal(str(payment.get("paidAmount"))) for payment in request_json.get("payments"))
 
         # Calculate Total USD
-        total_usd = sum(Decimal(str(payment.get("paidUsdAmount", 0)) for payment in request_json.get("payments")))
+        total_usd = sum(Decimal(str(payment.get("paidUsdAmount", 0))) for payment in request_json.get("payments"))
 
         mailing_address = request_json.get("mailingAddress", {})
         # Create a routing slip record.
