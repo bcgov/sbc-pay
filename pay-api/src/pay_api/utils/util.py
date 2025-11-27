@@ -312,11 +312,6 @@ def string_to_bool(val: str):
     return ast.literal_eval(val.capitalize())
 
 
-def get_quantized(amount: float) -> Decimal:
-    """Return rounded decimal. (Default = ROUND_HALF_EVEN)."""
-    return Decimal(amount).quantize(Decimal("1.00"))
-
-
 def cents_to_decimal(amount: int):
     """Return dollar amount from cents."""
     if amount is None:

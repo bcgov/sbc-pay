@@ -30,7 +30,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus
-from pay_api.utils.util import generate_transaction_number, get_quantized
+from pay_api.utils.util import generate_transaction_number
 
 from ..exceptions import BusinessException  # noqa: TID252
 from ..utils.errors import Error  # noqa: TID252
@@ -129,7 +129,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if payment := PaymentModel.find_payment_for_invoice(invoice.id):
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
-        routing_slip.remaining_amount += get_quantized(invoice.total)
+        routing_slip.remaining_amount += invoice.total
         # Move routing slip back to active on refund.
         if routing_slip.status == RoutingSlipStatus.COMPLETE.value:
             routing_slip.status = RoutingSlipStatus.ACTIVE.value
@@ -163,7 +163,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if routing_slip.parent:
             detail = f"This Routing slip is linked, enter the parent Routing slip: {routing_slip.parent.number}"
             raise BusinessException(InternalPayService._create_error_object("LINKED_ROUTING_SLIP", detail))
-        if routing_slip.remaining_amount < get_quantized(invoice.total):
+        if routing_slip.remaining_amount < invoice.total:
             detail = (
                 f"There is not enough balance in this Routing slip. "
                 f"The current balance is: ${routing_slip.remaining_amount:.2f}"
