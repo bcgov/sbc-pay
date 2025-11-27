@@ -27,9 +27,9 @@ from pay_api.models import (
     InvoiceReference,
     InvoiceStatusCode,
     PaymentLineItem,
+    db,
 )
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
-from pay_api.utils.query_util import QueryUtils
 
 
 class CsvService:
@@ -65,21 +65,6 @@ class CsvService:
         ).op("||")(literal(" Pacific Time"))
 
     @staticmethod
-    def _ensure_required_joins(query: Query) -> Query:
-        """Ensure required joins exist for CSV query."""
-        stmt = query.statement
-
-        if not QueryUtils.statement_has_join(stmt, CorpType.__table__):
-            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)
-
-        if not QueryUtils.statement_has_join(query.statement, InvoiceStatusCode.__table__):
-            query = query.join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
-
-        query = query.filter(Invoice.invoice_status_code != InvoiceStatus.DELETED.value)
-
-        return query
-
-    @staticmethod
     def _process_invoice_details(details: list) -> str:
         """Process invoice details to format and remove duplicates."""
         # Done because it's JSONB and not easy for the database to aggregate them. I've tried for hours.
@@ -112,13 +97,22 @@ class CsvService:
     def prepare_csv_data(results_query: Query) -> dict:
         """Prepare data for creating a CSV report."""
         formatted_date = CsvService._get_formatted_date_expression()
-        query = CsvService._ensure_required_joins(results_query)
-
         labels = CsvService._get_csv_labels()
 
-        # Some of the changes in here are purely for backwards compatibility.
+        invoice_ids_subquery = results_query.with_entities(Invoice.id).distinct().subquery()
+
+        # Build query from scratch with explicit joins to avoid cartesian product warnings
+        # Apply filters first, then joins for better performance
         query = (
-            query.with_entities(
+            db.session.query(Invoice)
+            .filter(Invoice.id.in_(db.session.query(invoice_ids_subquery.c.id)))
+            .filter(Invoice.invoice_status_code != InvoiceStatus.DELETED.value)
+            .join(CorpType, CorpType.code == Invoice.corp_type_code)
+            .join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
+            .join(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            .join(FeeSchedule, FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id)
+            .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+            .with_entities(
                 CorpType.product,
                 Invoice.corp_type_code,
                 func.string_agg(distinct(FeeSchedule.filing_type_code), ",").label("filing_type_codes"),
