@@ -15,7 +15,7 @@
 
 from dateutil import parser
 from flask import current_app
-from sqlalchemy import String, and_, cast, exists, func, or_, select
+from sqlalchemy import String, and_, cast, exists, func, lateral, literal, or_, select, true
 from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, with_expression
 
 from pay_api.exceptions import BusinessException
@@ -580,6 +580,42 @@ class InvoiceSearch:
         return report_response
 
     @staticmethod
+    def _get_formatted_date_expression():
+        """Get formatted date expression for CSV."""
+        return func.to_char(func.timezone("America/Los_Angeles", Invoice.created_on), "YYYY-MM-DD HH12:MI:SS AM").op(
+            "||"
+        )(" Pacific Time")
+
+    @staticmethod
+    def _ensure_required_joins(query):
+        """Ensure required joins exist for CSV query."""
+        stmt = query.statement
+
+        if not QueryUtils.statement_has_join(stmt, CorpType.__table__):
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)
+
+        if not QueryUtils.statement_has_join(query.statement, InvoiceStatusCode.__table__):
+            query = query.join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
+
+        return query
+
+    @staticmethod
+    def _build_details_formatted_expression():
+        """Build the details formatted expression for CSV."""
+        details_elem = lateral(func.jsonb_array_elements(Invoice.details).table_valued("value")).alias("details_elem")
+
+        details_formatted = func.string_agg(
+            func.concat(
+                func.jsonb_extract_path_text(details_elem.c.value, "label"),
+                literal(" "),
+                func.jsonb_extract_path_text(details_elem.c.value, "value"),
+            ),
+            literal(","),
+        ).label("details_formatted")
+
+        return details_formatted, details_elem
+
+    @staticmethod
     def _prepare_csv_data(results_query):
         """Prepare data for creating a CSV report."""
         labels = [
@@ -601,36 +637,28 @@ class InvoiceSearch:
             "Invoice Reference Number",
         ]
 
-        formatted_date = func.to_char(
-            func.timezone("America/Los_Angeles", Invoice.created_on), "YYYY-MM-DD HH12:MI:SS AM"
-        ).op("||")(" Pacific Time")
-        query = results_query
-        stmt = query.statement
-
-        if not QueryUtils.statement_has_join(stmt, CorpType.__table__):
-            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)
-
-        if not QueryUtils.statement_has_join(query.statement, InvoiceStatusCode.__table__):
-            query = query.join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
+        formatted_date = InvoiceSearch._get_formatted_date_expression()
+        query = InvoiceSearch._ensure_required_joins(results_query)
+        details_formatted, details_elem = InvoiceSearch._build_details_formatted_expression()
 
         query = (
-            query.with_entities(
+            query.join(details_elem, true(), isouter=True)
+            .with_entities(
                 CorpType.product,
                 Invoice.corp_type_code,
                 func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
                 func.string_agg(PaymentLineItem.description, ",").label("descriptions"),
-                cast(None, db.String).label("details_formatted"),
+                details_formatted,
                 Invoice.folio_number,
                 Invoice.created_name,
                 formatted_date.label("created_on_formatted"),
-                cast(Invoice.total, db.Float),
-                cast(
+                Invoice.total,
+                (
                     func.sum(PaymentLineItem.statutory_fees_gst + PaymentLineItem.service_fees_gst)
-                    + func.sum(PaymentLineItem.pst),
-                    db.Float,
+                    + func.sum(PaymentLineItem.pst)
                 ).label("total_tax"),
-                cast(Invoice.total - func.coalesce(Invoice.service_fees, 0), db.Float).label("statutory_fee"),
-                cast(func.coalesce(Invoice.service_fees, 0), db.Float).label("service_fee"),
+                (Invoice.total - func.coalesce(Invoice.service_fees, 0)).label("statutory_fee"),
+                func.coalesce(Invoice.service_fees, 0).label("service_fee"),
                 InvoiceStatusCode.description.label("invoice_status_code"),
                 Invoice.business_identifier,
                 Invoice.id,
