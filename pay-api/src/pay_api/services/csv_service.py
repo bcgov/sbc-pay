@@ -17,7 +17,8 @@ import csv
 import io
 from collections.abc import Iterator
 
-from sqlalchemy import and_, case, func, lateral, literal, true
+from sqlalchemy import and_, case, column, distinct, func, lateral, literal, text, true
+from sqlalchemy.sql import select
 from sqlalchemy.orm import Query
 
 from pay_api.models import (
@@ -60,9 +61,13 @@ class CsvService:
     @staticmethod
     def _get_formatted_date_expression():
         """Get formatted date expression for CSV."""
-        return func.to_char(func.timezone("America/Los_Angeles", Invoice.created_on), "YYYY-MM-DD HH12:MI:SS AM").op(
-            "||"
-        )(" Pacific Time")
+        return (
+            func.to_char(
+                func.timezone("America/Los_Angeles", func.timezone("UTC", Invoice.created_on)),
+                "YYYY-MM-DD HH12:MI:SS AM"
+            )
+            .op("||")(literal(" Pacific Time"))
+        )
 
     @staticmethod
     def _ensure_required_joins(query: Query) -> Query:
@@ -105,8 +110,8 @@ class CsvService:
             .with_entities(
                 CorpType.product,
                 Invoice.corp_type_code,
-                func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
-                func.string_agg(PaymentLineItem.description, ",").label("descriptions"),
+                func.string_agg(distinct(FeeSchedule.filing_type_code), ",").label("filing_type_codes"),
+                func.string_agg(distinct(PaymentLineItem.description), ",").label("descriptions"),
                 details_formatted,
                 Invoice.folio_number,
                 Invoice.created_name,
@@ -124,13 +129,13 @@ class CsvService:
                             Invoice.payment_method_code == PaymentMethod.PAD.value,
                             Invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value,
                         ),
-                        literal("Non Sufficient Funds"),
+                        literal("NON SUFFICIENT FUNDS"),
                     ),
-                    else_=InvoiceStatusCode.description,
+                    else_=func.upper(InvoiceStatusCode.description),
                 ).label("invoice_status_code"),
                 Invoice.business_identifier,
                 Invoice.id,
-                func.string_agg(InvoiceReference.invoice_number, ",").label("invoice_number"),
+                func.string_agg(distinct(InvoiceReference.invoice_number), ",").label("invoice_number"),
             )
             .group_by(
                 CorpType.product,
