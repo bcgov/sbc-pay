@@ -143,6 +143,13 @@ class CsvService:
                         literal("Non Sufficient Funds"),
                     ),
                     (
+                        and_(
+                            Invoice.payment_method_code == PaymentMethod.ONLINE_BANKING.value,
+                            Invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+                        ),
+                        literal("Pending"),
+                    ),
+                    (
                         Invoice.invoice_status_code == InvoiceStatus.PAID.value,
                         literal("COMPLETED"),
                     ),
