@@ -22,8 +22,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 import pytz
 
-from pay_api.models.invoice_status_code import InvoiceStatusCode
 from pay_api.models.payment_account import PaymentAccount
+from pay_api.services.csv_service import CsvService
 from pay_api.services.invoice_search import InvoiceSearch
 from pay_api.services.payment import Payment as PaymentService
 from pay_api.services.payment import PaymentReportInput
@@ -349,20 +349,23 @@ def test_create_payment_report_csv(session):
     payment_account.save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
+    nsf_invoice_id = None
     for _i in range(20):
         payment = factory_payment(payment_status_code="CREATED")
         payment.save()
+        payment_method = PaymentMethod.PAD.value if _i == 19 else PaymentMethod.DIRECT_PAY.value
+        status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value if _i == 19 else InvoiceStatus.CREATED.value
         invoice = factory_invoice(
             payment_account,
-            details=[{"label": f"Label {_i}", "value": f"Value {_i}"}]
+            details=[{"label": f"Label {_i}", "value": f"Value {_i}"}],
+            payment_method_code=payment_method,
+            status_code=status_code,
         )
         invoice.save()
+        if _i == 19:
+            nsf_invoice_id = invoice.id
         factory_invoice_reference(invoice.id).save()
-        factory_payment_line_item(
-            invoice_id=invoice.id,
-            fee_schedule_id=1,
-            description=f"Test Description {_i}"
-        ).save()
+        factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description=f"Test Description {_i}").save()
 
     search_results = InvoiceSearch.search_all_purchase_history(
         auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.CSV.value
@@ -370,7 +373,7 @@ def test_create_payment_report_csv(session):
     assert search_results is not None
     assert search_results.count() == 10
 
-    csv_data = InvoiceSearch._prepare_csv_data(search_results)
+    csv_data = CsvService.prepare_csv_data(search_results)
     assert csv_data is not None
     assert "columns" in csv_data
     assert "values" in csv_data
@@ -401,7 +404,10 @@ def test_create_payment_report_csv(session):
     assert float(first_row[8]) == expected_total
     assert float(first_row[10]) == expected_total - expected_service_fee
     assert float(first_row[11]) == expected_service_fee
-    assert first_row[12] == InvoiceStatusCode.find_by_code(first_invoice.invoice_status_code).description
+    assert first_row[12] == "Non Sufficient Funds"
+    assert first_invoice.id == nsf_invoice_id
+    assert first_invoice.payment_method_code == PaymentMethod.PAD.value
+    assert first_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
     assert first_row[13] == first_invoice.business_identifier
     assert first_row[14] == first_invoice.id
     assert first_row[15] == first_invoice.references[0].invoice_number
@@ -413,6 +419,50 @@ def test_create_payment_report_csv(session):
         report_name="test",
     )
     assert True  # If no error, then good
+
+
+def test_csv_service_create_report(session):
+    """Assert that the CSV service creates a streaming CSV report correctly."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.CC.value,
+        status_code=InvoiceStatus.CREATED.value,
+        details=[{"label": "Test Label", "value": "Test Value"}],
+    )
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description="Test Description").save()
+
+    search_results = InvoiceSearch.search_all_purchase_history(
+        auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.CSV.value
+    )
+
+    csv_data = CsvService.prepare_csv_data(search_results)
+    assert csv_data is not None
+    assert "columns" in csv_data
+    assert "values" in csv_data
+
+    csv_report = CsvService.create_report(csv_data)
+    assert csv_report is not None
+
+    csv_content = b"".join(csv_report)
+    assert csv_content is not None
+    assert len(csv_content) > 0
+
+    csv_lines = csv_content.decode("utf-8").split("\n")
+    assert len(csv_lines) > 1
+
+    header_line = csv_lines[0]
+    assert "Product" in header_line
+    assert "Status" in header_line
+    assert "Transaction Details" in header_line
+
+    data_lines = [line for line in csv_lines[1:] if line.strip()]
+    assert len(data_lines) >= 1
 
 
 def test_create_payment_report_pdf(session, rest_call_mock):

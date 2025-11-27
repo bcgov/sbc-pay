@@ -15,7 +15,7 @@
 
 from dateutil import parser
 from flask import current_app
-from sqlalchemy import String, and_, cast, exists, func, lateral, literal, or_, select, true
+from sqlalchemy import String, and_, cast, exists, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, with_expression
 
 from pay_api.exceptions import BusinessException
@@ -26,7 +26,6 @@ from pay_api.models import (
     Invoice,
     InvoiceReference,
     InvoiceSearchModel,
-    InvoiceStatusCode,
     PaymentAccount,
     PaymentLineItem,
     Refund,
@@ -48,11 +47,11 @@ from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus, PaymentMethod, RefundStatus
 from pay_api.utils.errors import Error
-from pay_api.utils.query_util import QueryUtils
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date, get_statement_currency_string
 
+from .csv_service import CsvService
 from .report_service import ReportRequest, ReportService
 
 
@@ -520,7 +519,8 @@ class InvoiceSearch:
         template_name = report_inputs.template_name
 
         if content_type == ContentType.CSV.value:
-            template_vars = InvoiceSearch._prepare_csv_data(results)
+            csv_data = CsvService.prepare_csv_data(results)
+            return CsvService.create_report(csv_data)
         else:
             # Use the status_code_description instead of status_code.
             # Future: move this into something more specialized.
@@ -579,109 +579,3 @@ class InvoiceSearch:
             )
         )
         return report_response
-
-    @staticmethod
-    def _get_formatted_date_expression():
-        """Get formatted date expression for CSV."""
-        return func.to_char(func.timezone("America/Los_Angeles", Invoice.created_on), "YYYY-MM-DD HH12:MI:SS AM").op(
-            "||"
-        )(" Pacific Time")
-
-    @staticmethod
-    def _ensure_required_joins(query):
-        """Ensure required joins exist for CSV query."""
-        stmt = query.statement
-
-        if not QueryUtils.statement_has_join(stmt, CorpType.__table__):
-            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)
-
-        if not QueryUtils.statement_has_join(query.statement, InvoiceStatusCode.__table__):
-            query = query.join(InvoiceStatusCode, InvoiceStatusCode.code == Invoice.invoice_status_code)
-
-        return query
-
-    @staticmethod
-    def _build_details_formatted_expression():
-        """Build the details formatted expression for CSV."""
-        details_elem = lateral(func.jsonb_array_elements(Invoice.details).table_valued("value")).alias("details_elem")
-
-        details_formatted = func.string_agg(
-            func.concat(
-                func.jsonb_extract_path_text(details_elem.c.value, "label"),
-                literal(" "),
-                func.jsonb_extract_path_text(details_elem.c.value, "value"),
-            ),
-            literal(","),
-        ).label("details_formatted")
-
-        return details_formatted, details_elem
-
-    @staticmethod
-    def _prepare_csv_data(results_query):
-        """Prepare data for creating a CSV report."""
-        formatted_date = InvoiceSearch._get_formatted_date_expression()
-        query = InvoiceSearch._ensure_required_joins(results_query)
-        details_formatted, details_elem = InvoiceSearch._build_details_formatted_expression()
-
-        # This is here intentionally so you can look at the return versus the headers.
-        labels = [
-            "Product",
-            "Corp Type",
-            "Transaction Type",
-            "Transaction",
-            "Transaction Details",
-            "Folio Number",
-            "Initiated By",
-            "Date",
-            "Purchase Amount",
-            "GST",
-            "Statutory Fee",
-            "BCOL Fee",
-            "Status",
-            "Corp Number",
-            "Transaction ID",
-            "Invoice Reference Number",
-        ]
-
-        query = (
-            query.join(details_elem, true(), isouter=True)
-            .with_entities(
-                CorpType.product,
-                Invoice.corp_type_code,
-                func.string_agg(FeeSchedule.filing_type_code, ",").label("filing_type_codes"),
-                func.string_agg(PaymentLineItem.description, ",").label("descriptions"),
-                details_formatted,
-                Invoice.folio_number,
-                Invoice.created_name,
-                formatted_date.label("created_on_formatted"),
-                Invoice.total,
-                (
-                    func.sum(PaymentLineItem.statutory_fees_gst + PaymentLineItem.service_fees_gst)
-                    + func.sum(PaymentLineItem.pst)
-                ).label("total_tax"),
-                (Invoice.total - func.coalesce(Invoice.service_fees, 0)).label("statutory_fee"),
-                func.coalesce(Invoice.service_fees, 0).label("service_fee"),
-                InvoiceStatusCode.description.label("invoice_status_code"),
-                Invoice.business_identifier,
-                Invoice.id,
-                func.string_agg(InvoiceReference.invoice_number, ",").label("invoice_number"),
-            )
-            .group_by(
-                CorpType.product,
-                Invoice.corp_type_code,
-                Invoice.folio_number,
-                Invoice.created_name,
-                Invoice.created_on,
-                Invoice.total,
-                Invoice.service_fees,
-                InvoiceStatusCode.description,
-                Invoice.business_identifier,
-                Invoice.id,
-            )
-            .order_by(Invoice.id.desc())
-        )
-
-        return {
-            "columns": labels,
-            "values": [list(row) for row in query.all()],
-        }
