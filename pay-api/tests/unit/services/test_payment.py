@@ -352,10 +352,17 @@ def test_create_payment_report_csv(session):
     for _i in range(20):
         payment = factory_payment(payment_status_code="CREATED")
         payment.save()
-        invoice = factory_invoice(payment_account)
+        invoice = factory_invoice(
+            payment_account,
+            details=[{"label": f"Label {_i}", "value": f"Value {_i}"}]
+        )
         invoice.save()
         factory_invoice_reference(invoice.id).save()
-        factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
+        factory_payment_line_item(
+            invoice_id=invoice.id,
+            fee_schedule_id=1,
+            description=f"Test Description {_i}"
+        ).save()
 
     search_results = InvoiceSearch.search_all_purchase_history(
         auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.CSV.value
@@ -378,9 +385,14 @@ def test_create_payment_report_csv(session):
 
     assert first_row[0] == first_invoice.corp_type.product
     assert first_row[1] == first_invoice.corp_type.code
-    assert first_row[2] is None or isinstance(first_row[2], str)
-    assert first_row[3] is None or isinstance(first_row[3], str)
-    assert first_row[4] is None or isinstance(first_row[4], str)
+    expected_filing_type_codes = ",".join(
+        [pli.fee_schedule.filing_type_code for pli in first_invoice.payment_line_items if pli.fee_schedule]
+    )
+    assert first_row[2] == expected_filing_type_codes
+    expected_descriptions = ",".join([pli.description for pli in first_invoice.payment_line_items])
+    assert first_row[3] == expected_descriptions
+    expected_details = ",".join([f"{detail.get('label')} {detail.get('value')}" for detail in first_invoice.details])
+    assert first_row[4] == expected_details
     assert first_row[5] == first_invoice.folio_number
     assert first_row[6] == first_invoice.created_name
     assert isinstance(first_row[7], str) and "Pacific Time" in first_row[7]
