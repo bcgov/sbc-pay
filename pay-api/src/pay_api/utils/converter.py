@@ -94,7 +94,7 @@ class Converter(cattrs.Converter):
     @staticmethod
     def _unstructure_datetime(obj: datetime) -> str:
         return obj.isoformat() if obj else None
-      
+
     @staticmethod
     def _structure_datetime():
         return lambda value, _: (
@@ -119,12 +119,10 @@ class Converter(cattrs.Converter):
     @staticmethod
     def _structure_formatted_currency(obj: Any, cls: type) -> CurrencyStr:  # noqa: ARG004
         """Convert various types to CurrencyStr."""
-        if isinstance(obj, (int, float, str)):
+        if isinstance(obj, int | float | str):
             return CurrencyStr(Decimal(str(obj)))
         if isinstance(obj, Decimal):
             return CurrencyStr(obj)
-        if isinstance(obj, str):
-            return CurrencyStr(Decimal(obj))
         return CurrencyStr(Decimal(0))
 
     @staticmethod

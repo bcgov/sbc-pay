@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal # noqa: TC003
 
 from dateutil.relativedelta import relativedelta
 from flask import current_app
@@ -49,6 +49,7 @@ from pay_api.utils.enums import (
     NotificationStatus,
     PaymentMethod,
     QueueSources,
+    RefundsPartialStatus,
     StatementFrequency,
     StatementTemplate,
 )
@@ -846,7 +847,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         """Apply partial refunds and credits subquery and computed status to the query."""
         partial_refund_subquery = (
             db.session.query(RefundsPartial.invoice_id, func.bool_or(RefundsPartial.is_credit).label("is_credit"))
-            .filter(RefundsPartial.status == "REFUND_PROCESSED")
+            .filter(RefundsPartial.status == RefundsPartialStatus.REFUND_PROCESSED.value)
             .group_by(RefundsPartial.invoice_id)
             .subquery()
         )
@@ -867,7 +868,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         if statement_to_date:
             refund_statuses = InvoiceStatus.refund_statuses()
             paid_statuses = InvoiceStatus.paid_statuses()
-            
+
             computed_status = case(
                 (
                     and_(
