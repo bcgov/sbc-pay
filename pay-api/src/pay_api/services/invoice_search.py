@@ -13,9 +13,7 @@
 # limitations under the License.
 """Service to support invoice searches."""
 
-import json
 from collections import defaultdict
-from datetime import datetime
 
 from dateutil import parser
 from flask import current_app
@@ -38,22 +36,14 @@ from pay_api.models import (
 )
 from pay_api.models.payment import TransactionSearchParams
 from pay_api.models.search.invoice_composite_model import InvoiceCompositeModel
+from pay_api.services.auth import get_account_info_with_contact
 from pay_api.services.code import Code as CodeService
 from pay_api.services.invoice import Invoice as InvoiceService
-from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment import PaymentReportInput
 from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
-from pay_api.utils.enums import (
-    AuthHeaderType,
-    Code,
-    ContentType,
-    InvoiceStatus,
-    PaymentMethod,
-    RefundStatus,
-    StatementTemplate,
-)
+from pay_api.utils.enums import Code, InvoiceStatus, PaymentMethod, RefundStatus, StatementTemplate
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.statement_dtos import (
@@ -594,22 +584,7 @@ class InvoiceSearch:
         db_summaries = db_summaries.summaries
 
         statement_to_date = parser.parse(statement.get("to_date"))
-
-        # Get account info
-        account_info = {}
-        if kwargs.get("auth", None):
-            account_id = kwargs.get("auth")["account"]["id"]
-            contact_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}/contacts"
-            contact = OAuthService.get(
-                endpoint=contact_url,
-                token=kwargs["user"].bearer_token,
-                auth_header_type=AuthHeaderType.BEARER,
-                content_type=ContentType.JSON,
-            ).json()
-
-            account_info = kwargs.get("auth").get("account")
-            account_info["contact"] = contact["contacts"][0]
-
+        account_info = get_account_info_with_contact(**kwargs)
         grouped_by_method = defaultdict(list)
         for invoice in invoices_orm:
             grouped_by_method[invoice.payment_method_code].append(invoice)
@@ -650,17 +625,6 @@ class InvoiceSearch:
 
         template_vars = context_dto.to_dict()
 
-        request_payload = {
-            "reportName": report_name,
-            "templateName": StatementTemplate.STATEMENT_REPORT.value,
-            "templateVars": template_vars,
-            "populatePageNumber": True,
-            "contentType": content_type,
-        }
-
-        with open(f"1-{report_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json", "w", encoding="utf-8") as f:
-            json.dump(request_payload, f, indent=4, ensure_ascii=False)
-
         report_response = ReportService.get_report_response(
             ReportRequest(
                 report_name=report_name,
@@ -681,71 +645,6 @@ class InvoiceSearch:
             filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
             if filtered_codes:
                 invoice["status_code"] = filtered_codes[0]["description"]
-
-    @staticmethod
-    def _adjust_invoice_status_for_statement_orm(invoice_orm, _payment_method: str, statement_to_date) -> str:
-        """Adjust single invoice ORM status for statement display."""
-        refund_statuses = {
-            InvoiceStatus.REFUNDED.value,
-            InvoiceStatus.CREDITED.value,
-            InvoiceStatus.PARTIALLY_CREDITED.value,
-            InvoiceStatus.PARTIALLY_REFUNDED.value,
-        }
-
-        paid_statuses = {
-            InvoiceStatus.PAID.value,
-            *refund_statuses,
-        }
-
-        status_code = invoice_orm.invoice_status_code
-        refund_date = invoice_orm.refund_date
-        payment_date = invoice_orm.payment_date
-
-        if status_code in refund_statuses:
-            if refund_date and refund_date > statement_to_date:
-                return InvoiceStatus.PAID.value
-
-        if status_code in paid_statuses:
-            if payment_date and payment_date > statement_to_date:
-                return InvoiceStatus.APPROVED.value
-
-        return status_code
-
-    @staticmethod
-    def _adjust_invoice_statuses_for_statement(invoices, statement_to_date):
-        """Adjust invoice statuses based on statement to_date for display purposes."""
-        refund_statuses = {
-            InvoiceStatus.REFUNDED.value,
-            InvoiceStatus.CREDITED.value,
-            InvoiceStatus.PARTIALLY_CREDITED.value,
-            InvoiceStatus.PARTIALLY_REFUNDED.value,
-        }
-
-        paid_statuses = {
-            InvoiceStatus.PAID.value,
-            *refund_statuses,
-        }
-
-        for invoice in invoices:
-            status_code = invoice.get("status_code")
-            refund_date = invoice.get("refund_date")
-            payment_date = invoice.get("payment_date")
-
-            if status_code in refund_statuses:
-                if refund_date and parser.parse(refund_date) > statement_to_date:
-                    invoice["status_code"] = InvoiceStatus.PAID.value
-                    status_code = InvoiceStatus.PAID.value
-
-            if status_code in paid_statuses:
-                if payment_date and parser.parse(payment_date) > statement_to_date:
-                    invoice["status_code"] = InvoiceStatus.APPROVED.value
-                    invoice["paid"] = 0
-                    invoice["refund"] = 0
-
-            if invoice.get("applied_credits"):
-                invoice["applied_credits"] = [
-                    c for c in invoice["applied_credits"] if parser.parse(c["created_on"]) <= statement_to_date
-                ] or invoice.pop("applied_credits", None)
 
     @staticmethod
     def _prepare_csv_data(results):
@@ -788,53 +687,3 @@ class InvoiceSearch:
             ]
             cells.append(row_value)
         return cells
-
-    @staticmethod
-    def determine_service_provision_status(status_code: str, payment_method: str) -> bool:
-        """Determine if service was provided based on invoice status code and payment method."""
-        status_code = status_code.upper().replace(" ", "_")
-        if status_code in InvoiceStatus.__members__:
-            status_enum = InvoiceStatus[status_code]
-        else:
-            status_enum = next((s for s in InvoiceStatus if s.value == status_code), status_code)
-
-        if status_enum is None:
-            return False
-
-        default_statuses = {
-            InvoiceStatus.PAID,
-            InvoiceStatus.CANCELLED,
-            InvoiceStatus.CREDITED,
-            InvoiceStatus.REFUND_REQUESTED,
-            InvoiceStatus.REFUNDED,
-            InvoiceStatus.COMPLETED,
-        }
-
-        if status_enum in default_statuses:
-            return True
-
-        match payment_method:
-            case PaymentMethod.PAD.value:
-                return status_enum in {
-                    InvoiceStatus.APPROVED,
-                    InvoiceStatus.SETTLEMENT_SCHEDULED,
-                }
-
-            case PaymentMethod.EFT.value:
-                return status_enum in {
-                    InvoiceStatus.APPROVED,
-                    InvoiceStatus.OVERDUE,
-                }
-
-            case PaymentMethod.EJV.value:
-                return status_enum in {
-                    InvoiceStatus.APPROVED,
-                }
-
-            case PaymentMethod.INTERNAL.value:
-                return status_enum in {
-                    InvoiceStatus.APPROVED,
-                }
-
-            case _:
-                return False

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Service class to control all the operations related to statements."""
 
+from __future__ import annotations
+
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
@@ -20,7 +22,7 @@ from dateutil.relativedelta import relativedelta
 from flask import current_app
 from sqlalchemy import Integer, and_, case, cast, distinct, exists, func, literal, literal_column, select
 from sqlalchemy.dialects.postgresql import ARRAY, INTEGER
-from sqlalchemy.orm import subqueryload, with_expression
+from sqlalchemy.orm import Query, subqueryload, with_expression
 from sqlalchemy.sql.functions import coalesce
 
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -50,7 +52,10 @@ from pay_api.utils.enums import (
     StatementFrequency,
     StatementTemplate,
 )
-from pay_api.utils.statement_dtos import PaymentMethodSummaryRawDTO, SummariesGroupedByPaymentMethodDTO
+from pay_api.utils.statement_dtos import (
+    PaymentMethodSummaryRawDTO,
+    SummariesGroupedByPaymentMethodDTO,
+)
 from pay_api.utils.util import get_first_and_last_of_frequency, get_local_time
 
 from .invoice import Invoice
@@ -463,12 +468,15 @@ class Statement:  # pylint:disable=too-many-public-methods
         else:
             statement_to_date = statement_svc.to_date
 
-            invoices_orm = Statement.find_all_payments_and_invoices_for_statement(
-                statement_id, include_partial_refunds_credits=True
+            invoices_query = Statement.find_all_payments_and_invoices_for_statement(
+                statement_id,
+                include_partial_refunds_credits=True,
+                statement_to_date=statement_to_date,
+                query_only=True,
             )
+            db_summaries = Statement.get_totals_by_payment_method_from_db(invoices_query, statement_to_date)
 
-            invoice_ids = [inv.id for inv in invoices_orm]
-            db_summaries = Statement.get_totals_by_payment_method_from_db(invoice_ids, statement_to_date)
+            invoices_orm = invoices_query.all()
 
             # Build statement summary for EFT/PAD
             summary = Statement._build_statement_summary_for_methods(statement_dao, invoices_orm)
@@ -722,7 +730,9 @@ class Statement:  # pylint:disable=too-many-public-methods
         statement_id: str,
         payment_method: PaymentMethod = None,
         include_partial_refunds_credits: bool = False,
-    ) -> list[InvoiceModel]:
+        query_only: bool = False,
+        statement_to_date: datetime = None,
+    ) -> Query | list[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""
         query = (
             db.session.query(InvoiceModel)
@@ -734,75 +744,22 @@ class Statement:  # pylint:disable=too-many-public-methods
             query = query.filter(InvoiceModel.payment_method_code == payment_method.value)
 
         if include_partial_refunds_credits:
-            query = Statement._apply_partial_refunds_and_credits(query)
+            query = Statement._apply_partial_refunds_and_credits(query, statement_to_date)
+
+        if query_only:
+            return query
 
         return query.all()
 
     @staticmethod
     def get_totals_by_payment_method_from_db(
-        invoice_ids: list[int], statement_to_date: datetime
+        invoices_query, statement_to_date: datetime
     ) -> SummariesGroupedByPaymentMethodDTO:
-        """Calculate payment method totals using database aggregations with CTE."""
-        invoice_aggregates = (
+        """Calculate payment method totals using database aggregation (no Python IDs, clean CTE)."""
+        paid_statuses = InvoiceStatus.paid_statuses()
+        invoice_ids_subq = invoices_query.with_entities(InvoiceModel.id).subquery()
+        inv = (
             db.session.query(
-                InvoiceModel.id.label("invoice_id"),
-                InvoiceModel.payment_method_code,
-                InvoiceModel.total,
-                InvoiceModel.paid,
-                InvoiceModel.refund,
-                InvoiceModel.service_fees,
-                func.coalesce(InvoiceModel.gst, 0).label("gst"),
-                InvoiceModel.payment_date,
-                InvoiceModel.refund_date,
-                InvoiceModel.invoice_status_code,
-                (InvoiceModel.total - InvoiceModel.service_fees - func.coalesce(InvoiceModel.gst, 0)).label(
-                    "statutory_fee"
-                ),
-                # Count as paid if: payment_date <= statement_to_date AND status is paid-related
-                case(
-                    (
-                        and_(
-                            InvoiceModel.payment_date.isnot(None),
-                            InvoiceModel.payment_date <= statement_to_date,
-                            InvoiceModel.invoice_status_code.in_(
-                                [
-                                    InvoiceStatus.PAID.value,
-                                    InvoiceStatus.PARTIAL.value,
-                                    InvoiceStatus.REFUNDED.value,
-                                    InvoiceStatus.CREDITED.value,
-                                    InvoiceStatus.PARTIALLY_REFUNDED.value,
-                                    InvoiceStatus.PARTIALLY_CREDITED.value,
-                                ]
-                            ),
-                        ),
-                        InvoiceModel.paid,
-                    ),
-                    else_=0,
-                ).label("counted_paid"),
-                # Calculate whether refund should be counted
-                case(
-                    (
-                        and_(
-                            InvoiceModel.paid == 0,
-                            InvoiceModel.refund > 0,
-                            InvoiceModel.refund_date.isnot(None),
-                            InvoiceModel.refund_date <= statement_to_date,
-                        ),
-                        InvoiceModel.refund,
-                    ),
-                    else_=0,
-                ).label("counted_refund"),
-                func.count(case((AppliedCredits.created_on <= statement_to_date, AppliedCredits.id), else_=None)).label(
-                    "credits_count"
-                ),
-                func.sum(
-                    case((AppliedCredits.created_on <= statement_to_date, AppliedCredits.amount_applied), else_=0)
-                ).label("credits_applied"),
-            )
-            .filter(InvoiceModel.id.in_(invoice_ids))
-            .outerjoin(AppliedCredits, AppliedCredits.invoice_id == InvoiceModel.id)
-            # joining invoices with multiple applied credits creates duplicate rows, collapses them into a single record
-            .group_by(
                 InvoiceModel.id,
                 InvoiceModel.payment_method_code,
                 InvoiceModel.total,
@@ -814,30 +771,78 @@ class Statement:  # pylint:disable=too-many-public-methods
                 InvoiceModel.refund_date,
                 InvoiceModel.invoice_status_code,
             )
-            .cte("invoice_aggregates")
+            .join(invoice_ids_subq, invoice_ids_subq.c.id == InvoiceModel.id)
+            .cte("inv")
+        )
+        agg = (
+            db.session.query(
+                inv.c.payment_method_code.label("payment_method_code"),
+                func.sum(inv.c.total).label("total"),
+                func.sum(inv.c.service_fees).label("service_fees"),
+                func.sum(inv.c.gst).label("gst"),
+                func.sum(inv.c.total - inv.c.service_fees - inv.c.gst).label("statutory_fee"),
+                func.sum(
+                    case(
+                        (
+                            and_(
+                                inv.c.payment_date.isnot(None),
+                                inv.c.payment_date <= statement_to_date,
+                                inv.c.invoice_status_code.in_(paid_statuses),
+                            ),
+                            inv.c.paid,
+                        ),
+                        else_=0,
+                    )
+                ).label("counted_paid"),
+                # Calculate whether refund should be counted
+                func.sum(
+                    case(
+                        (
+                            and_(
+                                inv.c.paid == 0,
+                                inv.c.refund > 0,
+                                inv.c.refund_date.isnot(None),
+                                inv.c.refund_date <= statement_to_date,
+                            ),
+                            inv.c.refund,
+                        ),
+                        else_=0,
+                    )
+                ).label("counted_refund"),
+                func.sum(
+                    case(
+                        (AppliedCredits.created_on <= statement_to_date, AppliedCredits.amount_applied),
+                        else_=0,
+                    )
+                ).label("credits_applied"),
+                func.count(inv.c.id).label("invoice_id"),
+            )
+            .outerjoin(AppliedCredits, AppliedCredits.invoice_id == inv.c.id)
+            .group_by(inv.c.payment_method_code)
+            .cte("agg")
         )
 
-        method_summary = (
+        result = (
             db.session.query(
-                invoice_aggregates.c.payment_method_code,
-                func.sum(invoice_aggregates.c.total).label(PaymentMethodSummaryRawDTO.TOTALS),
-                func.sum(invoice_aggregates.c.statutory_fee).label(PaymentMethodSummaryRawDTO.FEES),
-                func.sum(invoice_aggregates.c.service_fees).label(PaymentMethodSummaryRawDTO.SERVICE_FEES),
-                func.sum(invoice_aggregates.c.gst).label(PaymentMethodSummaryRawDTO.GST),
-                func.sum(invoice_aggregates.c.counted_paid).label(PaymentMethodSummaryRawDTO.PAID),
-                func.sum(invoice_aggregates.c.counted_refund).label(PaymentMethodSummaryRawDTO.COUNTED_REFUND),
-                func.count(invoice_aggregates.c.invoice_id).label(PaymentMethodSummaryRawDTO.INVOICE_COUNT),
+                agg.c.payment_method_code,
+                func.sum(agg.c.total).label(PaymentMethodSummaryRawDTO.TOTALS),
+                func.sum(agg.c.statutory_fee).label(PaymentMethodSummaryRawDTO.FEES),
+                func.sum(agg.c.service_fees).label(PaymentMethodSummaryRawDTO.SERVICE_FEES),
+                func.sum(agg.c.gst).label(PaymentMethodSummaryRawDTO.GST),
+                func.sum(agg.c.counted_paid).label(PaymentMethodSummaryRawDTO.PAID),
+                func.sum(agg.c.counted_refund).label(PaymentMethodSummaryRawDTO.COUNTED_REFUND),
+                func.count(agg.c.invoice_id).label(PaymentMethodSummaryRawDTO.INVOICE_COUNT),
             )
-            .group_by(invoice_aggregates.c.payment_method_code)
+            .group_by(agg.c.payment_method_code)
             .all()
         )
 
         return SummariesGroupedByPaymentMethodDTO.from_db_result(
-            {row.payment_method_code: PaymentMethodSummaryRawDTO.from_db_row(row) for row in method_summary}
+            {row.payment_method_code: PaymentMethodSummaryRawDTO.from_db_row(row) for row in result}
         )
 
     @staticmethod
-    def _apply_partial_refunds_and_credits(query):
+    def _apply_partial_refunds_and_credits(query, statement_to_date: datetime = None):
         """Apply partial refunds and credits subquery and computed status to the query."""
         partial_refund_subquery = (
             db.session.query(RefundsPartial.invoice_id, func.bool_or(RefundsPartial.is_credit).label("is_credit"))
@@ -845,8 +850,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             .group_by(RefundsPartial.invoice_id)
             .subquery()
         )
-
-        computed_status = case(
+        base_computed_status = case(
             (
                 and_(
                     InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
@@ -860,6 +864,42 @@ class Statement:  # pylint:disable=too-many-public-methods
             ),
             else_=InvoiceModel.invoice_status_code,
         )
+        if statement_to_date:
+            refund_statuses = InvoiceStatus.refund_statuses()
+            paid_statuses = InvoiceStatus.paid_statuses()
+            
+            computed_status = case(
+                (
+                    and_(
+                        InvoiceModel.invoice_status_code.in_(refund_statuses),
+                        InvoiceModel.refund_date.isnot(None),
+                        InvoiceModel.refund_date > statement_to_date,
+                    ),
+                    InvoiceStatus.PAID.value,
+                ),
+                (
+                    and_(
+                        InvoiceModel.invoice_status_code.in_(paid_statuses),
+                        InvoiceModel.payment_date.isnot(None),
+                        InvoiceModel.payment_date > statement_to_date,
+                    ),
+                    InvoiceStatus.APPROVED.value,
+                ),
+                (
+                    and_(
+                        InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
+                        InvoiceModel.refund != 0,
+                        partial_refund_subquery.c.is_credit.isnot(None),
+                    ),
+                    case(
+                        (partial_refund_subquery.c.is_credit.is_(True), InvoiceStatus.PARTIALLY_CREDITED.value),
+                        else_=InvoiceStatus.PARTIALLY_REFUNDED.value,
+                    ),
+                ),
+                else_=InvoiceModel.invoice_status_code,
+            )
+        else:
+            computed_status = base_computed_status
 
         return query.outerjoin(
             partial_refund_subquery, InvoiceModel.id == partial_refund_subquery.c.invoice_id
