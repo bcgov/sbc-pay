@@ -618,6 +618,11 @@ class InvoiceSearch:
     @staticmethod
     def _prepare_csv_data(results_query):
         """Prepare data for creating a CSV report."""
+        formatted_date = InvoiceSearch._get_formatted_date_expression()
+        query = InvoiceSearch._ensure_required_joins(results_query)
+        details_formatted, details_elem = InvoiceSearch._build_details_formatted_expression()
+
+        # This is here intentionally so you can look at the return versus the headers.
         labels = [
             "Product",
             "Corp Type",
@@ -636,10 +641,6 @@ class InvoiceSearch:
             "Transaction ID",
             "Invoice Reference Number",
         ]
-
-        formatted_date = InvoiceSearch._get_formatted_date_expression()
-        query = InvoiceSearch._ensure_required_joins(results_query)
-        details_formatted, details_elem = InvoiceSearch._build_details_formatted_expression()
 
         query = (
             query.join(details_elem, true(), isouter=True)
