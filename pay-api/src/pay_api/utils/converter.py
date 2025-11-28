@@ -97,11 +97,7 @@ class Converter(cattrs.Converter):
 
     @staticmethod
     def _structure_datetime():
-        return lambda value, _: (
-            datetime.fromisoformat(value)
-            if isinstance(value, str)
-            else value
-        )
+        return lambda value, _: (datetime.fromisoformat(value) if isinstance(value, str) else value)
 
     @staticmethod
     def remove_nones(data: dict[Any, Any]) -> dict[str, Any]:
@@ -129,6 +125,7 @@ class Converter(cattrs.Converter):
     def _unstructure_formatted_currency(obj: CurrencyStr) -> str:
         """Convert CurrencyStr to formatted string."""
         from pay_api.utils.util import get_statement_currency_string
+
         return get_statement_currency_string(obj)
 
     @staticmethod
@@ -139,6 +136,7 @@ class Converter(cattrs.Converter):
         if obj is None:
             return None
         from pay_api.utils.util import get_statement_date_string
+
         return FullMonthDateStr(get_statement_date_string(obj, "%B %d, %Y"))
 
     @staticmethod

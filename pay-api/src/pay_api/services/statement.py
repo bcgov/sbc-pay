@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
-from decimal import Decimal # noqa: TC003
+from decimal import Decimal  # noqa: TC003
 
 from dateutil.relativedelta import relativedelta
 from flask import current_app
@@ -445,7 +445,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         statement["from_date"] = from_date_string
         statement["to_date"] = to_date_string
         statement_to_date = statement_svc.to_date
-        
+
         is_pdf = content_type == ContentType.PDF.value
         extension = "pdf" if is_pdf else "csv"
 
@@ -455,9 +455,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             report_name = f"{report_name}-{from_date_string}-to-{to_date_string}.{extension}"
 
         statement_purchases = Statement.find_all_payments_and_invoices_for_statement(
-          statement_id,
-          is_pdf_statement=is_pdf,
-          statement_to_date=statement_to_date
+            statement_id, is_pdf_statement=is_pdf, statement_to_date=statement_to_date
         )
 
         if extension == "pdf":
@@ -490,9 +488,6 @@ class Statement:  # pylint:disable=too-many-public-methods
         current_app.logger.debug(">get_statement_report")
 
         return report_response, report_name
-        
-        
-        
 
     @staticmethod
     def get_summary(
