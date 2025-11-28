@@ -381,10 +381,14 @@ def test_create_payment_report_csv(session):
     # TRANSACTION_REPORT_DEFAULT_TOTAL is 10 in the config for tests
     assert len(csv_rows) == 10
 
-    first_invoice = search_results.first()
     first_row = csv_rows[0]
     assert isinstance(first_row, list)
     assert len(first_row) == 16
+
+    # Find the invoice from search_results that matches the CSV row's invoice ID
+    csv_invoice_id = first_row[14]  # Invoice ID is at index 14
+    first_invoice = next((inv for inv in search_results if inv.id == csv_invoice_id), None)
+    assert first_invoice is not None, f"Invoice with ID {csv_invoice_id} not found in search results"
 
     assert first_row[0] == first_invoice.corp_type.product
     assert first_row[1] == first_invoice.corp_type.code
