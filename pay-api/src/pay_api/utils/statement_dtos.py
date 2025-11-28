@@ -186,17 +186,17 @@ class PaymentMethodSummaryRawDTO(Serializable):
     @classmethod
     def from_db_row(cls, row) -> PaymentMethodSummaryRawDTO:
         """Create from database query row."""
-        totals = Decimal(str(getattr(row, cls.TOTALS)))
-        paid = Decimal(str(getattr(row, cls.PAID)))
-        counted_refund = Decimal(str(getattr(row, cls.COUNTED_REFUND)))
+        totals = getattr(row, cls.TOTALS)
+        paid = getattr(row, cls.PAID)
+        counted_refund = getattr(row, cls.COUNTED_REFUND)
 
         due = totals - paid - counted_refund
 
         return cls(
             totals=totals,
-            fees=Decimal(str(getattr(row, cls.FEES))),
-            service_fees=Decimal(str(getattr(row, cls.SERVICE_FEES))),
-            gst=Decimal(str(getattr(row, cls.GST))),
+            fees=getattr(row, cls.FEES),
+            service_fees=getattr(row, cls.SERVICE_FEES),
+            gst=getattr(row, cls.GST),
             paid=paid,
             due=due,
             invoice_count=getattr(row, cls.INVOICE_COUNT),
@@ -332,6 +332,17 @@ class StatementContextDTO(Serializable):
     statement_total: float | None = None
     is_overdue: bool | None = None
 
+    @staticmethod
+    def _compute_duration(from_date: str | None, to_date: str | None, frequency: str) -> str | None:
+        """Compute duration string based on dates and frequency."""
+        if frequency == StatementFrequency.DAILY.value and from_date:
+            return from_date
+        if from_date and to_date:
+            return f"{from_date} - {to_date}"
+        if from_date:
+            return from_date
+        return None
+
     @classmethod
     def from_dict(cls, statement: dict) -> StatementContextDTO:
         """Create DTO from statement dictionary with formatting."""
@@ -342,14 +353,7 @@ class StatementContextDTO(Serializable):
         to_date = statement.get("to_date")
         frequency = statement.get("frequency", "")
 
-        if frequency == StatementFrequency.DAILY.value and from_date:
-            duration = from_date
-        elif from_date and to_date:
-            duration = f"{from_date} - {to_date}"
-        elif from_date:
-            duration = from_date
-        else:
-            duration = None
+        duration = cls._compute_duration(from_date, to_date, frequency)
 
         converter = Converter()
         return cls(
