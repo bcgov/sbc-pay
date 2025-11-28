@@ -242,20 +242,20 @@ class GroupedInvoicesDTO(Serializable):
         ]
 
         summary = PaymentMethodSummaryDTO.from_db_summary(db_summary)
-
         include_service_provided = any(t.service_provided for t in transactions)
 
+        # Compute payment method specific fields before instantiation
+        # INTERNAL-specific: header text and staff payment flag
+        is_staff_payment = None
         if payment_method == PaymentMethod.INTERNAL.value:
-            has_staff_payment = any(
-                not hasattr(inv, "routing_slip") or inv.routing_slip is None for inv in invoices_orm
-            )
+            is_staff_payment = any(not hasattr(inv, "routing_slip") or inv.routing_slip is None for inv in invoices_orm)
             statement_header_text = (
-                StatementTitles["INTERNAL_STAFF"].value if has_staff_payment else StatementTitles[payment_method].value
+                StatementTitles["INTERNAL_STAFF"].value if is_staff_payment else StatementTitles[payment_method].value
             )
         else:
             statement_header_text = StatementTitles[payment_method].value
 
-        # EFT-specific fields
+        # EFT-specific: amount owing and dates
         amount_owing = None
         latest_payment_date = None
         due_date = None
@@ -265,11 +265,6 @@ class GroupedInvoicesDTO(Serializable):
                 latest_payment_date = statement_summary.get("latestStatementPaymentDate")
             elif not statement.get("is_interim_statement") and statement_summary:
                 due_date = statement_summary.get("dueDate")
-
-        # INTERNAL-specific fields
-        is_staff_payment = None
-        if payment_method == PaymentMethod.INTERNAL.value:
-            is_staff_payment = any(not hasattr(inv, "routing_slip") or inv.routing_slip is None for inv in invoices_orm)
 
         return cls(
             payment_method=payment_method,
