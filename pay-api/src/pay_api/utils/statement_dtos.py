@@ -394,9 +394,6 @@ class StatementSummaryDTO(Serializable):
         converter = Converter()
         dto = converter.structure(statement_summary, cls)
 
-        if dto.cancelled_transactions in (None, Decimal(0)):
-            dto.cancelled_transactions = None
-
         return dto
 
 
