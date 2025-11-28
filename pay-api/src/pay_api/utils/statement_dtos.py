@@ -18,8 +18,8 @@ This module contains all DTOs used in the statement PDF generation process.
 
 from __future__ import annotations
 
-from datetime import datetime  # noqa: TC001
-from decimal import Decimal  # noqa: TC001
+from datetime import datetime  # noqa: TC001 TC003
+from decimal import Decimal  # noqa: TC001 TC003
 
 from attrs import define
 

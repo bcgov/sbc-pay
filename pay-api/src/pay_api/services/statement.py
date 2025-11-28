@@ -439,14 +439,14 @@ class Statement:  # pylint:disable=too-many-public-methods
         statement_svc = Statement()
         statement_svc._dao = statement_dao  # pylint: disable=protected-access
         statement = statement_svc.asdict()
-        statement["from_date"] = from_date_string
-        statement["to_date"] = to_date_string
-        statement_to_date = statement_svc.to_date
 
         from_date_string: str = statement_svc.from_date.strftime(DT_SHORT_FORMAT)
         to_date_string: str = statement_svc.to_date.strftime(DT_SHORT_FORMAT)
+        statement["from_date"] = from_date_string
+        statement["to_date"] = to_date_string
+        statement_to_date = statement_svc.to_date
+        
         is_pdf = content_type == ContentType.PDF.value
-
         extension = "pdf" if is_pdf else "csv"
 
         if statement_svc.frequency == StatementFrequency.DAILY.value:

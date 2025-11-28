@@ -40,7 +40,6 @@ from pay_api.services.auth import get_account_info_with_contact
 from pay_api.services.code import Code as CodeService
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.payment import PaymentReportInput
-from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.enums import Code, ContentType, InvoiceStatus, PaymentMethod, RefundStatus, StatementTemplate
