@@ -30,7 +30,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus
-from pay_api.utils.util import generate_transaction_number, get_quantized
+from pay_api.utils.util import generate_transaction_number
 
 from ..exceptions import BusinessException  # noqa: TID252
 from ..utils.errors import Error  # noqa: TID252
@@ -55,7 +55,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return a static invoice number."""
         # No payment blockers for internal, this is done by staff.
         routing_slip = None
-        is_zero_dollar_invoice = get_quantized(invoice.total) == 0
+        is_zero_dollar_invoice = invoice.total == 0
         invoice_reference: InvoiceReference = None
         if routing_slip_number := invoice.routing_slip:
             current_app.logger.info(f"Routing slip number {routing_slip_number}, for invoice {invoice.id}")
@@ -64,8 +64,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if not is_zero_dollar_invoice and routing_slip is not None:
             # creating invoice in cfs is done in job
             current_app.logger.info(f"FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}")
-            routing_slip.remaining_amount -= get_quantized(invoice.total)
-            if routing_slip.status == RoutingSlipStatus.ACTIVE.value and routing_slip.remaining_amount < 0.01:
+            routing_slip.remaining_amount -= invoice.total
+            if routing_slip.status == RoutingSlipStatus.ACTIVE.value and routing_slip.remaining_amount == 0:
                 routing_slip.status = RoutingSlipStatus.COMPLETE.value
             routing_slip.flush()
         else:
@@ -129,7 +129,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if payment := PaymentModel.find_payment_for_invoice(invoice.id):
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
-        routing_slip.remaining_amount += get_quantized(invoice.total)
+        routing_slip.remaining_amount += invoice.total
         # Move routing slip back to active on refund.
         if routing_slip.status == RoutingSlipStatus.COMPLETE.value:
             routing_slip.status = RoutingSlipStatus.ACTIVE.value
@@ -163,7 +163,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if routing_slip.parent:
             detail = f"This Routing slip is linked, enter the parent Routing slip: {routing_slip.parent.number}"
             raise BusinessException(InternalPayService._create_error_object("LINKED_ROUTING_SLIP", detail))
-        if routing_slip.remaining_amount < get_quantized(invoice.total):
+        if routing_slip.remaining_amount < invoice.total:
             detail = (
                 f"There is not enough balance in this Routing slip. "
                 f"The current balance is: ${routing_slip.remaining_amount:.2f}"

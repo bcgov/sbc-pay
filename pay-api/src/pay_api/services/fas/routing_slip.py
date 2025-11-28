@@ -49,7 +49,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_local_time, get_quantized, get_str_by_path, string_to_date
+from pay_api.utils.util import get_local_time, get_str_by_path, string_to_date
 
 
 class RoutingSlip:
@@ -416,12 +416,10 @@ class RoutingSlip:
             status=CfsAccountStatus.PENDING.value,
         ).flush()
 
-        total = get_quantized(sum(float(payment.get("paidAmount")) for payment in request_json.get("payments")))
+        total = sum(Decimal(str(payment.get("paidAmount"))) for payment in request_json.get("payments"))
 
         # Calculate Total USD
-        total_usd = get_quantized(
-            sum(float(payment.get("paidUsdAmount", 0)) for payment in request_json.get("payments"))
-        )
+        total_usd = sum(Decimal(str(payment.get("paidUsdAmount", 0))) for payment in request_json.get("payments"))
 
         mailing_address = request_json.get("mailingAddress", {})
         # Create a routing slip record.
