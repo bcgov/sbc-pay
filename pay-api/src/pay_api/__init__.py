@@ -19,7 +19,6 @@ This module is the API for the Payment system.
 import os
 
 from flask import Flask, request
-from flask_executor import Executor
 from flask_migrate import Migrate, upgrade
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
@@ -69,7 +68,6 @@ def create_app(run_mode=None):
 
     setup_jwt_manager(app, jwt)
     ExceptionHandler(app)
-    app.extensions["flask_executor"] = Executor(app)
     setup_403_logging(app)
 
     @app.after_request

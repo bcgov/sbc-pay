@@ -390,7 +390,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         if previous_statement:
             previous_invoices = Statement.find_all_payments_and_invoices_for_statement(
                 previous_statement.id, payment_method
-            )
+            ).all()
             previous_items = InvoiceSearch.create_payment_report_details(purchases=previous_invoices, data=None)
 
             # Skip passing statement, we need the totals independent of the statement/payment date.
@@ -438,52 +438,36 @@ class Statement:  # pylint:disable=too-many-public-methods
 
         statement_svc = Statement()
         statement_svc._dao = statement_dao  # pylint: disable=protected-access
+        statement = statement_svc.asdict()
+        statement["from_date"] = from_date_string
+        statement["to_date"] = to_date_string
+        statement_to_date = statement_svc.to_date
 
         from_date_string: str = statement_svc.from_date.strftime(DT_SHORT_FORMAT)
         to_date_string: str = statement_svc.to_date.strftime(DT_SHORT_FORMAT)
+        is_pdf = content_type == ContentType.PDF.value
 
-        extension = "pdf" if content_type == ContentType.PDF.value else "csv"
+        extension = "pdf" if is_pdf else "csv"
 
         if statement_svc.frequency == StatementFrequency.DAILY.value:
             report_name = f"{report_name}-{from_date_string}.{extension}"
         else:
             report_name = f"{report_name}-{from_date_string}-to-{to_date_string}.{extension}"
 
-        statement = statement_svc.asdict()
-        statement["from_date"] = from_date_string
-        statement["to_date"] = to_date_string
+        statement_purchases = Statement.find_all_payments_and_invoices_for_statement(
+          statement_id,
+          is_pdf_statement=is_pdf,
+          statement_to_date=statement_to_date
+        )
 
-        if extension == "csv":
-            statement_purchases = Statement.find_all_payments_and_invoices_for_statement(statement_id)
-            result_items = InvoiceSearch.create_payment_report_details(purchases=statement_purchases, data=None)
-            report_inputs = PaymentReportInput(
-                content_type=content_type,
-                report_name=report_name,
-                template_name=StatementTemplate.STATEMENT_REPORT.value,
-                results=result_items,
-            )
-
-            report_response = InvoiceSearch.generate_payment_report(
-                report_inputs, auth=kwargs.get("auth", None), statement=statement
-            )
-        else:
-            statement_to_date = statement_svc.to_date
-
-            invoices_query = Statement.find_all_payments_and_invoices_for_statement(
-                statement_id,
-                include_partial_refunds_credits=True,
-                statement_to_date=statement_to_date,
-                query_only=True,
-            )
-            db_summaries = Statement.get_totals_by_payment_method_from_db(invoices_query, statement_to_date)
-
-            invoices_orm = invoices_query.all()
-
+        if extension == "pdf":
+            db_summaries = Statement.get_totals_by_payment_method_from_db(statement_purchases, statement_to_date)
+            statement_purchases = statement_purchases.all()
             # Build statement summary for EFT/PAD
-            summary = Statement._build_statement_summary_for_methods(statement_dao, invoices_orm)
+            summary = Statement._build_statement_summary_for_methods(statement_dao, statement_purchases)
 
             report_response = InvoiceSearch.generate_statement_pdf_report(
-                invoices_orm=invoices_orm,
+                invoices_orm=statement_purchases,
                 db_summaries=db_summaries,
                 statement=statement,
                 statement_summary=summary,
@@ -491,10 +475,24 @@ class Statement:  # pylint:disable=too-many-public-methods
                 content_type=content_type,
                 auth=kwargs.get("auth", None),
             )
+        else:
+            result_items = statement_purchases
+            report_inputs = PaymentReportInput(
+                content_type=content_type,
+                report_name=report_name,
+                template_name=StatementTemplate.STATEMENT_REPORT.value,
+                results=result_items,
+            )
+            report_response = InvoiceSearch.generate_payment_report(
+                report_inputs, auth=kwargs.get("auth", None), statement=statement
+            )
 
         current_app.logger.debug(">get_statement_report")
 
         return report_response, report_name
+        
+        
+        
 
     @staticmethod
     def get_summary(
@@ -730,8 +728,7 @@ class Statement:  # pylint:disable=too-many-public-methods
     def find_all_payments_and_invoices_for_statement(
         statement_id: str,
         payment_method: PaymentMethod = None,
-        include_partial_refunds_credits: bool = False,
-        query_only: bool = False,
+        is_pdf_statement: bool = False,
         statement_to_date: datetime = None,
     ) -> Query | list[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""
@@ -740,17 +737,13 @@ class Statement:  # pylint:disable=too-many-public-methods
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
             .filter(StatementInvoicesModel.statement_id == cast(statement_id, Integer))
         )
-
         if payment_method:
             query = query.filter(InvoiceModel.payment_method_code == payment_method.value)
 
-        if include_partial_refunds_credits:
+        if is_pdf_statement:
             query = Statement._apply_partial_refunds_and_credits(query, statement_to_date)
 
-        if query_only:
-            return query
-
-        return query.all()
+        return query
 
     @staticmethod
     def get_totals_by_payment_method_from_db(

@@ -63,7 +63,7 @@ class OAuthService:
         if content_type == ContentType.JSON:
             data = json.dumps(data, cls=DecimalEncoder)
 
-        if gzip_body and current_app.config.get('ENABLE_GZIP_BODY') is True:
+        if gzip_body and current_app.config.get("ENABLE_GZIP_BODY") is True:
             if isinstance(data, str):
                 data = data.encode("utf-8")
             data = gzip.compress(data)

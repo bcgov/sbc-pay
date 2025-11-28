@@ -43,6 +43,7 @@ class PurchaseHistorySearch:
     allowed_products: list[str] = None
     return_all: bool = False
     max_no_records: int = 0
+    query_only: bool = False
 
 
 @dataclass

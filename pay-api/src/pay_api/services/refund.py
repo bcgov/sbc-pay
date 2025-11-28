@@ -55,7 +55,6 @@ from pay_api.utils.errors import Error
 from pay_api.utils.product_auth_util import ProductAuthUtil
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
-    get_quantized,
     get_str_by_path,
     is_string_empty,
     normalize_accented_characters_json,
@@ -87,7 +86,7 @@ class RefundService:
         if (status := get_str_by_path(request, "status")) is None:
             raise BusinessException(Error.INVALID_REQUEST)
         user_name = kwargs["user"].user_name
-        if get_quantized(rs_model.remaining_amount) == 0:
+        if rs_model.remaining_amount == 0:
             raise BusinessException(Error.INVALID_REQUEST)  # refund not possible for zero amount routing slips
 
         is_refund_finalized = status in (
@@ -353,7 +352,6 @@ class RefundService:
 
         refund = cls._initialize_refund(invoice, request, user, auth_user)
         cls._save_partial_refund_lines(refund_partial_lines, invoice, refund)
-        refund.save()
 
         refund_amount = (
             PaymentSystemService.get_total_partial_refund_amount(refund_partial_lines)
@@ -363,6 +361,7 @@ class RefundService:
         if not requires_approval or user.is_system():
             return cls._complete_refund(invoice, refund, refund_partial_lines)
 
+        refund.save()
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         product_recipients = get_product_refund_recipients(product_code=invoice.corp_type.product, refund=refund)
         if product_recipients:
