@@ -1,7 +1,7 @@
 """Converter module to support decimal and datetime serialization."""
 
 import re
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -32,7 +32,7 @@ class FullMonthDateStr(str):
         """Create a new FullMonthDateStr instance."""
         if value is None:
             return None
-        if isinstance(value, datetime):
+        if isinstance(value, datetime | date):
             value = value.strftime("%B %d, %Y")
         return str.__new__(cls, value)
 

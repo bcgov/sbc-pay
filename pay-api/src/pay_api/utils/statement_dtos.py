@@ -21,7 +21,7 @@ from __future__ import annotations
 from datetime import datetime  # noqa: TC001 TC003
 from decimal import Decimal  # noqa: TC001 TC003
 
-from attrs import define, fields
+from attrs import define
 
 from pay_api.models.applied_credits import AppliedCreditsSearchModel
 from pay_api.models.invoice import InvoiceSearchModel  # noqa: TC001
@@ -30,7 +30,6 @@ from pay_api.models.statement import Statement  # noqa: TC001 TC003
 from pay_api.utils.converter import CurrencyStr, FullMonthDateStr
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
 from pay_api.utils.serializable import Serializable
-from pay_api.utils.util import get_statement_date_string
 
 
 @define
@@ -316,13 +315,15 @@ class StatementTotalsDTO(Serializable):
 
         db_summaries: Dict with payment_method as key
         """
-        totals_dict = {}
-        for field_ in fields(cls):
-            name = field_.name
-            total = sum(getattr(s, name) for s in db_summaries.values())
-            totals_dict[name] = total
-
-        return cls(**totals_dict)
+        summaries = list(db_summaries.values())
+        return cls(
+            fees=sum(s.fees for s in summaries),
+            service_fees=sum(s.service_fees for s in summaries),
+            gst=sum(s.gst for s in summaries),
+            totals=sum(s.totals for s in summaries),
+            paid=sum(s.paid for s in summaries),
+            due=sum(s.due for s in summaries),
+        )
 
 
 @define
@@ -347,16 +348,16 @@ class StatementContextDTO(Serializable):
     @staticmethod
     def _compute_duration(from_date: str | None, to_date: str | None, frequency: str) -> str | None:
         """Compute duration string based on dates and frequency."""
-        if frequency == StatementFrequency.DAILY.value and from_date:
-            formatted_date = get_statement_date_string(from_date) if from_date else from_date
-            return formatted_date
-        if from_date and to_date:
-            from_formatted = get_statement_date_string(from_date) if from_date else from_date
-            to_formatted = get_statement_date_string(to_date) if to_date else to_date
-            return f"{from_formatted} - {to_formatted}"
-        if from_date:
-            return get_statement_date_string(from_date) if from_date else from_date
-        return None
+        if not from_date:
+            return None
+
+        if frequency == StatementFrequency.DAILY.value:
+            return FullMonthDateStr(from_date)
+
+        if to_date:
+            return f"{FullMonthDateStr(from_date)} - {FullMonthDateStr(to_date)}"
+
+        return FullMonthDateStr(from_date)
 
     @classmethod
     def from_statement(cls, statement) -> StatementContextDTO:
@@ -364,13 +365,7 @@ class StatementContextDTO(Serializable):
         if not statement:
             return None
 
-        # convert need here for duration date string
-        from_date_str = get_statement_date_string(statement.from_date) if statement.from_date else None
-        to_date_str = get_statement_date_string(statement.to_date) if statement.to_date else None
-        created_on_str = get_statement_date_string(statement.created_on) if statement.created_on else None
-        frequency = statement.frequency or ""
-
-        duration = cls._compute_duration(from_date_str, to_date_str, frequency)
+        duration = cls._compute_duration(statement.from_date, statement.to_date, statement.frequency or "")
 
         # Convert the comma-separated payment_methods string (e.g., "EFT,PAD") into a list.
         # The DTO expects a list[str], and without this conversion the Converter in converter.py
@@ -383,10 +378,10 @@ class StatementContextDTO(Serializable):
         return cls(
             duration=duration,
             amount_owing=statement.amount_owing,
-            from_date=from_date_str,
-            to_date=to_date_str,
-            created_on=created_on_str,
-            frequency=frequency,
+            from_date=FullMonthDateStr(statement.from_date),
+            to_date=FullMonthDateStr(statement.to_date),
+            created_on=FullMonthDateStr(statement.created_on),
+            frequency=statement.frequency or "",
             id=statement.id,
             is_interim_statement=statement.is_interim_statement,
             overdue_notification_date=statement.overdue_notification_date,

@@ -1001,8 +1001,8 @@ def test_grouped_invoices_dto_from_invoices_and_summary(session):
 def test_statement_context_dto_from_dict():
     """Test StatementContextDTO.from_dict creates correct DTO."""
     statement = {
-        "from_date": "2024-06-01",
-        "to_date": "2024-06-30",
+        "from_date": "June 01, 2024",
+        "to_date": "June 30, 2024",
         "frequency": "MONTHLY",
         "amount_owing": 123.45,
         "id": 1,
@@ -1339,8 +1339,8 @@ def test_statement_transaction_dto_with_multiple_line_items(session):
 def test_statement_context_dto_with_daily_frequency():
     """Test StatementContextDTO handles DAILY frequency correctly."""
     statement = {
-        "from_date": "2024-06-01",
-        "to_date": "2024-06-01",
+        "from_date": "June 01, 2024",
+        "to_date": "June 01, 2024",
         "frequency": "DAILY",
         "amount_owing": 100,
     }

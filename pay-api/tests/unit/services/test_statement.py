@@ -45,7 +45,6 @@ from pay_api.utils.enums import (
     StatementFrequency,
     StatementTemplate,
 )
-from pay_api.utils.util import get_statement_date_string
 from tests.utilities.base_test import (
     factory_eft_shortname,
     factory_eft_shortname_link,
@@ -587,7 +586,7 @@ def test_get_eft_statement_for_empty_invoices(session):
         )
         assert report_name == expected_report_name
 
-        date_string_now = get_statement_date_string(datetime.now(tz=UTC))
+        date_string_now = FullMonthDateStr(datetime.now(tz=UTC))
         expected_template_vars = {
             "account": {
                 "accountType": "PREMIUM",
@@ -617,8 +616,8 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "amountOwing": "0.00",
                 "createdOn": date_string_now,
                 "frequency": "MONTHLY",
-                "fromDate": get_statement_date_string(statement_from_date),
-                "toDate": get_statement_date_string(statement_to_date),
+                "fromDate": FullMonthDateStr(statement_from_date),
+                "toDate": FullMonthDateStr(statement_to_date),
                 "id": statement_model.id,
                 "isInterimStatement": False,
                 "isOverdue": False,
@@ -626,10 +625,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
                 "statementTotal": 0,
-                "duration": (
-                    f"{get_statement_date_string(statement_from_date)} - "
-                    f"{get_statement_date_string(statement_to_date)}"
-                ),
+                "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
             },
             "statementSummary": {
                 "cancelledTransactions": None,
@@ -1007,7 +1003,7 @@ def test_get_eft_statement_with_invoices(session):
                 "notificationDate": None,
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
-                "statementTotal": 500.00,
+                "statementTotal": Decimal("500.00"),
             },
             "statementSummary": {
                 "cancelledTransactions": None,
@@ -1015,7 +1011,7 @@ def test_get_eft_statement_with_invoices(session):
                 "lastPadStatementPaidAmount": None,
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": FullMonthDateStr(invoice_3.payment_date.date()),
+                "latestStatementPaymentDate": invoice_3.payment_date.strftime(DT_SHORT_FORMAT),
             },
             # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {
