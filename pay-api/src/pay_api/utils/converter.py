@@ -1,7 +1,7 @@
 """Converter module to support decimal and datetime serialization."""
 
 import re
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -9,6 +9,32 @@ from typing import Any
 import cattrs
 from attrs import fields, has
 from cattrs.gen import make_dict_structure_fn, make_dict_unstructure_fn, override
+
+
+class CurrencyStr(str):
+    """Formatted currency string type."""
+
+    def __new__(cls, value):
+        """Create a new CurrencyStr instance."""
+        if value is None:
+            value = "0.00"
+        elif isinstance(value, Decimal | int | float):
+            value = f"{value:.2f}"
+        else:
+            value = str(value)
+        return str.__new__(cls, value)
+
+
+class FullMonthDateStr(str):
+    """Formatted date string type in '%B %d, %Y' format."""
+
+    def __new__(cls, value):
+        """Create a new FullMonthDateStr instance."""
+        if value is None:
+            return None
+        if isinstance(value, datetime | date):
+            value = value.strftime("%B %d, %Y")
+        return str.__new__(cls, value)
 
 
 class Converter(cattrs.Converter):
@@ -26,6 +52,10 @@ class Converter(cattrs.Converter):
         self.register_structure_hook(Decimal, self._structure_decimal)
         self.register_unstructure_hook(Decimal, self._unstructure_decimal)
         self.register_unstructure_hook(datetime, self._unstructure_datetime)
+        self.register_structure_hook(CurrencyStr, self.structure_formatted_currency)
+        self.register_unstructure_hook(CurrencyStr, self._unstructure_formatted_currency)
+        self.register_structure_hook(FullMonthDateStr, self.structure_month_date_year_str)
+        self.register_unstructure_hook(FullMonthDateStr, self._unstructure_statement_date_str)
         # Note we may need a hook to handle str = None, sometimes a str set to None would become 'None'
 
         if enum_to_value:
@@ -88,6 +118,10 @@ class Converter(cattrs.Converter):
         return obj.isoformat() if obj else None
 
     @staticmethod
+    def _structure_datetime():
+        return lambda value, _: (datetime.fromisoformat(value) if isinstance(value, str) else value)
+
+    @staticmethod
     def remove_nones(data: dict[Any, Any]) -> dict[str, Any]:
         """Remove nones from payload."""
         new_data = {}
@@ -99,3 +133,28 @@ class Converter(cattrs.Converter):
             elif val is not None:
                 new_data[key] = val
         return new_data
+
+    @staticmethod
+    def structure_formatted_currency(obj: Any) -> CurrencyStr:
+        """Structure a value into a CurrencyStr."""
+        return CurrencyStr(obj)
+
+    @staticmethod
+    def _unstructure_formatted_currency(obj: CurrencyStr) -> str:
+        """Convert CurrencyStr to formatted string."""
+        try:
+            return f"{float(obj):,.2f}"
+        except (TypeError, ValueError):
+            return "0.00"
+
+    @staticmethod
+    def structure_month_date_year_str(obj: Any) -> FullMonthDateStr | None:
+        """Structure a value into a FullMonthDateStr."""
+        if obj is None:
+            return None
+        return FullMonthDateStr(obj)
+
+    @staticmethod
+    def _unstructure_statement_date_str(obj: FullMonthDateStr) -> str | None:
+        """FullMonthDateStr is already a formatted string."""
+        return obj if obj else None

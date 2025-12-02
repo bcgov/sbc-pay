@@ -661,9 +661,11 @@ def factory_statement(
     statement_settings_id: str = None,
     created_on: datetime = datetime.now(tz=UTC),
     payment_methods: str = PaymentMethod.EFT.value,
+    is_interim_statement: bool = False,
+    amount_owing: float = None,
 ):
     """Return Factory."""
-    return Statement(
+    stmt = Statement(
         frequency=frequency,
         statement_settings_id=statement_settings_id,
         payment_account_id=payment_account_id,
@@ -671,7 +673,14 @@ def factory_statement(
         to_date=to_date,
         created_on=created_on,
         payment_methods=payment_methods,
+        is_interim_statement=is_interim_statement,
     ).save()
+
+    # Set amount_owing as an attribute (not a DB field, but used in schema)
+    if amount_owing is not None:
+        stmt.amount_owing = amount_owing
+
+    return stmt
 
 
 def factory_statement_invoices(statement_id: str, invoice_id: str):

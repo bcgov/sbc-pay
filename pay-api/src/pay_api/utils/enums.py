@@ -67,6 +67,25 @@ class InvoiceStatus(Enum):
     COMPLETED = "COMPLETED"
 
 
+    @classmethod
+    def refund_statuses(cls):
+        """Return list of refund-related statuses."""
+        return [
+            cls.REFUNDED.value,
+            cls.CREDITED.value,
+            cls.PARTIALLY_CREDITED.value,
+            cls.PARTIALLY_REFUNDED.value,
+        ]
+
+    @classmethod
+    def paid_statuses(cls):
+        """Return list of paid-related statuses (including refunded)."""
+        return [
+            cls.PAID.value,
+            *cls.refund_statuses(),
+        ]
+
+
 class TransactionStatus(Enum):
     """Transaction status codes."""
 

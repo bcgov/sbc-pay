@@ -199,3 +199,21 @@ def get_service_account_token():
     )
     bearer_token = token_response.json()["access_token"]
     return bearer_token
+
+
+def get_account_info_with_contact(**kwargs) -> dict:
+    """Get account info with contact details from kwargs."""
+    account_info = {}
+    if kwargs.get("auth", None):
+        account_id = kwargs.get("auth")["account"]["id"]
+        contact_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}/contacts"
+        contact = RestService.get(
+            endpoint=contact_url,
+            token=kwargs["user"].bearer_token,
+            auth_header_type=AuthHeaderType.BEARER,
+            content_type=ContentType.JSON,
+        ).json()
+
+        account_info = kwargs.get("auth").get("account")
+        account_info["contact"] = contact["contacts"][0]
+    return account_info
