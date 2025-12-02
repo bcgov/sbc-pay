@@ -17,7 +17,6 @@
 Test-Suite to ensure that the Statement Service is working as expected.
 """
 
-import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
@@ -1008,7 +1007,7 @@ def test_get_eft_statement_with_invoices(session):
                 "notificationDate": None,
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
-                "statementTotal": "500.00",
+                "statementTotal": 500.00,
             },
             "statementSummary": {
                 "cancelledTransactions": None,
@@ -1045,10 +1044,20 @@ def test_get_eft_statement_with_invoices(session):
         assert call_args.content_type == expected_report_inputs.content_type
         assert call_args.stream == expected_report_inputs.stream
 
-        # For template_vars, convert to JSON strings for comparison (ignores key order)
-        expected_json = json.dumps(expected_report_inputs.template_vars, sort_keys=True, default=str)
-        actual_json = json.dumps(call_args.template_vars, sort_keys=True, default=str)
-        assert actual_json == expected_json
+        # Compare template_vars as dictionaries (order-independent)
+        expected_vars = expected_report_inputs.template_vars
+        actual_vars = call_args.template_vars
+
+        # Sort transactions in grouped invoices for order-independent comparison
+        for grouped in expected_vars.get("groupedInvoices", []):
+            if "transactions" in grouped:
+                grouped["transactions"] = sorted(grouped["transactions"], key=lambda x: x.get("invoiceId", 0))
+
+        for grouped in actual_vars.get("groupedInvoices", []):
+            if "transactions" in grouped:
+                grouped["transactions"] = sorted(grouped["transactions"], key=lambda x: x.get("invoiceId", 0))
+
+        assert actual_vars == expected_vars
 
 
 def localize_date(date: datetime):

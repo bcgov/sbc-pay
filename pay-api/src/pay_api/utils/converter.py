@@ -15,9 +15,10 @@ class CurrencyStr(str):
     """Formatted currency string type."""
 
     def __new__(cls, value):
+        """Create a new CurrencyStr instance."""
         if value is None:
             value = "0.00"
-        elif isinstance(value, (Decimal, int, float)):
+        elif isinstance(value, Decimal | int | float):
             value = f"{value:.2f}"
         else:
             value = str(value)
@@ -28,6 +29,7 @@ class FullMonthDateStr(str):
     """Formatted date string type in '%B %d, %Y' format."""
 
     def __new__(cls, value):
+        """Create a new FullMonthDateStr instance."""
         if value is None:
             return None
         if isinstance(value, datetime):
@@ -134,6 +136,7 @@ class Converter(cattrs.Converter):
 
     @staticmethod
     def structure_formatted_currency(obj: Any) -> CurrencyStr:
+        """Structure a value into a CurrencyStr."""
         return CurrencyStr(obj)
 
     @staticmethod
@@ -146,6 +149,7 @@ class Converter(cattrs.Converter):
 
     @staticmethod
     def structure_month_date_year_str(obj: Any) -> FullMonthDateStr | None:
+        """Structure a value into a FullMonthDateStr."""
         if obj is None:
             return None
         return FullMonthDateStr(obj)

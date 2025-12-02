@@ -336,7 +336,7 @@ def test_search_payment_history_for_all(session):
         factory_invoice_reference(invoice.id).save()
 
     results = InvoiceSearch.search_all_purchase_history(
-        auth_account_id=auth_account_id, search_filter={}, query_only=True
+        auth_account_id=auth_account_id, search_filter={}, query_only=False
     )
     assert results is not None
     assert results.get("items") is not None
@@ -1068,6 +1068,7 @@ def test_determine_service_provision_status(status_code, payment_method, expecte
 
 def test_payment_method_summary_raw_dto_from_db_row():
     """Test PaymentMethodSummaryRawDTO.from_db_row() calculates due correctly."""
+
     class MockRow:
         def __init__(self):
             self.totals = 500.00
