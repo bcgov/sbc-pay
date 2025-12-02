@@ -15,6 +15,7 @@
 
 from sqlalchemy import and_, exists, func, select
 from sqlalchemy.orm import column_property
+from sqlalchemy.orm.decl_api import declared_attr
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentMethod
@@ -22,10 +23,9 @@ from pay_api.models import Refund as RefundModel
 from pay_api.utils.enums import InvoiceStatus
 
 
-class InvoiceCompositeModel(InvoiceModel):
-    """This class is a composite of the Invoice and other additional information required for search results."""
-
-    latest_refund_subq = (
+def get_latest_refund_subq():
+    """Get the latest refund subquery."""
+    return (
         select(RefundModel.id.label("refund_id"), RefundModel.status.label("refund_status"))
         .where(RefundModel.invoice_id == InvoiceModel.id)
         .order_by(RefundModel.id.desc())
@@ -34,11 +34,22 @@ class InvoiceCompositeModel(InvoiceModel):
         .subquery()
     )
 
-    latest_refund_id_expr = select(latest_refund_subq.c.refund_id).scalar_subquery()
 
-    latest_refund_status_expr = select(latest_refund_subq.c.refund_status).scalar_subquery()
+def get_latest_refund_id_expr():
+    """Get the latest refund ID expression."""
+    latest_refund_subq = get_latest_refund_subq()
+    return select(latest_refund_subq.c.refund_id).scalar_subquery()
 
-    full_refundable_expr = (
+
+def get_latest_refund_status_expr():
+    """Get the latest refund status expression."""
+    latest_refund_subq = get_latest_refund_subq()
+    return select(latest_refund_subq.c.refund_status).scalar_subquery()
+
+
+def get_full_refundable_expr():
+    """Get the full refundable expression."""
+    return (
         exists()
         .where(
             and_(
@@ -49,7 +60,10 @@ class InvoiceCompositeModel(InvoiceModel):
         .label("full_refundable")
     )
 
-    partial_refundable_expr = (
+
+def get_partial_refundable_expr():
+    """Get the partial refundable expression."""
+    return (
         exists()
         .where(
             and_(
@@ -62,7 +76,26 @@ class InvoiceCompositeModel(InvoiceModel):
         .label("partial_refundable")
     )
 
-    latest_refund_id = column_property(latest_refund_id_expr)
-    latest_refund_status = column_property(latest_refund_status_expr)
-    full_refundable = column_property(full_refundable_expr)
-    partial_refundable = column_property(partial_refundable_expr)
+
+class InvoiceCompositeModel(InvoiceModel):
+    """This class is a composite of the Invoice and other additional information required for search results."""
+
+    @declared_attr
+    def latest_refund_id(self):
+        """Latest refund ID as a column property."""
+        return column_property(get_latest_refund_id_expr())
+
+    @declared_attr
+    def latest_refund_status(self):
+        """Latest refund status as a column property."""
+        return column_property(get_latest_refund_status_expr())
+
+    @declared_attr
+    def full_refundable(self):
+        """Full refundable indicator as a column property."""
+        return column_property(get_full_refundable_expr())
+
+    @declared_attr
+    def partial_refundable(self):
+        """Partial refundable indicator as a column property."""
+        return column_property(get_partial_refundable_expr())

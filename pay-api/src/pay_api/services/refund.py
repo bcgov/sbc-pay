@@ -362,6 +362,7 @@ class RefundService:
             return cls._complete_refund(invoice, refund, refund_partial_lines)
 
         refund.save()
+
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         product_recipients = get_product_refund_recipients(product_code=invoice.corp_type.product, refund=refund)
         if product_recipients:
@@ -376,7 +377,7 @@ class RefundService:
                 refund_amount=refund_amount,
                 invoice_id=invoice.id,
                 invoice_reference_number=invoice.references[0].invoice_number if len(invoice.references) > 0 else None,
-                url=f"{current_app.config.get('PAY_WEB_URL')}/refund-request/{invoice.id}",
+                url=f"{current_app.config.get('PAY_WEB_URL')}/transaction-view/{refund.invoice_id}/refund-request/{refund.id}",
             ).render_body(status=refund.status, is_for_client=False)
             send_email(product_recipients, subject, html_body)
 
@@ -503,7 +504,7 @@ class RefundService:
                 refund_amount=refund_total,
                 invoice_id=invoice.id,
                 invoice_reference_number=invoice.references[0].invoice_number if len(invoice.references) > 0 else None,
-                url=f"{current_app.config.get('PAY_WEB_URL')}/refund-request/{refund.id}",
+                url=f"{current_app.config.get('PAY_WEB_URL')}/transaction-view/{refund.invoice_id}/refund-request/{refund.id}",
             )
             staff_html_body = email_config.render_body(status=refund.status, is_for_client=False)
             send_email(
@@ -538,7 +539,9 @@ class RefundService:
             payment_line_items[partial_refund_line.payment_line_item_id].append(partial_refund_line)
 
         for line_item_id, line_items in payment_line_items.items():
+            line_item_model = PaymentLineItemModel.find_by_id(line_item_id)
             line_item_dto = PartialRefundLineDTO(
+                description=line_item_model.description,
                 payment_line_item_id=line_item_id,
                 statutory_fee_amount=Decimal(0),
                 future_effective_fee_amount=Decimal(0),

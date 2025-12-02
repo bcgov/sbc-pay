@@ -343,6 +343,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     full_refundable: bool | None
     latest_refund_id: int | None
     latest_refund_status: str | None
+    routing_slip: str | None
 
     @classmethod
     def from_row(
@@ -387,6 +388,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
             disbursement_date=row.disbursement_date,
             disbursement_reversal_date=row.disbursement_reversal_date,
             invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None,
+            routing_slip=getattr(row, "routing_slip", None),
             # refund fields that are optional, this might not be returned if not using the invoice composite model
             latest_refund_id=getattr(row, "latest_refund_id", None),
             latest_refund_status=getattr(row, "latest_refund_status", None),
@@ -405,4 +407,8 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     def dao_to_dict(cls, invoice_dao: Invoice) -> dict:
         """Convert from DAO to Schema dict."""
         invoice_dict = Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao))
+        if invoice_dao.payment_line_items:
+            line_items_schema = PaymentLineItemSchema(many=True)
+            invoice_dict["line_items"] = line_items_schema.dump(invoice_dao.payment_line_items)
+
         return invoice_dict
