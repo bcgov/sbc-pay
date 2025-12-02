@@ -37,13 +37,13 @@ from pay_api.models import (
 )
 from pay_api.models.payment import TransactionSearchParams
 from pay_api.models.search.invoice_composite_model import InvoiceCompositeModel
+from pay_api.models.statement import Statement
 from pay_api.services.auth import get_account_info_with_contact
-from pay_api.services.code import Code as CodeService
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.payment import PaymentReportInput
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
-from pay_api.utils.enums import Code, ContentType, InvoiceStatus, PaymentMethod, RefundStatus, StatementTemplate
+from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, RefundStatus, StatementTemplate
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
 from pay_api.utils.statement_dtos import (
@@ -55,7 +55,7 @@ from pay_api.utils.statement_dtos import (
     SummariesGroupedByPaymentMethodDTO,
 )
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date, get_local_formatted_date_time
+from pay_api.utils.util import get_local_formatted_date
 
 from .csv_service import CsvService
 from .report_service import ReportRequest, ReportService
@@ -438,7 +438,9 @@ class InvoiceSearch:
         return data
 
     @staticmethod
-    def search_all_purchase_history(auth_account_id: str, search_filter: dict, content_type: str):
+    def search_all_purchase_history(
+        auth_account_id: str, search_filter: dict, query_only: bool = False
+    ):
         """Return all results for the purchase history."""
         return InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
@@ -447,7 +449,7 @@ class InvoiceSearch:
                 page=0,
                 limit=0,
                 return_all=True,
-                query_only=content_type == ContentType.CSV.value,
+                query_only=query_only,
             )
         )
 
@@ -456,7 +458,9 @@ class InvoiceSearch:
         """Create payment report."""
         current_app.logger.debug(f"<create_payment_report {auth_account_id}")
 
-        results = InvoiceSearch.search_all_purchase_history(auth_account_id, search_filter, content_type)
+        results = InvoiceSearch.search_all_purchase_history(
+            auth_account_id, search_filter, query_only=True
+        )
 
         report_response = InvoiceSearch.generate_payment_report(
             PaymentReportInput(
@@ -552,7 +556,7 @@ class InvoiceSearch:
     def generate_statement_pdf_report(
         invoices_orm: list[Invoice],
         db_summaries: SummariesGroupedByPaymentMethodDTO,
-        statement: dict,
+        statement: Statement,
         statement_summary: dict,
         report_name: str,
         content_type: str,
@@ -561,7 +565,7 @@ class InvoiceSearch:
         """Generate PDF statement report using ORM objects and database summaries."""
         db_summaries = db_summaries.summaries
 
-        statement_to_date = parser.parse(statement.get("to_date"))
+        statement_to_date = statement.to_date
         account_info = get_account_info_with_contact(**kwargs)
 
         grouped_invoices = InvoiceSearch._group_invoices_by_payment_method(
@@ -575,7 +579,7 @@ class InvoiceSearch:
         totals_dto = StatementTotalsDTO.from_db_summaries(db_summaries)
 
         statement_summary_dto = StatementSummaryDTO.from_dict(statement_summary)
-        statement_dto = StatementContextDTO.from_dict(statement)
+        statement_dto = StatementContextDTO.from_statement(statement)
 
         context_dto = StatementPDFContextDTO(
             statement_summary=statement_summary_dto,
@@ -604,7 +608,7 @@ class InvoiceSearch:
     def _group_invoices_by_payment_method(
         invoices_orm: list,
         db_summaries: dict,
-        statement: dict,
+        statement: Statement,
         statement_summary: dict,
         statement_to_date: datetime,
     ) -> list[GroupedInvoicesDTO]:

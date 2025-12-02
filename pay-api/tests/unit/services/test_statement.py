@@ -17,9 +17,10 @@
 Test-Suite to ensure that the Statement Service is working as expected.
 """
 
+import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from unittest.mock import ANY, patch
+from unittest.mock import patch
 
 import pytz
 from dateutil.relativedelta import relativedelta
@@ -624,7 +625,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "notificationDate": None,
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
-                "statementTotal": 0.0,
+                "statementTotal": 0,
                 "duration": (
                     f"{get_statement_date_string(statement_from_date)} - "
                     f"{get_statement_date_string(statement_to_date)}"
@@ -632,7 +633,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             },
             "statementSummary": {
                 "cancelledTransactions": None,
-                "dueDate": get_statement_date_string(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
+                "dueDate": StatementService.calculate_due_date(statement_to_date.date()),  # pylint: disable=protected-access
                 "lastPadStatementPaidAmount": None,
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
@@ -833,7 +834,9 @@ def test_get_eft_statement_with_invoices(session):
             "groupedInvoices": [
                 {
                     "amountOwing": "400.00",
-                    "dueDate": get_statement_date_string(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
+                    "dueDate": (
+                        StatementService.calculate_due_date(statement_to_date.date())
+                    ),  # pylint: disable=protected-access
                     "due": "450.00",
                     "fees": "468.75",
                     "gst": "6.25",
@@ -848,8 +851,8 @@ def test_get_eft_statement_with_invoices(session):
                     "totals": "500.00",
                     "transactions": [
                         {
-                            "id": invoice_1.id,
-                            "createdOn": ANY,
+                            "invoiceId": invoice_1.id,
+                            "createdOn": "December 02, 2025",
                             "details": ["label value"],
                             "fee": "200.00",
                             "folio": "1234567890",
@@ -857,12 +860,12 @@ def test_get_eft_statement_with_invoices(session):
                             "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "OTANN",
+                                    "filingTypeCode": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees": 0.0,
-                                    "service_fees_gst": None,
-                                    "statutory_fees_gst": None,
+                                    "serviceFees": 0.0,
+                                    "serviceFeesGst": None,
+                                    "statutoryFeesGst": None,
                                     "total": 10.0,
                                 },
                             ],
@@ -876,8 +879,8 @@ def test_get_eft_statement_with_invoices(session):
                             "appliedCredits": None,
                         },
                         {
-                            "id": invoice_2.id,
-                            "createdOn": ANY,
+                            "invoiceId": invoice_2.id,
+                            "createdOn": "December 02, 2025",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -885,12 +888,12 @@ def test_get_eft_statement_with_invoices(session):
                             "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "OTANN",
+                                    "filingTypeCode": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees": 0.0,
-                                    "service_fees_gst": None,
-                                    "statutory_fees_gst": None,
+                                    "serviceFees": 0.0,
+                                    "serviceFeesGst": None,
+                                    "statutoryFeesGst": None,
                                     "total": 10.0,
                                 },
                             ],
@@ -904,8 +907,8 @@ def test_get_eft_statement_with_invoices(session):
                             "appliedCredits": None,
                         },
                         {
-                            "id": invoice_3.id,
-                            "createdOn": ANY,
+                            "invoiceId": invoice_3.id,
+                            "createdOn": "December 02, 2025",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -913,16 +916,16 @@ def test_get_eft_statement_with_invoices(session):
                             "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "OTANN",
+                                    "filingTypeCode": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees": 0.0,
-                                    "service_fees_gst": None,
-                                    "statutory_fees_gst": None,
+                                    "serviceFees": 0.0,
+                                    "serviceFeesGst": None,
+                                    "statutoryFeesGst": None,
                                     "total": 10.0,
                                 },
                             ],
-                            "paymentDate": get_statement_date_string(invoice_3.payment_date, "%b %d, %Y"),
+                            "paymentDate": get_statement_date_string(invoice_3.payment_date, "%B %d, %Y"),
                             "products": ["test"],
                             "refundDate": None,
                             "serviceFee": "0.00",
@@ -932,8 +935,8 @@ def test_get_eft_statement_with_invoices(session):
                             "appliedCredits": None,
                         },
                         {
-                            "id": invoice_4.id,
-                            "createdOn": ANY,
+                            "invoiceId": invoice_4.id,
+                            "createdOn": "December 02, 2025",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -941,16 +944,16 @@ def test_get_eft_statement_with_invoices(session):
                             "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "OTANN",
+                                    "filingTypeCode": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees": 0.0,
-                                    "service_fees_gst": None,
-                                    "statutory_fees_gst": None,
+                                    "serviceFees": 0.0,
+                                    "serviceFeesGst": None,
+                                    "statutoryFeesGst": None,
                                     "total": 10.0,
                                 },
                             ],
-                            "paymentDate": get_statement_date_string(invoice_4.payment_date, "%b %d, %Y"),
+                            "paymentDate": get_statement_date_string(invoice_4.payment_date, "%B %d, %Y"),
                             "products": ["test"],
                             "refundDate": None,
                             "serviceFee": "0.00",
@@ -960,8 +963,8 @@ def test_get_eft_statement_with_invoices(session):
                             "appliedCredits": None,
                         },
                         {
-                            "id": invoice_5.id,
-                            "createdOn": ANY,
+                            "invoiceId": invoice_5.id,
+                            "createdOn": "December 02, 2025",
                             "details": ["label value"],
                             "fee": "118.75",
                             "folio": "1234567890",
@@ -969,12 +972,12 @@ def test_get_eft_statement_with_invoices(session):
                             "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "GSTTEST",
+                                    "filingTypeCode": "GSTTEST",
                                     "gst": 6.25,
                                     "pst": 0.0,
-                                    "service_fees": 25.0,
-                                    "service_fees_gst": 1.25,
-                                    "statutory_fees_gst": 5.0,
+                                    "serviceFees": 25.0,
+                                    "serviceFeesGst": 1.25,
+                                    "statutoryFeesGst": 5.0,
                                     "total": 150.0,
                                 },
                             ],
@@ -1007,15 +1010,19 @@ def test_get_eft_statement_with_invoices(session):
                 "notificationDate": None,
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
-                "statementTotal": 500.0,
+                "statementTotal": "500.00",
             },
             "statementSummary": {
                 "cancelledTransactions": None,
-                "dueDate": get_statement_date_string(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
+                "dueDate": (
+                    StatementService.calculate_due_date(statement_to_date.date())
+                ),  # pylint: disable=protected-access
                 "lastPadStatementPaidAmount": None,
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": get_statement_date_string(invoice_3.payment_date, "%B %d, %Y"),
+                "latestStatementPaymentDate": (
+                    invoice_3.payment_date.date()
+                ),
             },
             # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {
@@ -1036,7 +1043,26 @@ def test_get_eft_statement_with_invoices(session):
             stream=True,
         )
 
-        mock_report.assert_called_with(expected_report_inputs)
+        call_args = mock_report.call_args[0][0]
+
+        assert call_args.report_name == expected_report_inputs.report_name
+        assert call_args.template_name == expected_report_inputs.template_name
+        assert call_args.populate_page_number == expected_report_inputs.populate_page_number
+        assert call_args.content_type == expected_report_inputs.content_type
+        assert call_args.stream == expected_report_inputs.stream
+
+        # For template_vars, convert to JSON strings for comparison (ignores key order)
+        expected_json = json.dumps(
+            expected_report_inputs.template_vars,
+            sort_keys=True,
+            default=str,
+        )
+        actual_json = json.dumps(
+            call_args.template_vars,
+            sort_keys=True,
+            default=str,
+        )
+        assert actual_json == expected_json
 
 
 def localize_date(date: datetime):

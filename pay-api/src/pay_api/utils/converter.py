@@ -4,14 +4,22 @@ import re
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, NewType
+from typing import Any
 
 import cattrs
 from attrs import fields, has
 from cattrs.gen import make_dict_structure_fn, make_dict_unstructure_fn, override
+from dateutil import parser
 
-CurrencyStr = NewType("CurrencyStr", Decimal)
-FullMonthDateStr = NewType("FullMonthDateStr", str)  # "%B %d, %Y" format
+
+class CurrencyStr(Decimal):
+    """Formatted currency string type that extends Decimal."""
+    pass
+
+
+class FullMonthDateStr(str):
+    """Formatted date string type in '%B %d, %Y' format."""
+    pass
 
 
 class Converter(cattrs.Converter):
@@ -29,10 +37,9 @@ class Converter(cattrs.Converter):
         self.register_structure_hook(Decimal, self._structure_decimal)
         self.register_unstructure_hook(Decimal, self._unstructure_decimal)
         self.register_unstructure_hook(datetime, self._unstructure_datetime)
-        self.register_structure_hook(datetime, self._structure_datetime())
-        self.register_structure_hook(CurrencyStr, self._structure_formatted_currency)
+        self.register_structure_hook(CurrencyStr, self.structure_formatted_currency)
         self.register_unstructure_hook(CurrencyStr, self._unstructure_formatted_currency)
-        self.register_structure_hook(FullMonthDateStr, self._structure_month_date_year_str)
+        self.register_structure_hook(FullMonthDateStr, self.structure_month_date_year_str)
         self.register_unstructure_hook(FullMonthDateStr, self._unstructure_statement_date_str)
         # Note we may need a hook to handle str = None, sometimes a str set to None would become 'None'
 
@@ -113,31 +120,42 @@ class Converter(cattrs.Converter):
         return new_data
 
     @staticmethod
-    def _structure_formatted_currency(obj: Any, cls: type) -> CurrencyStr:  # noqa: ARG004
+    def structure_formatted_currency(obj: Any, cls: type) -> CurrencyStr:  # noqa: ARG004
         """Convert various types to CurrencyStr."""
+        if obj is None:
+            return None
+        if isinstance(obj, CurrencyStr):
+            return obj
         if isinstance(obj, int | float | str):
-            return CurrencyStr(Decimal(str(obj)))
+            return CurrencyStr(str(obj))
         if isinstance(obj, Decimal):
-            return CurrencyStr(obj)
-        return CurrencyStr(Decimal(0))
+            return CurrencyStr(str(obj))
+        return CurrencyStr("0")
 
     @staticmethod
     def _unstructure_formatted_currency(obj: CurrencyStr) -> str:
         """Convert CurrencyStr to formatted string."""
-        from pay_api.utils.util import get_statement_currency_string
-
-        return get_statement_currency_string(obj)
+        try:
+            return f"{float(obj):,.2f}"
+        except (TypeError, ValueError):
+            return "0.00"
 
     @staticmethod
-    def _structure_month_date_year_str(obj: Any, cls: type) -> FullMonthDateStr:  # noqa: ARG004
+    def structure_month_date_year_str(obj: Any, cls: type) -> FullMonthDateStr:  # noqa: ARG004
         """Convert various types to FullMonthDateStr (%B %d, %Y format)."""
-        if isinstance(obj, str):
-            return FullMonthDateStr(obj)
         if obj is None:
             return None
-        from pay_api.utils.util import get_statement_date_string
+        if isinstance(obj, FullMonthDateStr):
+            return obj
 
-        return FullMonthDateStr(get_statement_date_string(obj, "%B %d, %Y"))
+        if isinstance(obj, str):
+            return FullMonthDateStr(obj)
+
+        try:
+            dt = obj if hasattr(obj, "strftime") else parser.parse(obj)
+            return FullMonthDateStr(dt.strftime("%B %d, %Y"))
+        except (ValueError, TypeError):
+            return FullMonthDateStr("")
 
     @staticmethod
     def _unstructure_statement_date_str(obj: FullMonthDateStr) -> str:

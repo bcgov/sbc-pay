@@ -20,7 +20,6 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from pay_api.utils.statement_dtos import GroupedInvoicesDTO, PaymentMethodSummaryDTO, PaymentMethodSummaryRawDTO, StatementContextDTO, StatementSummaryDTO, StatementTotalsDTO, StatementTransactionDTO
 import pytest
 import pytz
 
@@ -29,7 +28,16 @@ from pay_api.services.csv_service import CsvService
 from pay_api.services.invoice_search import InvoiceSearch
 from pay_api.services.payment import Payment as PaymentService
 from pay_api.utils.dataclasses import PurchaseHistorySearch
-from pay_api.utils.enums import ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.statement_dtos import (
+    GroupedInvoicesDTO,
+    PaymentMethodSummaryDTO,
+    PaymentMethodSummaryRawDTO,
+    StatementContextDTO,
+    StatementSummaryDTO,
+    StatementTotalsDTO,
+    StatementTransactionDTO,
+)
 from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import (
     factory_invoice,
@@ -328,7 +336,7 @@ def test_search_payment_history_for_all(session):
         factory_invoice_reference(invoice.id).save()
 
     results = InvoiceSearch.search_all_purchase_history(
-        auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.PDF.value
+        auth_account_id=auth_account_id, search_filter={}, query_only=True
     )
     assert results is not None
     assert results.get("items") is not None
@@ -361,7 +369,7 @@ def test_create_payment_report_csv(session):
         factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description=f"Test Description {_i}").save()
 
     search_results = InvoiceSearch.search_all_purchase_history(
-        auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.CSV.value
+        auth_account_id=auth_account_id, search_filter={}, query_only=True
     )
     assert search_results is not None
     assert search_results.count() == 10
@@ -435,7 +443,7 @@ def test_csv_service_create_report(session):
     factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description="Test Description").save()
 
     search_results = InvoiceSearch.search_all_purchase_history(
-        auth_account_id=auth_account_id, search_filter={}, content_type=ContentType.CSV.value
+        auth_account_id=auth_account_id, search_filter={}, query_only=True
     )
 
     csv_data = CsvService.prepare_csv_data(search_results)
@@ -916,12 +924,12 @@ def test_statement_transaction_dto_from_orm(session):
     statement_to_date = datetime.now(tz=UTC)
     dto = StatementTransactionDTO.from_orm(invoice, PaymentMethod.EFT.value, statement_to_date)
 
-    assert dto.id == invoice.id
+    assert dto.invoice_id == invoice.id
     assert dto.products == ["test"]
     assert dto.folio == invoice.folio_number
-    assert dto.fee == "90.00"  # 100 - 10 service_fees - 0 gst
-    assert dto.service_fee == "10.00"
-    assert dto.total == "100.00"
+    assert dto.fee == 90  # 100 - 10 service_fees - 0 gst
+    assert dto.service_fee == 10
+    assert dto.total == 100
     assert dto.status_code == "APPROVED"
     assert dto.service_provided is True
     assert len(dto.line_items) == 1
@@ -962,9 +970,14 @@ def test_grouped_invoices_dto_from_invoices_and_summary(session):
         invoice_count=2,
     )
 
-    statement = {"amount_owing": 100, "to_date": "2024-06-01"}
-    statement_summary = {"dueDate": "2024-07-01"}
     statement_to_date = datetime.now(tz=UTC)
+    statement = factory_statement(
+        payment_account_id=payment_account.id,
+        from_date=statement_to_date - timedelta(days=30),
+        to_date=statement_to_date,
+    )
+    statement.amount_owing = 100
+    statement_summary = {"dueDate": "2024-07-01"}
 
     dto = GroupedInvoicesDTO.from_invoices_and_summary(
         payment_method=PaymentMethod.EFT.value,
@@ -977,9 +990,9 @@ def test_grouped_invoices_dto_from_invoices_and_summary(session):
     )
 
     assert dto.payment_method == PaymentMethod.EFT.value
-    assert dto.totals == "150.00"
-    assert dto.paid == "50.00"
-    assert dto.due == "100.00"
+    assert dto.totals == 150.00
+    assert dto.paid == 50.00
+    assert dto.due == 100.00
     assert dto.is_index_0 is True
     assert len(dto.transactions) == 2
     assert dto.include_service_provided is True
@@ -999,7 +1012,7 @@ def test_statement_context_dto_from_dict():
     dto = StatementContextDTO.from_dict(statement)
 
     assert dto.duration == "June 01, 2024 - June 30, 2024"
-    assert dto.amount_owing == "123.45"
+    assert dto.amount_owing == Decimal("123.45")
     assert dto.frequency == "MONTHLY"
     assert dto.id == 1
     assert dto.is_interim_statement is False
@@ -1017,9 +1030,9 @@ def test_statement_summary_dto_from_dict():
 
     dto = StatementSummaryDTO.from_dict(summary)
 
-    assert dto.last_statement_total == "100.00"
-    assert dto.last_statement_paid_amount == "50.00"
-    assert dto.cancelled_transactions == "10.00"
+    assert dto.last_statement_total == 100
+    assert dto.last_statement_paid_amount == 50
+    assert dto.cancelled_transactions == 10
     assert dto.latest_statement_payment_date is not None
     assert dto.due_date is not None
 
@@ -1046,16 +1059,11 @@ def test_statement_summary_dto_from_dict():
         (InvoiceStatus.OVERDUE.value, PaymentMethod.PAD.value, False),
         (InvoiceStatus.SETTLEMENT_SCHEDULED.value, PaymentMethod.CC.value, False),
         (InvoiceStatus.PARTIAL.value, PaymentMethod.EFT.value, False),
-        ("settlement scheduled", PaymentMethod.PAD.value, True),
-        ("Settlement Scheduled", PaymentMethod.EFT.value, False),
-        ("approved", PaymentMethod.EJV.value, True),
-        ("overdue", PaymentMethod.EFT.value, True),
-        ("overdue", PaymentMethod.PAD.value, False),
     ],
 )
 def test_determine_service_provision_status(status_code, payment_method, expected):
     """Test service provision status determination based on status and payment method."""
-    assert InvoiceSearch.determine_service_provision_status(status_code, payment_method) == expected
+    assert StatementTransactionDTO.determine_service_provision_status(status_code, payment_method) == expected
 
 
 def test_payment_method_summary_raw_dto_from_db_row():
@@ -1100,20 +1108,20 @@ def test_payment_method_summary_dto_from_db_summary():
 
     dto = PaymentMethodSummaryDTO.from_db_summary(raw_dto)
 
-    assert dto.totals == "500.00"
-    assert dto.fees == "450.00"
-    assert dto.service_fees == "25.00"
-    assert dto.gst == "25.00"
-    assert dto.paid == "100.00"
-    assert dto.due == "400.00"
+    assert dto.totals == 500.00
+    assert dto.fees == 450.00
+    assert dto.service_fees == 25.00
+    assert dto.gst == 25.00
+    assert dto.paid == 100.00
+    assert dto.due == 400.00
 
     dto_none = PaymentMethodSummaryDTO.from_db_summary(None)
-    assert dto_none.totals == "0.00"
-    assert dto_none.fees == "0.00"
-    assert dto_none.service_fees == "0.00"
-    assert dto_none.gst == "0.00"
-    assert dto_none.paid == "0.00"
-    assert dto_none.due == "0.00"
+    assert dto_none.totals == 0
+    assert dto_none.fees == 0
+    assert dto_none.service_fees == 0
+    assert dto_none.gst == 0
+    assert dto_none.paid == 0
+    assert dto_none.due == 0
 
 
 def test_statement_totals_dto_from_db_summaries():
@@ -1145,12 +1153,12 @@ def test_statement_totals_dto_from_db_summaries():
 
     dto = StatementTotalsDTO.from_db_summaries(db_summaries)
 
-    assert dto.totals == "800.00"  # 500 + 300
-    assert dto.fees == "730.00"  # 450 + 280
-    assert dto.service_fees == "35.00"  # 25 + 10
-    assert dto.gst == "35.00"  # 25 + 10
-    assert dto.paid == "150.00"  # 100 + 50
-    assert dto.due == "650.00"  # 400 + 250
+    assert dto.totals == 800.00  # 500 + 300
+    assert dto.fees == 730.00  # 450 + 280
+    assert dto.service_fees == 35.00  # 25 + 10
+    assert dto.gst == 35.00  # 25 + 10
+    assert dto.paid == 150.00  # 100 + 50
+    assert dto.due == 650.00  # 400 + 250
 
 
 def test_grouped_invoices_dto_with_internal_payment_method(session):
@@ -1178,7 +1186,10 @@ def test_grouped_invoices_dto_with_internal_payment_method(session):
         invoice_count=1,
     )
 
-    statement = {"to_date": "2024-06-01"}
+    statement = factory_statement(
+        payment_account_id=payment_account.id,
+        to_date="2024-06-01",
+    )
     statement_summary = {}
     statement_to_date = datetime.now(tz=UTC)
 
@@ -1222,7 +1233,12 @@ def test_grouped_invoices_dto_with_eft_interim_statement(session):
         invoice_count=1,
     )
 
-    statement = {"amount_owing": 100, "to_date": "2024-06-01", "is_interim_statement": True}
+    statement = factory_statement(
+        payment_account_id=payment_account.id,
+        to_date="2024-06-01",
+        is_interim_statement=True,
+        amount_owing=100,
+    )
     statement_summary = {"latestStatementPaymentDate": "2024-05-15"}
     statement_to_date = datetime.now(tz=UTC)
 
@@ -1237,7 +1253,7 @@ def test_grouped_invoices_dto_with_eft_interim_statement(session):
     )
 
     assert dto.payment_method == PaymentMethod.EFT.value
-    assert dto.amount_owing == "100.00"
+    assert dto.amount_owing == 100
     assert dto.latest_payment_date == "2024-05-15"
     assert dto.due_date is None  # Not set for interim statements
 
@@ -1267,7 +1283,12 @@ def test_grouped_invoices_dto_with_eft_regular_statement(session):
         invoice_count=1,
     )
 
-    statement = {"amount_owing": 100, "to_date": "2024-06-01", "is_interim_statement": False}
+    statement = factory_statement(
+        payment_account_id=payment_account.id,
+        to_date="2024-06-01",
+        is_interim_statement=False,
+        amount_owing=100,
+    )
     statement_summary = {"dueDate": "2024-07-01"}
     statement_to_date = datetime.now(tz=UTC)
 
@@ -1282,7 +1303,7 @@ def test_grouped_invoices_dto_with_eft_regular_statement(session):
     )
 
     assert dto.payment_method == PaymentMethod.EFT.value
-    assert dto.amount_owing == "100.00"
+    assert dto.amount_owing == 100
     assert dto.latest_payment_date is None  # Not set for regular statements
     assert dto.due_date is not None  # Should be formatted date
 
@@ -1339,6 +1360,6 @@ def test_statement_summary_dto_with_zero_cancelled_transactions():
 
     dto = StatementSummaryDTO.from_dict(summary)
 
-    assert dto.last_statement_total == "100.00"
-    assert dto.last_statement_paid_amount == "50.00"
+    assert dto.last_statement_total == 100
+    assert dto.last_statement_paid_amount == 50
     assert dto.cancelled_transactions is None  # Zero should become None

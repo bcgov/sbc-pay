@@ -21,14 +21,38 @@ from __future__ import annotations
 from datetime import datetime  # noqa: TC001 TC003
 from decimal import Decimal  # noqa: TC001 TC003
 
-from attrs import asdict, define, fields
+from attrs import define, field, fields
 
 from pay_api.models.applied_credits import AppliedCreditsSearchModel
 from pay_api.models.invoice import InvoiceSearchModel  # noqa: TC001
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
+from pay_api.models.statement import Statement  # noqa: TC001 TC003
 from pay_api.utils.converter import Converter, CurrencyStr, FullMonthDateStr
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
 from pay_api.utils.serializable import Serializable
+from pay_api.utils.util import get_statement_date_string
+
+
+def _to_currency_str(value):
+    """Auto-convert to CurrencyStr.
+
+    Field converter bridges the gap between raw data types (Decimal, int, float)
+    and display-specific types (CurrencyStr) at object creation time.
+    """
+    return value if isinstance(value, CurrencyStr) else Converter().structure_formatted_currency(value, CurrencyStr)
+
+
+def _to_full_month_date_str(value):
+    """Auto-convert to FullMonthDateStr.
+
+    Field converter bridges the gap between raw data types (datetime, Decimal)
+    and display-specific types (FullMonthDateStr) at object creation time.
+    """
+    return (
+        value
+        if isinstance(value, FullMonthDateStr)
+        else Converter().structure_month_date_year_str(value, FullMonthDateStr)
+    )
 
 
 @define
@@ -38,20 +62,20 @@ class StatementTransactionDTO(Serializable):
     Represents a formatted transaction row with all display-ready values.
     """
 
-    id: int
+    invoice_id: int
     products: list[str]
     details: list[str]
     folio: str
-    created_on: FullMonthDateStr
-    fee: CurrencyStr
-    service_fee: CurrencyStr
-    gst: CurrencyStr
-    total: CurrencyStr
     status_code: str
     service_provided: bool
     line_items: list[PaymentLineItemSearchModel]
-    payment_date: FullMonthDateStr | None = None
-    refund_date: FullMonthDateStr | None = None
+    created_on: FullMonthDateStr = field(converter=_to_full_month_date_str)
+    fee: CurrencyStr = field(converter=_to_currency_str)
+    service_fee: CurrencyStr = field(converter=_to_currency_str)
+    gst: CurrencyStr = field(converter=_to_currency_str)
+    total: CurrencyStr = field(converter=_to_currency_str)
+    payment_date: FullMonthDateStr | None = field(default=None, converter=_to_full_month_date_str)
+    refund_date: FullMonthDateStr | None = field(default=None, converter=_to_full_month_date_str)
     applied_credits: list[AppliedCreditsSearchModel] | None = None
 
     @staticmethod
@@ -104,39 +128,35 @@ class StatementTransactionDTO(Serializable):
     ) -> StatementTransactionDTO:
         """Create DTO from ORM invoice object for PDF statement."""
         products = [item.description for item in invoice.payment_line_items]
-
         details = [f"{d.get('label')} {d.get('value')}" for d in (invoice.details or [])]
-
-        # statutory fee
         fee = invoice.total - invoice.service_fees - (invoice.gst or 0)
-
         status_code = invoice.invoice_status_code
-
         service_provided = cls.determine_service_provision_status(status_code, payment_method)
-
         line_items = [PaymentLineItemSearchModel.from_row(item) for item in invoice.payment_line_items]
 
         applied_credits = None
         if invoice.applied_credits:
-            filtered_credits = [c for c in invoice.applied_credits if c.created_on <= statement_to_date]
+            # Convert date to datetime for comparison
+            statement_to_datetime = datetime.combine(statement_to_date, datetime.max.time())
+            filtered_credits = [c for c in invoice.applied_credits if c.created_on <= statement_to_datetime]
             if filtered_credits:
                 applied_credits = [AppliedCreditsSearchModel.from_row(c) for c in filtered_credits]
 
         return cls(
-            id=invoice.id,
+            invoice_id=invoice.id,
             products=products,
             details=details,
             folio=invoice.folio_number or "-",
-            created_on=Converter().structure(invoice.created_on, FullMonthDateStr),
-            fee=Converter().structure(fee, CurrencyStr),
-            service_fee=Converter().structure(invoice.service_fees, CurrencyStr),
-            gst=Converter().structure(invoice.gst, CurrencyStr),
-            total=Converter().structure(invoice.total, CurrencyStr),
+            created_on=invoice.created_on,
+            fee=fee,
+            service_fee=invoice.service_fees,
+            gst=invoice.gst,
+            total=invoice.total,
             status_code=status_code,
             service_provided=service_provided,
             line_items=line_items,
-            payment_date=Converter().structure(invoice.payment_date, FullMonthDateStr),
-            refund_date=Converter().structure(invoice.refund_date, FullMonthDateStr),
+            payment_date=invoice.payment_date,
+            refund_date=invoice.refund_date,
             applied_credits=applied_credits,
         )
 
@@ -145,17 +165,33 @@ class StatementTransactionDTO(Serializable):
 class PaymentMethodSummaryDTO(Serializable):
     """DTO for payment method summary totals in PDF statement."""
 
-    totals: CurrencyStr
-    fees: CurrencyStr
-    service_fees: CurrencyStr
-    gst: CurrencyStr
-    paid: CurrencyStr
-    due: CurrencyStr
+    totals: CurrencyStr = field(converter=_to_currency_str)
+    fees: CurrencyStr = field(converter=_to_currency_str)
+    service_fees: CurrencyStr = field(converter=_to_currency_str)
+    gst: CurrencyStr = field(converter=_to_currency_str)
+    paid: CurrencyStr = field(converter=_to_currency_str)
+    due: CurrencyStr = field(converter=_to_currency_str)
 
     @classmethod
     def from_db_summary(cls, db_summary: PaymentMethodSummaryRawDTO) -> PaymentMethodSummaryDTO:
         """Create from database aggregation summary for PDF statement."""
-        return Converter().structure(asdict(db_summary), cls)
+        if db_summary is None:
+            return cls(
+                totals=0.00,
+                fees=0.00,
+                service_fees=0.00,
+                gst=0.00,
+                paid=0.00,
+                due=0.00,
+            )
+        return cls(
+            totals=db_summary.totals,
+            fees=db_summary.fees,
+            service_fees=db_summary.service_fees,
+            gst=db_summary.gst,
+            paid=db_summary.paid,
+            due=db_summary.due,
+        )
 
 
 @define
@@ -208,22 +244,22 @@ class GroupedInvoicesDTO(Serializable):
     """DTO for invoices grouped by payment method in PDF statement."""
 
     payment_method: str
-    totals: CurrencyStr
-    fees: CurrencyStr
-    service_fees: CurrencyStr
-    gst: CurrencyStr
-    paid: CurrencyStr
-    due: CurrencyStr
+    totals: CurrencyStr = field(converter=_to_currency_str)
+    fees: CurrencyStr = field(converter=_to_currency_str)
+    service_fees: CurrencyStr = field(converter=_to_currency_str)
+    gst: CurrencyStr = field(converter=_to_currency_str)
+    paid: CurrencyStr = field(converter=_to_currency_str)
+    due: CurrencyStr = field(converter=_to_currency_str)
     transactions: list[StatementTransactionDTO]
     is_index_0: bool
     statement_header_text: str = None
     include_service_provided: bool = False
     # EFT-specific fields
-    amount_owing: CurrencyStr = None
-    latest_payment_date: str = None
-    due_date: str = None
+    amount_owing: CurrencyStr | None = field(default=None, converter=_to_currency_str)
+    latest_payment_date: str | None = None
+    due_date: str | None = None
     # INTERNAL-specific fields
-    is_staff_payment: bool = None
+    is_staff_payment: bool | None = None
 
     @classmethod
     def from_invoices_and_summary(
@@ -231,7 +267,7 @@ class GroupedInvoicesDTO(Serializable):
         payment_method: str,
         invoices_orm: list[InvoiceSearchModel],
         db_summary: PaymentMethodSummaryRawDTO,
-        statement: dict,
+        statement: Statement,
         statement_summary: dict,
         statement_to_date: datetime,
         is_first: bool = False,
@@ -250,7 +286,7 @@ class GroupedInvoicesDTO(Serializable):
         if payment_method == PaymentMethod.INTERNAL.value:
             is_staff_payment = any(not hasattr(inv, "routing_slip") or inv.routing_slip is None for inv in invoices_orm)
             statement_header_text = (
-                StatementTitles["INTERNAL_STAFF"].value if is_staff_payment else StatementTitles[payment_method].value
+                StatementTitles.INTERNAL_STAFF.value if is_staff_payment else StatementTitles[payment_method].value
             )
         else:
             statement_header_text = StatementTitles[payment_method].value
@@ -260,10 +296,10 @@ class GroupedInvoicesDTO(Serializable):
         latest_payment_date = None
         due_date = None
         if payment_method == PaymentMethod.EFT.value:
-            amount_owing = statement.get("amount_owing", 0.0)
-            if statement.get("is_interim_statement") and statement_summary:
+            amount_owing = statement.amount_owing
+            if statement.is_interim_statement and statement_summary:
                 latest_payment_date = statement_summary.get("latestStatementPaymentDate")
-            elif not statement.get("is_interim_statement") and statement_summary:
+            elif not statement.is_interim_statement and statement_summary:
                 due_date = statement_summary.get("dueDate")
 
         return cls(
@@ -289,12 +325,12 @@ class GroupedInvoicesDTO(Serializable):
 class StatementTotalsDTO(Serializable):
     """DTO for overall statement totals across all payment methods in PDF statement."""
 
-    fees: CurrencyStr
-    service_fees: CurrencyStr
-    gst: CurrencyStr
-    totals: CurrencyStr
-    paid: CurrencyStr
-    due: CurrencyStr
+    fees: CurrencyStr = field(converter=_to_currency_str)
+    service_fees: CurrencyStr = field(converter=_to_currency_str)
+    gst: CurrencyStr = field(converter=_to_currency_str)
+    totals: CurrencyStr = field(converter=_to_currency_str)
+    paid: CurrencyStr = field(converter=_to_currency_str)
+    due: CurrencyStr = field(converter=_to_currency_str)
 
     @classmethod
     def from_db_summaries(cls, db_summaries: dict[str, PaymentMethodSummaryRawDTO]) -> StatementTotalsDTO:
@@ -302,15 +338,13 @@ class StatementTotalsDTO(Serializable):
 
         db_summaries: Dict with payment_method as key
         """
-        converter = Converter()
-        instance = cls.__new__(cls)
-
-        for field in fields(cls):
-            name = field.name
+        totals_dict = {}
+        for field_ in fields(cls):
+            name = field_.name
             total = sum(getattr(s, name) for s in db_summaries.values())
-            setattr(instance, name, converter.structure(total, CurrencyStr))
+            totals_dict[name] = total
 
-        return instance
+        return cls(**totals_dict)
 
 
 @define
@@ -318,7 +352,7 @@ class StatementContextDTO(Serializable):
     """DTO for statement metadata in PDF rendering."""
 
     duration: str | None = None
-    amount_owing: CurrencyStr | None = None
+    amount_owing: CurrencyStr | None = field(default=None, converter=_to_currency_str)
     from_date: FullMonthDateStr | None = None
     to_date: FullMonthDateStr | None = None
     created_on: FullMonthDateStr | None = None
@@ -336,12 +370,53 @@ class StatementContextDTO(Serializable):
     def _compute_duration(from_date: str | None, to_date: str | None, frequency: str) -> str | None:
         """Compute duration string based on dates and frequency."""
         if frequency == StatementFrequency.DAILY.value and from_date:
-            return from_date
+            formatted_date = get_statement_date_string(from_date) if from_date else from_date
+            return formatted_date
         if from_date and to_date:
-            return f"{from_date} - {to_date}"
+            from_formatted = get_statement_date_string(from_date) if from_date else from_date
+            to_formatted = get_statement_date_string(to_date) if to_date else to_date
+            return f"{from_formatted} - {to_formatted}"
         if from_date:
-            return from_date
+            return get_statement_date_string(from_date) if from_date else from_date
         return None
+
+    @classmethod
+    def from_statement(cls, statement) -> StatementContextDTO:
+        """Create DTO from Statement object."""
+        if not statement:
+            return None
+
+        # convert need here for duration date string
+        from_date_str = get_statement_date_string(statement.from_date) if statement.from_date else None
+        to_date_str = get_statement_date_string(statement.to_date) if statement.to_date else None
+        created_on_str = get_statement_date_string(statement.created_on) if statement.created_on else None
+        frequency = statement.frequency or ""
+
+        duration = cls._compute_duration(from_date_str, to_date_str, frequency)
+
+        # Convert the comma-separated payment_methods string (e.g., "EFT,PAD") into a list.
+        # The DTO expects a list[str], and without this conversion the Converter in converter.py
+        # would treat the string as an iterable and split it into individual characters
+        payment_methods = None
+        if statement.payment_methods:
+            payment_methods = [m.strip() for m in statement.payment_methods.split(",") if m.strip()]
+
+        # Directly assign formatted string values
+        return cls(
+            duration=duration,
+            amount_owing=statement.amount_owing,
+            from_date=from_date_str,
+            to_date=to_date_str,
+            created_on=created_on_str,
+            frequency=frequency,
+            id=statement.id,
+            is_interim_statement=statement.is_interim_statement,
+            overdue_notification_date=statement.overdue_notification_date,
+            notification_date=statement.notification_date,
+            payment_methods=payment_methods,
+            statement_total=statement.statement_total,
+            is_overdue=statement.is_overdue,
+        )
 
     @classmethod
     def from_dict(cls, statement: dict) -> StatementContextDTO:
@@ -355,13 +430,12 @@ class StatementContextDTO(Serializable):
 
         duration = cls._compute_duration(from_date, to_date, frequency)
 
-        converter = Converter()
         return cls(
             duration=duration,
-            amount_owing=converter.structure(statement.get("amount_owing"), CurrencyStr),
-            from_date=converter.structure(from_date, FullMonthDateStr),
-            to_date=converter.structure(to_date, FullMonthDateStr),
-            created_on=converter.structure(statement.get("created_on"), FullMonthDateStr),
+            amount_owing=statement.get("amount_owing"),
+            from_date=from_date,
+            to_date=to_date,
+            created_on=statement.get("created_on"),
             frequency=frequency,
             id=statement.get("id"),
             is_interim_statement=statement.get("is_interim_statement"),
@@ -377,13 +451,12 @@ class StatementContextDTO(Serializable):
 class StatementSummaryDTO(Serializable):
     """DTO for statement summary in PDF rendering."""
 
-    last_statement_total: CurrencyStr | None = None
-    last_statement_paid_amount: CurrencyStr | None = None
-    cancelled_transactions: CurrencyStr | None = None
+    last_statement_total: CurrencyStr = field(converter=_to_currency_str)
+    last_statement_paid_amount: CurrencyStr = field(converter=_to_currency_str)
+    cancelled_transactions: CurrencyStr | None = field(default=None, converter=_to_currency_str)
+    last_pad_statement_paid_amount: CurrencyStr | None = field(default=None, converter=_to_currency_str)
     latest_statement_payment_date: FullMonthDateStr | None = None
     due_date: FullMonthDateStr | None = None
-    # Additional fields that might be in statement_summary
-    last_pad_statement_paid_amount: CurrencyStr | None = None
 
     @classmethod
     def from_dict(cls, statement_summary: dict) -> StatementSummaryDTO:
@@ -391,10 +464,19 @@ class StatementSummaryDTO(Serializable):
         if not statement_summary:
             return None
 
-        converter = Converter()
-        dto = converter.structure(statement_summary, cls)
+        # Handle zero cancelled transactions - convert to None
+        cancelled_transactions = statement_summary.get("cancelledTransactions")
+        if cancelled_transactions == 0:
+            cancelled_transactions = None
 
-        return dto
+        return cls(
+            last_statement_total=statement_summary.get("lastStatementTotal"),
+            last_statement_paid_amount=statement_summary.get("lastStatementPaidAmount"),
+            cancelled_transactions=cancelled_transactions,
+            latest_statement_payment_date=statement_summary.get("latestStatementPaymentDate"),
+            due_date=statement_summary.get("dueDate"),
+            last_pad_statement_paid_amount=statement_summary.get("lastPadStatementPaidAmount"),
+        )
 
 
 @define

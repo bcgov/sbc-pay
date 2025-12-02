@@ -53,10 +53,7 @@ from pay_api.utils.enums import (
     StatementFrequency,
     StatementTemplate,
 )
-from pay_api.utils.statement_dtos import (
-    PaymentMethodSummaryRawDTO,
-    SummariesGroupedByPaymentMethodDTO,
-)
+from pay_api.utils.statement_dtos import PaymentMethodSummaryRawDTO, SummariesGroupedByPaymentMethodDTO
 from pay_api.utils.util import get_first_and_last_of_frequency, get_local_time
 
 from .invoice import Invoice
@@ -436,20 +433,14 @@ class Statement:  # pylint:disable=too-many-public-methods
         statement_dao: StatementModel = Statement.find_by_id(statement_id)
         Statement.populate_overdue_from_invoices([statement_dao])
 
-        statement_svc = Statement()
-        statement_svc._dao = statement_dao  # pylint: disable=protected-access
-        statement = statement_svc.asdict()
-
-        from_date_string: str = statement_svc.from_date.strftime(DT_SHORT_FORMAT)
-        to_date_string: str = statement_svc.to_date.strftime(DT_SHORT_FORMAT)
-        statement["from_date"] = from_date_string
-        statement["to_date"] = to_date_string
-        statement_to_date = statement_svc.to_date
+        from_date_string: str = statement_dao.from_date.strftime(DT_SHORT_FORMAT)
+        to_date_string: str = statement_dao.to_date.strftime(DT_SHORT_FORMAT)
+        statement_to_date = statement_dao.to_date
 
         is_pdf = content_type == ContentType.PDF.value
         extension = "pdf" if is_pdf else "csv"
 
-        if statement_svc.frequency == StatementFrequency.DAILY.value:
+        if statement_dao.frequency == StatementFrequency.DAILY.value:
             report_name = f"{report_name}-{from_date_string}.{extension}"
         else:
             report_name = f"{report_name}-{from_date_string}-to-{to_date_string}.{extension}"
@@ -467,13 +458,19 @@ class Statement:  # pylint:disable=too-many-public-methods
             report_response = InvoiceSearch.generate_statement_pdf_report(
                 invoices_orm=statement_purchases,
                 db_summaries=db_summaries,
-                statement=statement,
+                statement=statement_dao,
                 statement_summary=summary,
                 report_name=report_name,
                 content_type=content_type,
                 auth=kwargs.get("auth", None),
             )
         else:
+            statement_svc = Statement()
+            statement_svc._dao = statement_dao  # pylint: disable=protected-access
+            statement_dict = statement_svc.asdict()
+            statement_dict["from_date"] = from_date_string
+            statement_dict["to_date"] = to_date_string
+
             result_items = statement_purchases
             report_inputs = PaymentReportInput(
                 content_type=content_type,
@@ -482,7 +479,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                 results=result_items,
             )
             report_response = InvoiceSearch.generate_payment_report(
-                report_inputs, auth=kwargs.get("auth", None), statement=statement
+                report_inputs, auth=kwargs.get("auth", None), statement=statement_dict
             )
 
         current_app.logger.debug(">get_statement_report")
