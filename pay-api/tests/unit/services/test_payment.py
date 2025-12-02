@@ -1012,7 +1012,7 @@ def test_statement_context_dto_from_dict():
     dto = StatementContextDTO.from_dict(statement)
 
     assert dto.duration == "June 01, 2024 - June 30, 2024"
-    assert dto.amount_owing == Decimal("123.45")
+    assert dto.amount_owing == 123.45
     assert dto.frequency == "MONTHLY"
     assert dto.id == 1
     assert dto.is_interim_statement is False

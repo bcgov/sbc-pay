@@ -37,6 +37,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
+from pay_api.utils.converter import FullMonthDateStr
 from pay_api.utils.enums import (
     ActivityAction,
     ContentType,
@@ -659,6 +660,7 @@ def test_get_eft_statement_for_empty_invoices(session):
         mock_report.assert_called_with(expected_report_inputs)
 
 
+@freeze_time("2025-12-02")
 def test_get_eft_statement_with_invoices(session):
     """Assert that the get statement report works for eft statement with invoices."""
     statement_from_date = datetime.now(tz=UTC) + relativedelta(months=1, day=1)
@@ -807,7 +809,8 @@ def test_get_eft_statement_with_invoices(session):
 
         assert report_name == expected_report_name
 
-        date_string_now = get_statement_date_string(datetime.now(tz=UTC))
+        date_string_now = FullMonthDateStr(datetime.now(tz=UTC))
+        due_date_value = FullMonthDateStr(StatementService.calculate_due_date(statement_to_date.date()))  # pylint: disable=protected-access
         expected_template_vars = {
             "account": {
                 "accountType": "PREMIUM",
@@ -834,9 +837,7 @@ def test_get_eft_statement_with_invoices(session):
             "groupedInvoices": [
                 {
                     "amountOwing": "400.00",
-                    "dueDate": (
-                        StatementService.calculate_due_date(statement_to_date.date())
-                    ),  # pylint: disable=protected-access
+                    "dueDate": due_date_value,
                     "due": "450.00",
                     "fees": "468.75",
                     "gst": "6.25",
@@ -925,7 +926,7 @@ def test_get_eft_statement_with_invoices(session):
                                     "total": 10.0,
                                 },
                             ],
-                            "paymentDate": get_statement_date_string(invoice_3.payment_date, "%B %d, %Y"),
+                            "paymentDate": FullMonthDateStr(invoice_3.payment_date),
                             "products": ["test"],
                             "refundDate": None,
                             "serviceFee": "0.00",
@@ -953,7 +954,7 @@ def test_get_eft_statement_with_invoices(session):
                                     "total": 10.0,
                                 },
                             ],
-                            "paymentDate": get_statement_date_string(invoice_4.payment_date, "%B %d, %Y"),
+                            "paymentDate": FullMonthDateStr(invoice_4.payment_date),
                             "products": ["test"],
                             "refundDate": None,
                             "serviceFee": "0.00",
@@ -997,13 +998,10 @@ def test_get_eft_statement_with_invoices(session):
             "statement": {
                 "amountOwing": "400.00",
                 "createdOn": date_string_now,
-                "duration": (
-                    f"{get_statement_date_string(statement_from_date)} - "
-                    f"{get_statement_date_string(statement_to_date)}"
-                ),
+                "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
                 "frequency": "MONTHLY",
-                "fromDate": get_statement_date_string(statement_from_date),
-                "toDate": get_statement_date_string(statement_to_date),
+                "fromDate": FullMonthDateStr(statement_from_date),
+                "toDate": FullMonthDateStr(statement_to_date),
                 "id": statement_model.id,
                 "isInterimStatement": False,
                 "isOverdue": False,
@@ -1014,15 +1012,11 @@ def test_get_eft_statement_with_invoices(session):
             },
             "statementSummary": {
                 "cancelledTransactions": None,
-                "dueDate": (
-                    StatementService.calculate_due_date(statement_to_date.date())
-                ),  # pylint: disable=protected-access
+                "dueDate": due_date_value,
                 "lastPadStatementPaidAmount": None,
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": (
-                    invoice_3.payment_date.date()
-                ),
+                "latestStatementPaymentDate": FullMonthDateStr(invoice_3.payment_date.date()),
             },
             # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
             "total": {
@@ -1052,16 +1046,8 @@ def test_get_eft_statement_with_invoices(session):
         assert call_args.stream == expected_report_inputs.stream
 
         # For template_vars, convert to JSON strings for comparison (ignores key order)
-        expected_json = json.dumps(
-            expected_report_inputs.template_vars,
-            sort_keys=True,
-            default=str,
-        )
-        actual_json = json.dumps(
-            call_args.template_vars,
-            sort_keys=True,
-            default=str,
-        )
+        expected_json = json.dumps(expected_report_inputs.template_vars, sort_keys=True, default=str)
+        actual_json = json.dumps(call_args.template_vars, sort_keys=True, default=str)
         assert actual_json == expected_json
 
 

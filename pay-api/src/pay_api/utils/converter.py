@@ -9,17 +9,30 @@ from typing import Any
 import cattrs
 from attrs import fields, has
 from cattrs.gen import make_dict_structure_fn, make_dict_unstructure_fn, override
-from dateutil import parser
 
 
-class CurrencyStr(Decimal):
-    """Formatted currency string type that extends Decimal."""
-    pass
+class CurrencyStr(str):
+    """Formatted currency string type."""
+
+    def __new__(cls, value):
+        if value is None:
+            value = "0.00"
+        elif isinstance(value, (Decimal, int, float)):
+            value = f"{value:.2f}"
+        else:
+            value = str(value)
+        return str.__new__(cls, value)
 
 
 class FullMonthDateStr(str):
     """Formatted date string type in '%B %d, %Y' format."""
-    pass
+
+    def __new__(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            value = value.strftime("%B %d, %Y")
+        return str.__new__(cls, value)
 
 
 class Converter(cattrs.Converter):
@@ -120,17 +133,8 @@ class Converter(cattrs.Converter):
         return new_data
 
     @staticmethod
-    def structure_formatted_currency(obj: Any, cls: type) -> CurrencyStr:  # noqa: ARG004
-        """Convert various types to CurrencyStr."""
-        if obj is None:
-            return None
-        if isinstance(obj, CurrencyStr):
-            return obj
-        if isinstance(obj, int | float | str):
-            return CurrencyStr(str(obj))
-        if isinstance(obj, Decimal):
-            return CurrencyStr(str(obj))
-        return CurrencyStr("0")
+    def structure_formatted_currency(obj: Any) -> CurrencyStr:
+        return CurrencyStr(obj)
 
     @staticmethod
     def _unstructure_formatted_currency(obj: CurrencyStr) -> str:
@@ -141,23 +145,12 @@ class Converter(cattrs.Converter):
             return "0.00"
 
     @staticmethod
-    def structure_month_date_year_str(obj: Any, cls: type) -> FullMonthDateStr:  # noqa: ARG004
-        """Convert various types to FullMonthDateStr (%B %d, %Y format)."""
+    def structure_month_date_year_str(obj: Any) -> FullMonthDateStr | None:
         if obj is None:
             return None
-        if isinstance(obj, FullMonthDateStr):
-            return obj
-
-        if isinstance(obj, str):
-            return FullMonthDateStr(obj)
-
-        try:
-            dt = obj if hasattr(obj, "strftime") else parser.parse(obj)
-            return FullMonthDateStr(dt.strftime("%B %d, %Y"))
-        except (ValueError, TypeError):
-            return FullMonthDateStr("")
+        return FullMonthDateStr(obj)
 
     @staticmethod
-    def _unstructure_statement_date_str(obj: FullMonthDateStr) -> str:
+    def _unstructure_statement_date_str(obj: FullMonthDateStr) -> str | None:
         """FullMonthDateStr is already a formatted string."""
-        return obj or ""
+        return obj if obj else None
