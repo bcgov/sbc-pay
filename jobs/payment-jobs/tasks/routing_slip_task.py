@@ -328,9 +328,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             except ValueError as e:
                 routing_slip.cas_mismatch = True
                 routing_slip.save()
-                current_app.logger.error(
-                    f"Skipping adjustment for routing slip {routing_slip.number}: {str(e)}"
-                )
+                current_app.logger.error(f"Skipping adjustment for routing slip {routing_slip.number}: {str(e)}")
                 continue
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
@@ -343,23 +341,21 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _has_pending_invoices(
-        cls, 
-        routing_slip: RoutingSlipModel, 
-        child_routing_slips: list[RoutingSlipModel]
+        cls, routing_slip: RoutingSlipModel, child_routing_slips: list[RoutingSlipModel]
     ) -> tuple[bool, int]:
         """Check if routing slip or its children have pending invoices."""
         all_routing_slips = [routing_slip] + child_routing_slips
         all_routing_slip_numbers = [rs.number for rs in all_routing_slips]
-        
+
         pending_invoice_count = (
             db.session.query(InvoiceModel)
             .filter(
                 InvoiceModel.routing_slip.in_(all_routing_slip_numbers),
-                InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.CREATED.value])
+                InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.CREATED.value]),
             )
             .count()
         )
-        
+
         return (pending_invoice_count > 0, pending_invoice_count)
 
     @classmethod
@@ -386,7 +382,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             db.session.query(func.sum(InvoiceModel.paid - func.coalesce(InvoiceModel.refund, 0)))
             .filter(
                 InvoiceModel.routing_slip.in_(routing_slip_numbers),
-                InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value
+                InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
             )
             .scalar()
         )
@@ -394,17 +390,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _check_data_consistency(
-        cls,
-        routing_slip: RoutingSlipModel,
-        sbc_pay_applied_amount: Decimal,
-        cfs_receipt_details: list[dict]
+        cls, routing_slip: RoutingSlipModel, sbc_pay_applied_amount: Decimal, cfs_receipt_details: list[dict]
     ) -> None:
         """Check data consistency between SBC-PAY and CFS."""
         sbc_pay_has_invoices = sbc_pay_applied_amount > 0
-        cfs_has_invoices = any(
-            receipt['has_applied_invoices']
-            for receipt in cfs_receipt_details
-        )
+        cfs_has_invoices = any(receipt["has_applied_invoices"] for receipt in cfs_receipt_details)
 
         if sbc_pay_has_invoices != cfs_has_invoices:
             error_msg = (
@@ -426,10 +416,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _validate_and_calculate_adjustment_amount(
-        cls,
-        routing_slip: RoutingSlipModel,
-        cfs_account: CfsAccountModel,
-        child_routing_slips: list[RoutingSlipModel]
+        cls, routing_slip: RoutingSlipModel, cfs_account: CfsAccountModel, child_routing_slips: list[RoutingSlipModel]
     ) -> None:
         """Validate adjustment amount for routing slip."""
         all_routing_slips = [routing_slip] + child_routing_slips
@@ -442,17 +429,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         for rs in all_routing_slips:
             receipt_number = rs.generate_cas_receipt_number()
             receipt_data = CFSService.get_receipt(cfs_account, receipt_number)
-            unapplied_amount = Decimal(str(receipt_data.get('unapplied_amount', 0)))
-            has_applied_invoices = len(receipt_data.get('invoices', [])) > 0
-            receipt_details.append({'has_applied_invoices': has_applied_invoices})
+            unapplied_amount = Decimal(str(receipt_data.get("unapplied_amount", 0)))
+            has_applied_invoices = len(receipt_data.get("invoices", [])) > 0
+            receipt_details.append({"has_applied_invoices": has_applied_invoices})
             cfs_unapplied_total += unapplied_amount
 
         # may raise ValueError
-        cls._check_data_consistency(
-            routing_slip,
-            sbc_pay_applied,
-            receipt_details
-        )
+        cls._check_data_consistency(routing_slip, sbc_pay_applied, receipt_details)
         all_rs_total = sum(rs.total for rs in all_routing_slips)
         expected_adjustment = all_rs_total - sbc_pay_applied
 

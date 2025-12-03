@@ -17,6 +17,8 @@
 Test-Suite to ensure that the AP Refund Job is working as expected.
 """
 
+import re
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -30,7 +32,10 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RoutingSlipStatus,
 )
+from pay_api.utils.util import get_nearest_business_day
 from tasks.ap_task import ApTask
+from tasks.common.cgi_ap import CgiAP
+from tasks.common.dataclasses import APFlow, APHeader, APLine, APSupplier
 
 from .factory import (
     factory_create_eft_account,
@@ -223,3 +228,79 @@ def test_routing_slip_refund_error_handling(session, monkeypatch):
 
     routing_slip = RoutingSlip.find_by_number(rs_1)
     assert routing_slip.status == RoutingSlipStatus.REFUND_AUTHORIZED.value
+
+
+def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, monkeypatch):
+    """Test that get_ap_header and get_ap_invoice_line use next business day.
+
+    Tests scenario where Saturday and Sunday are weekends, and Monday is a
+    holiday, so the next business day is Tuesday.
+
+    Steps:
+    1) Mock datetime.now() to return Saturday (June 29, 2024)
+    2) Call get_ap_header and get_ap_invoice_line
+    3) Assert that the effective_date is Tuesday (July 2, 2024),
+       skipping Sunday and Monday holiday (Canada Day)
+    """
+    # June 29, 2024 is a Saturday, July 1, 2024 (Monday) is Canada Day holiday
+    saturday_date = datetime(2024, 6, 29, 12, 0, 0, tzinfo=UTC)
+    next_business_day = get_nearest_business_day(saturday_date)
+
+    with patch("tasks.common.cgi_ap.datetime") as mock_dt, patch("pay_api.utils.util.datetime") as mock_util_dt:
+
+        def datetime_side_effect(*args, **kw):
+            if args or kw:
+                return datetime(*args, **kw)
+            return datetime
+
+        mock_dt.side_effect = datetime_side_effect
+        mock_dt.now = lambda _tz=None: saturday_date
+        mock_dt.UTC = UTC
+
+        mock_util_dt.side_effect = datetime_side_effect
+        mock_util_dt.now = lambda _tz=None: saturday_date
+        mock_util_dt.UTC = UTC
+
+        ap_header = APHeader(
+            ap_flow=APFlow.NON_GOV_TO_EFT,
+            total=100.00,
+            invoice_number="TEST123",
+            invoice_date=datetime.now(tz=UTC).date(),
+            ap_supplier=APSupplier(),
+        )
+
+        ap_line = APLine(
+            ap_flow=APFlow.NON_GOV_TO_EFT,
+            total=100.00,
+            invoice_number="TEST123",
+            line_number=1,
+            is_reversal=False,
+            distribution="12345678901234567890",
+            ap_supplier=APSupplier(),
+        )
+
+        header_result = CgiAP.get_ap_header(ap_header)
+        line_result = CgiAP.get_ap_invoice_line(ap_line)
+
+        header_date_match = re.search(r"CAD(\d{8})", header_result)
+        assert header_date_match, "Could not find effective_date in header"
+        header_effective_date_str = header_date_match.group(1)
+
+        line_date_match = re.search(r"(\d{8})", line_result[200:])
+        assert line_date_match, "Could not find effective_date in line"
+        line_effective_date_str = line_date_match.group(1)
+
+        header_effective_date = datetime.strptime(header_effective_date_str, "%Y%m%d").date()
+        line_effective_date = datetime.strptime(line_effective_date_str, "%Y%m%d").date()
+
+        expected_date = next_business_day.date()
+        assert header_effective_date == expected_date, (
+            f"Header effective_date {header_effective_date} "
+            f"should be {expected_date} "
+            f"(Tuesday, skipping weekend and holiday)"
+        )
+        assert line_effective_date == expected_date, (
+            f"Line effective_date {line_effective_date} "
+            f"should be {expected_date} "
+            f"(Tuesday, skipping weekend and holiday)"
+        )
