@@ -254,11 +254,11 @@ def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, mon
             return datetime
 
         mock_dt.side_effect = datetime_side_effect
-        mock_dt.now = lambda _tz=None: saturday_date
+        mock_dt.now = lambda *args, **kwargs: saturday_date
         mock_dt.UTC = UTC
 
         mock_util_dt.side_effect = datetime_side_effect
-        mock_util_dt.now = lambda _tz=None: saturday_date
+        mock_util_dt.now = lambda *args, **kwargs: saturday_date
         mock_util_dt.UTC = UTC
 
         ap_header = APHeader(
