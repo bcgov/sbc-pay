@@ -340,20 +340,22 @@ def test_receipt_adjustments(session, rs_status):
     parent_rs.save()
 
     # Test exception path first.
-    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
-         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
+    with (
+        patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt,
+        patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust,
+    ):
         # Return different values for parent and child receipts
         mock_get_receipt.side_effect = [
             {
-                'unapplied_amount': 0.0,  # parent
-                'receipt_amount': 20.0,
-                'invoices': []
+                "unapplied_amount": 0.0,  # parent
+                "receipt_amount": 20.0,
+                "invoices": [],
             },
             {
-                'unapplied_amount': 0.0,  # child
-                'receipt_amount': 10.0,
-                'invoices': []
-            }
+                "unapplied_amount": 0.0,  # child
+                "receipt_amount": 10.0,
+                "invoices": [],
+            },
         ]
         mock_adjust.side_effect = Exception("ERROR!")
         RoutingSlipTask.adjust_routing_slips()
@@ -365,20 +367,22 @@ def test_receipt_adjustments(session, rs_status):
     parent_rs.cas_mismatch = False
     parent_rs.save()
 
-    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
-         patch("pay_api.services.CFSService.adjust_receipt_to_zero"):
+    with (
+        patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt,
+        patch("pay_api.services.CFSService.adjust_receipt_to_zero"),
+    ):
         # Return different values for parent and child receipts
         mock_get_receipt.side_effect = [
             {
-                'unapplied_amount': 20.0,  # parent
-                'receipt_amount': 20.0,
-                'invoices': []
+                "unapplied_amount": 20.0,  # parent
+                "receipt_amount": 20.0,
+                "invoices": [],
             },
             {
-                'unapplied_amount': 10.0,  # child
-                'receipt_amount': 10.0,
-                'invoices': []
-            }
+                "unapplied_amount": 10.0,  # child
+                "receipt_amount": 10.0,
+                "invoices": [],
+            },
         ]
         RoutingSlipTask.adjust_routing_slips()
 
@@ -396,22 +400,19 @@ def test_receipt_adjustments_amount_mismatch(session):
         total=100,
         remaining_amount=50,
     )
-    
+
     rs = RoutingSlipModel.find_by_number(rs_number)
     rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
     rs.cas_mismatch = False
     rs.save()
 
     # doesn't match remaining_amount
-    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
-         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
-        
-        mock_get_receipt.return_value = {
-            'unapplied_amount': 30.0,
-            'receipt_amount': 100.0,
-            'invoices': []
-        }
-        
+    with (
+        patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt,
+        patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust,
+    ):
+        mock_get_receipt.return_value = {"unapplied_amount": 30.0, "receipt_amount": 100.0, "invoices": []}
+
         RoutingSlipTask.adjust_routing_slips()
 
         rs = RoutingSlipModel.find_by_number(rs_number)
@@ -436,15 +437,12 @@ def test_receipt_adjustments_data_mismatch(session):
     rs.save()
 
     # data mismatch
-    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
-         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
-        
-        mock_get_receipt.return_value = {
-            'unapplied_amount': 85.0,
-            'receipt_amount': 100.0,
-            'invoices': []
-        }
-        
+    with (
+        patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt,
+        patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust,
+    ):
+        mock_get_receipt.return_value = {"unapplied_amount": 85.0, "receipt_amount": 100.0, "invoices": []}
+
         RoutingSlipTask.adjust_routing_slips()
 
         rs = RoutingSlipModel.find_by_number(rs_number)
@@ -462,20 +460,21 @@ def test_receipt_adjustments_skip_cas_mismatch(session):
         total=100,
         remaining_amount=50,
     )
-    
+
     rs = RoutingSlipModel.find_by_number(rs_number)
     rs.status = RoutingSlipStatus.REFUND_AUTHORIZED.value
     rs.cas_mismatch = True
     rs.save()
 
-    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
-         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
-        
+    with (
+        patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt,
+        patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust,
+    ):
         RoutingSlipTask.adjust_routing_slips()
 
         assert not mock_get_receipt.called
         assert not mock_adjust.called
-        
+
         rs = RoutingSlipModel.find_by_number(rs_number)
         assert rs.remaining_amount == 50
         assert rs.cas_mismatch is True
@@ -496,15 +495,16 @@ def test_receipt_adjustments_cfs_has_invoices_sbc_pay_doesnt(session):
     rs.cas_mismatch = False
     rs.save()
 
-    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
-         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
-        
+    with (
+        patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt,
+        patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust,
+    ):
         mock_get_receipt.return_value = {
-            'unapplied_amount': 100.0,
-            'receipt_amount': 100.0,
-            'invoices': [{'invoice_number': 'INV123', 'amount': 50.0}]
+            "unapplied_amount": 100.0,
+            "receipt_amount": 100.0,
+            "invoices": [{"invoice_number": "INV123", "amount": 50.0}],
         }
-        
+
         RoutingSlipTask.adjust_routing_slips()
 
         rs = RoutingSlipModel.find_by_number(rs_number)
@@ -546,27 +546,28 @@ def test_receipt_adjustments_with_multiple_invoices_consistent(session):
     rs.cas_mismatch = False
     rs.save()
 
-    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
-         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
-
+    with (
+        patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt,
+        patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust,
+    ):
         # total: 100.33, applied: 33.22 (22.11 + 11.11), unapplied: 67.11
         mock_get_receipt.return_value = {
-            'unapplied_amount': 67.11,
-            'receipt_amount': 100.33,
-            'invoices': [
+            "unapplied_amount": 67.11,
+            "receipt_amount": 100.33,
+            "invoices": [
                 {
-                    'invoice_number': 'REG01036828',
-                    'total': 22.11,
-                    'amount_applied': 22.11,
-                    'links': [{'rel': 'self', 'href': 'https://xxx/invs/REG01036828/'}]
+                    "invoice_number": "REG01036828",
+                    "total": 22.11,
+                    "amount_applied": 22.11,
+                    "links": [{"rel": "self", "href": "https://xxx/invs/REG01036828/"}],
                 },
                 {
-                    'invoice_number': 'REG01036829',
-                    'total': 11.11,
-                    'amount_applied': 11.11,
-                    'links': [{'rel': 'self', 'href': 'https://xxx/invs/REG01036829/'}]
-                }
-            ]
+                    "invoice_number": "REG01036829",
+                    "total": 11.11,
+                    "amount_applied": 11.11,
+                    "links": [{"rel": "self", "href": "https://xxx/invs/REG01036829/"}],
+                },
+            ],
         }
 
         RoutingSlipTask.adjust_routing_slips()
@@ -585,9 +586,7 @@ def test_receipt_adjustments_skip_child_pending_invoices(session):
     parent_rs_number = "12353"
 
     child_pay_account = factory_routing_slip_account(
-        number=child_rs_number, 
-        status=CfsAccountStatus.ACTIVE.value, 
-        total=10
+        number=child_rs_number, status=CfsAccountStatus.ACTIVE.value, total=10
     )
     factory_routing_slip_account(
         number=parent_rs_number,
@@ -615,9 +614,10 @@ def test_receipt_adjustments_skip_child_pending_invoices(session):
         routing_slip=child_rs_number,
     )
 
-    with patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt, \
-         patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust:
-
+    with (
+        patch("pay_api.services.CFSService.get_receipt") as mock_get_receipt,
+        patch("pay_api.services.CFSService.adjust_receipt_to_zero") as mock_adjust,
+    ):
         RoutingSlipTask.adjust_routing_slips()
 
         assert not mock_get_receipt.called
