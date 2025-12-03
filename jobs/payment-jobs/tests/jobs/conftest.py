@@ -15,7 +15,6 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
-import time
 from unittest.mock import Mock
 
 import pytest
@@ -142,9 +141,9 @@ def auto(docker_services, app):
         docker_services.start("auth")
         docker_services.start("paybc")
         docker_services.start("reports")
-        docker_services.start("proxy")
         docker_services.start("sftp")
-        time.sleep(10)
+        docker_services.start("proxy")
+        docker_services.wait_for_service("proxy", 8080)
 
 
 @pytest.fixture(scope="session")
