@@ -32,7 +32,6 @@ from pay_api.utils.enums import (
     PaymentMethod,
     RoutingSlipStatus,
 )
-from pay_api.utils.util import get_nearest_business_day
 from tasks.ap_task import ApTask
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APFlow, APHeader, APLine, APSupplier
@@ -243,8 +242,9 @@ def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, mon
        skipping Sunday and Monday holiday (Canada Day)
     """
     # June 29, 2024 is a Saturday, July 1, 2024 (Monday) is Canada Day holiday
+    # July 2, 2024 (Tuesday) is the next business day
     saturday_date = datetime(2024, 6, 29, 12, 0, 0, tzinfo=UTC)
-    next_business_day = get_nearest_business_day(saturday_date)
+    expected_date = datetime(2024, 7, 2).date()
 
     with patch("tasks.common.cgi_ap.datetime") as mock_dt, patch("pay_api.utils.util.datetime") as mock_util_dt:
 
@@ -293,7 +293,6 @@ def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, mon
         header_effective_date = datetime.strptime(header_effective_date_str, "%Y%m%d").date()
         line_effective_date = datetime.strptime(line_effective_date_str, "%Y%m%d").date()
 
-        expected_date = next_business_day.date()
         assert header_effective_date == expected_date, (
             f"Header effective_date {header_effective_date} "
             f"should be {expected_date} "
