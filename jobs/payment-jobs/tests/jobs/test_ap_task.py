@@ -286,7 +286,10 @@ def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, mon
         assert header_date_match, "Could not find effective_date in header"
         header_effective_date_str = header_date_match.group(1)
 
-        line_date_match = re.search(r"(\d{8})", line_result[200:])
+        # Extract date from line: effective_date appears after distribution code + 55 spaces
+        # Distribution code ends with "0000000000" for NON_GOV_TO_EFT flow
+        dist_pattern = r"0000000000\s{55}(\d{8})"
+        line_date_match = re.search(dist_pattern, line_result)
         assert line_date_match, "Could not find effective_date in line"
         line_effective_date_str = line_date_match.group(1)
 
