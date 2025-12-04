@@ -124,7 +124,7 @@ def test_eft_consolidated_payments(session, client, jwt, app):
     )
     invoice_with_reference.save()
     factory_payment_line_item(invoice_id=invoice_with_reference.id, fee_schedule_id=1).save()
-    factory_invoice_reference(invoice_with_reference.id, invoice_number=invoice_with_reference).save()
+    factory_invoice_reference(invoice_with_reference.id, invoice_number=invoice_with_reference.id).save()
 
     invoice_without_reference = factory_invoice(
         payment_account, paid=0, total=100, status_code=InvoiceStatus.APPROVED.value
