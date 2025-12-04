@@ -833,6 +833,7 @@ def test_get_eft_statement_with_invoices(session):
                     "latestPaymentDate": None,
                     "paid": "50.00",
                     "creditsApplied": "0.00",
+                    "countedRefund": "0.00",
                     "paymentMethod": "EFT",
                     "serviceFees": "25.00",
                     "statementHeaderText": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",

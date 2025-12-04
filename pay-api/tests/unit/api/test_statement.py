@@ -24,6 +24,7 @@ from unittest.mock import patch
 from dateutil.relativedelta import relativedelta
 
 from pay_api.models import PaymentAccount
+from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.models.invoice import Invoice
 from pay_api.services.report_service import ReportService
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency
@@ -36,6 +37,8 @@ from tests.utilities.base_test import (
     factory_eft_shortname_link,
     factory_invoice,
     factory_payment_account,
+    factory_payment_line_item,
+    factory_refunds_partial,
     factory_statement,
     factory_statement_invoices,
     factory_statement_settings,
@@ -599,21 +602,37 @@ def test_statement_pad_totals_with_credits(session, client, jwt, app):
     credit = factory_credit(
         account_id=pay_account.id,
         cfs_identifier="TEST_CREDIT_PAD",
-        amount=50.00,
-        remaining_amount=50.00,
+        amount=10.00,
+        remaining_amount=10.00,
     )
 
     applied_credit = factory_applied_credits(
         invoice_id=invoice.id,
         credit_id=credit.id,
         invoice_number=f"INV_{invoice.id}",
-        amount_applied=50.00,
+        amount_applied=10.00,
         invoice_amount=invoice.total,
         cfs_identifier="TEST_CREDIT_PAD",
     )
 
     applied_credit.created_on = datetime(2025, 12, 6, tzinfo=UTC)
     applied_credit.save()
+
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    line_item = factory_payment_line_item(
+        invoice_id=invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+    )
+    line_item.save()
+
+    factory_refunds_partial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=10.00,
+        created_on=datetime(2025, 12, 7, tzinfo=UTC),
+    )
+    invoice.refund = 10.00
+    invoice.refund_date = datetime(2025, 12, 7, tzinfo=UTC)
 
     settings_model = factory_statement_settings(
         payment_account_id=pay_account.id,
@@ -648,10 +667,13 @@ def test_statement_pad_totals_with_credits(session, client, jwt, app):
         assert grouped_invoice["paymentMethod"] == PaymentMethod.PAD.value
 
         assert "creditsApplied" in grouped_invoice
-        assert grouped_invoice["creditsApplied"] == "50.00"
+        assert grouped_invoice["creditsApplied"] == "10.00"
 
         assert "totals" in grouped_invoice
-        assert grouped_invoice["totals"] == "0.00"
+        assert grouped_invoice["totals"] == "30.00"
 
         assert "paid" in grouped_invoice
-        assert grouped_invoice["paid"] == "0.00"
+        assert grouped_invoice["paid"] == "40.00"
+
+        assert "countedRefund" in grouped_invoice
+        assert grouped_invoice["countedRefund"] == "10.00"

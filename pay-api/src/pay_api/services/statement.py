@@ -784,7 +784,6 @@ class Statement:  # pylint:disable=too-many-public-methods
                     case(
                         (
                             and_(
-                                inv.c.paid == 0,
                                 inv.c.refund > 0,
                                 inv.c.refund_date.isnot(None),
                                 inv.c.refund_date <= statement_to_date,

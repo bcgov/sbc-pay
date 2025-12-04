@@ -156,6 +156,7 @@ class PaymentMethodSummaryDTO(Serializable):
     paid: CurrencyStr
     due: CurrencyStr
     credits_applied: CurrencyStr | None = None
+    counted_refund: CurrencyStr | None = None
 
     @classmethod
     def from_db_summary(cls, db_summary: PaymentMethodSummaryRawDTO) -> PaymentMethodSummaryDTO:
@@ -168,6 +169,8 @@ class PaymentMethodSummaryDTO(Serializable):
                 gst=0.00,
                 paid=0.00,
                 due=0.00,
+                counted_refund=0.00,
+                credits_applied=0.00,
             )
         return cls(
             totals=db_summary.totals,
@@ -177,6 +180,7 @@ class PaymentMethodSummaryDTO(Serializable):
             paid=db_summary.paid,
             due=db_summary.due,
             credits_applied=db_summary.credits_applied,
+            counted_refund=db_summary.counted_refund,
         )
 
 
@@ -205,6 +209,7 @@ class PaymentMethodSummaryRawDTO(Serializable):
     paid: Decimal
     due: Decimal
     credits_applied: Decimal
+    counted_refund: Decimal
     invoice_count: int
 
     @classmethod
@@ -216,15 +221,16 @@ class PaymentMethodSummaryRawDTO(Serializable):
         paid = getattr(row, cls.PAID)
 
         due = totals - paid - counted_refund
-        total_with_refund = totals - counted_refund - credits_applied
+        net_total = totals - counted_refund - credits_applied
         paid_without_credits = paid - credits_applied
 
         return cls(
-            totals=total_with_refund,
+            totals=net_total,
             fees=getattr(row, cls.FEES),
             service_fees=getattr(row, cls.SERVICE_FEES),
             gst=getattr(row, cls.GST),
             credits_applied=credits_applied,
+            counted_refund=counted_refund,
             paid=paid_without_credits,
             due=due,
             invoice_count=getattr(row, cls.INVOICE_COUNT),
@@ -247,6 +253,7 @@ class GroupedInvoicesDTO(Serializable):
     statement_header_text: str = None
     include_service_provided: bool = False
     credits_applied: CurrencyStr | None = None
+    counted_refund: CurrencyStr | None = None
     # EFT-specific fields
     amount_owing: CurrencyStr | None = None
     latest_payment_date: str | None = None
@@ -304,6 +311,7 @@ class GroupedInvoicesDTO(Serializable):
             paid=summary.paid,
             due=summary.due,
             credits_applied=summary.credits_applied,
+            counted_refund=summary.counted_refund,
             transactions=transactions,
             is_index_0=is_first,
             statement_header_text=statement_header_text,
