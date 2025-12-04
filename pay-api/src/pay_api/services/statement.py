@@ -400,13 +400,15 @@ class Statement:  # pylint:disable=too-many-public-methods
             if latest_payment_date is None or invoice.payment_date > latest_payment_date:
                 latest_payment_date = invoice.payment_date
 
+        last_total = previous_totals["fees"] if previous_totals else 0
+        last_paid = previous_totals["paid"] if previous_totals else 0
+
         return {
-            "lastStatementTotal": previous_totals["fees"] if previous_totals else 0,
-            "lastStatementPaidAmount": (previous_totals["paid"] if previous_totals else 0),
-            "latestStatementPaymentDate": (
-                latest_payment_date.strftime(DT_SHORT_FORMAT) if latest_payment_date else None
-            ),
+            "lastStatementTotal": last_total,
+            "lastStatementPaidAmount": last_paid,
+            "latestStatementPaymentDate": latest_payment_date,
             "dueDate": cls.calculate_due_date(statement.to_date) if statement else None,
+            "balanceForward": last_total - last_paid,
         }
 
     @staticmethod
@@ -418,10 +420,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.EFT.value):
             summary.update(Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.EFT))
         if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.PAD.value):
-            pad_summary = Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.PAD)
-            pad_amount = pad_summary.get("lastStatementPaidAmount")
-            if pad_amount:
-                summary["lastPADStatementPaidAmount"] = pad_amount
+            summary.update(Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.PAD))
         return summary
 
     @staticmethod
@@ -785,7 +784,6 @@ class Statement:  # pylint:disable=too-many-public-methods
                     case(
                         (
                             and_(
-                                inv.c.paid == 0,
                                 inv.c.refund > 0,
                                 inv.c.refund_date.isnot(None),
                                 inv.c.refund_date <= statement_to_date,
@@ -817,6 +815,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                 func.sum(agg.c.gst).label(PaymentMethodSummaryRawDTO.GST),
                 func.sum(agg.c.counted_paid).label(PaymentMethodSummaryRawDTO.PAID),
                 func.sum(agg.c.counted_refund).label(PaymentMethodSummaryRawDTO.COUNTED_REFUND),
+                func.sum(agg.c.credits_applied).label(PaymentMethodSummaryRawDTO.CREDITS_APPLIED),
                 func.count(agg.c.invoice_id).label(PaymentMethodSummaryRawDTO.INVOICE_COUNT),
             )
             .group_by(agg.c.payment_method_code)
