@@ -26,7 +26,6 @@ itsdangerous = "^2.1.2"
 dataclass-wizard = "^0.22.3"
 launchdarkly-server-sdk = "^8.2.1"
 more-itertools = "^10.2.0"
-pg8000 = "^1.30.5"
 cloud-sql-python-connector = "^1.13.0"
 ruff = "^0.14.1"
 
