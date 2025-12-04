@@ -26,7 +26,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import InvoiceCompositeModel, InvoiceSchema, InvoiceSearchModel, db
+from pay_api.models import InvoiceCompositeModel, InvoiceSchema, db
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.auth import check_auth

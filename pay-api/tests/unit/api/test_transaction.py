@@ -470,6 +470,7 @@ def test_transaction_post_for_nsf_payment(mock_payment_system_factory, mock_unlo
     mock_payment_system = mock_payment_system_factory.return_value
     mock_payment_system.get_receipt.return_value = ("12345", "2024-01-01", 100.00)
     mock_payment_system.get_pay_system_reason_code.return_value = None
+    mock_payment_system.get_payment_system_url_for_payment.return_value = "http://localhost:8080/pay-web"
 
     inv_number_1 = "REG00001"
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)

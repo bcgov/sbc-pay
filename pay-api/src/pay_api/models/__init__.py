@@ -75,4 +75,4 @@ from .search.invoice_composite_model import InvoiceCompositeModel
 from .comment import Comment, CommentSchema  # isort: skip - This has to be at the bottom otherwise FeeSchedule errors
 
 
-event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)
+event.listen(Engine, "before_cursor_execute", DBTracing.query_tracing)
