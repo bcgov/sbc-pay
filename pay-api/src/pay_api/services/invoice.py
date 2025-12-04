@@ -443,7 +443,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
                 abort(403)
 
         current_app.logger.debug(">find_composite_by_id")
-        return InvoiceSearchModel.dao_to_dict(invoice_composite)
+        return InvoiceCompositeModel.dao_to_dict(invoice_composite)
 
     @staticmethod
     def find_invoices_for_payment(

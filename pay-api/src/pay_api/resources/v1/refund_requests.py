@@ -48,6 +48,7 @@ def get_refund_requests():
     response, status = (
         RefundRequestService.search(
             RefundRequestsSearch(
+                invoice_id=request_data.invoice_id,
                 payment_method=request_data.payment_method,
                 refund_reason=request_data.refund_reason,
                 refund_amount=request_data.refund_amount,
