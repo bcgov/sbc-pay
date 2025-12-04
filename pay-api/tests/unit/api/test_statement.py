@@ -19,13 +19,17 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 from dateutil.relativedelta import relativedelta
 
 from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
+from pay_api.services.report_service import ReportService
 from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency
 from tests.utilities.base_test import (
+    factory_applied_credits,
+    factory_credit,
     factory_eft_credit,
     factory_eft_file,
     factory_eft_shortname,
@@ -558,3 +562,96 @@ def test_statement_summary_multi_eft_under_payment(session, client, jwt, app):
     assert rv.json.get("totalDue") == invoice2.total
     assert rv.json.get("shortNameLinksCount") == 2
     assert rv.json.get("isEftUnderPayment") is True
+
+
+def test_statement_pad_totals_with_credits(session, client, jwt, app):
+    """Assert that PAD statement with credits shows creditsApplied and credited transactions."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Accept": ContentType.PDF.value,
+    }
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(
+            get_payment_request_with_payment_method(
+                business_identifier="CP0002000",
+                payment_method=PaymentMethod.PAD.value,
+            )
+        ),
+        headers=headers,
+    )
+
+    invoice: Invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    statement_from_date = datetime(2025, 12, 1, tzinfo=UTC)
+    statement_to_date = datetime(2025, 12, 31, tzinfo=UTC)
+
+    invoice.paid = 50.00
+    invoice.created_on = datetime(2025, 12, 5, tzinfo=UTC)
+    invoice.payment_date = datetime(2025, 12, 10, tzinfo=UTC)
+    invoice.invoice_status_code = "PAID"
+    invoice.save()
+
+    credit = factory_credit(
+        account_id=pay_account.id,
+        cfs_identifier="TEST_CREDIT_PAD",
+        amount=50.00,
+        remaining_amount=50.00,
+    )
+
+    applied_credit = factory_applied_credits(
+        invoice_id=invoice.id,
+        credit_id=credit.id,
+        invoice_number=f"INV_{invoice.id}",
+        amount_applied=50.00,
+        invoice_amount=invoice.total,
+        cfs_identifier="TEST_CREDIT_PAD",
+    )
+
+    applied_credit.created_on = datetime(2025, 12, 6, tzinfo=UTC)
+    applied_credit.save()
+
+    settings_model = factory_statement_settings(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        from_date=statement_from_date,
+    )
+    statement_model = factory_statement(
+        payment_account_id=pay_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        payment_methods=PaymentMethod.PAD.value,
+        statement_settings_id=settings_model.id,
+        from_date=statement_from_date,
+        to_date=statement_to_date,
+    )
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice.id)
+
+    with patch.object(ReportService, "get_report_response", return_value=None) as mock_report:
+        rv = client.get(
+            f"/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}",
+            headers=headers,
+        )
+
+        assert rv.status_code == 200
+
+        call_args = mock_report.call_args[0][0]
+        template_vars = call_args.template_vars
+
+        assert len(template_vars["groupedInvoices"]) == 1
+
+        grouped_invoice = template_vars["groupedInvoices"][0]
+
+        assert grouped_invoice["paymentMethod"] == PaymentMethod.PAD.value
+
+        assert "creditsApplied" in grouped_invoice
+        assert grouped_invoice["creditsApplied"] == "50.00"
+
+        assert "totals" in grouped_invoice
+        assert grouped_invoice["totals"] == "0.00"
+
+        assert "paid" in grouped_invoice
+        assert grouped_invoice["paid"] == "0.00"

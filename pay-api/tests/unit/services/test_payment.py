@@ -18,7 +18,6 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 
 import pytest
 import pytz
@@ -35,7 +34,6 @@ from pay_api.utils.statement_dtos import (
     PaymentMethodSummaryRawDTO,
     StatementContextDTO,
     StatementSummaryDTO,
-    StatementTotalsDTO,
     StatementTransactionDTO,
 )
 from pay_api.utils.util import current_local_time
@@ -961,13 +959,14 @@ def test_grouped_invoices_dto_from_invoices_and_summary(session):
     factory_payment_line_item(invoice_id=invoice2.id, fee_schedule_id=1).save()
 
     db_summary = PaymentMethodSummaryRawDTO(
-        totals=Decimal("150"),
-        fees=Decimal("150"),
-        service_fees=Decimal("0"),
-        gst=Decimal("0"),
-        paid=Decimal("50"),
-        due=Decimal("100"),
+        totals=150,
+        fees=150,
+        service_fees=0,
+        gst=0,
+        paid=50,
+        due=100,
         invoice_count=2,
+        credits_applied=0,
     )
 
     statement_to_date = datetime.now(tz=UTC)
@@ -1078,32 +1077,35 @@ def test_payment_method_summary_raw_dto_from_db_row():
             self.paid = 100.00
             self.counted_refund = 0.00
             self.invoice_count = 5
+            self.credits_applied = 2.00
 
     row = MockRow()
     dto = PaymentMethodSummaryRawDTO.from_db_row(row)
 
-    assert dto.totals == Decimal("500.00")
-    assert dto.fees == Decimal("450.00")
-    assert dto.service_fees == Decimal("25.00")
-    assert dto.gst == Decimal("25.00")
-    assert dto.paid == Decimal("100.00")
-    assert dto.due == Decimal("400.00")  # totals - paid - counted_refund
+    assert dto.totals == 498.00
+    assert dto.fees == 450.00
+    assert dto.service_fees == 25.00
+    assert dto.gst == 25.00
+    assert dto.paid == 98.00
+    assert dto.due == 400.00  # totals - paid - counted_refund
     assert dto.invoice_count == 5
+    assert dto.credits_applied == 2.00
 
     row.counted_refund = 50.00
     dto_with_refund = PaymentMethodSummaryRawDTO.from_db_row(row)
-    assert dto_with_refund.due == Decimal("350.00")  # 500 - 100 - 50
+    assert dto_with_refund.due == 350.00  # 500 - 100 - 50
 
 
 def test_payment_method_summary_dto_from_db_summary():
     """Test PaymentMethodSummaryDTO.from_db_summary() formats currency correctly."""
     raw_dto = PaymentMethodSummaryRawDTO(
-        totals=Decimal("500.00"),
-        fees=Decimal("450.00"),
-        service_fees=Decimal("25.00"),
-        gst=Decimal("25.00"),
-        paid=Decimal("100.00"),
-        due=Decimal("400.00"),
+        totals=500.00,
+        fees=450.00,
+        service_fees=25.00,
+        gst=25.00,
+        paid=100.00,
+        due=400.00,
+        credits_applied=0.00,
         invoice_count=5,
     )
 
@@ -1125,43 +1127,6 @@ def test_payment_method_summary_dto_from_db_summary():
     assert dto_none.due == 0
 
 
-def test_statement_totals_dto_from_db_summaries():
-    """Test StatementTotalsDTO.from_db_summaries() aggregates multiple payment methods."""
-    eft_summary = PaymentMethodSummaryRawDTO(
-        totals=Decimal("500.00"),
-        fees=Decimal("450.00"),
-        service_fees=Decimal("25.00"),
-        gst=Decimal("25.00"),
-        paid=Decimal("100.00"),
-        due=Decimal("400.00"),
-        invoice_count=5,
-    )
-
-    pad_summary = PaymentMethodSummaryRawDTO(
-        totals=Decimal("300.00"),
-        fees=Decimal("280.00"),
-        service_fees=Decimal("10.00"),
-        gst=Decimal("10.00"),
-        paid=Decimal("50.00"),
-        due=Decimal("250.00"),
-        invoice_count=3,
-    )
-
-    db_summaries = {
-        PaymentMethod.EFT.value: eft_summary,
-        PaymentMethod.PAD.value: pad_summary,
-    }
-
-    dto = StatementTotalsDTO.from_db_summaries(db_summaries)
-
-    assert dto.totals == 800.00  # 500 + 300
-    assert dto.fees == 730.00  # 450 + 280
-    assert dto.service_fees == 35.00  # 25 + 10
-    assert dto.gst == 35.00  # 25 + 10
-    assert dto.paid == 150.00  # 100 + 50
-    assert dto.due == 650.00  # 400 + 250
-
-
 def test_grouped_invoices_dto_with_internal_payment_method(session):
     """Test GroupedInvoicesDTO handles INTERNAL payment method with staff payments."""
     payment_account = factory_payment_account()
@@ -1178,13 +1143,14 @@ def test_grouped_invoices_dto_with_internal_payment_method(session):
     factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
 
     db_summary = PaymentMethodSummaryRawDTO(
-        totals=Decimal("100"),
-        fees=Decimal("100"),
-        service_fees=Decimal("0"),
-        gst=Decimal("0"),
-        paid=Decimal("0"),
-        due=Decimal("100"),
+        totals=100,
+        fees=100,
+        service_fees=0,
+        gst=0,
+        paid=0,
+        due=100,
         invoice_count=1,
+        credits_applied=0,
     )
 
     statement = factory_statement(
@@ -1225,13 +1191,14 @@ def test_grouped_invoices_dto_with_eft_interim_statement(session):
     factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
 
     db_summary = PaymentMethodSummaryRawDTO(
-        totals=Decimal("100"),
-        fees=Decimal("100"),
-        service_fees=Decimal("0"),
-        gst=Decimal("0"),
-        paid=Decimal("0"),
-        due=Decimal("100"),
+        totals=100,
+        fees=100,
+        service_fees=0,
+        gst=0,
+        paid=0,
+        due=100,
         invoice_count=1,
+        credits_applied=0,
     )
 
     statement = factory_statement(
@@ -1275,13 +1242,14 @@ def test_grouped_invoices_dto_with_eft_regular_statement(session):
     factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
 
     db_summary = PaymentMethodSummaryRawDTO(
-        totals=Decimal("100"),
-        fees=Decimal("100"),
-        service_fees=Decimal("0"),
-        gst=Decimal("0"),
-        paid=Decimal("0"),
-        due=Decimal("100"),
+        totals=100,
+        fees=100,
+        service_fees=0,
+        gst=0,
+        paid=0,
+        due=100,
         invoice_count=1,
+        credits_applied=0,
     )
 
     statement = factory_statement(

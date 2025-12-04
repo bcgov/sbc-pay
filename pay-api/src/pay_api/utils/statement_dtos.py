@@ -51,10 +51,11 @@ class StatementTransactionDTO(Serializable):
     service_fee: CurrencyStr
     gst: CurrencyStr
     total: CurrencyStr
+    is_full_applied_credits: bool
+    applied_credits_amount: CurrencyStr
     payment_date: FullMonthDateStr | None
     refund_date: FullMonthDateStr | None
     applied_credits: list[AppliedCreditsSearchModel] | None = None
-
     @staticmethod
     def determine_service_provision_status(status_code: str, payment_method: str) -> bool:
         """Determine if service was provided based on invoice status code and payment method."""
@@ -105,19 +106,23 @@ class StatementTransactionDTO(Serializable):
     ) -> StatementTransactionDTO:
         """Create DTO from ORM invoice object for PDF statement."""
         products = [item.description for item in invoice.payment_line_items]
-        details = [f"{d.get('label')} {d.get('value')}" for d in (invoice.details or [])]
+        details = [f"{d.get('label', '')} {d.get('value', '')}".strip() for d in (invoice.details or [])]
         fee = invoice.total - invoice.service_fees - (invoice.gst or 0)
         status_code = invoice.invoice_status_code
         service_provided = cls.determine_service_provision_status(status_code, payment_method)
         line_items = [PaymentLineItemSearchModel.from_row(item) for item in invoice.payment_line_items]
 
         applied_credits = None
+        applied_credits_amount = 0
         if invoice.applied_credits:
             # Convert date to datetime for comparison
             statement_to_datetime = datetime.combine(statement_to_date, datetime.max.time())
             filtered_credits = [c for c in invoice.applied_credits if c.created_on <= statement_to_datetime]
             if filtered_credits:
                 applied_credits = [AppliedCreditsSearchModel.from_row(c) for c in filtered_credits]
+                applied_credits_amount = sum((c.amount_applied for c in filtered_credits), Decimal("0"))
+
+        is_full_applied_credits = applied_credits_amount == invoice.total
 
         return cls(
             invoice_id=invoice.id,
@@ -135,6 +140,8 @@ class StatementTransactionDTO(Serializable):
             payment_date=FullMonthDateStr(invoice.payment_date),
             refund_date=FullMonthDateStr(invoice.refund_date),
             applied_credits=applied_credits,
+            applied_credits_amount=CurrencyStr(applied_credits_amount),
+            is_full_applied_credits=is_full_applied_credits,
         )
 
 
@@ -148,6 +155,7 @@ class PaymentMethodSummaryDTO(Serializable):
     gst: CurrencyStr
     paid: CurrencyStr
     due: CurrencyStr
+    credits_applied: CurrencyStr | None = None
 
     @classmethod
     def from_db_summary(cls, db_summary: PaymentMethodSummaryRawDTO) -> PaymentMethodSummaryDTO:
@@ -168,6 +176,7 @@ class PaymentMethodSummaryDTO(Serializable):
             gst=db_summary.gst,
             paid=db_summary.paid,
             due=db_summary.due,
+            credits_applied=db_summary.credits_applied,
         )
 
 
@@ -186,6 +195,7 @@ class PaymentMethodSummaryRawDTO(Serializable):
     GST = "gst"
     PAID = "paid"
     COUNTED_REFUND = "counted_refund"
+    CREDITS_APPLIED = "credits_applied"
     INVOICE_COUNT = "invoice_count"
 
     totals: Decimal
@@ -194,23 +204,28 @@ class PaymentMethodSummaryRawDTO(Serializable):
     gst: Decimal
     paid: Decimal
     due: Decimal
+    credits_applied: Decimal
     invoice_count: int
 
     @classmethod
     def from_db_row(cls, row) -> PaymentMethodSummaryRawDTO:
         """Create from database query row."""
         totals = getattr(row, cls.TOTALS)
-        paid = getattr(row, cls.PAID)
         counted_refund = getattr(row, cls.COUNTED_REFUND)
+        credits_applied = getattr(row, cls.CREDITS_APPLIED)
+        paid = getattr(row, cls.PAID)
 
         due = totals - paid - counted_refund
+        total_with_refund = totals - counted_refund - credits_applied
+        paid_without_credits = paid - credits_applied
 
         return cls(
-            totals=totals,
+            totals=total_with_refund,
             fees=getattr(row, cls.FEES),
             service_fees=getattr(row, cls.SERVICE_FEES),
             gst=getattr(row, cls.GST),
-            paid=paid,
+            credits_applied=credits_applied,
+            paid=paid_without_credits,
             due=due,
             invoice_count=getattr(row, cls.INVOICE_COUNT),
         )
@@ -231,6 +246,7 @@ class GroupedInvoicesDTO(Serializable):
     is_index_0: bool
     statement_header_text: str = None
     include_service_provided: bool = False
+    credits_applied: CurrencyStr | None = None
     # EFT-specific fields
     amount_owing: CurrencyStr | None = None
     latest_payment_date: str | None = None
@@ -287,6 +303,7 @@ class GroupedInvoicesDTO(Serializable):
             gst=summary.gst,
             paid=summary.paid,
             due=summary.due,
+            credits_applied=summary.credits_applied,
             transactions=transactions,
             is_index_0=is_first,
             statement_header_text=statement_header_text,
@@ -295,34 +312,6 @@ class GroupedInvoicesDTO(Serializable):
             latest_payment_date=latest_payment_date,
             due_date=due_date,
             is_staff_payment=is_staff_payment,
-        )
-
-
-@define
-class StatementTotalsDTO(Serializable):
-    """DTO for overall statement totals across all payment methods in PDF statement."""
-
-    fees: CurrencyStr
-    service_fees: CurrencyStr
-    gst: CurrencyStr
-    totals: CurrencyStr
-    paid: CurrencyStr
-    due: CurrencyStr
-
-    @classmethod
-    def from_db_summaries(cls, db_summaries: dict[str, PaymentMethodSummaryRawDTO]) -> StatementTotalsDTO:
-        """Create DTO from multiple payment method summaries for PDF statement.
-
-        db_summaries: Dict with payment_method as key
-        """
-        summaries = list(db_summaries.values())
-        return cls(
-            fees=sum(s.fees for s in summaries),
-            service_fees=sum(s.service_fees for s in summaries),
-            gst=sum(s.gst for s in summaries),
-            totals=sum(s.totals for s in summaries),
-            paid=sum(s.paid for s in summaries),
-            due=sum(s.due for s in summaries),
         )
 
 
@@ -340,9 +329,9 @@ class StatementContextDTO(Serializable):
     id: int | None = None
     is_interim_statement: bool | None = None
     overdue_notification_date: str | None = None
-    notification_date: str | None = None
+    notification_date: FullMonthDateStr | None = None
     payment_methods: list[str] | None = None
-    statement_total: float | None = None
+    statement_total: CurrencyStr | None = None
     is_overdue: bool | None = None
 
     @staticmethod
@@ -384,8 +373,8 @@ class StatementContextDTO(Serializable):
             frequency=statement.frequency or "",
             id=statement.id,
             is_interim_statement=statement.is_interim_statement,
-            overdue_notification_date=statement.overdue_notification_date,
-            notification_date=statement.notification_date,
+            overdue_notification_date=FullMonthDateStr(statement.overdue_notification_date),
+            notification_date=FullMonthDateStr(statement.notification_date),
             payment_methods=payment_methods,
             statement_total=statement.statement_total,
             is_overdue=statement.is_overdue,
@@ -426,8 +415,8 @@ class StatementSummaryDTO(Serializable):
 
     last_statement_total: CurrencyStr
     last_statement_paid_amount: CurrencyStr
+    balance_forward: CurrencyStr
     cancelled_transactions: CurrencyStr | None = None
-    last_pad_statement_paid_amount: CurrencyStr | None = None
     latest_statement_payment_date: FullMonthDateStr | None = None
     due_date: FullMonthDateStr | None = None
 
@@ -446,9 +435,9 @@ class StatementSummaryDTO(Serializable):
             last_statement_total=statement_summary.get("lastStatementTotal"),
             last_statement_paid_amount=statement_summary.get("lastStatementPaidAmount"),
             cancelled_transactions=cancelled_transactions,
-            latest_statement_payment_date=statement_summary.get("latestStatementPaymentDate"),
-            due_date=statement_summary.get("dueDate"),
-            last_pad_statement_paid_amount=statement_summary.get("lastPadStatementPaidAmount"),
+            latest_statement_payment_date=FullMonthDateStr(statement_summary.get("latestStatementPaymentDate")),
+            due_date=FullMonthDateStr(statement_summary.get("dueDate")),
+            balance_forward=statement_summary.get("balanceForward"),
         )
 
 
@@ -481,7 +470,6 @@ class StatementPDFContextDTO(Serializable):
 
     statement_summary: StatementSummaryDTO | None
     grouped_invoices: list[GroupedInvoicesDTO]
-    total: StatementTotalsDTO
     account: dict | None
     statement: StatementContextDTO
     has_payment_instructions: bool = False

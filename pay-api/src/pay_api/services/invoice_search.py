@@ -51,7 +51,6 @@ from pay_api.utils.statement_dtos import (
     StatementContextDTO,
     StatementPDFContextDTO,
     StatementSummaryDTO,
-    StatementTotalsDTO,
     SummariesGroupedByPaymentMethodDTO,
 )
 from pay_api.utils.user_context import user_context
@@ -576,15 +575,12 @@ class InvoiceSearch:
             statement_to_date=statement_to_date,
         )
 
-        totals_dto = StatementTotalsDTO.from_db_summaries(db_summaries)
-
         statement_summary_dto = StatementSummaryDTO.from_dict(statement_summary)
         statement_dto = StatementContextDTO.from_statement(statement)
 
         context_dto = StatementPDFContextDTO(
             statement_summary=statement_summary_dto,
             grouped_invoices=grouped_invoices,
-            total=totals_dto,
             account=account_info,
             statement=statement_dto,
             has_payment_instructions=any(g.payment_method == PaymentMethod.EFT.value for g in grouped_invoices),

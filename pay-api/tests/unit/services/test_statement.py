@@ -624,24 +624,16 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "notificationDate": None,
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
-                "statementTotal": 0,
+                "statementTotal": "0.00",
                 "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
             },
             "statementSummary": {
                 "cancelledTransactions": None,
                 "dueDate": StatementService.calculate_due_date(statement_to_date.date()),  # pylint: disable=protected-access
-                "lastPadStatementPaidAmount": None,
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
                 "latestStatementPaymentDate": None,
-            },
-            "total": {
-                "due": "0.00",
-                "fees": "0.00",
-                "gst": "0.00",
-                "paid": "0.00",
-                "serviceFees": "0.00",
-                "totals": "0.00",
+                "balanceForward": "0.00",
             },
         }
         expected_report_inputs = ReportRequest(
@@ -655,7 +647,6 @@ def test_get_eft_statement_for_empty_invoices(session):
         mock_report.assert_called_with(expected_report_inputs)
 
 
-@freeze_time("2025-12-02")
 def test_get_eft_statement_with_invoices(session):
     """Assert that the get statement report works for eft statement with invoices."""
     statement_from_date = datetime.now(tz=UTC) + relativedelta(months=1, day=1)
@@ -841,6 +832,7 @@ def test_get_eft_statement_with_invoices(session):
                     "isStaffPayment": None,
                     "latestPaymentDate": None,
                     "paid": "50.00",
+                    "creditsApplied": "0.00",
                     "paymentMethod": "EFT",
                     "serviceFees": "25.00",
                     "statementHeaderText": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
@@ -848,7 +840,9 @@ def test_get_eft_statement_with_invoices(session):
                     "transactions": [
                         {
                             "invoiceId": invoice_1.id,
-                            "createdOn": "December 02, 2025",
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "200.00",
                             "folio": "1234567890",
@@ -876,7 +870,9 @@ def test_get_eft_statement_with_invoices(session):
                         },
                         {
                             "invoiceId": invoice_2.id,
-                            "createdOn": "December 02, 2025",
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -904,7 +900,9 @@ def test_get_eft_statement_with_invoices(session):
                         },
                         {
                             "invoiceId": invoice_3.id,
-                            "createdOn": "December 02, 2025",
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -932,7 +930,9 @@ def test_get_eft_statement_with_invoices(session):
                         },
                         {
                             "invoiceId": invoice_4.id,
-                            "createdOn": "December 02, 2025",
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
@@ -960,7 +960,9 @@ def test_get_eft_statement_with_invoices(session):
                         },
                         {
                             "invoiceId": invoice_5.id,
-                            "createdOn": "December 02, 2025",
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "118.75",
                             "folio": "1234567890",
@@ -1003,24 +1005,15 @@ def test_get_eft_statement_with_invoices(session):
                 "notificationDate": None,
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
-                "statementTotal": Decimal("500.00"),
+                "statementTotal": "500.00",
             },
             "statementSummary": {
                 "cancelledTransactions": None,
                 "dueDate": due_date_value,
-                "lastPadStatementPaidAmount": None,
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": invoice_3.payment_date.strftime(DT_SHORT_FORMAT),
-            },
-            # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
-            "total": {
-                "due": "450.00",
-                "fees": "468.75",
-                "gst": "6.25",
-                "paid": "50.00",
-                "serviceFees": "25.00",
-                "totals": "500.00",
+                "latestStatementPaymentDate": FullMonthDateStr(invoice_3.payment_date),
+                "balanceForward": "0.00",
             },
         }
         expected_report_inputs = ReportRequest(
