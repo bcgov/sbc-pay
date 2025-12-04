@@ -79,7 +79,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     DB_PORT = _get_config("DATABASE_PORT", default="5432")
     if DB_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
         SQLALCHEMY_DATABASE_URI = (
-            f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432"
+            f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?host={DB_UNIX_SOCKET}&port={DB_PORT}"
         )
     else:
         SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
