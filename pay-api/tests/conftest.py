@@ -93,7 +93,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     with app.app_context():
         # Create worker-specific database
         c = app.config
-        initial_url = f"postgresql+pg8000://{c['DB_USER']}:{c['DB_PASSWORD']}@{c['DB_HOST']}:{c['DB_PORT']}/pay-test"
+        initial_url = f"postgresql+psycopg://{c['DB_USER']}:{c['DB_PASSWORD']}@{c['DB_HOST']}:{c['DB_PORT']}/pay-test"
         engine = create_engine(initial_url, isolation_level="AUTOCOMMIT")
         with engine.connect() as conn:
             conn.execute(text(f'DROP DATABASE IF EXISTS "{c["DB_NAME"]}"'))
