@@ -75,23 +75,4 @@ from .search.invoice_composite_model import InvoiceCompositeModel
 from .comment import Comment, CommentSchema  # isort: skip - This has to be at the bottom otherwise FeeSchedule errors
 
 
-def handle_broken_pipe(exception_context):
-    """Handle broken pipe and connection errors for Cloud Run stale sockets."""
-    exc = exception_context.original_exception
-    if not exc:
-        return
-
-    msg = str(exc).lower()
-
-    if (
-        'broken pipe' in msg
-        or 'connection reset' in msg
-        or 'connection aborted' in msg
-        or 'server closed the connection' in msg
-    ):
-        exception_context.connection.invalidate()
-        exception_context.is_disconnect = True
-
-
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)
-event.listen(Engine, 'handle_error', handle_broken_pipe)
