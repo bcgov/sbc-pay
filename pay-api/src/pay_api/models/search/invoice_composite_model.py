@@ -13,13 +13,16 @@
 # limitations under the License.
 """Composite Model to handle invoice search queries."""
 
+from typing import Self
+
 from sqlalchemy import and_, exists, func, select
 from sqlalchemy.orm import column_property
 from sqlalchemy.orm.decl_api import declared_attr
 
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import PaymentMethod
+from pay_api.models import InvoiceSearchModel, PaymentLineItemSchema, PaymentMethod
 from pay_api.models import Refund as RefundModel
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import InvoiceStatus
 
 
@@ -99,3 +102,16 @@ class InvoiceCompositeModel(InvoiceModel):
     def partial_refundable(self):
         """Partial refundable indicator as a column property."""
         return column_property(get_partial_refundable_expr())
+
+    @classmethod
+    def dao_to_dict(cls, invoice_dao: Self) -> dict:
+        """Convert from DAO to Schema dict."""
+        invoice_dict = Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao))
+        # This is done for backwards compatibility and due to the mixture of two schema frameworks and only used for
+        # the invoice composite route.
+        # This will be refactored in an upcoming ticket to remove marshmallow and consolidate schema definitions
+        if invoice_dao.payment_line_items:
+            line_items_schema = PaymentLineItemSchema(many=True)
+            invoice_dict["line_items"] = line_items_schema.dump(invoice_dao.payment_line_items)
+
+        return invoice_dict
