@@ -169,18 +169,6 @@ typing-extensions = ">=4"
 tz = ["backports.zoneinfo ; python_version < \"3.9\""]
 
 [[package]]
-name = "asn1crypto"
-version = "1.5.1"
-description = "Fast ASN.1 parser and serializer with definitions for private keys, public keys, certificates, CRL, OCSP, CMS, PKCS#3, PKCS#7, PKCS#8, PKCS#12, PKCS#5, X.509 and TSP"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "asn1crypto-1.5.1-py2.py3-none-any.whl", hash = "sha256:db4e40728b728508912cbb3d44f19ce188f218e9eba635821bb4b68564f8fd67"},
-    {file = "asn1crypto-1.5.1.tar.gz", hash = "sha256:13ae38502be632115abf8a24cbe5f4da52e3b5231990aff31123c805306ccb9c"},
-]
-
-[[package]]
 name = "attrs"
 version = "23.2.0"
 description = "Classes Without Boilerplate"
@@ -2008,22 +1996,6 @@ resolved_reference = "fb6d6e44afac77599455843e9129a16a9b26d464"
 subdirectory = "pay-api"
 
 [[package]]
-name = "pg8000"
-version = "1.31.5"
-description = "PostgreSQL interface library"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "pg8000-1.31.5-py3-none-any.whl", hash = "sha256:0af2c1926b153307639868d2ee5cef6cd3a7d07448e12736989b10e1d491e201"},
-    {file = "pg8000-1.31.5.tar.gz", hash = "sha256:46ebb03be52b7a77c03c725c79da2ca281d6e8f59577ca66b17c9009618cae78"},
-]
-
-[package.dependencies]
-python-dateutil = ">=2.8.2"
-scramp = ">=1.4.5"
-
-[[package]]
 name = "pluggy"
 version = "1.5.0"
 description = "plugin and hook calling mechanisms for python"
@@ -2687,21 +2659,6 @@ resolved_reference = "22978d810dc4e85c51c3129936686b0a17124e64"
 subdirectory = "python"
 
 [[package]]
-name = "scramp"
-version = "1.4.5"
-description = "An implementation of the SCRAM protocol."
-optional = false
-python-versions = ">=3.8"
-groups = ["main"]
-files = [
-    {file = "scramp-1.4.5-py3-none-any.whl", hash = "sha256:50e37c464fc67f37994e35bee4151e3d8f9320e9c204fca83a5d313c121bbbe7"},
-    {file = "scramp-1.4.5.tar.gz", hash = "sha256:be3fbe774ca577a7a658117dca014e5d254d158cecae3dd60332dfe33ce6d78e"},
-]
-
-[package.dependencies]
-asn1crypto = ">=1.5.1"
-
-[[package]]
 name = "semver"
 version = "3.0.2"
 description = "Python helper for Semantic Versioning (https://semver.org)"
@@ -3166,4 +3123,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "b16692461c0e59f1c7560934be799f7b598d712a592900d07025b9e1cfd044f4"
+content-hash = "242b102d5193bfd63d026d1ac06f9581ff3c62cf0e9bce29ae93b4fe228aa8de"
