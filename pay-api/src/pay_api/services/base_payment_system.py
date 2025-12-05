@@ -321,13 +321,18 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             f"Updating {cfs_account.payment_method} credit amount for account {payment_account.auth_account_id}"
         )
 
-        try:
-            if send_credit_notification:
-                asyncio.ensure_future(PaymentSystemService._send_credit_notification(payment_account, refund_amount))
-        except Exception as e:
-            current_app.logger.error(
-                f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
-            )
+        if send_credit_notification:
+
+            async def _send_notification_async():
+                """Send credit notification asynchronously."""
+                try:
+                    PaymentSystemService._send_credit_notification(payment_account, refund_amount)
+                except Exception as e:
+                    current_app.logger.error(
+                        f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
+                    )
+
+            asyncio.run(_send_notification_async())
 
         payment_account.flush()
 
