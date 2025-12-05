@@ -460,6 +460,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         """Create or update payment account record."""
         current_app.logger.debug("<update payment account")
         try:
+            # future: need to use for_update for this, as the account may be updated by another thread.
             account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
             PaymentAccount._save_account(account_request, account)
         except ServiceUnavailableException as e:
