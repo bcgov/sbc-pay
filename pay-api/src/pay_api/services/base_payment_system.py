@@ -13,6 +13,7 @@
 # limitations under the License.
 """Abstract class for payment system implementation."""
 
+import asyncio
 import copy
 import functools
 import traceback
@@ -319,15 +320,16 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         current_app.logger.info(
             f"Updating {cfs_account.payment_method} credit amount for account {payment_account.auth_account_id}"
         )
-        payment_account.flush()
 
         try:
             if send_credit_notification:
-                PaymentSystemService._send_credit_notification(payment_account, refund_amount)
+                asyncio.ensure_future(PaymentSystemService._send_credit_notification(payment_account, refund_amount))
         except Exception as e:
             current_app.logger.error(
                 f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
             )
+
+        payment_account.flush()
 
         if is_partial and refund_amount != invoice.total:
             return InvoiceStatus.PAID.value
