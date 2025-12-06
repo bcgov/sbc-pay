@@ -36,7 +36,7 @@ requests = "^2.32.4"
 marshmallow = "^3.23.1"
 werkzeug = "^3.1.4"
 certifi = "^2024.8.30"
-urllib3 = "^2.5.0"
+urllib3 = "^2.6.0"
 idna = "^3.10"
 pg8000 = "^1.31.2"
 
