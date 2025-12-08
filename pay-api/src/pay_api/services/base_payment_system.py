@@ -13,11 +13,11 @@
 # limitations under the License.
 """Abstract class for payment system implementation."""
 
-import asyncio
 import copy
 import functools
 import traceback
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 
@@ -57,6 +57,8 @@ from pay_api.utils.errors import Error
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
 from .payment_line_item import PaymentLineItem
+
+_executor = ThreadPoolExecutor(max_workers=5)
 
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -324,8 +326,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
         if send_credit_notification:
 
-            async def _send_notification_async():
-                """Send credit notification asynchronously."""
+            def _send_notification():
+                """Send credit notification in background thread."""
                 try:
                     PaymentSystemService._send_credit_notification(payment_account, refund_amount)
                 except Exception as e:
@@ -333,11 +335,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                         f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
                     )
 
-            try:
-                asyncio.get_running_loop()
-                asyncio.create_task(_send_notification_async())
-            except RuntimeError:
-                current_app.logger.warning("No event loop running, credit notification will not be sent")
+            _executor.submit(_send_notification)
 
         payment_account.flush()
 

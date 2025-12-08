@@ -17,7 +17,6 @@
 Test-Suite to ensure that the Refund Service is working as expected.
 """
 
-import asyncio
 from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
@@ -67,7 +66,6 @@ def test_create_refund_for_unpaid_invoice(session):
     assert excinfo.type == BusinessException
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "payment_method, invoice_status, pay_status, has_reference, expected_inv_status",
     [
@@ -108,7 +106,7 @@ def test_create_refund_for_unpaid_invoice(session):
         ),
     ],
 )
-async def test_create_refund_for_paid_invoice(
+def test_create_refund_for_paid_invoice(
     session,
     monkeypatch,
     payment_method,
@@ -153,21 +151,14 @@ async def test_create_refund_for_paid_invoice(
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
 
-    loop = asyncio.get_running_loop()
+    def mock_executor_submit(func):
+        """Mock executor submit to run synchronously in tests."""
+        func()
+        return Mock()
 
-    def mock_get_running_loop():
-        """Mock get_running_loop to return the test's event loop."""
-        return loop
-
-    def mock_create_task(coro):
-        """Mock create_task to schedule task in test's event loop."""
-        return loop.create_task(coro)
-
-    mocker.patch("pay_api.services.base_payment_system.asyncio.get_running_loop", side_effect=mock_get_running_loop)
-    mocker.patch("pay_api.services.base_payment_system.asyncio.create_task", side_effect=mock_create_task)
+    mocker.patch("pay_api.services.base_payment_system._executor.submit", side_effect=mock_executor_submit)
 
     message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
-    await asyncio.sleep(0.01)
     i = InvoiceModel.find_by_id(i.id)
 
     assert i.invoice_status_code == expected_inv_status
