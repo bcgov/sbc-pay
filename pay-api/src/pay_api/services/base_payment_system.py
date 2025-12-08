@@ -253,7 +253,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         # Don't do anything is the status is APPROVED.
         is_partial = bool(refund_partial)
 
-        current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
+        current_app.logger.info(f"Processing refund for invoice : {invoice.id}, {invoice.invoice_status_code}")
 
         if is_partial and invoice.invoice_status_code != InvoiceStatus.PAID.value:
             raise BusinessException(Error.PARTIAL_REFUND_INVOICE_NOT_PAID)
@@ -290,6 +290,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             line_items = [PaymentLineItemModel.find_by_id(li.id) for li in invoice.payment_line_items]
             refund_amount = invoice.total
 
+        current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
         cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
         # TODO Create a payment record for this to show up on transactions, when the ticket comes.
         # Create a credit with CM identifier as CMs are not reported in payment interface file
