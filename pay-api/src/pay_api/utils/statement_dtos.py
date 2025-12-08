@@ -351,7 +351,7 @@ class GroupedInvoicesDTO(Serializable):
             service_fees=summary.service_fees,
             gst=summary.gst,
             paid=summary.paid,
-            due=summary.due,
+            due=summary.due + Decimal(statement_summary.get("balanceForward") or 0),
             credits_applied=summary.credits_applied,
             counted_refund=summary.counted_refund,
             transactions=transactions,
