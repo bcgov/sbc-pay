@@ -31,6 +31,7 @@ from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial, db
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
@@ -417,10 +418,9 @@ class Statement:  # pylint:disable=too-many-public-methods
     ) -> dict:
         """Build statement_summary for EFT and PAD without inflating locals in caller."""
         summary: dict = {}
-        if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.EFT.value):
-            summary.update(Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.EFT))
-        if Statement.is_payment_method_statement(statement_dao, statement_purchases, PaymentMethod.PAD.value):
-            summary.update(Statement._populate_statement_summary(statement_dao, statement_purchases, PaymentMethod.PAD))
+        for method in [PaymentMethod.EFT, PaymentMethod.PAD]:
+            if Statement.is_payment_method_statement(statement_dao, statement_purchases, method.value):
+                summary.update(Statement._populate_statement_summary(statement_dao, statement_purchases, method))
         return summary
 
     @staticmethod
@@ -451,6 +451,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         if extension == "pdf":
             db_summaries = Statement.get_totals_by_payment_method_from_db(statement_purchases, statement_to_date)
             statement_purchases = statement_purchases.all()
+            statement_purchases = [(invoice := row[0], setattr(invoice, "refund_id", row[1]))[0] for row in statement_purchases]
             # Build statement summary for EFT/PAD
             summary = Statement._build_statement_summary_for_methods(statement_dao, statement_purchases)
 
@@ -757,6 +758,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                 InvoiceModel.invoice_status_code,
             )
             .join(invoice_ids_subq, invoice_ids_subq.c.id == InvoiceModel.id)
+            .filter(InvoiceModel.invoice_status_code != InvoiceStatus.CANCELLED.value)
             .cte("inv")
         )
         agg = (
@@ -771,7 +773,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                         (
                             and_(
                                 inv.c.payment_date.isnot(None),
-                                inv.c.payment_date <= statement_to_date,
+                                func.date(inv.c.payment_date) <= statement_to_date,
                                 inv.c.invoice_status_code.in_(paid_statuses),
                             ),
                             inv.c.paid,
@@ -785,8 +787,9 @@ class Statement:  # pylint:disable=too-many-public-methods
                         (
                             and_(
                                 inv.c.refund > 0,
+                                inv.c.paid != 0,
                                 inv.c.refund_date.isnot(None),
-                                inv.c.refund_date <= statement_to_date,
+                                func.date(inv.c.refund_date) <= statement_to_date,
                             ),
                             inv.c.refund,
                         ),
@@ -795,7 +798,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                 ).label("counted_refund"),
                 func.sum(
                     case(
-                        (AppliedCredits.created_on <= statement_to_date, AppliedCredits.amount_applied),
+                        (func.date(AppliedCredits.created_on) <= statement_to_date, AppliedCredits.amount_applied),
                         else_=0,
                     )
                 ).label("credits_applied"),
@@ -835,20 +838,24 @@ class Statement:  # pylint:disable=too-many-public-methods
             .group_by(RefundsPartial.invoice_id)
             .subquery()
         )
+
+        refund_id, latest_refund_cte = Statement.build_refund_id_expr()
+        partial_refund_condition = and_(
+            InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
+            InvoiceModel.refund != 0,
+            partial_refund_subquery.c.is_credit.isnot(None),
+        )
+
+        partial_refund_case = case(
+            (partial_refund_subquery.c.is_credit.is_(True), InvoiceStatus.PARTIALLY_CREDITED.value),
+            else_=InvoiceStatus.PARTIALLY_REFUNDED.value,
+        )
+
         base_computed_status = case(
-            (
-                and_(
-                    InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
-                    InvoiceModel.refund != 0,
-                    partial_refund_subquery.c.is_credit.isnot(None),
-                ),
-                case(
-                    (partial_refund_subquery.c.is_credit.is_(True), InvoiceStatus.PARTIALLY_CREDITED.value),
-                    else_=InvoiceStatus.PARTIALLY_REFUNDED.value,
-                ),
-            ),
+            (partial_refund_condition, partial_refund_case),
             else_=InvoiceModel.invoice_status_code,
         )
+
         if statement_to_date:
             refund_statuses = InvoiceStatus.refund_statuses()
             paid_statuses = InvoiceStatus.paid_statuses()
@@ -858,7 +865,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                     and_(
                         InvoiceModel.invoice_status_code.in_(refund_statuses),
                         InvoiceModel.refund_date.isnot(None),
-                        InvoiceModel.refund_date > statement_to_date,
+                        func.date(InvoiceModel.refund_date) > statement_to_date,
                     ),
                     InvoiceStatus.PAID.value,
                 ),
@@ -866,29 +873,56 @@ class Statement:  # pylint:disable=too-many-public-methods
                     and_(
                         InvoiceModel.invoice_status_code.in_(paid_statuses),
                         InvoiceModel.payment_date.isnot(None),
-                        InvoiceModel.payment_date > statement_to_date,
+                        func.date(InvoiceModel.payment_date) > statement_to_date,
                     ),
                     InvoiceStatus.APPROVED.value,
                 ),
-                (
-                    and_(
-                        InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
-                        InvoiceModel.refund != 0,
-                        partial_refund_subquery.c.is_credit.isnot(None),
-                    ),
-                    case(
-                        (partial_refund_subquery.c.is_credit.is_(True), InvoiceStatus.PARTIALLY_CREDITED.value),
-                        else_=InvoiceStatus.PARTIALLY_REFUNDED.value,
-                    ),
-                ),
+                (partial_refund_condition, partial_refund_case),
                 else_=InvoiceModel.invoice_status_code,
             )
         else:
             computed_status = base_computed_status
 
-        return query.outerjoin(
-            partial_refund_subquery, InvoiceModel.id == partial_refund_subquery.c.invoice_id
-        ).options(
-            with_expression(InvoiceModel.invoice_status_code, computed_status),
-            subqueryload(InvoiceModel.applied_credits),
+        return (
+            query.outerjoin(partial_refund_subquery, InvoiceModel.id == partial_refund_subquery.c.invoice_id)
+            .outerjoin(latest_refund_cte, InvoiceModel.id == latest_refund_cte.c.invoice_id)
+            .options(
+                with_expression(InvoiceModel.invoice_status_code, computed_status),
+                subqueryload(InvoiceModel.applied_credits),
+            )
+            .add_columns(refund_id.label("refund_id"))
         )
+
+    @staticmethod
+    def _build__refund_cte():
+        """Build CTE for refund per invoice."""
+        refund_ranked = db.session.query(
+            RefundModel.invoice_id,
+            RefundModel.id.label("refund_id"),
+            func.row_number()
+            .over(
+                partition_by=RefundModel.invoice_id,
+                order_by=RefundModel.requested_date.desc(),
+            )
+            .label("rn"),
+        ).cte("refund_ranked")
+
+        return (
+            db.session.query(refund_ranked.c.invoice_id, refund_ranked.c.refund_id)
+            .filter(refund_ranked.c.rn == 1)
+            .cte("latest_refund")
+        )
+
+    @staticmethod
+    def build_refund_id_expr():
+        """Return (refund_id_case_expression, latest_refund_cte)."""
+        latest_refund_cte = Statement._build__refund_cte()
+
+        refund_id = case(
+            (
+                InvoiceModel.invoice_status_code.in_(InvoiceStatus.full_refund_statuses()),
+                latest_refund_cte.c.refund_id,
+            )
+        )
+
+        return refund_id, latest_refund_cte

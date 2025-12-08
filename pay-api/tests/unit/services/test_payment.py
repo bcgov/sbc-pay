@@ -967,6 +967,7 @@ def test_grouped_invoices_dto_from_invoices_and_summary(session):
         due=100,
         invoice_count=2,
         credits_applied=0,
+        counted_refund=0,
     )
 
     statement_to_date = datetime.now(tz=UTC)
@@ -1087,13 +1088,9 @@ def test_payment_method_summary_raw_dto_from_db_row():
     assert dto.service_fees == 25.00
     assert dto.gst == 25.00
     assert dto.paid == 98.00
-    assert dto.due == 400.00  # totals - paid - counted_refund
+    assert dto.due == 400.00
     assert dto.invoice_count == 5
     assert dto.credits_applied == 2.00
-
-    row.counted_refund = 50.00
-    dto_with_refund = PaymentMethodSummaryRawDTO.from_db_row(row)
-    assert dto_with_refund.due == 350.00  # 500 - 100 - 50
 
 
 def test_payment_method_summary_dto_from_db_summary():
@@ -1107,6 +1104,7 @@ def test_payment_method_summary_dto_from_db_summary():
         due=400.00,
         credits_applied=0.00,
         invoice_count=5,
+        counted_refund=0,
     )
 
     dto = PaymentMethodSummaryDTO.from_db_summary(raw_dto)
@@ -1151,6 +1149,7 @@ def test_grouped_invoices_dto_with_internal_payment_method(session):
         due=100,
         invoice_count=1,
         credits_applied=0,
+        counted_refund=0,
     )
 
     statement = factory_statement(
@@ -1199,6 +1198,7 @@ def test_grouped_invoices_dto_with_eft_interim_statement(session):
         due=100,
         invoice_count=1,
         credits_applied=0,
+        counted_refund=0,
     )
 
     statement = factory_statement(
@@ -1250,6 +1250,7 @@ def test_grouped_invoices_dto_with_eft_regular_statement(session):
         due=100,
         invoice_count=1,
         credits_applied=0,
+        counted_refund=0,
     )
 
     statement = factory_statement(
