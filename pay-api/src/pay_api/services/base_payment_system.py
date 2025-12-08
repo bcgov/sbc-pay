@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import current_app
+from flask import copy_current_request_context, current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException
@@ -326,6 +326,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
         if send_credit_notification:
 
+            @copy_current_request_context
             def _send_notification():
                 """Send credit notification in background thread."""
                 try:
