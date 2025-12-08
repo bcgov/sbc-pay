@@ -312,7 +312,6 @@ class GroupedInvoicesDTO(Serializable):
         is_first: bool = False,
     ) -> GroupedInvoicesDTO:
         """Create DTO from ORM invoices and database summary for PDF statement."""
-        # Filter out transactions that are not service provided
         transactions = [
             t
             for t in (StatementTransactionDTO.from_orm(inv, payment_method, statement_to_date) for inv in invoices_orm)
