@@ -333,7 +333,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                         f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
                     )
 
-            asyncio.run(_send_notification_async())
+            try:
+                asyncio.get_running_loop()
+                asyncio.create_task(_send_notification_async())
+            except RuntimeError:
+                current_app.logger.warning("No event loop running, credit notification will not be sent")
 
         payment_account.flush()
 
