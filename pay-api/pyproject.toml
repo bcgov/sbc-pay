@@ -68,7 +68,7 @@ threadloop = "1.0.2"
 thrift = "0.16.0"
 tornado = "^6.5.1"
 typing-extensions = "4.10.0"
-urllib3 = "2.5.0"
+urllib3 = "2.6.0"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 sql-versioning = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/sql-versioning", branch = "main" }
 aiohttp = "^3.12.14"
