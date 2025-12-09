@@ -38,6 +38,7 @@ class RefundRequestsSearch:
     """Used for searching refund requests records."""
 
     refund_type: str | None = RefundType.INVOICE.value
+    invoice_id: int | None = None
     payment_method: str | None = None
     refund_reason: str | None = None
     refund_amount: Decimal | None = None
@@ -111,15 +112,18 @@ class RefundRequestService:
         current_app.logger.debug("<get_search_query")
         partial_refund_total_subquery = cls.get_partial_refund_sum_query().subquery()
         prt_subquery = partial_refund_total_subquery.c
+
+        refund_amount_expr = case(
+            (prt_subquery.refund_partial_total > 0, prt_subquery.refund_partial_total),
+            else_=InvoiceModel.total,
+        )
+
         query = (
             db.session.query(
                 RefundModel,
                 InvoiceModel.total.label("transaction_amount"),
                 InvoiceModel.payment_method_code.label("payment_method"),
-                case(
-                    (prt_subquery.refund_partial_total > 0, prt_subquery.refund_partial_total),
-                    else_=InvoiceModel.total,
-                ).label("refund_amount"),
+                refund_amount_expr.label("refund_amount"),
             )
             .join(InvoiceModel, InvoiceModel.id == RefundModel.invoice_id)
             .join(CorpTypeModel, CorpTypeModel.code == InvoiceModel.corp_type_code)
@@ -128,6 +132,8 @@ class RefundRequestService:
                 partial_refund_total_subquery.c.refund_id == RefundModel.id,
             )
         )
+
+        query = query.filter_conditionally(search_criteria.invoice_id, InvoiceModel.id)
         query = query.filter_conditionally(search_criteria.refund_type, RefundModel.type)
         query = query.filter_conditionally(search_criteria.status, RefundModel.status)
         query = query.filter_conditionally(search_criteria.requested_by, RefundModel.requested_by, is_like=True)
@@ -135,7 +141,7 @@ class RefundRequestService:
         query = query.filter_conditionally(search_criteria.refund_method, RefundModel.refund_method)
         query = query.filter_conditionally(search_criteria.payment_method, InvoiceModel.payment_method_code)
         query = query.filter_conditionally(search_criteria.transaction_amount, InvoiceModel.total)
-        query = query.filter_conditionally(search_criteria.refund_amount, prt_subquery.refund_partial_total)
+        query = query.filter_conditionally(search_criteria.refund_amount, refund_amount_expr)
 
         query = query.filter_conditional_date_range(
             start_date=search_criteria.requested_start_date,

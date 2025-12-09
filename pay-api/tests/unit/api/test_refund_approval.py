@@ -531,6 +531,15 @@ def test_partial_refund_approval_flow(
     assert refund_result["decisionDate"] is None
     assert refund_result["declineReason"] is None
     assert refund_result["refundAmount"] == refund_amount
+    assert refund_result["partialRefundLines"]
+    assert len(refund_result["partialRefundLines"]) == 1
+    refund_line = refund_result["partialRefundLines"][0]
+    assert refund_line["paymentLineItemId"] == invoice.payment_line_items[0].id
+    assert refund_line["description"] == invoice.payment_line_items[0].description
+    assert refund_line["futureEffectiveFeeAmount"] == 0
+    assert refund_line["priorityFeeAmount"] == 0
+    assert refund_line["serviceFeeAmount"] == 0
+    assert refund_line["statutoryFeeAmount"] == refund_amount
 
     rv = client.get(f"/api/v1/refunds?refundStatus={RefundStatus.PENDING_APPROVAL.value}", headers=requester_headers)
     assert rv.status_code == 200

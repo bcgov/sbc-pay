@@ -131,6 +131,7 @@ class PartialRefundLineDTO:  # pylint: disable=too-few-public-methods
     """Schema used to serialize refund partial lines."""
 
     payment_line_item_id: int
+    description: str
     statutory_fee_amount: Decimal
     future_effective_fee_amount: Decimal
     priority_fee_amount: Decimal
@@ -144,6 +145,7 @@ class PartialRefundLineDTO:  # pylint: disable=too-few-public-methods
         """
         return cls(
             payment_line_item_id=row.get("payment_line_item_id"),
+            description=row.get("description"),
             statutory_fee_amount=row.get("statutory_fee_amount"),
             future_effective_fee_amount=row.get("future_effective_fee_amount"),
             priority_fee_amount=row.get("priority_fee_amount"),

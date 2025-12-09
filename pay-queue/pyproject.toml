@@ -17,7 +17,7 @@ sqlalchemy = "^2.0.28"
 itsdangerous = "^2.1.2"
 launchdarkly-server-sdk = "^8.2.1"
 cachecontrol = "^0.14.0"
-pay-api = { git = "https://github.com/ochiu/sbc-pay.git", branch = "30357-Refund-Approval-Flow-2", subdirectory = "pay-api" }
+pay-api = { git = "https://github.com/seeker25/sbc-pay.git", branch = "fix_deadlock", subdirectory = "pay-api" }
 
 
 [tool.poetry.group.dev.dependencies]
