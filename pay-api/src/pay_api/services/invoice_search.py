@@ -36,7 +36,13 @@ from pay_api.models import (
     db,
 )
 from pay_api.models.payment import TransactionSearchParams
-from pay_api.models.search.invoice_composite_model import InvoiceCompositeModel
+from pay_api.models.search.invoice_composite_model import (
+    InvoiceCompositeModel,
+    get_full_refundable_expr,
+    get_latest_refund_id_expr,
+    get_latest_refund_status_expr,
+    get_partial_refundable_expr,
+)
 from pay_api.models.statement import Statement
 from pay_api.services.auth import get_account_info_with_contact
 from pay_api.services.invoice import Invoice as InvoiceService
@@ -115,12 +121,10 @@ class InvoiceSearch:
                 InvoiceReference.reference_number,
                 InvoiceReference.status_code,
             ),
-            with_expression(InvoiceCompositeModel.latest_refund_id, InvoiceCompositeModel.latest_refund_id_expr),
-            with_expression(
-                InvoiceCompositeModel.latest_refund_status, InvoiceCompositeModel.latest_refund_status_expr
-            ),
-            with_expression(InvoiceCompositeModel.full_refundable, InvoiceCompositeModel.full_refundable_expr),
-            with_expression(InvoiceCompositeModel.partial_refundable, InvoiceCompositeModel.partial_refundable_expr),
+            with_expression(InvoiceCompositeModel.latest_refund_id, get_latest_refund_id_expr()),
+            with_expression(InvoiceCompositeModel.latest_refund_status, get_latest_refund_status_expr()),
+            with_expression(InvoiceCompositeModel.full_refundable, get_full_refundable_expr()),
+            with_expression(InvoiceCompositeModel.partial_refundable, get_partial_refundable_expr()),
         ]
 
         if include_credits_and_partial_refunds:

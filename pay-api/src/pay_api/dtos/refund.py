@@ -26,6 +26,7 @@ class RefundPatchRequest(Serializable):
 class RefundRequestGetRequest(Serializable):
     """Refund search."""
 
+    invoice_id: int = None
     refund_status: str = None
     requested_by: str = None
     requested_start_date: str = None

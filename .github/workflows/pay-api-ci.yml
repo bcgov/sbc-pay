@@ -50,7 +50,7 @@ jobs:
     env:
       FLASK_ENV: "testing"
       # Needs different database than POSTGRES otherwise dropping database doesn't work
-      DATABASE_TEST_URL: "postgresql+pg8000://postgres:postgres@localhost:5432/pay-test"
+      DATABASE_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/pay-test"
       USE_TEST_KEYCLOAK_DOCKER: "YES"
       USE_DOCKER_MOCK: "YES"
 

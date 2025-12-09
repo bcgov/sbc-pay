@@ -20,7 +20,7 @@ from flask import current_app
 
 from pay_api.models.eft_refund import EFTRefund
 from pay_api.utils.enums import DisbursementMethod
-from pay_api.utils.util import get_fiscal_year
+from pay_api.utils.util import get_fiscal_year, get_nearest_business_day
 from tasks.common.dataclasses import APFlow, APHeader, APLine, APSupplier
 
 from .cgi_ejv import CgiEjv
@@ -53,7 +53,7 @@ class CgiAP(CgiEjv):
         invoice_type = "ST"
         remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
         currency = "CAD"
-        effective_date = cls._get_date(datetime.now(tz=UTC))
+        effective_date = cls._get_date(get_nearest_business_day(datetime.now(tz=UTC)))
         invoice_date = cls._get_date(ap_header.invoice_date)
         oracle_invoice_batch_name = cls._get_oracle_invoice_batch_name(ap_header.ap_flow, ap_header.invoice_number)
         ap_flow_to_disbursement_method = {
@@ -82,7 +82,7 @@ class CgiAP(CgiEjv):
         commit_line_number = f"{cls.EMPTY:<4}"
         # Pad Zeros to four digits. EG. 0001
         line_number = f"{ap_line.line_number:04}"
-        effective_date = cls._get_date(datetime.now(tz=UTC))
+        effective_date = cls._get_date(get_nearest_business_day(datetime.now(tz=UTC)))
         line_code = cls._get_line_code(ap_line)
         supplier_number = cls._supplier_number(ap_line.ap_flow, ap_line.ap_supplier.supplier_number)
         dist_vendor = cls._dist_vendor(ap_line.ap_flow, ap_line.ap_supplier.supplier_number)

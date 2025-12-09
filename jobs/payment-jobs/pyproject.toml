@@ -8,7 +8,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pay-api = { git = "https://github.com/Jxio/sbc-pay.git", branch = "31164", subdirectory = "pay-api" }
+pay-api = { git = "https://github.com/seeker25/sbc-pay.git", branch = "fix_deadlock", subdirectory = "pay-api" }
 flask = "^3.0.2"
 flask-sqlalchemy = "^3.1.1"
 sqlalchemy = "^2.0.28"
@@ -26,9 +26,9 @@ itsdangerous = "^2.1.2"
 dataclass-wizard = "^0.22.3"
 launchdarkly-server-sdk = "^8.2.1"
 more-itertools = "^10.2.0"
-pg8000 = "^1.30.5"
 cloud-sql-python-connector = "^1.13.0"
 ruff = "^0.14.1"
+pg8000 = "^1.31.5"
 
 
 [tool.poetry.group.dev.dependencies]

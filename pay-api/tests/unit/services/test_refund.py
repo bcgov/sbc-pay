@@ -150,6 +150,14 @@ def test_create_refund_for_paid_invoice(
     factory_receipt(invoice_id=i.id, receipt_number="1234569546456").save()
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
+
+    def mock_executor_submit(func):
+        """Mock executor submit to run synchronously in tests."""
+        func()
+        return Mock()
+
+    mocker.patch("pay_api.services.base_payment_system._executor.submit", side_effect=mock_executor_submit)
+
     message = RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
     i = InvoiceModel.find_by_id(i.id)
 

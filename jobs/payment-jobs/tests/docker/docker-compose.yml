@@ -54,7 +54,7 @@ services:
     image: stoplight/prism:3.3.0
     command: >
       mock -p 4010 --host 0.0.0.0
-      https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/PayBC%20Mocking/paybc-1.0.0.yaml
+      https://raw.githubusercontent.com/bcgov/sbc-pay/d8091408d5cd591dd3e0c83ae8c5738de90699de/docs/docs/PayBC%20Mocking/paybc-1.0.0.yaml
   auth:
     image: stoplight/prism:3.3.0
     command: >

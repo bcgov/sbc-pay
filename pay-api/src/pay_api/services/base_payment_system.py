@@ -17,10 +17,11 @@ import copy
 import functools
 import traceback
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import current_app
+from flask import copy_current_request_context, current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException
@@ -56,6 +57,8 @@ from pay_api.utils.errors import Error
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
 from .payment_line_item import PaymentLineItem
+
+_executor = ThreadPoolExecutor(max_workers=5)
 
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -252,7 +255,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         # Don't do anything is the status is APPROVED.
         is_partial = bool(refund_partial)
 
-        current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
+        current_app.logger.info(f"Processing refund for invoice : {invoice.id}, {invoice.invoice_status_code}")
 
         if is_partial and invoice.invoice_status_code != InvoiceStatus.PAID.value:
             raise BusinessException(Error.PARTIAL_REFUND_INVOICE_NOT_PAID)
@@ -289,6 +292,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             line_items = [PaymentLineItemModel.find_by_id(li.id) for li in invoice.payment_line_items]
             refund_amount = invoice.total
 
+        current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
         cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
         # TODO Create a payment record for this to show up on transactions, when the ticket comes.
         # Create a credit with CM identifier as CMs are not reported in payment interface file
@@ -319,15 +323,22 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         current_app.logger.info(
             f"Updating {cfs_account.payment_method} credit amount for account {payment_account.auth_account_id}"
         )
-        payment_account.flush()
 
-        try:
-            if send_credit_notification:
-                PaymentSystemService._send_credit_notification(payment_account, refund_amount)
-        except Exception as e:
-            current_app.logger.error(
-                f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
-            )
+        if send_credit_notification:
+
+            @copy_current_request_context
+            def _send_notification():
+                """Send credit notification in background thread."""
+                try:
+                    PaymentSystemService._send_credit_notification(payment_account, refund_amount)
+                except Exception as e:
+                    current_app.logger.error(
+                        f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
+                    )
+
+            _executor.submit(_send_notification)
+
+        payment_account.flush()
 
         if is_partial and refund_amount != invoice.total:
             return InvoiceStatus.PAID.value
