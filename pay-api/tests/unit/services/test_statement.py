@@ -19,7 +19,7 @@ Test-Suite to ensure that the Statement Service is working as expected.
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from unittest.mock import ANY, patch
+from unittest.mock import patch
 
 import pytz
 from dateutil.relativedelta import relativedelta
@@ -36,6 +36,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.constants import DT_SHORT_FORMAT
+from pay_api.utils.converter import FullMonthDateStr
 from pay_api.utils.enums import (
     ActivityAction,
     ContentType,
@@ -44,7 +45,6 @@ from pay_api.utils.enums import (
     StatementFrequency,
     StatementTemplate,
 )
-from pay_api.utils.util import get_statement_date_string
 from tests.utilities.base_test import (
     factory_eft_shortname,
     factory_eft_shortname_link,
@@ -586,7 +586,7 @@ def test_get_eft_statement_for_empty_invoices(session):
         )
         assert report_name == expected_report_name
 
-        date_string_now = get_statement_date_string(datetime.now(tz=UTC))
+        date_string_now = FullMonthDateStr(datetime.now(tz=UTC))
         expected_template_vars = {
             "account": {
                 "accountType": "PREMIUM",
@@ -611,36 +611,29 @@ def test_get_eft_statement_for_empty_invoices(session):
                 },
             },
             "groupedInvoices": [],
+            "hasPaymentInstructions": False,
             "statement": {
-                "amount_owing": "0.00",
-                "created_on": date_string_now,
+                "amountOwing": "0.00",
+                "createdOn": date_string_now,
                 "frequency": "MONTHLY",
-                "from_date": get_statement_date_string(statement_from_date),
-                "to_date": get_statement_date_string(statement_to_date),
+                "fromDate": FullMonthDateStr(statement_from_date),
+                "toDate": FullMonthDateStr(statement_to_date),
                 "id": statement_model.id,
-                "is_interim_statement": False,
-                "is_overdue": False,
-                "notification_date": None,
-                "overdue_notification_date": None,
-                "payment_methods": ["EFT"],
-                "statement_total": 0.0,
-                "duration": (
-                    f"{get_statement_date_string(statement_from_date)} - "
-                    f"{get_statement_date_string(statement_to_date)}"
-                ),
+                "isInterimStatement": False,
+                "isOverdue": False,
+                "notificationDate": None,
+                "overdueNotificationDate": None,
+                "paymentMethods": ["EFT"],
+                "statementTotal": "0.00",
+                "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
             },
             "statementSummary": {
-                "dueDate": get_statement_date_string(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
+                "cancelledTransactions": None,
+                "dueDate": FullMonthDateStr(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
                 "latestStatementPaymentDate": None,
-            },
-            "total": {
-                "due": "0.00",
-                "fees": "0.00",
-                "paid": "0.00",
-                "serviceFees": "0.00",
-                "statutoryFees": "0.00",
+                "balanceForward": "0.00",
             },
         }
         expected_report_inputs = ReportRequest(
@@ -802,7 +795,8 @@ def test_get_eft_statement_with_invoices(session):
 
         assert report_name == expected_report_name
 
-        date_string_now = get_statement_date_string(datetime.now(tz=UTC))
+        date_string_now = FullMonthDateStr(datetime.now(tz=UTC))
+        due_date_value = FullMonthDateStr(StatementService.calculate_due_date(statement_to_date.date()))  # pylint: disable=protected-access
         expected_template_vars = {
             "account": {
                 "accountType": "PREMIUM",
@@ -828,237 +822,225 @@ def test_get_eft_statement_with_invoices(session):
             },
             "groupedInvoices": [
                 {
-                    "amount_owing": "400.00",
-                    "credits_total": 0.0,
-                    "due_date": get_statement_date_string(
-                        StatementService.calculate_due_date(statement_to_date.date())
-                    ),  # pylint: disable=protected-access
-                    "due_summary": 450.0,
-                    "fees_total": 468.75,
-                    "gst_total": 6.25,
-                    "include_service_provided": True,
-                    "is_index_0": True,
-                    "paid_summary": 50.0,
-                    "payment_method": "EFT",
-                    "refunds_total": 0.0,
-                    "service_fees_total": 25.0,
-                    "statement_header_text": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
-                    "total_paid": "100.00",
-                    "totals_summary": 500.0,
+                    "amountOwing": "400.00",
+                    "dueDate": due_date_value,
+                    "due": "450.00",
+                    "fees": "468.75",
+                    "gst": "6.25",
+                    "includeServiceProvided": True,
+                    "isIndex0": True,
+                    "isStaffPayment": None,
+                    "latestPaymentDate": None,
+                    "paid": "50.00",
+                    "creditsApplied": "0.00",
+                    "countedRefund": "0.00",
+                    "paymentMethod": "EFT",
+                    "serviceFees": "25.00",
+                    "statementHeaderText": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
+                    "totals": "500.00",
                     "transactions": [
                         {
-                            "bcol_account": "TEST",
-                            "business_identifier": "CP0001234",
-                            "corp_type_code": "CP",
-                            "created_by": "test",
-                            "created_name": "test name",
-                            "created_on": ANY,
+                            "invoiceId": invoice_1.id,
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "200.00",
                             "folio": "1234567890",
                             "gst": "0.00",
-                            "id": invoice_1.id,
-                            "invoice_number": "10021",
-                            "line_items": [
+                            "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "OTANN",
+                                    "filingTypeCode": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees": 0.0,
+                                    "serviceFees": 0.0,
+                                    "serviceFeesGst": None,
+                                    "statutoryFeesGst": None,
                                     "total": 10.0,
                                 },
                             ],
-                            "paid": 0.0,
-                            "payment_account": {
-                                "account_id": "1234",
-                                "billable": True,
-                            },
-                            "payment_method": "EFT",
-                            "product": "BUSINESS",
+                            "paymentDate": None,
+                            "refundFee": "0.00",
+                            "refundGst": "0.00",
+                            "refundId": None,
+                            "refundServiceFee": "0.00",
+                            "refundTotal": "0.00",
                             "products": ["test"],
-                            "refund": 0.0,
-                            "service_fee": "0.00",
-                            "service_provided": False,
-                            "status_code": "Invoice Approved",
+                            "refundDate": None,
+                            "serviceFee": "0.00",
+                            "serviceProvided": True,
+                            "statusCode": "APPROVED",
                             "total": "200.00",
+                            "appliedCredits": None,
                         },
                         {
-                            "bcol_account": "TEST",
-                            "business_identifier": "CP0001234",
-                            "corp_type_code": "CP",
-                            "created_by": "test",
-                            "created_name": "test name",
-                            "created_on": ANY,
+                            "invoiceId": invoice_2.id,
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
                             "gst": "0.00",
-                            "id": invoice_2.id,
-                            "invoice_number": "10021",
-                            "line_items": [
+                            "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "OTANN",
+                                    "filingTypeCode": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees": 0.0,
+                                    "serviceFees": 0.0,
+                                    "serviceFeesGst": None,
+                                    "statutoryFeesGst": None,
                                     "total": 10.0,
                                 },
                             ],
-                            "paid": 0.0,
-                            "payment_account": {"account_id": "1234", "billable": True},
-                            "payment_method": "EFT",
-                            "product": "BUSINESS",
+                            "paymentDate": None,
                             "products": ["test"],
-                            "refund": 0.0,
-                            "service_fee": "0.00",
-                            "service_provided": False,
-                            "status_code": "Invoice Approved",
+                            "refundDate": None,
+                            "refundFee": "0.00",
+                            "refundGst": "0.00",
+                            "refundId": None,
+                            "refundServiceFee": "0.00",
+                            "refundTotal": "0.00",
+                            "serviceFee": "0.00",
+                            "serviceProvided": True,
+                            "statusCode": "APPROVED",
                             "total": "50.00",
+                            "appliedCredits": None,
                         },
                         {
-                            "bcol_account": "TEST",
-                            "business_identifier": "CP0001234",
-                            "corp_type_code": "CP",
-                            "created_by": "test",
-                            "created_name": "test name",
-                            "created_on": ANY,
+                            "invoiceId": invoice_3.id,
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
                             "gst": "0.00",
-                            "id": invoice_3.id,
-                            "invoice_number": "10021",
-                            "line_items": [
+                            "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "OTANN",
+                                    "filingTypeCode": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees": 0.0,
+                                    "serviceFees": 0.0,
+                                    "serviceFeesGst": None,
+                                    "statutoryFeesGst": None,
                                     "total": 10.0,
                                 },
                             ],
-                            "paid": 50.0,
-                            "payment_account": {"account_id": "1234", "billable": True},
-                            "payment_date": datetime.strftime(invoice_3.payment_date, "%Y-%m-%dT%H:%M:%S.%f"),
-                            "payment_method": "EFT",
-                            "product": "BUSINESS",
+                            "paymentDate": FullMonthDateStr(invoice_3.payment_date),
                             "products": ["test"],
-                            "refund": 0.0,
-                            "service_fee": "0.00",
-                            "service_provided": True,
-                            "status_code": "COMPLETED",
+                            "refundDate": None,
+                            "refundFee": "0.00",
+                            "refundGst": "0.00",
+                            "refundId": None,
+                            "refundServiceFee": "0.00",
+                            "refundTotal": "0.00",
+                            "serviceFee": "0.00",
+                            "serviceProvided": True,
+                            "statusCode": "APPROVED",
                             "total": "50.00",
+                            "appliedCredits": None,
                         },
                         {
-                            "bcol_account": "TEST",
-                            "business_identifier": "CP0001234",
-                            "corp_type_code": "CP",
-                            "created_by": "test",
-                            "created_name": "test name",
-                            "created_on": ANY,
+                            "invoiceId": invoice_4.id,
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "50.00",
                             "folio": "1234567890",
                             "gst": "0.00",
-                            "id": invoice_4.id,
-                            "invoice_number": "10021",
-                            "line_items": [
+                            "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "OTANN",
+                                    "filingTypeCode": "OTANN",
                                     "gst": 0.0,
                                     "pst": 0.0,
-                                    "service_fees": 0.0,
+                                    "serviceFees": 0.0,
+                                    "serviceFeesGst": None,
+                                    "statutoryFeesGst": None,
                                     "total": 10.0,
                                 },
                             ],
-                            "paid": 50.0,
-                            "payment_account": {"account_id": "1234", "billable": True},
-                            "payment_date": datetime.strftime(invoice_4.payment_date, "%Y-%m-%dT%H:%M:%S"),
-                            "payment_method": "EFT",
-                            "product": "BUSINESS",
+                            "paymentDate": FullMonthDateStr(invoice_4.payment_date),
                             "products": ["test"],
-                            "refund": 0.0,
-                            "service_fee": "0.00",
-                            "service_provided": True,
-                            "status_code": "COMPLETED",
+                            "refundDate": None,
+                            "refundFee": "0.00",
+                            "refundGst": "0.00",
+                            "refundId": None,
+                            "refundServiceFee": "0.00",
+                            "refundTotal": "0.00",
+                            "serviceFee": "0.00",
+                            "serviceProvided": True,
+                            "statusCode": "PAID",
                             "total": "50.00",
+                            "appliedCredits": None,
                         },
                         {
-                            "bcol_account": "TEST",
-                            "business_identifier": "CP0001234",
-                            "corp_type_code": "CP",
-                            "created_by": "test",
-                            "created_name": "test name",
-                            "created_on": ANY,
+                            "invoiceId": invoice_5.id,
+                            "isFullAppliedCredits": False,
+                            "createdOn": FullMonthDateStr(datetime.now(UTC)),
+                            "appliedCreditsAmount": "0.00",
                             "details": ["label value"],
                             "fee": "118.75",
                             "folio": "1234567890",
                             "gst": "6.25",
-                            "id": invoice_5.id,
-                            "invoice_number": "10021",
-                            "line_items": [
+                            "lineItems": [
                                 {
                                     "description": "test",
-                                    "filing_type_code": "GSTTEST",
+                                    "filingTypeCode": "GSTTEST",
                                     "gst": 6.25,
                                     "pst": 0.0,
-                                    "service_fees": 25.0,
-                                    "service_fees_gst": 1.25,
-                                    "statutory_fees_gst": 5.0,
+                                    "serviceFees": 25.0,
+                                    "serviceFeesGst": 1.25,
+                                    "statutoryFeesGst": 5.0,
                                     "total": 150.0,
                                 },
                             ],
-                            "paid": 0.0,
-                            "payment_account": {"account_id": "1234", "billable": True},
-                            "payment_method": "EFT",
-                            "product": "BUSINESS",
+                            "paymentDate": None,
+                            "refundFee": "0.00",
+                            "refundGst": "0.00",
+                            "refundId": None,
+                            "refundServiceFee": "0.00",
+                            "refundTotal": "0.00",
                             "products": ["test"],
-                            "refund": 0.0,
-                            "service_fee": "25.00",
-                            "service_provided": False,
-                            "status_code": "Invoice Approved",
+                            "refundDate": None,
+                            "serviceFee": "25.00",
+                            "serviceProvided": True,
+                            "statusCode": "APPROVED",
                             "total": "150.00",
+                            "appliedCredits": None,
                         },
                     ],
                 }
             ],
+            "hasPaymentInstructions": True,
             "statement": {
-                "amount_owing": "400.00",
-                "created_on": date_string_now,
-                "duration": (
-                    f"{get_statement_date_string(statement_from_date)} - "
-                    f"{get_statement_date_string(statement_to_date)}"
-                ),
+                "amountOwing": "400.00",
+                "createdOn": date_string_now,
+                "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
                 "frequency": "MONTHLY",
-                "from_date": get_statement_date_string(statement_from_date),
-                "to_date": get_statement_date_string(statement_to_date),
+                "fromDate": FullMonthDateStr(statement_from_date),
+                "toDate": FullMonthDateStr(statement_to_date),
                 "id": statement_model.id,
-                "is_interim_statement": False,
-                "is_overdue": False,
-                "notification_date": None,
-                "overdue_notification_date": None,
-                "payment_methods": ["EFT"],
-                "statement_total": 500.0,
+                "isInterimStatement": False,
+                "isOverdue": False,
+                "notificationDate": None,
+                "overdueNotificationDate": None,
+                "paymentMethods": ["EFT"],
+                "statementTotal": "500.00",
             },
             "statementSummary": {
-                "dueDate": get_statement_date_string(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
+                "cancelledTransactions": None,
+                "dueDate": due_date_value,
                 "lastStatementTotal": "0.00",
                 "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": get_statement_date_string(invoice_3.payment_date.strftime("%Y-%m-%d")),
+                "latestStatementPaymentDate": FullMonthDateStr(invoice_3.payment_date),
+                "balanceForward": "0.00",
             },
-            # 2 are paid - looking with reference to the "statement", 1 is paid ($50) within the statement period
-            "total": {
-                "due": "450.00",
-                "fees": "500.00",
-                "paid": "50.00",
-                "serviceFees": "25.00",
-                "statutoryFees": "475.00",
-            },
-            "hasPaymentInstructions": True,
         }
         expected_report_inputs = ReportRequest(
             report_name=report_name,
@@ -1069,7 +1051,28 @@ def test_get_eft_statement_with_invoices(session):
             stream=True,
         )
 
-        mock_report.assert_called_with(expected_report_inputs)
+        call_args = mock_report.call_args[0][0]
+
+        assert call_args.report_name == expected_report_inputs.report_name
+        assert call_args.template_name == expected_report_inputs.template_name
+        assert call_args.populate_page_number == expected_report_inputs.populate_page_number
+        assert call_args.content_type == expected_report_inputs.content_type
+        assert call_args.stream == expected_report_inputs.stream
+
+        # Compare template_vars as dictionaries (order-independent)
+        expected_vars = expected_report_inputs.template_vars
+        actual_vars = call_args.template_vars
+
+        # Sort transactions in grouped invoices for order-independent comparison
+        for grouped in expected_vars.get("groupedInvoices", []):
+            if "transactions" in grouped:
+                grouped["transactions"] = sorted(grouped["transactions"], key=lambda x: x.get("invoiceId", 0))
+
+        for grouped in actual_vars.get("groupedInvoices", []):
+            if "transactions" in grouped:
+                grouped["transactions"] = sorted(grouped["transactions"], key=lambda x: x.get("invoiceId", 0))
+
+        assert actual_vars == expected_vars
 
 
 def localize_date(date: datetime):

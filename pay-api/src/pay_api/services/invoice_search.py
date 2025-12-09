@@ -13,6 +13,9 @@
 # limitations under the License.
 """Service to support invoice searches."""
 
+from collections import defaultdict
+from datetime import datetime
+
 from dateutil import parser
 from flask import current_app
 from sqlalchemy import String, and_, cast, exists, func, or_, select
@@ -40,22 +43,24 @@ from pay_api.models.search.invoice_composite_model import (
     get_latest_refund_status_expr,
     get_partial_refundable_expr,
 )
-from pay_api.services.code import Code as CodeService
+from pay_api.models.statement import Statement
+from pay_api.services.auth import get_account_info_with_contact
 from pay_api.services.invoice import Invoice as InvoiceService
-from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment import PaymentReportInput
-from pay_api.services.payment_calculations import (
-    build_grouped_invoice_context,
-    build_statement_context,
-    build_statement_summary_context,
-)
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
-from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus, PaymentMethod, RefundStatus
+from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, RefundStatus, StatementTemplate
 from pay_api.utils.errors import Error
 from pay_api.utils.sqlalchemy import JSONPath
+from pay_api.utils.statement_dtos import (
+    GroupedInvoicesDTO,
+    StatementContextDTO,
+    StatementPDFContextDTO,
+    StatementSummaryDTO,
+    SummariesGroupedByPaymentMethodDTO,
+)
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date, get_statement_currency_string
+from pay_api.utils.util import get_local_formatted_date
 
 from .csv_service import CsvService
 from .report_service import ReportRequest, ReportService
@@ -436,7 +441,9 @@ class InvoiceSearch:
         return data
 
     @staticmethod
-    def search_all_purchase_history(auth_account_id: str, search_filter: dict, content_type: str):
+    def search_all_purchase_history(
+        auth_account_id: str, search_filter: dict, query_only: bool = False
+    ):
         """Return all results for the purchase history."""
         return InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
@@ -445,7 +452,7 @@ class InvoiceSearch:
                 page=0,
                 limit=0,
                 return_all=True,
-                query_only=content_type == ContentType.CSV.value,
+                query_only=query_only,
             )
         )
 
@@ -454,7 +461,9 @@ class InvoiceSearch:
         """Create payment report."""
         current_app.logger.debug(f"<create_payment_report {auth_account_id}")
 
-        results = InvoiceSearch.search_all_purchase_history(auth_account_id, search_filter, content_type)
+        results = InvoiceSearch.search_all_purchase_history(
+            auth_account_id, search_filter, query_only=True
+        )
 
         report_response = InvoiceSearch.generate_payment_report(
             PaymentReportInput(
@@ -515,67 +524,78 @@ class InvoiceSearch:
 
     @staticmethod
     @user_context
-    def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
-        """Prepare data and generate payment report by calling report api."""
+    def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # noqa: ARG004 pylint: disable=too-many-locals,unused-argument
+        """Prepare data and generate payment report by calling report api.
+
+        This method is used for:
+        1. Statement CSV export - uses statement_report template
+        2. Payment transactions report (CSV/PDF) - uses payment_transactions template
+
+        Both CSV and PDF use the same simple format: columns + values.
+        Note: PDF statement generation uses generate_statement_pdf_report instead.
+        """
         content_type = report_inputs.content_type
         results = report_inputs.results
         report_name = report_inputs.report_name
         template_name = report_inputs.template_name
+        csv_data = CsvService.prepare_csv_data(results)
 
         if content_type == ContentType.CSV.value:
-            csv_data = CsvService.prepare_csv_data(results)
             return CsvService.create_report(csv_data)
         else:
-            # Use the status_code_description instead of status_code.
-            # Future: move this into something more specialized.
-            invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
-            for invoice in results.get("items", None):
-                filtered_codes = [cd for cd in invoice_status_codes["codes"] if cd["code"] == invoice["status_code"]]
-                if filtered_codes:
-                    invoice["status_code"] = filtered_codes[0]["description"]
-            invoices = results.get("items", None)
-            statement = kwargs.get("statement", {})
-            totals = InvoiceSearch.get_invoices_totals(invoices, statement)
+            report_response = ReportService.get_report_response(
+                ReportRequest(
+                    report_name=report_name,
+                    template_name=template_name,
+                    template_vars=csv_data,
+                    populate_page_number=True,
+                    content_type=content_type,
+                )
+            )
+            return report_response
 
-            account_info = None
-            if kwargs.get("auth", None):
-                account_id = kwargs.get("auth")["account"]["id"]
-                contact_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}/contacts"
-                contact = OAuthService.get(
-                    endpoint=contact_url,
-                    token=kwargs["user"].bearer_token,
-                    auth_header_type=AuthHeaderType.BEARER,
-                    content_type=ContentType.JSON,
-                ).json()
+    @staticmethod
+    @user_context
+    def generate_statement_pdf_report(
+        invoices_orm: list[Invoice],
+        db_summaries: SummariesGroupedByPaymentMethodDTO,
+        statement: Statement,
+        statement_summary: dict,
+        report_name: str,
+        content_type: str,
+        **kwargs,
+    ):
+        """Generate PDF statement report using ORM objects and database summaries."""
+        db_summaries = db_summaries.summaries
 
-                account_info = kwargs.get("auth").get("account")
-                account_info["contact"] = contact["contacts"][0]  # Get the first one from the list
+        statement_to_date = statement.to_date
+        account_info = get_account_info_with_contact(**kwargs)
 
-            invoices = results.get("items", [])
-            statement_summary = report_inputs.statement_summary
-            grouped_invoices: list[dict] = build_grouped_invoice_context(invoices, statement, statement_summary)
+        grouped_invoices = InvoiceSearch._group_invoices_by_payment_method(
+            invoices_orm=invoices_orm,
+            db_summaries=db_summaries,
+            statement=statement,
+            statement_summary=statement_summary,
+            statement_to_date=statement_to_date,
+        )
 
-            has_payment_instructions = any(item.get("payment_method") == "EFT" for item in grouped_invoices)
+        statement_summary_dto = StatementSummaryDTO.from_dict(statement_summary)
+        statement_dto = StatementContextDTO.from_statement(statement)
 
-            formatted_totals = {}
-            for key, value in totals.items():
-                formatted_totals[key] = get_statement_currency_string(value)
+        context_dto = StatementPDFContextDTO(
+            statement_summary=statement_summary_dto,
+            grouped_invoices=grouped_invoices,
+            account=account_info,
+            statement=statement_dto,
+            has_payment_instructions=any(g.payment_method == PaymentMethod.EFT.value for g in grouped_invoices),
+        )
 
-            template_vars = {
-                "statementSummary": build_statement_summary_context(statement_summary),
-                "groupedInvoices": grouped_invoices,
-                "total": formatted_totals,
-                "account": account_info,
-                "statement": build_statement_context(kwargs.get("statement")),
-            }
-
-            if has_payment_instructions:
-                template_vars["hasPaymentInstructions"] = True
+        template_vars = context_dto.to_dict()
 
         report_response = ReportService.get_report_response(
             ReportRequest(
                 report_name=report_name,
-                template_name=template_name,
+                template_name=StatementTemplate.STATEMENT_REPORT.value,
                 template_vars=template_vars,
                 populate_page_number=True,
                 content_type=content_type,
@@ -583,3 +603,38 @@ class InvoiceSearch:
             )
         )
         return report_response
+
+    @staticmethod
+    def _group_invoices_by_payment_method(
+        invoices_orm: list,
+        db_summaries: dict,
+        statement: Statement,
+        statement_summary: dict,
+        statement_to_date: datetime,
+    ) -> list[GroupedInvoicesDTO]:
+        """Group invoices by payment method and create DTOs."""
+        grouped_by_method = defaultdict(list)
+        for invoice in invoices_orm:
+            grouped_by_method[invoice.payment_method_code].append(invoice)
+
+        grouped_invoices = []
+        for method in [m.value for m in PaymentMethod.Order]:
+            if method not in grouped_by_method:
+                continue
+
+            items = grouped_by_method[method]
+            summary = db_summaries.get(method, {})
+
+            group_dto = GroupedInvoicesDTO.from_invoices_and_summary(
+                payment_method=method,
+                invoices_orm=items,
+                db_summary=summary,
+                statement=statement,
+                statement_summary=statement_summary,
+                statement_to_date=statement_to_date,
+                is_first=(len(grouped_invoices) == 0),
+            )
+
+            grouped_invoices.append(group_dto)
+
+        return grouped_invoices

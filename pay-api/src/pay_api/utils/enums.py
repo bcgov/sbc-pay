@@ -66,6 +66,38 @@ class InvoiceStatus(Enum):
     # This status is not stored in the database but used in models/invoice.py
     COMPLETED = "COMPLETED"
 
+    @classmethod
+    def partial_fund_statuses(cls):
+        """Return list of partially refunded and credited statuses."""
+        return [
+            cls.PARTIALLY_CREDITED.value,
+            cls.PARTIALLY_REFUNDED.value,
+        ]
+
+    @classmethod
+    def full_refund_statuses(cls):
+        """Return list of full refund related statuses."""
+        return [
+            cls.REFUNDED.value,
+            cls.CREDITED.value,
+        ]
+
+    @classmethod
+    def refund_statuses(cls):
+        """Return list of refund-related statuses."""
+        return [
+            *cls.full_refund_statuses(),
+            *cls.partial_fund_statuses(),
+        ]
+
+    @classmethod
+    def paid_statuses(cls):
+        """Return list of paid-related statuses (including refunded)."""
+        return [
+            cls.PAID.value,
+            *cls.refund_statuses(),
+        ]
+
 
 class TransactionStatus(Enum):
     """Transaction status codes."""
