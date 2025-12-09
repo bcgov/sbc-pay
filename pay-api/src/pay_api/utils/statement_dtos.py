@@ -24,11 +24,11 @@ from decimal import Decimal  # noqa: TC001 TC003
 from attrs import define
 
 from pay_api.models.applied_credits import AppliedCreditsSearchModel
-from pay_api.models.invoice import InvoiceSearchModel  # noqa: TC001
+from pay_api.models.invoice import Invoice as InvoiceModel  # noqa: TC001
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 from pay_api.models.statement import Statement  # noqa: TC001 TC003
 from pay_api.utils.converter import CurrencyStr, FullMonthDateStr
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency, StatementTitles
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, RefundsPartialType, StatementFrequency, StatementTitles
 from pay_api.utils.serializable import Serializable
 
 
@@ -53,9 +53,15 @@ class StatementTransactionDTO(Serializable):
     total: CurrencyStr
     is_full_applied_credits: bool
     applied_credits_amount: CurrencyStr
+    refund_total: CurrencyStr
+    refund_fee: CurrencyStr
+    refund_gst: CurrencyStr
+    refund_service_fee: CurrencyStr
     payment_date: FullMonthDateStr | None
     refund_date: FullMonthDateStr | None
+    refund_id: str | None = None
     applied_credits: list[AppliedCreditsSearchModel] | None = None
+
     @staticmethod
     def determine_service_provision_status(status_code: str, payment_method: str) -> bool:
         """Determine if service was provided based on invoice status code and payment method."""
@@ -66,6 +72,8 @@ class StatementTransactionDTO(Serializable):
             InvoiceStatus.REFUND_REQUESTED.value,
             InvoiceStatus.REFUNDED.value,
             InvoiceStatus.COMPLETED.value,
+            InvoiceStatus.PARTIALLY_CREDITED.value,
+            InvoiceStatus.PARTIALLY_REFUNDED.value,
         }
 
         if status_code in default_statuses:
@@ -97,10 +105,31 @@ class StatementTransactionDTO(Serializable):
             case _:
                 return False
 
+    @staticmethod
+    def _compute_refund_lines_for_display(invoice: InvoiceModel, fee: Decimal):
+        """Compute refund lines for display in statement."""
+        if invoice.invoice_status_code not in InvoiceStatus.refund_statuses():
+            return 0, 0, 0, None
+
+        if invoice.invoice_status_code in InvoiceStatus.partial_fund_statuses():
+            base_partial = sum(
+                r.refund_amount for r in invoice.partial_refunds if r.refund_type == RefundsPartialType.BASE_FEES.value
+            )
+            service_partial = sum(
+                r.refund_amount
+                for r in invoice.partial_refunds
+                if r.refund_type == RefundsPartialType.SERVICE_FEES.value
+            )
+            gst_partial = invoice.refund - base_partial - service_partial
+            refund_id = ",".join(str(r.id) for r in invoice.partial_refunds)
+            return base_partial, gst_partial, service_partial, refund_id
+
+        return fee, invoice.gst, invoice.service_fees, invoice.refund_id
+
     @classmethod
     def from_orm(
         cls,
-        invoice: InvoiceSearchModel,
+        invoice: InvoiceModel,
         payment_method: str,
         statement_to_date: datetime,
     ) -> StatementTransactionDTO:
@@ -124,6 +153,8 @@ class StatementTransactionDTO(Serializable):
 
         is_full_applied_credits = applied_credits_amount == invoice.total
 
+        refund_fee, refund_gst, refund_service_fee, refund_id = cls._compute_refund_lines_for_display(invoice, fee)
+
         return cls(
             invoice_id=invoice.id,
             products=products,
@@ -142,6 +173,11 @@ class StatementTransactionDTO(Serializable):
             applied_credits=applied_credits,
             applied_credits_amount=CurrencyStr(applied_credits_amount),
             is_full_applied_credits=is_full_applied_credits,
+            refund_id=refund_id,
+            refund_fee=CurrencyStr(refund_fee),
+            refund_gst=CurrencyStr(refund_gst),
+            refund_service_fee=CurrencyStr(refund_service_fee),
+            refund_total=CurrencyStr(invoice.refund),
         )
 
 
@@ -220,9 +256,12 @@ class PaymentMethodSummaryRawDTO(Serializable):
         credits_applied = getattr(row, cls.CREDITS_APPLIED)
         paid = getattr(row, cls.PAID)
 
-        due = totals - paid - counted_refund
-        net_total = totals - counted_refund - credits_applied
-        paid_without_credits = paid - credits_applied
+        totals_remaining_after_credits = max(totals - credits_applied, 0)
+
+        refund_applied_to_total = min(counted_refund, totals_remaining_after_credits)
+
+        net_total = totals - credits_applied - refund_applied_to_total
+        net_paid = paid - credits_applied - refund_applied_to_total
 
         return cls(
             totals=net_total,
@@ -231,8 +270,8 @@ class PaymentMethodSummaryRawDTO(Serializable):
             gst=getattr(row, cls.GST),
             credits_applied=credits_applied,
             counted_refund=counted_refund,
-            paid=paid_without_credits,
-            due=due,
+            paid=net_paid,
+            due=totals - paid,
             invoice_count=getattr(row, cls.INVOICE_COUNT),
         )
 
@@ -257,7 +296,7 @@ class GroupedInvoicesDTO(Serializable):
     # EFT-specific fields
     amount_owing: CurrencyStr | None = None
     latest_payment_date: str | None = None
-    due_date: str | None = None
+    due_date: FullMonthDateStr | None = None
     # INTERNAL-specific fields
     is_staff_payment: bool | None = None
 
@@ -265,7 +304,7 @@ class GroupedInvoicesDTO(Serializable):
     def from_invoices_and_summary(
         cls,
         payment_method: str,
-        invoices_orm: list[InvoiceSearchModel],
+        invoices_orm: list[InvoiceModel],
         db_summary: PaymentMethodSummaryRawDTO,
         statement: Statement,
         statement_summary: dict,
@@ -274,7 +313,9 @@ class GroupedInvoicesDTO(Serializable):
     ) -> GroupedInvoicesDTO:
         """Create DTO from ORM invoices and database summary for PDF statement."""
         transactions = [
-            StatementTransactionDTO.from_orm(inv, payment_method, statement_to_date) for inv in invoices_orm
+            t
+            for t in (StatementTransactionDTO.from_orm(inv, payment_method, statement_to_date) for inv in invoices_orm)
+            if t.service_provided
         ]
 
         summary = PaymentMethodSummaryDTO.from_db_summary(db_summary)
@@ -300,7 +341,7 @@ class GroupedInvoicesDTO(Serializable):
             if statement.is_interim_statement and statement_summary:
                 latest_payment_date = statement_summary.get("latestStatementPaymentDate")
             elif not statement.is_interim_statement and statement_summary:
-                due_date = statement_summary.get("dueDate")
+                due_date = FullMonthDateStr(statement_summary.get("dueDate"))
 
         return cls(
             payment_method=payment_method,
@@ -309,7 +350,7 @@ class GroupedInvoicesDTO(Serializable):
             service_fees=summary.service_fees,
             gst=summary.gst,
             paid=summary.paid,
-            due=summary.due,
+            due=summary.due + Decimal(statement_summary.get("balanceForward") or 0),
             credits_applied=summary.credits_applied,
             counted_refund=summary.counted_refund,
             transactions=transactions,

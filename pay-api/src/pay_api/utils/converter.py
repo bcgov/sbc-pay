@@ -34,6 +34,12 @@ class FullMonthDateStr(str):
             return None
         if isinstance(value, datetime | date):
             value = value.strftime("%B %d, %Y")
+        elif isinstance(value, str):
+            try:
+                dt = datetime.fromisoformat(value)
+                value = dt.strftime("%B %d, %Y")
+            except ValueError:
+                pass
         return str.__new__(cls, value)
 
 
