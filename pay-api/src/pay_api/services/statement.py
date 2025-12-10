@@ -405,9 +405,10 @@ class Statement:  # pylint:disable=too-many-public-methods
 
         last_total, last_paid = 0, 0
         if previous_statement:
-          summary = previous_summaries.summaries.get(payment_method.value)
-          last_total = summary.due
-          last_paid = summary.paid
+            summary = previous_summaries.summaries.get(payment_method.value)
+            if summary:
+                last_total = summary.due
+                last_paid = summary.paid
 
         return {
             "lastStatementTotal": last_total,
@@ -852,7 +853,6 @@ class Statement:  # pylint:disable=too-many-public-methods
         """Apply partial refunds and credits subquery and computed status to the query."""
         partial_refund_subquery = (
             db.session.query(RefundsPartial.invoice_id, func.bool_or(RefundsPartial.is_credit).label("is_credit"))
-            .filter(RefundsPartial.status == RefundsPartialStatus.REFUND_PROCESSED.value)
             .group_by(RefundsPartial.invoice_id)
             .subquery()
         )
@@ -861,6 +861,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         partial_refund_condition = and_(
             InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
             InvoiceModel.refund != 0,
+            InvoiceModel.refund_date.isnot(None),
             partial_refund_subquery.c.is_credit.isnot(None),
         )
 
