@@ -1079,6 +1079,8 @@ def test_payment_method_summary_raw_dto_from_db_row():
             self.counted_refund = 0.00
             self.invoice_count = 5
             self.credits_applied = 2.00
+            self.is_pre_summary = True
+            self.paid_pre_balance = 98.00
 
     row = MockRow()
     dto = PaymentMethodSummaryRawDTO.from_db_row(row)

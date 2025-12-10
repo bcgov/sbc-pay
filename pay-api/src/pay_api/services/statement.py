@@ -384,15 +384,17 @@ class Statement:  # pylint:disable=too-many-public-methods
     ) -> dict:
         """Populate statement summary with additional information."""
         previous_statement = Statement.get_previous_statement(statement)
-        previous_totals = None
         if previous_statement:
             previous_invoices = Statement.find_all_payments_and_invoices_for_statement(
-                previous_statement.id, payment_method
-            ).all()
-            previous_items = InvoiceSearch.create_payment_report_details(purchases=previous_invoices, data=None)
+                previous_statement.id,
+                payment_method,
+                is_pdf_statement=True,
+                statement_to_date=previous_statement.to_date,
+            )
 
-            # Skip passing statement, we need the totals independent of the statement/payment date.
-            previous_totals = InvoiceSearch.get_invoices_totals(previous_items.get("items", None), None)
+            previous_summaries = Statement.get_totals_by_payment_method_from_db(
+                previous_invoices, previous_statement.to_date, next_statement_to_date=statement.to_date
+            )
 
         latest_payment_date = None
         for invoice in statement_invoices:
@@ -401,8 +403,12 @@ class Statement:  # pylint:disable=too-many-public-methods
             if latest_payment_date is None or invoice.payment_date > latest_payment_date:
                 latest_payment_date = invoice.payment_date
 
-        last_total = previous_totals["fees"] if previous_totals else 0
-        last_paid = previous_totals["paid"] if previous_totals else 0
+        last_total, last_paid = 0, 0
+        if previous_statement:
+            summary = previous_summaries.summaries.get(payment_method.value)
+            if summary:
+                last_total = summary.due
+                last_paid = summary.paid
 
         return {
             "lastStatementTotal": last_total,
@@ -444,14 +450,15 @@ class Statement:  # pylint:disable=too-many-public-methods
         else:
             report_name = f"{report_name}-{from_date_string}-to-{to_date_string}.{extension}"
 
-        statement_purchases = Statement.find_all_payments_and_invoices_for_statement(
-            statement_id, is_pdf_statement=is_pdf, statement_to_date=statement_to_date
-        )
-
         if extension == "pdf":
+            statement_purchases = Statement.find_all_payments_and_invoices_for_statement(
+                statement_id, is_pdf_statement=is_pdf, statement_to_date=statement_to_date, add_refund_id=True
+            )
             db_summaries = Statement.get_totals_by_payment_method_from_db(statement_purchases, statement_to_date)
             statement_purchases = statement_purchases.all()
-            statement_purchases = [(invoice := row[0], setattr(invoice, "refund_id", row[1]))[0] for row in statement_purchases]
+            statement_purchases = [
+                (invoice := row[0], setattr(invoice, "refund_id", row[1]))[0] for row in statement_purchases
+            ]
             # Build statement summary for EFT/PAD
             summary = Statement._build_statement_summary_for_methods(statement_dao, statement_purchases)
 
@@ -465,6 +472,9 @@ class Statement:  # pylint:disable=too-many-public-methods
                 auth=kwargs.get("auth", None),
             )
         else:
+            statement_purchases = Statement.find_all_payments_and_invoices_for_statement(
+                statement_id, is_pdf_statement=is_pdf, statement_to_date=statement_to_date
+            )
             statement_svc = Statement()
             statement_svc._dao = statement_dao  # pylint: disable=protected-access
             statement_dict = statement_svc.asdict()
@@ -722,6 +732,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         payment_method: PaymentMethod = None,
         is_pdf_statement: bool = False,
         statement_to_date: datetime = None,
+        add_refund_id: bool = False,
     ) -> Query | list[InvoiceModel]:
         """Find all payment and invoices specific to a statement."""
         query = (
@@ -733,13 +744,15 @@ class Statement:  # pylint:disable=too-many-public-methods
             query = query.filter(InvoiceModel.payment_method_code == payment_method.value)
 
         if is_pdf_statement:
-            query = Statement._apply_partial_refunds_and_credits(query, statement_to_date)
+            query = Statement._apply_partial_refunds_and_credits(query, statement_to_date, add_refund_id=add_refund_id)
 
         return query
 
     @staticmethod
     def get_totals_by_payment_method_from_db(
-        invoices_query, statement_to_date: datetime
+        invoices_query,
+        statement_to_date: datetime,
+        next_statement_to_date: datetime = None,
     ) -> SummariesGroupedByPaymentMethodDTO:
         """Calculate payment method totals using database aggregation (no Python IDs, clean CTE)."""
         paid_statuses = InvoiceStatus.paid_statuses()
@@ -761,6 +774,9 @@ class Statement:  # pylint:disable=too-many-public-methods
             .filter(InvoiceModel.invoice_status_code != InvoiceStatus.CANCELLED.value)
             .cte("inv")
         )
+        paid_previous_stmt_expr = Statement._build_paid_previous_statement_expr(
+            inv, paid_statuses, statement_to_date, next_statement_to_date
+        )
         agg = (
             db.session.query(
                 inv.c.payment_method_code.label("payment_method_code"),
@@ -781,6 +797,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                         else_=0,
                     )
                 ).label("counted_paid"),
+                paid_previous_stmt_expr,
                 # Calculate whether refund should be counted
                 func.sum(
                     case(
@@ -817,9 +834,11 @@ class Statement:  # pylint:disable=too-many-public-methods
                 func.sum(agg.c.service_fees).label(PaymentMethodSummaryRawDTO.SERVICE_FEES),
                 func.sum(agg.c.gst).label(PaymentMethodSummaryRawDTO.GST),
                 func.sum(agg.c.counted_paid).label(PaymentMethodSummaryRawDTO.PAID),
+                func.sum(agg.c.paid_previous_statement).label(PaymentMethodSummaryRawDTO.PAID_PRE_BALANCE),
                 func.sum(agg.c.counted_refund).label(PaymentMethodSummaryRawDTO.COUNTED_REFUND),
                 func.sum(agg.c.credits_applied).label(PaymentMethodSummaryRawDTO.CREDITS_APPLIED),
                 func.count(agg.c.invoice_id).label(PaymentMethodSummaryRawDTO.INVOICE_COUNT),
+                literal(next_statement_to_date is not None).label(PaymentMethodSummaryRawDTO.IS_PRE_SUMMARY),
             )
             .group_by(agg.c.payment_method_code)
             .all()
@@ -830,11 +849,10 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
     @staticmethod
-    def _apply_partial_refunds_and_credits(query, statement_to_date: datetime = None):
+    def _apply_partial_refunds_and_credits(query, statement_to_date: datetime = None, add_refund_id: bool = False):
         """Apply partial refunds and credits subquery and computed status to the query."""
         partial_refund_subquery = (
             db.session.query(RefundsPartial.invoice_id, func.bool_or(RefundsPartial.is_credit).label("is_credit"))
-            .filter(RefundsPartial.status == RefundsPartialStatus.REFUND_PROCESSED.value)
             .group_by(RefundsPartial.invoice_id)
             .subquery()
         )
@@ -843,6 +861,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         partial_refund_condition = and_(
             InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
             InvoiceModel.refund != 0,
+            InvoiceModel.refund_date.isnot(None),
             partial_refund_subquery.c.is_credit.isnot(None),
         )
 
@@ -883,15 +902,19 @@ class Statement:  # pylint:disable=too-many-public-methods
         else:
             computed_status = base_computed_status
 
-        return (
+        q = (
             query.outerjoin(partial_refund_subquery, InvoiceModel.id == partial_refund_subquery.c.invoice_id)
             .outerjoin(latest_refund_cte, InvoiceModel.id == latest_refund_cte.c.invoice_id)
             .options(
                 with_expression(InvoiceModel.invoice_status_code, computed_status),
                 subqueryload(InvoiceModel.applied_credits),
             )
-            .add_columns(refund_id.label("refund_id"))
         )
+
+        if add_refund_id:
+            q = q.add_columns(refund_id.label("refund_id"))
+
+        return q
 
     @staticmethod
     def _build__refund_cte():
@@ -926,3 +949,24 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
         return refund_id, latest_refund_cte
+
+    @staticmethod
+    def _build_paid_previous_statement_expr(inv, paid_statuses, statement_to_date, next_statement_to_date):
+        """Return SQL expression for paid_previous_statement (0 if next_statement_to_date is None)."""
+        if not next_statement_to_date:
+            return literal(0).label("paid_previous_statement")
+
+        return func.sum(
+            case(
+                (
+                    and_(
+                        inv.c.payment_date.isnot(None),
+                        func.date(inv.c.payment_date) > statement_to_date,
+                        func.date(inv.c.payment_date) <= next_statement_to_date,
+                        inv.c.invoice_status_code.in_(paid_statuses),
+                    ),
+                    inv.c.paid,
+                ),
+                else_=0,
+            )
+        ).label("paid_previous_statement")
