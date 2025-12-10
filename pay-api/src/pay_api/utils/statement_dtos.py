@@ -234,9 +234,11 @@ class PaymentMethodSummaryRawDTO(Serializable):
     SERVICE_FEES = "service_fees"
     GST = "gst"
     PAID = "paid"
+    PAID_PRE_BALANCE = 'paid_pre_balance'
     COUNTED_REFUND = "counted_refund"
     CREDITS_APPLIED = "credits_applied"
     INVOICE_COUNT = "invoice_count"
+    IS_PRE_SUMMARY = "is_pre_summary"
 
     totals: Decimal
     fees: Decimal
@@ -247,6 +249,8 @@ class PaymentMethodSummaryRawDTO(Serializable):
     credits_applied: Decimal
     counted_refund: Decimal
     invoice_count: int
+    is_pre_summary: bool | None = None
+    paid_pre_balance: Decimal | None = None
 
     @classmethod
     def from_db_row(cls, row) -> PaymentMethodSummaryRawDTO:
@@ -255,6 +259,8 @@ class PaymentMethodSummaryRawDTO(Serializable):
         counted_refund = getattr(row, cls.COUNTED_REFUND)
         credits_applied = getattr(row, cls.CREDITS_APPLIED)
         paid = getattr(row, cls.PAID)
+        is_pre_summary = getattr(row, cls.IS_PRE_SUMMARY) or False
+        paid_pre_balance = getattr(row, cls.PAID_PRE_BALANCE) or 0
 
         totals_remaining_after_credits = max(totals - credits_applied, 0)
 
@@ -262,6 +268,7 @@ class PaymentMethodSummaryRawDTO(Serializable):
 
         net_total = totals - credits_applied - refund_applied_to_total
         net_paid = paid - credits_applied - refund_applied_to_total
+        paid_redefined = paid_pre_balance if is_pre_summary else net_paid
 
         return cls(
             totals=net_total,
@@ -270,7 +277,7 @@ class PaymentMethodSummaryRawDTO(Serializable):
             gst=getattr(row, cls.GST),
             credits_applied=credits_applied,
             counted_refund=counted_refund,
-            paid=net_paid,
+            paid=paid_redefined,
             due=totals - paid,
             invoice_count=getattr(row, cls.INVOICE_COUNT),
         )
@@ -350,7 +357,7 @@ class GroupedInvoicesDTO(Serializable):
             service_fees=summary.service_fees,
             gst=summary.gst,
             paid=summary.paid,
-            due=summary.due + Decimal(statement_summary.get("balanceForward") or 0),
+            due=summary.due,
             credits_applied=summary.credits_applied,
             counted_refund=summary.counted_refund,
             transactions=transactions,
@@ -486,7 +493,7 @@ class StatementSummaryDTO(Serializable):
             cancelled_transactions=cancelled_transactions,
             latest_statement_payment_date=FullMonthDateStr(statement_summary.get("latestStatementPaymentDate")),
             due_date=FullMonthDateStr(statement_summary.get("dueDate")),
-            balance_forward=statement_summary.get("balanceForward"),
+            balance_forward=max(statement_summary.get("balanceForward") or 0, 0),
         )
 
 
