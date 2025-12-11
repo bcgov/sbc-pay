@@ -116,7 +116,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             ldap_conn.set_option(ldap.OPT_PROTOCOL_VERSION, 3)  # pylint: disable=no-member
             # ldap_conn.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)  # pylint: disable=no-member
             ldap_conn.set_option(ldap.OPT_X_TLS_DEMAND, True)  # pylint: disable=no-member
-            ldap_conn.set_option(ldap.OPT_DEBUG_LEVEL, 255)  # pylint: disable=no-member
+            # ldap_conn.set_option(ldap.OPT_DEBUG_LEVEL, 255)  # pylint: disable=no-member
 
             username = current_app.config.get("BCOL_LDAP_USER_DN_PATTERN").format(user_id)
             ldap_conn.simple_bind_s(username, password)
