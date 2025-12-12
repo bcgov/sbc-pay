@@ -151,9 +151,9 @@ def test_create_refund_for_paid_invoice(
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
 
-    def mock_executor_submit(func):
+    def mock_executor_submit(func, *args, **kwargs):
         """Mock executor submit to run synchronously in tests."""
-        func()
+        func(*args, **kwargs)
         return Mock()
 
     mocker.patch("pay_api.services.base_payment_system._executor.submit", side_effect=mock_executor_submit)
