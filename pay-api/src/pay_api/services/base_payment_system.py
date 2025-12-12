@@ -327,16 +327,24 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         if send_credit_notification:
 
             @copy_current_request_context
-            def _send_notification():
+            def _send_notification(auth_account_id, account_name, branch_name, refund_amount):
                 """Send credit notification in background thread."""
                 try:
-                    PaymentSystemService._send_credit_notification(payment_account, refund_amount)
+                    PaymentSystemService._send_credit_notification(
+                        auth_account_id, account_name, branch_name, refund_amount
+                    )
                 except Exception as e:
                     current_app.logger.error(
                         f"{{Error sending credit notification: {str(e)} stack_trace: {traceback.format_exc()}}}"
                     )
 
-            _executor.submit(_send_notification)
+            _executor.submit(
+                _send_notification,
+                payment_account.auth_account_id,
+                payment_account.name,
+                payment_account.branch_name,
+                refund_amount,
+            )
 
         payment_account.flush()
 
@@ -346,29 +354,30 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         return InvoiceStatus.CREDITED.value
 
     @staticmethod
-    def _send_credit_notification(payment_account: PaymentAccountModel, refund_amount: float):
+    def _send_credit_notification(
+        auth_account_id: str, account_name: str, branch_name: str | None, refund_amount: float
+    ):
         """Send credit notification email to account admins."""
         receiver_recipients = []
-        org_admins_response = get_account_admin_users(payment_account.auth_account_id, use_service_account=True)
+        org_admins_response = get_account_admin_users(auth_account_id, use_service_account=True)
 
         members = org_admins_response.get("members") if org_admins_response.get("members", None) else []
         for member in members:
             if (user := member.get("user")) and (contacts := user.get("contacts")):
                 receiver_recipients.append(contacts[0].get("email"))
 
+        account_name_with_branch = (
+            f"{account_name}-{branch_name}" if branch_name and branch_name not in account_name else account_name
+        )
+
         subject = f"${refund_amount} {'credits' if refund_amount > 1 else 'credit'} was added to your account "
         html_body = _render_credit_add_notification_template(
             {
                 "amount": refund_amount,
-                "account_number": payment_account.auth_account_id,
-                "account_name_with_branch": (
-                    f"{payment_account.name}-{payment_account.branch_name}"
-                    if payment_account.branch_name and payment_account.branch_name not in payment_account.name
-                    else payment_account.name
-                ),
+                "account_number": auth_account_id,
+                "account_name_with_branch": account_name_with_branch,
                 "login_url": (
-                    f"{current_app.config.get('AUTH_WEB_URL')}/account/"
-                    f"{payment_account.auth_account_id}/settings/transactions"
+                    f"{current_app.config.get('AUTH_WEB_URL')}/account/{auth_account_id}/settings/transactions"
                 ),
             }
         )
