@@ -1161,7 +1161,7 @@ def test_post_shortname_refund(db, session, client, jwt, emails_with_keycloak_ro
             "authAccountId": payment_account.auth_account_id,
         }
     )
-    with patch("pay_api.services.eft_refund.send_email") as mock_email:
+    with patch("pay_api.services.eft_refund.send_email_async") as mock_email:
         rv = client.post("/api/v1/eft-shortnames/shortname-refund", headers=headers, json=data)
         if "invalid" in test_name:
             assert rv.status_code == 400

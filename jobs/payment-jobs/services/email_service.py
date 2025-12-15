@@ -22,6 +22,7 @@ from jinja2 import Environment, FileSystemLoader
 
 def _get_template(template_file_name: str):
     """Retrieve template."""
+    # Refactor this common code to PAY-API.
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
     templates_dir = os.path.join(project_root_dir, "templates")

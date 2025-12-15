@@ -15,10 +15,11 @@
 """This manages all of the email notification service."""
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 
 from attrs import define
-from flask import current_app
+from flask import copy_current_request_context, current_app
 from jinja2 import Environment, FileSystemLoader
 
 from pay_api.services.auth import get_service_account_token
@@ -26,10 +27,13 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType, RefundStatus
 from pay_api.utils.serializable import Serializable
 
+_executor = ThreadPoolExecutor(max_workers=5)
+
 
 def send_email(recipients: list[str], subject: str, body: str):
     """Send the email notification."""
-    # Note if we send HTML in the body, we aren't sending through GCNotify, ideally we'd like to send through GCNotify.
+    # Note if we send HTML in the body, we aren't sending through GCNotify,
+    # ideally we'd like to send through GCNotify.
     token = get_service_account_token()
     current_app.logger.info(f">send_email to recipients: {recipients}")
     notify_url = current_app.config.get("NOTIFY_API_ENDPOINT") + "notify/"
@@ -58,6 +62,26 @@ def send_email(recipients: list[str], subject: str, body: str):
             current_app.logger.error(f"Error sending email to {recipient}: {e}")
 
     return success
+
+
+def send_email_async(recipients: list[str], subject: str, body: str):
+    """Send the email notification asynchronously using ThreadExecutor.
+
+    Args:
+        recipients: List of email recipients
+        subject: Email subject
+        body: Email body
+
+    Returns:
+        Future object representing the asynchronous email sending task
+    """
+
+    @copy_current_request_context
+    def _send_email_task(recipients_list: list[str], email_subject: str, email_body: str):
+        """Send the email notification in background thread."""
+        return send_email(recipients_list, email_subject, email_body)
+
+    return _executor.submit(_send_email_task, recipients, subject, body)
 
 
 @define
@@ -94,7 +118,8 @@ def _render_payment_reversed_template(params: dict) -> str:
     env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
     template = env.get_template("eft_reverse_payment.html")
 
-    statement_url = f"{current_app.config.get('AUTH_WEB_URL')}/account/{params['accountId']}/settings/statements"
+    account_id = params["accountId"]
+    statement_url = f"{current_app.config.get('AUTH_WEB_URL')}/account/{account_id}/settings/statements"
     params["statementUrl"] = statement_url
 
     return template.render(params)
@@ -141,7 +166,7 @@ class JobFailureNotification(Serializable):
             current_app.logger.info("No recipients found to send email")
             return
         html_body = template.render(email_params)
-        send_email(recipients=recipients, subject=self.subject, body=html_body)
+        send_email_async(recipients=recipients, subject=self.subject, body=html_body)
 
 
 @define

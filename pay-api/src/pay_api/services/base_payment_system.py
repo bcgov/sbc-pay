@@ -382,6 +382,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                 ),
             }
         )
+        # Already async because of the ThreadExecutor higher up
         send_email(receiver_recipients, subject, html_body)
 
     @staticmethod

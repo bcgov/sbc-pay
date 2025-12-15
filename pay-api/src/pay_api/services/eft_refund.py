@@ -19,7 +19,10 @@ from pay_api.models.eft_credit import EFTCredit as EFTCreditModel
 from pay_api.models.eft_credit_invoice_link import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.services.auth import get_emails_with_keycloak_role
 from pay_api.services.eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
-from pay_api.services.email_service import ShortNameRefundEmailContent, send_email
+from pay_api.services.email_service import (
+    ShortNameRefundEmailContent,
+    send_email_async,
+)
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus,
     EFTHistoricalTypes,
@@ -67,7 +70,7 @@ class EFTRefund:
             status=EFTShortnameRefundStatus.PENDING_APPROVAL.value,
             url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{refund.short_name_id}",
         ).render_body()
-        send_email(qualified_receiver_recipients, subject, html_body)
+        send_email_async(qualified_receiver_recipients, subject, html_body)
         history.save()
         refund.save()
 
@@ -237,7 +240,7 @@ class EFTRefund:
                     url=f"{current_app.config.get('PAY_WEB_URL')}/eft/shortname-details/{refund.short_name_id}",
                 ).render_body()
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
-                send_email(expense_authority_recipients, subject, body)
+                send_email_async(expense_authority_recipients, subject, body)
             case EFTShortnameRefundStatus.APPROVED.value:
                 if user.user_name == refund.created_by:
                     raise BusinessException(Error.EFT_REFUND_SAME_USER_APPROVAL_FORBIDDEN)
@@ -257,10 +260,10 @@ class EFTRefund:
                 )
                 staff_body = content.render_body()
                 expense_authority_recipients = get_emails_with_keycloak_role(Role.EFT_REFUND_APPROVER.value)
-                send_email(expense_authority_recipients, subject, staff_body)
+                send_email_async(expense_authority_recipients, subject, staff_body)
                 client_recipients = [refund.refund_email]
                 client_body = content.render_body(is_for_client=True)
-                send_email(client_recipients, subject, client_body)
+                send_email_async(client_recipients, subject, client_body)
             case _:
                 raise NotImplementedError("Invalid status")
 
