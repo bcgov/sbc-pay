@@ -397,7 +397,7 @@ def test_eft_reverse_payment_action(db, session, client, jwt, app, admin_users_m
     credit_invoice_links[0].receipt_number = "ABC123"
     credit_invoice_links[0].save()
     factory_partner_disbursement(invoices[0], status_code=DisbursementStatus.COMPLETED.value).save()
-    with patch("pay_api.services.eft_service.send_email") as mock_email:
+    with patch("pay_api.services.eft_service.send_email_async") as mock_email:
         rv = client.post(
             f"/api/v1/eft-shortnames/{short_name.id}/payment",
             data=json.dumps({"action": EFTPaymentActions.REVERSE.value, "statementId": statement.id}),
