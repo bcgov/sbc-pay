@@ -234,7 +234,7 @@ class PaymentMethodSummaryRawDTO(Serializable):
     SERVICE_FEES = "service_fees"
     GST = "gst"
     PAID = "paid"
-    PAID_PRE_BALANCE = 'paid_pre_balance'
+    PAID_PRE_BALANCE = "paid_pre_balance"
     COUNTED_REFUND = "counted_refund"
     CREDITS_APPLIED = "credits_applied"
     INVOICE_COUNT = "invoice_count"

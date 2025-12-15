@@ -848,7 +848,9 @@ class CFSService(OAuthService):
         return cms_response.json() if cms_response is not None else None
 
     @classmethod
-    def create_cms(cls, line_items: list[PaymentLineItemModel], cfs_account: CfsAccountModel) -> dict[str, any]:
+    def create_cms(
+        cls, line_items: list[PaymentLineItemModel], cfs_account: CfsAccountModel, comment: str
+    ) -> dict[str, any]:
         """Create CM record in CFS."""
         current_app.logger.debug(">Creating CMS")
         access_token: str = CFSService.get_token().json().get("access_token")
@@ -867,7 +869,7 @@ class CFSService(OAuthService):
             "cust_trx_type": CFS_CMS_TRX_TYPE,
             "transaction_date": curr_time,
             "gl_date": curr_time,
-            "comments": "",
+            "comments": comment,
             "lines": cls.build_lines(line_items, negate=True),
         }
 
