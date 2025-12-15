@@ -44,7 +44,7 @@ jobs:
           make setup
       - name: Lint with ruff
         run: |
-          make lint
+          make ruff-check
 
   testing:
     needs: setup-job
