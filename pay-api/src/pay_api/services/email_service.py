@@ -75,8 +75,6 @@ def send_email_async(recipients: list[str], subject: str, body: str):
     Returns:
         Future object representing the asynchronous email sending task
     """
-    # Note if we send HTML in the body, we aren't sending through GCNotify,
-    # ideally we'd like to send through GCNotify.
 
     @copy_current_request_context
     def _send_email_task(recipients_list: list[str], email_subject: str, email_body: str):
