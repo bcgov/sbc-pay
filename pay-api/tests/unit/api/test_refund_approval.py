@@ -819,7 +819,7 @@ def test_regression_roles_create_refund_request(
             rv.json.get("message")
             == f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} is pending refund approval."
         )
-        refund_service_mocks["send_email"].assert_called_once()
+        refund_service_mocks["send_email_async"].assert_called_once()
         if role == Role.SYSTEM.value and not use_original_user_header:
             refund_service_mocks["get_auth_user"].assert_not_called()
         else:
@@ -827,7 +827,7 @@ def test_regression_roles_create_refund_request(
     else:
         assert refund.status == RefundStatus.APPROVAL_NOT_REQUIRED.value
         assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES[f"{PaymentMethod.DIRECT_PAY.value}.PAID"]
-        refund_service_mocks["send_email"].assert_not_called()
+        refund_service_mocks["send_email_async"].assert_not_called()
         refund_service_mocks["get_auth_user"].assert_not_called()
 
 
