@@ -54,7 +54,7 @@ from .deposit_service import DepositService
 from .eft_refund import EFTRefund as EFTRefundService
 from .eft_short_name_historical import EFTShortnameHistorical as EFTHistoryService
 from .eft_short_name_historical import EFTShortnameHistory as EFTHistory
-from .email_service import _render_payment_reversed_template, send_email
+from .email_service import _render_payment_reversed_template, send_email_async
 from .invoice import Invoice  # noqa: TC001
 from .invoice_reference import InvoiceReference  # noqa: TC001
 from .partner_disbursements import PartnerDisbursements
@@ -398,7 +398,7 @@ class EftService(DepositService):
             if "user" in admin and "contacts" in admin["user"] and admin["user"]["contacts"]
         ]
 
-        send_email(
+        send_email_async(
             recipients=recipients,
             subject="Outstanding Balance Adjustment Notice",
             body=_render_payment_reversed_template(email_params),

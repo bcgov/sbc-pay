@@ -33,7 +33,10 @@ from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models.refund import PartialRefundLineDTO, RefundDTO
 from pay_api.services.auth import get_auth_user
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.email_service import ProductRefundEmailContent, send_email
+from pay_api.services.email_service import (
+    ProductRefundEmailContent,
+    send_email_async,
+)
 from pay_api.services.partner_disbursements import PartnerDisbursements
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
@@ -379,7 +382,7 @@ class RefundService:
                 invoice_reference_number=invoice.references[0].invoice_number if len(invoice.references) > 0 else None,
                 url=f"{current_app.config.get('PAY_WEB_URL')}/transaction-view/{refund.invoice_id}/refund-request/{refund.id}",
             ).render_body(status=refund.status, is_for_client=False)
-            send_email(product_recipients, subject, html_body)
+            send_email_async(product_recipients, subject, html_body)
 
         return {
             "message": f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} "
@@ -507,7 +510,7 @@ class RefundService:
                 url=f"{current_app.config.get('PAY_WEB_URL')}/transaction-view/{refund.invoice_id}/refund-request/{refund.id}",
             )
             staff_html_body = email_config.render_body(status=refund.status, is_for_client=False)
-            send_email(
+            send_email_async(
                 product_recipients,
                 f"Refund Request {refund.status} for {invoice.corp_type.description}",
                 staff_html_body,
@@ -516,7 +519,7 @@ class RefundService:
             # There may be no notification email populated for SYSTEM created refund requests
             if refund.status == RefundStatus.APPROVED.value and refund.notification_email is not None:
                 client_html_body = email_config.render_body(status=refund.status, is_for_client=True)
-                send_email(
+                send_email_async(
                     [refund.notification_email],
                     f"Refund Notice for {payment_account._dao.auth_account_id}: {payment_account._dao.name} ",
                     client_html_body,
