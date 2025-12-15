@@ -624,8 +624,8 @@ def test_partial_refund_approval_flow(
         assert len(result["partialRefundLines"]) == 1
         assert result["declineReason"] is None
 
-        assert refund_service_mocks["send_email"].call_count == 2
-        refund_service_mocks["send_email"].reset_mock()
+        assert refund_service_mocks["send_email_async"].call_count == 2
+        refund_service_mocks["send_email_async"].reset_mock()
 
         rv = client.get(f"/api/v1/payment-requests/{invoice.id}/composite", headers=requester_headers)
         assert rv.status_code == 200
