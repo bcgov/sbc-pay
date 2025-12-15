@@ -292,8 +292,7 @@ def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, mon
         expected_date_str = expected_date.strftime("%Y%m%d")
         line_date_match = re.search(re.escape(expected_date_str), line_result)
         assert line_date_match, (
-            f"Could not find expected date {expected_date_str} in line. "
-            f"Line preview: {line_result[:500]}"
+            f"Could not find expected date {expected_date_str} in line. Line preview: {line_result[:500]}"
         )
         line_effective_date_str = expected_date_str
 

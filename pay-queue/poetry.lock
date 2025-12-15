@@ -2122,8 +2122,8 @@ werkzeug = "^3.1.4"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "fix_deadlock"
-resolved_reference = "1775ca2cc4391d7cfea73b1a5d28649e7ad72cc5"
+reference = "31689"
+resolved_reference = "bb455277f89b8032c9e78dd40fa8269a4f07982a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3297,4 +3297,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "6e22e50a2a49c9531f4c2e53666339860463d1800f0c3497a51b877678b00f51"
+content-hash = "44a8f05fac434539f1a4404b8ba242eb7c4d5393a26de613aa9adc7da99e073f"

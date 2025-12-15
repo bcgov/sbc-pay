@@ -43,7 +43,7 @@ jobs:
       - name: Lint with ruff
         id: ruff
         run: |
-          make lint
+          make ruff-check
 
   testing:
     needs: setup-job

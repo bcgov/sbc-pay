@@ -2164,8 +2164,8 @@ werkzeug = "^3.1.4"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "fix_deadlock"
-resolved_reference = "1775ca2cc4391d7cfea73b1a5d28649e7ad72cc5"
+reference = "31689"
+resolved_reference = "bb455277f89b8032c9e78dd40fa8269a4f07982a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3436,4 +3436,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "2ff160ecc4e7086d71d8b2edd18cbb029731e927a3ed5392fa4bc4e57ece5174"
+content-hash = "1dc635d94086497b3e9b2687290897f8785a1ec890e7ee7f08035713e6b74fcf"

@@ -50,7 +50,6 @@ from pay_api.utils.enums import (
     NotificationStatus,
     PaymentMethod,
     QueueSources,
-    RefundsPartialStatus,
     StatementFrequency,
     StatementTemplate,
 )
