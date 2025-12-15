@@ -117,15 +117,11 @@ def _render_payment_reversed_template(params: dict) -> str:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
     templates_dir = os.path.join(project_root_dir, "templates")
-    env = Environment(
-        loader=FileSystemLoader(templates_dir), autoescape=True
-    )
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
     template = env.get_template("eft_reverse_payment.html")
 
-    statement_url = (
-        f"{current_app.config.get('AUTH_WEB_URL')}/account/"
-        f"{params['accountId']}/settings/statements"
-    )
+    account_id = params["accountId"]
+    statement_url = f"{current_app.config.get('AUTH_WEB_URL')}/account/{account_id}/settings/statements"
     params["statementUrl"] = statement_url
 
     return template.render(params)
@@ -136,9 +132,7 @@ def _render_credit_add_notification_template(params: dict) -> str:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
     templates_dir = os.path.join(project_root_dir, "templates")
-    env = Environment(
-        loader=FileSystemLoader(templates_dir), autoescape=True
-    )
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
     template = env.get_template("credit_add_notification.html")
     return template.render(params)
 
