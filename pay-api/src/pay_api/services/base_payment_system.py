@@ -293,7 +293,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             refund_amount = invoice.total
 
         current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
-        comment = f"{'Full' if is_partial else 'Partial'} invoice credit for {invoice.id}"
+        comment = f"{'Partial' if is_partial else 'Full'} invoice credit for {invoice.id}"
         cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account, comment=comment)
         # TODO Create a payment record for this to show up on transactions, when the ticket comes.
         # Create a credit with CM identifier as CMs are not reported in payment interface file
