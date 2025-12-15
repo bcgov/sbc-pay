@@ -441,9 +441,7 @@ class InvoiceSearch:
         return data
 
     @staticmethod
-    def search_all_purchase_history(
-        auth_account_id: str, search_filter: dict, query_only: bool = False
-    ):
+    def search_all_purchase_history(auth_account_id: str, search_filter: dict, query_only: bool = False):
         """Return all results for the purchase history."""
         return InvoiceSearch.search_purchase_history(
             PurchaseHistorySearch(
@@ -461,9 +459,7 @@ class InvoiceSearch:
         """Create payment report."""
         current_app.logger.debug(f"<create_payment_report {auth_account_id}")
 
-        results = InvoiceSearch.search_all_purchase_history(
-            auth_account_id, search_filter, query_only=True
-        )
+        results = InvoiceSearch.search_all_purchase_history(auth_account_id, search_filter, query_only=True)
 
         report_response = InvoiceSearch.generate_payment_report(
             PaymentReportInput(
