@@ -852,6 +852,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         """Apply partial refunds and credits subquery and computed status to the query."""
         partial_refund_subquery = (
             db.session.query(RefundsPartial.invoice_id, func.bool_or(RefundsPartial.is_credit).label("is_credit"))
+            .filter(func.date(RefundsPartial.created_on) <= statement_to_date)
             .group_by(RefundsPartial.invoice_id)
             .subquery()
         )
