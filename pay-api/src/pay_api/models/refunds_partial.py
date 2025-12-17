@@ -21,8 +21,8 @@ from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import joinedload, relationship
 
-from pay_api.utils.util import Converter
 from pay_api.utils.serializable import Serializable
+from pay_api.utils.util import Converter
 
 from .audit import Audit
 from .base_model import BaseModel
