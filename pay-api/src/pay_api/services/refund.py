@@ -260,6 +260,7 @@ class RefundService:
         refund = RefundModel(
             type=RefundType.INVOICE.value,
             invoice_id=invoice.id,
+            refund_method=get_str_by_path(request, "refundMethod"),
             reason=get_str_by_path(request, "reason"),
             notification_email=get_str_by_path(request, "notificationEmail"),
             staff_comment=get_str_by_path(request, "staffComment"),

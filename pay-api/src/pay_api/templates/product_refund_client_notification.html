@@ -3,9 +3,9 @@
 Account Number: {{ accountNumber }}
 Account Name: {{ accountName }}
 Transaction ID: {{ invoiceId }}
-{% if status == 'DECLINED' %}
+{%- if invoiceReferenceNumber %}
 Invoice Reference: {{ invoiceReferenceNumber }}
-{% endif %}
+{%- endif %}
 
 
 A refund amount of ${{ '%.2f'|format(refundAmount) }} has been issued. The processing time will be 3-5 business days.
