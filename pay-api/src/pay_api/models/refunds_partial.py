@@ -17,8 +17,10 @@ from decimal import Decimal
 from typing import Self
 
 from attrs import define
+from pay_api.utils.util import Converter
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 from .audit import Audit
 from .base_model import BaseModel
@@ -71,6 +73,8 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     status = db.Column(db.String(20), nullable=True)
     gl_error = db.Column(db.String(250), nullable=True)
 
+    payment_line_item = relationship("PaymentLineItem", foreign_keys=[payment_line_item_id], lazy="joined")
+
     @classmethod
     def get_partial_refunds_for_invoice(cls, invoice_id: int) -> list[Self]:
         """Get all partial refunds for a specific invoice."""
@@ -89,6 +93,7 @@ class RefundPartialLine:
     payment_line_item_id: int
     refund_amount: Decimal
     refund_type: str
+    description: str | None = None
 
     @classmethod
     def from_row(cls, row: RefundsPartial):
@@ -97,7 +102,10 @@ class RefundPartialLine:
         https://www.attrs.org/en/stable/init.html
         """
         return cls(
-            payment_line_item_id=row.payment_line_item_id, refund_amount=row.refund_amount, refund_type=row.refund_type
+            payment_line_item_id=row.payment_line_item_id,
+            refund_amount=row.refund_amount,
+            refund_type=Converter.snake_case_to_title_case(row.refund_type),
+            description=row.payment_line_item.description if hasattr(row, "payment_line_item") else None,
         )
 
     @classmethod

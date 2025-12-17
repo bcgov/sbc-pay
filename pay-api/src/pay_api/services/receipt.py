@@ -19,9 +19,14 @@ from flask import current_app
 from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import AppliedCredits as AppliedCreditsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import Refund as RefundModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
+from pay_api.models.refund import RefundDTO
+from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.utils.enums import (
     AuthHeaderType,
     ContentType,
@@ -32,7 +37,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date
+from pay_api.utils.util import Converter, get_local_formatted_date
 
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -94,12 +99,22 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         is_pending_invoice = (
             invoice_data.payment_method_code
             in (PaymentMethod.PAD.value, PaymentMethod.EJV.value, PaymentMethod.EFT.value, PaymentMethod.INTERNAL.value)
-            and invoice_data.invoice_status_code != InvoiceStatus.PAID.value
+            and invoice_data.invoice_status_code not in InvoiceStatus.paid_statuses()
         )
         if not is_pending_invoice and not invoice_data.receipts:
             raise BusinessException(Error.INVALID_REQUEST)
 
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
+
+        applied_credits = AppliedCreditsModel.get_applied_credits_for_invoice(invoice_identifier)
+        if applied_credits:
+            receipt_details["appliedCredits"] = sum(
+                (float(credit.amount_applied) or 0.00) for credit in applied_credits
+            )
+
+        if filing_data.get("isRefund"):
+            receipt_details["isRefundReceipt"] = True
+            Receipt._add_refund_details(receipt_details, invoice_data, invoice_identifier)
 
         receipt_details["invoiceNumber"] = invoice_reference.invoice_number
         if invoice_data.payment_method_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
@@ -122,6 +137,21 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
             line_item.fee_schedule.filing_type_code == "NOCOI" for line_item in invoice_data.payment_line_items
         )
         return receipt_details
+
+    @staticmethod
+    def _add_refund_details(receipt_details: dict, invoice_data, invoice_identifier: str):
+        """Add refund details to receipt."""
+        converter = Converter(snake_case_to_camel=True)
+        if invoice_data.invoice_status_code == InvoiceStatus.PAID.value and (invoice_data.refund or 0) > 0:
+            partial_refunds = RefundsPartialModel.get_partial_refunds_for_invoice(invoice_identifier)
+            if partial_refunds:
+                receipt_details["partialRefund"] = converter.unstructure(RefundPartialLine.to_schema(partial_refunds))
+
+        if invoice_data.invoice_status_code in InvoiceStatus.full_refund_statuses():
+            refunds = RefundModel.find_latest_by_invoice_id(invoice_identifier)
+            receipt_details["refund"] = converter.unstructure(
+                RefundDTO.from_row(refunds, invoice_data.total, invoice_data.payment_method_code)
+            )
 
     @staticmethod
     def get_nsf_receipt_details(payment_id):
