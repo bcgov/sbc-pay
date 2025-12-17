@@ -89,7 +89,7 @@ class AppliedCredits(BaseModel):
     def find_by_application_id(cls, application_id: int):
         """Return the credit associated with the application id."""
         return cls.query.filter_by(application_id=application_id).first()
-    
+
     @classmethod
     def get_applied_credits_for_invoice(cls, invoice_id: int) -> list[Self]:
         """Get all applied credits for a specific invoice."""
@@ -125,7 +125,7 @@ class AppliedCreditsSearchModel:
             invoice_number=row.invoice_number,
             invoice_id=row.invoice_id,
         )
-    
+
     @classmethod
     def to_schema(cls, lines: list[AppliedCredits]):
         """Return list of schemas."""
