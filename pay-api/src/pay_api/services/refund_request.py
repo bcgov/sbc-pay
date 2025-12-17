@@ -152,7 +152,7 @@ class RefundRequestService:
 
         if search_criteria.filter_by_product:
             query = query.filter(CorpTypeModel.product.in_(search_criteria.allowed_products))
-        
+
         query = query.order_by(RefundModel.requested_date.desc())
         current_app.logger.debug(">get_search_query")
         return query
