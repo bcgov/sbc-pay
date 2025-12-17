@@ -175,7 +175,6 @@ def test_receipt_details_is_submission_true_with_nocoi(session):
 
 def test_receipt_with_pad_invoice_applied_credits_and_partial_refund(session):
     """Test receipt with PAD invoice, applied credits, and partial refund."""
-
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
     payment_account.save()
 

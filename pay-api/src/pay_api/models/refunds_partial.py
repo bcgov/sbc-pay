@@ -17,10 +17,11 @@ from decimal import Decimal
 from typing import Self
 
 from attrs import define
-from pay_api.utils.util import Converter
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+
+from pay_api.utils.util import Converter
 
 from .audit import Audit
 from .base_model import BaseModel
