@@ -25,11 +25,12 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import FeeCode, FeeSchedule, FilingType
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.services.payment_transaction import (
-    PaymentTransaction as PaymentTransactionService,
-)
+from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.receipt import Receipt as ReceiptService
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
+    factory_applied_credits,
+    factory_credit,
     factory_distribution_code,
     factory_distribution_link,
     factory_invoice,
@@ -37,6 +38,7 @@ from tests.utilities.base_test import (
     factory_payment,
     factory_payment_account,
     factory_payment_line_item,
+    factory_refunds_partial,
     get_paybc_transaction_request,
 )
 
@@ -169,3 +171,39 @@ def test_receipt_details_is_submission_true_with_nocoi(session):
     filing_data = {"corpName": "Test Corp"}
     receipt_details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True)
     assert receipt_details["isSubmission"] is True
+
+
+def test_receipt_with_pad_invoice_applied_credits_and_partial_refund(session):
+    """Test receipt with PAD invoice, applied credits, and partial refund."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
+    payment_account.save()
+
+    invoice = factory_invoice(
+        payment_account,
+        status_code=InvoiceStatus.PAID.value,
+        payment_method_code=PaymentMethod.PAD.value,
+        total=100,
+        refund=25,
+    )
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=100)
+    line.save()
+
+    receipt = ReceiptModel()
+    receipt.receipt_number = "1234567890"
+    receipt.invoice_id = invoice.id
+    receipt.receipt_date = datetime.now(tz=UTC)
+    receipt.receipt_amount = 100.00
+    receipt.save()
+
+    credit = factory_credit(account_id=payment_account.id, amount=50.00, remaining_amount=25.00)
+    factory_applied_credits(invoice_id=invoice.id, credit_id=credit.id, amount_applied=25.00)
+    factory_refunds_partial(invoice_id=invoice.id, payment_line_item_id=line.id, refund_amount=25.00)
+
+    filing_data = {"corpName": "Test Corp", "isRefund": True}
+    receipt_details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True)
+    assert receipt_details is not None
+    assert "partialRefund" in receipt_details

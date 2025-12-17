@@ -82,6 +82,13 @@ class Converter(cattrs.Converter):
         components = snake_str.split("_")
         return components[0] + "".join(x.title() for x in components[1:])
 
+    @staticmethod
+    def snake_case_to_title_case(snake_str: str) -> str:
+        """Convert snake_case string to Title Case."""
+        if not snake_str:
+            return snake_str
+        return snake_str.replace("_", " ").title()
+
     def _to_camel_case_unstructure(self, cls):
         return make_dict_unstructure_fn(
             cls, self, **{a.name: override(rename=self._to_camel_case(a.name)) for a in fields(cls)}

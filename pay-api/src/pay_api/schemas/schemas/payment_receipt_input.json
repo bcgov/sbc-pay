@@ -77,6 +77,16 @@
          "director-change"
        ],
        "pattern": "^(.*)$"
-     }
+     },
+     "isRefund": {
+      "$id": "#/properties/isRefund",
+      "type": "boolean",
+      "title": "The Receipt type Schema",
+      "default": false,
+      "examples": [
+        false,
+        true
+      ]
+    }
    }
  }

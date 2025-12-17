@@ -89,6 +89,15 @@ class AppliedCredits(BaseModel):
         """Return the credit associated with the application id."""
         return cls.query.filter_by(application_id=application_id).first()
 
+    @classmethod
+    def get_total_applied_credits_for_invoice(cls, invoice_id: int) -> Decimal:
+        """Get the total amount of applied credits for a specific invoice."""
+        return (
+            cls.query.with_entities(func.coalesce(func.sum(cls.amount_applied), 0.0))
+            .filter_by(invoice_id=invoice_id)
+            .scalar()
+        ) or Decimal("0.0")
+
 
 @define
 class AppliedCreditsSearchModel:
