@@ -106,7 +106,9 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
 
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
-        receipt_details["appliedCredits"] = AppliedCreditsModel.get_total_applied_credits_for_invoice(invoice_identifier)
+        receipt_details["appliedCredits"] = AppliedCreditsModel.get_total_applied_credits_for_invoice(
+            invoice_identifier
+        )
 
         if filing_data.get("isRefund"):
             Receipt._add_refund_details(receipt_details, invoice_data, invoice_identifier)
