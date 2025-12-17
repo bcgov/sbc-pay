@@ -15,7 +15,6 @@
 
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Self
 
 from attrs import define
 from sqlalchemy import ForeignKey, func
@@ -89,11 +88,6 @@ class AppliedCredits(BaseModel):
     def find_by_application_id(cls, application_id: int):
         """Return the credit associated with the application id."""
         return cls.query.filter_by(application_id=application_id).first()
-
-    @classmethod
-    def get_applied_credits_for_invoice(cls, invoice_id: int) -> list[Self]:
-        """Get all applied credits for a specific invoice."""
-        return cls.query.filter_by(invoice_id=invoice_id).all()
 
     @classmethod
     def get_total_applied_credits_for_invoice(cls, invoice_id: int) -> Decimal:

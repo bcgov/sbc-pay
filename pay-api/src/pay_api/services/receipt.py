@@ -106,12 +106,9 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
 
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
-        applied_credits_total = AppliedCreditsModel.get_total_applied_credits_for_invoice(invoice_identifier)
-        if applied_credits_total:
-            receipt_details["appliedCredits"] = applied_credits_total
+        receipt_details["appliedCredits"] = AppliedCreditsModel.get_total_applied_credits_for_invoice(invoice_identifier)
 
         if filing_data.get("isRefund"):
-            receipt_details["isRefundReceipt"] = True
             Receipt._add_refund_details(receipt_details, invoice_data, invoice_identifier)
 
         receipt_details["invoiceNumber"] = invoice_reference.invoice_number
@@ -139,6 +136,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _add_refund_details(receipt_details: dict, invoice_data, invoice_identifier: str):
         """Add refund details to receipt."""
+        receipt_details["isRefundReceipt"] = True
         if invoice_data.invoice_status_code == InvoiceStatus.PAID.value and (invoice_data.refund or 0) > 0:
             partial_refunds = RefundsPartialModel.get_partial_refunds_for_invoice(
                 invoice_identifier, include_payment_line_item=True
