@@ -95,6 +95,15 @@ class AppliedCredits(BaseModel):
         """Get all applied credits for a specific invoice."""
         return cls.query.filter_by(invoice_id=invoice_id).all()
 
+    @classmethod
+    def get_total_applied_credits_for_invoice(cls, invoice_id: int) -> Decimal:
+        """Get the total amount of applied credits for a specific invoice."""
+        return (
+            cls.query.with_entities(func.coalesce(func.sum(cls.amount_applied), 0.0))
+            .filter_by(invoice_id=invoice_id)
+            .scalar()
+        ) or Decimal("0.0")
+
 
 @define
 class AppliedCreditsSearchModel:
@@ -125,8 +134,3 @@ class AppliedCreditsSearchModel:
             invoice_number=row.invoice_number,
             invoice_id=row.invoice_id,
         )
-
-    @classmethod
-    def to_schema(cls, lines: list[AppliedCredits]):
-        """Return list of schemas."""
-        return [cls.from_row(line) for line in lines]

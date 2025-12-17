@@ -19,9 +19,10 @@ from typing import Self
 from attrs import define
 from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import joinedload, relationship
 
 from pay_api.utils.util import Converter
+from pay_api.utils.serializable import Serializable
 
 from .audit import Audit
 from .base_model import BaseModel
@@ -74,12 +75,15 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
     status = db.Column(db.String(20), nullable=True)
     gl_error = db.Column(db.String(250), nullable=True)
 
-    payment_line_item = relationship("PaymentLineItem", foreign_keys=[payment_line_item_id], lazy="joined")
+    payment_line_item = relationship("PaymentLineItem", foreign_keys=[payment_line_item_id], lazy="select")
 
     @classmethod
-    def get_partial_refunds_for_invoice(cls, invoice_id: int) -> list[Self]:
+    def get_partial_refunds_for_invoice(cls, invoice_id: int, include_payment_line_item: bool = False) -> list[Self]:
         """Get all partial refunds for a specific invoice."""
-        return cls.query.filter_by(invoice_id=invoice_id).all()
+        query = cls.query.filter_by(invoice_id=invoice_id)
+        if include_payment_line_item:
+            query = query.options(joinedload(cls.payment_line_item))
+        return query.all()
 
     @classmethod
     def get_partial_refunds_by_refund_id(cls, refund_id: int) -> list[Self]:
@@ -88,7 +92,7 @@ class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-i
 
 
 @define
-class RefundPartialLine:
+class RefundPartialLine(Serializable):
     """Used to feed for partial refunds."""
 
     payment_line_item_id: int
@@ -106,7 +110,7 @@ class RefundPartialLine:
             payment_line_item_id=row.payment_line_item_id,
             refund_amount=row.refund_amount,
             refund_type=Converter.snake_case_to_title_case(row.refund_type),
-            description=row.payment_line_item.description if hasattr(row, "payment_line_item") else None,
+            description=row.payment_line_item.description,
         )
 
     @classmethod

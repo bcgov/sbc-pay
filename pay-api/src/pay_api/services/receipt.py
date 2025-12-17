@@ -37,7 +37,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import Converter, get_local_formatted_date
+from pay_api.utils.util import get_local_formatted_date
 
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -106,11 +106,9 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
 
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
-        applied_credits = AppliedCreditsModel.get_applied_credits_for_invoice(invoice_identifier)
-        if applied_credits:
-            receipt_details["appliedCredits"] = sum(
-                (float(credit.amount_applied) or 0.00) for credit in applied_credits
-            )
+        applied_credits_total = AppliedCreditsModel.get_total_applied_credits_for_invoice(invoice_identifier)
+        if applied_credits_total:
+            receipt_details["appliedCredits"] = applied_credits_total
 
         if filing_data.get("isRefund"):
             receipt_details["isRefundReceipt"] = True
@@ -141,17 +139,20 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _add_refund_details(receipt_details: dict, invoice_data, invoice_identifier: str):
         """Add refund details to receipt."""
-        converter = Converter(snake_case_to_camel=True)
         if invoice_data.invoice_status_code == InvoiceStatus.PAID.value and (invoice_data.refund or 0) > 0:
-            partial_refunds = RefundsPartialModel.get_partial_refunds_for_invoice(invoice_identifier)
+            partial_refunds = RefundsPartialModel.get_partial_refunds_for_invoice(
+                invoice_identifier, include_payment_line_item=True
+            )
             if partial_refunds:
-                receipt_details["partialRefund"] = converter.unstructure(RefundPartialLine.to_schema(partial_refunds))
+                receipt_details["partialRefund"] = [
+                    line.to_dict() for line in RefundPartialLine.to_schema(partial_refunds)
+                ]
 
         if invoice_data.invoice_status_code in InvoiceStatus.full_refund_statuses():
             refunds = RefundModel.find_latest_by_invoice_id(invoice_identifier)
-            receipt_details["refund"] = converter.unstructure(
-                RefundDTO.from_row(refunds, invoice_data.total, invoice_data.payment_method_code)
-            )
+            receipt_details["refund"] = RefundDTO.from_row(
+                refunds, invoice_data.total, invoice_data.payment_method_code
+            ).to_dict()
 
     @staticmethod
     def get_nsf_receipt_details(payment_id):

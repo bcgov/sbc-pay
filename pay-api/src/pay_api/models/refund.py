@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.schema import CheckConstraint
 
 from pay_api.utils.enums import RefundStatus
+from pay_api.utils.serializable import Serializable
 from pay_api.utils.util import date_to_string
 
 from .base_model import BaseModel
@@ -154,7 +155,7 @@ class PartialRefundLineDTO:  # pylint: disable=too-few-public-methods
 
 
 @define
-class RefundDTO:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+class RefundDTO(Serializable):  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """Schema used to serialize refunds."""
 
     invoice_id: int
