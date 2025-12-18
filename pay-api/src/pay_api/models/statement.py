@@ -52,6 +52,7 @@ class Statement(BaseModel):
             "notification_date",
             "notification_status_code",
             "overdue_notification_date",
+            "pad_credit_balance",
             "payment_account_id",
             "payment_methods",
             "statement_settings_id",
@@ -72,6 +73,7 @@ class Statement(BaseModel):
     notification_status_code = db.Column(db.String(20), ForeignKey("notification_status_codes.code"), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
     payment_methods = db.Column(db.String(100), nullable=True)
+    pad_credit_balance = db.Column(db.Numeric(19, 2), nullable=True, default=None)
 
     @classmethod
     def find_all_statements_by_notification_status(cls, statuses):
