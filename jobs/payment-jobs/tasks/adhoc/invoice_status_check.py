@@ -46,7 +46,10 @@ class AdhocInvoiceStatusCheckTask:
 
     @classmethod
     def _get_invoice_reference(cls, invoice):
-        """Get COMPLETED or ACTIVE invoice reference."""
+        """Get COMPLETED or ACTIVE invoice reference.
+
+        For DELETED invoices, also try CANCELLED.
+        """
         for status in [
             InvoiceReferenceStatus.COMPLETED.value,
             InvoiceReferenceStatus.ACTIVE.value,
@@ -57,7 +60,18 @@ class AdhocInvoiceStatusCheckTask:
             )
             if ref:
                 return ref
-        raise ValueError(f"Invoice {invoice.id} has no COMPLETED or ACTIVE references")
+
+        if invoice.invoice_status_code == InvoiceStatus.DELETED.value:
+            cancelled_status = InvoiceReferenceStatus.CANCELLED.value
+            ref = next(
+                (r for r in invoice.references if r.status_code == cancelled_status),
+                None,
+            )
+            if ref:
+                return ref
+
+        msg = f"Invoice {invoice.id} has no COMPLETED, ACTIVE, or CANCELLED references"
+        raise ValueError(msg)
 
     @classmethod
     def _query_order_status(cls, invoice):
@@ -84,6 +98,7 @@ class AdhocInvoiceStatusCheckTask:
         status_map = {
             InvoiceStatus.PAID.value: STATUS_PAID,
             InvoiceStatus.CREATED.value: STATUS_CREATED,
+            InvoiceStatus.DELETED.value: STATUS_CREATED,
             InvoiceStatus.REFUNDED.value: STATUS_REFUNDED,
         }
         return status_map.get(invoice_status)
@@ -128,7 +143,7 @@ class AdhocInvoiceStatusCheckTask:
         if not paybc_trnamount:
             return False
 
-        is_created = invoice_status == InvoiceStatus.CREATED.value
+        is_created = invoice_status == InvoiceStatus.CREATED.value or invoice_status == InvoiceStatus.DELETED.value
         db_amount = cls._to_decimal(invoice.total if is_created else invoice.paid)
         paybc_amount = cls._to_decimal(paybc_trnamount)
 
@@ -144,7 +159,7 @@ class AdhocInvoiceStatusCheckTask:
 
     @classmethod
     def _check_pndng_status(cls, invoice, invoice_status, paybc_status):
-        """Check PNDNG status: paid should be $0 and status CREATED."""  # noqa: E501
+        """Check PNDNG status: paid should be $0 and status CREATED or DELETED."""  # noqa: E501
         if paybc_status != "PNDNG":
             return False
 
@@ -153,9 +168,9 @@ class AdhocInvoiceStatusCheckTask:
             cls._get_logger().warning(f"Invoice {invoice.id} PNDNG status - paid should be $0 but is {paid_amount}")
             return True
 
-        if invoice_status != InvoiceStatus.CREATED.value:
+        if invoice_status != InvoiceStatus.CREATED.value and invoice_status != InvoiceStatus.DELETED.value:
             cls._get_logger().warning(
-                f"Invoice {invoice.id} PNDNG status - status should be CREATED but is {invoice_status}"
+                f"Invoice {invoice.id} PNDNG status - status should be CREATED or DELETED but is {invoice_status}"
             )
             return True
         return False
@@ -276,25 +291,29 @@ class AdhocInvoiceStatusCheckTask:
                     cls._check_status_mismatch(invoice, invoice_status, paybc_status),
                     cls._check_refund_amount_mismatch(invoice, posted_refund),
                 ]
-                if invoice_status != InvoiceStatus.CREATED.value:
+                if invoice_status != InvoiceStatus.CREATED.value and invoice_status != InvoiceStatus.DELETED.value:
                     checks.append(cls._check_trnamount_mismatch(invoice, invoice_status, paybc_trnamount))
 
                 if sum(checks) > 0:
                     mismatch_count += sum(checks)
                     problem_invoices.add(invoice.id)
             except ValueError as ve:
-                # Skip invoices without COMPLETED or ACTIVE references
-                if "no COMPLETED or ACTIVE references" in str(ve):
-                    cls._get_logger().info(f"Invoice {invoice.id} - no COMPLETED or ACTIVE references, skipping")
+                # Skip invoices without references
+                if "no COMPLETED" in str(ve) or "no CANCELLED" in str(ve):
+                    cls._get_logger().info(f"Invoice {invoice.id} - no valid references found, skipping")
                     continue
                 # Re-raise other ValueErrors
                 raise
             except HTTPError as http_err:
-                # For CREATED invoices, 404 is expected (not yet in PayBC)
+                # For CREATED and DELETED invoices, 404 is expected (not yet in PayBC)
                 is_404 = http_err.response is not None and http_err.response.status_code == 404
-                if is_404 and invoice.invoice_status_code == InvoiceStatus.CREATED.value:
+                if is_404 and (
+                    invoice.invoice_status_code == InvoiceStatus.CREATED.value
+                    or invoice.invoice_status_code == InvoiceStatus.DELETED.value
+                ):
+                    status_name = "CREATED" if invoice.invoice_status_code == InvoiceStatus.CREATED.value else "DELETED"
                     cls._get_logger().info(
-                        f"Invoice {invoice.id} CREATED status - 404 from PayBC (expected, not yet created)"
+                        f"Invoice {invoice.id} {status_name} status - 404 from PayBC (expected, not yet created)"
                     )
                 else:
                     cls._get_logger().error(
