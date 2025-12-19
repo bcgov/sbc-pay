@@ -1,4 +1,4 @@
-"""Add pad_credit_balance to statement.
+"""Add pad_credit to statement.
 
 Revision ID: 1206aded914a
 Revises: 76b874c82ad6
@@ -21,9 +21,13 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('statements', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('pad_credit_balance', sa.Numeric(precision=19, scale=2), autoincrement=False, nullable=True))
+        batch_op.add_column(sa.Column('pad_credit', sa.Numeric(precision=19, scale=2), autoincrement=False, nullable=True))
+        batch_op.add_column(sa.Column('eft_credit', sa.Numeric(precision=19, scale=2), autoincrement=False, nullable=True))
+        batch_op.add_column(sa.Column('ob_credit', sa.Numeric(precision=19, scale=2), autoincrement=False, nullable=True))
 
 
 def downgrade():
     with op.batch_alter_table('statements', schema=None) as batch_op:
-        batch_op.drop_column('pad_credit_balance')
+        batch_op.drop_column('ob_credit')
+        batch_op.drop_column('eft_credit')
+        batch_op.drop_column('pad_credit')

@@ -626,6 +626,9 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "paymentMethods": ["EFT"],
                 "statementTotal": "0.00",
                 "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
+                "padCredit": None,
+                "eftCredit": None,
+                "obCredit": None,
             },
             "statementSummary": {
                 "cancelledTransactions": None,
@@ -634,6 +637,9 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "lastStatementPaidAmount": "0.00",
                 "latestStatementPaymentDate": None,
                 "balanceForward": "0.00",
+                "previousPadCredit": 0,
+                "previousEftCredit": 0,
+                "previousObCredit": 0,
             },
         }
         expected_report_inputs = ReportRequest(
@@ -1032,6 +1038,9 @@ def test_get_eft_statement_with_invoices(session):
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
                 "statementTotal": "500.00",
+                "padCredit": None,
+                "eftCredit": None,
+                "obCredit": None,
             },
             "statementSummary": {
                 "cancelledTransactions": None,
@@ -1040,6 +1049,9 @@ def test_get_eft_statement_with_invoices(session):
                 "lastStatementPaidAmount": "0.00",
                 "latestStatementPaymentDate": FullMonthDateStr(invoice_3.payment_date),
                 "balanceForward": "0.00",
+                "previousPadCredit": 0,
+                "previousEftCredit": 0,
+                "previousObCredit": 0,
             },
         }
         expected_report_inputs = ReportRequest(
