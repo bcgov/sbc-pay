@@ -79,6 +79,7 @@ def register_shellcontext(app):
 def run(job_name, argument=None):
     """Run the specified job with optional arguments."""
     from tasks.activate_pad_account_task import ActivatePadAccountTask
+    from tasks.adhoc.invoice_status_check import AdhocInvoiceStatusCheckTask
     from tasks.ap_task import ApTask
     from tasks.bcol_refund_confirmation_task import BcolRefundConfirmationTask
     from tasks.cfs_create_account_task import CreateAccountTask
@@ -168,6 +169,9 @@ def run(job_name, argument=None):
             case "BCOL_REFUND_CONFIRMATION":
                 BcolRefundConfirmationTask.update_bcol_refund_invoices()
                 application.logger.info("<<<< Completed running BCOL Refund Confirmation Job >>>>")
+            case "ADHOC_INVOICE_STATUS_CHECK":
+                AdhocInvoiceStatusCheckTask.check_invoice_statuses()
+                application.logger.info("<<<< Completed Adhoc Invoice Status Check >>>>")
             case _:
                 application.logger.debug("No valid args passed. Exiting job without running any ***************")
     except Exception as e:
