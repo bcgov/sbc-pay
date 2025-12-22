@@ -19,7 +19,6 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 
 from datetime import UTC, datetime, timedelta
 
-from pay_api.services.refund import RefundModel
 import pytest
 import pytz
 
@@ -27,6 +26,7 @@ from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.csv_service import CsvService
 from pay_api.services.invoice_search import InvoiceSearch
 from pay_api.services.payment import Payment as PaymentService
+from pay_api.services.refund import RefundModel
 from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, RefundStatus, RefundType
 from pay_api.utils.statement_dtos import (
