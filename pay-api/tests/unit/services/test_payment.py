@@ -19,6 +19,7 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 
 from datetime import UTC, datetime, timedelta
 
+from pay_api.services.refund import RefundModel
 import pytest
 import pytz
 
@@ -27,7 +28,7 @@ from pay_api.services.csv_service import CsvService
 from pay_api.services.invoice_search import InvoiceSearch
 from pay_api.services.payment import Payment as PaymentService
 from pay_api.utils.dataclasses import PurchaseHistorySearch
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, RefundStatus, RefundType
 from pay_api.utils.statement_dtos import (
     GroupedInvoicesDTO,
     PaymentMethodSummaryDTO,
@@ -38,11 +39,14 @@ from pay_api.utils.statement_dtos import (
 )
 from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import (
+    factory_applied_credits,
+    factory_credit,
     factory_invoice,
     factory_invoice_reference,
     factory_payment,
     factory_payment_account,
     factory_payment_line_item,
+    factory_refunds_partial,
     factory_statement,
     factory_usd_payment,
 )
@@ -382,7 +386,7 @@ def test_create_payment_report_csv(session):
 
     first_row = csv_rows[0]
     assert isinstance(first_row, list)
-    assert len(first_row) == 16
+    assert len(first_row) == 19
 
     # Find the invoice from search_results that matches the CSV row's invoice ID
     csv_invoice_id = first_row[14]  # Invoice ID is at index 14
@@ -414,6 +418,9 @@ def test_create_payment_report_csv(session):
     assert first_row[13] == first_invoice.business_identifier
     assert first_row[14] == first_invoice.id
     assert first_row[15] == first_invoice.references[0].invoice_number
+    assert first_row[16] == 0
+    assert first_row[17] == 0
+    assert first_row[18] == 0
 
     InvoiceSearch.create_payment_report(
         auth_account_id=auth_account_id,
@@ -463,6 +470,9 @@ def test_csv_service_create_report(session):
     assert "Product" in header_line
     assert "Status" in header_line
     assert "Transaction Details" in header_line
+    assert "Refund" in header_line
+    assert "Applied Credits" in header_line
+    assert "Account Credits" in header_line
 
     data_lines = [line for line in csv_lines[1:] if line.strip()]
     assert len(data_lines) >= 1
@@ -488,6 +498,104 @@ def test_create_payment_report_pdf(session, rest_call_mock):
         report_name="test",
     )
     assert True  # If no error, then good
+
+
+def test_csv_report_with_refunds_and_credits(session):
+    """Assert that CSV report correctly displays partial refunds, partial credits, applied credits, and account credits."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
+    payment_account.save()
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    invoice1 = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+        status_code=InvoiceStatus.PAID.value,
+        total=100.00,
+        paid=100.00,
+        refund=30.00,
+    )
+    invoice1.save()
+    invoice1.refund_date = datetime.now(tz=UTC)
+    invoice1.save()
+    factory_invoice_reference(invoice1.id).save()
+    line_item1 = factory_payment_line_item(invoice_id=invoice1.id, fee_schedule_id=1)
+    line_item1.save()
+    refund1 = RefundModel(
+        invoice_id=invoice1.id,
+        type=RefundType.INVOICE.value,
+        status=RefundStatus.APPROVED.value,
+        requested_date=datetime.now(tz=UTC),
+    ).save()
+    partial_refund1 = factory_refunds_partial(
+        invoice_id=invoice1.id,
+        payment_line_item_id=line_item1.id,
+        refund_amount=30.00,
+        is_credit=False,
+    )
+    partial_refund1.refund_id = refund1.id
+    partial_refund1.save()
+
+    invoice2 = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+        total=100.00,
+        paid=100.00,
+        refund=25.00,
+    )
+    invoice2.save()
+    invoice2.refund_date = datetime.now(tz=UTC)
+    invoice2.save()
+    factory_invoice_reference(invoice2.id).save()
+    line_item2 = factory_payment_line_item(invoice_id=invoice2.id, fee_schedule_id=1)
+    line_item2.save()
+
+    refund2 = RefundModel(
+        invoice_id=invoice2.id,
+        type=RefundType.INVOICE.value,
+        status=RefundStatus.APPROVED.value,
+        requested_date=datetime.now(tz=UTC),
+    ).save()
+
+    partial_refund2 = factory_refunds_partial(
+        invoice_id=invoice2.id,
+        payment_line_item_id=line_item2.id,
+        refund_amount=25.00,
+        is_credit=True,
+    )
+    partial_refund2.refund_id = refund2.id
+    partial_refund2.save()
+
+    credit = factory_credit(account_id=payment_account.id, amount=50.00)
+    factory_applied_credits(invoice_id=invoice2.id, credit_id=credit.id, amount_applied=20.00)
+
+    factory_credit(account_id=payment_account.id, amount=100.00, created_invoice_id=invoice2.id)
+
+    search_results = InvoiceSearch.search_all_purchase_history(
+        auth_account_id=auth_account_id, search_filter={}, query_only=True
+    )
+    csv_data = CsvService.prepare_csv_data(search_results)
+
+    assert csv_data is not None
+    assert "columns" in csv_data
+    assert "values" in csv_data
+
+    csv_rows = csv_data["values"]
+    assert len(csv_rows) == 2
+
+    rows_by_invoice_id = {row[14]: row for row in csv_rows}
+
+    row1 = rows_by_invoice_id[invoice1.id]
+    assert row1[12] == "Partially Refunded"
+    assert float(row1[16]) == -30.00
+    assert float(row1[17]) == 0
+    assert float(row1[18]) == 0
+
+    row2 = rows_by_invoice_id[invoice2.id]
+    assert row2[12] == "Partially Credited"
+    assert float(row2[16]) == -25.00
+    assert float(row2[17]) == 20.00
+    assert float(row2[18]) == -100.00
 
 
 def test_search_payment_history_with_tz(session, executor_mock):
