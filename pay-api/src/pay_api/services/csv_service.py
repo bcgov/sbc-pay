@@ -87,7 +87,7 @@ class CsvService:
         return (
             db.session.query(
                 AppliedCredits.invoice_id,
-                func.coalesce(func.sum(AppliedCredits.amount_applied), 0).label("total_applied_credits"),
+                func.sum(AppliedCredits.amount_applied).label("total_applied_credits"),
             )
             .group_by(AppliedCredits.invoice_id)
             .subquery()
@@ -99,7 +99,7 @@ class CsvService:
         return (
             db.session.query(
                 Credit.created_invoice_id,
-                func.coalesce(func.sum(Credit.amount), 0).label("total_credits_received"),
+                func.sum(Credit.amount).label("total_credits_received"),
             )
             .group_by(Credit.created_invoice_id)
             .subquery()
@@ -268,8 +268,7 @@ class CsvService:
                 Invoice.id,
                 func.string_agg(distinct(InvoiceReference.invoice_number), ",").label("invoice_number"),
                 (
-                    -1
-                    * case(
+                    -case(
                         (
                             approved_refunds_subquery.c.latest_refund_date.isnot(None),
                             func.coalesce(Invoice.refund, 0),
@@ -278,9 +277,7 @@ class CsvService:
                     )
                 ).label("total_refund"),
                 func.coalesce(applied_credits_subquery.c.total_applied_credits, 0).label("total_applied_credits"),
-                (-1 * func.coalesce(credits_received_subquery.c.total_credits_received, 0)).label(
-                    "total_credits_received"
-                ),
+                (-func.coalesce(credits_received_subquery.c.total_credits_received, 0)).label("total_credits_received"),
             )
             .group_by(
                 CorpType.product,
