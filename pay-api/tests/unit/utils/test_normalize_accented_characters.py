@@ -294,3 +294,43 @@ def test_special_characters_oe_ae():
 
     result = normalize_accented_characters_json(input_data)
     assert result == expected_data
+
+
+def test_unicode_quotation_marks():
+    """Test normalization of Unicode quotation marks and apostrophes."""
+    input_data = {
+        "name": "O\u2019Co",
+        "quote": "He said \u201cHello\u201d",
+        "apostrophe": "It\u2019s a test",
+        "mixed": "O\u2019Connor said \u201cYes\u201d",
+    }
+
+    expected_data = {
+        "name": "O'Co",
+        "quote": 'He said "Hello"',
+        "apostrophe": "It's a test",
+        "mixed": 'O\'Connor said "Yes"',
+    }
+
+    result = normalize_accented_characters_json(input_data)
+    assert result == expected_data
+
+
+def test_remove_all_non_ascii():
+    """Test that all non-ASCII characters are removed."""
+    input_data = {
+        "chinese": "你好世界",
+        "emoji": "Hello 😀 World 🌍",
+        "symbols": "Price: €100 ¥50 £30",
+        "mixed": "Café résumé naïve",
+    }
+
+    expected_data = {
+        "chinese": "",
+        "emoji": "Hello  World ",
+        "symbols": "Price: 100 50 30",
+        "mixed": "Cafe resume naive",
+    }
+
+    result = normalize_accented_characters_json(input_data)
+    assert result == expected_data
