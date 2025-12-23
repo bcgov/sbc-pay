@@ -88,7 +88,7 @@ class CsvService:
                 detail_texts.append(detail_text)
 
         return ",".join(detail_texts) if detail_texts else ""
-    
+
     @staticmethod
     def _get_approved_refunds_cte(invoice_ids_cte):
         """Get CTE for approved refunds filtered by invoice IDs."""
@@ -97,17 +97,17 @@ class CsvService:
                 Refund.invoice_id,
                 func.max(Refund.requested_date).label("latest_refund_date"),
             )
+            .filter(Refund.invoice_id.in_(db.session.query(invoice_ids_cte.c.id)))
             .filter(
-                Refund.invoice_id.in_(db.session.query(invoice_ids_cte.c.id))
-            )
-            .filter(
-                Refund.status.in_([
-                    RefundStatus.APPROVED.value,
-                    RefundStatus.APPROVAL_NOT_REQUIRED.value,
-                ])
+                Refund.status.in_(
+                    [
+                        RefundStatus.APPROVED.value,
+                        RefundStatus.APPROVAL_NOT_REQUIRED.value,
+                    ]
+                )
             )
             .group_by(Refund.invoice_id)
-            .cte('approved_refunds_cte')
+            .cte("approved_refunds_cte")
         )
 
     @staticmethod
@@ -119,18 +119,18 @@ class CsvService:
                 func.bool_or(RefundsPartial.is_credit).label("is_credit"),
             )
             .join(Refund, Refund.id == RefundsPartial.refund_id)
+            .filter(RefundsPartial.invoice_id.in_(db.session.query(invoice_ids_cte.c.id)))
             .filter(
-                RefundsPartial.invoice_id.in_(db.session.query(invoice_ids_cte.c.id))
-            )
-            .filter(
-                Refund.status.in_([
-                    RefundStatus.APPROVED.value,
-                    RefundStatus.PENDING_APPROVAL.value,
-                    RefundStatus.APPROVAL_NOT_REQUIRED.value,
-                ])
+                Refund.status.in_(
+                    [
+                        RefundStatus.APPROVED.value,
+                        RefundStatus.PENDING_APPROVAL.value,
+                        RefundStatus.APPROVAL_NOT_REQUIRED.value,
+                    ]
+                )
             )
             .group_by(RefundsPartial.invoice_id)
-            .cte('partial_refunds_cte')
+            .cte("partial_refunds_cte")
         )
 
     @staticmethod
@@ -141,11 +141,9 @@ class CsvService:
                 AppliedCredits.invoice_id,
                 func.sum(AppliedCredits.amount_applied).label("total_applied_credits"),
             )
-            .filter(
-                AppliedCredits.invoice_id.in_(db.session.query(invoice_ids_cte.c.id))
-            )
+            .filter(AppliedCredits.invoice_id.in_(db.session.query(invoice_ids_cte.c.id)))
             .group_by(AppliedCredits.invoice_id)
-            .cte('applied_credits_cte')
+            .cte("applied_credits_cte")
         )
 
     @staticmethod
@@ -156,11 +154,9 @@ class CsvService:
                 Credit.created_invoice_id,
                 func.sum(Credit.amount).label("total_credits_received"),
             )
-            .filter(
-                Credit.created_invoice_id.in_(db.session.query(invoice_ids_cte.c.id))
-            )
+            .filter(Credit.created_invoice_id.in_(db.session.query(invoice_ids_cte.c.id)))
             .group_by(Credit.created_invoice_id)
-            .cte('credits_received_cte')
+            .cte("credits_received_cte")
         )
 
     @staticmethod
@@ -180,12 +176,7 @@ class CsvService:
         formatted_date = CsvService._get_formatted_date_expression()
         labels = CsvService._get_csv_labels()
 
-        invoice_ids_cte = (
-            results_query
-            .with_entities(Invoice.id)
-            .distinct()
-            .cte('invoice_ids_cte')
-        )
+        invoice_ids_cte = results_query.with_entities(Invoice.id).distinct().cte("invoice_ids_cte")
 
         approved_refunds_cte = CsvService._get_approved_refunds_cte(invoice_ids_cte)
         partial_refunds_cte = CsvService._get_partial_refunds_status_cte(invoice_ids_cte)
