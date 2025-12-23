@@ -415,6 +415,9 @@ class Statement:  # pylint:disable=too-many-public-methods
             "latestStatementPaymentDate": latest_payment_date,
             "dueDate": cls.calculate_due_date(statement.to_date) if statement else None,
             "balanceForward": last_total - last_paid,
+            "previousPadCredit": previous_statement.pad_credit or 0 if previous_statement else 0,
+            "previousEftCredit": previous_statement.eft_credit or 0 if previous_statement else 0,
+            "previousObCredit": previous_statement.ob_credit or 0 if previous_statement else 0,
         }
 
     @staticmethod
