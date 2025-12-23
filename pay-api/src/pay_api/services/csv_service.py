@@ -40,72 +40,6 @@ class CsvService:
     """Service to support CSV report generation."""
 
     @staticmethod
-    def _get_approved_refunds_subquery():
-        """Get subquery to check if invoice has approved refunds."""
-        return (
-            db.session.query(
-                Refund.invoice_id,
-                func.max(Refund.requested_date).label("latest_refund_date"),
-            )
-            .filter(
-                Refund.status.in_(
-                    [
-                        RefundStatus.APPROVED.value,
-                        RefundStatus.APPROVAL_NOT_REQUIRED.value,
-                    ]
-                )
-            )
-            .group_by(Refund.invoice_id)
-            .subquery()
-        )
-
-    @staticmethod
-    def _get_partial_refunds_status_subquery():
-        """Get subquery to check if invoice has partial refunds and their type (credit or refund)."""
-        return (
-            db.session.query(
-                RefundsPartial.invoice_id,
-                func.bool_or(RefundsPartial.is_credit).label("is_credit"),
-            )
-            .join(Refund, Refund.id == RefundsPartial.refund_id)
-            .filter(
-                Refund.status.in_(
-                    [
-                        RefundStatus.APPROVED.value,
-                        RefundStatus.PENDING_APPROVAL.value,
-                        RefundStatus.APPROVAL_NOT_REQUIRED.value,
-                    ]
-                )
-            )
-            .group_by(RefundsPartial.invoice_id)
-            .subquery()
-        )
-
-    @staticmethod
-    def _get_applied_credits_subquery():
-        """Get subquery for applied credits."""
-        return (
-            db.session.query(
-                AppliedCredits.invoice_id,
-                func.sum(AppliedCredits.amount_applied).label("total_applied_credits"),
-            )
-            .group_by(AppliedCredits.invoice_id)
-            .subquery()
-        )
-
-    @staticmethod
-    def _get_credits_received_subquery():
-        """Get subquery for credits received (account credits)."""
-        return (
-            db.session.query(
-                Credit.created_invoice_id,
-                func.sum(Credit.amount).label("total_credits_received"),
-            )
-            .group_by(Credit.created_invoice_id)
-            .subquery()
-        )
-
-    @staticmethod
     def _get_csv_labels():
         """Get CSV column labels."""
         return [
@@ -154,6 +88,80 @@ class CsvService:
                 detail_texts.append(detail_text)
 
         return ",".join(detail_texts) if detail_texts else ""
+    
+    @staticmethod
+    def _get_approved_refunds_cte(invoice_ids_cte):
+        """Get CTE for approved refunds filtered by invoice IDs."""
+        return (
+            db.session.query(
+                Refund.invoice_id,
+                func.max(Refund.requested_date).label("latest_refund_date"),
+            )
+            .filter(
+                Refund.invoice_id.in_(db.session.query(invoice_ids_cte.c.id))
+            )
+            .filter(
+                Refund.status.in_([
+                    RefundStatus.APPROVED.value,
+                    RefundStatus.APPROVAL_NOT_REQUIRED.value,
+                ])
+            )
+            .group_by(Refund.invoice_id)
+            .cte('approved_refunds_cte')
+        )
+
+    @staticmethod
+    def _get_partial_refunds_status_cte(invoice_ids_cte):
+        """Get CTE for partial refunds status filtered by invoice IDs."""
+        return (
+            db.session.query(
+                RefundsPartial.invoice_id,
+                func.bool_or(RefundsPartial.is_credit).label("is_credit"),
+            )
+            .join(Refund, Refund.id == RefundsPartial.refund_id)
+            .filter(
+                RefundsPartial.invoice_id.in_(db.session.query(invoice_ids_cte.c.id))
+            )
+            .filter(
+                Refund.status.in_([
+                    RefundStatus.APPROVED.value,
+                    RefundStatus.PENDING_APPROVAL.value,
+                    RefundStatus.APPROVAL_NOT_REQUIRED.value,
+                ])
+            )
+            .group_by(RefundsPartial.invoice_id)
+            .cte('partial_refunds_cte')
+        )
+
+    @staticmethod
+    def _get_applied_credits_cte(invoice_ids_cte):
+        """Get CTE for applied credits filtered by invoice IDs."""
+        return (
+            db.session.query(
+                AppliedCredits.invoice_id,
+                func.sum(AppliedCredits.amount_applied).label("total_applied_credits"),
+            )
+            .filter(
+                AppliedCredits.invoice_id.in_(db.session.query(invoice_ids_cte.c.id))
+            )
+            .group_by(AppliedCredits.invoice_id)
+            .cte('applied_credits_cte')
+        )
+
+    @staticmethod
+    def _get_credits_received_cte(invoice_ids_cte):
+        """Get CTE for credits received filtered by invoice IDs."""
+        return (
+            db.session.query(
+                Credit.created_invoice_id,
+                func.sum(Credit.amount).label("total_credits_received"),
+            )
+            .filter(
+                Credit.created_invoice_id.in_(db.session.query(invoice_ids_cte.c.id))
+            )
+            .group_by(Credit.created_invoice_id)
+            .cte('credits_received_cte')
+        )
 
     @staticmethod
     def _process_csv_rows(rows: list, details_index: int = 4) -> list:
@@ -172,18 +180,22 @@ class CsvService:
         formatted_date = CsvService._get_formatted_date_expression()
         labels = CsvService._get_csv_labels()
 
-        invoice_ids_subquery = results_query.with_entities(Invoice.id).distinct().subquery()
+        invoice_ids_cte = (
+            results_query
+            .with_entities(Invoice.id)
+            .distinct()
+            .cte('invoice_ids_cte')
+        )
 
-        approved_refunds_subquery = CsvService._get_approved_refunds_subquery()
-        partial_refunds_status_subquery = CsvService._get_partial_refunds_status_subquery()
-        applied_credits_subquery = CsvService._get_applied_credits_subquery()
-        credits_received_subquery = CsvService._get_credits_received_subquery()
-
+        approved_refunds_cte = CsvService._get_approved_refunds_cte(invoice_ids_cte)
+        partial_refunds_cte = CsvService._get_partial_refunds_status_cte(invoice_ids_cte)
+        applied_credits_cte = CsvService._get_applied_credits_cte(invoice_ids_cte)
+        credits_received_cte = CsvService._get_credits_received_cte(invoice_ids_cte)
         # Build query from scratch with explicit joins to avoid cartesian product warnings
         # Apply filters first, then joins for better performance
         query = (
-            db.session.query(Invoice)
-            .filter(Invoice.id.in_(db.session.query(invoice_ids_subquery.c.id)))
+            db.session.query(invoice_ids_cte)
+            .join(Invoice, Invoice.id == invoice_ids_cte.c.id)
             .filter(Invoice.invoice_status_code != InvoiceStatus.DELETED.value)
             .join(CorpType, CorpType.code == Invoice.corp_type_code)
             .join(
@@ -196,22 +208,10 @@ class CsvService:
                 FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id,
             )
             .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-            .outerjoin(
-                approved_refunds_subquery,
-                approved_refunds_subquery.c.invoice_id == Invoice.id,
-            )
-            .outerjoin(
-                partial_refunds_status_subquery,
-                partial_refunds_status_subquery.c.invoice_id == Invoice.id,
-            )
-            .outerjoin(
-                applied_credits_subquery,
-                applied_credits_subquery.c.invoice_id == Invoice.id,
-            )
-            .outerjoin(
-                credits_received_subquery,
-                credits_received_subquery.c.created_invoice_id == Invoice.id,
-            )
+            .outerjoin(approved_refunds_cte, approved_refunds_cte.c.invoice_id == Invoice.id)
+            .outerjoin(partial_refunds_cte, partial_refunds_cte.c.invoice_id == Invoice.id)
+            .outerjoin(applied_credits_cte, applied_credits_cte.c.invoice_id == Invoice.id)
+            .outerjoin(credits_received_cte, credits_received_cte.c.created_invoice_id == Invoice.id)
             .with_entities(
                 CorpType.product,
                 Invoice.corp_type_code,
@@ -234,10 +234,10 @@ class CsvService:
                             Invoice.invoice_status_code == InvoiceStatus.PAID.value,
                             Invoice.refund != 0,
                             Invoice.refund_date.isnot(None),
-                            partial_refunds_status_subquery.c.is_credit.isnot(None),
+                            partial_refunds_cte.c.is_credit.isnot(None),
                         ),
                         case(
-                            (partial_refunds_status_subquery.c.is_credit.is_(True), literal("Partially Credited")),
+                            (partial_refunds_cte.c.is_credit.is_(True), literal("Partially Credited")),
                             else_=literal("Partially Refunded"),
                         ),
                     ),
@@ -270,14 +270,14 @@ class CsvService:
                 (
                     -case(
                         (
-                            approved_refunds_subquery.c.latest_refund_date.isnot(None),
+                            approved_refunds_cte.c.latest_refund_date.isnot(None),
                             func.coalesce(Invoice.refund, 0),
                         ),
                         else_=literal(0),
                     )
                 ).label("total_refund"),
-                func.coalesce(applied_credits_subquery.c.total_applied_credits, 0).label("total_applied_credits"),
-                (-func.coalesce(credits_received_subquery.c.total_credits_received, 0)).label("total_credits_received"),
+                func.coalesce(applied_credits_cte.c.total_applied_credits, 0).label("total_applied_credits"),
+                (-func.coalesce(credits_received_cte.c.total_credits_received, 0)).label("total_credits_received"),
             )
             .group_by(
                 CorpType.product,
@@ -293,10 +293,11 @@ class CsvService:
                 Invoice.id,
                 Invoice.refund,
                 Invoice.refund_date,
-                approved_refunds_subquery.c.latest_refund_date,
-                partial_refunds_status_subquery.c.is_credit,
-                applied_credits_subquery.c.total_applied_credits,
-                credits_received_subquery.c.total_credits_received,
+                Invoice.payment_method_code,
+                approved_refunds_cte.c.latest_refund_date,
+                partial_refunds_cte.c.is_credit,
+                applied_credits_cte.c.total_applied_credits,
+                credits_received_cte.c.total_credits_received,
             )
             .order_by(Invoice.id.desc())
         )
