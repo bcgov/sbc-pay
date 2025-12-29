@@ -378,5 +378,5 @@ class MigrationConfig:  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config("DATABASE_NAME")
     DB_HOST = _get_config("DATABASE_HOST")
     DB_PORT = _get_config("DATABASE_PORT", default="5432")
-    SQLALCHEMY_DATABASE_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
+    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
