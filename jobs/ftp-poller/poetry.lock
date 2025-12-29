@@ -2134,11 +2134,9 @@ packaging = "24.0"
 proto-plus = "1.23.0"
 protobuf = "4.25.8"
 psycopg = "^3.3.1"
-psycopg2-binary = "2.9.9"
 pyasn1 = "0.5.1"
 pyasn1-modules = "0.3.0"
 pycparser = "2.21"
-pyhumps = "3.8.0"
 pyrfc3339 = "1.1"
 pyrsistent = "0.20.0"
 python-dateutil = "2.9.0.post0"
@@ -2164,8 +2162,8 @@ werkzeug = "^3.1.4"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "31689"
-resolved_reference = "bb455277f89b8032c9e78dd40fa8269a4f07982a"
+reference = "add_dates_pay_queue_message"
+resolved_reference = "1a70683cf884f0bf5fe9bc2af23656cefb0ce86a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2567,18 +2565,6 @@ dev = ["black", "doc2dash", "flake8", "pyhamcrest[docs,tests]", "pytest-mypy", "
 docs = ["alabaster (>=0.7,<1.0)", "sphinx (>=4.0,<5.0)"]
 tests = ["coverage[toml]", "dataclasses ; python_version < \"3.7\"", "mypy (!=0.940) ; platform_python_implementation != \"PyPy\"", "pytest (>=5.0)", "pytest-mypy-plugins ; platform_python_implementation != \"PyPy\"", "pytest-sugar", "pytest-xdist", "pyyaml", "types-dataclasses ; python_version < \"3.7\"", "types-mock"]
 tests-numpy = ["numpy", "pyhamcrest[tests]"]
-
-[[package]]
-name = "pyhumps"
-version = "3.8.0"
-description = "🐫  Convert strings (and dictionary keys) between snake case, camel case and pascal case in Python. Inspired by Humps for Node"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "pyhumps-3.8.0-py3-none-any.whl", hash = "sha256:060e1954d9069f428232a1adda165db0b9d8dfdce1d265d36df7fbff540acfd6"},
-    {file = "pyhumps-3.8.0.tar.gz", hash = "sha256:498026258f7ee1a8e447c2e28526c0bea9407f9a59c03260aee4bd6c04d681a3"},
-]
 
 [[package]]
 name = "pyjwt"
@@ -3436,4 +3422,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "1dc635d94086497b3e9b2687290897f8785a1ec890e7ee7f08035713e6b74fcf"
+content-hash = "8d49f3fe0ccd0400077501a6752dbcc14c3635a366ed426b2652aa4029a0885a"
