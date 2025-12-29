@@ -1,17 +1,17 @@
 # Pay Team Report Dashboard
 
-A Streamlit application with multiple pages that allows users to generate reports and download data as CSV files.
+A Streamlit application with multiple pages that allows users to generate reports and download data as XLSX files.
 
 ## Purpose
 
-This application was created as a stopgap solution for PowerBI. It enables non-technical staff to generate and download reports independently, eliminating the need for developers to repeatedly run reports on demand.
+This application was created as a stopgap solution for PowerBI. It enables non-technical staff to generate and download reports independently, eliminating the need for developers to repeatedly run reports on demand. This isn't meant for complicated visuals or dashboards just a means to an end for access to data for business users.
 
 ## Features
 
 - **Streamlit Native Authentication**: User authentication using Streamlit's built-in OIDC support with Keycloak
 - **Multi-page navigation**: Main dashboard and Analytics page
 - **PostgreSQL integration**: Connect to your PostgreSQL database
-- **CSV download**: Export generated reports as CSV files
+- **XLSX download**: Export generated reports as XLSX files
 
 ## Setup
 

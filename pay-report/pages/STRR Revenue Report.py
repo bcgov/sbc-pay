@@ -1,10 +1,11 @@
-from datetime import date, datetime
+from datetime import date
 
 import pandas as pd
 import streamlit as st
 
 from src.db_connection import execute_query
 from src.menu import auth_guard_with_redirect
+from src.utils import display_report_with_download
 
 st.set_page_config(
     page_title="STRR Revenue Report", layout="wide", menu_items=None
@@ -16,7 +17,7 @@ st.title("STRR Revenue Report")
 
 report_title = "STRR Revenue Report"
 
-col1, col2, spacer = st.columns([0.8, 0.8, 10])
+col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
     start_date_1 = st.date_input(
@@ -28,8 +29,13 @@ with col2:
         "Report End", value=date.today(), key="analytics_end1"
     )
 
-try:
-    query = """
+with col3:
+    st.markdown("<br>", unsafe_allow_html=True)
+    run_report = st.button("Run Report", key="run_report", type="primary")
+
+if run_report:
+    try:
+        query = """
         WITH completed AS (
             SELECT
                 disbursement_date::date AS date,
@@ -112,12 +118,17 @@ try:
         SELECT
             d.date,
 
-            COALESCE(rp.sbc_revenue_paid, 0)     AS sbc_revenue_paid,
+            COALESCE(rp.sbc_revenue_paid, 0) AS sbc_revenue_paid,
             COALESCE(rr.sbc_revenue_reversed, 0) AS sbc_revenue_reversed,
-            COALESCE(rp.sbc_revenue_paid, 0) - COALESCE(rr.sbc_revenue_reversed, 0) AS sbc_revenue_net,
-            COALESCE(c.sbc_pay_total_disbursed, 0) AS sbc_pay_total_disbursed,
-            COALESCE(r.sbc_pay_total_reversed, 0) AS sbc_pay_total_reversed,
-            COALESCE(p.sbc_pay_total_partial_reversed, 0) AS sbc_pay_total_partial_reversed,
+            COALESCE(rp.sbc_revenue_paid, 0)
+            - COALESCE(rr.sbc_revenue_reversed, 0)
+            AS sbc_revenue_net,
+            COALESCE(c.sbc_pay_total_disbursed, 0)
+            AS sbc_pay_total_disbursed,
+            COALESCE(r.sbc_pay_total_reversed, 0)
+            AS sbc_pay_total_reversed,
+            COALESCE(p.sbc_pay_total_partial_reversed, 0)
+            AS sbc_pay_total_partial_reversed,
 
             COALESCE(c.sbc_pay_total_disbursed, 0)
             - COALESCE(r.sbc_pay_total_reversed, 0)
@@ -149,23 +160,15 @@ try:
         LEFT JOIN cas                 ON cas.date = d.date
         WHERE d.date >= %s AND d.date <= %s
         ORDER BY d.date;
-    """
+        """
 
-    results = execute_query(query, (start_date_1, end_date_1))
+        results = execute_query(query, (start_date_1, end_date_1))
 
-    if results:
-        df = pd.DataFrame(results)
-        csv = df.to_csv(index=False)
-        st.download_button(
-            label="Download CSV",
-            data=csv,
-            file_name=f"{report_title.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv",
-            key="download_analytics",
-        )
-        st.dataframe(df)
-    else:
-        st.info("No data returned from query.")
+        if results:
+            df = pd.DataFrame(results)
+            display_report_with_download(df, report_title)
+        else:
+            st.info("No data returned from query.")
 
-except Exception as e:
-    st.error(f"Error generating report: {str(e)}")
+    except Exception as e:
+        st.error(f"Error generating report: {str(e)}")

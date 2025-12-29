@@ -19,19 +19,14 @@ else:
 
 st.title("Pay Team Report Dashboard")
 
-username = get_username()
-st.subheader(f"Welcome, {username}!")
+st.subheader(f"Welcome, {get_username()}!")
 
 st.markdown("""
 ### Welcome to the Pay Team Report Dashboard
 
-This application provides access to various reports with date range
-filtering and CSV export capabilities.
-
 **Access Requirements:**
 - Authentication via Keycloak is required
 - Users must have the `pay-report` role assigned
-- If you see "Access denied", contact Pay Team to request the `pay-report` role
 """)
 
 st.markdown("""
