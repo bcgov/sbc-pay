@@ -18,6 +18,7 @@ itsdangerous = "^2.1.2"
 launchdarkly-server-sdk = "^8.2.1"
 cachecontrol = "^0.14.0"
 pay-api = { git = "https://github.com/seeker25/sbc-pay.git", branch = "add_dates_pay_queue_message", subdirectory = "pay-api" }
+psycopg = "^3.3.2"
 
 
 [tool.poetry.group.dev.dependencies]
