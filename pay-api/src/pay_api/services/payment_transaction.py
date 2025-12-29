@@ -21,7 +21,6 @@ from datetime import UTC, datetime
 
 import humps
 from flask import current_app
-from sbc_common_components.utils.dataclasses import PaymentToken
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
@@ -31,11 +30,13 @@ from pay_api.models import PaymentTransactionSchema
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.base_payment_system import PaymentSystemService  # noqa: TC001
+from pay_api.services.flags import flags
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
+from pay_api.utils.dataclasses import PaymentToken
 from pay_api.utils.enums import (
     InvoiceReferenceStatus,
     InvoiceStatus,
@@ -557,4 +558,18 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     @staticmethod
     def create_event_payload(invoice, status_code):
         """Create event payload for payment events."""
-        return humps.camelize(asdict(PaymentToken(invoice.id, status_code, invoice.filing_id, invoice.corp_type_code)))
+        payment_date = invoice.payment_date.isoformat() if invoice.payment_date else None
+        refund_date = invoice.refund_date.isoformat() if invoice.refund_date else None
+        payment_token = PaymentToken(
+            invoice.id,
+            status_code,
+            invoice.filing_id,
+            invoice.corp_type_code,
+            payment_date=payment_date,
+            refund_date=refund_date,
+        )
+        payload = humps.camelize(asdict(payment_token))
+        if not flags.is_on("payment-date-release-message", default=False):
+            payload.pop("paymentDate", None)
+            payload.pop("refundDate", None)
+        return payload

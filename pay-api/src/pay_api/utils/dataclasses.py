@@ -117,3 +117,15 @@ class ActivityLogData(Serializable):
     created_at: str
     source: str
     item_type: str = "ACCOUNT"
+
+
+@dataclass
+class PaymentToken:
+    """Payment token data class for event payloads."""
+
+    id: int
+    status_code: str
+    filing_id: int | None
+    corp_type_code: str
+    payment_date: str | None = None
+    refund_date: str | None = None
