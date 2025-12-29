@@ -27,7 +27,6 @@ launchdarkly-server-sdk = "^8.2.1"
 more-itertools = "^10.2.0"
 cloud-sql-python-connector = "^1.13.0"
 ruff = "^0.14.1"
-psycopg = "^3.3.2"
 
 
 [tool.poetry.group.dev.dependencies]

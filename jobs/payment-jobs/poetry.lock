@@ -1990,7 +1990,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "add_dates_pay_queue_message"
-resolved_reference = "784d39787dedb5b9c7f3e0e441cb2cea7fc999ec"
+resolved_reference = "5513d44e295afb40810de2e4da9f1a6548e8a076"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3027,4 +3027,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "c0b253758e46c54e2cf4e5ee579a286f11d9705de72ec5581567d91f9118fba2"
+content-hash = "4aa55ae7f3c8649b2c53b86a352a82fb14bf7630df98e3d58589c8b476e0e12a"
