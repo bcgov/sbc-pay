@@ -111,13 +111,14 @@ def test_payment_token_with_dates():
     refund_date = datetime.now(tz=UTC)
 
     class MockInvoice:
-        id = 55
-        filing_id = 55
-        corp_type_code = "NRO"
-        payment_date = payment_date
-        refund_date = refund_date
+        def __init__(self, payment_date, refund_date):
+            self.id = 55
+            self.filing_id = 55
+            self.corp_type_code = "NRO"
+            self.payment_date = payment_date
+            self.refund_date = refund_date
 
-    invoice = MockInvoice()
+    invoice = MockInvoice(payment_date, refund_date)
 
     with patch("pay_api.services.payment_transaction.flags.is_on", return_value=True):
         result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
