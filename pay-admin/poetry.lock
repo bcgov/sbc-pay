@@ -1957,7 +1957,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "add_dates_pay_queue_message"
-resolved_reference = "1a70683cf884f0bf5fe9bc2af23656cefb0ce86a"
+resolved_reference = "784d39787dedb5b9c7f3e0e441cb2cea7fc999ec"
 subdirectory = "pay-api"
 
 [[package]]
