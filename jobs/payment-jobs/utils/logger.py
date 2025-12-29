@@ -29,11 +29,7 @@ class LoggerUtil:
         """Remove StructuredLogHandler from all loggers globally."""
         for name in [None, "invoke_jobs", "api-exceptions"]:
             logger = logging.getLogger(name)
-            logger.handlers = [
-                h
-                for h in logger.handlers
-                if "StructuredLogHandler" not in str(type(h))
-            ]
+            logger.handlers = [h for h in logger.handlers if "StructuredLogHandler" not in str(type(h))]
 
     @classmethod
     def _setup_logger(cls, logger, logger_key: str):
@@ -69,9 +65,7 @@ class LoggerUtil:
                 creates a file in logs/ directory.
         """
         if log_file_path is None:
-            project_root = os.path.abspath(
-                os.path.dirname(os.path.dirname(__file__))
-            )
+            project_root = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
             logs_dir = os.path.join(project_root, "logs")
             os.makedirs(logs_dir, exist_ok=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

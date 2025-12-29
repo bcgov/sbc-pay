@@ -14,9 +14,7 @@
 """Adhoc task to check invoice status against PayBC order status."""
 
 import logging
-import os
 import sys
-from datetime import datetime
 from decimal import Decimal
 
 from flask import current_app
@@ -51,23 +49,23 @@ class AdhocInvoiceStatusCheckTask:
         """Get logger that writes to both console and file."""
         if cls._logger is None:
             logger_name = "AdhocInvoiceStatusCheckTask"
-            
-            console_logger = LoggerUtil.get_console_logger(logger_name)
+
+            LoggerUtil.get_console_logger(logger_name)
             file_logger = LoggerUtil.get_file_logger(logger_name)
-            
+
             combined_logger = logging.getLogger(f"{logger_name}_combined")
             combined_logger.setLevel(logging.DEBUG)
             combined_logger.handlers.clear()
             combined_logger.propagate = False
-            
+
             console_handler = logging.StreamHandler(sys.stdout)
             console_handler.setFormatter(logging.Formatter("%(message)s"))
             combined_logger.addHandler(console_handler)
-            
+
             if file_logger.handlers:
                 original_file_handler = file_logger.handlers[0]
                 cls._log_file_path = original_file_handler.baseFilename
-                
+
                 file_handler = logging.FileHandler(cls._log_file_path)
                 file_handler.setFormatter(
                     logging.Formatter(
@@ -77,7 +75,7 @@ class AdhocInvoiceStatusCheckTask:
                 )
                 combined_logger.addHandler(file_handler)
                 combined_logger.info(f"Logging to console and file: {cls._log_file_path}")
-            
+
             cls._logger = combined_logger
 
         return cls._logger
