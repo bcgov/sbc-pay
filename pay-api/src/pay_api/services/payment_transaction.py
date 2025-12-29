@@ -16,10 +16,8 @@
 from __future__ import annotations
 
 import uuid  # noqa: TC003
-from dataclasses import asdict
 from datetime import UTC, datetime
 
-import humps
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
 
@@ -568,7 +566,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             payment_date=payment_date,
             refund_date=refund_date,
         )
-        payload = humps.camelize(asdict(payment_token))
+        payload = payment_token.to_dict()
         if not flags.is_on("payment-date-release-message", default=False):
             payload.pop("paymentDate", None)
             payload.pop("refundDate", None)

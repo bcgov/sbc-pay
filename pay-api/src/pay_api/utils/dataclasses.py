@@ -119,8 +119,8 @@ class ActivityLogData(Serializable):
     item_type: str = "ACCOUNT"
 
 
-@dataclass
-class PaymentToken:
+@define
+class PaymentToken(Serializable):
     """Payment token data class for event payloads."""
 
     id: int

@@ -17,11 +17,9 @@
 Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
 
-from dataclasses import asdict
 from datetime import UTC, datetime
 from unittest.mock import ANY, MagicMock, patch
 
-import humps
 import pytest
 from dotenv import load_dotenv
 from gcp_queue.gcp_queue import GcpQueue
@@ -85,7 +83,7 @@ def test_gcp_pubsub_connectivity(monkeypatch):
     monkeypatch.undo()
     load_dotenv(".env")
     app_prod = create_app("production")
-    payload = humps.camelize(asdict(PaymentToken(55, TransactionStatus.COMPLETED.value, 55, "NRO")))
+    payload = PaymentToken(55, TransactionStatus.COMPLETED.value, 55, "NRO").to_dict()
     with app_prod.app_context():
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(
