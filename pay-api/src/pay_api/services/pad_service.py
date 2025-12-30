@@ -133,7 +133,7 @@ class PadService(PaymentSystemService, CFSService):
             current_app.logger.info(
                 f"Account PAD credit {pad_account_credit}, found for {payment_account.auth_account_id}"
             )
-            with db.session.begin():
+            with db.session.begin_nested():
                 payment_account = PaymentAccountModel.find_by_id_for_update(payment_account.id)
                 pad_account_credit = payment_account.pad_credit or 0
                 payment_account.pad_credit = (

@@ -241,7 +241,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     def _apply_credit(cls, invoice: Invoice):
         """Apply credit to invoice and update payment account for online banking only."""
         credit_balance = Decimal("0")
-        with db.session.begin():
+        with db.session.begin_nested():
             payment_account = PaymentAccountModel.find_by_id_for_update(invoice.payment_account_id)
             invoice_balance = invoice.total - (invoice.paid or 0)
 

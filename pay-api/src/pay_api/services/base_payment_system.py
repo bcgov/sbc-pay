@@ -310,7 +310,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         ).flush()
 
         # Add up the credit amount and update payment account table.
-        with db.session.begin():
+        with db.session.begin_nested():
             payment_account = PaymentAccountModel.find_by_id_for_update(invoice.payment_account_id)
             match cfs_account.payment_method:
                 case PaymentMethod.PAD.value:
