@@ -8,7 +8,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_INPUT=1 \
     PATH="/root/.local/bin:$PATH"
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
@@ -17,15 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && /root/.local/bin/uv --version
 
-# Copy dependencies and sync
 COPY pyproject.toml uv.lock* ./
-RUN uv sync --frozen
+RUN uv sync --frozen -v
 
-# Copy the application
 COPY . .
 
 # Optional: convert .env → Streamlit secrets
