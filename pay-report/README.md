@@ -119,6 +119,12 @@ docker run -p 8080:8080 \
   pay-report
 ```
 
+or 
+
+```bash
+docker run -p 8080:8080 --env-file .env pay-report
+```
+
 **Note**: Make sure your `.streamlit/secrets.toml` file is configured with the correct values before running the container.
 
 The application will be available at `http://localhost:8080`.
