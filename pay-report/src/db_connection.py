@@ -1,6 +1,6 @@
 import pg8000
 import streamlit as st
-from google.cloud.sql.connector import Connector
+from google.cloud.sql.connector import Connector, IPTypes
 
 from .auth import require_keycloak_auth
 
@@ -36,8 +36,7 @@ def get_db_connection():
                 "pg8000",
                 user=db_config.get("username", "postgres"),
                 db=db_config.get("database", "postgres"),
-                ip_type="public",
-                enable_iam_auth=True,
+                ip_type=IPTypes.PUBLIC,
             )
             return conn
 
