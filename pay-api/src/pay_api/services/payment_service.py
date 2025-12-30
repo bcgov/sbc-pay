@@ -25,6 +25,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import db
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.constants import EDIT_ROLE
@@ -240,35 +241,40 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     def _apply_credit(cls, invoice: Invoice):
         """Apply credit to invoice and update payment account for online banking only."""
         credit_balance = Decimal("0")
-        payment_account = PaymentAccountModel.find_by_id_for_update(invoice.payment_account_id)
-        invoice_balance = invoice.total - (invoice.paid or 0)
+        with db.session.begin():
+            payment_account = PaymentAccountModel.find_by_id_for_update(invoice.payment_account_id)
+            invoice_balance = invoice.total - (invoice.paid or 0)
 
-        cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
-        match cfs_account.payment_method:
-            case PaymentMethod.ONLINE_BANKING.value:
-                available_credit = payment_account.ob_credit or 0
-            case _:
-                raise NotImplementedError(f"Payment method {cfs_account.payment_method} invalid Online Banking only.")
+            cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
+            match cfs_account.payment_method:
+                case PaymentMethod.ONLINE_BANKING.value:
+                    available_credit = payment_account.ob_credit or 0
+                case _:
+                    raise NotImplementedError(
+                        f"Payment method {cfs_account.payment_method} invalid Online Banking only."
+                    )
 
-        if available_credit >= invoice_balance:
-            pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                invoice.payment_method_code
-            )
-            # Only release records, as the actual status change should happen during reconciliation in pay-queue.
-            pay_service.apply_credit(invoice)
-            credit_balance = available_credit - invoice_balance
-            invoice.paid = invoice.total
-            invoice.save()
-        elif available_credit <= invoice_balance:
-            invoice.paid = (invoice.paid or 0) + available_credit
-            invoice.save()
+            if available_credit >= invoice_balance:
+                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+                    invoice.payment_method_code
+                )
+                # Only release records, as the actual status change should happen during reconciliation in pay-queue.
+                pay_service.apply_credit(invoice)
+                credit_balance = available_credit - invoice_balance
+                invoice.paid = invoice.total
+                invoice.save()
+            elif available_credit <= invoice_balance:
+                invoice.paid = (invoice.paid or 0) + available_credit
+                invoice.save()
 
-        match cfs_account.payment_method:
-            case PaymentMethod.ONLINE_BANKING.value:
-                payment_account.ob_credit = credit_balance
-            case _:
-                raise NotImplementedError(f"Payment method {cfs_account.payment_method} invalid Online Banking only.")
-        payment_account.save()
+            match cfs_account.payment_method:
+                case PaymentMethod.ONLINE_BANKING.value:
+                    payment_account.ob_credit = credit_balance
+                case _:
+                    raise NotImplementedError(
+                        f"Payment method {cfs_account.payment_method} invalid Online Banking only."
+                    )
+            payment_account.save()
 
     @classmethod
     def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
