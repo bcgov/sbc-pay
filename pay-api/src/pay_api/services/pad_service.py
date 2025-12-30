@@ -135,7 +135,7 @@ class PadService(PaymentSystemService, CFSService):
             payment_account = PaymentAccountModel.find_by_id_for_update(payment_account.id)
             pad_account_credit = payment_account.pad_credit or 0
             payment_account.pad_credit = 0 if pad_account_credit < invoice.total else pad_account_credit - invoice.total
-            payment_account.save()
+            payment_account.flush()
 
     @user_context
     @skip_complete_post_invoice_for_sandbox
