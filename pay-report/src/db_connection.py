@@ -37,6 +37,7 @@ def get_db_connection():
                 user=db_config.get("username", "postgres"),
                 db=db_config.get("database", "postgres"),
                 ip_type=IPTypes.PUBLIC,
+                enable_iam_auth=True,
             )
             return conn
 
