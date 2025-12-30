@@ -930,12 +930,11 @@ def _rollup_credits(account_ids):
                         f" for credit {account_credit.cfs_identifier}",
                     )
 
-        with db.session.begin_nested():
-            pay_account = PaymentAccountModel.find_by_id_for_update(account_id)
-            pay_account.eft_credit = eft_credit_total
-            pay_account.ob_credit = ob_credit_total
-            pay_account.pad_credit = pad_credit_total
-            pay_account.save()
+        pay_account = PaymentAccountModel.find_by_id_for_update(account_id)
+        pay_account.eft_credit = eft_credit_total
+        pay_account.ob_credit = ob_credit_total
+        pay_account.pad_credit = pad_credit_total
+        pay_account.save()
 
 
 def _get_payment_account(row) -> PaymentAccountModel:

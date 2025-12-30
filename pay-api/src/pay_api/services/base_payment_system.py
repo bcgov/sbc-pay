@@ -33,7 +33,6 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.models import db
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.auth import get_account_admin_users
@@ -310,21 +309,18 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         ).flush()
 
         # Add up the credit amount and update payment account table.
-        with db.session.begin_nested():
-            payment_account = PaymentAccountModel.find_by_id_for_update(invoice.payment_account_id)
-            match cfs_account.payment_method:
-                case PaymentMethod.PAD.value:
-                    payment_account.pad_credit = (payment_account.pad_credit or 0) + refund_amount
-                case PaymentMethod.ONLINE_BANKING.value:
-                    payment_account.ob_credit = (payment_account.ob_credit or 0) + refund_amount
-                case PaymentMethod.EFT.value:
-                    payment_account.eft_credit = (payment_account.eft_credit or 0) + refund_amount
-                case _:
-                    # I don't believe there are CC (DirectPay flow not DirectSale) refunds, wouldn't want a credit back
-                    raise NotImplementedError(
-                        f"Payment method {invoice.payment_method_code} not implemented for credits."
-                    )
-            payment_account.save()
+        payment_account = PaymentAccountModel.find_by_id_for_update(invoice.payment_account_id)
+        match cfs_account.payment_method:
+            case PaymentMethod.PAD.value:
+                payment_account.pad_credit = (payment_account.pad_credit or 0) + refund_amount
+            case PaymentMethod.ONLINE_BANKING.value:
+                payment_account.ob_credit = (payment_account.ob_credit or 0) + refund_amount
+            case PaymentMethod.EFT.value:
+                payment_account.eft_credit = (payment_account.eft_credit or 0) + refund_amount
+            case _:
+                # I don't believe there are CC (DirectPay flow not DirectSale) refunds, wouldn't want a credit back
+                raise NotImplementedError(f"Payment method {invoice.payment_method_code} not implemented for credits.")
+        payment_account.save()
 
         current_app.logger.info(
             f"Updating {cfs_account.payment_method} credit amount for account {payment_account.auth_account_id}"
