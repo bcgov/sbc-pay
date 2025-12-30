@@ -1,0 +1,114 @@
+name: PAY REPORT CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release/*
+    paths:
+      - "pay-report/**"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./pay-report
+
+jobs:
+  setup-job:
+    runs-on: ubuntu-24.04
+
+    if: github.repository == 'bcgov/sbc-pay'
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: "true"
+
+  linting:
+    needs: setup-job
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev
+      - name: Lint with ruff
+        id: ruff
+        run: |
+          uv run ruff check .
+
+  testing:
+    needs: setup-job
+    env:
+      PYTHONPATH: "./src"
+
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
+
+    services:
+      postgres:
+        image: postgres:15.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pay-report-test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev
+      - name: Test with pytest
+        id: test
+        run: |
+          uv run pytest
+
+  build-check:
+    needs: setup-job
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Build Docker image
+        id: build
+        run: |
+          docker build -t pay-report:test .
+
