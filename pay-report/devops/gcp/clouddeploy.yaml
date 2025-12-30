@@ -32,7 +32,7 @@ serialPipeline:
       container-name: "pay-report-dev"
       cloudsql-instances: "gtksf3-dev:northamerica-northeast1:pay-db-dev"
       service-account: "sa-api@gtksf3-dev.iam.gserviceaccount.com"
-      container-port: "8501"
+      container-port: "8080"
  - targetId: gtksf3-test
    profiles: [test]
    strategy:
@@ -48,7 +48,7 @@ serialPipeline:
       service-account: "sa-api@gtksf3-test.iam.gserviceaccount.com"
       resources-cpu: 2000m
       resources-memory: 2Gi
-      container-port: "8501"
+      container-port: "8080"
  - targetId: gtksf3-sandbox
    profiles: [sandbox]
    strategy:
@@ -64,7 +64,7 @@ serialPipeline:
       service-account: "sa-api@gtksf3-tools.iam.gserviceaccount.com"
       max-scale: "10"
       container-concurrency: "10"
-      container-port: "8501"
+      container-port: "8080"
       resources-cpu: 2000m
       resources-memory: 4Gi
  - targetId: gtksf3-prod
@@ -82,7 +82,7 @@ serialPipeline:
       service-account: "sa-api@gtksf3-prod.iam.gserviceaccount.com"
       max-scale: "10"
       container-concurrency: "10"
-      container-port: "8501"
+      container-port: "8080"
       resources-cpu: 2000m
       resources-memory: 4Gi
 

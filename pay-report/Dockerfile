@@ -1,6 +1,18 @@
-FROM python:3.12-slim
+FROM python:3.12-bullseye AS builder
 
-WORKDIR /app
+ARG VCS_REF="missing"
+ARG BUILD_DATE="missing"
+
+ENV VCS_REF=${VCS_REF}
+ENV BUILD_DATE=${BUILD_DATE}
+ENV PORT=8080
+
+WORKDIR /code
+
+LABEL org.label-schema.vcs-ref=${VCS_REF} \
+  org.label-schema.build-date=${BUILD_DATE}
+
+LABEL vendor="BCROS"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -10,17 +22,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    python3-dev \
-    libffi-dev \
     curl \
-    ca-certificates \
+    # Cleaning cache:
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && /root/.local/bin/uv --version
+    && /root/.local/bin/uv --version \
+    && mv /root/.local/bin/uv /usr/local/bin/uv \
+    && chmod +x /usr/local/bin/uv
 
 COPY pyproject.toml uv.lock* ./
-RUN uv sync --frozen -v
+
+RUN --mount=type=cache,target="/root/.cache/uv" \
+  uv sync --no-default-groups --frozen
 
 COPY . .
 
@@ -29,8 +44,39 @@ RUN if [ -f .env ]; then \
       python scripts/env_to_toml.py .env .streamlit/secrets.toml; \
     fi
 
-EXPOSE 8501
+FROM python:3.12-slim-bullseye AS production
 
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+USER root
 
-ENTRYPOINT ["uv", "run", "streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ARG UID=1000
+ARG GID=1000
+
+ENV PORT=8080 \
+    PYTHONPATH="/code/src" \
+    PYTHONFAULTHANDLER=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    git \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g "${GID}" -r web \
+    && useradd -d '/code' -g web -l -r -u "${UID}" web \
+    && mkdir -p /code \
+    && chown web:web -R '/code'
+
+WORKDIR /code
+
+COPY --from=builder --chown=web:web /code /code
+
+COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
+
+USER web
+
+EXPOSE 8080
+
+ENTRYPOINT ["uv", "run", "streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]

@@ -56,7 +56,7 @@ Or using standard Python:
 streamlit run app.py
 ```
 
-The application will open in your default web browser at `http://localhost:8501`.
+The application will open in your default web browser at `http://localhost:8080`.
 
 ## Running Tests
 
@@ -114,14 +114,14 @@ docker build -t pay-report .
 Mount your `.streamlit/secrets.toml` file:
 
 ```bash
-docker run -p 8501:8501 \
+docker run -p 8080:8080 \
   -v $(pwd)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro \
   pay-report
 ```
 
 **Note**: Make sure your `.streamlit/secrets.toml` file is configured with the correct values before running the container.
 
-The application will be available at `http://localhost:8501`.
+The application will be available at `http://localhost:8080`.
 
 ## Notes
 
