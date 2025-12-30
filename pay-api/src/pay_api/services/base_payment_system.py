@@ -33,6 +33,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import db
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.auth import get_account_admin_users
@@ -320,7 +321,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             case _:
                 # I don't believe there are CC (DirectPay flow not DirectSale) refunds, wouldn't want a credit back
                 raise NotImplementedError(f"Payment method {invoice.payment_method_code} not implemented for credits.")
-        payment_account.save()
+        payment_account.flush()
 
         current_app.logger.info(
             f"Updating {cfs_account.payment_method} credit amount for account {payment_account.auth_account_id}"
