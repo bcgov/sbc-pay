@@ -22,7 +22,7 @@ def get_db_connection():
     """
     try:
         db_config = st.secrets.get("database", {})
-        instance_connection_name = db_config.get("instance_connection_name")
+        instance_connection_name = db_config.get("instance_connection")
 
         if instance_connection_name:
             connector = Connector()
@@ -31,7 +31,7 @@ def get_db_connection():
             conn = connector.connect(
                 instance_connection_name,
                 "pg8000",
-                user=db_config.get("user", "postgres"),
+                user=db_config.get("username", "postgres"),
                 db=db_config.get("database", "postgres"),
                 ip_type="public",
                 enable_iam_auth=True,
@@ -42,8 +42,8 @@ def get_db_connection():
         conn = pg8000.connect(
             host=db_config.get("host", "localhost"),
             port=int(db_config.get("port", "5432")),
-            database=db_config.get("database", "postgres"),
-            user=db_config.get("user", "postgres"),
+            database=db_config.get("name", "postgres"),
+            user=db_config.get("username", "postgres"),
             password=db_config.get("password", ""),
         )
         return conn
