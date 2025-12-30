@@ -39,11 +39,6 @@ RUN --mount=type=cache,target="/root/.cache/uv" \
 
 COPY . .
 
-# Optional: convert .env → Streamlit secrets
-RUN if [ -f .env ]; then \
-      python scripts/env_to_toml.py .env .streamlit/secrets.toml; \
-    fi
-
 FROM python:3.12-slim-bullseye AS production
 
 USER root
