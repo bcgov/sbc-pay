@@ -1,4 +1,4 @@
-FROM python:3.12-bullseye AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 ARG VCS_REF="missing"
 ARG BUILD_DATE="missing"
@@ -39,7 +39,7 @@ RUN --mount=type=cache,target="/root/.cache/uv" \
 
 COPY . .
 
-FROM python:3.12-slim-bullseye AS production
+FROM python:3.12-slim-bookworm AS production
 
 USER root
 
@@ -55,8 +55,6 @@ ENV PORT=8080 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
-    curl \
-    git \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -g "${GID}" -r web \
