@@ -84,6 +84,7 @@ class BaseModel(db.Model):
     @classmethod
     def find_by_id_for_update(cls, identifier: int) -> Self:
         """Return model by id with lock to avoid race conditions."""
-        if identifier:
-            return cls.query.filter_by(id=identifier).with_for_update().one_or_none()
-        return None
+        with db.session.begin():
+            if identifier:
+                return cls.query.filter_by(id=identifier).with_for_update().one_or_none()
+            return None
