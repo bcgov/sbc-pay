@@ -20,7 +20,7 @@ def test_generate_toml_secrets():
     }
 
     with TemporaryDirectory() as tmpdir:
-        output_path = Path(tmpdir) / "nested" / "dir" / "secrets.toml"
+        output_path = Path(tmpdir) / "nested" / "dir" / "test_secrets.toml"
 
         with patch.dict(os.environ, env_vars, clear=False):
             generate_toml_secrets(output_path)
@@ -48,7 +48,7 @@ def test_generate_toml_secrets():
 def test_generate_toml_secrets_edge_cases(env_vars, should_create_file):
     """Test edge cases: no vars, invalid vars."""
     with TemporaryDirectory() as tmpdir:
-        output_path = Path(tmpdir) / "secrets.toml"
+        output_path = Path(tmpdir) / "test_secrets.toml"
 
         with patch.dict(os.environ, env_vars, clear=True):
             generate_toml_secrets(output_path)

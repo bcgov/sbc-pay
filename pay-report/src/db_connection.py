@@ -25,6 +25,9 @@ def get_db_connection():
         instance_connection_name = db_config.get("instance_connection")
 
         if instance_connection_name:
+            # For PAY-DB string, not DW.
+            if instance_connection_name.startswith("/cloudsql/"):
+                instance_connection_name = instance_connection_name[10:]
             connector = Connector()
             # Use IAM authentication - no password needed
             # The connector uses Application Default Credentials (ADC)

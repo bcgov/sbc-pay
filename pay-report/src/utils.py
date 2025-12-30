@@ -27,4 +27,8 @@ def display_report_with_download(df, report_title):
         mime=mime_type,
         key="download_analytics",
     )
-    st.dataframe(df)
+    # Calculate height: ~35px per row + header, min 200px, max 600px
+    # Max height optimized for 1080p screens (accounting for browser chrome and UI)
+    row_count = len(df)
+    calculated_height = min(max(row_count * 35 + 50, 200), 600)
+    st.dataframe(df, height=calculated_height, width="stretch")

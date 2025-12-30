@@ -72,4 +72,4 @@ USER web
 
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "python /code/scripts/generate_toml_secrets.py && uv run streamlit run app.py --server.port=8080 --server.address=0.0.0.0"]
+ENTRYPOINT ["sh", "-c", "python /code/scripts/generate_toml_secrets.py && exec uv run streamlit run app.py --server.port=8080 --server.address=0.0.0.0"]

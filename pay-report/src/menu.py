@@ -9,8 +9,8 @@ def authenticated_menu():
     with st.sidebar:
         st.page_link("app.py", label="Home", icon="🏠")
         st.page_link(
-            "pages/STRR Revenue Report.py",
-            label="STRR Revenue Report",
+            "pages/Basic Invoice Search Demo.py",
+            label="Basic Invoice Search Demo",
             icon="📊",
         )
 
