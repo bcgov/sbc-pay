@@ -48,7 +48,7 @@ jobs:
   testing:
     needs: setup-job
     env:
-      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
+      DATABASE_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/pay-test"
       USE_DOCKER_MOCK: "YES"
       MINIO_ENDPOINT: "localhost:9000"
       MINIO_ACCESS_KEY: "minio"

@@ -350,12 +350,16 @@ def normalize_accented_characters(s):
     if s is None:
         return None
     s = s.replace("—", "-").replace("–", "-")
+    s = s.replace("\u2019", "'").replace("\u2018", "'")
+    s = s.replace("\u201c", '"').replace("\u201d", '"')
     # Normalize accented characters
     s = unicodedata.normalize("NFKD", s)
     s = "".join(c for c in s if not unicodedata.combining(c))
     # Handle special characters that aren't combining characters
     s = s.replace("ø", "o").replace("æ", "ae").replace("œ", "oe")
     s = s.replace("Ø", "O").replace("Æ", "AE").replace("Œ", "OE")
+    # Remove all non-ASCII characters
+    s = s.encode("ascii", errors="ignore").decode("ascii")
     return s
 
 

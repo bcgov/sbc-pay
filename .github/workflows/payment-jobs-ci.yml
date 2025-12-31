@@ -49,7 +49,7 @@ jobs:
   testing:
     needs: setup-job
     env:
-      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
+      DATABASE_TEST_URL: "postgresql+psycopg://postgres:postgres@localhost:5432/pay-test"
       USE_DOCKER_MOCK: "YES"
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
       SBC_PAY_CLIENT_ID: "sbc-pay"

@@ -17,10 +17,9 @@
 Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
 
-from dataclasses import asdict
+from datetime import UTC, datetime
 from unittest.mock import ANY, MagicMock, patch
 
-import humps
 import pytest
 from dotenv import load_dotenv
 from gcp_queue.gcp_queue import GcpQueue
@@ -28,7 +27,8 @@ from gcp_queue.gcp_queue import GcpQueue
 from pay_api import create_app
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
-from pay_api.services.payment_transaction import PaymentToken
+from pay_api.services.payment_transaction import PaymentTransaction
+from pay_api.utils.dataclasses import PaymentToken
 from pay_api.utils.enums import TransactionStatus
 
 
@@ -83,7 +83,7 @@ def test_gcp_pubsub_connectivity(monkeypatch):
     monkeypatch.undo()
     load_dotenv(".env")
     app_prod = create_app("production")
-    payload = humps.camelize(asdict(PaymentToken(55, TransactionStatus.COMPLETED.value, 55, "NRO")))
+    payload = PaymentToken(55, TransactionStatus.COMPLETED.value, 55, "NRO").to_dict()
     with app_prod.app_context():
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(
@@ -101,3 +101,42 @@ def test_gcp_pubsub_connectivity(monkeypatch):
                 topic=app_prod.config.get("ACCOUNT_MAILER_TOPIC"),
             )
         )
+
+
+def test_payment_token_with_dates():
+    """Test PaymentToken with payment_date and refund_date based on feature flag."""
+    payment_date = datetime.now(tz=UTC)
+    refund_date = datetime.now(tz=UTC)
+
+    class MockInvoice:
+        def __init__(self, payment_date, refund_date):
+            self.id = 55
+            self.filing_id = 55
+            self.corp_type_code = "NRO"
+            self.payment_date = payment_date
+            self.refund_date = refund_date
+
+    invoice = MockInvoice(payment_date, refund_date)
+
+    with patch("pay_api.services.payment_transaction.flags.is_on", return_value=True):
+        result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
+        assert result_payload["id"] == 55
+        assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
+        assert result_payload["paymentDate"] == payment_date.isoformat()
+        assert result_payload["refundDate"] == refund_date.isoformat()
+
+    with patch("pay_api.services.payment_transaction.flags.is_on", return_value=False):
+        result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
+        assert result_payload["id"] == 55
+        assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
+        assert "paymentDate" not in result_payload
+        assert "refundDate" not in result_payload
+
+    invoice.payment_date = None
+    invoice.refund_date = None
+    with patch("pay_api.services.payment_transaction.flags.is_on", return_value=True):
+        result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
+        assert result_payload["id"] == 55
+        assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
+        assert result_payload.get("paymentDate") is None
+        assert result_payload.get("refundDate") is None
