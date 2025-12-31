@@ -389,6 +389,9 @@ class StatementContextDTO(Serializable):
     payment_methods: list[str] | None = None
     statement_total: CurrencyStr | None = None
     is_overdue: bool | None = None
+    pad_credit: Decimal | None = None
+    eft_credit: Decimal | None = None
+    ob_credit: Decimal | None = None
 
     @staticmethod
     def _compute_duration(from_date: str | None, to_date: str | None, frequency: str) -> str | None:
@@ -434,6 +437,9 @@ class StatementContextDTO(Serializable):
             payment_methods=payment_methods,
             statement_total=statement.statement_total,
             is_overdue=statement.is_overdue,
+            pad_credit=statement.pad_credit,
+            eft_credit=statement.eft_credit,
+            ob_credit=statement.ob_credit,
         )
 
     @classmethod
@@ -462,6 +468,9 @@ class StatementContextDTO(Serializable):
             payment_methods=statement.get("payment_methods"),
             statement_total=statement.get("statement_total"),
             is_overdue=statement.get("is_overdue"),
+            pad_credit=statement.get("pad_credit"),
+            eft_credit=statement.get("eft_credit"),
+            ob_credit=statement.get("ob_credit"),
         )
 
 

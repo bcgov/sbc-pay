@@ -184,6 +184,9 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                 existing_statement.notification_status_code = notification_status
                 existing_statement.payment_methods = payment_methods
                 existing_statement.created_on = created_on
+                existing_statement.eft_credit = pay_account.eft_credit
+                existing_statement.pad_credit = pay_account.pad_credit
+                existing_statement.ob_credit = pay_account.ob_credit
                 statements.append(existing_statement)
             else:
                 statements.append(
@@ -196,6 +199,9 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                         to_date=cls.statement_to,
                         notification_status_code=notification_status,
                         payment_methods=payment_methods,
+                        eft_credit=pay_account.eft_credit,
+                        pad_credit=pay_account.pad_credit,
+                        ob_credit=pay_account.ob_credit,
                     )
                 )
         return statements
