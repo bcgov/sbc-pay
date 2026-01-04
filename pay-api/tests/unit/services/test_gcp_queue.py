@@ -111,7 +111,7 @@ def test_payment_token_with_dates():
     class MockInvoice:
         def __init__(self, payment_date, refund_date):
             self.id = 55
-            self.filing_identifier = 55
+            self.filing_id = 55
             self.corp_type_code = "NRO"
             self.payment_date = payment_date
             self.refund_date = refund_date
