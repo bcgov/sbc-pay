@@ -561,8 +561,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         payment_token = PaymentToken(
             invoice.id,
             status_code,
-            invoice.filing_id,
-            invoice.corp_type_code,
+            filing_identifier=invoice.filing_id,
+            corp_type_code=invoice.corp_type_code,
             payment_date=payment_date,
             refund_date=refund_date,
         )
