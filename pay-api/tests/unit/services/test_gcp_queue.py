@@ -111,7 +111,7 @@ def test_payment_token_with_dates():
     class MockInvoice:
         def __init__(self, payment_date, refund_date):
             self.id = 55
-            self.filing_id = 55
+            self.filing_identifier = 55
             self.corp_type_code = "NRO"
             self.payment_date = payment_date
             self.refund_date = refund_date
@@ -122,6 +122,8 @@ def test_payment_token_with_dates():
         result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         assert result_payload["id"] == 55
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
+        assert result_payload["filingIdentifier"] == 55
+        assert result_payload["corpTypeCode"] == "NRO"
         assert result_payload["paymentDate"] == payment_date.isoformat()
         assert result_payload["refundDate"] == refund_date.isoformat()
 
@@ -129,6 +131,8 @@ def test_payment_token_with_dates():
         result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         assert result_payload["id"] == 55
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
+        assert result_payload["filingIdentifier"] == 55
+        assert result_payload["corpTypeCode"] == "NRO"
         assert "paymentDate" not in result_payload
         assert "refundDate" not in result_payload
 
@@ -138,5 +142,7 @@ def test_payment_token_with_dates():
         result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         assert result_payload["id"] == 55
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
+        assert result_payload["filingIdentifier"] == 55
+        assert result_payload["corpTypeCode"] == "NRO"
         assert result_payload.get("paymentDate") is None
         assert result_payload.get("refundDate") is None
