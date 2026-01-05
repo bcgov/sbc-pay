@@ -18,7 +18,7 @@ This module contains all DTOs used in the statement PDF generation process.
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import defaultdict  # noqa: TC001 TC003
 from datetime import datetime  # noqa: TC001 TC003
 from decimal import Decimal  # noqa: TC001 TC003
 
@@ -536,7 +536,8 @@ class StatementSummaryTotal(Serializable):
 
     @classmethod
     def from_dict(cls, data: dict) -> StatementSummaryTotal:
-        """Expected input shape:
+        """Expected input shape.
+
         {
             "PAD": { ... },
             "EFT": { ... },
