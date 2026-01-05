@@ -395,7 +395,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             previous_summaries = Statement.get_totals_by_payment_method_from_db(
                 previous_invoices, previous_statement.to_date, next_statement_to_date=statement.to_date
             )
-        
+
             for invoice in previous_invoices:
                 if invoice.payment_date is None:
                     continue

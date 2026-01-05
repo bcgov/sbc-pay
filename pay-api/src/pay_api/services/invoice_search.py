@@ -587,14 +587,14 @@ class InvoiceSearch:
         template_vars = context_dto.to_dict()
 
         report_response = ReportService.get_report_response(
-          ReportRequest(
-              report_name=report_name,
-              template_name=StatementTemplate.STATEMENT_REPORT.value,
-              template_vars=template_vars,
-              populate_page_number=True,
-              content_type=content_type,
-              stream=True,
-          )
+            ReportRequest(
+                report_name=report_name,
+                template_name=StatementTemplate.STATEMENT_REPORT.value,
+                template_vars=template_vars,
+                populate_page_number=True,
+                content_type=content_type,
+                stream=True,
+            )
         )
         return report_response
 

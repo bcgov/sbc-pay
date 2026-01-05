@@ -629,7 +629,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "padCredit": None,
                 "eftCredit": None,
                 "obCredit": None,
-            }
+            },
         }
         expected_report_inputs = ReportRequest(
             report_name=report_name,
@@ -1039,7 +1039,7 @@ def test_get_eft_statement_with_invoices(session):
                 "padCredit": None,
                 "eftCredit": None,
                 "obCredit": None,
-            }
+            },
         }
         expected_report_inputs = ReportRequest(
             report_name=report_name,

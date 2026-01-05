@@ -365,9 +365,9 @@ class GroupedInvoicesDTO(Serializable):
         if payment_method == PaymentMethod.EFT.value:
             amount_owing = statement.amount_owing
             if statement.is_interim_statement and statement_summary:
-                latest_payment_date = statement_summary.get("latestStatementPaymentDate")
+                latest_payment_date = statement_summary.latest_statement_payment_date
             elif not statement.is_interim_statement and statement_summary:
-                due_date = FullMonthDateStr(statement_summary.get("dueDate"))
+                due_date = statement_summary.due_date
 
         return cls(
             payment_method=payment_method,
