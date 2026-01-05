@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal  # noqa: TC003
 
@@ -378,11 +379,11 @@ class Statement:  # pylint:disable=too-many-public-methods
         )
 
     @classmethod
-    def _populate_statement_summary(
-        cls, statement: StatementModel, statement_invoices: list[InvoiceModel], payment_method: PaymentMethod
-    ) -> dict:
+    def _populate_statement_summary(cls, statement: StatementModel, payment_method: PaymentMethod) -> dict:
         """Populate statement summary with additional information."""
         previous_statement = Statement.get_previous_statement(statement)
+        latest_payment_date = None
+        last_total, last_paid, credit_balance = 0, 0, 0
         if previous_statement:
             previous_invoices = Statement.find_all_payments_and_invoices_for_statement(
                 previous_statement.id,
@@ -394,41 +395,39 @@ class Statement:  # pylint:disable=too-many-public-methods
             previous_summaries = Statement.get_totals_by_payment_method_from_db(
                 previous_invoices, previous_statement.to_date, next_statement_to_date=statement.to_date
             )
+        
+            for invoice in previous_invoices:
+                if invoice.payment_date is None:
+                    continue
+                if latest_payment_date is None or invoice.payment_date > latest_payment_date:
+                    latest_payment_date = invoice.payment_date
 
-        latest_payment_date = None
-        for invoice in statement_invoices:
-            if invoice.payment_date is None:
-                continue
-            if latest_payment_date is None or invoice.payment_date > latest_payment_date:
-                latest_payment_date = invoice.payment_date
-
-        last_total, last_paid = 0, 0
-        if previous_statement:
-            summary = previous_summaries.summaries.get(payment_method.value)
+            summary = previous_summaries.summaries.get(payment_method)
             if summary:
                 last_total = summary.due
                 last_paid = summary.paid
-
+            if payment_method == PaymentMethod.PAD:
+                credit_balance = previous_statement.pad_credit if previous_statement else 0
+            elif payment_method == PaymentMethod.EFT:
+                credit_balance = previous_statement.eft_credit if previous_statement else 0
+            elif payment_method == PaymentMethod.ONLINE_BANKING:
+                credit_balance = previous_statement.ob_credit if previous_statement else 0
+        balance_forward = last_total - last_paid if credit_balance <= 0 else -credit_balance
         return {
             "lastStatementTotal": last_total,
             "lastStatementPaidAmount": last_paid,
             "latestStatementPaymentDate": latest_payment_date,
             "dueDate": cls.calculate_due_date(statement.to_date) if statement else None,
-            "balanceForward": last_total - last_paid,
-            "previousPadCredit": previous_statement.pad_credit or 0 if previous_statement else 0,
-            "previousEftCredit": previous_statement.eft_credit or 0 if previous_statement else 0,
-            "previousObCredit": previous_statement.ob_credit or 0 if previous_statement else 0,
+            "balanceForward": balance_forward,
+            "creditBalance": credit_balance,
         }
 
     @staticmethod
-    def _build_statement_summary_for_methods(
-        statement_dao: StatementModel, statement_purchases: list[InvoiceModel]
-    ) -> dict:
+    def _build_statement_summary_for_methods(statement_dao: StatementModel, payment_method: PaymentMethod) -> dict:
         """Build statement_summary for EFT and PAD without inflating locals in caller."""
         summary: dict = {}
-        for method in [PaymentMethod.EFT, PaymentMethod.PAD]:
-            if Statement.is_payment_method_statement(statement_dao, statement_purchases, method.value):
-                summary.update(Statement._populate_statement_summary(statement_dao, statement_purchases, method))
+        summary.update(Statement._populate_statement_summary(statement_dao, payment_method))
+
         return summary
 
     @staticmethod
@@ -461,11 +460,24 @@ class Statement:  # pylint:disable=too-many-public-methods
             statement_purchases = [
                 (invoice := row[0], setattr(invoice, "refund_id", row[1]))[0] for row in statement_purchases
             ]
-            # Build statement summary for EFT/PAD
-            summary = Statement._build_statement_summary_for_methods(statement_dao, statement_purchases)
+            grouped_invoices_by_method = defaultdict(list[InvoiceModel])
+            pad_summary, eft_summary = False, False
+            summary = defaultdict(dict)
+            for invoice in statement_purchases:
+                grouped_invoices_by_method[invoice.payment_method_code].append(invoice)
+                if invoice.payment_method_code == PaymentMethod.PAD.value and not pad_summary:
+                    summary[PaymentMethod.PAD.value] = Statement._build_statement_summary_for_methods(
+                        statement_dao, PaymentMethod.PAD
+                    )
+                    pad_summary = True
+                if invoice.payment_method_code == PaymentMethod.EFT.value and not eft_summary:
+                    summary[PaymentMethod.EFT.value] = Statement._build_statement_summary_for_methods(
+                        statement_dao, PaymentMethod.EFT
+                    )
+                    eft_summary = True
 
             report_response = InvoiceSearch.generate_statement_pdf_report(
-                invoices_orm=statement_purchases,
+                grouped_invoice=grouped_invoices_by_method,
                 db_summaries=db_summaries,
                 statement=statement_dao,
                 statement_summary=summary,
@@ -743,7 +755,7 @@ class Statement:  # pylint:disable=too-many-public-methods
             .filter(StatementInvoicesModel.statement_id == cast(statement_id, Integer))
         )
         if payment_method:
-            query = query.filter(InvoiceModel.payment_method_code == payment_method.value)
+            query = query.filter(InvoiceModel.payment_method_code == payment_method)
 
         if is_pdf_statement:
             query = Statement._apply_partial_refunds_and_credits(query, statement_to_date, add_refund_id=add_refund_id)
@@ -954,7 +966,7 @@ class Statement:  # pylint:disable=too-many-public-methods
         return refund_id, latest_refund_cte
 
     @staticmethod
-    def _build_paid_previous_statement_expr(inv, paid_statuses, statement_to_date, next_statement_to_date):
+    def _build_paid_previous_statement_expr(inv, paid_statuses, previous_statement_to_date, next_statement_to_date):
         """Return SQL expression for paid_previous_statement (0 if next_statement_to_date is None)."""
         if not next_statement_to_date:
             return literal(0).label("paid_previous_statement")
@@ -964,7 +976,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                 (
                     and_(
                         inv.c.payment_date.isnot(None),
-                        func.date(inv.c.payment_date) > statement_to_date,
+                        func.date(inv.c.payment_date) > previous_statement_to_date,
                         func.date(inv.c.payment_date) <= next_statement_to_date,
                         inv.c.invoice_status_code.in_(paid_statuses),
                     ),

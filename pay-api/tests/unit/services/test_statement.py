@@ -629,18 +629,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "padCredit": None,
                 "eftCredit": None,
                 "obCredit": None,
-            },
-            "statementSummary": {
-                "cancelledTransactions": None,
-                "dueDate": FullMonthDateStr(StatementService.calculate_due_date(statement_to_date.date())),  # pylint: disable=protected-access
-                "lastStatementTotal": "0.00",
-                "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": None,
-                "balanceForward": "0.00",
-                "previousPadCredit": 0,
-                "previousEftCredit": 0,
-                "previousObCredit": 0,
-            },
+            }
         }
         expected_report_inputs = ReportRequest(
             report_name=report_name,
@@ -828,6 +817,15 @@ def test_get_eft_statement_with_invoices(session):
             },
             "groupedInvoices": [
                 {
+                    "statementSummary": {
+                        "cancelledTransactions": None,
+                        "dueDate": due_date_value,
+                        "lastStatementTotal": "0.00",
+                        "lastStatementPaidAmount": "0.00",
+                        "latestStatementPaymentDate": None,
+                        "balanceForward": "0.00",
+                        "creditBalance": "0.00",
+                    },
                     "amountOwing": "400.00",
                     "dueDate": due_date_value,
                     "due": "450.00",
@@ -1041,18 +1039,7 @@ def test_get_eft_statement_with_invoices(session):
                 "padCredit": None,
                 "eftCredit": None,
                 "obCredit": None,
-            },
-            "statementSummary": {
-                "cancelledTransactions": None,
-                "dueDate": due_date_value,
-                "lastStatementTotal": "0.00",
-                "lastStatementPaidAmount": "0.00",
-                "latestStatementPaymentDate": FullMonthDateStr(invoice_3.payment_date),
-                "balanceForward": "0.00",
-                "previousPadCredit": 0,
-                "previousEftCredit": 0,
-                "previousObCredit": 0,
-            },
+            }
         }
         expected_report_inputs = ReportRequest(
             report_name=report_name,

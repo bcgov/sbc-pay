@@ -13,7 +13,6 @@
 # limitations under the License.
 """Service to support invoice searches."""
 
-from collections import defaultdict
 from datetime import datetime
 
 from dateutil import parser
@@ -46,6 +45,7 @@ from pay_api.models.search.invoice_composite_model import (
 from pay_api.models.statement import Statement
 from pay_api.services.auth import get_account_info_with_contact
 from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.services.invoice import InvoiceModel
 from pay_api.services.payment import PaymentReportInput
 from pay_api.utils.converter import Converter
 from pay_api.utils.dataclasses import PurchaseHistorySearch
@@ -553,7 +553,7 @@ class InvoiceSearch:
     @staticmethod
     @user_context
     def generate_statement_pdf_report(
-        invoices_orm: list[Invoice],
+        grouped_invoice: dict[list[InvoiceModel]],
         db_summaries: SummariesGroupedByPaymentMethodDTO,
         statement: Statement,
         statement_summary: dict,
@@ -568,18 +568,16 @@ class InvoiceSearch:
         account_info = get_account_info_with_contact(**kwargs)
 
         grouped_invoices = InvoiceSearch._group_invoices_by_payment_method(
-            invoices_orm=invoices_orm,
+            grouped_invoice=grouped_invoice,
             db_summaries=db_summaries,
             statement=statement,
             statement_summary=statement_summary,
             statement_to_date=statement_to_date,
         )
 
-        statement_summary_dto = StatementSummaryDTO.from_dict(statement_summary)
         statement_dto = StatementContextDTO.from_statement(statement)
 
         context_dto = StatementPDFContextDTO(
-            statement_summary=statement_summary_dto,
             grouped_invoices=grouped_invoices,
             account=account_info,
             statement=statement_dto,
@@ -589,48 +587,53 @@ class InvoiceSearch:
         template_vars = context_dto.to_dict()
 
         report_response = ReportService.get_report_response(
-            ReportRequest(
-                report_name=report_name,
-                template_name=StatementTemplate.STATEMENT_REPORT.value,
-                template_vars=template_vars,
-                populate_page_number=True,
-                content_type=content_type,
-                stream=True,
-            )
+          ReportRequest(
+              report_name=report_name,
+              template_name=StatementTemplate.STATEMENT_REPORT.value,
+              template_vars=template_vars,
+              populate_page_number=True,
+              content_type=content_type,
+              stream=True,
+          )
         )
         return report_response
 
     @staticmethod
     def _group_invoices_by_payment_method(
-        invoices_orm: list,
+        grouped_invoice: dict[list[InvoiceModel]],
         db_summaries: dict,
         statement: Statement,
         statement_summary: dict,
         statement_to_date: datetime,
     ) -> list[GroupedInvoicesDTO]:
-        """Group invoices by payment method and create DTOs."""
-        grouped_by_method = defaultdict(list)
-        for invoice in invoices_orm:
-            grouped_by_method[invoice.payment_method_code].append(invoice)
+        """Create grouped invoices DTOs."""
+        # Convert statement_summary dict to StatementSummaryDTO objects
+        statement_summary_dtos = {}
+        if statement_summary:
+            for method, summary_dict in statement_summary.items():
+                ss = StatementSummaryDTO.from_dict(summary_dict)
+                if ss:
+                    statement_summary_dtos[method] = ss
 
-        grouped_invoices = []
+        grouped_invoices_structured = []
         for method in [m.value for m in PaymentMethod.Order]:
-            if method not in grouped_by_method:
+            if method not in grouped_invoice:
                 continue
 
-            items = grouped_by_method[method]
+            items = grouped_invoice[method]
             summary = db_summaries.get(method, {})
+            statement_summary_current = statement_summary_dtos.get(method)
 
             group_dto = GroupedInvoicesDTO.from_invoices_and_summary(
                 payment_method=method,
                 invoices_orm=items,
                 db_summary=summary,
                 statement=statement,
-                statement_summary=statement_summary,
+                statement_summary=statement_summary_current,
                 statement_to_date=statement_to_date,
-                is_first=(len(grouped_invoices) == 0),
+                is_first=(len(grouped_invoices_structured) == 0),
             )
 
-            grouped_invoices.append(group_dto)
+            grouped_invoices_structured.append(group_dto)
 
-        return grouped_invoices
+        return grouped_invoices_structured

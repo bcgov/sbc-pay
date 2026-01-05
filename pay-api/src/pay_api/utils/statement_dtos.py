@@ -18,6 +18,7 @@ This module contains all DTOs used in the statement PDF generation process.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime  # noqa: TC001 TC003
 from decimal import Decimal  # noqa: TC001 TC003
 
@@ -239,6 +240,7 @@ class PaymentMethodSummaryRawDTO(Serializable):
     CREDITS_APPLIED = "credits_applied"
     INVOICE_COUNT = "invoice_count"
     IS_PRE_SUMMARY = "is_pre_summary"
+    PAYMENT_METHOD = "payment_method_code"
 
     totals: Decimal
     fees: Decimal
@@ -251,6 +253,7 @@ class PaymentMethodSummaryRawDTO(Serializable):
     invoice_count: int
     is_pre_summary: bool | None = None
     paid_pre_balance: Decimal | None = None
+    latest_payment_date: FullMonthDateStr | None = None
 
     @classmethod
     def from_db_row(cls, row) -> PaymentMethodSummaryRawDTO:
@@ -261,13 +264,24 @@ class PaymentMethodSummaryRawDTO(Serializable):
         paid = getattr(row, cls.PAID)
         is_pre_summary = getattr(row, cls.IS_PRE_SUMMARY) or False
         paid_pre_balance = getattr(row, cls.PAID_PRE_BALANCE) or 0
+        payment_method = getattr(row, cls.PAYMENT_METHOD, None)
 
-        totals_remaining_after_credits = max(totals - credits_applied, 0)
+        # For EFT, PAD, and ONLINE_BANKING, refunds are kept as credits in the account
+        refund_as_credit_methods = {
+            PaymentMethod.EFT.value,
+            PaymentMethod.PAD.value,
+            PaymentMethod.ONLINE_BANKING.value,
+        }
 
-        refund_applied_to_total = min(counted_refund, totals_remaining_after_credits)
+        if payment_method in refund_as_credit_methods:
+            net_total = totals - credits_applied - counted_refund
+            net_paid = paid - credits_applied
+            net_due = net_total - net_paid
+        else:
+            net_total = totals - credits_applied - counted_refund
+            net_paid = paid
+            net_due = totals - paid
 
-        net_total = totals - credits_applied - refund_applied_to_total
-        net_paid = paid - credits_applied - refund_applied_to_total
         paid_redefined = paid_pre_balance if is_pre_summary else net_paid
 
         return cls(
@@ -278,7 +292,7 @@ class PaymentMethodSummaryRawDTO(Serializable):
             credits_applied=credits_applied,
             counted_refund=counted_refund,
             paid=paid_redefined,
-            due=totals - paid,
+            due=net_due,
             invoice_count=getattr(row, cls.INVOICE_COUNT),
         )
 
@@ -300,6 +314,7 @@ class GroupedInvoicesDTO(Serializable):
     include_service_provided: bool = False
     credits_applied: CurrencyStr | None = None
     counted_refund: CurrencyStr | None = None
+    statement_summary: StatementSummaryDTO | None = None
     # EFT-specific fields
     amount_owing: CurrencyStr | None = None
     latest_payment_date: str | None = None
@@ -314,7 +329,7 @@ class GroupedInvoicesDTO(Serializable):
         invoices_orm: list[InvoiceModel],
         db_summary: PaymentMethodSummaryRawDTO,
         statement: Statement,
-        statement_summary: dict,
+        statement_summary: StatementSummaryDTO | None,
         statement_to_date: datetime,
         is_first: bool = False,
     ) -> GroupedInvoicesDTO:
@@ -327,6 +342,10 @@ class GroupedInvoicesDTO(Serializable):
 
         summary = PaymentMethodSummaryDTO.from_db_summary(db_summary)
         include_service_provided = any(t.service_provided for t in transactions)
+
+        adjusted_due = summary.due
+        if statement_summary and hasattr(statement_summary, "balance_forward"):
+            adjusted_due = adjusted_due + Decimal(statement_summary.balance_forward) + summary.credits_applied
 
         # Compute payment method specific fields before instantiation
         # INTERNAL-specific: header text and staff payment flag
@@ -357,9 +376,10 @@ class GroupedInvoicesDTO(Serializable):
             service_fees=summary.service_fees,
             gst=summary.gst,
             paid=summary.paid,
-            due=summary.due,
+            due=adjusted_due,
             credits_applied=summary.credits_applied,
             counted_refund=summary.counted_refund,
+            statement_summary=statement_summary,
             transactions=transactions,
             is_index_0=is_first,
             statement_header_text=statement_header_text,
@@ -476,7 +496,7 @@ class StatementContextDTO(Serializable):
 
 @define
 class StatementSummaryDTO(Serializable):
-    """DTO for statement summary in PDF rendering."""
+    """DTO for statement summary for a payment method."""
 
     last_statement_total: CurrencyStr
     last_statement_paid_amount: CurrencyStr
@@ -484,6 +504,7 @@ class StatementSummaryDTO(Serializable):
     cancelled_transactions: CurrencyStr | None = None
     latest_statement_payment_date: FullMonthDateStr | None = None
     due_date: FullMonthDateStr | None = None
+    credit_balance: CurrencyStr | None = None
 
     @classmethod
     def from_dict(cls, statement_summary: dict) -> StatementSummaryDTO:
@@ -502,8 +523,42 @@ class StatementSummaryDTO(Serializable):
             cancelled_transactions=cancelled_transactions,
             latest_statement_payment_date=FullMonthDateStr(statement_summary.get("latestStatementPaymentDate")),
             due_date=FullMonthDateStr(statement_summary.get("dueDate")),
-            balance_forward=max(statement_summary.get("balanceForward") or 0, 0),
+            balance_forward=statement_summary.get("balanceForward") or 0,
+            credit_balance=statement_summary.get("creditBalance"),
         )
+
+
+@define
+class StatementSummaryTotal(Serializable):
+    """DTO for statement summary grouped by payment method (for PDF rendering)."""
+
+    summaries: defaultdict[str, StatementSummaryDTO]
+
+    @classmethod
+    def from_dict(cls, data: dict) -> StatementSummaryTotal:
+        """Expected input shape:
+        {
+            "PAD": { ... },
+            "EFT": { ... },
+            "ONLINE_BANKING": { ... }
+        }
+        """
+        if not data:
+            return cls(summaries={})
+
+        summaries: defaultdict[PaymentMethod, StatementSummaryDTO] = {}
+
+        for method, summary_dict in data.items():
+            ss = StatementSummaryDTO.from_dict(summary_dict)
+            if ss:
+                summaries[method] = ss
+
+        return cls(summaries=summaries)
+
+    def get(self, payment_method: PaymentMethod | str) -> StatementSummaryDTO | None:
+        """Convenience accessor."""
+        key = payment_method.value if isinstance(payment_method, PaymentMethod) else payment_method
+        return self.summaries.get(key)
 
 
 @define
@@ -533,7 +588,6 @@ class SummariesGroupedByPaymentMethodDTO(Serializable):
 class StatementPDFContextDTO(Serializable):
     """DTO for complete PDF statement rendering context."""
 
-    statement_summary: StatementSummaryDTO | None
     grouped_invoices: list[GroupedInvoicesDTO]
     account: dict | None
     statement: StatementContextDTO
