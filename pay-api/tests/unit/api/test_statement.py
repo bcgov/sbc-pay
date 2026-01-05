@@ -673,7 +673,7 @@ def test_statement_pad_totals_with_credits(session, client, jwt, app):
         assert grouped_invoice["totals"] == "30.00"
 
         assert "paid" in grouped_invoice
-        assert grouped_invoice["paid"] == "30.00"
+        assert grouped_invoice["paid"] == "40.00"
 
         assert "countedRefund" in grouped_invoice
         assert grouped_invoice["countedRefund"] == "10.00"

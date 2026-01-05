@@ -1085,7 +1085,7 @@ def test_grouped_invoices_dto_from_invoices_and_summary(session):
         to_date=statement_to_date,
     )
     statement.amount_owing = 100
-    statement_summary = {"dueDate": "2024-07-01"}
+    statement_summary = StatementSummaryDTO.from_dict({"dueDate": "2024-07-01"})
 
     dto = GroupedInvoicesDTO.from_invoices_and_summary(
         payment_method=PaymentMethod.EFT.value,
@@ -1317,7 +1317,7 @@ def test_grouped_invoices_dto_with_eft_interim_statement(session):
         is_interim_statement=True,
         amount_owing=100,
     )
-    statement_summary = {"latestStatementPaymentDate": "2024-05-15"}
+    statement_summary = StatementSummaryDTO.from_dict({"latestStatementPaymentDate": "2024-05-15"})
     statement_to_date = datetime.now(tz=UTC)
 
     dto = GroupedInvoicesDTO.from_invoices_and_summary(
@@ -1332,7 +1332,7 @@ def test_grouped_invoices_dto_with_eft_interim_statement(session):
 
     assert dto.payment_method == PaymentMethod.EFT.value
     assert dto.amount_owing == 100
-    assert dto.latest_payment_date == "2024-05-15"
+    assert dto.latest_payment_date == "May 15, 2024"
     assert dto.due_date is None  # Not set for interim statements
 
 
@@ -1369,7 +1369,7 @@ def test_grouped_invoices_dto_with_eft_regular_statement(session):
         is_interim_statement=False,
         amount_owing=100,
     )
-    statement_summary = {"dueDate": "2024-07-01"}
+    statement_summary = StatementSummaryDTO.from_dict({"dueDate": "2024-07-01"})
     statement_to_date = datetime.now(tz=UTC)
 
     dto = GroupedInvoicesDTO.from_invoices_and_summary(

@@ -2000,9 +2000,9 @@ werkzeug = "^3.1.4"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "add_dates_pay_queue_message"
-resolved_reference = "5513d44e295afb40810de2e4da9f1a6548e8a076"
+url = "https://github.com/Jxio/sbc-pay.git"
+reference = "31423"
+resolved_reference = "abac0e5a53992581fbc017f8469e38e4c1cb3607"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3070,4 +3070,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "1efc560c6ee3d95813ecdbfafc35956cb56282e7a8c5a7eeaaf3573ed230ad96"
+content-hash = "4c0aff267ffaad2121ad16e52fdfcce224d2e8ff44fa180c65560602c00328c3"
