@@ -69,7 +69,7 @@ typing-extensions = "4.12.0"
 urllib3 = "2.6.0"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 sql-versioning = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/sql-versioning", branch = "main" }
-aiohttp = "^3.12.14"
+aiohttp = "^3.13.3"
 setuptools = "^78.1.1"
 flask-executor = "^1.0.0"
 cachelib = "^0.13.0"
