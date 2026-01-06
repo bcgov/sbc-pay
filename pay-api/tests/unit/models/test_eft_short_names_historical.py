@@ -71,7 +71,7 @@ def test_eft_short_names_historical(session):
         statement_number=1234567,
         transaction_date=now_date,
         transaction_type=EFTHistoricalTypes.STATEMENT_PAID.value,
-        comment="test comment"
+        comment="test comment",
     ).save()
 
     short_name_historical = EFTShortnamesHistorical.find_by_id(short_name_historical.id)
