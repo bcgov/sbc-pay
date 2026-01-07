@@ -157,7 +157,7 @@ class StatementTransactionDTO(Serializable):
         is_full_applied_credits = applied_credits_amount == invoice.total
 
         refund_fee, refund_gst, refund_service_fee, refund_id = cls._compute_refund_lines_for_display(invoice, fee)
-        
+
         refund_total = invoice.total if invoice.invoice_status_code == InvoiceStatus.CANCELLED.value else invoice.refund
 
         return cls(
