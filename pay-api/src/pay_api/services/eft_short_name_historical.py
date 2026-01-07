@@ -238,6 +238,7 @@ class EFTShortnameHistorical:
                 history_model.transaction_date,
                 history_model.transaction_type,
                 history_model.is_processing,
+                history_model.comment,
                 history_model.created_on,
                 PaymentAccountModel.auth_account_id,
                 cls._get_account_name(),

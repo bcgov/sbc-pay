@@ -42,10 +42,10 @@ class EFTShortnamesHistorical(BaseModel):
         "include_properties": [
             "id",
             "amount",
+            "comment",
             "created_by",
             "created_on",
             "credit_balance",
-            "description",
             "eft_refund_id",
             "hidden",
             "invoice_id",
@@ -60,6 +60,7 @@ class EFTShortnamesHistorical(BaseModel):
     }
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     amount = db.Column(db.Numeric(19, 2), nullable=False)
+    comment = db.Column(db.String(250), nullable=True)
     created_by = db.Column(db.String, nullable=True)
     created_on = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(tz=UTC))
     credit_balance = db.Column(db.Numeric(19, 2), nullable=False)
@@ -94,6 +95,7 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
     account_name: str
     account_branch: str
     amount: Decimal
+    comment: str
     invoice_id: int
     eft_refund_id: int
     eft_refund_method: str
@@ -121,6 +123,7 @@ class EFTShortnameHistorySchema:  # pylint: disable=too-few-public-methods
             account_id=getattr(row, "auth_account_id", None),
             account_name=getattr(row, "account_name", None),
             account_branch=getattr(row, "account_branch", None),
+            comment=getattr(row, "comment", None),
             invoice_id=getattr(row, "invoice_id", None),
             eft_refund_id=getattr(row, "eft_refund_id", None),
             eft_refund_method=getattr(row, "refund_method", None),
