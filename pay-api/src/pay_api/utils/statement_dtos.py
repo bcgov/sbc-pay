@@ -107,7 +107,10 @@ class StatementTransactionDTO(Serializable):
 
     @staticmethod
     def _compute_refund_lines_for_display(invoice: InvoiceModel, fee: Decimal):
-        """Compute refund lines for display in statement."""
+        """Compute refund lines for display in statement. refund_fee, refund_gst, refund_service_fee, refund_id are returned."""
+        if invoice.invoice_status_code == InvoiceStatus.CANCELLED.value:
+            return fee, invoice.gst, invoice.service_fees, None
+
         if invoice.invoice_status_code not in InvoiceStatus.refund_statuses():
             return 0, 0, 0, None
 
@@ -155,6 +158,8 @@ class StatementTransactionDTO(Serializable):
 
         refund_fee, refund_gst, refund_service_fee, refund_id = cls._compute_refund_lines_for_display(invoice, fee)
 
+        refund_total = invoice.total if invoice.invoice_status_code == InvoiceStatus.CANCELLED.value else invoice.refund
+
         return cls(
             invoice_id=invoice.id,
             products=products,
@@ -177,7 +182,7 @@ class StatementTransactionDTO(Serializable):
             refund_fee=CurrencyStr(refund_fee),
             refund_gst=CurrencyStr(refund_gst),
             refund_service_fee=CurrencyStr(refund_service_fee),
-            refund_total=CurrencyStr(invoice.refund),
+            refund_total=CurrencyStr(refund_total),
         )
 
 
