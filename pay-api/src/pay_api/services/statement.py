@@ -773,6 +773,22 @@ class Statement:  # pylint:disable=too-many-public-methods
             .filter(InvoiceModel.invoice_status_code != InvoiceStatus.CANCELLED.value)
             .cte("inv")
         )
+
+        # Pre-aggregate applied_credits by invoice to avoid duplicate rows in join
+        credits_agg = (
+            db.session.query(
+                AppliedCredits.invoice_id,
+                func.sum(
+                    case(
+                        (func.date(AppliedCredits.created_on) <= statement_to_date, AppliedCredits.amount_applied),
+                        else_=0,
+                    )
+                ).label("credits_applied"),
+            )
+            .group_by(AppliedCredits.invoice_id)
+            .cte("credits_agg")
+        )
+
         paid_previous_stmt_expr = Statement._build_paid_previous_statement_expr(
             inv, paid_statuses, statement_to_date, next_statement_to_date
         )
@@ -812,15 +828,10 @@ class Statement:  # pylint:disable=too-many-public-methods
                         else_=0,
                     )
                 ).label("counted_refund"),
-                func.sum(
-                    case(
-                        (func.date(AppliedCredits.created_on) <= statement_to_date, AppliedCredits.amount_applied),
-                        else_=0,
-                    )
-                ).label("credits_applied"),
-                func.count(inv.c.id).label("invoice_id"),
+                func.sum(coalesce(credits_agg.c.credits_applied, 0)).label("credits_applied"),
+                func.count(distinct(inv.c.id)).label("invoice_id"),
             )
-            .outerjoin(AppliedCredits, AppliedCredits.invoice_id == inv.c.id)
+            .outerjoin(credits_agg, credits_agg.c.invoice_id == inv.c.id)
             .group_by(inv.c.payment_method_code)
             .cte("agg")
         )
@@ -836,7 +847,7 @@ class Statement:  # pylint:disable=too-many-public-methods
                 func.sum(agg.c.paid_previous_statement).label(PaymentMethodSummaryRawDTO.PAID_PRE_BALANCE),
                 func.sum(agg.c.counted_refund).label(PaymentMethodSummaryRawDTO.COUNTED_REFUND),
                 func.sum(agg.c.credits_applied).label(PaymentMethodSummaryRawDTO.CREDITS_APPLIED),
-                func.count(agg.c.invoice_id).label(PaymentMethodSummaryRawDTO.INVOICE_COUNT),
+                func.sum(agg.c.invoice_id).label(PaymentMethodSummaryRawDTO.INVOICE_COUNT),
                 literal(next_statement_to_date is not None).label(PaymentMethodSummaryRawDTO.IS_PRE_SUMMARY),
             )
             .group_by(agg.c.payment_method_code)
