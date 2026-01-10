@@ -614,6 +614,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             "hasPaymentInstructions": False,
             "statement": {
                 "amountOwing": "0.00",
+                "defaultPaymentMethod": "EFT",
                 "createdOn": date_string_now,
                 "frequency": "MONTHLY",
                 "fromDate": FullMonthDateStr(statement_from_date),
@@ -624,6 +625,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "notificationDate": None,
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
+                "statementHeaderText": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
                 "statementTotal": "0.00",
                 "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
             },
@@ -1021,6 +1023,7 @@ def test_get_eft_statement_with_invoices(session):
             "statement": {
                 "amountOwing": "400.00",
                 "createdOn": date_string_now,
+                "defaultPaymentMethod": "EFT",
                 "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
                 "frequency": "MONTHLY",
                 "fromDate": FullMonthDateStr(statement_from_date),
@@ -1031,6 +1034,7 @@ def test_get_eft_statement_with_invoices(session):
                 "notificationDate": None,
                 "overdueNotificationDate": None,
                 "paymentMethods": ["EFT"],
+                "statementHeaderText": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
                 "statementTotal": "500.00",
             },
             "statementSummary": {
