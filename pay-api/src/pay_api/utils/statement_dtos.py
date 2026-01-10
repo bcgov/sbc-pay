@@ -394,6 +394,8 @@ class StatementContextDTO(Serializable):
     payment_methods: list[str] | None = None
     statement_total: CurrencyStr | None = None
     is_overdue: bool | None = None
+    statement_header_text: str | None = None
+    default_payment_method: str | None = None
 
     @staticmethod
     def _compute_duration(from_date: str | None, to_date: str | None, frequency: str) -> str | None:
@@ -423,6 +425,11 @@ class StatementContextDTO(Serializable):
         payment_methods = None
         if statement.payment_methods:
             payment_methods = [m.strip() for m in statement.payment_methods.split(",") if m.strip()]
+        
+        statement_header_text = None
+        if len(payment_methods) == 1: # used for Statement that has no any invoices
+            statement_header_text = StatementTitles[payment_methods[0]].value
+            default_payment_method = payment_methods[0]
 
         # Directly assign formatted string values
         return cls(
@@ -439,6 +446,8 @@ class StatementContextDTO(Serializable):
             payment_methods=payment_methods,
             statement_total=statement.statement_total,
             is_overdue=statement.is_overdue,
+            statement_header_text=statement_header_text,
+            default_payment_method=default_payment_method,
         )
 
     @classmethod

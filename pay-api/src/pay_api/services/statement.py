@@ -895,6 +895,8 @@ class Statement:  # pylint:disable=too-many-public-methods
                     and_(
                         InvoiceModel.invoice_status_code.in_(refund_statuses),
                         InvoiceModel.refund_date.isnot(None),
+                        InvoiceModel.payment_date.isnot(None),
+                        func.date(InvoiceModel.payment_date) <= statement_to_date,
                         func.date(InvoiceModel.refund_date) > statement_to_date,
                     ),
                     InvoiceStatus.PAID.value,
