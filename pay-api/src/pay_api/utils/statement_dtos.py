@@ -425,9 +425,9 @@ class StatementContextDTO(Serializable):
         payment_methods = None
         if statement.payment_methods:
             payment_methods = [m.strip() for m in statement.payment_methods.split(",") if m.strip()]
-        
+
         statement_header_text = None
-        if len(payment_methods) == 1: # used for Statement that has no any invoices
+        if len(payment_methods) == 1:  # used for Statement that has no any invoices
             statement_header_text = StatementTitles[payment_methods[0]].value
             default_payment_method = payment_methods[0]
 
