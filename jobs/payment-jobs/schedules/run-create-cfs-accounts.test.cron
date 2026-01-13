@@ -1,2 +1,2 @@
-# every 10 minutes between 8 am to 9 pm PDT/PST 
-*/10 8-21 * * *
+# every 10 minutes between 6 am to 9 pm PDT/PST 
+*/10 6-21 * * *
