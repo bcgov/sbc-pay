@@ -1,7 +1,5 @@
 """Serializable class for cattr structure and unstructure."""
 
-
-
 from pay_api.utils.converter import Converter
 
 
