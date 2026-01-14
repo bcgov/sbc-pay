@@ -74,7 +74,6 @@ class OAuthService:
         safe_headers.pop("Pay-Connector", None)
         current_app.logger.debug(f"Endpoint : {endpoint}")
         current_app.logger.debug(f"headers : {safe_headers}")
-        current_app.logger.debug(f"data : {data}")
         response = None
         try:
             if is_put:
