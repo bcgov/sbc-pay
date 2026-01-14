@@ -1,8 +1,6 @@
 """Serializable class for cattr structure and unstructure."""
 
-from dataclasses import is_dataclass
 
-from attrs import has as attrs_has
 
 from pay_api.utils.converter import Converter
 
