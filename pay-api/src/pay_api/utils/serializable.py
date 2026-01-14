@@ -17,11 +17,4 @@ class Serializable:
 
     def to_dict(self):
         """Convert from object to dictionary."""
-        cls = self.__class__
-        if is_dataclass(cls) and not attrs_has(cls):
-            raise ValueError(
-                f"Class {cls.__name__} uses @dataclass instead of @define. "
-                "Consider using @define from attrs for snake case to camel case serialization support."
-            )
-
         return Converter(snake_case_to_camel=True).unstructure(self)

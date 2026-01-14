@@ -1,5 +1,6 @@
 """Converter module to support decimal and datetime serialization."""
 
+import dataclasses
 import re
 from datetime import date, datetime
 from decimal import Decimal
@@ -62,6 +63,7 @@ class Converter(cattrs.Converter):
         self.register_unstructure_hook(CurrencyStr, self._unstructure_formatted_currency)
         self.register_structure_hook(FullMonthDateStr, self.structure_month_date_year_str)
         self.register_unstructure_hook(FullMonthDateStr, self._unstructure_statement_date_str)
+        self.register_case_hooks(dataclasses.is_dataclass, dataclasses.fields)
         # Note we may need a hook to handle str = None, sometimes a str set to None would become 'None'
 
         if enum_to_value:
