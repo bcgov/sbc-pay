@@ -161,8 +161,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             if payment_method_code != PaymentMethod.DRAWDOWN.value or (
                 payment_method_code == PaymentMethod.DRAWDOWN.value and not isinstance(e, BusinessException)
             ):
-                current_app.logger.error("Rolling back as error occured!")
-                current_app.logger.error(e)
+                current_app.logger.error(f"Rolling back as error occured! {payment_method_code}", exc_info=True)
             if invoice:
                 invoice.rollback()
             if pay_system_invoice:
