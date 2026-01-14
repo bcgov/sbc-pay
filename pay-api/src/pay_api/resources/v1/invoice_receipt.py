@@ -41,6 +41,7 @@ def get_invoice_receipt(invoice_id):
         receipt_details.pop("paymentMethodDescription", None)
         # This is because NAMES isn't flexible
         receipt_details.pop("isSubmission", None)
+        receipt_details.pop("appliedCredits", None)
 
     except BusinessException as exception:
         return exception.response()
