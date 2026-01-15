@@ -59,8 +59,8 @@ class EFTStatements:
                 )
             )
             .group_by(StatementModel.payment_account_id)
-            .cte('eft_statement_summary')
-            .prefix_with('MATERIALIZED')
+            .cte("eft_statement_summary")
+            .prefix_with("MATERIALIZED")
         )
 
     @staticmethod
