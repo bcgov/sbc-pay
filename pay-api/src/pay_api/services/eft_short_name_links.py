@@ -41,7 +41,7 @@ class EFTShortnameLinks:
     def get_shortname_links(cls, short_name_id: int) -> dict:
         """Get EFT short name account links."""
         current_app.logger.debug("<get_shortname_links")
-        statement_summary_query = EFTStatements.get_statement_summary_query().subquery()
+        statement_summary_query = EFTStatements.get_statement_summary_cte()
         invoice_count_query = EftService.get_pending_payment_count()
         statements_owing = EFTStatements.get_statements_owing_as_array().subquery()
 

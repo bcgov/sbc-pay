@@ -30,7 +30,7 @@ class EFTStatements:
     """Service to support EFT statements."""
 
     @staticmethod
-    def get_statement_summary_query():
+    def get_statement_summary_cte():
         """Query for latest statement id and total amount owing of invoices in statements."""
         return (
             db.session.query(
@@ -59,6 +59,8 @@ class EFTStatements:
                 )
             )
             .group_by(StatementModel.payment_account_id)
+            .cte("eft_statement_summary")
+            .prefix_with("MATERIALIZED")
         )
 
     @staticmethod
