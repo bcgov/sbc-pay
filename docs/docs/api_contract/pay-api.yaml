@@ -1659,7 +1659,7 @@ components:
           description: amount paid
         refund:
           type: number
-          description: reference number
+          description: amount refunded or credited
         refundDate:
           type: string
           description: date when received confirmation invoice was refunded
