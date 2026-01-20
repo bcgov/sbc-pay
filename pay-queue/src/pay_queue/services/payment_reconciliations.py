@@ -881,7 +881,7 @@ def _calculate_receipt_applied_amount(receipt: dict) -> Decimal:
     invoices = receipt.get("invoices", [])
 
     if (
-        receipt.get("receipt_method") == ReceiptMethod.ONLINE_BANKING.value
+        receipt.get("payment_method") == ReceiptMethod.ONLINE_BANKING.value
         and not invoices
         and receipt.get("unapplied_amount") == 0
     ):
