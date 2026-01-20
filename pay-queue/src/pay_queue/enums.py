@@ -77,3 +77,18 @@ class TargetTransaction(Enum):
     DEBIT_MEMO = "DM"
     CREDIT_MEMO = "CM"
     RECEIPT = "RECEIPT"
+
+
+class ReceiptMethod(Enum):
+    """Receipt Method from CFS."""
+
+    ONLINE_BANKING = "Online Banking Payments"
+    PAD_DAILY = "BCR-PAD Daily"
+    PAD_STOP = "BCR-PAD Stop"
+
+
+class ReceiptStatus(Enum):
+    """Receipt Status from CFS."""
+
+    APP = "APP"  # Applied
+    REV = "REV"  # Reversed
