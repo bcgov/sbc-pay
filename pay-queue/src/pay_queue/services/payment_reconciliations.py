@@ -55,7 +55,15 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.util import generate_consolidated_transaction_number, get_topic_for_corp_type
 from pay_queue import config
-from pay_queue.enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
+from pay_queue.enums import (
+    Column,
+    ReceiptMethod,
+    ReceiptStatus,
+    RecordType,
+    SourceTransaction,
+    Status,
+    TargetTransaction,
+)
 from pay_queue.services.email_service import EmailParams, send_error_email
 from pay_queue.util import get_object_from_bucket_folder
 
@@ -828,9 +836,7 @@ def _sync_credit_records_with_cfs():
                     continue
                 raise e
             receipt_amount = float(receipt.get("receipt_amount"))
-            applied_amount: float = 0
-            for invoice in receipt.get("invoices", []):
-                applied_amount += float(invoice.get("amount_applied"))
+            applied_amount = _calculate_receipt_applied_amount(receipt)
             credit.remaining_amount = receipt_amount - applied_amount
             credit.cfs_site = receipt_site
         credit.save()
@@ -868,6 +874,22 @@ def _fetch_credit_memo_payment_method(credit, cfs_account_pad, cfs_account_ob, c
             f"Credit memo not found in CFS for PAD or OB - payment account id: {credit.account_id}",
         )
     return credit_memo, credit_site
+
+
+def _calculate_receipt_applied_amount(receipt: dict) -> float:
+    """Calculate the applied amount from a receipt."""
+    receipt_amount = float(receipt.get("receipt_amount"))
+    applied_amount: float = 0
+    if (
+        receipt.get("receipt_method") == ReceiptMethod.ONLINE_BANKING.value
+        and len(receipt.get("invoices", [])) == 0
+        and receipt.get("unapplied_amount") == 0
+    ):
+        applied_amount = receipt_amount
+    else:
+        for invoice in receipt.get("invoices", []):
+            applied_amount += float(invoice.get("amount_applied"))
+    return applied_amount
 
 
 def _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
