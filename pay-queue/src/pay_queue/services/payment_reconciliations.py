@@ -58,7 +58,6 @@ from pay_queue import config
 from pay_queue.enums import (
     Column,
     ReceiptMethod,
-    ReceiptStatus,
     RecordType,
     SourceTransaction,
     Status,
