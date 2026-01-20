@@ -14,6 +14,8 @@
 
 """Unit tests for receipt condition logic in payment reconciliations."""
 
+from decimal import Decimal
+
 import pytest
 
 from pay_queue.enums import ReceiptMethod
@@ -23,16 +25,16 @@ from pay_queue.services.payment_reconciliations import _calculate_receipt_applie
 @pytest.mark.parametrize(
     "receipt_amount,receipt_method,unapplied_amount,invoices,expected_applied",
     [
-        (100.0, "Online Banking Payments", 0, [], 100.0),
-        (100.0, "Online Banking Payments", 50, [], 0.0),
-        (100.0, "BCR-PAD Daily", 0, [], 0.0),
-        (100.0, "Other Method", 0, [{"amount_applied": 25.0}], 25.0),
-        (100.0, "Online Banking Payments", 0, [{"amount_applied": 25.0}], 25.0),
-        (100.0, "Online Banking Payments", 0, [{"amount_applied": 25.0}, {"amount_applied": 30.0}], 55.0),
-        (150.0, ReceiptMethod.ONLINE_BANKING.value, 0, [], 150.0),
-        (100.0, "BCR-PAD Daily", 0, [{"amount_applied": 25.0}, {"amount_applied": 30.0}, {"amount_applied": 45.0}], 100.0),
-        (100.0, ReceiptMethod.ONLINE_BANKING.value, 0, [{"amount_applied": 75.0}], 75.0),
-        (100.0, ReceiptMethod.ONLINE_BANKING.value, 25.0, [], 0.0),
+        (100.0, "Online Banking Payments", 0, [], "100.0"),
+        (100.0, "Online Banking Payments", 50, [], "0.0"),
+        (100.0, "BCR-PAD Daily", 0, [], "0.0"),
+        (100.0, "Other Method", 0, [{"amount_applied": 25.0}], "25.0"),
+        (100.0, "Online Banking Payments", 0, [{"amount_applied": 25.0}], "25.0"),
+        (100.0, "Online Banking Payments", 0, [{"amount_applied": 25.0}, {"amount_applied": 30.0}], "55.0"),
+        (150.0, ReceiptMethod.ONLINE_BANKING.value, 0, [], "150.0"),
+        (100.0, "BCR-PAD Daily", 0, [{"amount_applied": 25.0}, {"amount_applied": 30.0}, {"amount_applied": 45.0}], "100.0"),
+        (100.0, ReceiptMethod.ONLINE_BANKING.value, 0, [{"amount_applied": 75.0}], "75.0"),
+        (100.0, ReceiptMethod.ONLINE_BANKING.value, 25.0, [], "0.0"),
     ],
 )
 def test_calculate_receipt_applied_amount(receipt_amount, receipt_method, unapplied_amount, invoices, expected_applied):
@@ -45,4 +47,4 @@ def test_calculate_receipt_applied_amount(receipt_amount, receipt_method, unappl
     }
 
     applied_amount = _calculate_receipt_applied_amount(receipt)
-    assert applied_amount == expected_applied
+    assert applied_amount == Decimal(expected_applied)

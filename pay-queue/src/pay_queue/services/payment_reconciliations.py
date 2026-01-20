@@ -835,9 +835,9 @@ def _sync_credit_records_with_cfs():
                     current_app.logger.warning(f"Error fetching receipt {credit.cfs_identifier} : {e!s}")
                     continue
                 raise e
-            receipt_amount = float(receipt.get("receipt_amount"))
+            receipt_amount = Decimal(str(receipt.get("receipt_amount")))
             applied_amount = _calculate_receipt_applied_amount(receipt)
-            credit.remaining_amount = receipt_amount - applied_amount
+            credit.remaining_amount = float(receipt_amount - applied_amount)
             credit.cfs_site = receipt_site
         credit.save()
         _rollup_credits(account_ids)
@@ -876,20 +876,19 @@ def _fetch_credit_memo_payment_method(credit, cfs_account_pad, cfs_account_ob, c
     return credit_memo, credit_site
 
 
-def _calculate_receipt_applied_amount(receipt: dict) -> float:
+def _calculate_receipt_applied_amount(receipt: dict) -> Decimal:
     """Calculate the applied amount from a receipt."""
-    receipt_amount = float(receipt.get("receipt_amount"))
-    applied_amount: float = 0
+    receipt_amount = Decimal(str(receipt.get("receipt_amount")))
+    invoices = receipt.get("invoices", [])
+
     if (
         receipt.get("receipt_method") == ReceiptMethod.ONLINE_BANKING.value
-        and len(receipt.get("invoices", [])) == 0
+        and not invoices
         and receipt.get("unapplied_amount") == 0
     ):
-        applied_amount = receipt_amount
-    else:
-        for invoice in receipt.get("invoices", []):
-            applied_amount += float(invoice.get("amount_applied"))
-    return applied_amount
+        return receipt_amount
+
+    return sum((Decimal(str(invoice.get("amount_applied"))) for invoice in invoices), Decimal("0"))
 
 
 def _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
