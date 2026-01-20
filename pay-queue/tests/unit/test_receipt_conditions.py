@@ -23,7 +23,7 @@ from pay_queue.services.payment_reconciliations import _calculate_receipt_applie
 
 
 @pytest.mark.parametrize(
-    "receipt_amount,receipt_method,unapplied_amount,invoices,expected_applied",
+    "receipt_amount,payment_method,unapplied_amount,invoices,expected_applied",
     [
         (100.0, "Online Banking Payments", 0, [], "100.0"),
         (100.0, "Online Banking Payments", 50, [], "0.0"),
@@ -43,11 +43,11 @@ from pay_queue.services.payment_reconciliations import _calculate_receipt_applie
         (100.0, ReceiptMethod.ONLINE_BANKING.value, 25.0, [], "0.0"),
     ],
 )
-def test_calculate_receipt_applied_amount(receipt_amount, receipt_method, unapplied_amount, invoices, expected_applied):
+def test_calculate_receipt_applied_amount(receipt_amount, payment_method, unapplied_amount, invoices, expected_applied):
     """Test the receipt applied amount calculation logic."""
     receipt = {
         "receipt_amount": receipt_amount,
-        "receipt_method": receipt_method,
+        "payment_method": payment_method,
         "unapplied_amount": unapplied_amount,
         "invoices": invoices,
     }
