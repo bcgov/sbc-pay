@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 
 from attrs import define
-from flask import copy_current_request_context, current_app
+from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 
 from pay_api.services.auth import get_service_account_token
@@ -75,11 +75,12 @@ def send_email_async(recipients: list[str], subject: str, body: str):
     Returns:
         Future object representing the asynchronous email sending task
     """
+    app = current_app._get_current_object()
 
-    @copy_current_request_context
     def _send_email_task(recipients_list: list[str], email_subject: str, email_body: str):
         """Send the email notification in background thread."""
-        return send_email(recipients_list, email_subject, email_body)
+        with app.app_context():
+            return send_email(recipients_list, email_subject, email_body)
 
     return _executor.submit(_send_email_task, recipients, subject, body)
 
