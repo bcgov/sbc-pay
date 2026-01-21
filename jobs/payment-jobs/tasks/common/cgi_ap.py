@@ -118,6 +118,7 @@ class CgiAP(CgiEjv):
             street_additional = (
                 refund_details["mailingAddress"]["streetAdditional"]
                 if "streetAdditional" in refund_details["mailingAddress"]
+                and refund_details["mailingAddress"]["streetAdditional"] is not None
                 else f"{cls.EMPTY:<40}"
             )
         return name, city, region, postal_code, country, street, street_additional
