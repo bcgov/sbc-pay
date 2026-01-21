@@ -32,7 +32,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 
 # from pay_api.models import Payment as PaymentModel
-from pay_api.services import CFSService
+from pay_api.services import CFSService, email_service
 from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
 
@@ -517,10 +517,27 @@ def test_create_pad_invoice_exception_handling(session):
     test_exception = Exception("Test CFS service failure")
 
     with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
-        with patch("tasks.cfs_create_invoice_task.send_notification") as mock_send_notification:
-            mock_create_invoice.side_effect = test_exception
-            CreateInvoiceTask.create_invoices()
-            mock_send_notification.assert_called_once()
+        with patch.object(email_service, "send_email") as mock_send_email:
+            futures = []
+            original_executor = email_service._executor
+            original_submit = original_executor.submit
+
+            def capture_future(fn, *args, **kwargs):
+                future = original_submit(fn, *args, **kwargs)
+                futures.append(future)
+                return future
+
+            with patch.object(original_executor, "submit", side_effect=capture_future):
+                mock_create_invoice.side_effect = test_exception
+                mock_send_email.return_value = True
+                CreateInvoiceTask.create_invoices()
+                for future in futures:
+                    future.result(timeout=2)
+                mock_send_email.assert_called_once()
+                call_args = mock_send_email.call_args
+                recipients, subject, body = call_args.args
+                assert "CFS Create Invoice Job Failure" in subject
+                assert "Test CFS service failure" in body
 
     updated_invoice = InvoiceModel.find_by_id(invoice.id)
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value

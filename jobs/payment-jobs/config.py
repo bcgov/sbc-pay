@@ -260,6 +260,10 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     # Need a value for this, so we can mock the publish client.
     BUSINESS_PAY_TOPIC = "business-pay-topic"
 
+    # Email notification settings for testing
+    IT_OPS_EMAIL = ["test@example.com"]
+    NOTIFY_API_ENDPOINT = "http://localhost:8080/notify-api/"
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
