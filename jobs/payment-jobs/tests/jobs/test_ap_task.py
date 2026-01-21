@@ -309,3 +309,22 @@ def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, mon
             f"should be {expected_date} "
             f"(Tuesday, skipping weekend and holiday)"
         )
+
+
+def test_grab_refund_details_street_additional_none(session):
+    """Test grab_refund_details handles streetAdditional being explicitly None."""
+    refund_details = {
+        "name": "TEST NAME",
+        "mailingAddress": {
+            "city": "Victoria",
+            "region": "BC",
+            "street": "655 Douglas St",
+            "country": "CA",
+            "postalCode": "V8V 0B6",
+            "streetAdditional": None,
+        },
+    }
+
+    *_, street_additional = CgiAP.grab_refund_details(refund_details)
+
+    assert street_additional == f"{CgiAP.EMPTY:<40}"
