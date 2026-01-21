@@ -532,7 +532,7 @@ def test_create_pad_invoice_exception_handling(session):
                 mock_send_email.return_value = True
                 CreateInvoiceTask.create_invoices()
                 for future in futures:
-                    future.result(timeout=5)
+                    future.result(timeout=2)
                 mock_send_email.assert_called_once()
                 call_args = mock_send_email.call_args
                 recipients, subject, body = call_args.args
