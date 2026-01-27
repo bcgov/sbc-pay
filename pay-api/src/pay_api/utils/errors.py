@@ -188,6 +188,7 @@ class Error(Enum):
     RS_INSUFFICIENT_FUNDS = "RS_INSUFFICIENT_FUNDS", HTTPStatus.BAD_REQUEST
     RS_DOESNT_EXIST = "RS_DOESNT_EXIST", HTTPStatus.BAD_REQUEST
     RS_NOT_ACTIVE = "RS_NOT_ACTIVE", HTTPStatus.BAD_REQUEST
+    # NOTE: DO NOT USE BAD_REQUEST GOING FORWARD, USE 422 BAD_REQUEST FOR BAD JSON, NOT BUSINESS EXCEPTION
 
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
