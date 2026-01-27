@@ -296,6 +296,9 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         if not is_partial and CreditModel.find_by_invoice_id(invoice.id):
             raise BusinessException(Error.REFUND_ALREADY_EXISTS)
 
+        # TODO: Create a payment record for this to show up on transactions, when the ticket comes.
+        # Create a credit with CM identifier as CMs are not reported in payment interface file
+        # until invoice is applied.
         credit = CreditModel(
             cfs_site=cfs_account.cfs_site,
             is_credit_memo=True,

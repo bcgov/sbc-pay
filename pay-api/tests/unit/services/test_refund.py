@@ -28,6 +28,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.cfs_account import CfsAccount
 from pay_api.services import RefundService
+from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import (
     EFTCreditInvoiceStatus,
@@ -39,6 +40,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.user_context import UserContext
 from tests.utilities.base_test import (
+    factory_credit,
     factory_eft_credit,
     factory_eft_credit_invoice_link,
     factory_eft_file,
@@ -350,3 +352,26 @@ def test_initialize_refund_requested_by(
             )
 
             assert result.requested_by == expected_requested_by
+
+
+def test_create_credit_memo_fails_when_already_exists(session):
+    """Assert that creating a credit memo fails when one already exists for the invoice."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value).save()
+    cfs_account = CfsAccount.find_latest_account_by_account_id(payment_account.id)
+    invoice = factory_invoice(
+        payment_account=payment_account,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+        cfs_account_id=cfs_account.id,
+    ).save()
+
+    factory_credit(
+        account_id=payment_account.id,
+        is_credit_memo=True,
+        created_invoice_id=invoice.id,
+    )
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentSystemService._refund_and_create_credit_memo(invoice)
+
+    assert excinfo.value.code == "REFUND_ALREADY_EXISTS"
