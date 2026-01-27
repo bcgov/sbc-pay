@@ -293,13 +293,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             refund_amount = invoice.total
 
         current_app.logger.info(f"Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}")
-        comment = f"{'Partial' if is_partial else 'Full'} invoice credit for {invoice.id}"
-        cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account, comment=comment)
-        # TODO Create a payment record for this to show up on transactions, when the ticket comes.
-        # Create a credit with CM identifier as CMs are not reported in payment interface file
-        # until invoice is applied.
-        CreditModel(
-            cfs_identifier=cms_response.get("credit_memo_number"),
+        if not is_partial and CreditModel.find_by_invoice_id(invoice.id):
+            raise BusinessException(Error.REFUND_ALREADY_EXISTS)
+
+        credit = CreditModel(
             cfs_site=cfs_account.cfs_site,
             is_credit_memo=True,
             amount=refund_amount,
@@ -307,6 +304,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             account_id=invoice.payment_account_id,
             created_invoice_id=invoice.id,
         ).save()
+
+        comment = f"{'Partial' if is_partial else 'Full'} invoice credit for {invoice.id}"
+        cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account, comment=comment)
+        credit.cfs_identifier = cms_response.get("credit_memo_number")
+        credit.save()
 
         # Add up the credit amount and update payment account table.
         payment_account = PaymentAccountModel.find_by_id_for_update(invoice.payment_account_id)
