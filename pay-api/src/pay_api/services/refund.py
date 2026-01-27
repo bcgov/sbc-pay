@@ -273,7 +273,7 @@ class RefundService:
                 else RefundStatus.APPROVAL_NOT_REQUIRED.value
             ),
         )
-        refund.flush()
+        refund.save()
         return refund
 
     @classmethod

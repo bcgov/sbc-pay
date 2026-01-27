@@ -76,6 +76,11 @@ class Credit(BaseModel):
         return cls.query.filter_by(cfs_identifier=cfs_identifier).filter_by(is_credit_memo=credit_memo).one_or_none()
 
     @classmethod
+    def find_by_invoice_id(cls, invoice_id: int):
+        """Find Credit by created_invoice_id."""
+        return cls.query.filter_by(created_invoice_id=invoice_id).filter_by(is_credit_memo=True).first()
+
+    @classmethod
     def find_remaining_by_account_id(cls, account_id: int) -> Decimal:
         """Find Credit by account id."""
         return Decimal(
