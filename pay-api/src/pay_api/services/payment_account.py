@@ -677,6 +677,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         payload: dict[str, any] = {
             "accountId": self.auth_account_id,
             "accountName": self.name,
+            "branchName": self.branch_name
         }
 
         if event_type == QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value:
