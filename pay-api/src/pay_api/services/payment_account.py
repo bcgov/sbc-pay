@@ -674,10 +674,10 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
     def create_account_event_payload(self, event_type: str, receipt_info: dict = None, include_pay_info: bool = False):
         """Return event payload for account."""
+        account_name = f"{self.name} - {self.branch_name}" if self.branch_name else self.name
         payload: dict[str, any] = {
             "accountId": self.auth_account_id,
-            "accountName": self.name,
-            "branchName": self.branch_name,
+            "accountName": account_name,
         }
 
         if event_type == QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value:
