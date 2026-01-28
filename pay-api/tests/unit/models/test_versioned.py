@@ -56,7 +56,7 @@ def test_concurrent_versioned_updates(
 
     with db.engine.begin() as conn:
         result = conn.execute(
-            db.text("INSERT INTO test_versioned (name, value, version) " "VALUES ('test', 100, 1) RETURNING id")
+            db.text("INSERT INTO test_versioned (name, value, version) VALUES ('test', 100, 1) RETURNING id")
         )
         test_id = result.fetchone()[0]
 
@@ -105,9 +105,9 @@ def test_concurrent_versioned_updates(
 
     if should_fail:
         assert errors, "Expected errors due to race condition without locking"
-        assert any(
-            "unique" in str(err).lower() or "duplicate" in str(err).lower() for err in errors
-        ), f"Expected unique constraint error, got: {errors}"
+        assert any("unique" in str(err).lower() or "duplicate" in str(err).lower() for err in errors), (
+            f"Expected unique constraint error, got: {errors}"
+        )
     else:
         assert not errors, f"Errors: {errors}"
         assert len(history) == 2, f"History should have 2 rows, got {len(history)}: {history}"

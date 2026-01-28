@@ -37,7 +37,7 @@ class Refund(BaseModel):
     __table_args__ = (
         CheckConstraint(
             "NOT(routing_slip_id IS NULL AND invoice_id IS NULL)",
-            name="routing_slip_invoice" "_id_check",
+            name="routing_slip_invoice_id_check",
         ),
     )
     # this mapper is used so that new and old versions of the service can be run simultaneously,

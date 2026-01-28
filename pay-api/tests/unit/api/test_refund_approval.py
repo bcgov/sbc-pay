@@ -276,7 +276,7 @@ def test_full_refund_approval_flow(
     rv = request_refund(client, invoice, requester_headers)
     assert rv.status_code == 202
     expected_message = (
-        f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} " f"is pending refund approval."
+        f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} is pending refund approval."
     )
     assert rv.json.get("message") == expected_message
     refund_service_mocks["get_auth_user"].assert_called_once()
@@ -384,7 +384,7 @@ def test_full_refund_decline_flow(session, client, jwt, app, monkeypatch, refund
     rv = request_refund(client, invoice, requester_headers)
     assert rv.status_code == 202
     expected_message = (
-        f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} " f"is pending refund approval."
+        f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} is pending refund approval."
     )
     assert rv.json.get("message") == expected_message
     refund_service_mocks["send_email_async"].assert_called_once()
@@ -508,7 +508,7 @@ def test_partial_refund_approval_flow(
     rv = request_refund(client, invoice, requester_headers, refund_revenue)
     assert rv.status_code == 202
     expected_message = (
-        f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} " f"is pending refund approval."
+        f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} is pending refund approval."
     )
     assert rv.json.get("message") == expected_message
     refund_service_mocks["send_email_async"].assert_called_once()

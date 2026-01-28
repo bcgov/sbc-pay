@@ -1697,9 +1697,9 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
     payment_request_response_no_gst = rv.json
 
     # Verify the POST response has GST fields hidden when GST is not present
-    assert (
-        "gst" not in payment_request_response_no_gst
-    ), "GST field should be hidden in POST response when invoice has no GST"
+    assert "gst" not in payment_request_response_no_gst, (
+        "GST field should be hidden in POST response when invoice has no GST"
+    )
 
     if "lineItems" in payment_request_response_no_gst and payment_request_response_no_gst["lineItems"]:
         line_item = payment_request_response_no_gst["lineItems"][0]

@@ -34,7 +34,7 @@ from pay_api.services.paybc_service import PaybcService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.errors import Error
-from tests.utilities.base_test import get_unlinked_pad_account_payload
+from tests.utilities.base_test import get_gov_account_payload, get_unlinked_pad_account_payload
 
 
 def test_paybc_system_factory(session, public_user_mock):
@@ -145,3 +145,17 @@ def test_invalid_pay_system(session, public_user_mock):
     with pytest.raises(BusinessException) as excinfo:
         PaymentSystemFactory.create(payment_method="XXX", corp_type="XXX")
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
+
+
+def test_ejv_restricted_factory(session, system_user_mock):
+    """Test payment system creation fails when EJV is restricted on the account."""
+    from pay_api.exceptions import BusinessException
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory
+
+    ejv_account = PaymentAccountService.create(get_gov_account_payload())
+    ejv_account._dao.restrict_ejv = True
+    ejv_account._dao.save()
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentSystemFactory.create(payment_method=PaymentMethod.EJV.value, payment_account=ejv_account)
+    assert excinfo.value.code == Error.EJV_PAYMENT_METHOD_RESTRICTED.name

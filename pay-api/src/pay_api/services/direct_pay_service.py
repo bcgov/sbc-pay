@@ -242,7 +242,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     ):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         current_app.logger.debug(
-            "<process_cfs_refund creating automated refund for invoice: " f"{invoice.id}, {invoice.invoice_status_code}"
+            f"<process_cfs_refund creating automated refund for invoice: {invoice.id}, {invoice.invoice_status_code}"
         )
 
         refund_url = current_app.config.get("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL") + "/paybc-service/api/refund"

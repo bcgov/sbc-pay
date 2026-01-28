@@ -550,7 +550,7 @@ class RoutingSlip:
                 paid_amount = Decimal(str(payment_request.get("paidAmount", 0)))
                 correction_total += paid_amount - payment.paid_amount
                 if payment.payment_method_code == PaymentMethod.CASH.value:
-                    comment += f"Cash Payment corrected amount" f" from ${payment.paid_amount} to ${paid_amount}\n"
+                    comment += f"Cash Payment corrected amount from ${payment.paid_amount} to ${paid_amount}\n"
                 else:
                     comment += f"Cheque Payment {payment.cheque_receipt_number}"
                     if cheque_receipt_number := payment_request.get("chequeReceiptNumber"):

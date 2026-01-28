@@ -89,7 +89,7 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
     pad_credit = db.Column(db.Numeric(19, 2), nullable=True, default=0)
     billable = db.Column(Boolean(), default=True)
     eft_enable = db.Column(Boolean(), nullable=False, default=False)
-    restrict_ejv = db.Column(Boolean(), nullable=False, server_default='f')
+    restrict_ejv = db.Column(Boolean(), nullable=False, server_default="f")
 
     # before this date , the account shouldn't get used
     pad_activation_date = db.Column(db.DateTime, nullable=True)
@@ -98,7 +98,7 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
 
     def __str__(self):
         """Override to string."""
-        return f'{self.name or ""} ({self.auth_account_id})'
+        return f"{self.name or ''} ({self.auth_account_id})"
 
     @classmethod
     def find_by_auth_account_id(cls, auth_account_id: str) -> PaymentAccount | None:

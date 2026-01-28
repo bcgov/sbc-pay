@@ -121,7 +121,7 @@ class EftService(DepositService):
             payment_method_code=self.get_payment_method_code(),
             payment_status_code=PaymentStatus.COMPLETED.value,
             payment_system_code=self.get_payment_system_code(),
-            invoice_number=f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}',
+            invoice_number=f"{current_app.config['EFT_INVOICE_PREFIX']}{invoice.id}",
             invoice_amount=invoice.total,
             payment_account_id=payment_account.id,
             payment_date=payment_date,
