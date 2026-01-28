@@ -99,9 +99,9 @@ def test_history_table_columns(session, inspector, versioned_models):
         missing_additional = expected_additional - set(history_columns.keys())
         assert not missing_additional, f"Missing required columns in {history_table}: {missing_additional}"
 
-        assert not history_columns["version"][
-            "autoincrement"
-        ], f"Version column should not be autoincrement in {history_table}"
+        assert not history_columns["version"]["autoincrement"], (
+            f"Version column should not be autoincrement in {history_table}"
+        )
         assert not history_columns["version"]["nullable"], f"Version column should not be nullable in {history_table}"
 
 
@@ -172,11 +172,11 @@ def test_history_table_column_types_match_base_tables(session, inspector, versio
 
             if "autoincrement" in base_type and "autoincrement" not in history_type:
                 base_type_without_auto = base_type.replace("autoincrement=True", "").strip()
-                assert (
-                    base_type_without_auto == history_type
-                ), f"Column {column_name} type mismatch in {history_table}: expected {base_type_without_auto},"
+                assert base_type_without_auto == history_type, (
+                    f"Column {column_name} type mismatch in {history_table}: expected {base_type_without_auto},"
+                )
                 f"got {history_type}"
             else:
-                assert (
-                    base_type == history_type
-                ), f"Column {column_name} type mismatch in {history_table}: expected {base_type}, got {history_type}"
+                assert base_type == history_type, (
+                    f"Column {column_name} type mismatch in {history_table}: expected {base_type}, got {history_type}"
+                )

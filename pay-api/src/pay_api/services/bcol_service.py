@@ -56,7 +56,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Create Invoice in PayBC."""
         self.ensure_no_payment_blockers(payment_account)
         current_app.logger.debug(
-            f"<Creating BCOL records for Invoice: {invoice.id}, " f"Auth Account : {payment_account.auth_account_id}"
+            f"<Creating BCOL records for Invoice: {invoice.id}, Auth Account : {payment_account.auth_account_id}"
         )
         user: UserContext = kwargs["user"]
         force_non_staff_fee_code = "force_non_staff_fee_code" in kwargs

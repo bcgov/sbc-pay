@@ -317,7 +317,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     ):
         """Calculate fees for the filing by using the arguments."""
         current_app.logger.debug(
-            f"<get_fees_by_corp_type_and_filing_type : {corp_type}, {filing_type_code}, " f"{valid_date}"
+            f"<get_fees_by_corp_type_and_filing_type : {corp_type}, {filing_type_code}, {valid_date}"
         )
         user: UserContext = kwargs["user"]
 

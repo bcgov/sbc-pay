@@ -59,7 +59,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
         # If the account is not billable, then create records,
         if not payment_account.billable:
             current_app.logger.debug(
-                f"Non billable invoice {invoice.id}, " f"Auth Account : {payment_account.auth_account_id}"
+                f"Non billable invoice {invoice.id}, Auth Account : {payment_account.auth_account_id}"
             )
             invoice_reference = InvoiceReference.create(invoice.id, generate_transaction_number(invoice.id), None)
         # else Do nothing here as the invoice references are created later.

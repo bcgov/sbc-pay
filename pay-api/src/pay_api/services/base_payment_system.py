@@ -238,7 +238,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Validate refund amount."""
         if refund_amount > max_amount:
             current_app.logger.error(
-                f"Refund amount {str(refund_amount)} " f"exceeds maximum allowed amount {str(max_amount)}."
+                f"Refund amount {str(refund_amount)} exceeds maximum allowed amount {str(max_amount)}."
             )
             raise BusinessException(Error.INVALID_REQUEST)
 

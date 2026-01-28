@@ -698,9 +698,9 @@ def test_patch_transaction_for_eft_overdue(session, monkeypatch):
     payment = PaymentService._consolidate_invoices_and_pay(  # pylint: disable=protected-access
         payment_account.auth_account_id, all_invoice_statuses=False
     )
-    assert (
-        original_invoice_reference.status_code == InvoiceReferenceStatus.CANCELLED.value
-    ), "Invoice reference should be CANCELLED a new invoice reference should be created"
+    assert original_invoice_reference.status_code == InvoiceReferenceStatus.CANCELLED.value, (
+        "Invoice reference should be CANCELLED a new invoice reference should be created"
+    )
 
     txn = PaymentTransactionService.create_transaction_for_payment(payment.id, get_paybc_transaction_request())
     txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")

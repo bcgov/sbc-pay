@@ -56,10 +56,7 @@ class AuthEvent:
             )
         except Exception:  # NOQA pylint: disable=broad-except
             current_app.logger.error("Error publishing lock event:", exc_info=True)
-            current_app.logger.warning(
-                f"Notification to Queue failed for the Account {
-                    params.account_id}"
-            )
+            current_app.logger.warning(f"Notification to Queue failed for the Account {params.account_id}")
 
     @staticmethod
     def publish_unlock_account_event(payment_account: PaymentAccountModel):
@@ -88,6 +85,5 @@ class AuthEvent:
         except Exception:  # NOQA pylint: disable=broad-except
             current_app.logger.error("Error publishing EFT overdue unlock event:", exc_info=True)
             current_app.logger.warning(
-                f"Notification to Queue failed for the Account {
-                    payment_account.auth_account_id}"
+                f"Notification to Queue failed for the Account {payment_account.auth_account_id}"
             )

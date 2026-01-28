@@ -62,16 +62,13 @@ def check_auth(
     if call_auth_svc:
         bearer_token = user.bearer_token
         current_app.logger.info(
-            f"Checking auth for Account : {account_id}, Business : {business_identifier}, "
-            f"Is Staff : {user.is_staff()}"
+            f"Checking auth for Account : {account_id}, Business : {business_identifier}, Is Staff : {user.is_staff()}"
         )
         roles: list = []
         auth_response = {}
 
         if account_id:
-            auth_url = (
-                current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}" f"/authorizations?expanded=true"
-            )
+            auth_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}/authorizations?expanded=true"
             additional_headers = None
             if corp_type_code:
                 additional_headers = {"Product-Code": product_code}
