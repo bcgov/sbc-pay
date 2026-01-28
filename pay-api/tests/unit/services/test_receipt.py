@@ -211,7 +211,7 @@ def test_receipt_with_pad_invoice_applied_credits_and_partial_refund(session):
 
 
 @pytest.mark.parametrize(
-    "filing_data,payment_method_code,use_refund_date,use_created_on",
+    "is_refund,payment_method_code,use_refund_date,use_created_on",
     [
         (True, PaymentMethod.CC.value, True, False),
         (False, PaymentMethod.PAD.value, False, True),
@@ -221,6 +221,7 @@ def test_receipt_with_pad_invoice_applied_credits_and_partial_refund(session):
     ],
 )
 def test_get_receipt_date(session, is_refund, payment_method_code, use_refund_date, use_created_on):
+    """Test get receipt date for different payment methods and refund dates."""
     payment_account = factory_payment_account()
     payment_account.save()
 
