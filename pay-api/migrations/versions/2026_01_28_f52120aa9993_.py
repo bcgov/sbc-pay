@@ -1,4 +1,4 @@
-"""empty message
+"""Add restrict_ejv column to payment_accounts table.
 
 Revision ID: f52120aa9993
 Revises: 3f51ab8b4a10
