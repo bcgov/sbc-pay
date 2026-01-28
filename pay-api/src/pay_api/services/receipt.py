@@ -128,7 +128,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         receipt_details["invoice"] = camelcase_dict(invoice_data.asdict(), {})
         # Format date to display in report.
 
-        receipt_date = Receipt._get_receipt_date(filing_data, invoice_data)
+        receipt_date = Receipt.get_receipt_date(filing_data.get("isRefund"), invoice_data)
         receipt_details["invoice"]["createdOn"] = receipt_date
 
         # Check if any payment line items have NOCOI filing_type_code, this is for officer and changes receipt.
@@ -138,9 +138,9 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         return receipt_details
 
     @staticmethod
-    def _get_receipt_date(filing_data, invoice_data):
+    def get_receipt_date(is_refund, invoice_data):
         """Get the formatted receipt date for the invoice depending on type."""
-        if filing_data.get("isRefund"):
+        if is_refund:
             raw_date = invoice_data.refund_date
         else:
             if invoice_data.payment_method_code in (

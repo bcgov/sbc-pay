@@ -28,6 +28,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
+from pay_api.utils.util import get_local_formatted_date
 from tests.utilities.base_test import (
     factory_applied_credits,
     factory_credit,
@@ -207,3 +208,41 @@ def test_receipt_with_pad_invoice_applied_credits_and_partial_refund(session):
     receipt_details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True)
     assert receipt_details is not None
     assert "partialRefund" in receipt_details
+
+
+@pytest.mark.parametrize(
+    "filing_data,payment_method_code,use_refund_date,use_created_on",
+    [
+        (True, PaymentMethod.CC.value, True, False),
+        (False, PaymentMethod.PAD.value, False, True),
+        (False, PaymentMethod.EJV.value, False, True),
+        (False, PaymentMethod.EFT.value, False, True),
+        (False, PaymentMethod.CC.value, False, False),
+    ],
+)
+def test_get_receipt_date(session, is_refund, payment_method_code, use_refund_date, use_created_on):
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    refund_date = datetime(2024, 1, 2, tzinfo=UTC)
+    created_on = datetime(2024, 2, 3, tzinfo=UTC)
+    payment_date = datetime(2024, 3, 4, tzinfo=UTC)
+
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=payment_method_code,
+        created_on=created_on,
+        payment_date=payment_date,
+        refund_date=refund_date if use_refund_date else None,
+    )
+
+    result = ReceiptService.get_receipt_date(is_refund, invoice)
+
+    if use_refund_date:
+        expected_raw = refund_date
+    elif use_created_on:
+        expected_raw = created_on
+    else:
+        expected_raw = payment_date
+
+    assert result == get_local_formatted_date(expected_raw)
