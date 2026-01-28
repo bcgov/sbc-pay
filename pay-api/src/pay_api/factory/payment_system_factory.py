@@ -106,6 +106,10 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def _validate_and_throw_error(instance: PaymentSystemService, payment_account: PaymentAccount):
+        if isinstance(instance, EjvPayService):
+            if payment_account.restrict_ejv:
+                raise BusinessException(Error.EJV_PAYMENT_METHOD_RESTRICTED)
+
         if isinstance(instance, PadService):
             is_in_pad_confirmation_period = (
                 payment_account.pad_activation_date is not None
