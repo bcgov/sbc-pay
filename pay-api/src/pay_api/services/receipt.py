@@ -129,7 +129,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         # Format date to display in report.
 
         receipt_date = Receipt.get_receipt_date(filing_data.get("isRefund"), invoice_data)
-        receipt_details["invoice"]["createdOn"] = receipt_date
+        receipt_details["invoice"]["receiptDate"] = receipt_date
 
         # Check if any payment line items have NOCOI filing_type_code, this is for officer and changes receipt.
         receipt_details["isSubmission"] = any(
