@@ -25,7 +25,7 @@ def upgrade():
         batch_op.add_column(sa.Column('restrict_ejv', sa.Boolean(), server_default='f', nullable=False))
 
     with op.batch_alter_table('payment_accounts_history', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('restrict_ejv', sa.Boolean(), autoincrement=False, nullable=False))
+        batch_op.add_column(sa.Column('restrict_ejv', sa.Boolean(), server_default='f', autoincrement=False, nullable=False))
 
 
 def downgrade():
