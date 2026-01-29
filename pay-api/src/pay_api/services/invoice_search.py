@@ -345,7 +345,7 @@ class InvoiceSearch:
         # Grab +1, so we can check if there are more records.
         params.limit += 1
         sub_query = cls.generate_subquery(params).subquery()
-        results = query.filter(Invoice.id.in_(sub_query.select())).order_by(Invoice.id.desc()).all()
+        results = query.join(sub_query, Invoice.id == sub_query.c.id).order_by(Invoice.id.desc()).all()
         has_more = len(results) > params.limit
         return results[: params.limit], has_more
 
@@ -368,7 +368,8 @@ class InvoiceSearch:
                     limit=search_params.limit,
                 )
             )
-            query = query.filter(Invoice.id.in_(sub_query.subquery().select())).order_by(Invoice.id.desc())
+            sub_q = sub_query.subquery()
+            query = query.join(sub_q, Invoice.id == sub_q.c.id).order_by(Invoice.id.desc())
         elif search_params.max_no_records > 0:
             sub_query = cls.generate_subquery(
                 TransactionSearchParams(
@@ -378,7 +379,8 @@ class InvoiceSearch:
                     page=None,
                 )
             )
-            query = query.filter(Invoice.id.in_(sub_query.subquery().select()))
+            sub_q = sub_query.subquery()
+            query = query.join(sub_q, Invoice.id == sub_q.c.id)
             count_query = sub_query
 
         return query, count_query
