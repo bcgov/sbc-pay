@@ -255,7 +255,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     def _create_transaction(payment: Payment, request_json: dict, invoice: Invoice = None):
         # Cannot start transaction on completed payment
         current_app.logger.info(
-            f"Creating transactional record {payment.invoice_number}, " f"{payment.payment_status_code}"
+            f"Creating transactional record {payment.invoice_number}, {payment.payment_status_code}"
         )
         if payment.payment_status_code in (
             PaymentStatus.COMPLETED.value,

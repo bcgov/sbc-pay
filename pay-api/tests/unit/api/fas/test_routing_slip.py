@@ -326,7 +326,7 @@ def test_link_routing_slip(session, client, jwt, app):
     nsf = get_routing_slip_request("933458069")
     client.post("/api/v1/fas/routing-slips", data=json.dumps(nsf), headers=headers)
     rv = client.patch(
-        f'/api/v1/fas/routing-slips/{nsf.get("number")}?action={PatchActions.UPDATE_STATUS.value}',
+        f"/api/v1/fas/routing-slips/{nsf.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
         data=json.dumps({"status": RoutingSlipStatus.NSF.value}),
         headers=headers,
     )

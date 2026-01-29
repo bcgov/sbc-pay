@@ -627,7 +627,7 @@ def test_get_eft_statement_for_empty_invoices(session):
                 "paymentMethods": ["EFT"],
                 "statementHeaderText": "ACCOUNT STATEMENT - ELECTRONIC FUNDS TRANSFER",
                 "statementTotal": "0.00",
-                "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
+                "duration": (f"{FullMonthDateStr(statement_from_date)} - {FullMonthDateStr(statement_to_date)}"),
             },
             "statementSummary": {
                 "cancelledTransactions": None,
@@ -1024,7 +1024,7 @@ def test_get_eft_statement_with_invoices(session):
                 "amountOwing": "400.00",
                 "createdOn": date_string_now,
                 "defaultPaymentMethod": "EFT",
-                "duration": (f"{FullMonthDateStr(statement_from_date)} - " f"{FullMonthDateStr(statement_to_date)}"),
+                "duration": (f"{FullMonthDateStr(statement_from_date)} - {FullMonthDateStr(statement_to_date)}"),
                 "frequency": "MONTHLY",
                 "fromDate": FullMonthDateStr(statement_from_date),
                 "toDate": FullMonthDateStr(statement_to_date),
