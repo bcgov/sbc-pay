@@ -687,19 +687,19 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             created_from, created_to = get_first_and_last_dates_of_month(month=month, year=year)
 
         if created_from and created_to:
-            # Truncate time for from date and add max time for to date
             tz_name = current_app.config["LEGISLATIVE_TIMEZONE"]
             tz_local = pytz.timezone(tz_name)
-            local_start = tz_local.localize(
-                created_from.replace(hour=0, minute=0, second=0, microsecond=0),
-                is_dst=True,
-            )
+
+            # Strip tzinfo before localizing (get_first_and_last_dates_of_month returns tz-aware)
+            naive_start = created_from.replace(tzinfo=None, hour=0, minute=0, second=0, microsecond=0)
+            naive_end = created_to.replace(tzinfo=None, hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+
+            local_start = tz_local.localize(naive_start, is_dst=True)
+            local_end = tz_local.localize(naive_end, is_dst=True)
+
             utc_start = local_start.astimezone(pytz.UTC)
-            local_end = tz_local.localize(
-                created_to.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1),
-                is_dst=True,
-            )
             utc_end = local_end.astimezone(pytz.UTC)
+
             query = query.filter(
                 InvoiceModel.created_on >= utc_start,
                 InvoiceModel.created_on < utc_end,
