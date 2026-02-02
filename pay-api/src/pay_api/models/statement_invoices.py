@@ -36,12 +36,13 @@ class StatementInvoices(BaseModel):
     #
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
-    __mapper_args__ = {"include_properties": ["id", "invoice_id", "statement_id"]}
+    __mapper_args__ = {"include_properties": ["id", "invoice_id", "statement_from", "statement_id"]}
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     statement_id = db.Column(db.Integer, ForeignKey("statements.id"), nullable=False, index=True)
     invoice_id = db.Column(db.Integer, ForeignKey("invoices.id"), nullable=False, index=True)
+    statement_from = db.Column(db.Date, nullable=False, index=True)
 
     @classmethod
     def find_all_invoices_for_statement(cls, statement_identifier: str):
