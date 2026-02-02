@@ -690,10 +690,19 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             # Truncate time for from date and add max time for to date
             tz_name = current_app.config["LEGISLATIVE_TIMEZONE"]
             tz_local = pytz.timezone(tz_name)
-
-            created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
-            created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
-            query = query.filter(
-                func.timezone(tz_name, func.timezone("UTC", InvoiceModel.created_on)).between(created_from, created_to)
+            local_start = tz_local.localize(
+                created_from.replace(hour=0, minute=0, second=0, microsecond=0),
+                is_dst=True,
             )
+            utc_start = local_start.astimezone(pytz.UTC)
+            local_end = tz_local.localize(
+                created_to.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1),
+                is_dst=True,
+            )
+            utc_end = local_end.astimezone(pytz.UTC)
+            query = query.filter(
+                InvoiceModel.created_on >= utc_start,
+                InvoiceModel.created_on < utc_end,
+            )
+
         return query
