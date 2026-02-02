@@ -24,7 +24,6 @@ from pay_api.models.base_model import db
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.services.invoice import Invoice as InvoiceService
-from pay_api.services.statement import Statement as StatementService
 from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
 from pay_api.utils.enums import NotificationStatus, StatementFrequency
 from pay_api.utils.util import (
@@ -155,30 +154,32 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         cls._create_statement_records(search_filter, statement_settings, account_override)
 
     @classmethod
-    def _upsert_statements(cls, statement_settings, invoice_detail_tuple, reuse_statements):
+    def _upsert_statements(cls, statement_settings, invoices_by_account, reuse_statements):
         """Upsert statements to reuse statement ids because they are referenced in the EFT Shortname History."""
+        # Build lookup dict for reuse_statements: key = (payment_account_id, frequency, from_date, to_date)
+        # tuples are the idiomatic Python choice for composite keys
+        reuse_lookup = {}
+        for statement in reuse_statements:
+            key = (statement.payment_account_id, statement.frequency, statement.from_date, statement.to_date)
+            reuse_lookup[key] = statement
+
         statements = []
+        from_date = cls.statement_from.date()
+        to_date = cls.statement_to.date()
+        created_on = get_local_time(datetime.now(tz=UTC))
+
         for setting, pay_account in statement_settings:
-            existing_statement = next(
-                (
-                    statement
-                    for statement in reuse_statements
-                    if statement.payment_account_id == pay_account.id
-                    and statement.frequency == setting.frequency
-                    and statement.from_date == cls.statement_from.date()
-                    and statement.to_date == cls.statement_to.date()
-                ),
-                None,
-            )
+            key = (pay_account.id, setting.frequency, from_date, to_date)
+            existing_statement = reuse_lookup.get(key)
+
             notification_status = (
                 NotificationStatus.PENDING.value
                 if pay_account.statement_notification_enabled is True and cls.has_date_override is False
                 else NotificationStatus.SKIP.value
             )
-            payment_methods = StatementService.determine_payment_methods(
-                invoice_detail_tuple, pay_account, existing_statement
-            )
-            created_on = get_local_time(datetime.now(tz=UTC))
+            account_invoices = invoices_by_account.get(pay_account.auth_account_id, [])
+            payment_methods = cls._determine_payment_methods_fast(account_invoices, pay_account, existing_statement)
+
             if existing_statement:
                 current_app.logger.debug(f"Reusing existing statement already exists for {cls.statement_from.date()}")
                 existing_statement.notification_status_code = notification_status
@@ -199,6 +200,24 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                     )
                 )
         return statements
+
+    @classmethod
+    def _determine_payment_methods_fast(cls, account_invoices, pay_account, existing_statement=None) -> str:
+        """Determine payment methods from pre-grouped invoices for this account."""
+        payment_methods = {invoice.payment_method_code for invoice in account_invoices}
+        if existing_statement and not payment_methods:
+            return existing_statement.payment_methods
+        if not payment_methods:
+            payment_methods = {pay_account.payment_method or ""}
+        return ",".join(payment_methods)
+
+    @staticmethod
+    def _group_invoices_by_account(invoices) -> dict:
+        """Group invoices by auth_account_id."""
+        invoices_by_account = {}
+        for invoice in invoices:
+            invoices_by_account.setdefault(invoice.auth_account_id, []).append(invoice)
+        return invoices_by_account
 
     @classmethod
     def _create_statement_records(cls, search_filter, statement_settings, account_override: str):
@@ -231,23 +250,32 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # statement logic when transitioning payment methods
         search_filter["matchPaymentMethods"] = True
         invoice_detail_tuple = InvoiceService.get_invoices_and_payment_accounts_for_statements(search_filter)
+        invoices_by_account = cls._group_invoices_by_account(invoice_detail_tuple)
+
         reuse_statements = []
         if cls.has_date_override and statement_settings:
             reuse_statements = cls._clean_up_old_statements(statement_settings)
         current_app.logger.debug("Upserting statements.")
-        statements = cls._upsert_statements(statement_settings, invoice_detail_tuple, reuse_statements)
+        statements = cls._upsert_statements(statement_settings, invoices_by_account, reuse_statements)
         # Return defaults which returns the id.
         db.session.bulk_save_objects(statements, return_defaults=True)
         db.session.flush()
 
         current_app.logger.debug("Inserting statement invoices.")
-        statement_invoices = []
+        statement_invoices = cls._build_statement_invoice_records(statements, auth_account_ids, invoices_by_account)
+        if statement_invoices:
+            db.session.execute(StatementInvoicesModel.__table__.insert(), statement_invoices)
+
+    @staticmethod
+    def _build_statement_invoice_records(statements, auth_account_ids, invoices_by_account) -> list[dict]:
+        """Build statement invoice records for bulk insert."""
+        stmt_id_col = StatementInvoicesModel.statement_id.key
+        inv_id_col = StatementInvoicesModel.invoice_id.key
+        records = []
         for statement, auth_account_id in zip(statements, auth_account_ids):  # noqa: B905
-            invoices = [i for i in invoice_detail_tuple if i.auth_account_id == auth_account_id]
-            statement_invoices = statement_invoices + [
-                StatementInvoicesModel(statement_id=statement.id, invoice_id=invoice.id) for invoice in invoices
-            ]
-        db.session.bulk_save_objects(statement_invoices)
+            for invoice in invoices_by_account.get(auth_account_id, []):
+                records.append({stmt_id_col: statement.id, inv_id_col: invoice.id})
+        return records
 
     @classmethod
     def _clean_up_old_statements(cls, statement_settings):
