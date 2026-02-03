@@ -159,9 +159,11 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # Build lookup dict for reuse_statements: key = (payment_account_id, frequency, from_date, to_date)
         # tuples are the idiomatic Python choice for composite keys
         reuse_lookup = {}
+        # Order matters here, so we reuse the earlier statements ids first
         for statement in reuse_statements:
             key = (statement.payment_account_id, statement.frequency, statement.from_date, statement.to_date)
-            reuse_lookup[key] = statement
+            if key not in reuse_lookup:
+                reuse_lookup[key] = statement
 
         statements = []
         from_date = cls.statement_from.date()
@@ -296,6 +298,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                 is_interim_statement=False,
             )
             .filter(StatementModel.payment_account_id.in_(payment_account_ids))
+            .order_by(StatementModel.id)
             .all()
         )
         current_app.logger.debug(f"Removing {len(existing_statements)} existing duplicate/stale statement invoices.")
