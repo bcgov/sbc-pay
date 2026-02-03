@@ -255,7 +255,7 @@ class InvoiceSearch:
                 return query.filter(Invoice.total != 0).filter(
                     Invoice.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])
                 )
-            case _:  # default case
+            case _:
                 return query.filter(Invoice.total != 0).filter(Invoice.payment_method_code == payment_type)
 
     @classmethod
