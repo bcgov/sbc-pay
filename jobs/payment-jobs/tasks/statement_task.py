@@ -265,6 +265,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         statement_invoices = cls._build_statement_invoice_records(statements, auth_account_ids, invoices_by_account)
         if statement_invoices:
             db.session.execute(StatementInvoicesModel.__table__.insert(), statement_invoices)
+            db.session.flush()
 
     @staticmethod
     def _build_statement_invoice_records(statements, auth_account_ids, invoices_by_account) -> list[dict]:
