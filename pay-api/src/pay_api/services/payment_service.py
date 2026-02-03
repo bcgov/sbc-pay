@@ -450,10 +450,11 @@ def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
         _paybc_receipt_is_synced(invoice)
 
 
-def _paybc_receipt_is_synced(invoice):
+def _paybc_receipt_is_synced(invoice: Invoice):
     """Check if a DIRECT_PAY invoice can be deleted by verifying PAYBC receipt status."""
+    invoice_model = getattr(invoice, "_dao", invoice)
     try:
-        paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+        paybc_invoice = DirectPayService.query_order_status(invoice_model, InvoiceReferenceStatus.ACTIVE.value)
         if paybc_invoice.paymentstatus not in STATUS_PAID:
             return
         if not (
