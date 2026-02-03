@@ -444,6 +444,17 @@ def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
         PaymentStatus.DELETED.value,
     ):
         raise BusinessException(Error.COMPLETED_PAYMENT)
+    # For DIRECT_PAY invoices, check PAYBC receipt to see if it's out of sync
+    if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
+        try:
+            _update_active_transactions(invoice.id)
+        except Exception as e:
+            current_app.logger.info(
+                f"PAYBC status for invoice {invoice.id} not found during delete check: {str(e)}",
+                exc_info=True,
+            )
+        else:
+            raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
 def _get_payment_method(payment_request: dict, payment_account: PaymentAccount):
