@@ -20,6 +20,15 @@ depends_on = None
 
 
 def upgrade():
+    # Remove duplicate (statement_id, invoice_id) records, keeping only the one with the lowest id
+    op.execute("""
+        DELETE FROM statement_invoices a
+        USING statement_invoices b
+        WHERE a.statement_id = b.statement_id
+          AND a.invoice_id = b.invoice_id
+          AND a.id > b.id
+    """)
+
     op.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS ix_statement_invoices_statement_invoice
         ON statement_invoices (statement_id, invoice_id)
