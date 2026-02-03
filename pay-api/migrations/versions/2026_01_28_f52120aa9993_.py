@@ -8,7 +8,7 @@ Create Date: 2026-01-28 14:01:12.660238
 from alembic import op
 import sqlalchemy as sa
 
-from migrations.utils import column_exists
+from pay_api.utils.migration_utils import column_exists
 
 
 # revision identifiers, used by Alembic.
