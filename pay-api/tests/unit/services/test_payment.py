@@ -198,11 +198,20 @@ def test_payment_with_no_active_invoice(session):
         ("id", None, False, 1, "id", None),
         (
             "payment_method_no_match",
-            {"paymentMethod": PaymentMethod.CC.value},
+            {"paymentMethod": PaymentMethod.EFT.value},
             False,
             0,
             None,
             None,
+        ),
+        ("id", None, False, 1, "id", None),
+        (
+                "payment_method_credit_card_match",
+                {"paymentMethod": PaymentMethod.CC.value},
+                False,
+                2,
+                None,
+                None,
         ),
         (
             "payment_method_match",
