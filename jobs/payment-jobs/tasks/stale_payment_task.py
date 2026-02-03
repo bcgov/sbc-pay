@@ -116,17 +116,6 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             cls._handle_direct_pay_invoice(invoice)
 
     @classmethod
-    def _should_process_transaction(cls, invoice_id: int, status_codes: list[str]):
-        """Check if a transaction should be processed."""
-        for status_code in status_codes:
-            transaction = TransactionService.find_by_invoice_id_and_status(invoice_id, status_code)
-            if transaction and transaction.payment_id:
-                payment = PaymentModel.find_by_id(transaction.payment_id)
-                if payment.payment_status_code != PaymentStatus.COMPLETED.value:
-                    return transaction
-        return None
-
-    @classmethod
     def _handle_direct_pay_invoice(cls, invoice: InvoiceModel):
         """Handle NSF or shopping cart credit card invoices.
 
@@ -138,7 +127,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         try:
             # Note: CREATED is handled by find_stale_records, might not need in job, doesn't handle FAILED though.
             if not (
-                transaction := cls._should_process_transaction(
+                transaction := TransactionService.should_process_transaction(
                     invoice.id, [TransactionStatus.FAILED.value, TransactionStatus.CREATED.value]
                 )
             ):
@@ -158,7 +147,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             if paybc_invoice.paymentstatus not in STATUS_PAID:
                 return
             if not (
-                transaction := cls._should_process_transaction(
+                transaction := TransactionService.should_process_transaction(
                     invoice.id, [TransactionStatus.CREATED.value, TransactionStatus.FAILED.value]
                 )
             ):
