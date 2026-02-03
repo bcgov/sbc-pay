@@ -217,7 +217,7 @@ def test_delete_payment(session, auth_mock, public_user_mock):
     payment_account.save()
     # payment.save()
     cfs_account = CfsAccount.find_by_account_id(payment_account.id)[0]
-    invoice = factory_invoice(payment_account, total=10)
+    invoice = factory_invoice(payment_account, total=10, payment_method_code=PaymentMethod.DRAWDOWN.value)
     invoice.cfs_account_id = cfs_account.id
     invoice.save()
     invoice_reference = factory_invoice_reference(invoice.id, invoice_number="INV-001").save()
