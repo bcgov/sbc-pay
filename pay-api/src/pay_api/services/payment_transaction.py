@@ -358,6 +358,17 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         active_transaction = PaymentTransactionModel.find_by_invoice_id_and_status(invoice_id, status_code)
         return PaymentTransaction.populate(active_transaction)
 
+    @classmethod
+    def should_process_transaction(cls, invoice_id: int, status_codes: list[str]):
+        """Check if a transaction should be processed."""
+        for status_code in status_codes:
+            transaction = PaymentTransaction.find_by_invoice_id_and_status(invoice_id, status_code)
+            if transaction and transaction.payment_id:
+                payment = Payment.find_by_id(transaction.payment_id)
+                if payment.payment_status_code != PaymentStatus.COMPLETED.value:
+                    return transaction
+        return False
+      
     @staticmethod
     def update_transaction(transaction_id: uuid, pay_response_url: str):  # pylint: disable=too-many-locals
         """Update transaction record.

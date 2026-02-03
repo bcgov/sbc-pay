@@ -21,7 +21,7 @@ import copy
 import json
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from flask import current_app
@@ -390,23 +390,21 @@ def test_delete_direct_pay_invoice_blocks_deletion(session, client, jwt, app, au
     )
     invoice.save()
 
-    invoice_reference = factory_invoice_reference(invoice.id, invoice_number="INV-DIRECT-001").save()
+    invoice_reference = factory_invoice_reference(invoice.id, invoice_number="REGTEST001").save()
     payment = factory_payment(
         invoice_number=invoice_reference.invoice_number,
         payment_account_id=payment_account.id,
         invoice_amount=10,
         payment_method_code=PaymentMethod.DIRECT_PAY.value,
     ).save()
-    
+
     transaction = factory_payment_transaction(payment.id, status_code="CREATED")
     transaction.save()
 
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    mocker.patch(
-        "pay_api.services.payment_service.PaymentTransaction.find_by_invoice_id_and_status",
-        return_value=transaction,
-    )
+    target = "pay_api.services.direct_pay_service.DirectPayService.query_order_status"
+    mocker.patch(target, return_value={"paymentstatus": "PAID"})
     mocker.patch(
         "pay_api.services.payment_service.PaymentTransaction.update_transaction",
         return_value=None,
