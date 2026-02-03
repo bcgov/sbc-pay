@@ -2186,8 +2186,8 @@ werkzeug = "^3.1.4"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "fix_send_email_jobs"
-resolved_reference = "705e39b2241c4d74a55bda2c9e2cdaa88574e654"
+reference = "32241"
+resolved_reference = "2050b640066437899807be57f4d24eef3ca79f62"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3267,4 +3267,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "cf6362eccb2381591d46ed0be89f8c68f11f09e0428361a7d52c58d3025b615c"
+content-hash = "c7e684a6ac62c0c63f6c753c3c4af7db0e51c33178cdc3eb795c8f2856ad5ecb"
