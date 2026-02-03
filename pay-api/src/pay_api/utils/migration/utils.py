@@ -21,7 +21,7 @@ def column_exists(table_name: str, column_name: str) -> bool:
     """Check if a column exists in a table."""
     bind = op.get_bind()
     inspector = inspect(bind)
-    columns = [col['name'] for col in inspector.get_columns(table_name)]
+    columns = [col["name"] for col in inspector.get_columns(table_name)]
     return column_name in columns
 
 
@@ -31,7 +31,7 @@ def index_exists(index_name: str) -> bool:
     inspector = inspect(bind)
     for table_name in inspector.get_table_names():
         indexes = inspector.get_indexes(table_name)
-        if any(idx['name'] == index_name for idx in indexes):
+        if any(idx["name"] == index_name for idx in indexes):
             return True
     return False
 
