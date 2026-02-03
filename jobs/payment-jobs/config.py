@@ -115,7 +115,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     AUTH_WEB_URL = os.getenv("AUTH_WEB_PAY_TRANSACTION_URL", "")
     AUTH_WEB_STATEMENT_URL = os.getenv("AUTH_WEB_STATEMENT_URL", "account/orgId/settings/statements")
     REGISTRIES_LOGO_IMAGE_NAME = os.getenv("REGISTRIES_LOGO_IMAGE_NAME", "bc_logo_for_email.png")
-    PAY_WEB_URL = os.getenv("PAY_WEB_PAY_URL", "")
+    PAY_WEB_URL = os.getenv("PAY_WEB_URL", "")
 
     # GCP PubSub
     GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
