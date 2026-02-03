@@ -271,10 +271,14 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         """Build statement invoice records for bulk insert."""
         stmt_id_col = StatementInvoicesModel.statement_id.key
         inv_id_col = StatementInvoicesModel.invoice_id.key
+        seen = set()
         records = []
         for statement, auth_account_id in zip(statements, auth_account_ids):  # noqa: B905
             for invoice in invoices_by_account.get(auth_account_id, []):
-                records.append({stmt_id_col: statement.id, inv_id_col: invoice.id})
+                key = (statement.id, invoice.id)
+                if key not in seen:
+                    seen.add(key)
+                    records.append({stmt_id_col: statement.id, inv_id_col: invoice.id})
         return records
 
     @classmethod

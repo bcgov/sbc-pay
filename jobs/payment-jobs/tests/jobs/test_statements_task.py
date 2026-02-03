@@ -94,7 +94,7 @@ def test_statements(session):
     # Check to see if the old statement was reused and invoices were cleaned up.
     assert Statement.find_by_id(first_statement_id)
     assert first_statement_id == statements[0][0].id
-    assert len(StatementInvoices.find_all_invoices_for_statement(first_statement_id)) == 2
+    assert len(StatementInvoices.find_all_invoices_for_statement(first_statement_id)) == 1
 
 
 def test_statements_for_empty_results(session):
