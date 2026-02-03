@@ -447,10 +447,10 @@ def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
     if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
-        _check_direct_pay_invoice_deletion(invoice)
+        _paybc_receipt_is_synced(invoice)
 
 
-def _check_direct_pay_invoice_deletion(invoice):
+def _paybc_receipt_is_synced(invoice):
     """Check if a DIRECT_PAY invoice can be deleted by verifying PAYBC receipt status."""
     try:
         paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
