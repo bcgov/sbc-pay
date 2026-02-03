@@ -445,27 +445,32 @@ def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
         PaymentStatus.DELETED.value,
     ):
         raise BusinessException(Error.COMPLETED_PAYMENT)
-    # For DIRECT_PAY invoices, check PAYBC receipt to see if it's out of sync
+
     if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
-        try:
-            paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
-            if paybc_invoice.paymentstatus not in STATUS_PAID:
-                return
-            if not (
-                transaction := PaymentTransaction.should_process_transaction(
-                    invoice.id, [TransactionStatus.CREATED.value, TransactionStatus.FAILED.value]
-                )
-            ):
-                return
-            # check existing payment status in PayBC and save receipt
-            PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
-        except Exception as e:
-            current_app.logger.info(
-                f"PAYBC status for invoice {invoice.id} not found during delete check: {str(e)}",
-                exc_info=True,
+        _check_direct_pay_invoice_deletion(invoice)
+
+
+def _check_direct_pay_invoice_deletion(invoice):
+    """Check if a DIRECT_PAY invoice can be deleted by verifying PAYBC receipt status."""
+    try:
+        paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+        if paybc_invoice.paymentstatus not in STATUS_PAID:
+            return
+        if not (
+            transaction := PaymentTransaction.should_process_transaction(
+                invoice.id, [TransactionStatus.CREATED.value, TransactionStatus.FAILED.value]
             )
-        else:
-            raise BusinessException(Error.COMPLETED_PAYMENT)
+        ):
+            return
+        # check existing payment status in PayBC and save receipt
+        PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
+    except Exception as e:
+        current_app.logger.info(
+            f"PAYBC status for invoice {invoice.id} not found during delete check: {str(e)}",
+            exc_info=True,
+        )
+    else:
+        raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
 def _get_payment_method(payment_request: dict, payment_account: PaymentAccount):
