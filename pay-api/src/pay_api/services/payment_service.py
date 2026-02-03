@@ -27,6 +27,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
+from pay_api.services.direct_pay_service import STATUS_PAID, DirectPayService
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import (
     InvoiceReferenceStatus,
@@ -443,6 +444,32 @@ def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
         PaymentStatus.COMPLETED.value,
         PaymentStatus.DELETED.value,
     ):
+        raise BusinessException(Error.COMPLETED_PAYMENT)
+
+    if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
+        _paybc_receipt_is_synced(invoice)
+
+
+def _paybc_receipt_is_synced(invoice):
+    """Check if a DIRECT_PAY invoice can be deleted by verifying PAYBC receipt status."""
+    try:
+        paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+        if paybc_invoice.paymentstatus not in STATUS_PAID:
+            return
+        if not (
+            transaction := PaymentTransaction.should_process_transaction(
+                invoice.id, [TransactionStatus.CREATED.value, TransactionStatus.FAILED.value]
+            )
+        ):
+            return
+        # check existing payment status in PayBC and save receipt
+        PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
+    except Exception as e:
+        current_app.logger.info(
+            f"PAYBC status for invoice {invoice.id} not found during delete check: {str(e)}",
+            exc_info=True,
+        )
+    else:
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
