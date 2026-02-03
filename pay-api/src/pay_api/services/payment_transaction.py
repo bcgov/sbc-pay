@@ -368,7 +368,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 if payment.payment_status_code != PaymentStatus.COMPLETED.value:
                     return transaction
         return False
-      
+
     @staticmethod
     def update_transaction(transaction_id: uuid, pay_response_url: str):  # pylint: disable=too-many-locals
         """Update transaction record.

@@ -115,7 +115,6 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             cls._handle_direct_sale_invoice(invoice)
             cls._handle_direct_pay_invoice(invoice)
 
-
     @classmethod
     def _handle_direct_pay_invoice(cls, invoice: InvoiceModel):
         """Handle NSF or shopping cart credit card invoices.
