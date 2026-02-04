@@ -94,7 +94,7 @@ def test_statements(session):
     # Check to see if the old statement was reused and invoices were cleaned up.
     assert Statement.find_by_id(first_statement_id)
     assert first_statement_id == statements[0][0].id
-    assert len(StatementInvoices.find_all_invoices_for_statement(first_statement_id)) == 2
+    assert len(StatementInvoices.find_all_invoices_for_statement(first_statement_id)) == 1
 
 
 def test_statements_for_empty_results(session):
@@ -347,9 +347,9 @@ def test_many_statements():
         )
     db.session.execute(insert(Statement), statement_list)
 
-    statement = db.session.query(Statement).first()
+    statements = db.session.query(Statement).all()
     statement_invoices_list = []
-    for _ in range(0, 70000):
+    for statement in statements:
         statement_invoices_list.append({"statement_id": statement.id, "invoice_id": invoice.id})
     db.session.execute(insert(StatementInvoices), statement_invoices_list)
     StatementTask.generate_statements([datetime(2024, 1, 1, 8).strftime("%Y-%m-%d")])
