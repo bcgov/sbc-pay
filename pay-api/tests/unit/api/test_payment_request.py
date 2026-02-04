@@ -403,7 +403,7 @@ def test_delete_direct_pay_invoice_blocks_deletion(session, client, jwt, app, au
 
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    target = "pay_api.services.direct_pay_service.DirectPayService.query_order_status"
+    target = "pay_api.services.direct_sale_service.DirectSaleService.query_order_status"
     mocker.patch(target, return_value=mocker.MagicMock(paymentstatus="PAID"))
     mocker.patch(
         "pay_api.services.payment_service.PaymentTransaction.update_transaction",

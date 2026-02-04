@@ -22,7 +22,7 @@ from requests import HTTPError
 from sqlalchemy.orm import lazyload
 
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.direct_sale_service import DirectSaleService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import (
     AuthHeaderType,
@@ -112,7 +112,7 @@ class AdhocInvoiceStatusCheckTask:
     @classmethod
     def _query_order_status(cls, invoice):
         """Request order status from PayBC."""
-        token = DirectPayService().get_token().json()
+        token = DirectSaleService().get_token().json()
         access_token = token.get("access_token")
         ref = cls._get_invoice_reference(invoice)
         config = current_app.config

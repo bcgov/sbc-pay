@@ -27,7 +27,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
-from pay_api.services.direct_pay_service import STATUS_PAID, DirectPayService
+from pay_api.services.direct_sale_service import STATUS_PAID, DirectSaleService
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import (
     InvoiceReferenceStatus,
@@ -454,7 +454,7 @@ def _paybc_receipt_is_synced(invoice: Invoice):
     """Check if a DIRECT_PAY invoice can be deleted by verifying PAYBC receipt status."""
     invoice_model = getattr(invoice, "_dao", invoice)
     try:
-        paybc_invoice = DirectPayService.query_order_status(invoice_model, InvoiceReferenceStatus.ACTIVE.value)
+        paybc_invoice = DirectSaleService.query_order_status(invoice_model, InvoiceReferenceStatus.ACTIVE.value)
         if paybc_invoice.paymentstatus not in STATUS_PAID:
             return
         if not (

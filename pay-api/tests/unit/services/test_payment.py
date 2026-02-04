@@ -51,8 +51,6 @@ from tests.utilities.base_test import (
     factory_usd_payment,
 )
 
-# noqa: I005
-
 
 def test_payment_saved_from_new(session):
     """Assert that the payment is saved to the table."""

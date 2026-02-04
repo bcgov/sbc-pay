@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for direct pay automated refund task."""
+"""Tests for direct sale automated refund task."""
 
 import datetime
 from unittest.mock import Mock
@@ -25,7 +25,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentStatus, RefundsPartialType
 from tasks.common.enums import PaymentDetailsGlStatus
-from tasks.direct_pay_automated_refund_task import DirectPayAutomatedRefundTask
+from tasks.direct_sale_automated_refund_task import DirectSaleAutomatedRefundTask
 
 from .factory import (
     factory_create_direct_pay_account,
@@ -40,7 +40,7 @@ from .factory import (
 
 def test_automated_refund_task(session):
     """Test automated refund task, runs without exceptions."""
-    DirectPayAutomatedRefundTask().process_cc_refunds()
+    DirectSaleAutomatedRefundTask().process_cc_refunds()
     assert True
 
 
@@ -60,10 +60,10 @@ def test_successful_paid_refund(session, monkeypatch):
     ):  # pylint: disable=unused-argument; mocks of library methods
         return {"revenue": [{"refund_data": [{"refundglstatus": "PAID", "refundglerrormessage": ""}]}]}
 
-    target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
+    target = "tasks.direct_sale_automated_refund_task.DirectSaleAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
-    DirectPayAutomatedRefundTask().process_cc_refunds()
+    DirectSaleAutomatedRefundTask().process_cc_refunds()
     assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
     assert invoice.refund_date is not None
     assert payment.payment_status_code == PaymentStatus.REFUNDED.value
@@ -82,13 +82,13 @@ def test_successful_completed_refund(session, monkeypatch, mocker):
     ):  # pylint: disable=unused-argument; mocks of library methods
         return {"revenue": [{"refund_data": [{"refundglstatus": "CMPLT", "refundglerrormessage": ""}]}]}
 
-    target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
+    target = "tasks.direct_sale_automated_refund_task.DirectSaleAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
     mock_publish = Mock()
     mocker.patch("pay_api.services.gcp_queue.GcpQueue.publish", mock_publish)
     with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
-        DirectPayAutomatedRefundTask().process_cc_refunds()
+        DirectSaleAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
         assert invoice.refund_date is not None
@@ -127,11 +127,11 @@ def test_bad_cfs_refund(session, monkeypatch):
             ]
         }
 
-    target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
+    target = "tasks.direct_sale_automated_refund_task.DirectSaleAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
     with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
-        DirectPayAutomatedRefundTask().process_cc_refunds()
+        DirectSaleAutomatedRefundTask().process_cc_refunds()
         assert refund.gl_error == "BAD BAD"
         assert refund.gl_posted is None
 
@@ -163,11 +163,11 @@ def test_complete_refund_partial(session, monkeypatch):
     ):  # pylint: disable=unused-argument; mocks of library methods
         return {"revenue": [{"refund_data": [{"refundglstatus": "CMPLT", "refundglerrormessage": ""}]}]}
 
-    target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
+    target = "tasks.direct_sale_automated_refund_task.DirectSaleAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
     with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
-        DirectPayAutomatedRefundTask().process_cc_refunds()
+        DirectSaleAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert invoice.refund_date is not None
@@ -215,11 +215,11 @@ def test_error_refund_partial(session, monkeypatch, gl_error_code, gl_error_mess
             "revenue": [{"refund_data": [{"refundglstatus": gl_error_code, "refundglerrormessage": gl_error_message}]}]
         }
 
-    target = "tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status"
+    target = "tasks.direct_sale_automated_refund_task.DirectSaleAutomatedRefundTask._query_order_status"
     monkeypatch.setattr(target, payment_status)
 
     with freeze_time(datetime.datetime.combine(datetime.datetime.now(tz=datetime.UTC).date(), datetime.time(6, 00))):
-        DirectPayAutomatedRefundTask().process_cc_refunds()
+        DirectSaleAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
         assert invoice.refund_date is not None

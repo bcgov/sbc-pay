@@ -21,12 +21,12 @@ from pay_api.exceptions import BusinessException
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService  # noqa: I001
 from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.direct_sale_service import DirectSaleService
 from pay_api.services.eft_service import EftService
 from pay_api.services.ejv_pay_service import EjvPayService
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.pad_service import PadService
-from pay_api.services.paybc_service import PaybcService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role  # noqa: I001
 from pay_api.utils.errors import Error
@@ -45,9 +45,9 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         """Create the payment system implementation from payment method."""
         _instance: PaymentSystemService = None
         if payment_method == PaymentMethod.DIRECT_PAY.value:
-            _instance = DirectPayService()
+            _instance = DirectSaleService()
         elif payment_method == PaymentMethod.CC.value:
-            _instance = PaybcService()
+            _instance = DirectPayService()
         elif payment_method == PaymentMethod.DRAWDOWN.value:
             _instance = BcolService()
         elif payment_method == PaymentMethod.INTERNAL.value:
