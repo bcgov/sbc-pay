@@ -566,7 +566,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
     @staticmethod
     def _get_product_release_and_reversal_dates(invoice):
-        """get product_release_date and product_reversal_date for queue message."""
+        """Get product_release_date and product_reversal_date for queue message."""
         payment_method = invoice.payment_method_code
         release_dt = None
         if payment_method in (

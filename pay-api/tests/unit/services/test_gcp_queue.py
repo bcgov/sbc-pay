@@ -29,7 +29,7 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
 from pay_api.services.payment_transaction import PaymentTransaction
 from pay_api.utils.dataclasses import PaymentToken
-from pay_api.utils.enums import TransactionStatus
+from pay_api.utils.enums import PaymentMethod, TransactionStatus
 
 
 @pytest.fixture()
@@ -115,6 +115,7 @@ def test_payment_token_with_dates():
             self.corp_type_code = "NRO"
             self.payment_date = payment_date
             self.refund_date = refund_date
+            self.payment_method_code = PaymentMethod.DIRECT_PAY.value
 
     invoice = MockInvoice(payment_date, refund_date)
 
