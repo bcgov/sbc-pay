@@ -29,7 +29,7 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
 from pay_api.services.payment_transaction import PaymentTransaction
 from pay_api.utils.dataclasses import PaymentToken
-from pay_api.utils.enums import TransactionStatus
+from pay_api.utils.enums import PaymentMethod, TransactionStatus
 
 
 @pytest.fixture()
@@ -115,6 +115,7 @@ def test_payment_token_with_dates():
             self.corp_type_code = "NRO"
             self.payment_date = payment_date
             self.refund_date = refund_date
+            self.payment_method_code = PaymentMethod.DIRECT_PAY.value
 
     invoice = MockInvoice(payment_date, refund_date)
 
@@ -124,8 +125,8 @@ def test_payment_token_with_dates():
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
         assert result_payload["filingIdentifier"] == 55
         assert result_payload["corpTypeCode"] == "NRO"
-        assert result_payload["paymentDate"] == payment_date.isoformat()
-        assert result_payload["refundDate"] == refund_date.isoformat()
+        assert result_payload["productReleaseDate"] == payment_date.isoformat()
+        assert result_payload["productReversalDate"] == refund_date.isoformat()
 
     with patch("pay_api.services.payment_transaction.flags.is_on", return_value=False):
         result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
@@ -133,8 +134,8 @@ def test_payment_token_with_dates():
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
         assert result_payload["filingIdentifier"] == 55
         assert result_payload["corpTypeCode"] == "NRO"
-        assert "paymentDate" not in result_payload
-        assert "refundDate" not in result_payload
+        assert "productReleaseDate" not in result_payload
+        assert "productReversalDate" not in result_payload
 
     invoice.payment_date = None
     invoice.refund_date = None
@@ -144,5 +145,5 @@ def test_payment_token_with_dates():
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
         assert result_payload["filingIdentifier"] == 55
         assert result_payload["corpTypeCode"] == "NRO"
-        assert result_payload.get("paymentDate") is None
-        assert result_payload.get("refundDate") is None
+        assert result_payload.get("productReleaseDate") is None
+        assert result_payload.get("productReversalDate") is None

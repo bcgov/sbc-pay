@@ -17,7 +17,7 @@ sqlalchemy = "^2.0.28"
 itsdangerous = "^2.1.2"
 launchdarkly-server-sdk = "^8.2.1"
 cachecontrol = "^0.14.0"
-pay-api = { git = "https://github.com/seeker25/sbc-pay.git", branch = "rename_direct_pay_direct_sale", subdirectory = "pay-api" }
+pay-api = { git = "https://github.com/jxio/sbc-pay.git", branch = "32320", subdirectory = "pay-api" }
 
 
 [tool.poetry.group.dev.dependencies]
