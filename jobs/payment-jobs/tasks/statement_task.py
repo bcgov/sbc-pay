@@ -258,9 +258,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             reuse_statements = cls._clean_up_old_statements(statement_settings)
         current_app.logger.debug("Upserting statements.")
         statements = cls._upsert_statements(statement_settings, invoices_by_account, reuse_statements)
-        new = [s for s in statements if s.id is None]
-        if new:
-            db.session.add_all(new)
+        db.session.add_all(statements)
         db.session.flush()
 
         current_app.logger.debug("Inserting statement invoices.")
