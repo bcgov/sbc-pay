@@ -2023,7 +2023,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "rename_direct_pay_direct_sale"
-resolved_reference = "95572ada6c21e7266ee3e964a63600b0128e4374"
+resolved_reference = "e8e6973840de20de87d1f053ac3f801b2d0af47d"
 subdirectory = "pay-api"
 
 [[package]]
