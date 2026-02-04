@@ -50,7 +50,7 @@ def create_app(run_mode=None):
     db.init_app(app)
     queue.init_app(app)
     if run_mode != "testing":
-        if app.config.get("CLOUD_PLATFORM") != "OCP":
+        if app.config.get("RUN_MIGRATION") is True:
             Migrate(app, db)
             app.logger.info(f"Booting up with CPU count (useful for GCP): {os.cpu_count()}")
             app.logger.info("Running migration upgrade.")
