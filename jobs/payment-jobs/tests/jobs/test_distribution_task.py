@@ -76,7 +76,7 @@ def test_update_failed_distributions_refunds(session, monkeypatch):
 
     # Required, because mocking out the POST below (This uses the OAuthService POST).
     monkeypatch.setattr(
-        "pay_api.services.direct_pay_service.DirectPayService.get_token",
+        "pay_api.services.direct_sale_service.DirectSaleService.get_token",
         paybc_token_response,
     )
     # Mock POST until obtain OAS spec from PayBC for updating GL.
@@ -122,7 +122,7 @@ def test_update_failed_distribution_payments(session, monkeypatch):
 
     # Required, because we're mocking out the POST below (This uses the OAuthService POST).
     monkeypatch.setattr(
-        "pay_api.services.direct_pay_service.DirectPayService.get_token",
+        "pay_api.services.direct_sale_service.DirectSaleService.get_token",
         paybc_token_response,
     )
     # Mock POST until obtain OAS spec from PayBC for updating GL.

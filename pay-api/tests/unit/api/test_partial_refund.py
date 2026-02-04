@@ -35,7 +35,7 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundPartialModel
-from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.direct_sale_service import DirectSaleService
 from pay_api.services.refund import RefundService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import (
@@ -111,7 +111,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
         }
     ]
 
-    direct_pay_service = DirectPayService()
+    direct_pay_service = DirectSaleService()
     base_paybc_response = _get_base_paybc_response()
     refund_partial = [
         RefundPartialLine(
@@ -120,7 +120,7 @@ def test_create_refund(session, client, jwt, app, monkeypatch, mocker):
             refund_type=RefundsPartialType.BASE_FEES.value,
         )
     ]
-    with patch("pay_api.services.direct_pay_service.DirectPayService.get") as mock_get:
+    with patch("pay_api.services.direct_sale_service.DirectSaleService.get") as mock_get:
         mock_get.return_value.ok = True
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = base_paybc_response
@@ -396,7 +396,7 @@ def test_create_refund_validation(session, client, jwt, app, monkeypatch, fee_ty
         }
     ]
     base_paybc_response = _get_base_paybc_response()
-    with patch("pay_api.services.direct_pay_service.DirectPayService.get") as mock_get:
+    with patch("pay_api.services.direct_sale_service.DirectSaleService.get") as mock_get:
         mock_get.return_value.ok = True
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = base_paybc_response

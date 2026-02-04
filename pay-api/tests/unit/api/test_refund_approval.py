@@ -557,7 +557,7 @@ def test_partial_refund_approval_flow(
     assert rv.json["partialRefunds"]
     assert len(rv.json["partialRefunds"]) == 1
 
-    with patch("pay_api.services.direct_pay_service.DirectPayService.get") as mock_get:
+    with patch("pay_api.services.direct_sale_service.DirectSaleService.get") as mock_get:
         mock_get.return_value.ok = True
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {

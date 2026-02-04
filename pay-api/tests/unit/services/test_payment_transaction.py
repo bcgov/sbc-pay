@@ -508,7 +508,7 @@ def test_event_failed_transactions(session, public_user_mock, monkeypatch):
     def get_receipt(cls, payment_account, pay_response_url: str, invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
         return "1234567890", datetime.now(tz=UTC), 30.00
 
-    monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
+    monkeypatch.setattr("pay_api.services.direct_sale_service.DirectSaleService.get_receipt", get_receipt)
 
     with patch(
         "pay_api.services.gcp_queue_publisher.publish_to_queue",
@@ -660,7 +660,7 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
     def get_receipt(cls, payment_account, pay_response_url: str, invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
         return "1234567890", datetime.now(tz=UTC), 100.00
 
-    monkeypatch.setattr("pay_api.services.paybc_service.PaybcService.get_receipt", get_receipt)
+    monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
     txn = PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())
     txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")
 
@@ -694,13 +694,13 @@ def test_patch_transaction_for_eft_overdue(session, monkeypatch):
     def get_receipt(cls, payment_account, pay_response_url: str, invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
         return "1234567890", datetime.now(tz=UTC), 100.00
 
-    monkeypatch.setattr("pay_api.services.paybc_service.PaybcService.get_receipt", get_receipt)
+    monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
     payment = PaymentService._consolidate_invoices_and_pay(  # pylint: disable=protected-access
         payment_account.auth_account_id, all_invoice_statuses=False
     )
-    assert original_invoice_reference.status_code == InvoiceReferenceStatus.CANCELLED.value, (
-        "Invoice reference should be CANCELLED a new invoice reference should be created"
-    )
+    assert (
+        original_invoice_reference.status_code == InvoiceReferenceStatus.CANCELLED.value
+    ), "Invoice reference should be CANCELLED a new invoice reference should be created"
 
     txn = PaymentTransactionService.create_transaction_for_payment(payment.id, get_paybc_transaction_request())
     txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")

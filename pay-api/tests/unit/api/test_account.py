@@ -1456,12 +1456,12 @@ def test_invoice_search_model_without_exclude_counts_validation(session, client,
     assert len(items) == 1
     invoice_data = items[0]
 
-    assert "appliedCredits" not in invoice_data, (
-        "appliedCredits field should NOT be present when excludeCounts is not used"
-    )
-    assert "partialRefunds" not in invoice_data, (
-        "partialRefunds field should NOT be present when excludeCounts is not used"
-    )
+    assert (
+        "appliedCredits" not in invoice_data
+    ), "appliedCredits field should NOT be present when excludeCounts is not used"
+    assert (
+        "partialRefunds" not in invoice_data
+    ), "partialRefunds field should NOT be present when excludeCounts is not used"
 
 
 def test_search_partially_refunded_invoices(session, client, jwt, app):
@@ -1704,9 +1704,9 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert pad_invoice.id not in invoice_ids, (
-        f"PAD invoice fully covered by credits should NOT appear in PAD search: {invoice_ids}"
-    )
+    assert (
+        pad_invoice.id not in invoice_ids
+    ), f"PAD invoice fully covered by credits should NOT appear in PAD search: {invoice_ids}"
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
@@ -1718,9 +1718,9 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert pad_invoice.id in invoice_ids, (
-        f"PAD invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
-    )
+    assert (
+        pad_invoice.id in invoice_ids
+    ), f"PAD invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
 
     rv = client.post(
         "/api/v1/payment-requests",
@@ -1749,12 +1749,12 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert pad_invoice_partial.id in invoice_ids, (
-        f"PAD invoice partially covered by credits SHOULD appear in PAD search: {invoice_ids}"
-    )
-    assert pad_invoice.id not in invoice_ids, (
-        f"PAD invoice fully covered by credits should still NOT appear in PAD search: {invoice_ids}"
-    )
+    assert (
+        pad_invoice_partial.id in invoice_ids
+    ), f"PAD invoice partially covered by credits SHOULD appear in PAD search: {invoice_ids}"
+    assert (
+        pad_invoice.id not in invoice_ids
+    ), f"PAD invoice fully covered by credits should still NOT appear in PAD search: {invoice_ids}"
 
     rv = client.post(
         "/api/v1/payment-requests",
@@ -1790,9 +1790,9 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert online_banking_invoice.id not in invoice_ids, (
-        f"ONLINE_BANKING invoice fully covered by credits should NOT appear in ONLINE_BANKING search: {invoice_ids}"
-    )
+    assert (
+        online_banking_invoice.id not in invoice_ids
+    ), f"ONLINE_BANKING invoice fully covered by credits should NOT appear in ONLINE_BANKING search: {invoice_ids}"
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
@@ -1804,9 +1804,9 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert online_banking_invoice.id in invoice_ids, (
-        f"ONLINE_BANKING invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
-    )
+    assert (
+        online_banking_invoice.id in invoice_ids
+    ), f"ONLINE_BANKING invoice fully covered by credits SHOULD appear in CREDIT search: {invoice_ids}"
 
     rv = client.post(
         "/api/v1/payment-requests",
@@ -1835,12 +1835,12 @@ def test_search_credit_payment_method(session, client, jwt, app):
     response_data = rv.json
     items = response_data["items"]
     invoice_ids = [item["id"] for item in items]
-    assert online_banking_invoice_partial.id in invoice_ids, (
-        f"ONLINE_BANKING invoice partially covered by credits SHOULD be in ONLINE_BANKING search: {invoice_ids}"
-    )
-    assert online_banking_invoice.id not in invoice_ids, (
-        f"ONLINE_BANKING invoice fully covered by credits should still NOT be in ONLINE_BANKING search: {invoice_ids}"
-    )
+    assert (
+        online_banking_invoice_partial.id in invoice_ids
+    ), f"ONLINE_BANKING invoice partially covered by credits SHOULD be in ONLINE_BANKING search: {invoice_ids}"
+    assert (
+        online_banking_invoice.id not in invoice_ids
+    ), f"ONLINE_BANKING invoice fully covered by credits should still NOT be in ONLINE_BANKING search: {invoice_ids}"
 
 
 def test_credit_payment_method_with_status_combinations(session, client, jwt, app):
@@ -1927,9 +1927,9 @@ def test_credit_payment_method_with_status_combinations(session, client, jwt, ap
     assert len(items) >= 1, f"Expected at least 1 item for PARTIALLY_CREDITED, got {len(items)}"
 
     invoice_ids = [item["id"] for item in items]
-    assert invoice.id in invoice_ids, (
-        f"Expected invoice ({invoice.id}) to be in PARTIALLY_CREDITED results: {invoice_ids}"
-    )
+    assert (
+        invoice.id in invoice_ids
+    ), f"Expected invoice ({invoice.id}) to be in PARTIALLY_CREDITED results: {invoice_ids}"
 
     rv = client.post(
         f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",

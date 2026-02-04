@@ -403,7 +403,7 @@ def test_delete_direct_pay_invoice_blocks_deletion(session, client, jwt, app, au
 
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
 
-    target = "pay_api.services.direct_pay_service.DirectPayService.query_order_status"
+    target = "pay_api.services.direct_sale_service.DirectSaleService.query_order_status"
     mocker.patch(target, return_value=mocker.MagicMock(paymentstatus="PAID"))
     mocker.patch(
         "pay_api.services.payment_service.PaymentTransaction.update_transaction",
@@ -1743,9 +1743,9 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
     payment_request_response_no_gst = rv.json
 
     # Verify the POST response has GST fields hidden when GST is not present
-    assert "gst" not in payment_request_response_no_gst, (
-        "GST field should be hidden in POST response when invoice has no GST"
-    )
+    assert (
+        "gst" not in payment_request_response_no_gst
+    ), "GST field should be hidden in POST response when invoice has no GST"
 
     if "lineItems" in payment_request_response_no_gst and payment_request_response_no_gst["lineItems"]:
         line_item = payment_request_response_no_gst["lineItems"][0]
