@@ -183,7 +183,6 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             payment_methods = cls._determine_payment_methods_fast(account_invoices, pay_account, existing_statement)
 
             if existing_statement:
-                current_app.logger.debug(f"Reusing existing statement already exists for {cls.statement_from.date()}")
                 existing_statement.notification_status_code = notification_status
                 existing_statement.payment_methods = payment_methods
                 existing_statement.created_on = created_on
@@ -259,8 +258,9 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             reuse_statements = cls._clean_up_old_statements(statement_settings)
         current_app.logger.debug("Upserting statements.")
         statements = cls._upsert_statements(statement_settings, invoices_by_account, reuse_statements)
-        # Return defaults which returns the id.
-        db.session.bulk_save_objects(statements, return_defaults=True)
+        new = [s for s in statements if s.id is None]
+        if new:
+            db.session.add_all(new)
         db.session.flush()
 
         current_app.logger.debug("Inserting statement invoices.")
