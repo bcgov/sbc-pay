@@ -597,7 +597,7 @@ def test_build_automated_refund_payload_paybc_validation(session, test_name, has
         "postedrefundamount": None,
         "refundedamount": None,
     }
-    with patch("pay_api.services.direct_pay_service.DirectSaleService.get") as mock_get:
+    with patch("pay_api.services.direct_sale_service.DirectSaleService.get") as mock_get:
         mock_get.return_value.ok = True
         mock_get.return_value.status_code = 200
         if test_name == "paybc_non_match":
