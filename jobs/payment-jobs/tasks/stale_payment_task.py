@@ -24,7 +24,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db
 from pay_api.services import InvoiceService, PaymentService, TransactionService
-from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.direct_sale_service import DirectSaleService
 from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod, PaymentStatus, TransactionStatus
 
 STATUS_PAID = ("PAID", "CMPLT")
@@ -143,7 +143,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         if invoice.payment_method_code == PaymentMethod.CC.value:
             return
         try:
-            paybc_invoice = DirectPayService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
+            paybc_invoice = DirectSaleService.query_order_status(invoice, InvoiceReferenceStatus.ACTIVE.value)
             if paybc_invoice.paymentstatus not in STATUS_PAID:
                 return
             if not (

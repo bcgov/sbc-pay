@@ -129,7 +129,7 @@ def test_create_payment_record_rollback(session, public_user_mock):
         assert excinfo.type is Exception
 
     with patch(
-        "pay_api.services.direct_pay_service.DirectPayService.create_invoice",
+        "pay_api.services.direct_sale_service.DirectSaleService.create_invoice",
         side_effect=Exception("mocked error"),
     ):
         with pytest.raises(Exception) as excinfo:

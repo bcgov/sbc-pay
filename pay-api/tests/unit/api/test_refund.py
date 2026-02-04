@@ -494,7 +494,7 @@ def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):
         raise BusinessException(error)
 
     monkeypatch.setattr(
-        "pay_api.services.direct_pay_service.DirectPayService.process_cfs_refund",
+        "pay_api.services.direct_sale_service.DirectSaleService.process_cfs_refund",
         mock_process_cfs_refund,
     )
 

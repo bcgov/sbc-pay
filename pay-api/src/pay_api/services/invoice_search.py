@@ -355,7 +355,7 @@ class InvoiceSearch:
         return results[: params.limit], has_more
 
     @classmethod
-    def search(  # noqa:E501; too-many-locals, too-many-branches, too-many-statements;
+    def search(  # noqa: E501
         cls, search_params: PurchaseHistorySearch
     ):
         """Search for purchase history."""

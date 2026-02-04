@@ -84,7 +84,7 @@ def run(job_name, argument=None):
     from tasks.bcol_refund_confirmation_task import BcolRefundConfirmationTask
     from tasks.cfs_create_account_task import CreateAccountTask
     from tasks.cfs_create_invoice_task import CreateInvoiceTask
-    from tasks.direct_pay_automated_refund_task import DirectPayAutomatedRefundTask
+    from tasks.direct_sale_automated_refund_task import DirectSaleAutomatedRefundTask
     from tasks.distribution_task import DistributionTask
     from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
     from tasks.ejv_payment_task import EjvPaymentTask
@@ -164,8 +164,8 @@ def run(job_name, argument=None):
                 ApTask.create_ap_files()
                 application.logger.info("<<<< Completed running AP Job for refund >>>>")
             case "DIRECT_PAY_REFUND":
-                DirectPayAutomatedRefundTask.process_cc_refunds()
-                application.logger.info("<<<< Completed running Direct Pay Automated Refund Job >>>>")
+                DirectSaleAutomatedRefundTask.process_cc_refunds()
+                application.logger.info("<<<< Completed running Direct Sale Automated Refund Job >>>>")
             case "BCOL_REFUND_CONFIRMATION":
                 BcolRefundConfirmationTask.update_bcol_refund_invoices()
                 application.logger.info("<<<< Completed running BCOL Refund Confirmation Job >>>>")

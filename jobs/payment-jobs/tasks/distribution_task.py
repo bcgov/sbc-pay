@@ -22,7 +22,7 @@ from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from pay_api.models.refund import Refund as RefundModel
-from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.direct_sale_service import DirectSaleService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 
@@ -55,7 +55,7 @@ class DistributionTask:
         if len(gl_update_invoices) == 0:
             return
 
-        access_token: str = DirectPayService().get_token().json().get("access_token")
+        access_token: str = DirectSaleService().get_token().json().get("access_token")
         paybc_ref_number: str = current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER")
         paybc_svc_base_url = current_app.config.get("PAYBC_DIRECT_PAY_BASE_URL")
         for gl_update_invoice in gl_update_invoices:

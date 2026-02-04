@@ -2185,9 +2185,9 @@ werkzeug = "^3.1.4"
 
 [package.source]
 type = "git"
-url = "https://github.com/jxio/sbc-pay.git"
-reference = "32320"
-resolved_reference = "d1420b1257a0abcd43ec9c5fbabdc4d76251689f"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "rename_direct_pay_direct_sale"
+resolved_reference = "e8e6973840de20de87d1f053ac3f801b2d0af47d"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3267,4 +3267,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "4459f610a1befb6c1c0dd12333ef4b49d7c7e34c92178f60d7b824dbbcb2ebcf"
+content-hash = "b0040493959ca72116f2d9575af7780205e149d0a35e405ac0485b7b04e83252"
