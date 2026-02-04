@@ -17,9 +17,9 @@ import logging
 
 from flask import current_app
 from ldclient import Context
-from ldclient import get as ldclient_get  # noqa: I001
+from ldclient import get as ldclient_get
 from ldclient import set_config as ldclient_set_config
-from ldclient.config import Config  # noqa: I005
+from ldclient.config import Config
 from ldclient.integrations import Files
 
 from pay_api.utils import user_context
