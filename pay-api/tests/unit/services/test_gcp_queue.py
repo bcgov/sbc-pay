@@ -124,8 +124,8 @@ def test_payment_token_with_dates():
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
         assert result_payload["filingIdentifier"] == 55
         assert result_payload["corpTypeCode"] == "NRO"
-        assert result_payload["paymentDate"] == payment_date.isoformat()
-        assert result_payload["refundDate"] == refund_date.isoformat()
+        assert result_payload["productReleaseDate"] == payment_date.isoformat()
+        assert result_payload["productReversalDate"] == refund_date.isoformat()
 
     with patch("pay_api.services.payment_transaction.flags.is_on", return_value=False):
         result_payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
@@ -133,8 +133,8 @@ def test_payment_token_with_dates():
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
         assert result_payload["filingIdentifier"] == 55
         assert result_payload["corpTypeCode"] == "NRO"
-        assert "paymentDate" not in result_payload
-        assert "refundDate" not in result_payload
+        assert "productReleaseDate" not in result_payload
+        assert "productReversalDate" not in result_payload
 
     invoice.payment_date = None
     invoice.refund_date = None
@@ -144,5 +144,5 @@ def test_payment_token_with_dates():
         assert result_payload["statusCode"] == TransactionStatus.COMPLETED.value
         assert result_payload["filingIdentifier"] == 55
         assert result_payload["corpTypeCode"] == "NRO"
-        assert result_payload.get("paymentDate") is None
-        assert result_payload.get("refundDate") is None
+        assert result_payload.get("productReleaseDate") is None
+        assert result_payload.get("productReversalDate") is None

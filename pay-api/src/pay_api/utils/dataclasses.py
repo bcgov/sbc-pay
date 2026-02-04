@@ -127,5 +127,5 @@ class PaymentToken(Serializable):
     status_code: str
     filing_identifier: int | None
     corp_type_code: str
-    payment_date: str | None = None
-    refund_date: str | None = None
+    product_release_date: str | None = None
+    product_reversal_date: str | None = None

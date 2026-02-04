@@ -565,20 +565,37 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         current_app.logger.debug(">publish_status")
 
     @staticmethod
+    def _get_product_release_and_reversal_dates(invoice):
+        """get product_release_date and product_reversal_date for queue message."""
+        payment_method = invoice.payment_method_code
+        release_dt = None
+        if payment_method in (PaymentMethod.PAD.value, PaymentMethod.EFT.value, 
+                              PaymentMethod.EJV.value, PaymentMethod.INTERNAL.value):
+            release_dt = invoice.created_on
+        else:
+            release_dt = invoice.payment_date
+        reversal_dt = invoice.refund_date
+        product_release_date = release_dt.isoformat() if release_dt else None
+        product_reversal_date = reversal_dt.isoformat() if reversal_dt else None
+        return product_release_date, product_reversal_date
+
+    @staticmethod
     def create_event_payload(invoice, status_code):
         """Create event payload for payment events."""
-        payment_date = invoice.payment_date.isoformat() if invoice.payment_date else None
-        refund_date = invoice.refund_date.isoformat() if invoice.refund_date else None
+        product_release_date, product_reversal_date = PaymentTransaction._get_product_release_and_reversal_dates(
+            invoice
+        )
+
         payment_token = PaymentToken(
             invoice.id,
             status_code,
             filing_identifier=invoice.filing_id,
             corp_type_code=invoice.corp_type_code,
-            payment_date=payment_date,
-            refund_date=refund_date,
+            product_release_date=product_release_date,
+            product_reversal_date=product_reversal_date,
         )
         payload = payment_token.to_dict()
         if not flags.is_on("payment-date-release-message", default=False):
-            payload.pop("paymentDate", None)
-            payload.pop("refundDate", None)
+            payload.pop("productReleaseDate", None)
+            payload.pop("productReversalDate", None)
         return payload
