@@ -43,7 +43,3 @@ To prepare your local database:
 1. Tests are run from the Status bar at the bottom of the workbench in VS Code or `pytest` command.
 2. Next run `make coverage` to generate the coverage report, which appears in the *htmlcov* directory.
 3. You may need to disable code coverage under [tool:pytest] addopts key, to get the debugger to hit a breakpoint.
-
-## Openshift Environment
-
-View the [document](https://github.com/bcgov/sbc-auth/blob/development/docs/build-deploy.md).

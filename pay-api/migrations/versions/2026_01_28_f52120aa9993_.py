@@ -8,6 +8,8 @@ Create Date: 2026-01-28 14:01:12.660238
 from alembic import op
 import sqlalchemy as sa
 
+from pay_api.utils.migration_utils import column_exists
+
 
 # revision identifiers, used by Alembic.
 # Note you may see foreign keys with distribution_codes_history
@@ -21,16 +23,20 @@ depends_on = None
 
 
 def upgrade():
-    with op.batch_alter_table('payment_accounts', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('restrict_ejv', sa.Boolean(), server_default='f', nullable=False))
+    if not column_exists('payment_accounts', 'restrict_ejv'):
+        with op.batch_alter_table('payment_accounts', schema=None) as batch_op:
+            batch_op.add_column(sa.Column('restrict_ejv', sa.Boolean(), server_default='f', nullable=False))
 
-    with op.batch_alter_table('payment_accounts_history', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('restrict_ejv', sa.Boolean(), server_default='f', autoincrement=False, nullable=False))
+    if not column_exists('payment_accounts_history', 'restrict_ejv'):
+        with op.batch_alter_table('payment_accounts_history', schema=None) as batch_op:
+            batch_op.add_column(sa.Column('restrict_ejv', sa.Boolean(), server_default='f', autoincrement=False, nullable=False))
 
 
 def downgrade():
-    with op.batch_alter_table('payment_accounts_history', schema=None) as batch_op:
-        batch_op.drop_column('restrict_ejv')
+    if column_exists('payment_accounts_history', 'restrict_ejv'):
+        with op.batch_alter_table('payment_accounts_history', schema=None) as batch_op:
+            batch_op.drop_column('restrict_ejv')
 
-    with op.batch_alter_table('payment_accounts', schema=None) as batch_op:
-        batch_op.drop_column('restrict_ejv')
+    if column_exists('payment_accounts', 'restrict_ejv'):
+        with op.batch_alter_table('payment_accounts', schema=None) as batch_op:
+            batch_op.drop_column('restrict_ejv')
