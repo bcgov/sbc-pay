@@ -569,8 +569,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         """get product_release_date and product_reversal_date for queue message."""
         payment_method = invoice.payment_method_code
         release_dt = None
-        if payment_method in (PaymentMethod.PAD.value, PaymentMethod.EFT.value, 
-                              PaymentMethod.EJV.value, PaymentMethod.INTERNAL.value):
+        if payment_method in (
+            PaymentMethod.PAD.value,
+            PaymentMethod.EFT.value,
+            PaymentMethod.EJV.value,
+            PaymentMethod.INTERNAL.value,
+        ):
             release_dt = invoice.created_on
         else:
             release_dt = invoice.payment_date
