@@ -228,30 +228,35 @@ class InvoiceSearch:
     @classmethod
     def _apply_payment_method_filter(cls, query, payment_type: str):
         """Apply payment method filter to query."""
-        if payment_type == "NO_FEE":
-            return query.filter(Invoice.total == 0)
-        elif payment_type == PaymentMethod.CREDIT.value:
-            return query.filter(exists().where(AppliedCredits.invoice_id == Invoice.id))
-        elif payment_type in [PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value]:
-            # For PAD and ONLINE_BANKING, exclude invoices where sum of AppliedCredits equals invoice total
-            credit_total_subquery = (
-                select(AppliedCredits.invoice_id, func.sum(AppliedCredits.amount_applied).label("total_applied"))
-                .group_by(AppliedCredits.invoice_id)
-                .subquery()
-            )
-
-            return query.outerjoin(credit_total_subquery, credit_total_subquery.c.invoice_id == Invoice.id).filter(
-                and_(
-                    Invoice.total != 0,
-                    Invoice.payment_method_code == payment_type,
-                    or_(
-                        credit_total_subquery.c.total_applied.is_(None),
-                        credit_total_subquery.c.total_applied != Invoice.total,
-                    ),
+        match payment_type:
+            case "NO_FEE":
+                return query.filter(Invoice.total == 0)
+            case PaymentMethod.CREDIT.value:
+                return query.filter(exists().where(AppliedCredits.invoice_id == Invoice.id))
+            case PaymentMethod.PAD.value | PaymentMethod.ONLINE_BANKING.value:
+                # For PAD and ONLINE_BANKING, exclude invoices where sum of AppliedCredits equals invoice total
+                credit_total_subquery = (
+                    select(AppliedCredits.invoice_id, func.sum(AppliedCredits.amount_applied).label("total_applied"))
+                    .group_by(AppliedCredits.invoice_id)
+                    .subquery()
                 )
-            )
-        else:
-            return query.filter(Invoice.total != 0).filter(Invoice.payment_method_code == payment_type)
+
+                return query.outerjoin(credit_total_subquery, credit_total_subquery.c.invoice_id == Invoice.id).filter(
+                    and_(
+                        Invoice.total != 0,
+                        Invoice.payment_method_code == payment_type,
+                        or_(
+                            credit_total_subquery.c.total_applied.is_(None),
+                            credit_total_subquery.c.total_applied != Invoice.total,
+                        ),
+                    )
+                )
+            case PaymentMethod.CC.value | PaymentMethod.DIRECT_PAY.value:
+                return query.filter(Invoice.total != 0).filter(
+                    Invoice.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])
+                )
+            case _:
+                return query.filter(Invoice.total != 0).filter(Invoice.payment_method_code == payment_type)
 
     @classmethod
     def filter_payment_account(cls, query, auth_account_id, search_filter: dict, include_joins=False):
@@ -350,7 +355,7 @@ class InvoiceSearch:
         return results[: params.limit], has_more
 
     @classmethod
-    def search(  # noqa:E501; too-many-locals, too-many-branches, too-many-statements;
+    def search(  # noqa: E501
         cls, search_params: PurchaseHistorySearch
     ):
         """Search for purchase history."""

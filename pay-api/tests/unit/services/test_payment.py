@@ -51,8 +51,6 @@ from tests.utilities.base_test import (
     factory_usd_payment,
 )
 
-# noqa: I005
-
 
 def test_payment_saved_from_new(session):
     """Assert that the payment is saved to the table."""
@@ -198,9 +196,18 @@ def test_payment_with_no_active_invoice(session):
         ("id", None, False, 1, "id", None),
         (
             "payment_method_no_match",
-            {"paymentMethod": PaymentMethod.CC.value},
+            {"paymentMethod": PaymentMethod.EFT.value},
             False,
             0,
+            None,
+            None,
+        ),
+        ("id", None, False, 1, "id", None),
+        (
+            "payment_method_credit_card_match",
+            {"paymentMethod": PaymentMethod.CC.value},
+            False,
+            2,
             None,
             None,
         ),

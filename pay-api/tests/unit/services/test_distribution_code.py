@@ -96,7 +96,7 @@ def test_update_distribution(session, public_user_mock, monkeypatch):
     def get_receipt(cls, payment_account, pay_response_url: str, invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
         return "1234567890", datetime.now(tz=UTC), 30.00
 
-    monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
+    monkeypatch.setattr("pay_api.services.direct_sale_service.DirectSaleService.get_receipt", get_receipt)
 
     # Update transaction without response url, which should update the receipt
     PaymentTransactionService.update_transaction(transaction.id, pay_response_url=None)

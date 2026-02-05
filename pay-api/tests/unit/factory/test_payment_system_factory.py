@@ -27,10 +27,10 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService
 from pay_api.services.deposit_service import DepositService
 from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.direct_sale_service import DirectSaleService
 from pay_api.services.eft_service import EftService
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.pad_service import PadService
-from pay_api.services.paybc_service import PaybcService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.errors import Error
@@ -43,12 +43,12 @@ def test_paybc_system_factory(session, public_user_mock):
 
     # Test for CC and CP
     instance = PaymentSystemFactory.create(payment_method="CC", corp_type="CP")
-    assert isinstance(instance, PaybcService)
+    assert isinstance(instance, DirectPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for CC and CP
     instance = PaymentSystemFactory.create(payment_method=PaymentMethod.DIRECT_PAY.value, corp_type="CP")
-    assert isinstance(instance, DirectPayService)
+    assert isinstance(instance, DirectSaleService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for CC and CP with zero fees
@@ -58,12 +58,12 @@ def test_paybc_system_factory(session, public_user_mock):
 
     # Test for PAYBC Service
     instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.CC.value)
-    assert isinstance(instance, PaybcService)
+    assert isinstance(instance, DirectPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for Direct Pay Service
     instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.DIRECT_PAY.value)
-    assert isinstance(instance, DirectPayService)
+    assert isinstance(instance, DirectSaleService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for Internal Service

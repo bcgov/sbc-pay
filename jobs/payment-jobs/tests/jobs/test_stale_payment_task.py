@@ -94,7 +94,7 @@ def test_verify_created_credit_card_invoices(
         pay_system_reason_code="NSF" if payment_method == PaymentMethod.CC.value else "DECLINED",
     ).save()
 
-    with patch("pay_api.services.paybc_service.PaybcService.get_receipt") as mock_get_receipt:
+    with patch("pay_api.services.direct_pay_service.DirectPayService.get_receipt") as mock_get_receipt:
         mock_receipt = ("TEST123", datetime.now(tz=UTC), 50.0)
         mock_get_receipt.return_value = mock_receipt
 

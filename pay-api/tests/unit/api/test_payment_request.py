@@ -38,6 +38,11 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role, RoutingSlipStatus, TransactionStatus
 from tests.utilities.base_test import (
     activate_pad_account,
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment,
+    factory_payment_account,
+    factory_payment_transaction,
     get_basic_account_payload,
     get_claims,
     get_gov_account_payload,
@@ -370,6 +375,47 @@ def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
     ):
         rv = client.delete(f"/api/v1/payment-requests/{pay_id}", headers=headers)
         assert rv.status_code == 202
+
+
+def test_delete_direct_pay_invoice_blocks_deletion(session, client, jwt, app, auth_mock, mocker):
+    """Assert that deleting a DIRECT_PAY invoice is blocked with COMPLETED_PAYMENT when _update_active_transactions succeeds."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+        status_code=InvoiceStatus.CREATED.value,
+        total=10,
+    )
+    invoice.save()
+
+    invoice_reference = factory_invoice_reference(invoice.id, invoice_number="REGTEST001").save()
+    payment = factory_payment(
+        invoice_number=invoice_reference.invoice_number,
+        payment_account_id=payment_account.id,
+        invoice_amount=10,
+        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+    ).save()
+
+    transaction = factory_payment_transaction(payment.id, status_code="CREATED")
+    transaction.save()
+
+    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+
+    target = "pay_api.services.direct_sale_service.DirectSaleService.query_order_status"
+    mocker.patch(target, return_value=mocker.MagicMock(paymentstatus="PAID"))
+    mocker.patch(
+        "pay_api.services.payment_service.PaymentTransaction.update_transaction",
+        return_value=None,
+    )
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.delete(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get("type") == "COMPLETED_PAYMENT"
 
 
 def test_payment_creation_with_routing_slip(session, client, jwt, app):

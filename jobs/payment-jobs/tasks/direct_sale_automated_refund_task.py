@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Task to handle Direct Pay automated refunds."""
+"""Task to handle Direct Sale automated refunds."""
 
 from datetime import UTC, datetime
 
@@ -22,7 +22,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models.invoice import Invoice
-from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.direct_sale_service import DirectSaleService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import (
     AuthHeaderType,
@@ -38,7 +38,7 @@ from tasks.common.dataclasses import OrderStatus
 from tasks.common.enums import PaymentDetailsGlStatus
 
 
-class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
+class DirectSaleAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     """Task to query CAS for order statuses of invoices.
 
     Ensures invoices have been processed correctly by the GL.
@@ -144,7 +144,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _query_order_status(cls, invoice: Invoice):
         """Request order status for CFS."""
-        access_token: str = DirectPayService().get_token().json().get("access_token")
+        access_token: str = DirectSaleService().get_token().json().get("access_token")
         paybc_ref_number: str = current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER")
         paybc_svc_base_url = current_app.config.get("PAYBC_DIRECT_PAY_BASE_URL")
         completed_reference = list(
@@ -242,7 +242,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         payment = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
         payment.save()
-        DirectPayService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
+        DirectSaleService().release_payment_or_reversal(invoice, TransactionStatus.REVERSED.value)
 
     @classmethod
     def _set_refund_partials_posted(cls, invoice: Invoice):
