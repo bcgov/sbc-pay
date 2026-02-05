@@ -2022,8 +2022,8 @@ werkzeug = "^3.1.4"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "rename_direct_pay_direct_sale"
-resolved_reference = "e8e6973840de20de87d1f053ac3f801b2d0af47d"
+reference = "is_empty_statements"
+resolved_reference = "ceb727cdb196924dfaa9e89cf408dda306fd5f81"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3081,4 +3081,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "e298f78e05a45ea088367bc52d145eb8bbbae7cfc94651abd59e36568d5e33d6"
+content-hash = "b36e1c4ff4d4d6daa290973996540755266a43f10878cf712b6ca3fe3002a399"

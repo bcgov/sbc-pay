@@ -78,6 +78,7 @@ def test_statements(session):
     invoices = StatementInvoices.find_all_invoices_for_statement(first_statement_id)
     assert invoices is not None
     assert invoices[0].invoice_id == invoice.id
+    assert statements[0][0].is_empty is False
 
     # Test date override.
     # Override computes for the target date, not the previous date like above.
@@ -120,6 +121,7 @@ def test_statements_for_empty_results(session):
     assert statements is not None
     invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
     assert len(invoices) == 0
+    assert statements[0][0].is_empty is True
 
 
 def test_bcol_weekly_to_eft_statement(session):
