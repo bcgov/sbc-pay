@@ -181,11 +181,13 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             )
             account_invoices = invoices_by_account.get(pay_account.auth_account_id, [])
             payment_methods = cls._determine_payment_methods_fast(account_invoices, pay_account, existing_statement)
+            is_empty = len(account_invoices) == 0
 
             if existing_statement:
                 existing_statement.notification_status_code = notification_status
                 existing_statement.payment_methods = payment_methods
                 existing_statement.created_on = created_on
+                existing_statement.is_empty = is_empty
                 statements.append(existing_statement)
             else:
                 statements.append(
@@ -198,6 +200,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                         to_date=cls.statement_to,
                         notification_status_code=notification_status,
                         payment_methods=payment_methods,
+                        is_empty=is_empty,
                     )
                 )
         return statements
