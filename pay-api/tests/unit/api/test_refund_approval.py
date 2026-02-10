@@ -178,6 +178,7 @@ def get_refund_token_headers(app, jwt, token_config: dict):
             get_claims(
                 app_request=app,
                 username=token_config["requester_name"],
+                role="NA",
                 roles=token_config["requester_roles"],
             ),
             token_header,
@@ -189,6 +190,7 @@ def get_refund_token_headers(app, jwt, token_config: dict):
             get_claims(
                 app_request=app,
                 username=token_config["approver_name"],
+                role="NA",
                 roles=token_config["approver_roles"],
             ),
             token_header,
@@ -974,3 +976,83 @@ def test_validate_refund_requester_approver_not_same(
 
     assert rv.status_code == 403
     assert rv.json["type"] == Error.REFUND_REQUEST_SAME_USER_APPROVAL_FORBIDDEN.name
+
+
+@pytest.mark.parametrize(
+    "test_name,roles,check_auth_called,expected_status",
+    [
+        ("system", [Role.SYSTEM.value], True, 201),
+        (
+            "forbidden-product-role",
+            ["strr" + RolePattern.PRODUCT_VIEW_TRANSACTION.value, Role.PRODUCT_REFUND_VIEWER.value],
+            False,
+            403,
+        ),
+        (
+            "allowed-product-role",
+            ["business" + RolePattern.PRODUCT_VIEW_TRANSACTION.value, Role.PRODUCT_REFUND_VIEWER.value],
+            False,
+            201,
+        ),
+        ("view-all-transactions", [Role.VIEW_ALL_TRANSACTIONS.value], False, 201),
+    ],
+)
+def test_invoice_receipt_product_permissions(
+    session,
+    client,
+    jwt,
+    app,
+    monkeypatch,
+    refund_service_mocks,
+    send_email_mock,
+    test_name,
+    roles,
+    check_auth_called,
+    expected_status,
+):
+    """Assert invoice receipt retrieval based on product permissions."""
+    token_config = {
+        "requester_name": "TEST_CREATE",
+        "requester_roles": ["ABC"],
+        "approver_name": "TEST_GET_RECEIPT",
+        "approver_roles": roles,
+    }
+    create_user_headers, test_user_headers = get_refund_token_headers(app, jwt, token_config)
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=create_user_headers,
+    )
+    invoice_id = rv.json.get("id")
+    data = {
+        "clientSystemUrl": "http://localhost:8080/coops-web/transactions/transaction_id=abcd",
+        "payReturnUrl": "http://localhost:8080/pay-web",
+    }
+    receipt_number = "123451"
+    rv = client.post(
+        f"/api/v1/payment-requests/{invoice_id}/transactions",
+        data=json.dumps(data),
+        headers=create_user_headers,
+    )
+    txn_id = rv.json.get("id")
+    client.patch(
+        f"/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}",
+        data=json.dumps({"receipt_number": receipt_number}),
+        headers=create_user_headers,
+    )
+    filing_data = {
+        "corpName": "CP0001234",
+        "filingDateTime": "June 27, 2019",
+        "fileName": "director-change",
+    }
+    with patch("pay_api.services.invoice.check_auth") as mock_check_auth:
+        rv = client.post(
+            f"/api/v1/payment-requests/{invoice_id}/receipts",
+            data=json.dumps(filing_data),
+            headers=test_user_headers,
+        )
+        assert rv.status_code == expected_status
+        if check_auth_called:
+            mock_check_auth.assert_called_once()
+        else:
+            mock_check_auth.assert_not_called()
