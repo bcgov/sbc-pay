@@ -576,9 +576,22 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return pdf_response, invoice_pdf_dict.get("reportName")
 
     @staticmethod
-    def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES):
+    @user_context
+    def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES, **kwargs):
         # Check if user is authorized to perform this action
-        check_auth(dao.business_identifier, one_of_roles=one_of_roles)
+        user: UserContext = kwargs["user"]
+        if user.has_role(Role.VIEW_ALL_TRANSACTIONS.value):
+            return
+
+        products, filter_by_product = ProductAuthUtil.check_products_from_role_pattern(
+            role_pattern=RolePattern.PRODUCT_VIEW_TRANSACTION.value,
+            all_products_role=Role.VIEW_ALL_TRANSACTIONS.value,
+        )
+        if not filter_by_product:
+            check_auth(dao.business_identifier, one_of_roles=one_of_roles)
+        else:
+            if dao.corp_type.product not in products:
+                abort(403)
 
     @staticmethod
     def _add_dynamic_fields(invoice: dict[str, any], calculate_dynamic_fields: bool = False) -> dict[str, any]:

@@ -239,18 +239,23 @@ class RefundService:
             raise BusinessException(Error.REFUND_INSUFFICIENT_PRODUCT_AUTHORIZATION)
 
     @classmethod
-    def _validate_refund_approval_flow(cls, invoice: InvoiceModel, is_system: bool, auth_user: dict = None):
+    def _validate_refund_approval_flow(cls, invoice: InvoiceModel, user: UserContext) -> dict | None:
         requires_approval = invoice.corp_type.refund_approval
         if not requires_approval:
-            return
-
-        if not is_system:
-            if not auth_user or "email" not in auth_user:
-                raise BusinessException(Error.INVALID_REQUEST)
+            return None
 
         refund = RefundModel.find_latest_by_invoice_id(invoice.id)
         if refund and refund.status != RefundStatus.DECLINED.value:
             raise BusinessException(Error.REFUND_ALREADY_EXISTS)
+
+        if user.is_system() and user.original_username is None:
+            return None
+
+        auth_user = get_auth_user(user.original_username or user.user_name)
+        if not auth_user or "email" not in auth_user:
+            raise BusinessException(Error.REFUND_REQUEST_REQUESTER_EMAIL_REQUIRED)
+
+        return auth_user
 
     @classmethod
     def _initialize_refund(
@@ -346,9 +351,7 @@ class RefundService:
             invoice=invoice, allowed_products=products, is_system=user.is_system(), allow_system=True
         )
         if requires_approval:
-            if user.original_username or (user.user_name and not user.is_system()):
-                auth_user = get_auth_user(user.original_username or user.user_name)
-            cls._validate_refund_approval_flow(invoice, user.is_system(), auth_user)
+            auth_user = cls._validate_refund_approval_flow(invoice, user)
 
         if is_partial_refund:
             refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
@@ -468,6 +471,9 @@ class RefundService:
 
         if is_string_empty(user.user_name):
             raise BusinessException(Error.REFUND_REQUEST_DECISION_USER_NAME_REQUIRED)
+
+        if data.status == RefundStatus.APPROVED.value and user.user_name == refund.requested_by:
+            raise BusinessException(Error.REFUND_REQUEST_SAME_USER_APPROVAL_FORBIDDEN)
 
     @staticmethod
     @user_context
