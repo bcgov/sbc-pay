@@ -158,7 +158,7 @@ def request_refund(
         payload["refundRevenue"] = refund_revenue
 
     if use_original_user_header:
-        request_headers["original_user"] = "ORIGINAL_USER"
+        request_headers["Original-Username"] = "ORIGINAL_USER"
 
     rv = client.post(
         f"/api/v1/payment-requests/{invoice.id}/refunds",
@@ -775,17 +775,17 @@ def test_refund_requester_unauthorized(session, client, jwt, app, monkeypatch, r
 
 
 @pytest.mark.parametrize(
-    "role,refund_approval,expect_pending_approval,use_original_user_header",
+    "role,refund_approval,expect_pending_approval,use_original_user_header,expect_get_auth_user",
     [
-        (Role.SYSTEM.value, True, False, False),
-        (Role.SYSTEM.value, True, False, True),
-        (Role.SYSTEM.value, False, False, False),
-        (Role.FAS_REFUND.value, True, True, False),
-        (Role.FAS_REFUND.value, True, True, True),
-        (Role.FAS_REFUND.value, False, False, False),
-        (Role.CREATE_CREDITS.value, True, True, False),
-        (Role.CREATE_CREDITS.value, True, True, True),
-        (Role.CREATE_CREDITS.value, False, False, False),
+        (Role.SYSTEM.value, True, False, False, False),
+        (Role.SYSTEM.value, True, False, True, True),
+        (Role.SYSTEM.value, False, False, False, False),
+        (Role.FAS_REFUND.value, True, True, False, True),
+        (Role.FAS_REFUND.value, True, True, True, True),
+        (Role.FAS_REFUND.value, False, False, False, False),
+        (Role.CREATE_CREDITS.value, True, True, False, True),
+        (Role.CREATE_CREDITS.value, True, True, True, True),
+        (Role.CREATE_CREDITS.value, False, False, False, False),
     ],
 )
 def test_regression_roles_create_refund_request(
@@ -800,6 +800,7 @@ def test_regression_roles_create_refund_request(
     refund_approval,
     expect_pending_approval,
     use_original_user_header,
+    expect_get_auth_user,
 ):
     """Assert backwards compatibility for existing roles on refund creation."""
     cfs_account = setup_filing_and_account_data(
@@ -808,7 +809,12 @@ def test_regression_roles_create_refund_request(
     invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.DIRECT_PAY.value)
     token_config = {"requester_name": "requester", "requester_roles": [role]}
     system_headers, _ = get_refund_token_headers(app, jwt, token_config)
-    rv = request_refund(client, invoice, system_headers)
+    rv = request_refund(
+        client=client,
+        invoice=invoice,
+        request_headers=system_headers,
+        use_original_user_header=use_original_user_header,
+    )
 
     assert rv.status_code == 202
     refund = RefundModel.find_by_id(rv.json["refundId"])
@@ -820,14 +826,14 @@ def test_regression_roles_create_refund_request(
             == f"Invoice ({invoice.id}) for payment method {invoice.payment_method_code} is pending refund approval."
         )
         refund_service_mocks["send_email_async"].assert_called_once()
-        if role == Role.SYSTEM.value and not use_original_user_header:
-            refund_service_mocks["get_auth_user"].assert_not_called()
-        else:
-            refund_service_mocks["get_auth_user"].assert_called_once()
     else:
         assert refund.status == RefundStatus.APPROVAL_NOT_REQUIRED.value
         assert rv.json.get("message") == REFUND_SUCCESS_MESSAGES[f"{PaymentMethod.DIRECT_PAY.value}.PAID"]
         refund_service_mocks["send_email_async"].assert_not_called()
+
+    if expect_get_auth_user:
+        refund_service_mocks["get_auth_user"].assert_called_once()
+    else:
         refund_service_mocks["get_auth_user"].assert_not_called()
 
 
@@ -868,3 +874,103 @@ def test_regression_roles_approval_decline_unauthorized(
     )
 
     assert rv.status_code == 403
+
+
+@pytest.mark.parametrize(
+    "roles,refund_approval,use_original_user_header,expect_original_user_header",
+    [
+        ([Role.SYSTEM.value], True, False, False),
+        ([Role.SYSTEM.value], True, True, True),
+        ([Role.SYSTEM.value], False, False, False),
+        ([Role.SYSTEM.value], False, True, True),
+        ([Role.PRODUCT_REFUND_REQUESTER.value, Role.PRODUCT_REFUND_VIEWER.value], True, False, False),
+        ([Role.PRODUCT_REFUND_REQUESTER.value, Role.PRODUCT_REFUND_VIEWER.value], True, True, False),
+        ([Role.PRODUCT_REFUND_REQUESTER.value, Role.PRODUCT_REFUND_VIEWER.value], False, False, False),
+        ([Role.PRODUCT_REFUND_REQUESTER.value, Role.PRODUCT_REFUND_VIEWER.value], False, True, False),
+    ],
+)
+def test_refund_request_requester(
+    session,
+    client,
+    jwt,
+    app,
+    monkeypatch,
+    refund_service_mocks,
+    send_email_mock,
+    roles,
+    refund_approval,
+    use_original_user_header,
+    expect_original_user_header,
+):
+    """Assert requester original user header usage, override should only be valid for SYSTEM role."""
+    cfs_account = setup_filing_and_account_data(
+        product_code="TEST_PRODUCT", payment_method=PaymentMethod.DIRECT_PAY.value, refund_approval=refund_approval
+    )
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.DIRECT_PAY.value)
+    token_config = {"requester_name": "REQUESTER", "requester_roles": roles}
+    requester_headers, _ = get_refund_token_headers(app, jwt, token_config)
+    rv = request_refund(
+        client=client,
+        invoice=invoice,
+        request_headers=requester_headers,
+        use_original_user_header=use_original_user_header,
+    )
+
+    assert rv.status_code == 202
+    refund_id = rv.json["refundId"]
+    rv = client.get(f"/api/v1/refunds/{refund_id}", headers=requester_headers)
+    assert rv.status_code == 200
+    assert rv.json
+    refund = rv.json
+
+    if expect_original_user_header:
+        assert refund["requestedBy"] == "ORIGINAL_USER"
+    else:
+        assert refund["requestedBy"] == token_config["requester_name"]
+
+
+def test_validate_refund_requester_email_required(
+    session, client, jwt, app, monkeypatch, refund_service_mocks, send_email_mock
+):
+    """Assert requester email needs to exist."""
+    cfs_account = setup_filing_and_account_data(
+        product_code="TEST_PRODUCT", payment_method=PaymentMethod.DIRECT_PAY.value, refund_approval=True
+    )
+    refund_service_mocks["get_auth_user"].return_value = None
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.DIRECT_PAY.value)
+    token_config = {"requester_name": "requester", "requester_roles": [Role.PRODUCT_REFUND_REQUESTER.value]}
+    system_headers, _ = get_refund_token_headers(app, jwt, token_config)
+    rv = request_refund(client=client, invoice=invoice, request_headers=system_headers)
+
+    assert rv.status_code == 400
+    assert rv.json["type"] == Error.REFUND_REQUEST_REQUESTER_EMAIL_REQUIRED.name
+
+
+def test_validate_refund_requester_approver_not_same(
+    session, client, jwt, app, monkeypatch, refund_service_mocks, send_email_mock
+):
+    """Assert refund request approver can't be the same as the requester."""
+    cfs_account = setup_filing_and_account_data(
+        product_code="TEST_PRODUCT", payment_method=PaymentMethod.DIRECT_PAY.value, refund_approval=True
+    )
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, PaymentMethod.DIRECT_PAY.value)
+    token_config = {
+        "requester_name": "requester",
+        "requester_roles": [Role.PRODUCT_REFUND_REQUESTER.value, Role.PRODUCT_REFUND_APPROVER.value],
+    }
+    requester_headers, _ = get_refund_token_headers(app, jwt, token_config)
+    rv = request_refund(client=client, invoice=invoice, request_headers=requester_headers)
+    assert rv.status_code == 202
+    refund_id = rv.json["refundId"]
+    rv = client.patch(
+        f"/api/v1/payment-requests/{invoice.id}/refunds/{refund_id}",
+        data=json.dumps(
+            {
+                "status": RefundStatus.APPROVED.value,
+            }
+        ),
+        headers=requester_headers,
+    )
+
+    assert rv.status_code == 403
+    assert rv.json["type"] == Error.REFUND_REQUEST_SAME_USER_APPROVAL_FORBIDDEN.name
