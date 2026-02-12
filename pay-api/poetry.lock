@@ -2648,8 +2648,8 @@ structlog = "^24.1.0"
 [package.source]
 type = "git"
 url = "https://github.com/bcgov/sbc-connect-common.git"
-reference = "main"
-resolved_reference = "54315fc8d6d42b9f502dc7f31a57626c6bf27547"
+reference = "2a3d5a2d5b5ff3c905626f3193db5ed0af6d4952"
+resolved_reference = "2a3d5a2d5b5ff3c905626f3193db5ed0af6d4952"
 subdirectory = "python/structured-logging"
 
 [[package]]
@@ -2869,4 +2869,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "7e9484f3abaffbffa53d7a481e08d9a259bf9e1697dbb8e6d1d897e251663a7f"
+content-hash = "177e4767f9987d0d6278d5486570fafb9173e711edaa3de169b93a8fdd204d47"
