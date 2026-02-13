@@ -1,4 +1,4 @@
-FROM python:3.12.2-bullseye
+FROM python:3.13.6-bullseye
 
 # ========================================================================================================
 # Install go-crond (from https://github.com/BCDevOps/go-crond)

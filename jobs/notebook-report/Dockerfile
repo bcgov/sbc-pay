@@ -1,4 +1,4 @@
-FROM python:3.13.2-bookworm
+FROM python:3.14.3-bookworm
 
 ARG VCS_REF="missing"
 ARG BUILD_DATE="missing"
