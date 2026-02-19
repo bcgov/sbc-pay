@@ -25,7 +25,9 @@ import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.services.hashing import HashingService
+from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.payment_service import Payment as PaymentService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import (
@@ -714,3 +716,40 @@ def test_patch_transaction_for_eft_overdue(session, monkeypatch):
     invoice_2 = Invoice.find_by_id(invoice_2.id)
     assert invoice_2.invoice_status_code == InvoiceStatus.PAID.value, "OVERDUE invoice should be PAID"
     assert payment_account.has_overdue_invoices is None, "This flag should be cleared."
+
+
+def test_update_receipt_details_creates_invoice_reference_when_missing(session):
+    """Assert that _update_receipt_details creates an invoice reference when one doesn't exist for an invoice."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment_account.save()
+
+    invoice = factory_invoice(payment_account, total=100)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    # Deliberately do NOT create an invoice reference for this invoice
+    payment = factory_payment(
+        payment_account_id=payment_account.id,
+        invoice_amount=100,
+        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+    ).save()
+
+    transaction_dao = factory_payment_transaction(payment.id, TransactionStatus.CREATED.value)
+    transaction_dao.save()
+
+    receipt_details = ("1234567890", datetime.now(tz=UTC), 100.00)
+
+    invoice_service = InvoiceService()
+    invoice_service._dao = invoice  # pylint: disable=protected-access
+
+    PaymentTransactionService._update_receipt_details([invoice_service], payment, receipt_details, transaction_dao)
+
+    assert transaction_dao.status_code == TransactionStatus.COMPLETED.value
+
+    updated_invoice = Invoice.find_by_id(invoice.id)
+    assert updated_invoice.invoice_status_code == InvoiceStatus.PAID.value
+
+    new_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
+    assert new_ref is not None

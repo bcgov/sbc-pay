@@ -488,6 +488,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
                 invoice.payment_date = datetime.now(tz=UTC)
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+                # If we don't have an invoice reference, create one for direct sale only.
+                if invoice_reference is None and invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
+                    current_app.logger.warning(f"No invoice reference found for invoice {invoice.id}, creating one")
+                    invoice_reference = InvoiceReference.create(
+                        invoice_id=invoice.id,
+                        invoice_number=payment.invoice_number,
+                        reference_number=current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER"),
+                    )
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
                 # If it's not PAD/EFT, publish message. Refactor and move to pay system service later.
                 if invoice.payment_method_code not in [
