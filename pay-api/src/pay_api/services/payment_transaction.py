@@ -44,7 +44,7 @@ from pay_api.utils.enums import (
     TransactionStatus,
 )
 from pay_api.utils.errors import Error
-from pay_api.utils.util import generate_transaction_number, get_topic_for_corp_type, is_valid_redirect_url
+from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
 
@@ -493,7 +493,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                     current_app.logger.warning(f"No invoice reference found for invoice {invoice.id}, creating one")
                     invoice_reference = InvoiceReference.create(
                         invoice_id=invoice.id,
-                        invoice_number=generate_transaction_number(invoice.id),
+                        invoice_number=payment.invoice_number,
                         reference_number=current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER"),
                     )
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
