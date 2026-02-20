@@ -188,12 +188,10 @@ def post_invoice_report(invoice_id: int = None):
 def post_invoice_release(invoice_id):
     """Release a payment record for the invoice."""
     current_app.logger.info("<post_invoice_release for invoice : %s", invoice_id)
-    token_info = g.jwt_oidc_token_info or {}
-    if token_info.get("azp") != "sbc-pay":
+    if g.jwt_oidc_token_info.get("azp") != "sbc-pay":
         return error_to_response(Error.INVALID_CLIENT)
 
-    invoice = InvoiceModel.find_by_id(invoice_id)
-    if not invoice:
+    if not (invoice := InvoiceModel.find_by_id(invoice_id)):
         raise BusinessException(Error.INVALID_INVOICE_ID)
 
     PaymentSystemService.release_payment_or_reversal(
