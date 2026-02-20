@@ -15,18 +15,20 @@
 
 from http import HTTPStatus
 
-from flask import Blueprint, Response, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, g, jsonify, request
 from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
 from pay_api.services.auth import check_auth
+from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import MAKE_PAYMENT
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.enums import Role
+from pay_api.utils.enums import Role, TransactionStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
@@ -178,3 +180,25 @@ def post_invoice_report(invoice_id: int = None):
         return exception.response()
     current_app.logger.debug(">post_invoice_report")
     return jsonify(response), 200
+
+
+@bp.route("/<int:invoice_id>/release", methods=["POST", "OPTIONS"])
+@cross_origin(origins="*", methods=["POST"])
+@_jwt.requires_roles([Role.SYSTEM.value])
+def post_invoice_release(invoice_id):
+    """Release a payment record for the invoice."""
+    current_app.logger.info("<post_invoice_release for invoice : %s", invoice_id)
+    token_info = g.jwt_oidc_token_info or {}
+    if token_info.get("azp") != "sbc-pay":
+        return error_to_response(Error.INVALID_CLIENT)
+
+    invoice = InvoiceModel.find_by_id(invoice_id)
+    if not invoice:
+        raise BusinessException(Error.INVALID_INVOICE_ID)
+
+    PaymentSystemService.release_payment_or_reversal(
+        invoice,
+        transaction_status=TransactionStatus.COMPLETED.value,
+    )
+    current_app.logger.debug(">post_invoice_release")
+    return jsonify(None), HTTPStatus.OK
