@@ -17,7 +17,6 @@
 Test-Suite to ensure that the CreateAccountTask for routing slip is working as expected.
 """
 
-from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
