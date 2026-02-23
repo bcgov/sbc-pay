@@ -977,8 +977,11 @@ def test_validate_refund_requester_approver_not_same(
     assert rv.status_code == 403
     assert rv.json["type"] == Error.REFUND_REQUEST_SAME_USER_APPROVAL_FORBIDDEN.name
 
-@pytest.mark.skip(reason="Temporarily skipping this test due to reverting a change. Will re-enable when new implementation"
-                         "is in place.")
+
+@pytest.mark.skip(
+    reason="Temporarily skipping this test due to reverting a change. Will re-enable when new implementation"
+    "is in place."
+)
 @pytest.mark.parametrize(
     "test_name,roles,check_auth_called,expected_status",
     [
