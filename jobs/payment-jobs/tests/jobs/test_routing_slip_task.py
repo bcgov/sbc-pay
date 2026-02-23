@@ -17,7 +17,8 @@
 Test-Suite to ensure that the CreateAccountTask for routing slip is working as expected.
 """
 
-from unittest.mock import patch
+from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -627,3 +628,46 @@ def test_receipt_adjustments_skip_child_pending_invoices(session):
         assert parent_rs.remaining_amount == 20
 
         assert parent_rs.cas_mismatch is False
+
+
+def test_apply_routing_slips_to_invoice_uses_decimal(session):
+    """Test that apply_routing_slips_to_invoice uses Decimal for receipt amount calculations."""
+    rs_number = "99999"
+    pay_account = factory_routing_slip_account(number=rs_number, status=CfsAccountStatus.ACTIVE.value, total=100)
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    payment_account = PaymentAccountModel.find_by_id(rs.payment_account_id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.INTERNAL.value)
+
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=30,
+        status_code=InvoiceStatus.CREATED.value,
+        payment_method_code=PaymentMethod.INTERNAL.value,
+        routing_slip=rs_number,
+    )
+    inv_ref = factory_invoice_reference(invoice.id, invoice_number="INV001")
+
+    # Use values that would produce floating-point errors with float math:
+    # float(100.01) - float(69.99) = 30.020000000000003 (float drift)
+    # Decimal("100.01") - Decimal("69.99") = Decimal("30.02") (exact)
+    mock_apply_response = MagicMock()
+    mock_apply_response.json.return_value = {
+        "receipt_number": rs_number,
+        "unapplied_amount": 69.99,
+    }
+
+    with (
+        patch.object(CFSService, "get_receipt", return_value={"unapplied_amount": 100.01}),
+        patch.object(CFSService, "apply_receipt", return_value=mock_apply_response),
+        patch.object(CFSService, "get_invoice", return_value={"amount_due": 0}),
+    ):
+        RoutingSlipTask.apply_routing_slips_to_invoice(
+            payment_account, cfs_account, rs, invoice, inv_ref.invoice_number
+        )
+
+    receipts = ReceiptModel.find_all_receipts_for_invoice(invoice.id)
+    assert len(receipts) == 1
+    receipt = receipts[0]
+    # Decimal math avoids float drift: 100.01 - 69.99 = 30.02 exactly
+    # (with float math this would be 30.020000000000003)
+    assert receipt.receipt_amount == 30.02
