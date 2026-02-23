@@ -533,7 +533,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         return invoice
 
     @classmethod
-    def _apply_routing_slips_to_pending_invoices(cls, routing_slip: RoutingSlipModel) -> float:
+    def _apply_routing_slips_to_pending_invoices(cls, routing_slip: RoutingSlipModel) -> Decimal:
         """Apply the routing slips again."""
         current_app.logger.info(f"Applying routing slips to pending invoices for routing slip: {routing_slip.number}")
         routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
@@ -603,8 +603,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 )
 
                 # If balance of receipt is zero, continue to next receipt.
-                receipt_balance_before_apply = float(
-                    CFSService.get_receipt(active_cfs_account, receipt_number).get("unapplied_amount")
+                receipt_balance_before_apply = Decimal(
+                    str(CFSService.get_receipt(active_cfs_account, receipt_number).get("unapplied_amount"))
                 )
                 current_app.logger.debug(f"Current balance on {receipt_number} = {receipt_balance_before_apply}")
                 if receipt_balance_before_apply == 0:
@@ -615,7 +615,9 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
                 receipt = ReceiptModel()
                 receipt.receipt_number = receipt_response.json().get("receipt_number", None)
-                receipt_amount = receipt_balance_before_apply - float(receipt_response.json().get("unapplied_amount"))
+                receipt_amount = receipt_balance_before_apply - Decimal(
+                    str(receipt_response.json().get("unapplied_amount"))
+                )
                 receipt.receipt_amount = receipt_amount
                 receipt.invoice_id = invoice.id
                 receipt.receipt_date = datetime.now(tz=UTC)
