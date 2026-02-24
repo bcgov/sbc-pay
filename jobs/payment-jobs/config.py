@@ -118,7 +118,6 @@ class _Config:  # pylint: disable=too-few-public-methods
     PAY_WEB_URL = os.getenv("PAY_WEB_URL", "")
 
     # GCP PubSub
-    GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", None)
     AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", None)
     BUSINESS_PAY_TOPIC = os.getenv("BUSINESS_PAY_TOPIC", "business-pay-topic")
@@ -255,7 +254,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CGI_SFTP_PORT = 2222
     CGI_SFTP_DIRECTORY = "/data/"
     CGI_SFTP_HOST = "localhost"
-    GCP_AUTH_KEY = None
 
     # Need a value for this, so we can mock the publish client.
     BUSINESS_PAY_TOPIC = "business-pay-topic"
