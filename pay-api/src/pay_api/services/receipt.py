@@ -97,14 +97,16 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         receipt_details: dict = {}
         invoice_data = None
         # invoice number mandatory
-        products, has_product_role = ProductAuthUtil.has_product_pattern_role(
-            RolePattern.PRODUCT_VIEW_TRANSACTION.value
-        )
-
-        if has_product_role and not skip_auth_check:
-            invoice_data = Invoice.find_product_invoice_id(invoice_identifier, products)
-        else:
+        if skip_auth_check:
             invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
+        else:
+            products, has_product_role = ProductAuthUtil.has_product_pattern_role(
+                RolePattern.PRODUCT_VIEW_TRANSACTION.value
+            )
+            if has_product_role:
+                invoice_data = Invoice.find_product_invoice_id(invoice_identifier, products)
+            else:
+                invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
 
         is_pending_invoice = (
             invoice_data.payment_method_code
