@@ -64,3 +64,20 @@ class ProductAuthUtil:
             case RefundStatus.DECLINED.value:
                 all_recipients = [refund.requester_email]
         return all_recipients
+
+    @staticmethod
+    @user_context
+    def has_product_pattern_role(role_pattern: RolePattern, **kwargs) -> tuple:
+        """Check for product pattern role."""
+        user: UserContext = kwargs["user"]
+        # Has product viewing role, but not for a specific product, user can view all products
+        if user.has_role(Role.VIEW_ALL_TRANSACTIONS.value):
+            return None, True
+
+        roles = user.roles or []
+        products = [s[: -len(role_pattern)].upper() for s in roles if s.endswith(role_pattern)]
+
+        if not products:
+            return None, False
+
+        return products, True
