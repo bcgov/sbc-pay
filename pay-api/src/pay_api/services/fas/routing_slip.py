@@ -22,7 +22,7 @@ from operator import and_
 import pytz
 from flask import abort, current_app
 from sqlalchemy import Numeric, cast, func
-from sqlalchemy.orm import contains_eager, lazyload, load_only
+from sqlalchemy.orm import contains_eager, lazyload, load_only, with_expression
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -32,6 +32,13 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import RoutingSlipSchema, db
+from pay_api.models.search.invoice_composite_model import (
+    InvoiceCompositeModel,
+    get_full_refundable_expr,
+    get_latest_refund_id_expr,
+    get_latest_refund_status_expr,
+    get_partial_refundable_expr,
+)
 from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -327,14 +334,32 @@ class RoutingSlip:
         return pdf_response, report_dict.get("reportName")
 
     @classmethod
-    def validate_and_find_by_number(cls, rs_number: str) -> dict[str, any]:
+    def validate_and_find_by_number(cls, rs_number: str, route_version: int = 1) -> dict[str, any]:
         """Validate digits before finding by routing slip number."""
         if not current_app.config.get("ALLOW_LEGACY_ROUTING_SLIPS"):
             RoutingSlip._validate_routing_slip_number_digits(rs_number)
-        return cls.find_by_number(rs_number)
+        return cls.find_by_number(rs_number, route_version)
 
     @classmethod
-    def find_by_number(cls, rs_number: str) -> dict[str, any]:
+    def _get_invoice_composites(cls, rs_number: str) -> list[InvoiceCompositeModel]:
+        """Get invoice composites for a routing slip."""
+        return (
+            db.session.query(InvoiceCompositeModel)
+            .filter(
+                InvoiceCompositeModel.routing_slip == rs_number,
+                InvoiceCompositeModel.payment_method_code == PaymentMethod.INTERNAL.value,
+            )
+            .options(
+                with_expression(InvoiceCompositeModel.latest_refund_id, get_latest_refund_id_expr()),
+                with_expression(InvoiceCompositeModel.latest_refund_status, get_latest_refund_status_expr()),
+                with_expression(InvoiceCompositeModel.full_refundable, get_full_refundable_expr()),
+                with_expression(InvoiceCompositeModel.partial_refundable, get_partial_refundable_expr()),
+            )
+            .all()
+        )
+
+    @classmethod
+    def find_by_number(cls, rs_number: str, route_version: int = 1) -> dict[str, any]:
         """Find by routing slip number."""
         routing_slip_dict: dict[str, any] = None
         if routing_slip := RoutingSlipModel.find_by_number(rs_number):
@@ -354,6 +379,11 @@ class RoutingSlip:
             routing_slip_dict["allowedStatuses"] = RoutingSlipStatusTransitionService.get_possible_transitions(
                 routing_slip
             )
+
+            if route_version == 2:
+                invoice_composites = cls._get_invoice_composites(rs_number)
+                routing_slip_dict["invoices"] = [InvoiceCompositeModel.dao_to_dict(inv) for inv in invoice_composites]
+
             # Future: Use CATTRS
             routing_slip_dict["mailingAddress"] = {
                 "city": routing_slip.city,

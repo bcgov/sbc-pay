@@ -16,6 +16,7 @@
 from flask import Flask
 
 from .v1 import v1_endpoint
+from .v2 import v2_endpoint
 
 
 class Endpoints:  # pylint: disable=too-few-public-methods
@@ -35,6 +36,7 @@ class Endpoints:  # pylint: disable=too-few-public-methods
     def _mount_endpoints(self):
         """Mount the endpoints of the system."""
         v1_endpoint.init_app(self.app)
+        v2_endpoint.init_app(self.app)
 
 
 endpoints = Endpoints()
