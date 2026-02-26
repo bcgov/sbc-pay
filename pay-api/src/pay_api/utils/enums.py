@@ -59,6 +59,7 @@ class InvoiceStatus(Enum):
     CANCELLED = "CANCELLED"
     CREDITED = "CREDITED"
     OVERDUE = "OVERDUE"
+    CHARGEBACK = "CHARGEBACK"
     # Below are frontend only, they are technically PAID on the backend.
     # We left these as PAID otherwise we'd need to have partners make changes.
     PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED"
