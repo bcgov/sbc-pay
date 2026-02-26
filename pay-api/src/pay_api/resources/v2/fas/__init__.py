@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2026 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Exposes all resource endpoints mounted in Flask-Blueprint style for FAS V2."""
 
-"""Version of this service in PEP440.
-
-[N!]N(.N)*[{a|b|rc}N][.postN][.devN]
-Epoch segment: N!
-Release segment: N(.N)*
-Pre-release segment: {a|b|rc}N
-Post-release segment: .postN
-Development release segment: .devN
-"""
-
-__version__ = "1.22.20"  # pylint: disable=invalid-name
+from .routing_slip import bp as fas_routing_slip_bp
