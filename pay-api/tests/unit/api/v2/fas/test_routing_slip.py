@@ -21,6 +21,8 @@ while the v1 route does are without those fields.
 import json
 from datetime import UTC, datetime
 
+import pytest
+
 from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.refund import Refund as RefundModel
@@ -62,8 +64,9 @@ def _create_routing_slip_with_invoice(client, jwt, rs_number: str):
     return headers, rs_number
 
 
-def test_get_routing_slip_v2_invoices_with_refund_data(session, client, jwt):
-    """Assert invoice composite model refund fields are returned."""
+@pytest.mark.parametrize("refund_status", [RefundStatus.APPROVAL_NOT_REQUIRED.value, RefundStatus.APPROVED.value])
+def test_get_routing_slip_v2_approval(session, client, jwt, refund_status):
+    """Assert invoice composite model refund fields are returned for approval end states."""
     headers, rs_number = _create_routing_slip_with_invoice(client, jwt, "123456789")
 
     rv = client.get(f"/api/v2/fas/routing-slips/{rs_number}", headers=headers)
@@ -82,7 +85,7 @@ def test_get_routing_slip_v2_invoices_with_refund_data(session, client, jwt):
 
     refund = RefundModel(
         type=RefundType.INVOICE.value,
-        status=RefundStatus.APPROVAL_NOT_REQUIRED.value,
+        status=refund_status,
         invoice_id=invoice["id"],
         requested_by="test_user",
         requested_date=datetime.now(tz=UTC),
@@ -92,7 +95,7 @@ def test_get_routing_slip_v2_invoices_with_refund_data(session, client, jwt):
     invoice_model.refund = 100
     invoice_model.save()
 
-    refund = RefundModel.find_by_routing_slip_id(refund.routing_slip_id)
+    refund = RefundModel.find_by_id(refund.id)
     rv = client.get(f"/api/v2/fas/routing-slips/{rs_number}", headers=headers)
     assert rv.status_code == 200
 
@@ -101,10 +104,52 @@ def test_get_routing_slip_v2_invoices_with_refund_data(session, client, jwt):
     assert len(invoices) == 1
     invoice = invoices[0]
     assert invoice["latestRefundId"] == refund.id
-    assert invoice["latestRefundStatus"] == RefundStatus.APPROVAL_NOT_REQUIRED.value
+    assert invoice["latestRefundStatus"] == refund_status
     assert invoice["fullRefundable"] is False
     assert invoice["partialRefundable"] is False
     assert invoice["refund"] == 100
+
+
+@pytest.mark.parametrize("refund_status", [RefundStatus.PENDING_APPROVAL.value, RefundStatus.DECLINED.value])
+def test_get_routing_slip_v2_refund_incomplete(session, client, jwt, refund_status):
+    """Assert invoice composite model refund fields are returned for refund incomplete states."""
+    headers, rs_number = _create_routing_slip_with_invoice(client, jwt, "123456789")
+
+    rv = client.get(f"/api/v2/fas/routing-slips/{rs_number}", headers=headers)
+    assert rv.status_code == 200
+
+    invoices = rv.json.get("invoices")
+    assert invoices is not None
+    assert len(invoices) == 1
+
+    invoice = invoices[0]
+    assert invoice["latestRefundId"] is None
+    assert invoice["latestRefundStatus"] is None
+    assert invoice["fullRefundable"] is True
+    assert invoice["partialRefundable"] is False
+    assert invoice["refund"] == 0
+
+    refund = RefundModel(
+        type=RefundType.INVOICE.value,
+        status=refund_status,
+        invoice_id=invoice["id"],
+        requested_by="test_user",
+        requested_date=datetime.now(tz=UTC),
+    ).save()
+
+    refund = RefundModel.find_by_id(refund.id)
+    rv = client.get(f"/api/v2/fas/routing-slips/{rs_number}", headers=headers)
+    assert rv.status_code == 200
+
+    invoices = rv.json.get("invoices")
+    assert invoices is not None
+    assert len(invoices) == 1
+    invoice = invoices[0]
+    assert invoice["latestRefundId"] == refund.id
+    assert invoice["latestRefundStatus"] == refund_status
+    assert invoice["fullRefundable"] is True
+    assert invoice["partialRefundable"] is False
+    assert invoice["refund"] == 0
 
 
 def test_get_routing_slip_v1_invoices_without_refund_data(session, client, jwt):
