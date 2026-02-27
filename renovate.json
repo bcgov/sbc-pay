@@ -8,11 +8,30 @@
   "packageRules": [
     {
       "matchManagers": ["poetry", "dockerfile"],
-      "groupName": "python and docker updates",
       "postUpdateOptions": ["poetryLockUpdate"]
     },
     {
+      "matchFileNames": ["pay-api/**"],
+      "groupName": "pay-api updates"
+    },
+    {
+      "matchFileNames": [
+        "pay-queue/**",
+        "pay-admin/**",
+        "jobs/payment-jobs/**",
+        "jobs/ftp-poller/**"
+      ],
+      "groupName": "pay-api dependents updates"
+    },
+    {
       "matchUpdateTypes": ["minor", "patch"],
+      "excludeFileNames": [
+        "pay-api/**",
+        "pay-queue/**",
+        "pay-admin/**",
+        "jobs/payment-jobs/**",
+        "jobs/ftp-poller/**"
+      ],
       "groupName": "non-major updates"
     },
     {
@@ -22,7 +41,7 @@
     {
       "matchDepTypes": ["devDependencies"],
       "groupName": "dev dependencies"
-    },
+    }
   ],
   "vulnerabilityAlerts": {
     "enabled": true,
