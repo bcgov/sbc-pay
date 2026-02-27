@@ -425,6 +425,23 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
+    def find_product_invoice_id(identifier: int, products):
+        """Find product invoice by id."""
+        invoice_dao = InvoiceModel.find_by_id(identifier)
+
+        if not invoice_dao:
+            raise BusinessException(Error.INVALID_INVOICE_ID)
+
+        if products and invoice_dao.corp_type.product not in products:
+            abort(403)
+
+        invoice = Invoice()
+        invoice._dao = invoice_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug(">find_product_invoice_id")
+        return invoice
+
+    @staticmethod
     @user_context
     def find_composite_by_id(identifier: int, **kwargs):
         """Find the invoice composite by id."""

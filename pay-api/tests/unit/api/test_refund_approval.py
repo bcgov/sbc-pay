@@ -978,30 +978,28 @@ def test_validate_refund_requester_approver_not_same(
     assert rv.json["type"] == Error.REFUND_REQUEST_SAME_USER_APPROVAL_FORBIDDEN.name
 
 
-@pytest.mark.skip(
-    reason="Temporarily skipping this test due to reverting a change. Will re-enable when new implementation"
-    "is in place."
-)
 @pytest.mark.parametrize(
     "test_name,roles,check_auth_called,expected_status",
     [
         ("system", [Role.SYSTEM.value], True, 201),
         (
             "forbidden-product-role",
-            ["strr" + RolePattern.PRODUCT_VIEW_TRANSACTION.value, Role.PRODUCT_REFUND_VIEWER.value],
+            ["strr" + RolePattern.PRODUCT_VIEW_TRANSACTION.value],
             False,
             403,
         ),
         (
-            "allowed-product-role",
-            ["business" + RolePattern.PRODUCT_VIEW_TRANSACTION.value, Role.PRODUCT_REFUND_VIEWER.value],
+            "allowed-business-product-role",
+            ["business" + RolePattern.PRODUCT_VIEW_TRANSACTION.value],
             False,
             201,
         ),
         ("view-all-transactions", [Role.VIEW_ALL_TRANSACTIONS.value], False, 201),
+        ("editor-role-transactions", [Role.EDITOR.value], True, 201),
+        ("viewer-role-transactions", [Role.VIEWER.value], True, 201),
     ],
 )
-def test_invoice_receipt_product_permissions(
+def test_invoice_receipt_permissions(
     session,
     client,
     jwt,
@@ -1014,7 +1012,7 @@ def test_invoice_receipt_product_permissions(
     check_auth_called,
     expected_status,
 ):
-    """Assert invoice receipt retrieval based on product permissions."""
+    """Assert invoice receipt retrieval based on permissions."""
     token_config = {
         "requester_name": "TEST_CREATE",
         "requester_roles": ["ABC"],

@@ -34,8 +34,10 @@ from pay_api.utils.enums import (
     InvoiceStatus,
     PaymentMethod,
     PaymentSystem,
+    RolePattern,
 )
 from pay_api.utils.errors import Error
+from pay_api.utils.product_auth_util import ProductAuthUtil
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date
 
@@ -93,8 +95,18 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
     def get_receipt_details(filing_data, invoice_identifier, skip_auth_check):
         """Return receipt details."""
         receipt_details: dict = {}
+        invoice_data = None
         # invoice number mandatory
-        invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
+        if skip_auth_check:
+            invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
+        else:
+            products, has_product_role = ProductAuthUtil.has_product_pattern_role(
+                RolePattern.PRODUCT_VIEW_TRANSACTION.value
+            )
+            if has_product_role:
+                invoice_data = Invoice.find_product_invoice_id(invoice_identifier, products)
+            else:
+                invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
 
         is_pending_invoice = (
             invoice_data.payment_method_code
