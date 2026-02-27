@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
-gunicorn = "^23.0.0"
+gunicorn = "^25.0.0"
 flask = "^3.0.2"
 flask-script = "^2.0.6"
 flask-moment = "^1.0.5"
