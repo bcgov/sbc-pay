@@ -12,7 +12,8 @@
     },
     {
       "matchFileNames": ["pay-api/**"],
-      "groupName": "pay-api updates"
+      "groupName": "pay-api updates",
+      "prPriority": 10
     },
     {
       "matchFileNames": [
@@ -21,7 +22,9 @@
         "jobs/payment-jobs/**",
         "jobs/ftp-poller/**"
       ],
-      "groupName": "pay-api dependents updates"
+      "groupName": "pay-api dependents updates",
+      "prPriority": -1,
+      "dependencyDashboardApproval": true
     },
     {
       "matchUpdateTypes": ["minor", "patch"],
