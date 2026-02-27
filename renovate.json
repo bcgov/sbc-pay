@@ -3,7 +3,7 @@
   "extends": [
     "local>bcgov/renovate-config"
   ],
-  "ignoreAuthors": ["travis8814@gmail.com"],
+  "gitIgnoredAuthors": ["travis8814@gmail.com"],
   "automerge": false,
   "labels": ["dependencies"],
   "packageRules": [
