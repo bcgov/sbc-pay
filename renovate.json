@@ -4,10 +4,32 @@
     "local>bcgov/renovate-config"
   ],
   "automerge": false,
+  "labels": ["dependencies"],
   "packageRules": [
     {
       "matchManagers": ["poetry"],
       "postUpdateOptions": ["poetryLockUpdate"]
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "non-major updates"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "breaking"]
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev dependencies"
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker updates"
     }
-  ]
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["dependencies", "security"],
+    "schedule": ["at any time"]
+  }
 }
