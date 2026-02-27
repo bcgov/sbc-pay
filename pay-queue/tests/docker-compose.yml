@@ -8,7 +8,7 @@ services:
     depends_on:
       - paybc
   paybc:
-    image: stoplight/prism:3.3.0
+    image: stoplight/prism:3.3.7
     command: >
       mock -p 4010 --host 0.0.0.0 https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/PayBC%20Mocking/paybc-1.0.0.yaml
   pubsub-emulator:
@@ -19,7 +19,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
   gcs-emulator:
-    image: fsouza/fake-gcs-server:1.52.2
+    image: fsouza/fake-gcs-server:1.54.0
     ports:
       - "4443:4443"
     command: [ "-scheme", "http", "-host", "0.0.0.0", "-port", "4443" ]

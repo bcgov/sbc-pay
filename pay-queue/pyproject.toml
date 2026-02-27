@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 flask = "^3.0.2"
-jsonschema = "4.17.3"
+jsonschema = "4.26.0"
 python-dotenv = "^1.0.1"
 pycountry = "^23.12.11"
 werkzeug = "^3.0.1"
@@ -30,8 +30,8 @@ freezegun = "^1.4.0"
 coverage = "^7.4.3"
 pydocstyle = "^6.3.0"
 lovely-pytest-docker = "^0.3.1"
-pytest-asyncio = "0.18.3"
-ruff = "^0.14.1"
+pytest-asyncio = "0.26.0"
+ruff = "^0.15.0"
 
 
 [tool.ruff]
