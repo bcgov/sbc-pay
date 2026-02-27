@@ -7,7 +7,8 @@
   "labels": ["dependencies"],
   "packageRules": [
     {
-      "matchManagers": ["poetry"],
+      "matchManagers": ["poetry", "dockerfile"],
+      "groupName": "python and docker updates",
       "postUpdateOptions": ["poetryLockUpdate"]
     },
     {
@@ -22,10 +23,6 @@
       "matchDepTypes": ["devDependencies"],
       "groupName": "dev dependencies"
     },
-    {
-      "matchManagers": ["dockerfile"],
-      "groupName": "docker updates"
-    }
   ],
   "vulnerabilityAlerts": {
     "enabled": true,
