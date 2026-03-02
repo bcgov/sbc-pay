@@ -8,6 +8,12 @@
   "labels": ["dependencies"],
   "packageRules": [
     {
+      "matchPackageNames": ["postgres", "postgresql"],
+      "matchManagers": ["github-actions", "dockerfile"],
+      "allowedVersions": "< 16.0.0",
+      "description": "Pin Postgres to version 15 to prevent major upgrades"
+    },
+    {
       "matchManagers": ["poetry", "dockerfile"],
       "postUpdateOptions": ["poetryLockUpdate"]
     },
