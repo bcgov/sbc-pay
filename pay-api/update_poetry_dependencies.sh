@@ -13,7 +13,6 @@ REPO=$(git config --get remote.origin.url)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 echo "Fetching latest SHA for branch '$BRANCH' from remote..."
-# Gets the SHA of the HEAD of the current branch on origin
 REMOTE_SHA=$(git ls-remote "$REPO" "refs/heads/$BRANCH" | cut -f1)
 
 if [ -z "$REMOTE_SHA" ]; then
@@ -33,8 +32,7 @@ update_pyproject_and_poetry() {
 
   echo "Updating $file to commit $REMOTE_SHA (Branch: $BRANCH)..."
   
-  # Added ' # from branch: $BRANCH' to the end of the replacement string
-  sed -i -E "s|pay-api\s*=\s*\{[^}]*\}|pay-api = { git = \"$REPO\", rev = \"$REMOTE_SHA\", subdirectory = \"pay-api\" } # from branch: $BRANCH|" "$file"
+  sed -i -E "s|pay-api\s*=\s*\{[^}]*\}.*|pay-api = { git = \"$REPO\", rev = \"$REMOTE_SHA\", subdirectory = \"pay-api\" } # from branch: $BRANCH|" "$file"
 
   echo "Running poetry update pay-api in $dir..."
   (
