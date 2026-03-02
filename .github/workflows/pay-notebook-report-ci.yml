@@ -6,6 +6,10 @@ on:
       - main
     paths:
       - "jobs/notebook-report/**"
+
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash

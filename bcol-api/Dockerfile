@@ -1,5 +1,4 @@
 FROM python:3.12.2-bookworm AS development_build
-
 ARG VCS_REF="missing"
 ARG BUILD_DATE="missing"
 
