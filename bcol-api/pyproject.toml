@@ -35,7 +35,7 @@ pyhamcrest = "^2.1.0"
 pytest-cov = "^4.1.0"
 coverage = "^7.4.3"
 pydocstyle = "^6.3.0"
-lovely-pytest-docker = "^0.3.1"
+lovely-pytest-docker = "^1.0.0"
 ruff = "^0.14.1"
 
 [tool.ruff]
