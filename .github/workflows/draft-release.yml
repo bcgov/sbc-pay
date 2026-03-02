@@ -12,7 +12,7 @@ jobs:
       - name: Get current date
         id: date
         run: echo "::set-output name=release-name::Payment Services $(date +'%B, %Y') Release"
-      - uses: release-drafter/release-drafter@v5
+      - uses: release-drafter/release-drafter@v6
         with:
           name: "${{ steps.date.outputs.release-name }}"
         env:
