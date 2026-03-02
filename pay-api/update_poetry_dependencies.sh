@@ -9,8 +9,19 @@ TARGET_DIRS=(
   "../jobs/ftp-poller"
 )
 
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
 REPO=$(git config --get remote.origin.url)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+echo "Fetching latest SHA for branch '$BRANCH' from remote..."
+# Gets the SHA of the HEAD of the current branch on origin
+REMOTE_SHA=$(git ls-remote "$REPO" "refs/heads/$BRANCH" | cut -f1)
+
+if [ -z "$REMOTE_SHA" ]; then
+    echo "Error: Could not find branch '$BRANCH' on remote. Please push your branch first."
+    exit 1
+fi
+
+echo "Using Remote SHA: $REMOTE_SHA"
 
 update_pyproject_and_poetry() {
   local dir=$1
@@ -20,17 +31,20 @@ update_pyproject_and_poetry() {
     return
   fi
 
-  echo "Updating $file..."
-  sed -i -E  "s|pay-api\s*=\s*\{[^}]*subdirectory\s*=\s*\"pay-api\"[^}]*\}|pay-api = { git = \"$REPO\", branch = \"$BRANCH\", subdirectory = \"pay-api\" }|" "$file"
+  echo "Updating $file to commit $REMOTE_SHA (Branch: $BRANCH)..."
+  
+  # Added ' # from branch: $BRANCH' to the end of the replacement string
+  sed -i -E "s|pay-api\s*=\s*\{[^}]*\}|pay-api = { git = \"$REPO\", rev = \"$REMOTE_SHA\", subdirectory = \"pay-api\" } # from branch: $BRANCH|" "$file"
 
   echo "Running poetry update pay-api in $dir..."
-  cd "$dir"
-  poetry update pay-api
-  cd - > /dev/null
+  (
+    cd "$dir"
+    poetry update pay-api
+  )
 }
 
 for dir in "${TARGET_DIRS[@]}"; do
   update_pyproject_and_poetry "$dir"
 done
 
-echo "All done."
+echo "All done. All services pinned to remote SHA: $REMOTE_SHA from branch: $BRANCH"
