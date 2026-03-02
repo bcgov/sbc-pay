@@ -20,7 +20,7 @@ itsdangerous = "^2.1.2"
 jinja2 = "^3.1.3"
 launchdarkly-server-sdk = "^8.2.1"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
-pay-api = { git = "https://github.com/seeker25/sbc-pay.git", rev = "a7e4d61b36504703181bf9b4a50b1f07f9722c92", subdirectory = "pay-api" } # from branch: main
+pay-api = { git = "https://github.com/seeker25/sbc-pay.git", rev = "c0b9a3aca7d66c8e56a56a604b463d92e8a76591", subdirectory = "pay-api" } # from branch: update_deps__
 wheel = "^0.46.2"
 
 
