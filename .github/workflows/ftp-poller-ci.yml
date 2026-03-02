@@ -8,6 +8,9 @@ on:
     paths:
       - "jobs/ftp-poller/**"
 
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash

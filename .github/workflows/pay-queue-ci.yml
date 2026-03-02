@@ -10,6 +10,9 @@ on:
       - "pay-api/src/pay_api/models/**"
       - "pay-api/src/pay_api/services/cfs_service.py"
 
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash

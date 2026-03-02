@@ -9,6 +9,9 @@ on:
       - "pay-admin/**"
       - "pay-api/src/pay_api/models/**"
 
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash
