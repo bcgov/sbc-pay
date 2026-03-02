@@ -819,13 +819,13 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 
 [[package]]
 name = "lovely-pytest-docker"
-version = "0.3.1"
+version = "1.0.0"
 description = "Pytest testing utilities with docker containers."
 optional = false
 python-versions = "*"
 groups = ["dev"]
 files = [
-    {file = "lovely-pytest-docker-0.3.1.tar.gz", hash = "sha256:4326a180bfd4dd4ad69c2ef3e3643c41075d965f40068488b40204602e6df85e"},
+    {file = "lovely_pytest_docker-1.0.0.tar.gz", hash = "sha256:7283abfe400c31ecc7155f9338c6f5af476f2ab506e1aadb9f7e9a5005e491d6"},
 ]
 
 [package.dependencies]
@@ -1798,4 +1798,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "d2160eb07a1e40dc071d5741bd9275deb0395c1e4f7d55ae66ae74c05748f56f"
+content-hash = "61876f8ad756f734b42e2a8f3fdc87aaf3a8fd6efc71f6070c7be28ca0fdf1a2"
