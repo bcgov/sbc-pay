@@ -12,6 +12,12 @@
       "postUpdateOptions": ["poetryLockUpdate"]
     },
     {
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["python"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "non-major updates"
     },
