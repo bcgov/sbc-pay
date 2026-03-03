@@ -17,7 +17,7 @@ sqlalchemy = "^2.0.28"
 itsdangerous = "^2.1.2"
 launchdarkly-server-sdk = "^8.2.1"
 cachecontrol = "^0.14.0"
-pay-api = { git = "https://github.com/seeker25/sbc-pay.git", rev = "c0b9a3aca7d66c8e56a56a604b463d92e8a76591", subdirectory = "pay-api" } # from branch: update_deps__
+pay-api = { git = "https://github.com/seeker25/sbc-pay.git", rev = "34e6f3c9e9d9adef87240da91530b4a5af6bc455", subdirectory = "pay-api" } # from branch: fix_deps_p599
 
 
 [tool.poetry.group.dev.dependencies]
