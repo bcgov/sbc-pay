@@ -1003,6 +1003,7 @@ def _publish_payment_event(inv: InvoiceModel):
                 message_type=QueueMessageTypes.PAYMENT.value,
                 payload=payload,
                 topic=get_topic_for_corp_type(inv.corp_type_code),
+                corp_type=inv.corp_type_code,
             ),
         )
     except Exception as e:  # NOQA pylint: disable=broad-except
