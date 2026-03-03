@@ -15,7 +15,7 @@ DOCKER_NAME:=pay-queue
 setup: install ## Setup the project
 
 clean: clean-build clean-pyc clean-test ## Clean the project
-	rm -rf venv/
+	poetry env remove --all
 
 clean-build: ## Clean build files
 	rm -fr build/
