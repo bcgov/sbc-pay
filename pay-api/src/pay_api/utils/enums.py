@@ -60,6 +60,8 @@ class InvoiceStatus(Enum):
     CREDITED = "CREDITED"
     OVERDUE = "OVERDUE"
     CHARGEBACK = "CHARGEBACK"
+    # Finance has issued a manual cheque; no CFS/GL updates are triggered.
+    MANUAL_REFUNDED = "MANUAL_REFUNDED"
     # Below are frontend only, they are technically PAID on the backend.
     # We left these as PAID otherwise we'd need to have partners make changes.
     PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED"
@@ -81,6 +83,7 @@ class InvoiceStatus(Enum):
         return [
             cls.REFUNDED.value,
             cls.CREDITED.value,
+            cls.MANUAL_REFUNDED.value,
         ]
 
     @classmethod

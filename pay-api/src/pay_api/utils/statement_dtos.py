@@ -71,6 +71,7 @@ class StatementTransactionDTO(Serializable):
             InvoiceStatus.CREDITED.value,
             InvoiceStatus.REFUND_REQUESTED.value,
             InvoiceStatus.REFUNDED.value,
+            InvoiceStatus.MANUAL_REFUNDED.value,
             InvoiceStatus.COMPLETED.value,
             InvoiceStatus.PARTIALLY_CREDITED.value,
             InvoiceStatus.PARTIALLY_REFUNDED.value,

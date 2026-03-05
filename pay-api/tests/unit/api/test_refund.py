@@ -27,10 +27,12 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Refund as RefundModel
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, RefundStatus, Role
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
+    factory_invoice,
     factory_invoice_reference,
+    factory_payment_account,
     get_claims,
     get_payment_request,
     get_payment_request_with_payment_method,
@@ -509,3 +511,48 @@ def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):
         "type": Error.DIRECT_PAY_INVALID_RESPONSE.name,
         "detail": ["Transaction does not exist"],
     }
+
+
+def test_create_manual_refund(session, client, jwt, app):
+    """Assert POST /refunds/manual path, invalid status, and duplicate refund."""
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.STAFF.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    account = factory_payment_account()
+    account.save()
+    paid_invoice = factory_invoice(account, status_code=InvoiceStatus.PAID.value, total=50)
+    paid_invoice.save()
+
+    rv = client.post(
+        f"/api/v1/payment-requests/{paid_invoice.id}/refunds/manual",
+        data=json.dumps({"reason": "GOVN overcharge", "staffComment": "Exemption not applied"}),
+        headers=headers,
+    )
+    assert rv.status_code == 202
+    assert rv.json.get("refundAmount") == paid_invoice.total
+    updated = InvoiceModel.find_by_id(paid_invoice.id)
+    assert updated.invoice_status_code == InvoiceStatus.MANUAL_REFUNDED.value
+    assert updated.refund == paid_invoice.paid
+    assert updated.refund_date is not None
+    refund = RefundModel.find_by_id(rv.json["refundId"])
+    assert refund.reason == "GOVN overcharge"
+    assert refund.status == RefundStatus.APPROVAL_NOT_REQUIRED.value
+
+    # Duplicate refund on same invoice should fail
+    rv = client.post(
+        f"/api/v1/payment-requests/{paid_invoice.id}/refunds/manual",
+        data=json.dumps({"reason": "Duplicate"}),
+        headers=headers,
+    )
+    assert rv.status_code == 400
+
+    # Invoice not in a refundable state
+    created_invoice = factory_invoice(account, status_code=InvoiceStatus.CREATED.value, total=50)
+    created_invoice.save()
+    rv = client.post(
+        f"/api/v1/payment-requests/{created_invoice.id}/refunds/manual",
+        data=json.dumps({"reason": "Test"}),
+        headers=headers,
+    )
+    assert rv.status_code == 400
+    assert rv.json.get("type") == Error.INVALID_REQUEST.name

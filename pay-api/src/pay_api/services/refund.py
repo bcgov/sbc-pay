@@ -396,6 +396,53 @@ class RefundService:
             "isPartialRefund": is_partial_refund,
         }
 
+    @classmethod
+    @user_context
+    def create_manual_refund(cls, invoice_id: int, request: dict, **kwargs) -> dict:
+        """Mark an invoice as manually refunded (Finance has already issued a cheque).
+
+        This does NOT call CFS or update revenue. It only records the refund in PAY-DB.
+        """
+        current_app.logger.debug(f"<create_manual_refund invoice_id={invoice_id}")
+        user: UserContext = kwargs["user"]
+
+        invoice = InvoiceModel.find_by_id(invoice_id)
+        if not invoice:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        if invoice.invoice_status_code not in (
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.PARTIAL.value,
+        ):
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        existing_refund = RefundModel.find_latest_by_invoice_id(
+            invoice_id,
+            (
+                RefundStatus.PENDING_APPROVAL.value,
+                RefundStatus.APPROVAL_NOT_REQUIRED.value,
+                RefundStatus.APPROVED.value,
+            ),
+        )
+        if existing_refund is not None:
+            raise BusinessException(Error.REFUND_ALREADY_EXISTS)
+
+        refund = cls._initialize_refund(invoice, request, user)
+        refund.status = RefundStatus.APPROVAL_NOT_REQUIRED.value
+
+        invoice.invoice_status_code = InvoiceStatus.MANUAL_REFUNDED.value
+        invoice.refund = invoice.paid
+        invoice.refund_date = datetime.now(tz=UTC)
+        invoice.save()
+
+        refund.save()
+        current_app.logger.debug(f">create_manual_refund invoice_id={invoice_id} refund_id={refund.id}")
+        return {
+            "message": f"Invoice ({invoice_id}) has been marked as manually refunded.",
+            "refundId": refund.id,
+            "refundAmount": invoice.refund,
+        }
+
     @staticmethod
     def _save_partial_refund_lines(
         partial_refund_lines: list[RefundPartialLine], invoice: InvoiceModel, refund: RefundModel
