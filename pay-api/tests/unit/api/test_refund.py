@@ -520,7 +520,7 @@ def test_create_manual_refund(session, client, jwt, app):
 
     account = factory_payment_account()
     account.save()
-    paid_invoice = factory_invoice(account, status_code=InvoiceStatus.PAID.value, total=50)
+    paid_invoice = factory_invoice(account, status_code=InvoiceStatus.PAID.value, total=50, paid=50)
     paid_invoice.save()
 
     rv = client.post(
@@ -529,7 +529,7 @@ def test_create_manual_refund(session, client, jwt, app):
         headers=headers,
     )
     assert rv.status_code == 202
-    assert rv.json.get("refundAmount") == paid_invoice.total
+    assert float(rv.json.get("refundAmount")) == float(paid_invoice.paid)
     updated = InvoiceModel.find_by_id(paid_invoice.id)
     assert updated.invoice_status_code == InvoiceStatus.MANUAL_REFUNDED.value
     assert updated.refund == paid_invoice.paid
