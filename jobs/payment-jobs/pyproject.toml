@@ -23,7 +23,7 @@ pysftp = "^0.2.9"
 flask-migrate = "^4.0.7"
 itsdangerous = "^2.1.2"
 dataclass-wizard = "^0.22.3"
-launchdarkly-server-sdk = "^8.2.1"
+launchdarkly-server-sdk = "^9.0.0"
 more-itertools = "^10.2.0"
 cloud-sql-python-connector = "^1.13.0"
 ruff = "^0.14.1"
@@ -31,16 +31,16 @@ pg8000 = "^1.31.5"
 
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.1.1"
+pytest = "^9.0.0"
 pytest-mock = "^3.12.0"
 requests = "^2.31.0"
 pyhamcrest = "^2.1.0"
-pytest-cov = "^4.1.0"
-faker = "^24.2.0"
+pytest-cov = "^7.0.0"
+faker = "^40.0.0"
 coverage = "^7.4.3"
 freezegun = "^1.4.0"
-lovely-pytest-docker = "^0.3.1"
-pytest-asyncio = "^0.23.5.post1"
+lovely-pytest-docker = "^1.0.0"
+pytest-asyncio = "^1.0.0"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

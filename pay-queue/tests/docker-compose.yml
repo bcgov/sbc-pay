@@ -8,7 +8,7 @@ services:
     depends_on:
       - paybc
   paybc:
-    image: stoplight/prism:3.3.0
+    image: stoplight/prism:5.14.3
     command: >
       mock -p 4010 --host 0.0.0.0 https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/PayBC%20Mocking/paybc-1.0.0.yaml
   pubsub-emulator:
