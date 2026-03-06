@@ -6,38 +6,68 @@
   "ignorePaths": [
     "jobs/notebook-report/**"
   ],
-  "gitIgnoredAuthors": ["travis8814@gmail.com"],
+  "gitIgnoredAuthors": [
+    "travis8814@gmail.com"
+  ],
   "automerge": false,
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "packageRules": [
     {
-      "matchPackageNames": ["postgres", "postgresql"],
-      "matchManagers": ["github-actions", "dockerfile"],
+      "matchPackageNames": [
+        "postgres",
+        "postgresql"
+      ],
+      "matchManagers": [
+        "github-actions",
+        "dockerfile"
+      ],
       "enabled": false,
       "description": "Disable all automated updates for Postgres"
     },
     {
-      "matchManagers": ["poetry"],
-      "postUpdateOptions": ["poetryLockUpdate"]
+      "matchManagers": [
+        "poetry"
+      ],
+      "postUpdateOptions": [
+        "poetryLockUpdate"
+      ]
     },
     {
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "non-major updates",
-      "excludePackageNames": ["python"]
+      "matchPackageNames": [
+        "!python"
+      ]
     },
     {
-      "matchUpdateTypes": ["major"],
-      "labels": ["dependencies", "breaking"]
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "labels": [
+        "dependencies",
+        "breaking"
+      ]
     },
     {
-      "matchDepTypes": ["devDependencies"],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
       "groupName": "dev dependencies"
     },
     {
-      "matchFileNames": ["pay-api/**"],
+      "matchFileNames": [
+        "pay-api/**"
+      ],
       "groupName": "pay-api updates",
       "prPriority": 10,
-      "excludePackageNames": ["python"]
+      "matchPackageNames": [
+        "!python"
+      ]
     },
     {
       "matchFileNames": [
@@ -49,22 +79,35 @@
       "groupName": "pay-api dependents updates",
       "prPriority": -1,
       "dependencyDashboardApproval": true,
-      "excludePackageNames": ["python"]
+      "matchPackageNames": [
+        "!python"
+      ]
     },
     {
-      "matchPackageNames": ["ruff"],
+      "matchPackageNames": [
+        "ruff"
+      ],
       "rangeStrategy": "pin"
     },
     {
-      "matchManagers": ["dockerfile"],
-      "matchPackageNames": ["python"],
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchPackageNames": [
+        "python"
+      ],
       "enabled": false,
       "description": "Disable Python Docker image updates everywhere"
     }
   ],
   "vulnerabilityAlerts": {
     "enabled": true,
-    "labels": ["dependencies", "security"],
-    "schedule": ["at any time"]
+    "labels": [
+      "dependencies",
+      "security"
+    ],
+    "schedule": [
+      "at any time"
+    ]
   }
 }
