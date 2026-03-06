@@ -22,7 +22,8 @@
     },
     {
       "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "non-major updates"
+      "groupName": "non-major updates",
+      "excludePackageNames": ["python"]
     },
     {
       "matchUpdateTypes": ["major"],
@@ -35,7 +36,8 @@
     {
       "matchFileNames": ["pay-api/**"],
       "groupName": "pay-api updates",
-      "prPriority": 10
+      "prPriority": 10,
+      "excludePackageNames": ["python"]
     },
     {
       "matchFileNames": [
@@ -46,19 +48,18 @@
       ],
       "groupName": "pay-api dependents updates",
       "prPriority": -1,
-      "dependencyDashboardApproval": true
-    },
-    {
-      "matchManagers": ["dockerfile"],
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["python"],
-      "matchFileNames": ["**/*"],
-      "enabled": false,
-      "description": "Disable Python Docker image updates everywhere"
+      "dependencyDashboardApproval": true,
+      "excludePackageNames": ["python"]
     },
     {
       "matchPackageNames": ["ruff"],
       "rangeStrategy": "pin"
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["python"],
+      "enabled": false,
+      "description": "Disable Python Docker image updates everywhere"
     }
   ],
   "vulnerabilityAlerts": {
