@@ -21,12 +21,6 @@
       "postUpdateOptions": ["poetryLockUpdate"]
     },
     {
-      "matchManagers": ["dockerfile"],
-      "matchPackageNames": ["python"],
-      "enabled": false,
-      "description": "Disable all automated updates for Python in Dockerfiles"
-    },
-    {
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "non-major updates"
     },
@@ -53,7 +47,13 @@
       "groupName": "pay-api dependents updates",
       "prPriority": -1,
       "dependencyDashboardApproval": true
-    }
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["python"],
+      "enabled": false,
+      "description": "Disable all automated updates for Python in Dockerfiles"
+    },
   ],
   "vulnerabilityAlerts": {
     "enabled": true,
