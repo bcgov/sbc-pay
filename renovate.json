@@ -4,9 +4,9 @@
     "local>bcgov/renovate-config"
   ],
   "ignorePaths": [
-    "jobs/notebook-report/**"
+    "jobs/notebook-report/**",
+    "**/Dockerfile"
   ],
-  "ignoreDeps": ["python"],
   "gitIgnoredAuthors": ["travis8814@gmail.com"],
   "automerge": false,
   "labels": ["dependencies"],
