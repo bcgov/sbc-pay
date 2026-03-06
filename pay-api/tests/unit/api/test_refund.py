@@ -531,7 +531,7 @@ def test_create_manual_refund(session, client, jwt, app):
     assert rv.status_code == 202
     assert float(rv.json.get("refundAmount")) == float(paid_invoice.paid)
     updated = InvoiceModel.find_by_id(paid_invoice.id)
-    assert updated.invoice_status_code == InvoiceStatus.MANUAL_REFUNDED.value
+    assert updated.invoice_status_code == InvoiceStatus.MANUALLY_REFUNDED.value
     assert updated.refund == paid_invoice.paid
     assert updated.refund_date is not None
     refund = RefundModel.find_by_id(rv.json["refundId"])

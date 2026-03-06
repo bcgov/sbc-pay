@@ -430,7 +430,7 @@ class RefundService:
         refund = cls._initialize_refund(invoice, request, user)
         refund.status = RefundStatus.APPROVAL_NOT_REQUIRED.value
 
-        invoice.invoice_status_code = InvoiceStatus.MANUAL_REFUNDED.value
+        invoice.invoice_status_code = InvoiceStatus.MANUALLY_REFUNDED.value
         invoice.refund = invoice.paid
         invoice.refund_date = datetime.now(tz=UTC)
         invoice.save()

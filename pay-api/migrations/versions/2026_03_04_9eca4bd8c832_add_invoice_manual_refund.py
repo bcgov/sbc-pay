@@ -1,5 +1,5 @@
 """
-Add MANUAL_REFUNDED invoice status code.
+Add MANUALLY_REFUNDED invoice status code.
 Revision ID: 9eca4bd8c832
 Revises: 1b96dd80e686
 Create Date: 2026-03-04 15:43:41.258631
@@ -23,10 +23,10 @@ depends_on = None
 def upgrade():
     op.execute(
         "INSERT INTO invoice_status_codes (code, description) "
-        "VALUES ('MANUAL_REFUNDED', 'Manual Refunded') "
+        "VALUES ('MANUALLY_REFUNDED', 'Manually Refunded') "
         "ON CONFLICT DO NOTHING"
     )
 
 
 def downgrade():
-    op.execute("DELETE FROM invoice_status_codes WHERE code = 'MANUAL_REFUNDED'")
+    op.execute("DELETE FROM invoice_status_codes WHERE code = 'MANUALLY_REFUNDED'")
