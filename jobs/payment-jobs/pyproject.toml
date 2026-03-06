@@ -8,7 +8,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pay-api = { git = "https://github.com/seeker25/sbc-pay.git", rev = "c0b9a3aca7d66c8e56a56a604b463d92e8a76591", subdirectory = "pay-api" } # from branch: update_deps__
+pay-api = { git = "https://github.com/jxio/sbc-pay.git", rev = "e6d379b7e69191132941893844ebd1f2a06fa4fb", subdirectory = "pay-api" } # from branch: update_deps__
 flask = "^3.0.2"
 flask-sqlalchemy = "^3.1.1"
 sqlalchemy = "^2.0.28"

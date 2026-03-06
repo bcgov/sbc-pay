@@ -58,6 +58,22 @@ def post_refund(invoice_id):
     return jsonify(response), HTTPStatus.ACCEPTED
 
 
+@bp.route("/refunds/manual", methods=["POST", "OPTIONS"])
+@cross_origin(origins="*", methods=["POST"])
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.SYSTEM.value])
+def post_manual_refund(invoice_id: int):
+    """Mark an invoice as manually refunded (Finance has already issued a cheque)."""
+    current_app.logger.info(f"<post_manual_refund : {invoice_id}")
+    request_json = request.get_json(silent=True) or {}
+    try:
+        response = RefundService.create_manual_refund(invoice_id, request_json)
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug(f">post_manual_refund : {invoice_id}")
+    return jsonify(response), HTTPStatus.ACCEPTED
+
+
 @bp.route("/refunds/<int:refund_id>", methods=["PATCH"])
 @cross_origin(origins="*")
 @_jwt.requires_auth

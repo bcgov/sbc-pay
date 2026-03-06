@@ -133,7 +133,8 @@ class EjvPartnerDistributionTask(CgiEjv):
             .all()
         )
 
-        # REFUND_REQUESTED for credit card payments, CREDITED for AR and REFUNDED for other payments.
+        # REFUND_REQUESTED for credit card payments, CREDITED for AR, REFUNDED for other payments,
+        # MANUALLY_REFUNDED when Finance issued cheque (no credit memo, but still claw back partner revenue).
         reversals = (
             base_query.filter(
                 InvoiceModel.invoice_status_code.in_(
@@ -141,6 +142,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                         InvoiceStatus.REFUNDED.value,
                         InvoiceStatus.REFUND_REQUESTED.value,
                         InvoiceStatus.CREDITED.value,
+                        InvoiceStatus.MANUALLY_REFUNDED.value,
                     ]
                 )
             )
@@ -174,6 +176,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                             InvoiceStatus.REFUNDED.value,
                             InvoiceStatus.REFUND_REQUESTED.value,
                             InvoiceStatus.CREDITED.value,
+                            InvoiceStatus.MANUALLY_REFUNDED.value,
                         ],
                         target_type=EJVLinkType.INVOICE.value,
                         identifier=invoice.id,
