@@ -17,7 +17,7 @@
       "description": "Disable all automated updates for Postgres"
     },
     {
-      "matchManagers": ["poetry", "dockerfile"],
+      "matchManagers": ["poetry"],
       "postUpdateOptions": ["poetryLockUpdate"]
     },
     {
