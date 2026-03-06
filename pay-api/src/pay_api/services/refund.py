@@ -430,6 +430,9 @@ class RefundService:
         refund = cls._initialize_refund(invoice, request, user)
         refund.status = RefundStatus.APPROVAL_NOT_REQUIRED.value
 
+        if invoice.payment_method_code == PaymentMethod.EFT.value:
+            PartnerDisbursements.handle_reversal(invoice)
+
         invoice.invoice_status_code = InvoiceStatus.MANUALLY_REFUNDED.value
         invoice.refund = invoice.paid
         invoice.refund_date = datetime.now(tz=UTC)
