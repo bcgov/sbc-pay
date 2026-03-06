@@ -36,7 +36,7 @@ pytest-cov = "^4.1.0"
 coverage = "^7.4.3"
 pydocstyle = "^6.3.0"
 lovely-pytest-docker = "^1.0.0"
-ruff = "^0.14.1"
+ruff = "0.14.1"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
