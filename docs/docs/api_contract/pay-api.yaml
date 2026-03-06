@@ -1686,6 +1686,7 @@ components:
             - CREDITED
             - OVERDUE
             - CHARGEBACK
+            - MANUALLY_REFUNDED
         references:
           type: array
           items:
