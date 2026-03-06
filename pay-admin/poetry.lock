@@ -1499,18 +1499,18 @@ python-dateutil = "*"
 
 [[package]]
 name = "httplib2"
-version = "0.22.0"
+version = "0.31.2"
 description = "A comprehensive HTTP client library."
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+python-versions = ">=3.6"
 groups = ["main"]
 files = [
-    {file = "httplib2-0.22.0-py3-none-any.whl", hash = "sha256:14ae0a53c1ba8f3d37e9e27cf37eabb0fb9980f435ba405d546948b009dd64dc"},
-    {file = "httplib2-0.22.0.tar.gz", hash = "sha256:d7a10bc5ef5ab08322488bde8c726eeee5c8618723fdb399597ec58f3d82df81"},
+    {file = "httplib2-0.31.2-py3-none-any.whl", hash = "sha256:dbf0c2fa3862acf3c55c078ea9c0bc4481d7dc5117cae71be9514912cf9f8349"},
+    {file = "httplib2-0.31.2.tar.gz", hash = "sha256:385e0869d7397484f4eab426197a4c020b606edd43372492337c0b4010ae5d24"},
 ]
 
 [package.dependencies]
-pyparsing = {version = ">=2.4.2,<3.0.0 || >3.0.0,<3.0.1 || >3.0.1,<3.0.2 || >3.0.2,<3.0.3 || >3.0.3,<4", markers = "python_version > \"3.0\""}
+pyparsing = ">=3.1,<4"
 
 [[package]]
 name = "idna"
@@ -1969,7 +1969,7 @@ develop = false
 aiohttp = "^3.13.3"
 alembic = "1.13.1"
 attrs = "23.2.0"
-blinker = "^1.7.0"
+blinker = "1.7.0"
 cachelib = "^0.13.0"
 cachetools = "5.3.3"
 cattrs = "23.2.3"
@@ -1997,7 +1997,7 @@ greenlet = "3.0.3"
 gunicorn = "23.0.0"
 holidays = "0.37"
 idna = "3.7"
-itsdangerous = "^2.1.2"
+itsdangerous = "2.1.2"
 jaeger-client = "4.8.0"
 jinja2 = "3.1.6"
 jsonschema = "4.17.3"
@@ -2040,8 +2040,8 @@ werkzeug = "^3.1.4"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "c0b9a3aca7d66c8e56a56a604b463d92e8a76591"
-resolved_reference = "c0b9a3aca7d66c8e56a56a604b463d92e8a76591"
+reference = "a7e4d61b36504703181bf9b4a50b1f07f9722c92"
+resolved_reference = "a7e4d61b36504703181bf9b4a50b1f07f9722c92"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3099,4 +3099,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "692d8493658aad05c54aff2fe3e6a4bef2ee1cd43a3c7470ed6027a587d321e5"
+content-hash = "aff03a905f184b36a518c7be84b97e2f3dc5080db7157e9310cf4972f4e98f3f"

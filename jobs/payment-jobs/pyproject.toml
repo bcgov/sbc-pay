@@ -8,25 +8,25 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pay-api = { git = "https://github.com/seeker25/sbc-pay.git", rev = "c0b9a3aca7d66c8e56a56a604b463d92e8a76591", subdirectory = "pay-api" } # from branch: update_deps__
+pay-api = { git = "https://github.com/seeker25/sbc-pay.git", rev = "a7e4d61b36504703181bf9b4a50b1f07f9722c92", subdirectory = "pay-api" } # from branch: update_deps__
 flask = "^3.0.2"
 flask-sqlalchemy = "^3.1.1"
 sqlalchemy = "^2.0.28"
 flask-marshmallow = "^1.2.0"
 marshmallow-sqlalchemy = "^1.0.0"
 python-dotenv = "^1.0.1"
-jsonschema = "4.17.3"
+jsonschema = "4.26.0"
 requests = "^2.31.0"
 werkzeug = "^3.1.5"
 jaeger-client = "^4.8.0"
 pysftp = "^0.2.9"
 flask-migrate = "^4.0.7"
 itsdangerous = "^2.1.2"
-dataclass-wizard = "^0.22.3"
+dataclass-wizard = "^0.39.0"
 launchdarkly-server-sdk = "^8.2.1"
 more-itertools = "^10.2.0"
 cloud-sql-python-connector = "^1.13.0"
-ruff = "^0.14.1"
+ruff = "0.14.1"
 pg8000 = "^1.31.5"
 
 
@@ -40,7 +40,7 @@ faker = "^24.2.0"
 coverage = "^7.4.3"
 freezegun = "^1.4.0"
 lovely-pytest-docker = "^0.3.1"
-pytest-asyncio = "^0.23.5.post1"
+pytest-asyncio = "^0.26.0"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
