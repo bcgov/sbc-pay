@@ -38,37 +38,37 @@ services:
       - auth
       - notify
   bcol:
-    image: stoplight/prism:3.3.0
+    image: stoplight/prism:3.3.7
     command: >
       mock -p 4010 --host 0.0.0.0
       https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/api_contract/bcol-api-1.0.0.yaml
   pay:
-    image: stoplight/prism:3.3.0
+    image: stoplight/prism:3.3.7
     command: >
       mock -p 4010 --host 0.0.0.0
       https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/api_contract/pay-api.yaml
   reports:
-    image: stoplight/prism:3.3.0
+    image: stoplight/prism:3.3.7
     command: >
       mock -p 4010 --host 0.0.0.0
       https://raw.githubusercontent.com/seeker25/sbc-pay/31180/docs/docs/api_contract/report-api.yaml
   paybc:
-    image: stoplight/prism:3.3.0
+    image: stoplight/prism:3.3.7
     command: >
       mock -p 4010 --host 0.0.0.0
       https://raw.githubusercontent.com/bcgov/sbc-pay/d8091408d5cd591dd3e0c83ae8c5738de90699de/docs/docs/PayBC%20Mocking/paybc-1.0.0.yaml
   auth:
-    image: stoplight/prism:3.3.0
+    image: stoplight/prism:3.3.7
     command: >
       mock -p 4010 --host 0.0.0.0
       https://raw.githubusercontent.com/bcgov/sbc-auth/main/docs/docs/api_contract/auth-api.yaml
   notify:
-    image: stoplight/prism:3.3.0
+    image: stoplight/prism:3.3.7
     command: >
       mock -p 4010 --host 0.0.0.0
       https://raw.githubusercontent.com/bcgov/sbc-auth/main/docs/docs/api_contract/notify-api-1.0.0.yaml
   gcs-emulator:
-    image: fsouza/fake-gcs-server:1.52.2
+    image: fsouza/fake-gcs-server:1.54.0
     ports:
       - "4443:4443"
     command: ["-scheme", "http", "-host", "0.0.0.0", "-port", "4443"]
