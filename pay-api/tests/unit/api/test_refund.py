@@ -515,7 +515,7 @@ def test_create_direct_pay_refund_fails(session, client, jwt, app, monkeypatch):
 
 def test_create_manual_refund(session, client, jwt, app):
     """Assert POST /refunds/manual path, invalid status, and duplicate refund."""
-    token = jwt.create_jwt(get_claims(app_request=app, role=Role.STAFF.value), token_header)
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     account = factory_payment_account()
