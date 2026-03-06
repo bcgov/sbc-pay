@@ -205,6 +205,15 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     assert partner_disbursement.status_code == DisbursementStatus.UPLOADED.value
     assert partner_disbursement.processed_on
 
+    # MANUALLY_REFUNDED should also be treated as a reversal (Finance issued cheque, claw back partner revenue).
+    invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+    invoice.invoice_status_code = InvoiceStatus.MANUALLY_REFUNDED.value
+    invoice.save()
+
+    EjvPartnerDistributionTask.create_ejv_file()
+    invoice = Invoice.find_by_id(invoice.id)
+    assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
+
 
 @pytest.mark.parametrize("client_code, batch_type", [("112", "GA"), ("113", "GI")])
 def test_disbursement_error_handling(session, monkeypatch, client_code, batch_type, google_bucket_mock):

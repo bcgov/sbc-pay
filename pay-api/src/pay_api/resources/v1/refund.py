@@ -61,7 +61,7 @@ def post_refund(invoice_id):
 @bp.route("/refunds/manual", methods=["POST", "OPTIONS"])
 @cross_origin(origins="*", methods=["POST"])
 @_jwt.requires_auth
-@_jwt.has_one_of_roles([Role.STAFF.value, Role.SYSTEM.value])
+@_jwt.has_one_of_roles([Role.SYSTEM.value])
 def post_manual_refund(invoice_id: int):
     """Mark an invoice as manually refunded (Finance has already issued a cheque)."""
     current_app.logger.info(f"<post_manual_refund : {invoice_id}")
