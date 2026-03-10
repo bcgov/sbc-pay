@@ -84,6 +84,7 @@ class RoutingSlip:
                 # load_only only loads the desired columns.
                 load_only(
                     RoutingSlipModel.created_name,
+                    RoutingSlipModel.refund_status,
                     RoutingSlipModel.status,
                     RoutingSlipModel.number,
                     RoutingSlipModel.routing_slip_date,
