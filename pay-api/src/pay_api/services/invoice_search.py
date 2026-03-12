@@ -19,7 +19,7 @@ from datetime import datetime
 from dateutil import parser
 from flask import current_app
 from sqlalchemy import String, and_, cast, exists, func, or_, select
-from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, with_expression
+from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, noload, with_expression
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import (
@@ -139,7 +139,6 @@ class InvoiceSearch:
                                     Refund.status.in_(
                                         [
                                             RefundStatus.APPROVED.value,
-                                            RefundStatus.PENDING_APPROVAL.value,
                                             RefundStatus.APPROVAL_NOT_REQUIRED.value,
                                         ]
                                     ),
@@ -147,6 +146,15 @@ class InvoiceSearch:
                             )
                         )
                     ),
+                ]
+            )
+        else:
+            # the relationships are lazy loading, so from_row on the schema in some cases causes this to be queried
+            # disabling since we don't want these to go off when include is False.
+            options.extend(
+                [
+                    noload(InvoiceCompositeModel.applied_credits),
+                    noload(InvoiceCompositeModel.partial_refunds),
                 ]
             )
 
