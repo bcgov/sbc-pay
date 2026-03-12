@@ -43,7 +43,7 @@ pylint = "^3.1.0"
 pylint-flask = "^0.6"
 lovely-pytest-docker = "^0.3.1"
 pytest-asyncio = "^0.23.5.post1"
-black = "^24.10.0"
+black = "^26.0.0"
 isort = "^5.13.2"
 flake8-pyproject = "^1.2.3"
 
