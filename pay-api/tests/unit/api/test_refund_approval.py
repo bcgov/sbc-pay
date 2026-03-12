@@ -54,7 +54,7 @@ from tests.utilities.base_test import (
 
 
 def setup_filing_and_account_data(
-    product_code: str, payment_method: str, refund_approval: bool = True
+    product_code: str, payment_method: str, refund_approval: bool = True, auth_account_id: str = "1234"
 ) -> CfsAccountModel:
     """Set up supporting filing and account data for refund approval flow."""
     test_code = "REFUNDTEST"
@@ -88,7 +88,9 @@ def setup_filing_and_account_data(
         fee_schedule_id=fee_schedule_with_gst.fee_schedule_id,
     ).save()
 
-    pay_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value, auth_account_id="1234").save()
+    pay_account = factory_payment_account(
+        payment_method_code=PaymentMethod.EFT.value, auth_account_id=auth_account_id
+    ).save()
     cfs_account = CfsAccountModel.find_by_account_id(pay_account.id)[0]
     cfs_account.cfs_party = "1111"
     cfs_account.cfs_account = "1111"
@@ -180,6 +182,7 @@ def get_refund_token_headers(app, jwt, token_config: dict):
                 username=token_config["requester_name"],
                 role="NA",
                 roles=token_config["requester_roles"],
+                product_code=None,
             ),
             token_header,
         )
@@ -192,6 +195,7 @@ def get_refund_token_headers(app, jwt, token_config: dict):
                 username=token_config["approver_name"],
                 role="NA",
                 roles=token_config["approver_roles"],
+                product_code=None,
             ),
             token_header,
         )
@@ -479,7 +483,10 @@ def test_partial_refund_approval_flow(
     session, client, jwt, app, monkeypatch, refund_service_mocks, account_admin_mock, send_email_mock, payment_method
 ):
     """Assert partial refund approval flow works correctly."""
-    cfs_account = setup_filing_and_account_data("TEST_PRODUCT", payment_method)
+    auth_account_id = "1234"
+    cfs_account = setup_filing_and_account_data(
+        product_code="TEST_PRODUCT", payment_method=payment_method, auth_account_id=auth_account_id
+    )
     invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, payment_method)
     token_config = {
         "requester_name": "TEST_REQUESTER",
@@ -551,6 +558,16 @@ def test_partial_refund_approval_flow(
     search_result = rv.json["items"][0]
     assert len(search_result["partialRefundLines"]) == 1
     assert_equal_refunds(search_result, refund_result)
+    for payload in [{}, {"excludeCounts": True}]:
+        rv = client.post(
+            f"/api/v1/accounts/{auth_account_id}/payments/queries?viewAll=true",
+            data=json.dumps(payload),
+            headers=requester_headers,
+        )
+        assert rv.status_code == 200
+        assert rv.json
+        assert len(rv.json["items"]) == 1
+        assert rv.json["items"][0].get("partialRefunds") is None
 
     rv = client.get(f"/api/v1/payment-requests/{invoice.id}/composite", headers=requester_headers)
     assert rv.status_code == 200
@@ -635,6 +652,21 @@ def test_partial_refund_approval_flow(
         assert rv.json["id"] == invoice.id
         assert rv.json["partialRefunds"]
         assert len(rv.json["partialRefunds"]) == 1
+
+        for payload in [{}, {"excludeCounts": True}]:
+            rv = client.post(
+                f"/api/v1/accounts/{auth_account_id}/payments/queries?viewAll=true",
+                data=json.dumps(payload),
+                headers=requester_headers,
+            )
+            assert rv.status_code == 200
+            assert rv.json
+            assert len(rv.json["items"]) == 1
+            partial_refunds = rv.json["items"][0].get("partialRefunds")
+            if payload.get("excludeCounts"):
+                assert partial_refunds
+            else:
+                assert partial_refunds is None
 
 
 def test_cc_refund_should_reject(
