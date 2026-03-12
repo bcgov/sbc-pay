@@ -8,52 +8,7 @@
     "**/Dockerfile"
   ],
   "gitIgnoredAuthors": ["travis8814@gmail.com"],
-  "automerge": false,
-  "labels": ["dependencies"],
-  "packageRules": [
-    {
-      "matchPackageNames": ["postgres", "postgresql"],
-      "matchManagers": ["github-actions", "dockerfile"],
-      "enabled": false,
-      "description": "Disable all automated updates for Postgres"
-    },
-    {
-      "matchManagers": ["poetry"],
-      "postUpdateOptions": ["poetryLockUpdate"]
-    },
-    {
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "non-major updates"
-    },
-    {
-      "matchUpdateTypes": ["major"],
-      "labels": ["dependencies", "breaking"]
-    },
-    {
-      "matchDepTypes": ["devDependencies"],
-      "groupName": "dev dependencies"
-    },
-    {
-      "matchFileNames": ["pay-api/**"],
-      "groupName": "pay-api updates",
-      "prPriority": 10
-    },
-    {
-      "matchFileNames": [
-        "pay-queue/**",
-        "pay-admin/**",
-        "jobs/payment-jobs/**",
-        "jobs/ftp-poller/**"
-      ],
-      "groupName": "pay-api dependents updates",
-      "prPriority": -1,
-      "dependencyDashboardApproval": true
-    },
-    {
-      "matchPackageNames": ["ruff"],
-      "rangeStrategy": "pin"
-    }
-  ],
+  "enabled": false,
   "vulnerabilityAlerts": {
     "enabled": true,
     "labels": ["dependencies", "security"],
