@@ -98,7 +98,8 @@ class _Config:  # pylint: disable=too-few-public-methods
     PREFERRED_URL_SCHEME = "https"
     SESSION_TYPE = "cachelib"
     SESSION_SERIALIZATION_FORMAT = "json"
-    SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir="/tmp/sessions")  # noqa: S108
+    _session_cache_dir = os.getenv("SESSION_CACHE_DIR", "/tmp/sessions")  # noqa: S108
+    SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir=_session_cache_dir)
     CACHE_TYPE = "simple"
 
     TESTING = False

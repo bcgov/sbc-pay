@@ -141,7 +141,7 @@ class DistributionCodeConfig(SecuredView):
         form = super().create_form(obj)
         return form
 
-    def on_model_change(self, form, model, is_created):
+    def on_model_change(self, form, model, is_created):  # noqa: ARG002
         """Trigger on model change."""
         model.created_by = model.created_by or "SYSTEM"
         if is_created:

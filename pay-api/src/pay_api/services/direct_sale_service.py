@@ -128,7 +128,7 @@ class DirectSaleService(PaymentSystemService, OAuthService):
         url_params_dict["hashValue"] = HashingService.encode(unquote_plus(url_params))
         encoded_query_params = urlencode(url_params_dict)  # encode it again to inlcude the hash
         paybc_url = current_app.config.get("PAYBC_DIRECT_PAY_PORTAL_URL")
-        current_app.logger.debug(f"PayBC URL for {invoice.id} -> {paybc_url}?{encoded_query_params}")
+        current_app.logger.debug(f"PayBC URL generated for invoice {invoice.id}")
         return f"{paybc_url}?{encoded_query_params}"
 
     @staticmethod
@@ -296,7 +296,7 @@ class DirectSaleService(PaymentSystemService, OAuthService):
     ):
         """Get the receipt details by calling PayBC web service."""
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
-        current_app.logger.debug(f"Getting receipt details {invoice_reference.invoice_id}. {pay_response_url}")
+        current_app.logger.debug(f"Getting receipt details for invoice {invoice_reference.invoice_id}")
         if pay_response_url:
             parsed_args = parse_url_params(pay_response_url)
 
@@ -307,7 +307,9 @@ class DirectSaleService(PaymentSystemService, OAuthService):
             # Check if trnApproved is 1=Success, 0=Declined
             trn_approved: str = parsed_args.get("trnApproved")
             if trn_approved == "1" and not HashingService.is_valid_checksum(pay_response_url_without_hash, hash_value):
-                current_app.logger.warning(f"Transaction is approved, but hash is not matching : {pay_response_url}")
+                current_app.logger.warning(
+                    f"Transaction approved but hash mismatch for invoice {invoice_reference.invoice_id}"
+                )
                 return None
             # Get the transaction number from args
             paybc_transaction_number = parsed_args.get("pbcTxnNumber")

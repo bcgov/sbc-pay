@@ -26,7 +26,7 @@ class HashingService:
     @staticmethod
     def encode(param: str) -> str:
         """Return a hashed string using the static salt from config."""
-        current_app.logger.debug(f"encoding for string {param}")
+        current_app.logger.debug("Encoding hash for payment parameters")
         api_key = current_app.config.get("PAYBC_DIRECT_PAY_API_KEY")
         # MD5 required for PayBC API compatibility - not used for cryptographic security
         return hashlib.md5(f"{param}{api_key}".encode()).hexdigest()  # noqa: S324
