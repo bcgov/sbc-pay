@@ -139,6 +139,3 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
     TESTING = False
     DEBUG = False
-
-    _session_cache_dir = os.getenv("SESSION_CACHE_DIR", "/var/data/pay-admin/sessions")
-    SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir=_session_cache_dir)
