@@ -52,6 +52,7 @@ def worker():
         elif ce.type in [
             QueueMessageTypes.INCORPORATION.value,
             QueueMessageTypes.REGISTRATION.value,
+            QueueMessageTypes.CONTINUATION_IN.value,
         ]:
             update_temporary_identifier(ce.data)
         else:

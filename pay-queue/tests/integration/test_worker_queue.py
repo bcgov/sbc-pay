@@ -13,6 +13,9 @@
 # limitations under the License.
 """Test Suite to ensure the worker routines are working as expected."""
 
+import pytest
+from sbc_common_components.utils.enums import QueueMessageTypes
+
 from pay_api.models import Invoice
 from pay_api.utils.enums import PaymentMethod, PaymentSystem
 from tests.integration import (
@@ -25,7 +28,15 @@ from tests.integration import (
 from .utils import helper_add_identifier_event_to_queue
 
 
-def test_update_payment(session, app, client):
+@pytest.mark.parametrize(
+    "message_type",
+    [
+        QueueMessageTypes.INCORPORATION.value,
+        QueueMessageTypes.REGISTRATION.value,
+        QueueMessageTypes.CONTINUATION_IN.value,
+    ],
+)
+def test_update_payment(session, app, client, message_type):
     """Assert that the update internal payment records works."""
     # vars
     old_identifier = "T000000000"
@@ -45,7 +56,9 @@ def test_update_payment(session, app, client):
 
     invoice_id = invoice.id
 
-    helper_add_identifier_event_to_queue(client, old_identifier=old_identifier, new_identifier=new_identifier)
+    helper_add_identifier_event_to_queue(
+        client, old_identifier=old_identifier, new_identifier=new_identifier, message_type=message_type
+    )
 
     # Get the internal account and invoice and assert that the identifier is new identifier
     invoice = Invoice.find_by_id(invoice_id)

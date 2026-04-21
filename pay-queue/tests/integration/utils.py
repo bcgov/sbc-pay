@@ -172,9 +172,9 @@ def helper_add_identifier_event_to_queue(
     client,
     old_identifier: str = "T1234567890",
     new_identifier: str = "BC1234567890",
+    message_type: str = QueueMessageTypes.INCORPORATION.value,
 ):
     """Add event to the Queue."""
-    message_type = QueueMessageTypes.INCORPORATION.value
     queue_payload = {
         "filing": {
             "header": {"filingId": "12345678"},
