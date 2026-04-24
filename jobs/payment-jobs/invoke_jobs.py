@@ -31,6 +31,7 @@ from services import data_warehouse
 from tasks.eft_overpayment_notification_task import EFTOverpaymentNotificationTask
 from tasks.eft_statement_due_task import EFTStatementDueTask
 from tasks.eft_task import EFTTask
+from tasks.permission_check import PayJobPermissionCheckTask
 from tasks.routing_slip_task import RoutingSlipTask
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), "logging.conf"))  # important to do this first
@@ -172,6 +173,9 @@ def run(job_name, argument=None):
             case "ADHOC_INVOICE_STATUS_CHECK":
                 AdhocInvoiceStatusCheckTask.check_invoice_statuses()
                 application.logger.info("<<<< Completed Adhoc Invoice Status Check >>>>")
+            case "PERMISSION_CHECK":
+                PayJobPermissionCheckTask.check()
+                application.logger.info("<<<< Completed Jobs Permission Check >>>>")
             case _:
                 application.logger.debug("No valid args passed. Exiting job without running any ***************")
     except Exception as e:
