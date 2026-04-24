@@ -33,6 +33,28 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """This module contains all the services used."""
 
+import google.auth
+from flask import Flask
 from gcp_queue import GcpQueue
+from google.auth import impersonated_credentials
+from google.cloud import pubsub_v1
 
-queue = GcpQueue()
+
+class _ImpersonatingGcpQueue(GcpQueue):
+    def init_app(self, app: Flask):
+        super().init_app(app)
+        service_account = app.config.get("AUTHPAY_SERVICE_ACCOUNT")
+        if service_account:
+            source_creds, _ = google.auth.default()
+            target_creds = impersonated_credentials.Credentials(
+                source_credentials=source_creds,
+                target_principal=service_account,
+                target_scopes=["https://www.googleapis.com/auth/pubsub"],
+            )
+            self._publisher = pubsub_v1.PublisherClient(
+                credentials=target_creds,
+                publisher_options=self.publisher_options,
+            )
+
+
+queue = _ImpersonatingGcpQueue()

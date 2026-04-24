@@ -143,6 +143,9 @@ class _Config:  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config("PAYBC_DIRECT_PAY_CLIENT_SECRET")
     PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config("PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL")
 
+    # GCP Service Account Impersonation for PubSub
+    AUTHPAY_SERVICE_ACCOUNT = os.getenv("AUTHPAY_SERVICE_ACCOUNT", None)
+
     # PUB/SUB - PUB: auth-event-dev, account-mailer-dev, business-pay-dev, namex-pay-dev
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
     AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", "auth-event-dev")

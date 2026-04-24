@@ -117,6 +117,9 @@ class _Config:  # pylint: disable=too-few-public-methods
     REGISTRIES_LOGO_IMAGE_NAME = os.getenv("REGISTRIES_LOGO_IMAGE_NAME", "bc_logo_for_email.png")
     PAY_WEB_URL = os.getenv("PAY_WEB_URL", "")
 
+    # GCP Service Account Impersonation for PubSub
+    AUTHPAY_SERVICE_ACCOUNT = os.getenv("AUTHPAY_SERVICE_ACCOUNT", None)
+
     # GCP PubSub
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", None)
     AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", None)
