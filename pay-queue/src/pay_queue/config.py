@@ -114,7 +114,6 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     # PUB/SUB - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev, business-events
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
     AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", "auth-event-dev")
-    GCP_AUTH_KEY = os.getenv("AUTHPAY_GCP_AUTH_KEY", None)
     BUSINESS_PAY_TOPIC = os.getenv("BUSINESS_PAY_TOPIC", "business-pay-topic")
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
@@ -183,7 +182,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
         "TEST_PUSH_ENDPOINT",
         f"http://host.docker.internal:{TEST_PUSH_ENDPOINT_PORT!s}/",
     )
-    GCP_AUTH_KEY = None
     DISABLE_EJV_ERROR_EMAIL = False
     DISABLE_CSV_ERROR_EMAIL = False
     # Need a value for this, so we can mock the publish client.
