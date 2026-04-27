@@ -1,4 +1,4 @@
-FROM python:3.12.2-bookworm
+FROM python:3.12.2-bullseye
 # ========================================================================================================
 # Install go-crond (from https://github.com/BCDevOps/go-crond)
 #  - Adds some additional logging enhancements on top of the upstream project;
