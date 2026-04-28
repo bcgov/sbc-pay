@@ -1,3 +1,25 @@
+ARG SOURCE_REPO=BCDevOps
+ARG GOCROND_VERSION=0.6.2
+ARG VCS_REF="missing"
+ARG BUILD_DATE="missing"
+
+FROM golang:1.22-bookworm AS go-crond-builder
+
+ARG SOURCE_REPO
+ARG GOCROND_VERSION
+
+WORKDIR /tmp
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build go-crond from source with cgo disabled so os/user uses the pure-Go
+# lookup path instead of the glibc/cgo path that was crashing on bookworm.
+RUN git clone --branch "${GOCROND_VERSION}" --depth 1 "https://github.com/${SOURCE_REPO}/go-crond.git" \
+    && cd go-crond \
+    && CGO_ENABLED=0 go build -tags osusergo,netgo -o /usr/local/bin/go-crond .
+
 FROM python:3.12.2-bookworm
 # ========================================================================================================
 # Install go-crond (from https://github.com/BCDevOps/go-crond)
@@ -8,10 +30,10 @@ FROM python:3.12.2-bookworm
 # - https://blog.danman.eu/cron-jobs-in-openshift/
 #
 # --------------------------------------------------------------------------------------------------------
-ARG SOURCE_REPO=BCDevOps
-ARG GOCROND_VERSION=0.6.2
-ARG VCS_REF="missing"
-ARG BUILD_DATE="missing"
+ARG SOURCE_REPO
+ARG GOCROND_VERSION
+ARG VCS_REF
+ARG BUILD_DATE
 
 ENV VCS_REF=${VCS_REF}
 ENV BUILD_DATE=${BUILD_DATE}
@@ -19,7 +41,7 @@ ENV BUILD_DATE=${BUILD_DATE}
 LABEL org.label-schema.vcs-ref=${VCS_REF} \
     org.label-schema.build-date=${BUILD_DATE}
 
-RUN curl https://github.com/$SOURCE_REPO/go-crond/releases/download/$GOCROND_VERSION/go-crond-64-linux -s -L -o /usr/local/bin/go-crond
+COPY --from=go-crond-builder /usr/local/bin/go-crond /usr/local/bin/go-crond
 RUN chmod ug+x /usr/local/bin/go-crond
 # ========================================================================================================
 
@@ -94,8 +116,7 @@ COPY . .
 
 # Set ownership and permissions
 # Set scripts as executable (make files and python files do not have to be marked)
-# Make /etc/passwd writable for the root group so the container can add a
-# runtime entry for an OpenShift-assigned arbitrary UID when needed.
+# Make /etc/passwd writable for the root group so an entry can be created for an OpenShift assigned user account.
 RUN chown -R $user:root $HOME \
     && chmod -R ug+rw $HOME \
     && chmod ug+x $HOME/*.sh \
