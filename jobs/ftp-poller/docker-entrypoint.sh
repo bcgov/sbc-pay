@@ -1,7 +1,9 @@
-function configure_nss_wrapper() {
-  local uid gid
+function ensure_runtime_user() {
+  local uid gid runtime_user runtime_shell
   uid="$(id -u)"
   gid="$(id -g)"
+  runtime_user="app"
+  runtime_shell="/bin/sh"
 
   # On OpenShift the container may run with a random UID that is not present in
   # the image's passwd database. Some binaries, including go-crond, resolve the
@@ -10,23 +12,16 @@ function configure_nss_wrapper() {
     return
   fi
 
-  # nss_wrapper lets us provide a temporary passwd view for the current process
-  # without modifying the real /etc/passwd inside the container.
-  export NSS_WRAPPER_PASSWD
-  export NSS_WRAPPER_GROUP=/etc/group
-  NSS_WRAPPER_PASSWD="$(mktemp)"
-  cp /etc/passwd "${NSS_WRAPPER_PASSWD}"
-  echo "default:x:${uid}:${gid}:OpenShift User:${HOME}:/sbin/nologin" >> "${NSS_WRAPPER_PASSWD}"
-
-  export LD_PRELOAD
-  LD_PRELOAD="$(ldconfig -p | awk '/libnss_wrapper.so/ {print $NF; exit}')"
-
-  if [ -z "${LD_PRELOAD}" ]; then
-    echo "Unable to locate libnss_wrapper.so" >&2
+  # Add the smallest possible passwd entry for the current runtime identity.
+  # Use the actual uid/gid, avoid root-group membership, and provide a minimal
+  # shell path so user lookup succeeds before go-crond starts.
+  if [ ! -w /etc/passwd ]; then
+    echo "Unable to add runtime user entry: /etc/passwd is not writable" >&2
     exit 1
   fi
 
-  echo "Configured nss_wrapper for arbitrary UID ${uid}"
+  echo "${runtime_user}:x:${uid}:${gid}:${runtime_user}:${HOME}:${runtime_shell}" >> /etc/passwd
+  echo "Added runtime passwd entry for UID ${uid}"
 }
 
 function start_cron_jobs() {
@@ -35,5 +30,5 @@ function start_cron_jobs() {
   exec ${CRON_CMD}
 }
 
-configure_nss_wrapper
+ensure_runtime_user
 start_cron_jobs

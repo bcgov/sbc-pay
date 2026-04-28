@@ -69,7 +69,6 @@ RUN apt-get update \
     curl \
     gettext \
     git \
-    libnss-wrapper \
     libpq-dev \
     wait-for-it \
   && curl -sSL 'https://install.python-poetry.org' | python - \
@@ -95,9 +94,12 @@ COPY . .
 
 # Set ownership and permissions
 # Set scripts as executable (make files and python files do not have to be marked)
+# Make /etc/passwd writable for the root group so the container can add a
+# runtime entry for an OpenShift-assigned arbitrary UID when needed.
 RUN chown -R $user:root $HOME \
     && chmod -R ug+rw $HOME \
     && chmod ug+x $HOME/*.sh \
+    && chmod g+rw /etc/passwd \
     && chmod g-w $HOME/cron/crontab
 
 USER $user
