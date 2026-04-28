@@ -8,8 +8,7 @@ FROM golang:1.22-bookworm AS go-crond-builder
 ARG SOURCE_REPO
 ARG GOCROND_VERSION
 
-ENV GOPATH=/go
-WORKDIR /go/src/github.com/${SOURCE_REPO}
+WORKDIR /tmp
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y git ca-certificates \
@@ -17,9 +16,13 @@ RUN apt-get update \
 
 # Build go-crond from source with cgo disabled so os/user uses the pure-Go
 # lookup path instead of the glibc/cgo path that was crashing on bookworm.
+# The upstream repo predates Go modules, so create a temporary go.mod in the
+# builder stage to resolve its dependencies before compiling.
 RUN git clone --branch "${GOCROND_VERSION}" --depth 1 "https://github.com/${SOURCE_REPO}/go-crond.git" \
     && cd go-crond \
-    && GO111MODULE=off CGO_ENABLED=0 go build -tags osusergo,netgo -o /usr/local/bin/go-crond .
+    && go mod init "github.com/${SOURCE_REPO}/go-crond" \
+    && go mod tidy \
+    && CGO_ENABLED=0 go build -tags osusergo,netgo -o /usr/local/bin/go-crond .
 
 FROM python:3.12.2-bookworm
 # ========================================================================================================
