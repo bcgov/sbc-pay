@@ -31,4 +31,12 @@ function start_cron_jobs() {
 }
 
 ensure_runtime_user
+
+# Temporary debug output to confirm the runtime UID is resolvable before
+# go-crond starts. Remove once the startup issue is understood.
+id
+getent passwd "$(id -u)" || true
+grep "$(id -u)" /etc/passwd || true
+tail -n 5 /etc/passwd
+
 start_cron_jobs
