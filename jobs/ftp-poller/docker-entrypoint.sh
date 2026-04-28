@@ -31,5 +31,4 @@ function start_cron_jobs() {
 }
 
 ensure_runtime_user
-
 start_cron_jobs
