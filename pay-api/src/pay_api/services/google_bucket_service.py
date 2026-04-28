@@ -31,10 +31,12 @@ class GoogleBucketService:
     def get_client() -> storage.Client:
         """Get a Google cloud storage client."""
         current_app.logger.info("Initializing Google Storage client.")
-        json_text = base64.b64decode(current_app.config.get("GOOGLE_STORAGE_SA")).decode("utf-8")
-        auth_json = json.loads(json_text, strict=False)
-        client = storage.Client.from_service_account_info(auth_json)
-        return client
+        google_storage_sa = current_app.config.get("GOOGLE_STORAGE_SA")
+        if google_storage_sa:
+            json_text = base64.b64decode(google_storage_sa).decode("utf-8")
+            auth_json = json.loads(json_text, strict=False)
+            return storage.Client.from_service_account_info(auth_json)
+        return storage.Client()
 
     @staticmethod
     def get_bucket(client: storage.Client, bucket_name: str) -> storage.Bucket:
