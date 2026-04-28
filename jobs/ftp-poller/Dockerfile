@@ -69,6 +69,7 @@ RUN apt-get update \
     curl \
     gettext \
     git \
+    libnss-wrapper \
     libpq-dev \
     wait-for-it \
   && curl -sSL 'https://install.python-poetry.org' | python - \
@@ -78,7 +79,7 @@ RUN apt-get update \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements, to cache them in docker layer
-COPY --chown=web:web ./poetry.lock ./pyproject.toml .
+COPY --chown=pay:pay ./poetry.lock ./pyproject.toml .
 
 # Project initialization:
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
@@ -94,11 +95,9 @@ COPY . .
 
 # Set ownership and permissions
 # Set scripts as executable (make files and python files do not have to be marked)
-# Make /etc/passwd writable for the root group so an entry can be created for an OpenShift assigned user account.
 RUN chown -R $user:root $HOME \
     && chmod -R ug+rw $HOME \
     && chmod ug+x $HOME/*.sh \
-    && chmod g+rw /etc/passwd \
     && chmod g-w $HOME/cron/crontab
 
 USER $user
