@@ -65,7 +65,7 @@ def temp_test_files() -> Iterator[list[str]]:
 
 
 def test_get_client(session, app) -> None:
-    """Test getting storage client."""
+    """Test getting storage client using explicit service account credentials."""
     service_account_info = {}
 
     encoded_credentials = base64.b64encode(json.dumps(service_account_info).encode()).decode()
@@ -78,6 +78,20 @@ def test_get_client(session, app) -> None:
         client = GoogleBucketService.get_client()
 
         mock_client_method.assert_called_once_with(service_account_info)
+        assert client == mock_client_instance
+
+
+def test_get_client_default_credentials(session, app) -> None:
+    """Test getting storage client via ADC when GOOGLE_STORAGE_SA is not set."""
+    app.config["GOOGLE_STORAGE_SA"] = None
+
+    with patch("pay_api.services.google_bucket_service.storage.Client") as mock_client_class:
+        mock_client_instance = MagicMock()
+        mock_client_class.return_value = mock_client_instance
+
+        client = GoogleBucketService.get_client()
+
+        mock_client_class.assert_called_once_with()
         assert client == mock_client_instance
 
 
