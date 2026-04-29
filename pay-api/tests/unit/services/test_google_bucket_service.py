@@ -84,14 +84,17 @@ def test_get_client(session, app) -> None:
 def test_get_client_default_credentials(session, app) -> None:
     """Test getting storage client via ADC when GOOGLE_STORAGE_SA is not set."""
     app.config["GOOGLE_STORAGE_SA"] = None
+    mock_creds = MagicMock()
 
-    with patch("pay_api.services.google_bucket_service.storage.Client") as mock_client_class:
+    with patch("pay_api.services.google_bucket_service.google.auth.default", return_value=(mock_creds, "test-project")) as mock_auth, \
+         patch("pay_api.services.google_bucket_service.storage.Client") as mock_client_class:
         mock_client_instance = MagicMock()
         mock_client_class.return_value = mock_client_instance
 
         client = GoogleBucketService.get_client()
 
-        mock_client_class.assert_called_once_with()
+        mock_auth.assert_called_once()
+        mock_client_class.assert_called_once_with(credentials=mock_creds, project="test-project")
         assert client == mock_client_instance
 
 

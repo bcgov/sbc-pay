@@ -18,6 +18,7 @@ import json
 import os
 import tempfile
 
+import google.auth
 from attrs import define
 from flask import current_app
 from google.cloud import storage
@@ -31,12 +32,13 @@ class GoogleBucketService:
     def get_client() -> storage.Client:
         """Get a Google cloud storage client."""
         current_app.logger.info("Initializing Google Storage client.")
-        google_storage_sa = current_app.config.get("GOOGLE_STORAGE_SA")
+        google_storage_sa = os.environ.get("GOOGLE_STORAGE_SA") or current_app.config.get("GOOGLE_STORAGE_SA")
         if google_storage_sa:
             json_text = base64.b64decode(google_storage_sa).decode("utf-8")
             auth_json = json.loads(json_text, strict=False)
             return storage.Client.from_service_account_info(auth_json)
-        return storage.Client()
+        credentials, project = google.auth.default()
+        return storage.Client(credentials=credentials, project=project)
 
     @staticmethod
     def get_bucket(client: storage.Client, bucket_name: str) -> storage.Bucket:
