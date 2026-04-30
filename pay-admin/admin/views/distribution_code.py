@@ -58,6 +58,10 @@ class DistributionCodeConfig(SecuredView):
         "statutory_fees_gst_distribution_code": "Statutory Fees GST Distribution Code",
         "service_fee_gst_distribution_code": "Service Fee GST Distribution Code",
         "account": "Account (For ministry government accounts)",
+        "created_by": "Created By",
+        "created_on": "Created On",
+        "updated_by": "Updated By",
+        "updated_on": "Updated On",
     }
     column_searchable_list = (
         "name",
@@ -95,6 +99,7 @@ class DistributionCodeConfig(SecuredView):
         "statutory_fees_gst_distribution_code",
         "service_fee_gst_distribution_code",
         "account",
+        *SecuredView._AUDIT_FIELDS,
     ]
 
     edit_columns = form_columns
@@ -128,6 +133,11 @@ class DistributionCodeConfig(SecuredView):
         form = super().edit_form(obj)
         form.account.render_kw = {"disabled": True}
 
+        for field_name in self._AUDIT_FIELDS:
+            field = getattr(form, field_name, None)
+            if field:
+                field.render_kw = {"readonly": True}
+
         if obj and obj.distribution_code_id and self._should_hide_service_fee_fields(obj.distribution_code_id):
             message = "Disabled because this distribution code is used as a service fee distribution code elsewhere"
             for field_name in self.SERVICE_FEE_FIELDS_HIDDEN:
@@ -139,13 +149,13 @@ class DistributionCodeConfig(SecuredView):
     def create_form(self, obj=None):
         """Create form overrides."""
         form = super().create_form(obj)
+        for field_name in self._AUDIT_FIELDS:
+            form._fields.pop(field_name, None)
         return form
 
-    def on_model_change(self, form, model, is_created):  # noqa: ARG002
+    def on_model_change(self, form, model, is_created):
         """Trigger on model change."""
-        model.created_by = model.created_by or "SYSTEM"
-        if is_created:
-            model.updated_by = "SYSTEM"
+        super().on_model_change(form, model, is_created)
 
 
 # If this view is going to be displayed for only special roles, do like below

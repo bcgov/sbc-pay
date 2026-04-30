@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from datetime import UTC, datetime
+
 from flask_admin.contrib import sqla
 
 from admin import keycloak
@@ -23,6 +25,8 @@ class SecuredView(sqla.ModelView):
 
     # Allow export as a CSV file.
     can_export = False
+
+    _AUDIT_FIELDS = ["created_by", "created_on", "updated_by", "updated_on"]
 
     # Allow the user to change the page size.
     can_set_page_size = True
@@ -92,3 +96,18 @@ class SecuredView(sqla.ModelView):
             return kc.get_redirect_url()
 
         return "not authorized"
+
+    def on_model_change(self, form, model, is_created):  # noqa: ARG002
+        """Set audit fields from the logged-in OIDC user on every create/edit."""
+        username = keycloak.Keycloak(None).get_username() or "UNKNOWN"
+        now = datetime.now(tz=UTC)
+        if is_created:
+            if hasattr(model, "created_by"):
+                model.created_by = model.created_by or username
+            if hasattr(model, "created_on"):
+                model.created_on = model.created_on or now
+        else:
+            if hasattr(model, "updated_by"):
+                model.updated_by = username
+            if hasattr(model, "updated_on"):
+                model.updated_on = now
