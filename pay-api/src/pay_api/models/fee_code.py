@@ -14,12 +14,14 @@
 """Model to handle all operations related to Fee Code master data."""
 
 from marshmallow import fields
+from sql_versioning import Versioned
 
+from .audit import Audit
 from .code_table import CodeTable
 from .db import db, ma
 
 
-class FeeCode(db.Model, CodeTable):
+class FeeCode(CodeTable, Audit, Versioned):
     """This class manages all of the base data about a Fee Code.
 
     Fee Codes holds the fee amount
@@ -36,7 +38,19 @@ class FeeCode(db.Model, CodeTable):
     #
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
-    __mapper_args__ = {"include_properties": ["amount", "code"]}
+    __mapper_args__ = {
+        "include_properties": [
+            "amount",
+            "code",
+            "created_by",
+            "created_name",
+            "created_on",
+            "updated_by",
+            "updated_name",
+            "updated_on",
+            "version",
+        ]
+    }
 
     code = db.Column(db.String(10), primary_key=True)
     amount = db.Column("amount", db.Numeric(19, 2), nullable=False)

@@ -2,6 +2,8 @@
 .PHONY: setup
 .PHONY: ci cd
 .PHONY: run
+.PHONY: db-revision
+.PHONY: db-upgrade
 
 MKFILE_PATH:=$(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_ABS_DIR:=$(patsubst %/,%,$(dir $(MKFILE_PATH)))
@@ -82,6 +84,12 @@ build-nc: ## Build the docker container without caching
 #################################################################################
 run: ## Run the project in local
 	poetry run flask run -p 5000
+
+db-revision: ## Autogenerate an Alembic migration revision (usage: make db-revision m="your message")
+	FLASK_APP=wsgi.py RUN_MIGRATION=true poetry run flask db revision --autogenerate -m "$(m)"
+
+db-upgrade: ## Run migrations to upgrade the database to head
+	FLASK_APP=wsgi.py RUN_MIGRATION=true poetry run flask db upgrade
 
 #################################################################################
 # Self Documenting Commands                                                     #
