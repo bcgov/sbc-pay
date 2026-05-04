@@ -13,6 +13,7 @@
 # limitations under the License.
 """BDD step definitions for keycloak.feature."""
 
+import flask
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 
@@ -47,9 +48,7 @@ def check_has_access(app, context, required_role):
     """Set roles."""
     roles = context.get("user_roles", [])
     with app.test_request_context():
-        from flask import session  # noqa: PLC0415
-
-        session["oidc_auth_profile"] = {"roles": roles}
+        flask.session["oidc_auth_profile"] = {"roles": roles}
         context["result"] = Keycloak(None).has_access(required_role)
 
 

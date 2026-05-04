@@ -13,6 +13,7 @@
 # limitations under the License.
 """BDD step definitions for secured_view.feature."""
 
+import flask
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 from werkzeug.wrappers import Response
@@ -59,6 +60,23 @@ def view_already_redirected(context):
     context["view"].connected = True
 
 
+@given(parsers.parse('a user is logged in with roles "{role1}" and "{role2}"'))
+def user_logged_in_with_two_roles(role1, role2, context):
+    """Set two roles on the fake OIDC session."""
+    Keycloak._oidc.user_loggedin = True  # noqa: SLF001
+    context["user_roles"] = [role1, role2]
+
+
+@when("we check create and edit permissions")
+def check_create_edit_permissions(app, context):
+    """Evaluate can_create and can_edit inside a request context with the user's roles."""
+    roles = context.get("user_roles", [])
+    with app.test_request_context():
+        flask.session["oidc_auth_profile"] = {"roles": roles}
+        context["can_create"] = context["view"].can_create
+        context["can_edit"] = context["view"].can_edit
+
+
 @when("the inaccessible view is requested")
 def inaccessible_requested(context):
     """Set a request which is not accessible."""
@@ -69,6 +87,30 @@ def inaccessible_requested(context):
 def cannot_delete(context):
     """Assert delete is not allowed."""
     assert context["view"].can_delete is False
+
+
+@then("create should be allowed")
+def create_allowed(context):
+    """Assert can_create is True."""
+    assert context["can_create"] is True
+
+
+@then("create should not be allowed")
+def create_not_allowed(context):
+    """Assert can_create is False."""
+    assert context["can_create"] is False
+
+
+@then("edit should be allowed")
+def edit_allowed(context):
+    """Assert can_edit is True."""
+    assert context["can_edit"] is True
+
+
+@then("edit should not be allowed")
+def edit_not_allowed(context):
+    """Assert can_edit is False."""
+    assert context["can_edit"] is False
 
 
 @then("the response should be a redirect to login")

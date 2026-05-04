@@ -55,7 +55,7 @@ def all_columns_in_config_fc(context):
 
 @then(parsers.parse('the list columns should include "{column}"'))
 def list_has_column_fc(context, column):
-    """Assert inidividual column."""
+    """Assert individual column."""
     columns = [name for name, _label in context["view"].get_list_columns()]
     assert column in columns, f"Expected '{column}' in list columns, got: {columns}"
 
