@@ -56,7 +56,7 @@ def generate_dc_create_form(context):
     """Set a mock form."""
     mock_form = MagicMock()
     mock_form._fields = {field: MagicMock() for field in ["name", *_AUDIT_FIELDS]}
-    with patch("admin.views.secured_view.SecuredView.create_form", return_value=mock_form):
+    with patch("flask_admin.contrib.sqla.ModelView.create_form", return_value=mock_form):
         context["form"] = context["view"].create_form()
 
 
@@ -70,7 +70,7 @@ def generate_dc_edit_form(context):
         field.render_kw = None
         setattr(mock_form, field_name, field)
     obj = SimpleNamespace(distribution_code_id=None)
-    with patch("admin.views.secured_view.SecuredView.edit_form", return_value=mock_form):
+    with patch("flask_admin.contrib.sqla.ModelView.edit_form", return_value=mock_form):
         context["form"] = context["view"].edit_form(obj=obj)
 
 

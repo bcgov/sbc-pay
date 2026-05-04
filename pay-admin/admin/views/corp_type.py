@@ -23,7 +23,13 @@ class CorpTypeConfig(SecuredView):
 
     column_list = ["code", "description", "refund_approval"]
 
+    column_searchable_list = ("code",)
+    column_sortable_list = ("code",)
+
+    column_default_sort = "code"
+
     column_labels = {
+        **SecuredView._AUDIT_LABELS,
         "code": "Code",
         "description": "Description",
         "bcol_code_full_service_fee": "BCOL Fee Code used for Account transactions - "
@@ -35,10 +41,6 @@ class CorpTypeConfig(SecuredView):
         "product": "Product to map in account products",
         "refund_approval": "Refund Approval required",
     }
-    column_searchable_list = ("code",)
-    column_sortable_list = ("code",)
-
-    column_default_sort = "code"
 
     form_choices = {}
 
@@ -52,6 +54,7 @@ class CorpTypeConfig(SecuredView):
         "is_online_banking_allowed",
         "product",
         "refund_approval",
+        *SecuredView._AUDIT_FIELDS,
     ]
 
     def on_form_prefill(self, form, id):  # noqa: ARG002

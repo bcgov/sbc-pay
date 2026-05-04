@@ -17,3 +17,27 @@ Feature: FilingType admin view
     Given the FilingType admin view is loaded
     When the edit form is prefilled for an existing record
     Then the code field should be readonly
+
+  Scenario: Audit fields are stripped from the create form
+    Given the FilingType admin view is loaded
+    When the FilingType create form is generated
+    Then the audit fields should not be present in the create form
+
+  Scenario: Audit fields are readonly in the edit form
+    Given the FilingType admin view is loaded
+    When the FilingType edit form is generated
+    Then the audit fields should be readonly
+
+  Scenario: Audit fields are populated when a filing type is created
+    Given the FilingType admin view is loaded
+    And a user is logged in as "Joe"
+    And the current time is "2024-01-15 10:00:00"
+    When a new FilingType record is saved
+    Then the created audit fields should be "Joe" and "2024-01-15 10:00:00"
+
+  Scenario: Audit fields are updated when a filing type is edited
+    Given the FilingType admin view is loaded
+    And a user is logged in as "Joe"
+    And the current time is "2024-01-15 10:00:00"
+    When an existing FilingType record is saved
+    Then the updated audit fields should be "Joe" and "2024-01-15 10:00:00"
