@@ -141,10 +141,10 @@ def upgrade():
         batch_op.add_column(sa.Column('version', sa.Integer(), nullable=False, server_default='1'))
 
     # Backfill existing rows before enforcing NOT NULL
-    op.execute("UPDATE corp_types SET created_by = 'SYSTEM', created_on = now() WHERE created_by IS NULL")
-    op.execute("UPDATE fee_codes SET created_by = 'SYSTEM', created_on = now() WHERE created_by IS NULL")
-    op.execute("UPDATE filing_types SET created_by = 'SYSTEM', created_on = now() WHERE created_by IS NULL")
-    op.execute("UPDATE fee_schedules SET created_by = 'SYSTEM', created_on = now() WHERE created_by IS NULL")
+    op.execute("UPDATE corp_types SET created_by = 'Alembic', created_on = now() WHERE created_by IS NULL")
+    op.execute("UPDATE fee_codes SET created_by = 'Alembic', created_on = now() WHERE created_by IS NULL")
+    op.execute("UPDATE filing_types SET created_by = 'Alembic', created_on = now() WHERE created_by IS NULL")
+    op.execute("UPDATE fee_schedules SET created_by = 'Alembic', created_on = now() WHERE created_by IS NULL")
 
     # Enforce NOT NULL now that existing rows are backfilled
     op.alter_column('corp_types', 'created_by', nullable=False)
