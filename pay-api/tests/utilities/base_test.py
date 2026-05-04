@@ -1074,14 +1074,14 @@ def factory_partner_disbursement(
 
 def factory_filing_type_model(filing_type_code: str, filing_description: str = "TEST"):
     """Return the filing type model."""
-    filing_type = FilingType(code=filing_type_code, description=filing_description)
+    filing_type = FilingType(code=filing_type_code, description=filing_description, created_by="TEST")
     filing_type.save()
     return filing_type
 
 
 def factory_fee_model(fee_code: str, amount: float):
     """Return the fee code model."""
-    fee_code_master = FeeCode(code=fee_code, amount=Decimal(str(amount)))
+    fee_code_master = FeeCode(code=fee_code, amount=Decimal(str(amount)), created_by="TEST")
     fee_code_master.save()
     return fee_code_master
 
@@ -1091,7 +1091,11 @@ def factory_corp_type_model(
 ):
     """Return the corp type model."""
     corp_type = CorpType(
-        code=corp_type_code, description=corp_type_description, product=product_code, refund_approval=refund_approval
+        code=corp_type_code,
+        description=corp_type_description,
+        product=product_code,
+        refund_approval=refund_approval,
+        created_by="TEST",
     )
     corp_type.save()
     return corp_type
@@ -1118,6 +1122,7 @@ def factory_fee_schedule_model(
         variable=variable,
         show_on_pricelist=show_on_pricelist,
         gst_added=gst_added,
+        created_by="TEST",
     )
     if service_fee:
         fee_schedule.service_fee_code = service_fee.code

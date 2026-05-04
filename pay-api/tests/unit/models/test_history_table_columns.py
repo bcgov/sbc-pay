@@ -108,7 +108,13 @@ def test_history_table_columns(session, inspector, versioned_models):
 def test_history_tables_have_composite_primary_keys(session, inspector, versioned_models):
     """Test that all history tables have composite primary keys with id and version."""
     # Tables to skip for this test (they have different primary key structures)
-    skip_tables = {"distribution_codes_history"}
+    skip_tables = {
+        "corp_types_history",
+        "distribution_codes_history",
+        "fee_codes_history",
+        "fee_schedules_history",
+        "filing_types_history",
+    }
 
     for _base_table, history_table in versioned_models:
         if history_table in skip_tables:

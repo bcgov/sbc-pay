@@ -22,7 +22,7 @@ from pay_api.models import FeeCode
 
 def factory_feecode(fee_code: str, amount: int):
     """Return a valid FeeCode object."""
-    return FeeCode(code=fee_code, amount=amount)
+    return FeeCode(code=fee_code, amount=amount, created_by="TEST")
 
 
 def test_feecode(session):

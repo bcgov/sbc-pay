@@ -24,17 +24,17 @@ from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 
 def factory_corp_type(corp_type_code: str, corp_description: str):
     """Return a valid Corp Type object."""
-    return CorpType(code=corp_type_code, description=corp_description)
+    return CorpType(code=corp_type_code, description=corp_description, created_by="TEST")
 
 
 def factory_feecode(fee_code: str, amount: int):
     """Return a valid FeeCode object."""
-    return FeeCode(code=fee_code, amount=amount)
+    return FeeCode(code=fee_code, amount=amount, created_by="TEST")
 
 
 def factory_filing_type(code: str, description: str):
     """Return a valid FilingType object."""
-    return FilingType(code=code, description=description)
+    return FilingType(code=code, description=description, created_by="TEST")
 
 
 def factory_fee_schedule(
@@ -59,6 +59,7 @@ def factory_fee_schedule(
         future_effective_fee_code=future_effective_fee_code,
         service_fee_code=service_fee_code,
         show_on_pricelist=show_on_pricelist,
+        created_by="TEST",
     )
 
 
@@ -187,4 +188,4 @@ def get_or_create_corp_type(corp_type_code: str, corp_description: str, session)
     existing = session.query(CorpType).filter_by(code=corp_type_code).first()
     if existing:
         return existing
-    return CorpType(code=corp_type_code, description=corp_description)
+    return CorpType(code=corp_type_code, description=corp_description, created_by="TEST")

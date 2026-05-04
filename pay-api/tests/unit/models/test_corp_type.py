@@ -22,7 +22,7 @@ from pay_api.models import CorpType
 
 def factory_corp_type(corp_type_code: str, corp_description: str, product: str = None, payment_methods: list = None):
     """Return a valid Corp Type object."""
-    corp_type = CorpType(code=corp_type_code, description=corp_description)
+    corp_type = CorpType(code=corp_type_code, description=corp_description, created_by="TEST")
     if product:
         corp_type.product = product
     if payment_methods:
