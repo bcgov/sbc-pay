@@ -21,6 +21,7 @@ class CodeConfig(SecuredView):
 
     column_list = column_searchable_list = ("code", "description")
 
+    # Keep everything sorted, although realistically also we need to sort the values within a row before it is saved.
     column_default_sort = "code"
 
     column_labels = {**SecuredView._AUDIT_LABELS}
