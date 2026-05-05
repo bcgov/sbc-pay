@@ -45,18 +45,6 @@ class SecuredView(sqla.ModelView):
 
     _AUDIT_FIELDS = ["created_by", "created_on", "updated_by", "updated_on"]
 
-    form_overrides = {
-        "created_on": _ReadonlyDateTimeField,
-        "updated_on": _ReadonlyDateTimeField,
-    }
-
-    _AUDIT_LABELS = {
-        "created_by": "Created By",
-        "created_on": "Created On",
-        "updated_by": "Updated By",
-        "updated_on": "Updated On",
-    }
-
     # Allow the user to change the page size.
     can_set_page_size = True
 
@@ -125,21 +113,6 @@ class SecuredView(sqla.ModelView):
             return kc.get_redirect_url()
 
         return "not authorized"
-
-    def edit_form(self, obj=None):
-        """Make audit fields readonly in edit form."""
-        form = super().edit_form(obj)
-        for field_name in self._AUDIT_FIELDS:
-            if field := getattr(form, field_name, None):
-                field.render_kw = {"readonly": True}
-        return form
-
-    def create_form(self, obj=None):
-        """Remove audit fields from create form because they are auto-populated."""
-        form = super().create_form(obj)
-        for field_name in self._AUDIT_FIELDS:
-            form._fields.pop(field_name, None)
-        return form
 
     def on_model_change(self, form, model, is_created):  # noqa: ARG002
         """Set audit fields from the logged-in OIDC user on every create/edit."""
