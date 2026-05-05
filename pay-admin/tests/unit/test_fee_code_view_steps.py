@@ -20,6 +20,16 @@ from pytest_bdd import given, parsers, scenarios, then, when
 
 from admin.views.fee_code import FeeCodeConfig
 from pay_api.models import FeeCode, db
+from tests.utilities.admin_view_audit_helpers import (
+    assert_audit_fields_absent,
+    assert_audit_fields_readonly,
+    assert_created_fields,
+    assert_updated_fields,
+    generate_create_form,
+    generate_edit_form,
+    save_existing_record,
+    save_new_record,
+)
 
 scenarios("features/fee_code_view.feature")
 
@@ -46,6 +56,30 @@ def prefill_form_fc(context):
     context["form"] = mock_form
 
 
+@when("the FeeCode create form is generated")
+def generate_fc_create_form(context):
+    """Generate the create form."""
+    generate_create_form(context, ["code", "amount"])
+
+
+@when("the FeeCode edit form is generated")
+def generate_fc_edit_form(context):
+    """Generate the edit form."""
+    generate_edit_form(context, ["code", "amount"])
+
+
+@when("a new FeeCode record is saved")
+def save_new_fc(context):
+    """Save a new record."""
+    save_new_record(context)
+
+
+@when("an existing FeeCode record is saved")
+def save_existing_fc(context):
+    """Save an existing record."""
+    save_existing_record(context)
+
+
 @then("all list columns should be within the configured column_list")
 def all_columns_in_config_fc(context):
     """Assert all columns listed."""
@@ -70,3 +104,27 @@ def default_sort_fc(context, column):
 def code_is_readonly_fc(context):
     """Assert readonly column."""
     assert context["form"].code.render_kw == {"readonly": True}
+
+
+@then("the audit fields should not be present in the create form")
+def audit_fields_absent_fc(context):
+    """Assert audit fields are removed from create."""
+    assert_audit_fields_absent(context)
+
+
+@then("the audit fields should be readonly")
+def audit_fields_readonly_fc(context):
+    """Assert audit fields are readonly."""
+    assert_audit_fields_readonly(context)
+
+
+@then(parsers.parse('the created audit fields should be "{expected_by}" and "{expected_on}"'))
+def created_audit_fields_fc(context, expected_by, expected_on):
+    """Assert created audit fields."""
+    assert_created_fields(context, expected_by, expected_on)
+
+
+@then(parsers.parse('the updated audit fields should be "{expected_by}" and "{expected_on}"'))
+def updated_audit_fields_fc(context, expected_by, expected_on):
+    """Assert updated audit fields."""
+    assert_updated_fields(context, expected_by, expected_on)

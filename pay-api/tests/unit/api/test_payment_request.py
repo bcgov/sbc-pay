@@ -1444,22 +1444,22 @@ def test_payment_request_gst_and_service_fees_calculation(session, client, jwt, 
     priority_fee_code = "COMP_PRI"
     future_effective_fee_code = "COMP_FUT"
 
-    main_fee = FeeCode(code=fee_code, amount=Decimal("150.00"))
+    main_fee = FeeCode(code=fee_code, amount=Decimal("150.00"), created_by="TEST")
     main_fee.save()
 
-    service_fee = FeeCode(code=service_fee_code, amount=Decimal("25.50"))
+    service_fee = FeeCode(code=service_fee_code, amount=Decimal("25.50"), created_by="TEST")
     service_fee.save()
 
-    priority_fee = FeeCode(code=priority_fee_code, amount=Decimal("15.75"))
+    priority_fee = FeeCode(code=priority_fee_code, amount=Decimal("15.75"), created_by="TEST")
     priority_fee.save()
 
-    future_effective_fee = FeeCode(code=future_effective_fee_code, amount=Decimal("35.25"))
+    future_effective_fee = FeeCode(code=future_effective_fee_code, amount=Decimal("35.25"), created_by="TEST")
     future_effective_fee.save()
 
-    corp_type = CorpType(code=corp_type_code, description="Comprehensive Test Corp")
+    corp_type = CorpType(code=corp_type_code, description="Comprehensive Test Corp", created_by="TEST")
     corp_type.save()
 
-    filing_type = FilingType(code=filing_type_code, description="Comprehensive Test Filing")
+    filing_type = FilingType(code=filing_type_code, description="Comprehensive Test Filing", created_by="TEST")
     filing_type.save()
 
     fee_schedule_model = FeeScheduleModel(
@@ -1472,6 +1472,7 @@ def test_payment_request_gst_and_service_fees_calculation(session, client, jwt, 
         future_effective_fee_code=future_effective_fee_code,
         gst_added=True,
         show_on_pricelist=True,
+        created_by="TEST",
     )
     fee_schedule_model.save()
 
@@ -1597,16 +1598,16 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
     corp_type_code = "GSTTEST"
     fee_code = "GSTTEST"
 
-    fee_code_model = FeeCode(code=fee_code, amount=Decimal("100.00"))
+    fee_code_model = FeeCode(code=fee_code, amount=Decimal("100.00"), created_by="TEST")
     fee_code_model.save()
 
-    service_fee_code_model = FeeCode(code="GSTSRV", amount=Decimal("10.00"))
+    service_fee_code_model = FeeCode(code="GSTSRV", amount=Decimal("10.00"), created_by="TEST")
     service_fee_code_model.save()
 
-    corp_type = CorpType(code=corp_type_code, description="GST Test Corp", product="BUSINESS")
+    corp_type = CorpType(code=corp_type_code, description="GST Test Corp", product="BUSINESS", created_by="TEST")
     corp_type.save()
 
-    filing_type = FilingType(code=filing_type_code, description="GST Test Filing")
+    filing_type = FilingType(code=filing_type_code, description="GST Test Filing", created_by="TEST")
     filing_type.save()
 
     fee_schedule_with_gst = FeeScheduleModel(
@@ -1617,6 +1618,7 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
         gst_added=True,
         show_on_pricelist=True,
         service_fee=service_fee_code_model,
+        created_by="TEST",
     )
     fee_schedule_with_gst.save()
 
@@ -1694,16 +1696,18 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
     corp_type_code_no_gst = "NOGSTTEST"
     fee_code_no_gst = "NOGSTTEST"
 
-    fee_code_model_no_gst = FeeCode(code=fee_code_no_gst, amount=Decimal("100.00"))
+    fee_code_model_no_gst = FeeCode(code=fee_code_no_gst, amount=Decimal("100.00"), created_by="TEST")
     fee_code_model_no_gst.save()
 
-    service_fee_code_model_no_gst = FeeCode(code="NOGSTSRV", amount=Decimal("10.00"))
+    service_fee_code_model_no_gst = FeeCode(code="NOGSTSRV", amount=Decimal("10.00"), created_by="TEST")
     service_fee_code_model_no_gst.save()
 
-    corp_type_no_gst = CorpType(code=corp_type_code_no_gst, description="No GST Test Corp", product="BUSINESS")
+    corp_type_no_gst = CorpType(
+        code=corp_type_code_no_gst, description="No GST Test Corp", product="BUSINESS", created_by="TEST"
+    )
     corp_type_no_gst.save()
 
-    filing_type_no_gst = FilingType(code=filing_type_code_no_gst, description="No GST Test Filing")
+    filing_type_no_gst = FilingType(code=filing_type_code_no_gst, description="No GST Test Filing", created_by="TEST")
     filing_type_no_gst.save()
 
     fee_schedule_without_gst = FeeScheduleModel(
@@ -1714,6 +1718,7 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
         gst_added=False,
         show_on_pricelist=True,
         service_fee=service_fee_code_model_no_gst,
+        created_by="TEST",
     )
     fee_schedule_without_gst.save()
 

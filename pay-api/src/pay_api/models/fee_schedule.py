@@ -17,20 +17,21 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from attr import define
+from sql_versioning import Versioned
 from sqlalchemy import Boolean, Date, ForeignKey, cast
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
 from pay_api.utils.serializable import Serializable
 
-from .base_model import BaseModel
+from .audit import Audit
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode
 from .filing_type import FilingType, FilingTypeSchema
 
 
-class FeeSchedule(BaseModel):
+class FeeSchedule(Audit, Versioned):
     """This class manages all of the base data about a fee schedule.
 
     Fee schedule holds the data related to filing type and fee code which is used to calculate the fees for a filing
@@ -51,17 +52,24 @@ class FeeSchedule(BaseModel):
     __mapper_args__ = {
         "include_properties": [
             "corp_type_code",
-            "gst_added",
+            "created_by",
+            "created_name",
+            "created_on",
             "fee_code",
             "fee_end_date",
             "fee_schedule_id",
             "fee_start_date",
             "filing_type_code",
             "future_effective_fee_code",
+            "gst_added",
             "priority_fee_code",
             "service_fee_code",
             "show_on_pricelist",
+            "updated_by",
+            "updated_name",
+            "updated_on",
             "variable",
+            "version",
         ]
     }
 

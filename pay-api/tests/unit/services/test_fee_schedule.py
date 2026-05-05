@@ -41,6 +41,7 @@ def test_fee_schedule_saved_from_new(session):
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
     fee_schedule.fee_start_date = datetime.now(tz=UTC)
+    fee_schedule._dao.created_by = "TEST"  # pylint: disable=protected-access
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
@@ -56,6 +57,7 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
     fee_schedule.fee_start_date = datetime.now(tz=UTC)
+    fee_schedule._dao.created_by = "TEST"  # pylint: disable=protected-access
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
@@ -106,6 +108,7 @@ def test_find_by_corp_type_and_filing_type_and_valid_date(session):
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
     fee_schedule.fee_start_date = datetime.now(tz=UTC)
+    fee_schedule._dao.created_by = "TEST"  # pylint: disable=protected-access
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
@@ -125,6 +128,7 @@ def test_find_by_corp_type_and_filing_type_and_invalid_date(session):
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
     fee_schedule.fee_start_date = datetime.now(tz=UTC)
+    fee_schedule._dao.created_by = "TEST"  # pylint: disable=protected-access
     fee_schedule.save()
 
     with pytest.raises(BusinessException) as excinfo:
@@ -152,6 +156,7 @@ def test_fee_schedule_with_priority_and_future_effective_filing_rates(session):
         fee_code=FEE_CODE,
         future_effective_fee_code="FU001",
         priority_fee_code="PR001",
+        created_by="TEST",
     ).save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
@@ -173,6 +178,7 @@ def test_fee_schedule_with_waive_fees(session):
     fee_schedule.corp_type_code = CORP_TYPE_CODE
     fee_schedule.fee_code = FEE_CODE
     fee_schedule.fee_start_date = datetime.now(tz=UTC)
+    fee_schedule._dao.created_by = "TEST"  # pylint: disable=protected-access
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
@@ -189,16 +195,16 @@ def test_fee_schedule_with_service_fees(session):
     tran_fee_code = "TRAN"
     corp_type_code = "XCORP"
     fee_code = "FEE01"
-    fee_code_master = FeeCode(code=tran_fee_code, amount=10)
+    fee_code_master = FeeCode(code=tran_fee_code, amount=10, created_by="TEST")
     fee_code_master.save()
 
-    fee_code_master = FeeCode(code=fee_code, amount=100)
+    fee_code_master = FeeCode(code=fee_code, amount=100, created_by="TEST")
     fee_code_master.save()
 
-    corp_type = CorpType(code=corp_type_code, description="TEST")
+    corp_type = CorpType(code=corp_type_code, description="TEST", created_by="TEST")
     corp_type.save()
 
-    filing_type = FilingType(code=FILING_TYPE_CODE, description="TEST")
+    filing_type = FilingType(code=FILING_TYPE_CODE, description="TEST", created_by="TEST")
     filing_type.save()
 
     fee_schedule = services.FeeSchedule()
@@ -207,6 +213,7 @@ def test_fee_schedule_with_service_fees(session):
     fee_schedule.fee_code = fee_code
     fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.service_fee_code = tran_fee_code
+    fee_schedule._dao.created_by = "TEST"  # pylint: disable=protected-access
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
@@ -224,16 +231,16 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
     tran_fee_code = "TRAN"
     corp_type_code = "XCORP"
     fee_code = "FEE01"
-    fee_code_master = FeeCode(code=tran_fee_code, amount=10)
+    fee_code_master = FeeCode(code=tran_fee_code, amount=10, created_by="TEST")
     fee_code_master.save()
 
-    fee_code_master = FeeCode(code=fee_code, amount=100)
+    fee_code_master = FeeCode(code=fee_code, amount=100, created_by="TEST")
     fee_code_master.save()
 
-    corp_type = CorpType(code=corp_type_code, description="TEST")
+    corp_type = CorpType(code=corp_type_code, description="TEST", created_by="TEST")
     corp_type.save()
 
-    filing_type = FilingType(code=FILING_TYPE_CODE, description="TEST")
+    filing_type = FilingType(code=FILING_TYPE_CODE, description="TEST", created_by="TEST")
     filing_type.save()
 
     fee_schedule = services.FeeSchedule()
@@ -242,6 +249,7 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
     fee_schedule.fee_code = fee_code
     fee_schedule.fee_start_date = datetime.now(tz=UTC)
     fee_schedule.service_fee_code = tran_fee_code
+    fee_schedule._dao.created_by = "TEST"  # pylint: disable=protected-access
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
@@ -258,16 +266,16 @@ def test_get_fee_details(session):
     # Create mock fee details in the database
     fee_code = "FEE001"
 
-    fee_code_master = FeeCode(code=fee_code, amount=100)
+    fee_code_master = FeeCode(code=fee_code, amount=100, created_by="TEST")
     fee_code_master.save()
 
     filing_type_code = "TEST"
     corp_type_code = "CP TEST"
 
-    filing_type = FilingType(code=filing_type_code, description="Test Filing Type")
+    filing_type = FilingType(code=filing_type_code, description="Test Filing Type", created_by="TEST")
     filing_type.save()
 
-    corp_type = CorpType(code=corp_type_code, description="Test Corp Type")
+    corp_type = CorpType(code=corp_type_code, description="Test Corp Type", created_by="TEST")
     corp_type.product = "PRODUCT_CODE1"
     corp_type.save()
 
@@ -277,6 +285,7 @@ def test_get_fee_details(session):
         fee_code=fee_code,
         fee_start_date=datetime.now(tz=UTC),
         show_on_pricelist=True,
+        created_by="TEST",
     )
     fee_schedule.save()
 
@@ -299,6 +308,7 @@ def test_fee_schedule_gst_properties(session):
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
+        created_by="TEST",
     )
     fee_schedule_model.save()
 
@@ -338,6 +348,7 @@ def test_fee_schedule_gst_properties_disabled(session):
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=False,
+        created_by="TEST",
     )
     fee_schedule_model.save()
 
@@ -365,6 +376,7 @@ def test_fee_schedule_gst_properties_with_zero_fees(session):
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
+        created_by="TEST",
     )
     fee_schedule_model.save()
 
@@ -392,6 +404,7 @@ def test_fee_schedule_gst_properties_rounding(session):
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
+        created_by="TEST",
     )
     fee_schedule_model.save()
 
@@ -417,18 +430,18 @@ def create_linked_data(
     future_effective_fee: str = None,
 ):
     """Return a valid fee schedule object, creates the related objects first."""
-    corp_type = CorpType(code=corp_type_code, description="TEST")
+    corp_type = CorpType(code=corp_type_code, description="TEST", created_by="TEST")
     corp_type.save()
 
-    fee_code_master = FeeCode(code=fee_code, amount=100)
+    fee_code_master = FeeCode(code=fee_code, amount=100, created_by="TEST")
     fee_code_master.save()
 
     if priority_fee:
-        priority_fee_code = FeeCode(code=priority_fee, amount=10)
+        priority_fee_code = FeeCode(code=priority_fee, amount=10, created_by="TEST")
         priority_fee_code.save()
     if future_effective_fee:
-        future_effective_fee_code = FeeCode(code=future_effective_fee, amount=20)
+        future_effective_fee_code = FeeCode(code=future_effective_fee, amount=20, created_by="TEST")
         future_effective_fee_code.save()
 
-    filing_type = FilingType(code=filing_type_code, description="TEST")
+    filing_type = FilingType(code=filing_type_code, description="TEST", created_by="TEST")
     filing_type.save()

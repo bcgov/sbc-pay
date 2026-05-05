@@ -21,10 +21,17 @@ from .secured_view import SecuredView
 class FeeCodeConfig(SecuredView):
     """Fee code config."""
 
-    column_list = form_columns = column_searchable_list = ("code", "amount")
+    column_list = column_searchable_list = ("code", "amount")
 
-    # Keep everything sorted, although realistically also we need to sort the values within a row before it is saved.
     column_default_sort = "code"
+
+    column_labels = {**SecuredView._AUDIT_LABELS}
+
+    form_columns = edit_columns = [
+        "code",
+        "amount",
+        *SecuredView._AUDIT_FIELDS,
+    ]
 
     def on_form_prefill(self, form, id):  # noqa: ARG002
         """Prefill overrides."""

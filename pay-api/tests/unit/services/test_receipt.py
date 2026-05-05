@@ -146,12 +146,14 @@ def test_receipt_details_is_submission_true_with_nocoi(session):
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
-    filing_type = FilingType(code="NOCOI", description="No COI Filing")
+    filing_type = FilingType(code="NOCOI", description="No COI Filing", created_by="TEST")
     filing_type.save()
-    fee_code = FeeCode(code="NOCOI_FEE", amount=25.00)
+    fee_code = FeeCode(code="NOCOI_FEE", amount=25.00, created_by="TEST")
     fee_code.save()
     # NOCOI is a filing type that's specific for officers it's free so it's considered a submission
-    fee_schedule = FeeScheduleModel(filing_type_code="NOCOI", corp_type_code="CP", fee_code="NOCOI_FEE")
+    fee_schedule = FeeScheduleModel(
+        filing_type_code="NOCOI", corp_type_code="CP", fee_code="NOCOI_FEE", created_by="TEST"
+    )
     fee_schedule.save()
 
     distribution_code = factory_distribution_code("Test Distribution Code")

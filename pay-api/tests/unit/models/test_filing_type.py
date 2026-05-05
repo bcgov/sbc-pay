@@ -22,7 +22,7 @@ from pay_api.models import FilingType
 
 def factory_filing_type(code: str, description: str):
     """Return a valid FilingType object."""
-    return FilingType(code=code, description=description)
+    return FilingType(code=code, description=description, created_by="TEST")
 
 
 def test_filing_type(session):

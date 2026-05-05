@@ -34,6 +34,7 @@ class FeeScheduleConfig(SecuredView):
     ]
 
     column_labels = {
+        **SecuredView._AUDIT_LABELS,
         "corp_type": "Corp Type",
         "corp_type_code": "Corp Type",
         "filing_type": "Filing Type",
@@ -69,6 +70,7 @@ class FeeScheduleConfig(SecuredView):
         "variable",
         "show_on_pricelist",
         "gst_added",
+        *SecuredView._AUDIT_FIELDS,
     ]
     edit_columns = [
         "corp_type",
@@ -80,6 +82,7 @@ class FeeScheduleConfig(SecuredView):
         "distribution_codes",
         "show_on_pricelist",
         "gst_added",
+        *SecuredView._AUDIT_FIELDS,
     ]
 
     @staticmethod

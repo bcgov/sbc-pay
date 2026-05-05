@@ -709,16 +709,16 @@ def test_get_eft_statement_with_invoices(session):
     factory_payment_line_item(invoice_id=invoice_4.id, fee_schedule_id=1).save()
 
     # Create fee schedule with GST enabled for invoice 5
-    fee_code_gst = FeeCode(code="GSTFEE", amount=Decimal("100.00"))
+    fee_code_gst = FeeCode(code="GSTFEE", amount=Decimal("100.00"), created_by="TEST")
     fee_code_gst.save()
 
-    service_fee_code_gst = FeeCode(code="GSTSRV", amount=Decimal("25.00"))
+    service_fee_code_gst = FeeCode(code="GSTSRV", amount=Decimal("25.00"), created_by="TEST")
     service_fee_code_gst.save()
 
-    corp_type_gst = CorpType(code="GSTTEST", description="GST Test Corp", product="BUSINESS")
+    corp_type_gst = CorpType(code="GSTTEST", description="GST Test Corp", product="BUSINESS", created_by="TEST")
     corp_type_gst.save()
 
-    filing_type_gst = FilingType(code="GSTTEST", description="GST Test Filing")
+    filing_type_gst = FilingType(code="GSTTEST", description="GST Test Filing", created_by="TEST")
     filing_type_gst.save()
 
     fee_schedule_gst = FeeScheduleModel(
@@ -728,6 +728,7 @@ def test_get_eft_statement_with_invoices(session):
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
         show_on_pricelist=True,
+        created_by="TEST",
         service_fee=service_fee_code_gst,
     )
     fee_schedule_gst.save()

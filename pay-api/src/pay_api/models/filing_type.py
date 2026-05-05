@@ -13,11 +13,14 @@
 # limitations under the License.
 """Model to handle all operations related to filing type master data."""
 
+from sql_versioning import Versioned
+
+from .audit import Audit
 from .code_table import CodeTable
 from .db import db, ma
 
 
-class FilingType(db.Model, CodeTable):
+class FilingType(CodeTable, Audit, Versioned):
     """This class manages all of the base data about a filing type.
 
     Filing type indicates the filing operation on the entity
@@ -34,7 +37,19 @@ class FilingType(db.Model, CodeTable):
     #
     # NOTE: please keep mapper names in alpha-order, easier to track that way
     #       Exception, id is always first, _fields first
-    __mapper_args__ = {"include_properties": ["code", "description"]}
+    __mapper_args__ = {
+        "include_properties": [
+            "code",
+            "created_by",
+            "created_name",
+            "created_on",
+            "description",
+            "updated_by",
+            "updated_name",
+            "updated_on",
+            "version",
+        ]
+    }
 
     code = db.Column(db.String(10), primary_key=True)
     description = db.Column("description", db.String(200), nullable=False)

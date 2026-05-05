@@ -13,13 +13,15 @@
 # limitations under the License.
 """Model to handle all operations related to Corp type master data."""
 
+from sql_versioning import Versioned
 from sqlalchemy import Boolean
 
+from .audit import Audit
 from .code_table import CodeTable
 from .db import db, ma
 
 
-class CorpType(db.Model, CodeTable):
+class CorpType(Audit, Versioned, CodeTable):
     """This class manages all of the base data about a Corp Type.
 
     Corp types are different types of corporation the payment system supports
@@ -44,12 +46,19 @@ class CorpType(db.Model, CodeTable):
             "bcol_code_partial_service_fee",
             "bcol_staff_fee_code",
             "code",
+            "created_by",
+            "created_name",
+            "created_on",
             "description",
             "has_partner_disbursements",
             "is_online_banking_allowed",
             "payment_methods",
-            "refund_approval",
             "product",
+            "refund_approval",
+            "updated_by",
+            "updated_name",
+            "updated_on",
+            "version",
         ]
     }
 
