@@ -27,13 +27,13 @@ from admin import keycloak
 class _ReadonlyDateTimeField(StringField):
     """Renders a DateTime column as plain text in BC time (PDT, UTC-7); never writes back to the model on form submit."""
 
-    _PDT = ZoneInfo("Etc/GMT+7")
-    _FORMAT = "%Y-%m-%d %H:%M:%S"
+    _TZ = ZoneInfo("America/Vancouver")
+    _FORMAT = "%Y-%m-%d %H:%M:%S %Z"
 
     def _value(self):
         if self.data and hasattr(self.data, "strftime"):
             dt = self.data if self.data.tzinfo else self.data.replace(tzinfo=UTC)
-            return dt.astimezone(self._PDT).strftime(self._FORMAT)
+            return dt.astimezone(self._TZ).strftime(self._FORMAT)
         return super()._value()
 
     def populate_obj(self, obj, name):  # noqa: ARG002
