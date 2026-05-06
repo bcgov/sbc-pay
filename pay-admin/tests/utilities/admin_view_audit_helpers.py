@@ -59,8 +59,12 @@ def assert_audit_fields_readonly(context):
 def save_new_record(context):
     """Save a new auditable record through the current admin view."""
     model = SimpleNamespace(
-        created_by=None, created_name=None, created_on=None,
-        updated_by=None, updated_name=None, updated_on=None,
+        created_by=None,
+        created_name=None,
+        created_on=None,
+        updated_by=None,
+        updated_name=None,
+        updated_on=None,
     )
     with freeze_time(context.get("timestamp", "2024-01-15 10:00:00")):
         context["view"].on_model_change(MagicMock(), model, is_created=True)
@@ -70,8 +74,12 @@ def save_new_record(context):
 def save_existing_record(context):
     """Save an existing auditable record through the current admin view."""
     model = SimpleNamespace(
-        created_by="original", created_name="original", created_on=None,
-        updated_by=None, updated_name=None, updated_on=None,
+        created_by="original",
+        created_name="original",
+        created_on=None,
+        updated_by=None,
+        updated_name=None,
+        updated_on=None,
     )
     with freeze_time(context.get("timestamp", "2024-01-15 10:00:00")):
         context["view"].on_model_change(MagicMock(), model, is_created=False)
