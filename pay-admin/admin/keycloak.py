@@ -62,3 +62,7 @@ class Keycloak:
     def get_username(self) -> str:
         """Get the username for the currently logged in user."""
         return self._oidc.user_getfield("preferred_username")
+
+    def get_name(self) -> str:
+        """Get the full name for the currently logged in user."""
+        return self._oidc.user_getfield("name")

@@ -58,7 +58,14 @@ def assert_audit_fields_readonly(context):
 
 def save_new_record(context):
     """Save a new auditable record through the current admin view."""
-    model = SimpleNamespace(created_by=None, created_on=None, updated_by=None, updated_on=None)
+    model = SimpleNamespace(
+        created_by=None,
+        created_name=None,
+        created_on=None,
+        updated_by=None,
+        updated_name=None,
+        updated_on=None,
+    )
     with freeze_time(context.get("timestamp", "2024-01-15 10:00:00")):
         context["view"].on_model_change(MagicMock(), model, is_created=True)
     context["model"] = model
@@ -66,7 +73,14 @@ def save_new_record(context):
 
 def save_existing_record(context):
     """Save an existing auditable record through the current admin view."""
-    model = SimpleNamespace(created_by="original", created_on=None, updated_by=None, updated_on=None)
+    model = SimpleNamespace(
+        created_by="original",
+        created_name="original",
+        created_on=None,
+        updated_by=None,
+        updated_name=None,
+        updated_on=None,
+    )
     with freeze_time(context.get("timestamp", "2024-01-15 10:00:00")):
         context["view"].on_model_change(MagicMock(), model, is_created=False)
     context["model"] = model
@@ -76,8 +90,10 @@ def assert_created_fields(context, expected_by, expected_on):
     """Assert created audit fields."""
     expected_datetime = datetime.fromisoformat(expected_on.replace(" ", "T")).replace(tzinfo=UTC)
     assert context["model"].created_by == expected_by
+    assert context["model"].created_name == expected_by
     assert context["model"].created_on == expected_datetime
     assert context["model"].updated_by is None
+    assert context["model"].updated_name is None
     assert context["model"].updated_on is None
 
 
@@ -85,4 +101,5 @@ def assert_updated_fields(context, expected_by, expected_on):
     """Assert updated audit fields."""
     expected_datetime = datetime.fromisoformat(expected_on.replace(" ", "T")).replace(tzinfo=UTC)
     assert context["model"].updated_by == expected_by
+    assert context["model"].updated_name == expected_by
     assert context["model"].updated_on == expected_datetime

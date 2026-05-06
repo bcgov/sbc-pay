@@ -14,10 +14,30 @@ limitations under the License.
 """
 
 from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 from flask_admin.contrib import sqla
+from sqlalchemy import inspect as sa_inspect
+from sqlalchemy.orm.attributes import flag_modified
+from wtforms import StringField
 
 from admin import keycloak
+
+
+class _ReadonlyDateTimeField(StringField):
+    """Renders a DateTime column as plain text in BC time (PDT, UTC-7); never writes back to the model on form submit."""
+
+    _TZ = ZoneInfo("America/Vancouver")
+    _FORMAT = "%Y-%m-%d %H:%M:%S %Z"
+
+    def _value(self):
+        if self.data and hasattr(self.data, "strftime"):
+            dt = self.data if self.data.tzinfo else self.data.replace(tzinfo=UTC)
+            return dt.astimezone(self._TZ).strftime(self._FORMAT)
+        return super()._value()
+
+    def populate_obj(self, obj, name):  # noqa: ARG002
+        pass  # audit field; value is managed server-side, not via form input
 
 
 class SecuredView(sqla.ModelView):
@@ -27,6 +47,11 @@ class SecuredView(sqla.ModelView):
     can_export = False
 
     _AUDIT_FIELDS = ["created_by", "created_on", "updated_by", "updated_on"]
+
+    form_overrides = {
+        "created_on": _ReadonlyDateTimeField,
+        "updated_on": _ReadonlyDateTimeField,
+    }
 
     _AUDIT_LABELS = {
         "created_by": "Created By",
@@ -107,40 +132,44 @@ class SecuredView(sqla.ModelView):
     def edit_form(self, obj=None):
         """Make audit fields readonly in edit form."""
         form = super().edit_form(obj)
-        self._set_audit_fields_readonly(form)
+        for field_name in self._AUDIT_FIELDS:
+            if field := getattr(form, field_name, None):
+                field.render_kw = {"readonly": True}
         return form
 
     def create_form(self, obj=None):
         """Remove audit fields from create form because they are auto-populated."""
         form = super().create_form(obj)
-        self._remove_audit_fields(form)
-        return form
-
-    def _set_audit_fields_readonly(self, form):
-        """Make audit fields readonly if they are present on a form."""
-        for field_name in self._AUDIT_FIELDS:
-            field = getattr(form, field_name, None)
-            if field is not None:
-                field.render_kw = {"readonly": True}
-        return form
-
-    def _remove_audit_fields(self, form):
-        """Remove audit fields if they are present on a form."""
         for field_name in self._AUDIT_FIELDS:
             form._fields.pop(field_name, None)
         return form
 
     def on_model_change(self, form, model, is_created):  # noqa: ARG002
         """Set audit fields from the logged-in OIDC user on every create/edit."""
-        username = keycloak.Keycloak(None).get_username() or "UNKNOWN"
+        kc = keycloak.Keycloak(None)
+        username = kc.get_username() or "UNKNOWN"
+        name = kc.get_name() or username
         now = datetime.now(tz=UTC)
         if is_created:
-            if hasattr(model, "created_by"):
-                model.created_by = model.created_by or username
-            if hasattr(model, "created_on"):
-                model.created_on = model.created_on or now
-        else:
-            if hasattr(model, "updated_by"):
-                model.updated_by = username
-            if hasattr(model, "updated_on"):
-                model.updated_on = now
+            model.created_by = getattr(model, "created_by", None) or username
+            model.created_name = getattr(model, "created_name", None) or name
+            model.created_on = getattr(model, "created_on", None) or now
+        elif self._is_modified(model):
+            model.updated_by = username
+            model.updated_name = name
+            model.updated_on = now
+            # Force SQLAlchemy to include these columns in the UPDATE SET clause,
+            # preventing the Audit model's onupdate callbacks from firing.
+            # Those callbacks use JWT context which is unavailable in Flask-Admin.
+            if hasattr(model, "__mapper__"):
+                for field in ("updated_by", "updated_name", "updated_on"):
+                    flag_modified(model, field)
+
+    def _is_modified(self, model) -> bool:
+        """Return True if any non-audit field changed since the model was loaded."""
+        try:
+            return any(
+                attr.history.has_changes() for attr in sa_inspect(model).attrs if attr.key not in self._AUDIT_FIELDS
+            )
+        except Exception:  # noqa: BLE001
+            return True  # non-SA object (e.g. test mocks); assume modified
