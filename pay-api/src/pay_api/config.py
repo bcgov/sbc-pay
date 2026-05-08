@@ -58,24 +58,13 @@ def get_named_config(config_name: str = "production"):
 _DEFAULT_SENTINEL = object()
 
 
-def _get_config(config_key: str, default=_DEFAULT_SENTINEL, **kwargs):
-    """Get the config from environment.
-
-    If a caller does not provide a `default` (the special sentinel is used),
-    this function will raise a ``KeyError`` when the environment variable is
-    not set. If a `default` is provided, that value is returned when the
-    environment variable is missing.
-    """
+def _get_config(config_key: str, **kwargs):
+    """Get a configuration value from environment variables."""
     if "default" in kwargs:
-        default = kwargs.get("default")
-
-    if default is _DEFAULT_SENTINEL:
+        value = os.getenv(config_key, kwargs.get("default"))
+    else:
         value = os.getenv(config_key)
-        if value is None:
-            raise KeyError(f'Missing required configuration "{config_key}"')
-        return value
-
-    return os.getenv(config_key, default)
+    return value
 
 
 class _Config:  # pylint: disable=too-few-public-methods
