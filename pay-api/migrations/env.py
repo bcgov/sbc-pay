@@ -61,8 +61,17 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
+    # mirror online configuration: include compare_type and include_object so
+    # offline SQL generation matches online autogenerate behavior
+    configure_args = dict(current_app.extensions["migrate"].configure_args)
+    configure_args.setdefault("compare_type", True)
+
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        include_object=include_object,
+        **configure_args,
     )
 
     with context.begin_transaction():

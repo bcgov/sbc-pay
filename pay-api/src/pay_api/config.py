@@ -59,11 +59,22 @@ _DEFAULT_SENTINEL = object()
 
 
 def _get_config(config_key: str, default=_DEFAULT_SENTINEL, **kwargs):
-    """Get the config from environment, and throw error if there are no default values and if the value is None."""
+    """Get the config from environment.
+
+    If a caller does not provide a `default` (the special sentinel is used),
+    this function will raise a ``KeyError`` when the environment variable is
+    not set. If a `default` is provided, that value is returned when the
+    environment variable is missing.
+    """
     if "default" in kwargs:
         default = kwargs.get("default")
+
     if default is _DEFAULT_SENTINEL:
-        return os.getenv(config_key)
+        value = os.getenv(config_key)
+        if value is None:
+            raise KeyError(f'Missing required configuration "{config_key}"')
+        return value
+
     return os.getenv(config_key, default)
 
 
@@ -88,19 +99,19 @@ class _Config:  # pylint: disable=too-few-public-methods
     PAY_LD_SDK_KEY = _get_config("PAY_LD_SDK_KEY")
 
     # POSTGRESQL
-    DB_USER = _get_config("DATABASE_USERNAME", "")
-    DB_PASSWORD = _get_config("DATABASE_PASSWORD", "")
-    DB_NAME = _get_config("DATABASE_NAME", "")
-    DB_HOST = _get_config("DATABASE_HOST", "")
-    DB_PORT = _get_config("DATABASE_PORT", default="5432")
     SQLALCHEMY_ECHO = _get_config("SQLALCHEMY_ECHO", default="False").lower() == "true"
 
-    CLOUDSQL_INSTANCE_CONNECTION_NAME = os.getenv("CLOUDSQL_INSTANCE_CONNECTION_NAME", "")
-    DB_IP_TYPE = os.getenv("DATABASE_IP_TYPE", "private").lower()
+    DB_USER = _get_config("DATABASE_USERNAME")
+    DB_NAME = _get_config("DATABASE_NAME")
+    CLOUDSQL_INSTANCE_CONNECTION_NAME = _get_config("CLOUDSQL_INSTANCE_CONNECTION_NAME", default="")
+    DB_IP_TYPE = _get_config("DATABASE_IP_TYPE", default="private").lower()
 
     if CLOUDSQL_INSTANCE_CONNECTION_NAME:
         SQLALCHEMY_DATABASE_URI = "postgresql+pg8000://"
-    if DB_HOST:
+    else:
+        DB_PASSWORD = _get_config("DATABASE_PASSWORD")
+        DB_HOST = _get_config("DATABASE_HOST")
+        DB_PORT = _get_config("DATABASE_PORT", default="5432")
         SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
     # JWT_OIDC Settings
@@ -247,6 +258,11 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
         "DATABASE_TEST_URL", default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     )
     SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.rsplit("/", 1)[0] + f"/{DB_NAME}"
+
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+pg8000://", 1)
+    if SQLALCHEMY_DATABASE_URI and "+psycopg" in SQLALCHEMY_DATABASE_URI:
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("+psycopg", "+pg8000")
 
     JWT_OIDC_TEST_MODE = True
     # JWT_OIDC_ISSUER = _get_config('JWT_OIDC_TEST_ISSUER')

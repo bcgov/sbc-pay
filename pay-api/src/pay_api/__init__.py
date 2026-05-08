@@ -43,7 +43,9 @@ def create_app(run_mode=None):
     """Return a configured Flask App using the Factory method."""
     if run_mode is None:
         run_mode = os.getenv("DEPLOYMENT_ENV", "production")
-    is_flask_db_command = "db" in sys.argv
+    # Detect explicit 'db' command (exact match) to avoid false positives
+    # e.g. `flask db upgrade` -> sys.argv[1] == 'db'
+    is_flask_db_command = len(sys.argv) > 1 and sys.argv[1] == "db"
 
     app = Flask(__name__)
     app.env = run_mode
@@ -60,7 +62,8 @@ def create_app(run_mode=None):
             user=app.config.get("DB_USER", ""),
             ip_type=app.config.get("DB_IP_TYPE"),
             schema="public" if run_mode != "migration" else None,
-            pool_recycle=300,
+            pool_timeout=30,
+            max_overflow=3,
         )
 
         app.config["SQLALCHEMY_ENGINE_OPTIONS"] = db_config.get_engine_options()
