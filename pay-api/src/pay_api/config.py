@@ -55,8 +55,11 @@ def get_named_config(config_name: str = "production"):
     return config
 
 
+_DEFAULT_SENTINEL = object()
+
+
 def _get_config(config_key: str, **kwargs):
-    """Get the config from environment, and throw error if there are no default values and if the value is None."""
+    """Get a configuration value from environment variables."""
     if "default" in kwargs:
         value = os.getenv(config_key, kwargs.get("default"))
     else:
@@ -80,34 +83,25 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_size": 5,  # Base connection pool size - Default 5
-        "max_overflow": 3,  # Additional connections when needed - Default 10
-        "pool_pre_ping": True,  # Test connections before use - Default False
-        "pool_recycle": 300,  # Recycle connections 5m - Default 1800
-        "pool_timeout": 30,  # Timeout for getting connection - Default 30
-        "pool_use_lifo": True,
-    }
-
     ALEMBIC_INI = "migrations/alembic.ini"
 
     PAY_LD_SDK_KEY = _get_config("PAY_LD_SDK_KEY")
 
     # POSTGRESQL
-    DB_USER = _get_config("DATABASE_USERNAME")
-    DB_PASSWORD = _get_config("DATABASE_PASSWORD")
-    DB_NAME = _get_config("DATABASE_NAME")
-    DB_HOST = _get_config("DATABASE_HOST")
-    DB_PORT = _get_config("DATABASE_PORT", default="5432")
     SQLALCHEMY_ECHO = _get_config("SQLALCHEMY_ECHO", default="False").lower() == "true"
 
-    # POSTGRESQL
-    if DB_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
-        SQLALCHEMY_DATABASE_URI = (
-            f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?host={DB_UNIX_SOCKET}&port={DB_PORT}"
-        )
+    DB_USER = _get_config("DATABASE_USERNAME")
+    DB_NAME = _get_config("DATABASE_NAME")
+    CLOUDSQL_INSTANCE_CONNECTION_NAME = _get_config("CLOUDSQL_INSTANCE_CONNECTION_NAME", default="")
+    DB_IP_TYPE = _get_config("DATABASE_IP_TYPE", default="private").lower()
+
+    if CLOUDSQL_INSTANCE_CONNECTION_NAME:
+        SQLALCHEMY_DATABASE_URI = "postgresql+pg8000://"
     else:
-        SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        DB_PASSWORD = _get_config("DATABASE_PASSWORD")
+        DB_HOST = _get_config("DATABASE_HOST")
+        DB_PORT = _get_config("DATABASE_PORT", default="5432")
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
     # JWT_OIDC Settings
     JWT_OIDC_WELL_KNOWN_CONFIG = _get_config("JWT_OIDC_WELL_KNOWN_CONFIG")
@@ -250,9 +244,14 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_NAME = f"pay-test-{worker_id}"
 
     SQLALCHEMY_DATABASE_URI = _get_config(
-        "DATABASE_TEST_URL", default=f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
+        "DATABASE_TEST_URL", default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     )
     SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.rsplit("/", 1)[0] + f"/{DB_NAME}"
+
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+pg8000://", 1)
+    if SQLALCHEMY_DATABASE_URI and "+psycopg" in SQLALCHEMY_DATABASE_URI:
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("+psycopg", "+pg8000")
 
     JWT_OIDC_TEST_MODE = True
     # JWT_OIDC_ISSUER = _get_config('JWT_OIDC_TEST_ISSUER')
@@ -377,5 +376,13 @@ class MigrationConfig:  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config("DATABASE_NAME")
     DB_HOST = _get_config("DATABASE_HOST")
     DB_PORT = _get_config("DATABASE_PORT", default="5432")
-    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
+
+    CLOUDSQL_INSTANCE_CONNECTION_NAME = os.getenv("CLOUDSQL_INSTANCE_CONNECTION_NAME", "")
+    DB_IP_TYPE = os.getenv("DATABASE_IP_TYPE", "private").lower()
+
+    if CLOUDSQL_INSTANCE_CONNECTION_NAME:
+        SQLALCHEMY_DATABASE_URI = "postgresql+pg8000://"
+    if DB_HOST:
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
