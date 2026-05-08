@@ -251,6 +251,11 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     )
     SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.rsplit("/", 1)[0] + f"/{DB_NAME}"
 
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+pg8000://", 1)
+    if SQLALCHEMY_DATABASE_URI and "+psycopg" in SQLALCHEMY_DATABASE_URI:
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("+psycopg", "+pg8000")
+
     JWT_OIDC_TEST_MODE = True
     # JWT_OIDC_ISSUER = _get_config('JWT_OIDC_TEST_ISSUER')
     JWT_OIDC_TEST_AUDIENCE = _get_config("JWT_OIDC_TEST_AUDIENCE")
