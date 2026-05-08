@@ -17,6 +17,7 @@ This module is the API for the Payment system.
 """
 
 import os
+import sys
 
 from flask import Flask, request
 from flask_migrate import Migrate, upgrade
@@ -43,25 +44,49 @@ def create_app(run_mode=None):
     """Return a configured Flask App using the Factory method."""
     if run_mode is None:
         run_mode = os.getenv("DEPLOYMENT_ENV", "production")
+    is_flask_db_command = "db" in sys.argv
+
     app = Flask(__name__)
     app.env = run_mode
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     flags.init_app(app)
+
+    if app.config.get("CLOUDSQL_INSTANCE_CONNECTION_NAME"):
+        from cloud_sql_connector import DBConfig
+
+        db_config = DBConfig(
+            instance_name=app.config.get("CLOUDSQL_INSTANCE_CONNECTION_NAME"),
+            database=app.config.get("DB_NAME", ""),
+            user=app.config.get("DB_USER", ""),
+            ip_type=app.config.get("DB_IP_TYPE"),
+            schema="public" if run_mode != "migration" else None,
+            pool_recycle=300,
+        )
+
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = db_config.get_engine_options()
+
     db.init_app(app)
     queue.init_app(app)
     if run_mode != "testing":
+        Migrate(app, db)
         if app.config.get("RUN_MIGRATION") is True:
-            Migrate(app, db)
-            app.logger.info(f"Booting up with CPU count (useful for GCP): {os.cpu_count()}")
-            app.logger.info("Running migration upgrade.")
-            with app.app_context():
-                execute_migrations(app)
-            # Alembic has it's own logging config, we'll need to restore our logging here.
-            setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
-            app.logger.info("Finished migration upgrade.")
+            if is_flask_db_command:
+                app.logger.info("Skipping startup migration execution during flask db command.")
+            else:
+                app.logger.info(f"Booting up with CPU count (useful for GCP): {os.cpu_count()}")
+                app.logger.info("Running migration upgrade.")
+                with app.app_context():
+                    execute_migrations(app)
+                # Alembic has it's own logging config, we'll need to restore our logging here.
+                setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
+                app.logger.info("Finished migration upgrade.")
         else:
             app.logger.info("Migrations were executed on prehook.")
+
+    if is_flask_db_command:
+        return app
+
     ma.init_app(app)
     endpoints.init_app(app)
 
