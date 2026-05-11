@@ -23,6 +23,8 @@ pay-api = { git = "https://github.com/bcgov/sbc-pay.git", branch = "feature-clou
 flask-session = {extras = ["filesystem"], version = "^0.8.0"}
 authlib = "1.6.11"
 aiohttp = "3.13.4"
+cloud-sql-connector = "*"
+pg8000 = "*"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -36,8 +38,6 @@ freezegun = "^1.4.0"
 coverage = "^7.4.3"
 pydocstyle = "^6.3.0"
 pytest-bdd = "^7.0.0"
-cloud-sql-connector = "*"
-pg8000 = "*"
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
