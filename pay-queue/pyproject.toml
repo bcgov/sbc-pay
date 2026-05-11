@@ -18,6 +18,8 @@ itsdangerous = "^2.1.2"
 launchdarkly-server-sdk = "^8.2.1"
 cachecontrol = "^0.14.0"
 pay-api = { git = "https://github.com/bcgov/sbc-pay.git", branch = "feature-clousql-connector-pay-api", subdirectory = "pay-api" } # from branch: update_deps__
+cloud-sql-connector = "*"
+pg8000 = "*"
 
 
 [tool.poetry.group.dev.dependencies]
