@@ -70,16 +70,18 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
 
     # POSTGRESQL
     DB_USER = os.getenv("DATABASE_USERNAME", "")
-    DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
     DB_NAME = os.getenv("DATABASE_NAME", "")
-    DB_HOST = os.getenv("DATABASE_HOST", "")
-    DB_PORT = os.getenv("DATABASE_PORT", "5432")
-    if DB_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
-        SQLALCHEMY_DATABASE_URI = (
-            f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?host={DB_UNIX_SOCKET}&port={DB_PORT}"
-        )
+
+    CLOUDSQL_INSTANCE_CONNECTION_NAME = os.getenv("CLOUDSQL_INSTANCE_CONNECTION_NAME", "")
+    DB_IP_TYPE = os.getenv("DATABASE_IP_TYPE", "private").lower()
+
+    if CLOUDSQL_INSTANCE_CONNECTION_NAME:
+        SQLALCHEMY_DATABASE_URI = "postgresql+pg8000://"
     else:
-        SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
+        DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
+        DB_HOST = os.getenv("DATABASE_HOST", "")
+        DB_PORT = os.getenv("DATABASE_PORT", "5432")
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
     # CFS API Settings
     CFS_BASE_URL = os.getenv("CFS_BASE_URL")
@@ -157,7 +159,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_PORT = os.getenv("DATABASE_TEST_PORT", "5432")
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_TEST_URL",
-        default=f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}",
+        default=f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}",
     )
 
     USE_DOCKER_MOCK = os.getenv("USE_DOCKER_MOCK", None)
