@@ -51,6 +51,25 @@ def create_app(run_mode=None):
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
     app.config.from_object(config.CONFIGURATION[run_mode])
 
+    # If Cloud SQL connection info is present, configure SQLAlchemy engine options
+    if app.config.get("CLOUDSQL_INSTANCE_CONNECTION_NAME"):
+        try:
+            from cloud_sql_connector import DBConfig
+
+            db_config = DBConfig(
+                instance_name=app.config.get("CLOUDSQL_INSTANCE_CONNECTION_NAME"),
+                database=app.config.get("DB_NAME", ""),
+                user=app.config.get("DB_USER", ""),
+                ip_type=app.config.get("DB_IP_TYPE"),
+                schema="public",
+                pool_timeout=30,
+                max_overflow=3,
+            )
+
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = db_config.get_engine_options()
+        except Exception:
+            app.logger.exception("Failed to configure Cloud SQL DBConfig")
+
     app.logger.info("init db.")
     db.init_app(app)
     ma.init_app(app)
