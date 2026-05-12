@@ -18,15 +18,16 @@ These will get initialized by the application.
 
 # services/data_warehouse.py
 
+from cloud_sql_connector import DBConfig
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
-from cloud_sql_connector import DBConfig
 
 
 class DataWarehouseDB:
     """Data Warehouse connection using cloud_sql_connector."""
 
     def __init__(self, app=None):
+        """Initialize the DataWarehouseDB instance."""
         self.engine = None
         if app:
             self.init_app(app)

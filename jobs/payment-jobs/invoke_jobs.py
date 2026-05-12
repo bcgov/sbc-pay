@@ -68,7 +68,7 @@ def create_app(
             )
 
             app.config["SQLALCHEMY_ENGINE_OPTIONS"] = db_config.get_engine_options()
-        except Exception as e:
+        except Exception:
             app.logger.exception("Failed to configure Cloud SQL DBConfig")
             raise
 
