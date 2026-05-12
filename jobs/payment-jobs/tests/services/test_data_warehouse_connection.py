@@ -47,6 +47,19 @@ def test_data_warehouse_connection(mock_connector, mock_create_engine, app):
     mock_result = [(1,)]
     mock_connection.execute.return_value.fetchone.return_value = mock_result[0]
     mock_connector.return_value.connect.return_value = mock_connection
+@patch("services.data_warehouse.create_engine")
+@patch("cloud_sql_connector.DBConfig.get_engine_options")
+def test_data_warehouse_connection(mock_get_engine_options, mock_create_engine, app):
+    """Test the connection to the Data Warehouse."""
+    mock_engine = MagicMock()
+    mock_connection = MagicMock()
+    mock_create_engine.return_value = mock_engine
+    mock_engine.connect.return_value.__enter__.return_value = mock_connection
+
+    # Setup mock results
+    mock_result = [(1,)]
+    mock_connection.execute.return_value.fetchone.return_value = mock_result[0]
+    mock_get_engine_options.return_value = {}
 
     # Initialize with test_connection=False to avoid the first execute call
     data_warehouse.init_app(app, test_connection=False)
@@ -58,7 +71,6 @@ def test_data_warehouse_connection(mock_connector, mock_create_engine, app):
 
             assert result is not None, "Connection to the Data Warehouse failed."
             assert result[0] == 1, "Unexpected result from the Data Warehouse connection test."
-
     mock_create_engine.assert_called_once()
     mock_engine.connect.assert_called_once()
     mock_connection.execute.assert_called_once_with(test_query)

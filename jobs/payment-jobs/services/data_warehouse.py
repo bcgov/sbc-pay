@@ -20,7 +20,7 @@ These will get initialized by the application.
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
-from cloud_sql_connector import DBConfig, getconn
+from cloud_sql_connector import DBConfig
 
 
 class DataWarehouseDB:
@@ -79,8 +79,14 @@ class DataWarehouseDB:
             print(f"Connection successful. Database version: {result[0]}")  # noqa: T201
 
     def teardown(self, exception=None):  # noqa: ARG002 - required by Flask interface
-        """Clean up resources."""
-        pass
+        """Clean up resources: dispose engine and close connector."""
+        if self.engine:
+            self.engine.dispose()
+        try:
+            from cloud_sql_connector import close_connector
+            close_connector()
+        except ImportError:
+            pass
 
     @property
     def session(self):
