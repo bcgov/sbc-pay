@@ -29,17 +29,6 @@ CONFIGURATION = {
 }
 
 
-def _normalize_postgres_driver(database_url: str) -> str:
-    """Normalize PostgreSQL URLs to use the pg8000 SQLAlchemy driver."""
-    if database_url.startswith("postgresql+pg8000://"):
-        return database_url
-    if database_url.startswith("postgresql://"):
-        return database_url.replace("postgresql://", "postgresql+pg8000://", 1)
-    if database_url.startswith("postgres://"):
-        return database_url.replace("postgres://", "postgresql+pg8000://", 1)
-    return database_url
-
-
 def get_named_config(config_name: str = "production"):
     """Return the configuration object based on the name.
 
@@ -236,12 +225,13 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_NAME = os.getenv("DATABASE_TEST_NAME", "")
     DB_HOST = os.getenv("DATABASE_TEST_HOST", "")
     DB_PORT = os.getenv("DATABASE_TEST_PORT", "5432")
-    SQLALCHEMY_DATABASE_URI = _normalize_postgres_driver(
-        os.getenv(
-            "DATABASE_TEST_URL",
-            f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}",
-        )
-    )
+    _db_test_url = os.getenv("DATABASE_TEST_URL")
+    if _db_test_url:
+        SQLALCHEMY_DATABASE_URI = _db_test_url.replace("postgresql://", "postgresql+pg8000://", 1)
+        if "+psycopg" in SQLALCHEMY_DATABASE_URI:
+            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("+psycopg", "+pg8000")
+    else:
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
 
     SERVER_NAME = "localhost:5001"
 
