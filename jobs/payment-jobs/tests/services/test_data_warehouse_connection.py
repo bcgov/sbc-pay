@@ -47,6 +47,8 @@ def test_data_warehouse_connection(mock_connector, mock_create_engine, app):
     mock_result = [(1,)]
     mock_connection.execute.return_value.fetchone.return_value = mock_result[0]
     mock_connector.return_value.connect.return_value = mock_connection
+
+
 @patch("services.data_warehouse.create_engine")
 @patch("cloud_sql_connector.DBConfig.get_engine_options")
 def test_data_warehouse_connection(mock_get_engine_options, mock_create_engine, app):

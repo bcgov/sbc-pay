@@ -84,6 +84,7 @@ class DataWarehouseDB:
             self.engine.dispose()
         try:
             from cloud_sql_connector import close_connector
+
             close_connector()
         except ImportError:
             pass
