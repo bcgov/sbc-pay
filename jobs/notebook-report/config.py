@@ -3,9 +3,8 @@
 import ast
 import os
 
-from dotenv import find_dotenv, load_dotenv
 from cloud_sql_connector import DBConfig, getconn
-
+from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 
@@ -68,6 +67,6 @@ def get_conn():
         database=Config.DB_NAME,
         user=Config.DB_USER,
         ip_type=Config.DB_IP_TYPE,
-        schema="public"
+        schema="public",
     )
     return getconn(config)
