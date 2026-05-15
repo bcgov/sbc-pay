@@ -44,7 +44,7 @@ serialPipeline:
       service-name: "pay-admin-test"
       container-name: "pay-admin-test"
       cloudsql-instances: "gtksf3-test:northamerica-northeast1:pay-db-test"
-      service-account: "sa-api@gtksf3-test.iam.gserviceaccount.com"
+      service-account: "sa-job@gtksf3-test.iam.gserviceaccount.com"
  - targetId: gtksf3-sandbox
    profiles: [sandbox]
    strategy:
@@ -57,7 +57,7 @@ serialPipeline:
       service-name: "pay-admin-sandbox"
       container-name: "pay-admin-sandbox"
       cloudsql-instances: "gtksf3-tools:northamerica-northeast1:pay-db-sandbox"
-      service-account: "sa-api@gtksf3-tools.iam.gserviceaccount.com"
+      service-account: "sa-job@gtksf3-tools.iam.gserviceaccount.com"
       max-scale: "50"
       container-concurrency: "20"
       container-port: "8080"
@@ -75,7 +75,7 @@ serialPipeline:
       service-name: "pay-admin-prod"
       container-name: "pay-admin-prod"
       cloudsql-instances: "gtksf3-prod:northamerica-northeast1:pay-db-prod"
-      service-account: "sa-api@gtksf3-prod.iam.gserviceaccount.com"
+      service-account: "sa-job@gtksf3-prod.iam.gserviceaccount.com"
       max-scale: "50"
       container-concurrency: "20"
       container-port: "8080"
