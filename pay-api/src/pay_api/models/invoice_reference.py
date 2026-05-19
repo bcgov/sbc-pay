@@ -82,7 +82,7 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
             results = query.order_by(InvoiceReference.id.desc()).all()
             if len(results) > 1:
                 current_app.logger.warning(
-                    f"Multiple COMPLETED invoice references found for invoice_id, using most recent."
+                    f"Multiple COMPLETED invoice references found for {invoice_id}, using most recent."
                 )
             return results[0] if results else None
         return query.one_or_none()

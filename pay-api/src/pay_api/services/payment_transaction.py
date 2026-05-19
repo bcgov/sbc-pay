@@ -23,6 +23,7 @@ from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.models import Receipt as ReceiptModel
@@ -490,16 +491,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
                 # If we don't have an invoice reference, create one for direct sale only.
                 if invoice_reference is None and invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
-                    if InvoiceReference.find_by_invoice_id_and_status(
+                    if InvoiceReferenceModel.find_by_invoice_id_and_status(
                         invoice.id, InvoiceReferenceStatus.COMPLETED.value
                     ):
                         current_app.logger.warning(
                             f"Invoice {invoice.id} already has a COMPLETED reference, skipping duplicate processing"
                         )
                     else:
-                        current_app.logger.warning(
-                            f"No invoice reference found for invoice {invoice.id}, creating one"
-                        )
+                        current_app.logger.warning(f"No invoice reference found for invoice {invoice.id}, creating one")
                         invoice_reference = InvoiceReference.create(
                             invoice_id=invoice.id,
                             invoice_number=payment.invoice_number,
