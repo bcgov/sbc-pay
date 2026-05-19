@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from flask import current_app
 from marshmallow import fields
 from sqlalchemy import ForeignKey
 
@@ -77,6 +78,13 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
             query = query.filter(InvoiceReference.is_consolidated.is_(False))
         if status_code == InvoiceReferenceStatus.CANCELLED.value:
             return query.order_by(InvoiceReference.id.desc()).first()
+        if status_code == InvoiceReferenceStatus.COMPLETED.value:
+            results = query.order_by(InvoiceReference.id.desc()).all()
+            if len(results) > 1:
+                current_app.logger.warning(
+                    f"Multiple COMPLETED invoice references found for invoice_id, using most recent."
+                )
+            return results[0] if results else None
         return query.one_or_none()
 
     @classmethod

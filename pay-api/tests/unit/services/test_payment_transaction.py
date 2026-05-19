@@ -718,6 +718,45 @@ def test_patch_transaction_for_eft_overdue(session, monkeypatch):
     assert payment_account.has_overdue_invoices is None, "This flag should be cleared."
 
 
+def test_update_receipt_details_skips_duplicate_when_completed_reference_exists(session):
+    """Assert that a duplicate InvoiceReference is not created when one is already COMPLETED (concurrent request race)."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment_account.save()
+
+    invoice = factory_invoice(payment_account, total=100)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
+    factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id).save()
+
+    # Simulate the first concurrent request already having COMPLETED the reference.
+    factory_invoice_reference(
+        invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value, invoice_number="REG12345"
+    ).save()
+
+    payment = factory_payment(
+        payment_account_id=payment_account.id,
+        invoice_amount=100,
+        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+    ).save()
+
+    transaction_dao = factory_payment_transaction(payment.id, TransactionStatus.CREATED.value)
+    transaction_dao.save()
+
+    invoice_service = InvoiceService()
+    invoice_service._dao = invoice  # pylint: disable=protected-access
+
+    with patch.object(PaymentTransactionService, "publish_status") as mock_publish:
+        PaymentTransactionService._update_receipt_details(
+            [invoice_service], payment, ("1234567890", datetime.now(tz=UTC), 100.00), transaction_dao
+        )
+        mock_publish.assert_not_called()
+
+    completed_refs = InvoiceReferenceModel.query.filter_by(
+        invoice_id=invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value
+    ).all()
+    assert len(completed_refs) == 1
+
+
 def test_update_receipt_details_creates_invoice_reference_when_missing(session):
     """Assert that _update_receipt_details creates an invoice reference when one doesn't exist for an invoice."""
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
