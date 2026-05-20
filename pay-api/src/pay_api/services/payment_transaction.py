@@ -23,6 +23,7 @@ from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.models import Receipt as ReceiptModel
@@ -490,20 +491,28 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
                 # If we don't have an invoice reference, create one for direct sale only.
                 if invoice_reference is None and invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
-                    current_app.logger.warning(f"No invoice reference found for invoice {invoice.id}, creating one")
-                    invoice_reference = InvoiceReference.create(
-                        invoice_id=invoice.id,
-                        invoice_number=payment.invoice_number,
-                        reference_number=current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER"),
-                    )
-                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-                # If it's not PAD/EFT, publish message. Refactor and move to pay system service later.
-                if invoice.payment_method_code not in [
-                    PaymentMethod.PAD.value,
-                    PaymentMethod.EFT.value,
-                ]:
-                    current_app.logger.info(f"Release record for invoice : {invoice.id} ")
-                    PaymentTransaction.publish_status(transaction_dao, invoice)
+                    if InvoiceReferenceModel.find_by_invoice_id_and_status(
+                        invoice.id, InvoiceReferenceStatus.COMPLETED.value
+                    ):
+                        current_app.logger.warning(
+                            f"Invoice {invoice.id} already has a COMPLETED reference, skipping duplicate processing"
+                        )
+                    else:
+                        current_app.logger.warning(f"No invoice reference found for invoice {invoice.id}, creating one")
+                        invoice_reference = InvoiceReference.create(
+                            invoice_id=invoice.id,
+                            invoice_number=payment.invoice_number,
+                            reference_number=current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER"),
+                        )
+                if invoice_reference is not None:
+                    invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+                    # If it's not PAD/EFT, publish message. Refactor and move to pay system service later.
+                    if invoice.payment_method_code not in [
+                        PaymentMethod.PAD.value,
+                        PaymentMethod.EFT.value,
+                    ]:
+                        current_app.logger.info(f"Release record for invoice : {invoice.id} ")
+                        PaymentTransaction.publish_status(transaction_dao, invoice)
 
     @staticmethod
     def __wrap_dao(transaction_dao):
