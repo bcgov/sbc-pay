@@ -212,5 +212,6 @@ def get_account_info_with_contact(**kwargs) -> dict:
         ).json()
 
         account_info = kwargs.get("auth").get("account")
-        account_info["contact"] = contact["contacts"][0]
+        contacts = contact.get("contacts") or []
+        account_info["contact"] = contacts[0] if contacts else {}
     return account_info
