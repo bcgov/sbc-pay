@@ -77,6 +77,35 @@ def create_app(run_mode=None):
     return app
 
 
+def setup_tracing(app):
+    """Register OTEL tracing hooks. No-op when OTEL_SDK_DISABLED=true."""
+    if os.getenv("OTEL_SDK_DISABLED", "true").lower() != "false":
+        return
+
+    @app.before_request
+    def attach_frontend_trace_id():
+        registries_trace_id = request.headers.get("registries-trace-id")
+        if registries_trace_id:
+            ctx = baggage.set_baggage("registries_trace_id", registries_trace_id)
+            context.attach(ctx)
+            span = trace.get_current_span()
+            if span.is_recording():
+                span.set_attribute("app.registries_trace_id", registries_trace_id)
+
+
+def setup_response_headers(app):
+    """Register after_request handler for CORS and version headers."""
+    @app.after_request
+    def handle_after_request(response):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = (
+            "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey, Original-Username, "
+            "Original-Sub"
+        )
+        response.headers["API"] = f"pay_api/{get_run_version()}"
+        return response
+
+
 def setup_403_logging(app):
     """Log setup for forbidden."""
     # This is intended for DEV and TEST.
