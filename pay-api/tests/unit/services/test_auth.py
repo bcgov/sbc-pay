@@ -22,9 +22,9 @@ from unittest.mock import patch
 import pytest
 from werkzeug.exceptions import HTTPException
 
-from pay_api.services.auth import check_auth
+from pay_api.services.auth import check_auth, get_account_info_with_contact
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
-from pay_api.utils.user_context import get_original_user_sub, get_original_username
+from pay_api.utils.user_context import UserContext, get_original_user_sub, get_original_username
 
 
 def test_auth_role_for_service_account(session, monkeypatch):
@@ -140,3 +140,25 @@ def test_missing_header_returns_none(function, header):
         mock_request.headers = {}
         result = function(is_system=True)
         assert result is None
+
+
+@pytest.mark.parametrize(
+    "contacts,expected_contact",
+    [
+        ([], {}),
+        (
+            [{"street": "66-2098 Boucherie Rd", "city": "Westbank", "region": "BC"}],
+            {"street": "66-2098 Boucherie Rd", "city": "Westbank", "region": "BC"},
+        ),
+    ],
+)
+def test_get_account_info_with_contact(session, public_user_mock, contacts, expected_contact):
+    """Assert that org contact is included when present and empty when missing."""
+    with patch("pay_api.services.auth.RestService.get") as mock_get:
+        mock_get.return_value.json.return_value = {"contacts": contacts}
+        account_info = get_account_info_with_contact(
+            auth={"account": {"id": "1234", "name": "Mock Account"}},
+            user=UserContext(),
+        )
+
+    assert account_info["contact"] == expected_contact
