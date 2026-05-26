@@ -67,40 +67,11 @@ def create_app(run_mode=None):
 
     app.after_request(convert_to_camel)
 
-    if os.getenv("OTEL_SDK_DISABLED", "true").lower() == "false":
-
-        @app.before_request
-        def attach_frontend_trace_id():
-            registries_trace_id = request.headers.get("registries-trace-id")
-            if registries_trace_id:
-                ctx = baggage.set_baggage("registries_trace_id", registries_trace_id)
-                context.attach(ctx)
-                span = trace.get_current_span()
-                if span.is_recording():
-                    span.set_attribute("app.registries_trace_id", registries_trace_id)
-
+    setup_tracing(app)
     setup_jwt_manager(app, jwt)
     ExceptionHandler(app)
     setup_403_logging(app)
-
-    @app.after_request
-    def handle_after_request(response):  # pylint: disable=unused-variable
-        add_version(response)
-        set_access_control_header(response)
-        return response
-
-    def set_access_control_header(response):
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = (
-            "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey, Original-Username, "
-            "Original-Sub"
-        )
-
-    def add_version(response):  # pylint: disable=unused-variable
-        version = get_run_version()
-        response.headers["API"] = f"pay_api/{version}"
-        return response
-
+    setup_response_headers(app)
     register_shellcontext(app)
     build_cache(app)
     return app
