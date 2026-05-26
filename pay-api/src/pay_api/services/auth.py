@@ -213,5 +213,8 @@ def get_account_info_with_contact(**kwargs) -> dict:
 
         account_info = kwargs.get("auth").get("account")
         contacts = contact.get("contacts") or []
+        if not contacts:
+            current_app.logger.warning("No contacts found for account id %s", account_id)
+
         account_info["contact"] = contacts[0] if contacts else {}
     return account_info
