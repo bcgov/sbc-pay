@@ -1903,26 +1903,6 @@ files = [
 typing-extensions = ">=4.5.0"
 
 [[package]]
-name = "opentelemetry-distro"
-version = "0.63b1"
-description = "OpenTelemetry Python Distro"
-optional = false
-python-versions = ">=3.10"
-groups = ["main"]
-files = [
-    {file = "opentelemetry_distro-0.63b1-py3-none-any.whl", hash = "sha256:b405b04ad70e430390265eb38e82e067a84ca1f49a21429eaadb930c13330d66"},
-    {file = "opentelemetry_distro-0.63b1.tar.gz", hash = "sha256:f435098abc7953f58226e8bf79e4c90bc6b32e50aa75d6fa074201db8243b577"},
-]
-
-[package.dependencies]
-opentelemetry-api = ">=1.12,<2.0"
-opentelemetry-instrumentation = "0.63b1"
-opentelemetry-sdk = ">=1.13,<2.0"
-
-[package.extras]
-otlp = ["opentelemetry-exporter-otlp (==1.42.1)"]
-
-[[package]]
 name = "opentelemetry-exporter-gcp-trace"
 version = "1.12.0"
 description = "Google Cloud Trace exporter for OpenTelemetry"
@@ -3230,4 +3210,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "3bf72c653e77f0c3f960a5467046f8e4b489edac31a35a3f7d81125f6ef15f3d"
+content-hash = "84cc1877827a5ed1fa1c3b2fae31c3fe1fb6600acf00929fa6f036a7c4dc84eb"

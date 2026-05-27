@@ -108,8 +108,6 @@ FROM development_build AS production_build
 COPY --chown=web:web . /code
 
 ENV OTEL_SDK_DISABLED=true \
-    OTEL_SERVICE_NAME=pay-api \
-    OTEL_TRACES_SAMPLER=always_on \
-    OTEL_TRACES_SAMPLER_ARG=1.0
+    OTEL_SERVICE_NAME=pay-api
 
-CMD sh -c 'if [ "${OTEL_SDK_DISABLED}" = "false" ]; then exec opentelemetry-instrument gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:app; else exec gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:app; fi'
+CMD exec gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:app
