@@ -211,6 +211,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     # Used for DEV/TEST/SANDBOX only. If True, will skip payment and return success and send queue message.
     ALLOW_SKIP_PAYMENT = os.getenv("ALLOW_SKIP_PAYMENT", "False").lower() == "true"
     ENABLE_403_LOGGING = os.getenv("ENABLE_403_LOGGING", "False").lower() == "true"
+    OTEL_SDK_DISABLED = os.getenv("OTEL_SDK_DISABLED", "True").lower() == "true"
 
     # To differentiate between local, dev, test, sandbox, prod
     ENVIRONMENT_NAME = os.getenv("ENVIRONMENT_NAME", "local")

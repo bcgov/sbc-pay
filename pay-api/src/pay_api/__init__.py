@@ -20,6 +20,7 @@ import os
 
 from flask import Flask, request
 from flask_migrate import Migrate, upgrade
+from gcp_tracing import tracing
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 
@@ -66,31 +67,28 @@ def create_app(run_mode=None):
 
     app.after_request(convert_to_camel)
 
+    tracing.init_app(app, db=db)
     setup_jwt_manager(app, jwt)
     ExceptionHandler(app)
     setup_403_logging(app)
+    setup_response_headers(app)
+    register_shellcontext(app)
+    build_cache(app)
+    return app
+
+
+def setup_response_headers(app):
+    """Register after_request handler for CORS and version headers."""
 
     @app.after_request
-    def handle_after_request(response):  # pylint: disable=unused-variable
-        add_version(response)
-        set_access_control_header(response)
-        return response
-
-    def set_access_control_header(response):
+    def handle_after_request(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Headers"] = (
             "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey, Original-Username, "
             "Original-Sub"
         )
-
-    def add_version(response):  # pylint: disable=unused-variable
-        version = get_run_version()
-        response.headers["API"] = f"pay_api/{version}"
+        response.headers["API"] = f"pay_api/{get_run_version()}"
         return response
-
-    register_shellcontext(app)
-    build_cache(app)
-    return app
 
 
 def setup_403_logging(app):
