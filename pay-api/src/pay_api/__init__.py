@@ -79,6 +79,7 @@ def create_app(run_mode=None):
 
 def setup_response_headers(app):
     """Register after_request handler for CORS and version headers."""
+
     @app.after_request
     def handle_after_request(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
