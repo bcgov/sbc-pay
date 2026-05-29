@@ -1066,6 +1066,30 @@ resolved_reference = "c898988d239dc261b2b186465a1887f15512c102"
 subdirectory = "python/gcp-queue"
 
 [[package]]
+name = "gcp-tracing"
+version = "0.1.0"
+description = "OpenTelemetry tracing utilities for GCP Cloud Trace integration with Flask applications"
+optional = false
+python-versions = "^3.12"
+groups = ["main"]
+files = []
+develop = false
+
+[package.dependencies]
+flask = ">=3"
+opentelemetry-exporter-gcp-trace = "^1.12.0"
+opentelemetry-instrumentation-flask = "^0.63b1"
+opentelemetry-instrumentation-requests = "^0.63b1"
+opentelemetry-sdk = "^1.42.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/sumesh85/sbc-connect-common.git"
+reference = "tracing"
+resolved_reference = "336fe8a386bc43e80c447b738831bb66f77d9f50"
+subdirectory = "python/gcp-tracing"
+
+[[package]]
 name = "google-api-core"
 version = "2.19.1"
 description = "Google API client core library"
@@ -3210,4 +3234,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "84cc1877827a5ed1fa1c3b2fae31c3fe1fb6600acf00929fa6f036a7c4dc84eb"
+content-hash = "0bf91a95e723caaa559c98c90217f0a1b207f7ac7b5c6e5311fe1ba81d649794"

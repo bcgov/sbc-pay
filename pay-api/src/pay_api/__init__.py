@@ -20,14 +20,7 @@ import os
 
 from flask import Flask, request
 from flask_migrate import Migrate, upgrade
-from opentelemetry import trace
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from gcp_tracing import tracing
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 
@@ -74,7 +67,7 @@ def create_app(run_mode=None):
 
     app.after_request(convert_to_camel)
 
-    setup_tracing(app)
+    tracing.init_app(app, db=db)
     setup_jwt_manager(app, jwt)
     ExceptionHandler(app)
     setup_403_logging(app)
@@ -82,34 +75,6 @@ def create_app(run_mode=None):
     register_shellcontext(app)
     build_cache(app)
     return app
-
-
-def setup_tracing(app):
-    """Set up OTEL tracing with export to Google Cloud Trace.
-
-    Controlled via OTEL_SDK_DISABLED in config.py (default: True).
-    Override per environment via op://relationship/$APP_ENV/pay-api/OTEL_SDK_DISABLED in vaults.gcp.env.
-    """
-    if app.config.get("OTEL_SDK_DISABLED", True):
-        return
-
-    exporter = CloudTraceSpanExporter()
-    provider = TracerProvider(resource=Resource.create())
-    provider.add_span_processor(BatchSpanProcessor(exporter))
-    trace.set_tracer_provider(provider)
-
-    FlaskInstrumentor().instrument_app(app)
-    with app.app_context():
-        SQLAlchemyInstrumentor().instrument(engine=db.engine)
-    RequestsInstrumentor().instrument()
-
-    @app.before_request
-    def attach_frontend_trace_id():
-        registries_trace_id = request.headers.get("registries-trace-id")
-        if registries_trace_id:
-            span = trace.get_current_span()
-            if span.is_recording():
-                span.set_attribute("app.registries_trace_id", registries_trace_id)
 
 
 def setup_response_headers(app):
