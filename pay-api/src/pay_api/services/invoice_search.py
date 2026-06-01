@@ -274,6 +274,7 @@ class InvoiceSearch:
             payment_account_subq = (
                 db.session.query(PaymentAccount.id)
                 .filter(PaymentAccount.auth_account_id == auth_account_id)
+                .limit(1)
                 .scalar_subquery()
             )
             query = query.filter(Invoice.payment_account_id == payment_account_subq)
