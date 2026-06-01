@@ -237,7 +237,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     DEBUG = True
     TESTING = True
-    CACHE_TYPE = "NullCache"
+
 
     USE_TEST_KEYCLOAK_DOCKER = _get_config("USE_TEST_KEYCLOAK_DOCKER", default=None)
     USE_DOCKER_MOCK = _get_config("USE_DOCKER_MOCK", default=None)
