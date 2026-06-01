@@ -233,6 +233,15 @@ class Statement:  # pylint:disable=too-many-public-methods
                 )
             )
         )
+        statement_total_subq = (
+            db.session.query(func.sum(InvoiceModel.total - coalesce(InvoiceModel.refund, 0)))
+            .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id)
+            .filter(StatementInvoicesModel.statement_id == StatementModel.id)
+            .correlate(StatementModel)
+            .scalar_subquery()
+        )
+        query = query.add_columns(statement_total_subq.label("statement_total"))
+
         if is_owing:
             owing_subquery = Statement.get_statement_owing_query().subquery()
             query = query.add_columns(owing_subquery.c.amount_owing).outerjoin(
@@ -263,9 +272,9 @@ class Statement:  # pylint:disable=too-many-public-methods
         query = query.order_by(StatementModel.to_date.desc(), frequency_case)
         pagination = query.paginate(per_page=limit, page=page)
 
-        for i, (statement, amount_owing) in enumerate(pagination.items):
+        for i, (statement, statement_total, amount_owing) in enumerate(pagination.items):
             statement.amount_owing = amount_owing if amount_owing else 0
-            statement.statement_total = Statement.get_statement_total(statement.id)
+            statement.statement_total = statement_total or 0
             pagination.items[i] = statement
 
         return pagination.items, pagination.total

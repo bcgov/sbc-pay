@@ -271,10 +271,12 @@ class InvoiceSearch:
         """Use subquery to look for payment accounts ahead of time, much faster and easier."""
         account_name = search_filter.get("accountName", None)
         if auth_account_id:
-            payment_account_id = (
-                db.session.query(PaymentAccount.id).filter(PaymentAccount.auth_account_id == auth_account_id).scalar()
+            payment_account_subq = (
+                db.session.query(PaymentAccount.id)
+                .filter(PaymentAccount.auth_account_id == auth_account_id)
+                .scalar_subquery()
             )
-            query = query.filter(Invoice.payment_account_id == (payment_account_id or -1))
+            query = query.filter(Invoice.payment_account_id == payment_account_subq)
         if account_name:
             if include_joins:
                 query = query.join(PaymentAccount, PaymentAccount.id == Invoice.payment_account_id)

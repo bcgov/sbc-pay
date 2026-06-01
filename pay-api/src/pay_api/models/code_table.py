@@ -15,6 +15,8 @@
 
 from typing import Self
 
+from pay_api.utils.cache import cache
+
 
 class CodeTable:  # pylint: disable=too-few-public-methods
     """This class provides base methods for Code Table."""
@@ -22,7 +24,12 @@ class CodeTable:  # pylint: disable=too-few-public-methods
     @classmethod
     def find_by_code(cls, code) -> Self:
         """Given a code, this will return code master details."""
+        cache_key = f"{cls.__name__}_{code}"
+        if cached := cache.get(cache_key):
+            return cached
         code_table = cls.query.filter_by(code=code).one_or_none()  # pylint: disable=no-member
+        if code_table:
+            cache.set(cache_key, code_table, timeout=3600)
         return code_table
 
     @classmethod
