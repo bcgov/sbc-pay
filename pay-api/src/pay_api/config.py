@@ -23,6 +23,7 @@ import base64
 import os
 import sys
 
+from cloud_sql_connector import DBConfig
 from dotenv import find_dotenv, load_dotenv
 
 # this will load all the envars from a .env file located in the project root (api)
@@ -98,6 +99,17 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     if CLOUDSQL_INSTANCE_CONNECTION_NAME:
         SQLALCHEMY_DATABASE_URI = "postgresql+pg8000://"
+        db_config = DBConfig(
+            instance_name=CLOUDSQL_INSTANCE_CONNECTION_NAME,
+            database=DB_NAME,
+            user=DB_USER,
+            ip_type=DB_IP_TYPE,
+            schema="public",
+            pool_timeout=30,
+            max_overflow=3,
+        )
+
+        SQLALCHEMY_ENGINE_OPTIONS = db_config.get_engine_options()
     else:
         DB_PASSWORD = _get_config("DATABASE_PASSWORD")
         DB_HOST = _get_config("DATABASE_HOST")
@@ -367,25 +379,8 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     DEBUG = False
 
 
-class MigrationConfig:  # pylint: disable=too-few-public-methods
+class MigrationConfig(_Config):  # pylint: disable=too-few-public-methods
     """Config for db migration."""
 
     TESTING = False
     DEBUG = True
-
-    # POSTGRESQL
-    DB_USER = _get_config("DATABASE_USERNAME")
-    DB_PASSWORD = _get_config("DATABASE_PASSWORD")
-    DB_NAME = _get_config("DATABASE_NAME")
-    DB_HOST = _get_config("DATABASE_HOST")
-    DB_PORT = _get_config("DATABASE_PORT", default="5432")
-
-    CLOUDSQL_INSTANCE_CONNECTION_NAME = os.getenv("CLOUDSQL_INSTANCE_CONNECTION_NAME", "")
-    DB_IP_TYPE = os.getenv("DATABASE_IP_TYPE", "private").lower()
-
-    if CLOUDSQL_INSTANCE_CONNECTION_NAME:
-        SQLALCHEMY_DATABASE_URI = "postgresql+pg8000://"
-    if DB_HOST:
-        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-    SQLALCHEMY_TRACK_MODIFICATIONS = False

@@ -19,6 +19,7 @@ This module is the API for the Payment system.
 import os
 import sys
 
+from cloud_sql_connector import setup_pg8000_close_event_listener
 from flask import Flask, request
 from flask_migrate import Migrate, upgrade
 from gcp_tracing import tracing
@@ -54,21 +55,6 @@ def create_app(run_mode=None):
 
     flags.init_app(app)
 
-    if app.config.get("CLOUDSQL_INSTANCE_CONNECTION_NAME"):
-        from cloud_sql_connector import DBConfig
-
-        db_config = DBConfig(
-            instance_name=app.config.get("CLOUDSQL_INSTANCE_CONNECTION_NAME"),
-            database=app.config.get("DB_NAME", ""),
-            user=app.config.get("DB_USER", ""),
-            ip_type=app.config.get("DB_IP_TYPE"),
-            schema="public" if run_mode != "migration" else None,
-            pool_timeout=30,
-            max_overflow=3,
-        )
-
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = db_config.get_engine_options()
-
     db.init_app(app)
     queue.init_app(app)
     if run_mode != "testing":
@@ -85,6 +71,9 @@ def create_app(run_mode=None):
                 setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
                 app.logger.info("Finished migration upgrade.")
         else:
+            with app.app_context():
+                engine = db.engine
+                setup_pg8000_close_event_listener(engine)
             app.logger.info("Migrations were executed on prehook.")
 
     if is_flask_db_command:
