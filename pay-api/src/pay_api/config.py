@@ -68,6 +68,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     """Base class configuration that should set reasonable defaults for all the other configurations."""
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+    CACHE_TYPE = "SimpleCache"
     RUN_MIGRATION = os.getenv("RUN_MIGRATION", "false").lower() == "true"
     LOGGING_OVERRIDE_CONFIG = None
     if logging_config_value := os.getenv("LOGGING_OVERRIDE_CONFIG"):
@@ -117,6 +118,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     JWT_OIDC_CLIENT_SECRET = _get_config("JWT_OIDC_CLIENT_SECRET")
     JWT_OIDC_CACHING_ENABLED = _get_config("JWT_OIDC_CACHING_ENABLED", default=False)
     JWT_OIDC_JWKS_CACHE_TIMEOUT = int(_get_config("JWT_OIDC_JWKS_CACHE_TIMEOUT", default=300))
+    FEE_CACHE_TIMEOUT = int(_get_config("FEE_CACHE_TIMEOUT", default=300))
 
     # CFS API Settings
     CFS_BASE_URL = _get_config("CFS_BASE_URL")

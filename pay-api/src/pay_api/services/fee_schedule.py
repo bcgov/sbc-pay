@@ -32,6 +32,7 @@ from pay_api.models import FeeDetailsSchema, FeeScheduleSchema, db
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import FilingType as FilingTypeModel
 from pay_api.models import TaxRate as TaxRateModel
+from pay_api.utils.cache import cache
 from pay_api.utils.constants import TAX_CLASSIFICATION_GST
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
@@ -444,6 +445,9 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def get_fee_details(product_code: str = None):
         """Get Products Fees -the cost of a filing and the list of filings."""
         current_app.logger.debug("<get_fee_details")
+        cache_key = f"fee_details_{product_code}"
+        if cached := cache.get(cache_key):
+            return cached
         data = {"items": []}
         main_fee_code = aliased(FeeCodeModel)
         service_fee_code = aliased(FeeCodeModel)
@@ -501,5 +505,6 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
                 variable=fee.variable,
             )
             data["items"].append(fee_details_schema.to_dict())
+        cache.set(cache_key, data, timeout=current_app.config.get("FEE_CACHE_TIMEOUT", 300))
         current_app.logger.debug(">get_fee_details")
         return data

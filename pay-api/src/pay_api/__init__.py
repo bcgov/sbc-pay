@@ -87,6 +87,7 @@ def setup_response_headers(app):
             "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey, Original-Username, "
             "Original-Sub"
         )
+        response.headers["Access-Control-Max-Age"] = "86400"
         response.headers["API"] = f"pay_api/{get_run_version()}"
         return response
 

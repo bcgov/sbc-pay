@@ -25,6 +25,7 @@ from pay_api import create_app, setup_jwt_manager
 from pay_api import jwt as _jwt
 from pay_api.models import db as _db
 from pay_api.services.code import Code as CodeService
+from pay_api.utils.cache import cache
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -147,6 +148,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
 def setup_code_service(session, app):
     """Set up CodeService cache for unit tests."""
     with app.app_context():
+        cache.clear()
         CodeService.build_all_codes_cache()
 
 
