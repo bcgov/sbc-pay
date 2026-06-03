@@ -24,6 +24,7 @@ import os
 import sys
 
 from cachelib.file import FileSystemCache
+from cloud_sql_connector import DBConfig
 from dotenv import find_dotenv, load_dotenv
 
 # this will load all the envars from a .env file located in the project root (api)
@@ -77,10 +78,25 @@ class _Config:  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config("DATABASE_NAME")
     DB_HOST = _get_config("DATABASE_HOST")
     DB_PORT = _get_config("DATABASE_PORT", default="5432")
-    if DB_UNIX_SOCKET := os.getenv("DATABASE_UNIX_SOCKET", None):
-        SQLALCHEMY_DATABASE_URI = (
-            f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?host={DB_UNIX_SOCKET}&port={DB_PORT}"
+
+    # Cloud SQL connector support
+    CLOUDSQL_INSTANCE_CONNECTION_NAME = os.getenv("CLOUDSQL_INSTANCE_CONNECTION_NAME", "")
+    DB_IP_TYPE = os.getenv("DATABASE_IP_TYPE", "private").lower()
+
+    if CLOUDSQL_INSTANCE_CONNECTION_NAME:
+        SQLALCHEMY_DATABASE_URI = "postgresql+pg8000://"
+
+        db_config = DBConfig(
+            instance_name=CLOUDSQL_INSTANCE_CONNECTION_NAME,
+            database=DB_NAME,
+            user=DB_USER,
+            ip_type=DB_IP_TYPE,
+            schema="public",
+            pool_timeout=30,
+            max_overflow=3,
         )
+
+        SQLALCHEMY_ENGINE_OPTIONS = db_config.get_engine_options()
     else:
         SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     SQLALCHEMY_ECHO = _get_config("SQLALCHEMY_ECHO", default="False").lower() == "true"
