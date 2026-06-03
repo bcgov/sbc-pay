@@ -37,6 +37,7 @@ from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
 from pay_api.utils.dataclasses import PaymentToken
 from pay_api.utils.enums import (
+    CorpType,
     InvoiceReferenceStatus,
     InvoiceStatus,
     PaymentMethod,
@@ -45,6 +46,7 @@ from pay_api.utils.enums import (
     TransactionStatus,
 )
 from pay_api.utils.errors import Error
+from pay_api.utils import user_context
 from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
@@ -236,6 +238,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if not payment:
             # Transaction is against payment, so create a payment if not present.
             invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+            PaymentTransaction._validate_invoice_reference_for_transaction(invoice, invoice_reference)
 
             # Create a payment record
             payment = Payment.create(
@@ -298,6 +301,24 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         transaction_dao = transaction.save()
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
         return transaction
+
+    @staticmethod
+    def _validate_invoice_reference_for_transaction(invoice: Invoice, invoice_reference: InvoiceReference | None):
+        """Ensure invoice reference exists before creating a payment for a transaction."""
+        if invoice_reference:
+            return
+        current_app.logger.warning(
+            f"No active invoice reference for invoice {invoice.id} "
+            f"({invoice.payment_method_code}, {invoice.corp_type_code}, {invoice.invoice_status_code})"
+        )
+        # NRO OB has no reference until signed-in (click "Pay Now", PATCH); unauthenticated POST needs login, not 500.
+        if (
+            not user_context._get_token()
+            and invoice.payment_method_code == PaymentMethod.ONLINE_BANKING.value
+            and invoice.corp_type_code == CorpType.NRO.value
+        ):
+            raise BusinessException(Error.PAYMENT_REQUIRES_LOGIN)
+        raise BusinessException(Error.INVOICE_PAYMENT_NOT_READY)
 
     @staticmethod
     def _validate_redirect_url_and_throw_error(payment_method: str, return_url: str):
