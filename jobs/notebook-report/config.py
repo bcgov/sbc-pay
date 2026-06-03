@@ -46,7 +46,7 @@ class Config:
     DB_NAME = os.getenv("PAY_DB_NAME", "")
 
     # Cloud SQL connector support
-    CLOUDSQL_INSTANCE_CONNECTION_NAME = os.getenv("PAY_DB_UNIX_SOCKET", "")
+    CLOUDSQL_INSTANCE_CONNECTION_NAME = os.getenv("CLOUDSQL_INSTANCE", "")
     DB_IP_TYPE = os.getenv("DATABASE_IP_TYPE", "private").lower()
 
     if CLOUDSQL_INSTANCE_CONNECTION_NAME:
