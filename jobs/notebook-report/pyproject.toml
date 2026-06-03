@@ -141,7 +141,7 @@ minversion = "2.0"
 testpaths = [
    "tests",
 ]
-addopts = ""
+addopts = "--cov=notebookreport --cov=util --cov=config"
 python_files = [
    "test*.py"
 ]
