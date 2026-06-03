@@ -49,10 +49,10 @@ def create_app(run_mode=None) -> Flask:
     flags.init_app(app)
 
     db.init_app(app)
-
-    with app.app_context():
-        engine = db.engine
-        setup_pg8000_close_event_listener(engine)
+    if run_mode != "testing":
+        with app.app_context():
+            engine = db.engine
+            setup_pg8000_close_event_listener(engine)
 
     register_endpoints(app)
 
