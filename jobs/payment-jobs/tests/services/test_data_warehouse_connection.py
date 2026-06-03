@@ -35,20 +35,17 @@ def app():
 
 
 @patch("services.data_warehouse.create_engine")
-@patch("services.data_warehouse.Connector")
-def test_data_warehouse_connection(mock_connector, mock_create_engine, app):
+@patch("cloud_sql_connector.DBConfig.get_engine_options")
+def test_data_warehouse_connection(mock_get_engine_options, mock_create_engine, app):
     """Test the connection to the Data Warehouse."""
     mock_engine = MagicMock()
     mock_connection = MagicMock()
     mock_create_engine.return_value = mock_engine
     mock_engine.connect.return_value.__enter__.return_value = mock_connection
 
-    # Setup mock results
-    mock_result = [(1,)]
-    mock_connection.execute.return_value.fetchone.return_value = mock_result[0]
-    mock_connector.return_value.connect.return_value = mock_connection
+    mock_connection.execute.return_value.fetchone.return_value = (1,)
+    mock_get_engine_options.return_value = {}
 
-    # Initialize with test_connection=False to avoid the first execute call
     data_warehouse.init_app(app, test_connection=False)
 
     with app.app_context():

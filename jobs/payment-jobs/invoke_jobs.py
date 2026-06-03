@@ -52,6 +52,7 @@ def create_app(
     app.env = run_mode
 
     app.config.from_object(config.CONFIGURATION[run_mode])
+
     app.logger.info("<<<< Starting Payment Jobs >>>>")
     queue.init_app(app)
     db.init_app(app)
