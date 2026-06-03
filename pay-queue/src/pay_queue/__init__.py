@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import os
 
+from cloud_sql_connector import setup_pg8000_close_event_listener
 from flask import Flask
 
 from pay_api.models import db
@@ -46,7 +47,12 @@ def create_app(run_mode=None) -> Flask:
 
     queue.init_app(app)
     flags.init_app(app)
+
     db.init_app(app)
+    if run_mode != "testing":
+        with app.app_context():
+            engine = db.engine
+            setup_pg8000_close_event_listener(engine)
 
     register_endpoints(app)
 
