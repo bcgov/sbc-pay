@@ -38,7 +38,8 @@ werkzeug = "^3.1.4"
 certifi = "^2026.0.0"
 urllib3 = "^2.6.0"
 idna = "^3.10"
-pg8000 = "^1.31.2"
+cloud-sql-connector = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/cloud-sql-connector", branch = "main" }
+pg8000 = "*"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -140,7 +141,7 @@ minversion = "2.0"
 testpaths = [
    "tests",
 ]
-addopts = ""
+addopts = "--cov=notebookreport --cov=util --cov=config"
 python_files = [
    "test*.py"
 ]
