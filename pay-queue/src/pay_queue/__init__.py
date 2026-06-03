@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import os
 
+from cloud_sql_connector import setup_pg8000_close_event_listener
 from flask import Flask
 
 from pay_api.models import db
@@ -47,22 +48,11 @@ def create_app(run_mode=None) -> Flask:
     queue.init_app(app)
     flags.init_app(app)
 
-    if app.config.get("CLOUDSQL_INSTANCE_CONNECTION_NAME"):
-        from cloud_sql_connector import DBConfig
-
-        db_config = DBConfig(
-            instance_name=app.config.get("CLOUDSQL_INSTANCE_CONNECTION_NAME"),
-            database=app.config.get("DB_NAME", ""),
-            user=app.config.get("DB_USER", ""),
-            ip_type=app.config.get("DB_IP_TYPE"),
-            schema="public",
-            pool_timeout=30,
-            max_overflow=3,
-        )
-
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = db_config.get_engine_options()
-
     db.init_app(app)
+
+    with app.app_context():
+        engine = db.engine
+        setup_pg8000_close_event_listener(engine)
 
     register_endpoints(app)
 
