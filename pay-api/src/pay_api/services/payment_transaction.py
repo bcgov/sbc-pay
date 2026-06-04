@@ -35,7 +35,6 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils import user_context
 from pay_api.utils.dataclasses import PaymentToken
 from pay_api.utils.enums import (
     CorpType,
@@ -47,6 +46,7 @@ from pay_api.utils.enums import (
     TransactionStatus,
 )
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import _get_token
 from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
@@ -313,7 +313,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         )
         # NRO OB has no reference until signed-in (click "Pay Now", PATCH); unauthenticated POST needs login, not 500.
         if (
-            not user_context._get_token()
+            not _get_token()
             and invoice.payment_method_code == PaymentMethod.ONLINE_BANKING.value
             and invoice.corp_type_code == CorpType.NRO.value
         ):

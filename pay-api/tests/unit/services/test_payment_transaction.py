@@ -182,7 +182,7 @@ def test_create_transaction_for_invoice_ob_nro_without_reference_not_ready_when_
     )
     invoice.save()
 
-    monkeypatch.setattr("pay_api.utils.user_context._get_token", lambda: "test-token")
+    monkeypatch.setattr("pay_api.services.payment_transaction._get_token", lambda: "test-token")
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
