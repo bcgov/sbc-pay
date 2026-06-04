@@ -155,6 +155,40 @@ def test_transaction_create_from_invalid_payment(session):
     assert excinfo.value.code == Error.INVALID_INVOICE_ID.name
 
 
+def test_create_transaction_for_invoice_ob_nro_without_reference_requires_login(session):
+    """Assert unauthenticated OB NRO invoice returns PAYMENT_REQUIRES_LOGIN."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+        corp_type_code="NRO",
+    )
+    invoice.save()
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
+    assert excinfo.value.code == Error.PAYMENT_REQUIRES_LOGIN.name
+
+
+def test_create_transaction_for_invoice_ob_nro_without_reference_not_ready_when_authenticated(session, monkeypatch):
+    """Assert authenticated OB NRO invoice without reference returns INVOICE_PAYMENT_NOT_READY."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    invoice = factory_invoice(
+        payment_account,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+        corp_type_code="NRO",
+    )
+    invoice.save()
+
+    monkeypatch.setattr("pay_api.services.payment_transaction._get_token", lambda: "test-token")
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
+    assert excinfo.value.code == Error.INVOICE_PAYMENT_NOT_READY.name
+
+
 @skip_in_pod
 def test_transaction_update(session, public_user_mock):
     """Assert that the payment is saved to the table."""
