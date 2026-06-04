@@ -17,6 +17,7 @@ from typing import Any
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -27,6 +28,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
+from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 
 from .base_payment_system import skip_complete_post_invoice_for_sandbox, skip_invoice_for_sandbox
@@ -68,11 +70,17 @@ class PadService(PaymentSystemService, CFSService):
 
     def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: dict[str, Any]) -> CfsAccountModel:  # noqa: ARG002
         """Update account in CFS."""
-        if (
+        bank_info_changed = (
             str(payment_info.get("bankInstitutionNumber")) != cfs_account.bank_number
             or str(payment_info.get("bankTransitNumber")) != cfs_account.bank_branch_number
             or str(payment_info.get("bankAccountNumber")) != cfs_account.bank_account_number
-        ):
+        )
+        # CFS IDs are populated by the CREATE_CFS_ACCOUNTS job; reject bank updates until setup is complete
+        # to avoid calling CFS with None party/account/site values.
+        cfs_setup_incomplete = not (cfs_account.cfs_party and cfs_account.cfs_account and cfs_account.cfs_site)
+        if bank_info_changed and (cfs_setup_incomplete or cfs_account.status == CfsAccountStatus.PENDING.value):
+            raise BusinessException(Error.CFS_ACCOUNT_SETUP_IN_PROGRESS)
+        if bank_info_changed:
             # This means, PAD account details have changed. So update banking details for this CFS account
             # Call cfs service to add new bank info.
             current_app.logger.info(f"Updating PAD account details for {cfs_account}")
