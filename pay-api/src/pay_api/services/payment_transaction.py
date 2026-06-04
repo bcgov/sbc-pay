@@ -35,6 +35,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
+from pay_api.utils import user_context
 from pay_api.utils.dataclasses import PaymentToken
 from pay_api.utils.enums import (
     CorpType,
@@ -46,7 +47,6 @@ from pay_api.utils.enums import (
     TransactionStatus,
 )
 from pay_api.utils.errors import Error
-from pay_api.utils import user_context
 from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
