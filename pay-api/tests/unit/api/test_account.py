@@ -50,6 +50,7 @@ from pay_api.utils.enums import (
     Role,
 )
 from tests.utilities.base_test import (
+    activate_pad_account,
     factory_applied_credits,
     factory_corp_type_model,
     factory_credit,
@@ -834,6 +835,7 @@ def test_create_pad_update_when_cfs_down(session, client, jwt, app):
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
+    activate_pad_account(auth_account_id)
 
     # Mock ServiceUnavailableException
     with patch(
@@ -859,6 +861,8 @@ def test_update_pad_account_when_cfs_up(session, client, jwt, app):
         headers=headers,
     )
     auth_account_id = rv.json.get("accountId")
+    activate_pad_account(auth_account_id)
+
     rv = client.put(
         f"/api/v1/accounts/{auth_account_id}",
         data=json.dumps(get_unlinked_pad_account_payload(bank_account="11111111")),

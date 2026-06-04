@@ -26,6 +26,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.services.pad_service import PadService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.errors import Error
@@ -390,3 +391,40 @@ def test_payment_account_service_with_cfs_account(session):
     assert payment_account_service.bank_number == bank_number
     assert payment_account_service.bank_branch_number == bank_branch_number
     assert payment_account_service.bank_account_number == bank_account_number
+
+
+def test_update_pad_bank_info_raises_when_cfs_setup_pending(session):
+    """Assert that updating PAD bank details while CFS account is still being set up raises BusinessException."""
+    pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pad_account.id, PaymentMethod.PAD.value)
+
+    assert cfs_account.status == CfsAccountStatus.PENDING.value
+    assert cfs_account.cfs_party is None
+
+    new_payment_info = {
+        "bankInstitutionNumber": "002",
+        "bankTransitNumber": "11111",
+        "bankAccountNumber": "9999999999",
+    }
+
+    with pytest.raises(BusinessException) as exc_info:
+        PadService().update_account(name="Test", cfs_account=cfs_account, payment_info=new_payment_info)
+
+    assert exc_info.value.code == Error.CFS_ACCOUNT_SETUP_IN_PROGRESS.code
+
+
+def test_update_pad_bank_info_no_error_when_bank_unchanged(session):
+    """Assert that no error is raised when bank details are unchanged even if CFS setup is pending."""
+    pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pad_account.id, PaymentMethod.PAD.value)
+
+    assert cfs_account.status == CfsAccountStatus.PENDING.value
+    assert cfs_account.cfs_party is None
+
+    same_payment_info = {
+        "bankInstitutionNumber": cfs_account.bank_number,
+        "bankTransitNumber": cfs_account.bank_branch_number,
+        "bankAccountNumber": cfs_account.bank_account_number,
+    }
+
+    PadService().update_account(name="Test", cfs_account=cfs_account, payment_info=same_payment_info)

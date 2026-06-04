@@ -93,6 +93,12 @@ class Error(Enum):
 
     CFS_INVOICES_MISMATCH = "CFS_INVOICES_MISMATCH", HTTPStatus.BAD_REQUEST
 
+    CFS_ACCOUNT_SETUP_IN_PROGRESS = (
+        "CFS_ACCOUNT_SETUP_IN_PROGRESS",
+        HTTPStatus.BAD_REQUEST,
+        "Payment account setup is still in progress. Please wait a few minutes and try updating your bank details again.",
+    )
+
     DOCUMENT_TYPE_INVALID = "DOCUMENT_TYPE_INVALID", HTTPStatus.BAD_REQUEST
 
     EFT_PARTIAL_REFUND_MISSING_LINKS = "EFT_PARTIAL_REFUND_MISSING_LINKS", HTTPStatus.BAD_REQUEST
