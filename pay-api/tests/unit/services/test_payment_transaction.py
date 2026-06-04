@@ -171,9 +171,7 @@ def test_create_transaction_for_invoice_ob_nro_without_reference_requires_login(
     assert excinfo.value.code == Error.PAYMENT_REQUIRES_LOGIN.name
 
 
-def test_create_transaction_for_invoice_ob_nro_without_reference_not_ready_when_authenticated(
-    session, monkeypatch
-):
+def test_create_transaction_for_invoice_ob_nro_without_reference_not_ready_when_authenticated(session, monkeypatch):
     """Assert authenticated OB NRO invoice without reference returns INVOICE_PAYMENT_NOT_READY."""
     payment_account = factory_payment_account()
     payment_account.save()

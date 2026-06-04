@@ -74,9 +74,7 @@ class Error(Enum):
     INVOICE_PAYMENT_NOT_READY = (
         "INVOICE_PAYMENT_NOT_READY",
         HTTPStatus.BAD_REQUEST,
-        (
-            "Payment cannot be started for this invoice, since invoice reference is not yet available."
-        ),
+        ("Payment cannot be started for this invoice, since invoice reference is not yet available."),
     )
     PATCH_INVALID_ACTION = "PATCH_INVALID_ACTION", HTTPStatus.BAD_REQUEST
 
