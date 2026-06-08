@@ -1,0 +1,152 @@
+version: 2
+updates:
+  # Python dependencies — pay-api
+  - package-ecosystem: "pip"
+    directory: "/pay-api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "pay-api"
+
+  # Python dependencies — pay-queue
+  - package-ecosystem: "pip"
+    directory: "/pay-queue"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "pay-queue"
+
+  # Python dependencies — pay-admin
+  - package-ecosystem: "pip"
+    directory: "/pay-admin"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "pay-admin"
+
+  # Python dependencies — bcol-api
+  - package-ecosystem: "pip"
+    directory: "/bcol-api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "bcol-api"
+
+  # Python dependencies — payment-jobs
+  - package-ecosystem: "pip"
+    directory: "/jobs/payment-jobs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "payment-jobs"
+
+  # Python dependencies — ftp-poller
+  - package-ecosystem: "pip"
+    directory: "/jobs/ftp-poller"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "ftp-poller"
+
+  # Python dependencies — notebook-report
+  - package-ecosystem: "pip"
+    directory: "/jobs/notebook-report"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "notebook-report"
+
+  # Docker base images — all services
+  - package-ecosystem: "docker"
+    directory: "/pay-api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/pay-queue"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/pay-admin"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/bcol-api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/jobs/payment-jobs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/jobs/ftp-poller"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/jobs/notebook-report"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"
