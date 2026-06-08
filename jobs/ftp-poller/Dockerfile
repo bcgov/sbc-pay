@@ -24,7 +24,7 @@ RUN git clone --branch "${GOCROND_VERSION}" --depth 1 "https://github.com/${SOUR
     && go mod tidy \
     && CGO_ENABLED=0 go build -tags osusergo,netgo -o /usr/local/bin/go-crond .
 
-FROM python:3.12.2-bookworm
+FROM python:3.14.5-bookworm
 # ========================================================================================================
 # Install go-crond (from https://github.com/BCDevOps/go-crond)
 #  - Adds some additional logging enhancements on top of the upstream project;
