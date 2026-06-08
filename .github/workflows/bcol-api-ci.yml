@@ -116,7 +116,7 @@ jobs:
         run: |
           make test
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           file: ./bcol-api/coverage.xml
           flags: bcolapi

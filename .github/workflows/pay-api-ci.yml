@@ -115,7 +115,7 @@ jobs:
           cd tests/docker
           docker-compose down
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           file: ./pay-api/coverage.xml
           flags: payapi
