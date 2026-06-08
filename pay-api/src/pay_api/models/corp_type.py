@@ -46,6 +46,7 @@ class CorpType(Audit, Versioned, CodeTable):
             "bcol_code_partial_service_fee",
             "bcol_staff_fee_code",
             "code",
+            "comments",
             "created_by",
             "created_name",
             "created_on",
@@ -64,6 +65,7 @@ class CorpType(Audit, Versioned, CodeTable):
 
     code = db.Column("code", db.String(10), primary_key=True)
     description = db.Column("description", db.String(200), nullable=False)
+    comments = db.Column(db.String(250), nullable=True)
     bcol_code_full_service_fee = db.Column(db.String(20), nullable=True)
     bcol_code_partial_service_fee = db.Column(db.String(20), nullable=True)
     bcol_code_no_service_fee = db.Column(db.String(20), nullable=True)

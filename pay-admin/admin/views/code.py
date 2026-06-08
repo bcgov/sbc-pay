@@ -29,6 +29,7 @@ class CodeConfig(SecuredView):
     form_columns = edit_columns = [
         "code",
         "description",
+        "comments",
         *SecuredView._AUDIT_FIELDS,
     ]
 

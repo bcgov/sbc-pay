@@ -42,6 +42,7 @@ class FeeCode(CodeTable, Audit, Versioned):
         "include_properties": [
             "amount",
             "code",
+            "comments",
             "created_by",
             "created_name",
             "created_on",
@@ -54,6 +55,7 @@ class FeeCode(CodeTable, Audit, Versioned):
 
     code = db.Column(db.String(10), primary_key=True)
     amount = db.Column("amount", db.Numeric(19, 2), nullable=False)
+    comments = db.Column(db.String(250), nullable=True)
 
     def save(self):
         """Save fee code."""

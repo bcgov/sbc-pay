@@ -40,6 +40,7 @@ class FilingType(CodeTable, Audit, Versioned):
     __mapper_args__ = {
         "include_properties": [
             "code",
+            "comments",
             "created_by",
             "created_name",
             "created_on",
@@ -53,6 +54,7 @@ class FilingType(CodeTable, Audit, Versioned):
 
     code = db.Column(db.String(10), primary_key=True)
     description = db.Column("description", db.String(200), nullable=False)
+    comments = db.Column(db.String(250), nullable=True)
 
     def save(self):
         """Save filing type."""
