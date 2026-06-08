@@ -3,7 +3,7 @@ ARG GOCROND_VERSION=0.6.2
 ARG VCS_REF="missing"
 ARG BUILD_DATE="missing"
 
-FROM golang:1.22-bookworm AS go-crond-builder
+FROM golang:1.26-bookworm AS go-crond-builder
 
 ARG SOURCE_REPO
 ARG GOCROND_VERSION
