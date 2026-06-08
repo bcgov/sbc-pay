@@ -20,6 +20,7 @@ cachecontrol = "^0.14.0"
 pay-api = { git = "https://github.com/bcgov/sbc-pay.git", branch = "main", subdirectory = "pay-api" } # from branch: update_deps__
 cloud-sql-connector = "*"
 pg8000 = "*"
+urllib3 = "2.7.0"
 
 
 [tool.poetry.group.dev.dependencies]
