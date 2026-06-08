@@ -40,7 +40,7 @@ cloud-sql-connector = { git = "https://github.com/bcgov/sbc-connect-common.git",
 greenlet = "3.0.3"
 gunicorn = "23.0.0"
 holidays = "0.37"
-idna = "3.7"
+idna = "3.18"
 itsdangerous = "^2.1.2"
 gcp-tracing = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/gcp-tracing", branch = "main" }
 opentelemetry-instrumentation-sqlalchemy = "^0.63b1"
