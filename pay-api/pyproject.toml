@@ -9,7 +9,7 @@ readme = "README.md"
 python = "^3.12"
 flask-caching = { git = "https://github.com/pallets-eco/flask-caching.git", branch = "master" }
 flask-cors = "6.0.0"
-flask-migrate = "4.0.7"
+flask-migrate = "4.1.0"
 flask-moment = "1.0.5"
 flask-sqlalchemy = "3.1.1"
 flask-script = "2.0.6"
