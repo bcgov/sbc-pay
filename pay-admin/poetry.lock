@@ -972,21 +972,21 @@ packaging = ">=14.1"
 
 [[package]]
 name = "flask-oidc"
-version = "2.2.0"
+version = "2.4.0"
 description = "OpenID Connect extension for Flask"
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "flask_oidc-2.2.0-py3-none-any.whl", hash = "sha256:879ac475ed5164d1ab902026a4fbc2957817a56db30e288267f47028b006a072"},
-    {file = "flask_oidc-2.2.0.tar.gz", hash = "sha256:72bb679fd78d8066925bf2f8e8f5ace03353421451fd2577f2bb57766d572892"},
+    {file = "flask_oidc-2.4.0-py3-none-any.whl", hash = "sha256:5aa398dd3e593c5ed9d94f23a948c635606d619b974b5df25de8aeb725b6ea8d"},
+    {file = "flask_oidc-2.4.0.tar.gz", hash = "sha256:e72378fcea8f90ccab874836a61f1783092a900c965e52587c1307e38b2e2153"},
 ]
 
 [package.dependencies]
 authlib = ">=1.2.0,<2.0.0"
-blinker = ">=1.5.0,<2.0.0"
-flask = ">=2.0.0,<4.0.0"
-requests = ">=2.24.0,<3.0.0"
+blinker = ">=1.4.0,<2.0.0"
+flask = ">=0.12.2,<4.0.0"
+requests = ">=2.20.0,<3.0.0"
 
 [[package]]
 name = "flask-opentracing"
@@ -3620,4 +3620,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "e90fa2f69bb2da3add4cace6c751c8307d427d149db6761db44397567d341891"
+content-hash = "d917fa176bbbad65685df9b9f257977edd579b835e2c80344b7805f8e934d9f8"
