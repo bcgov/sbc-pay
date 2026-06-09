@@ -15,23 +15,23 @@ httplib2 = "^0.22.0"
 python-dotenv = "^1.0.1"
 requests = "^2.31.0"
 requests-futures = "^1.0.1"
-wtforms = "^3.1.2"
+wtforms = "^3.2.2"
 werkzeug = "^3.0.1"
-itsdangerous = "^2.1.2"
+itsdangerous = "^2.2.0"
 jinja2 = "^3.1.3"
 pay-api = { git = "https://github.com/bcgov/sbc-pay.git", branch = "main", subdirectory = "pay-api" } # from branch: update_deps__
 cloud-sql-connector = "*"
 pg8000 = "*"
 urllib3 = "2.7.0"
 flask-session = {extras = ["filesystem"], version = "^0.8.0"}
-authlib = "1.6.11"
+authlib = "1.7.2"
 aiohttp = "3.14.0"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"
 ruff = "^0.14.1"
-pytest-mock = "^3.12.0"
+pytest-mock = "^3.15.1"
 requests = "^2.31.0"
 pyhamcrest = "^2.1.0"
 pytest-cov = "^4.1.0"
