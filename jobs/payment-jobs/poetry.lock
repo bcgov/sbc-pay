@@ -1808,13 +1808,13 @@ redis = ["redis (>=2.10.5)"]
 
 [[package]]
 name = "lovely-pytest-docker"
-version = "0.3.1"
+version = "1.0.0"
 description = "Pytest testing utilities with docker containers."
 optional = false
 python-versions = "*"
 groups = ["dev"]
 files = [
-    {file = "lovely-pytest-docker-0.3.1.tar.gz", hash = "sha256:4326a180bfd4dd4ad69c2ef3e3643c41075d965f40068488b40204602e6df85e"},
+    {file = "lovely_pytest_docker-1.0.0.tar.gz", hash = "sha256:7283abfe400c31ecc7155f9338c6f5af476f2ab506e1aadb9f7e9a5005e491d6"},
 ]
 
 [package.dependencies]
@@ -3562,4 +3562,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "1c8a7200607e5f7e4b7cc8da0531e73b9b5db4b0912a8795cbb43c4333a57544"
+content-hash = "66caffb0bb804f4e85656c93be40945726239c1a0a39ed81121c132f8634600b"
