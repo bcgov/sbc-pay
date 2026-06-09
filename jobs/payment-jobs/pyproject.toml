@@ -31,7 +31,7 @@ cloud-sql-connector = "*"
 pg8000 = "*"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.1.1"
+pytest = "^8.4.2"
 pytest-mock = "^3.12.0"
 requests = "^2.31.0"
 pyhamcrest = "^2.1.0"
