@@ -1197,6 +1197,7 @@ def factory_refunds_partial(
     created_name: str = "Test User",
     created_on: datetime = datetime.now(tz=UTC),
     is_credit: bool = None,
+    refund_id: int = None,
 ):
     """Return a RefundsPartial model."""
     if is_credit is None:
@@ -1218,6 +1219,7 @@ def factory_refunds_partial(
         created_name=created_name,
         created_on=created_on,
         is_credit=is_credit,
+        refund_id=refund_id,
     )
     refund_partial.save()
     return refund_partial
