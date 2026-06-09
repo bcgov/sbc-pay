@@ -77,7 +77,6 @@ updates:
       - "dependencies"
       - "skip-changelog"
 
-
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"

@@ -1492,6 +1492,12 @@ def test_search_partially_refunded_invoices(session, client, jwt, app):
     )
     line_item.save()
 
+    refund = Refund(
+        invoice_id=invoice.id,
+        type=RefundType.INVOICE.value,
+        status=RefundStatus.APPROVAL_NOT_REQUIRED.value,
+    ).save()
+
     partial_refund = RefundsPartial(
         invoice_id=invoice.id,
         payment_line_item_id=line_item.id,
@@ -1502,6 +1508,7 @@ def test_search_partially_refunded_invoices(session, client, jwt, app):
         created_name="Test User",
         created_on=datetime.now(tz=UTC),
         is_credit=False,
+        refund_id=refund.id,
     )
     partial_refund.save()
 
@@ -1541,6 +1548,12 @@ def test_search_partially_credited_invoices(session, client, jwt, app):
     )
     line_item.save()
 
+    refund = Refund(
+        invoice_id=invoice.id,
+        type=RefundType.INVOICE.value,
+        status=RefundStatus.APPROVAL_NOT_REQUIRED.value,
+    ).save()
+
     partial_refund = RefundsPartial(
         invoice_id=invoice.id,
         payment_line_item_id=line_item.id,
@@ -1551,6 +1564,7 @@ def test_search_partially_credited_invoices(session, client, jwt, app):
         created_name="Test User",
         created_on=datetime.now(tz=UTC),
         is_credit=True,
+        refund_id=refund.id,
     )
     partial_refund.save()
 
@@ -1564,6 +1578,85 @@ def test_search_partially_credited_invoices(session, client, jwt, app):
     items = rv.json.get("items")
     assert len(items) == 1
     assert items[0]["id"] == invoice.id
+
+
+@pytest.mark.parametrize(
+    "invoice_status, is_credit, refund_status, expect_match",
+    [
+        # PARTIALLY_REFUNDED (is_credit=False) — approved statuses should match
+        (InvoiceStatus.PARTIALLY_REFUNDED.value, False, RefundStatus.APPROVED.value, True),
+        (InvoiceStatus.PARTIALLY_REFUNDED.value, False, RefundStatus.APPROVAL_NOT_REQUIRED.value, True),
+        (InvoiceStatus.PARTIALLY_REFUNDED.value, False, RefundStatus.PENDING_APPROVAL.value, False),
+        (InvoiceStatus.PARTIALLY_REFUNDED.value, False, RefundStatus.DECLINED.value, False),
+        # PARTIALLY_CREDITED (is_credit=True) — approved statuses should match
+        (InvoiceStatus.PARTIALLY_CREDITED.value, True, RefundStatus.APPROVED.value, True),
+        (InvoiceStatus.PARTIALLY_CREDITED.value, True, RefundStatus.APPROVAL_NOT_REQUIRED.value, True),
+        (InvoiceStatus.PARTIALLY_CREDITED.value, True, RefundStatus.PENDING_APPROVAL.value, False),
+        (InvoiceStatus.PARTIALLY_CREDITED.value, True, RefundStatus.DECLINED.value, False),
+    ],
+)
+@pytest.mark.parametrize("exclude_counts", [False, True])
+def test_search_partial_status_requires_approved_refund(
+    session, client, jwt, app, invoice_status, is_credit, refund_status, expect_match, exclude_counts
+):
+    """Filtering by PARTIALLY_CREDITED/PARTIALLY_REFUNDED only returns invoice when linked Refund is approved."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=headers,
+    )
+    invoice = Invoice.find_by_id(rv.json.get("id"))
+    pay_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    line_item = PaymentLineItem(
+        invoice_id=invoice.id,
+        fee_schedule_id=1,
+        filing_fees=Decimal("100.00"),
+        total=Decimal("100.00"),
+        description="Test Line Item",
+        line_item_status_code=LineItemStatus.ACTIVE.value,
+    )
+    line_item.save()
+
+    refund = Refund(
+        invoice_id=invoice.id,
+        type=RefundType.INVOICE.value,
+        status=refund_status,
+    ).save()
+
+    RefundsPartial(
+        invoice_id=invoice.id,
+        payment_line_item_id=line_item.id,
+        refund_amount=Decimal("25.00"),
+        refund_type=RefundsPartialType.BASE_FEES.value,
+        status=PaymentStatus.COMPLETED.value,
+        created_by="TEST_USER",
+        created_name="Test User",
+        created_on=datetime.now(tz=UTC),
+        is_credit=is_credit,
+        refund_id=refund.id,
+    ).save()
+
+    payload = {"statusCode": invoice_status}
+    if exclude_counts:
+        payload["excludeCounts"] = True
+
+    rv = client.post(
+        f"/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=10",
+        data=json.dumps(payload),
+        headers=headers,
+    )
+
+    assert rv.status_code == 200
+    items = rv.json.get("items")
+    if expect_match:
+        assert len(items) == 1
+        assert items[0]["id"] == invoice.id
+    else:
+        assert len(items) == 0
 
 
 def test_search_credit_payment_method(session, client, jwt, app):
@@ -1891,6 +1984,12 @@ def test_credit_payment_method_with_status_combinations(session, client, jwt, ap
     invoice_ids = [item["id"] for item in items]
     assert invoice.id in invoice_ids, f"Expected invoice ({invoice.id}) to be in results: {invoice_ids}"
 
+    refund = Refund(
+        invoice_id=invoice.id,
+        type=RefundType.INVOICE.value,
+        status=RefundStatus.APPROVAL_NOT_REQUIRED.value,
+    ).save()
+
     line_item = factory_payment_line_item(invoice.id, 1).save()
     factory_refunds_partial(
         invoice_id=invoice.id,
@@ -1900,6 +1999,7 @@ def test_credit_payment_method_with_status_combinations(session, client, jwt, ap
         created_by="test_user",
         created_name="Test User",
         is_credit=True,
+        refund_id=refund.id,
     )
 
     line_item2 = factory_payment_line_item(invoice.id, 1).save()
@@ -1911,6 +2011,7 @@ def test_credit_payment_method_with_status_combinations(session, client, jwt, ap
         created_by="test_user",
         created_name="Test User",
         is_credit=False,
+        refund_id=refund.id,
     )
 
     rv = client.post(

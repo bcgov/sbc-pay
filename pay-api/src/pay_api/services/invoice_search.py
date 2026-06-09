@@ -219,19 +219,34 @@ class InvoiceSearch:
         query = InvoiceService.filter_date(query, search_filter)
         return query
 
+    @staticmethod
+    def _partial_refund_with_approved_status_exists(is_credit: bool):
+        """Return an EXISTS clause for partial refunds with an approved refund status."""
+        return exists().where(
+            and_(
+                RefundsPartial.invoice_id == Invoice.id,
+                RefundsPartial.is_credit.is_(is_credit),
+                exists().where(
+                    and_(
+                        Refund.id == RefundsPartial.refund_id,
+                        Refund.status.in_(
+                            [
+                                RefundStatus.APPROVED.value,
+                                RefundStatus.APPROVAL_NOT_REQUIRED.value,
+                            ]
+                        ),
+                    )
+                ),
+            )
+        )
+
     @classmethod
     def _apply_status_filter(cls, query, status_code: str):
         """Apply status filter to query."""
-        if status_code == InvoiceStatus.PARTIALLY_CREDITED.value:
-            return query.filter(
-                exists().where(and_(RefundsPartial.invoice_id == Invoice.id, RefundsPartial.is_credit.is_(True)))
-            )
-        elif status_code == InvoiceStatus.PARTIALLY_REFUNDED.value:
-            return query.filter(
-                exists().where(and_(RefundsPartial.invoice_id == Invoice.id, RefundsPartial.is_credit.is_(False)))
-            )
-        else:
-            return query.filter(Invoice.invoice_status_code == status_code)
+        if status_code in (InvoiceStatus.PARTIALLY_CREDITED.value, InvoiceStatus.PARTIALLY_REFUNDED.value):
+            is_credit = status_code == InvoiceStatus.PARTIALLY_CREDITED.value
+            return query.filter(cls._partial_refund_with_approved_status_exists(is_credit=is_credit))
+        return query.filter(Invoice.invoice_status_code == status_code)
 
     @classmethod
     def _apply_payment_method_filter(cls, query, payment_type: str):
