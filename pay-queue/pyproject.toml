@@ -16,7 +16,7 @@ attrs = "^23.2.0"
 sqlalchemy = "^2.0.28"
 itsdangerous = "^2.2.0"
 launchdarkly-server-sdk = "^8.2.1"
-cachecontrol = "^0.14.0"
+cachecontrol = "^0.14.4"
 pay-api = { git = "https://github.com/bcgov/sbc-pay.git", branch = "main", subdirectory = "pay-api" } # from branch: update_deps__
 cloud-sql-connector = "*"
 pg8000 = "*"
