@@ -59,13 +59,13 @@ def prefill_form_fc(context):
 @when("the FeeCode create form is generated")
 def generate_fc_create_form(context):
     """Generate the create form."""
-    generate_create_form(context, ["code", "amount"])
+    generate_create_form(context, ["code", "amount", "comments"])
 
 
 @when("the FeeCode edit form is generated")
 def generate_fc_edit_form(context):
     """Generate the edit form."""
-    generate_edit_form(context, ["code", "amount"])
+    generate_edit_form(context, ["code", "amount", "comments"])
 
 
 @when("a new FeeCode record is saved")

@@ -88,6 +88,7 @@ class DistributionCodeConfig(SecuredView):
         "service_line",
         "stob",
         "project_code",
+        "comments",
         "start_date",
         "end_date",
         "stop_ejv",

@@ -19,7 +19,7 @@ wtforms = "^3.2.2"
 werkzeug = "^3.0.1"
 itsdangerous = "^2.2.0"
 jinja2 = "^3.1.3"
-pay-api = { git = "https://github.com/bcgov/sbc-pay.git", branch = "main", subdirectory = "pay-api" } # from branch: update_deps__
+pay-api = { git = "https://github.com/jxio/sbc-pay.git", branch = "33299_", subdirectory = "pay-api" } # from branch: update_deps__
 mako = "1.3.12"
 pyasn1 = "0.6.3"
 cloud-sql-connector = "*"

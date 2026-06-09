@@ -70,6 +70,7 @@ class FeeScheduleConfig(SecuredView):
         "variable",
         "show_on_pricelist",
         "gst_added",
+        "comments",
         *SecuredView._AUDIT_FIELDS,
     ]
     edit_columns = [
@@ -82,6 +83,7 @@ class FeeScheduleConfig(SecuredView):
         "distribution_codes",
         "show_on_pricelist",
         "gst_added",
+        "comments",
         *SecuredView._AUDIT_FIELDS,
     ]
 

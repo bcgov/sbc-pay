@@ -59,13 +59,13 @@ def prefill_form_ct(context):
 @when("the CorpType create form is generated")
 def generate_ct_create_form(context):
     """Generate the create form."""
-    generate_create_form(context, ["code", "description"])
+    generate_create_form(context, ["code", "description", "comments"])
 
 
 @when("the CorpType edit form is generated")
 def generate_ct_edit_form(context):
     """Generate the edit form."""
-    generate_edit_form(context, ["code", "description"])
+    generate_edit_form(context, ["code", "description", "comments"])
 
 
 @when("a new CorpType record is saved")
