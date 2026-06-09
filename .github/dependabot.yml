@@ -9,7 +9,7 @@ updates:
     versioning-strategy: increase
     labels:
       - "dependencies"
-      - "pay-api"
+      - "skip-changelog"
 
   # Python dependencies — pay-queue
   - package-ecosystem: "pip"
@@ -20,7 +20,7 @@ updates:
     versioning-strategy: increase
     labels:
       - "dependencies"
-      - "pay-queue"
+      - "skip-changelog"
 
   # Python dependencies — pay-admin
   - package-ecosystem: "pip"
@@ -31,7 +31,7 @@ updates:
     versioning-strategy: increase
     labels:
       - "dependencies"
-      - "pay-admin"
+      - "skip-changelog"
 
   # Python dependencies — bcol-api
   - package-ecosystem: "pip"
@@ -42,7 +42,7 @@ updates:
     versioning-strategy: increase
     labels:
       - "dependencies"
-      - "bcol-api"
+      - "skip-changelog"
 
   # Python dependencies — payment-jobs
   - package-ecosystem: "pip"
@@ -53,7 +53,7 @@ updates:
     versioning-strategy: increase
     labels:
       - "dependencies"
-      - "payment-jobs"
+      - "skip-changelog"
 
   # Python dependencies — ftp-poller
   - package-ecosystem: "pip"
@@ -64,7 +64,7 @@ updates:
     versioning-strategy: increase
     labels:
       - "dependencies"
-      - "ftp-poller"
+      - "skip-changelog"
 
   # Python dependencies — notebook-report
   - package-ecosystem: "pip"
@@ -75,71 +75,7 @@ updates:
     versioning-strategy: increase
     labels:
       - "dependencies"
-      - "notebook-report"
-
-  # Docker base images — all services
-  - package-ecosystem: "docker"
-    directory: "/pay-api"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "docker"
-
-  - package-ecosystem: "docker"
-    directory: "/pay-queue"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "docker"
-
-  - package-ecosystem: "docker"
-    directory: "/pay-admin"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "docker"
-
-  - package-ecosystem: "docker"
-    directory: "/bcol-api"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "docker"
-
-  - package-ecosystem: "docker"
-    directory: "/jobs/payment-jobs"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "docker"
-
-  - package-ecosystem: "docker"
-    directory: "/jobs/ftp-poller"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "docker"
-
-  - package-ecosystem: "docker"
-    directory: "/jobs/notebook-report"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "docker"
+      - "skip-changelog"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -149,4 +85,4 @@ updates:
       day: "monday"
     labels:
       - "dependencies"
-      - "github-actions"
+      - "skip-changelog"
