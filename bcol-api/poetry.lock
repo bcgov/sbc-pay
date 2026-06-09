@@ -531,14 +531,14 @@ tests = ["flake8", "flake8-quotes", "mock", "pytest", "pytest-cov"]
 
 [[package]]
 name = "flask-restx"
-version = "1.3.0"
+version = "1.3.2"
 description = "Fully featured framework for fast, easy and documented API development with Flask"
 optional = false
-python-versions = "*"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "flask-restx-1.3.0.tar.gz", hash = "sha256:4f3d3fa7b6191fcc715b18c201a12cd875176f92ba4acc61626ccfd571ee1728"},
-    {file = "flask_restx-1.3.0-py2.py3-none-any.whl", hash = "sha256:636c56c3fb3f2c1df979e748019f084a938c4da2035a3e535a4673e4fc177691"},
+    {file = "flask-restx-1.3.2.tar.gz", hash = "sha256:0ae13d77e7d7e4dce513970cfa9db45364aef210e99022de26d2b73eb4dbced5"},
+    {file = "flask_restx-1.3.2-py2.py3-none-any.whl", hash = "sha256:6e035496e8223668044fc45bf769e526352fd648d9e159bd631d94fd645a687b"},
 ]
 
 [package.dependencies]
@@ -546,13 +546,13 @@ aniso8601 = ">=0.82"
 Flask = ">=0.8,<2.0.0 || >2.0.0"
 importlib-resources = "*"
 jsonschema = "*"
-pytz = "*"
+referencing = "*"
 werkzeug = "!=2.0.0"
 
 [package.extras]
-dev = ["Faker (==2.0.0)", "black", "blinker", "invoke (==2.2.0)", "mock (==3.0.5)", "pytest (==7.0.1)", "pytest-benchmark (==3.4.1)", "pytest-cov (==4.0.0)", "pytest-flask (==1.3.0)", "pytest-mock (==3.6.1)", "pytest-profiling (==1.7.0)", "setuptools", "tox", "twine (==3.8.0)", "tzlocal"]
+dev = ["Faker (==2.0.0)", "backports.zoneinfo ; python_version < \"3.9\"", "black", "blinker", "invoke (==2.2.0)", "mock (==3.0.5)", "pytest (==7.0.1)", "pytest-benchmark (==3.4.1)", "pytest-cov (==4.0.0)", "pytest-flask (==1.3.0)", "pytest-mock (==3.6.1)", "pytest-profiling (==1.7.0)", "setuptools", "tox", "twine (==3.8.0)"]
 doc = ["Sphinx (==5.3.0)", "alabaster (==0.7.12)", "sphinx-issues (==3.0.1)"]
-test = ["Faker (==2.0.0)", "blinker", "invoke (==2.2.0)", "mock (==3.0.5)", "pytest (==7.0.1)", "pytest-benchmark (==3.4.1)", "pytest-cov (==4.0.0)", "pytest-flask (==1.3.0)", "pytest-mock (==3.6.1)", "pytest-profiling (==1.7.0)", "setuptools", "twine (==3.8.0)", "tzlocal"]
+test = ["Faker (==2.0.0)", "backports.zoneinfo ; python_version < \"3.9\"", "blinker", "invoke (==2.2.0)", "mock (==3.0.5)", "pytest (==7.0.1)", "pytest-benchmark (==3.4.1)", "pytest-cov (==4.0.0)", "pytest-flask (==1.3.0)", "pytest-mock (==3.6.1)", "pytest-profiling (==1.7.0)", "setuptools", "twine (==3.8.0)"]
 
 [[package]]
 name = "flask-script"
@@ -1915,4 +1915,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "dd4b2889cb1fe9c27a0f4d0d88026e77145de65667ea9ef33e4648aed2977d87"
+content-hash = "9fba8a11cafd168289a0b04e44d7bd625c83fad2573a8522ed23182433370739"
