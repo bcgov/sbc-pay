@@ -25,7 +25,7 @@ pg8000 = "*"
 urllib3 = "2.7.0"
 flask-session = {extras = ["filesystem"], version = "^0.8.0"}
 authlib = "1.6.11"
-aiohttp = "3.13.4"
+aiohttp = "3.14.0"
 
 
 [tool.poetry.group.dev.dependencies]
