@@ -141,7 +141,7 @@ class APLine:
         line_item: LineItemModel,
         line_number: int,
         distribution: str,
-        ap_supplier: "APSupplier" = None,
+        ap_supplier: APSupplier = None,
     ):
         """Build dataclass object from invoice."""
         # Note the invoice_date should be the payment_date in the future.
