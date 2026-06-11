@@ -21,7 +21,10 @@ import re
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
+from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.models import NonGovDisbursementConfig as NonGovDisbursementConfigModel
 from pay_api.models import RoutingSlip
 from pay_api.utils.enums import (
     APRefundMethod,
@@ -45,6 +48,7 @@ from .factory import (
     factory_create_eft_shortname,
     factory_create_eft_transaction,
     factory_create_pad_account,
+    factory_distribution,
     factory_eft_shortname_link,
     factory_invoice,
     factory_payment_line_item,
@@ -153,36 +157,94 @@ def test_routing_slip_refunds(session, monkeypatch):
         mock_upload.assert_not_called()
 
 
-def test_ap_disbursement(session, monkeypatch):
-    """Test AP Disbursement for Non-government entities.
-
-    Steps:
-    1) Create invoices, payment line items with BCA corp type.
-    2) Run the job and assert status
-    """
-    account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
-    invoice = factory_invoice(
-        payment_account=account,
-        status_code=InvoiceStatus.PAID.value,
-        total=10,
-        corp_type_code="BCA",
-    )
+def test_ap_disbursement(session):
+    """AP disbursement: multi-partner, GST calc (statutory only), reversal C line code, status updates."""
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCA", "OLAARTOQ")
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
-    line.save()
 
-    refund_invoice = factory_invoice(
+    NonGovDisbursementConfigModel(corp_type_code="BCA", cas_supplier_number="BCA999", cas_supplier_site="001").save()
+    CorpTypeModel(code="TST", description="Test Partner").save()
+    tst_dist = factory_distribution(name="Test Partner")
+    NonGovDisbursementConfigModel(corp_type_code="TST", cas_supplier_number="TST123", cas_supplier_site="001").save()
+
+    account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
+
+    bca_invoice = factory_invoice(
+        payment_account=account, status_code=InvoiceStatus.PAID.value, total=13, corp_type_code="BCA"
+    )
+    factory_payment_line_item(
+        bca_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=10, statutory_fees_gst=1, service_fees_gst=2
+    )
+
+    bca_refund = factory_invoice(
         payment_account=account,
         status_code=InvoiceStatus.REFUNDED.value,
-        total=10,
+        total=13,
         disbursement_status_code=DisbursementStatus.COMPLETED.value,
         corp_type_code="BCA",
     )
-    line = factory_payment_line_item(refund_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
-    line.save()
+    factory_payment_line_item(
+        bca_refund.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=10, statutory_fees_gst=1, service_fees_gst=2
+    )
+
+    tst_invoice = factory_invoice(
+        payment_account=account, status_code=InvoiceStatus.PAID.value, total=20, corp_type_code="TST"
+    )
+    factory_payment_line_item(
+        tst_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=20, fee_dist_id=tst_dist.distribution_code_id
+    )
+
+    with patch.object(ApTask, "_create_file_and_upload") as mock_upload:
+        ApTask.create_ap_files()
+        assert mock_upload.call_count == 2
+        all_calls = [call[0][0] for call in mock_upload.call_args_list]
+
+    bca_content = next(c for c in all_calls if CgiAP.format_amount(11) in c)
+    tst_content = next(c for c in all_calls if CgiAP.format_amount(20) in c)
+
+    # Disbursement amount = total + statutory_fees_gst (11), not total + all GST (13)
+    assert CgiAP.format_amount(11) in bca_content
+    assert CgiAP.format_amount(13) not in bca_content
+
+    # Paid invoice APIL → "D"; reversal APIL → "C" (credit BCReg GL, debit supplier EFT)
+    apil_lines = [l for l in bca_content.splitlines() if "APIL" in l and CgiAP.format_amount(11) in l]
+    line_codes = {l[l.index(CgiAP.format_amount(11)) + 15] for l in apil_lines}
+    assert "D" in line_codes
+    assert "C" in line_codes
+
+    assert CgiAP.format_amount(20) in tst_content
+
+    session.refresh(bca_invoice)
+    session.refresh(bca_refund)
+    session.refresh(tst_invoice)
+    assert bca_invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert bca_refund.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert tst_invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
+
+    partner_codes = {h.partner_code for h in session.query(EjvHeaderModel).all()}
+    assert {"BCA", "TST"} <= partner_codes
+
+
+def test_ap_disbursement_edge_cases(session):
+    """No upload when config absent; no upload when config present but no eligible invoices."""
+    # Case 1: config present, no invoices → no upload
+    NonGovDisbursementConfigModel(corp_type_code="BCA", cas_supplier_number="BCA999", cas_supplier_site="001").save()
+    session.flush()
     with patch("tasks.common.cgi_ejv.CgiEjv.upload") as mock_upload:
         ApTask.create_ap_files()
-        mock_upload.assert_called()
+        mock_upload.assert_not_called()
+
+    # Case 2: config absent, invoice present → no upload
+    session.query(NonGovDisbursementConfigModel).delete()
+    session.flush()
+    account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCA", "OLAARTOQ")
+    bca_invoice = factory_invoice(
+        payment_account=account, status_code=InvoiceStatus.PAID.value, total=10, corp_type_code="BCA"
+    )
+    factory_payment_line_item(bca_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    with patch("tasks.common.cgi_ejv.CgiEjv.upload") as mock_upload:
+        ApTask.create_ap_files()
+        mock_upload.assert_not_called()
 
 
 def test_routing_slip_refund_error_handling(session, monkeypatch):
