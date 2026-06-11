@@ -1,7 +1,7 @@
 """add_non_gov_disbursement_config
 
 Revision ID: d4e5f6a7b8c9
-Revises: cb622dbbf69d
+Revises: 9b1c4d7e8f90
 Create Date: 2026-06-09 00:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.sql import column, table
 
 revision = "d4e5f6a7b8c9"
-down_revision = "cb622dbbf69d"
+down_revision = "9b1c4d7e8f90"
 branch_labels = None
 depends_on = None
 
