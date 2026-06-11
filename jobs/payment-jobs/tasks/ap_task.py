@@ -23,12 +23,12 @@ from sqlalchemy import Date, cast
 
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
-from pay_api.models import NonGovDisbursementConfig as NonGovDisbursementConfigModel
 from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import NonGovDisbursementConfig as NonGovDisbursementConfigModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
@@ -327,7 +327,9 @@ class ApTask(CgiAP):
         ap_flow = APFlow.NON_GOV_TO_EFT
         configs: list[NonGovDisbursementConfigModel] = NonGovDisbursementConfigModel.query.all()
         if not configs:
-            current_app.logger.warning("No non gov disbursement config found; at-least config for BCA should be present.")
+            current_app.logger.warning(
+                "No non gov disbursement config found; at-least config for BCA should be present."
+            )
             return
 
         for config in configs:
@@ -423,4 +425,3 @@ class ApTask(CgiAP):
         db.session.commit()
         # Sleep to prevent collision on file name.
         time.sleep(1)
-

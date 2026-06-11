@@ -190,7 +190,10 @@ def test_ap_disbursement(session):
         payment_account=account, status_code=InvoiceStatus.PAID.value, total=20, corp_type_code="TST"
     )
     factory_payment_line_item(
-        tst_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=20, fee_dist_id=tst_dist.distribution_code_id
+        tst_invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        total=20,
+        fee_dist_id=tst_dist.distribution_code_id,
     )
 
     with patch.object(ApTask, "_create_file_and_upload") as mock_upload:
@@ -206,8 +209,8 @@ def test_ap_disbursement(session):
     assert CgiAP.format_amount(13) not in bca_content
 
     # Paid invoice APIL → "D"; reversal APIL → "C" (credit BCReg GL, debit supplier EFT)
-    apil_lines = [l for l in bca_content.splitlines() if "APIL" in l and CgiAP.format_amount(11) in l]
-    line_codes = {l[l.index(CgiAP.format_amount(11)) + 15] for l in apil_lines}
+    apil_lines = [line for line in bca_content.split("\n") if "APIL" in line and CgiAP.format_amount(11) in line]
+    line_codes = {line[line.index(CgiAP.format_amount(11)) + 15] for line in apil_lines}
     assert "D" in line_codes
     assert "C" in line_codes
 
