@@ -162,7 +162,7 @@ def test_ap_disbursement(session):
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCA", "OLAARTOQ")
 
     NonGovDisbursementConfigModel(corp_type_code="BCA", cas_supplier_number="BCA999", cas_supplier_site="001").save()
-    CorpTypeModel(code="TST", description="Test Partner").save()
+    CorpTypeModel(code="TST", description="Test Partner", created_by="test").save()
     tst_dist = factory_distribution(name="Test Partner")
     NonGovDisbursementConfigModel(corp_type_code="TST", cas_supplier_number="TST123", cas_supplier_site="001").save()
 
@@ -328,7 +328,7 @@ def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, mon
             total=100.00,
             invoice_number="TEST123",
             invoice_date=datetime.now(tz=UTC).date(),
-            ap_supplier=APSupplier(),
+            ap_supplier=APSupplier(supplier_number="TEST00001", supplier_site="001"),
         )
 
         ap_line = APLine(
@@ -338,7 +338,7 @@ def test_get_ap_header_and_line_weekend_and_holiday_date_adjustment(session, mon
             line_number=1,
             is_reversal=False,
             distribution="12345678901234567890",
-            ap_supplier=APSupplier(),
+            ap_supplier=APSupplier(supplier_number="TEST00001", supplier_site="001"),
         )
 
         header_result = CgiAP.get_ap_header(ap_header)
