@@ -30,6 +30,7 @@ class FeeCodeConfig(SecuredView):
     form_columns = edit_columns = [
         "code",
         "amount",
+        "comments",
         *SecuredView._AUDIT_FIELDS,
     ]
 

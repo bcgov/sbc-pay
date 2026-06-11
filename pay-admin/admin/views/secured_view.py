@@ -165,6 +165,11 @@ class SecuredView(sqla.ModelView):
                 for field in ("updated_by", "updated_name", "updated_on"):
                     flag_modified(model, field)
 
+        # If left blank on a create, stored as NULL
+        comments = getattr(model, "comments", None)
+        if comments is not None and not str(comments).strip():
+            model.comments = None
+
     def _is_modified(self, model) -> bool:
         """Return True if any non-audit field changed since the model was loaded."""
         try:

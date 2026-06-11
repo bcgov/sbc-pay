@@ -54,6 +54,7 @@ class CorpTypeConfig(SecuredView):
         "is_online_banking_allowed",
         "product",
         "refund_approval",
+        "comments",
         *SecuredView._AUDIT_FIELDS,
     ]
 
