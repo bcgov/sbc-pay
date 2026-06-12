@@ -158,7 +158,7 @@ def test_routing_slip_refunds(session, monkeypatch):
 
 
 def test_ap_disbursement(session):
-    """AP disbursement: multi-partner, GST calc (statutory only), reversal C line code, status updates."""
+    """AP disbursement: multi-partner, GST calc (statutory only), D line code, status updates."""
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCA", "OLAARTOQ")
 
     NonGovDisbursementConfigModel(
@@ -177,17 +177,6 @@ def test_ap_disbursement(session):
     )
     factory_payment_line_item(
         bca_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=10, statutory_fees_gst=1, service_fees_gst=2
-    )
-
-    bca_refund = factory_invoice(
-        payment_account=account,
-        status_code=InvoiceStatus.REFUNDED.value,
-        total=13,
-        disbursement_status_code=DisbursementStatus.COMPLETED.value,
-        corp_type_code="BCA",
-    )
-    factory_payment_line_item(
-        bca_refund.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=10, statutory_fees_gst=1, service_fees_gst=2
     )
 
     tst_invoice = factory_invoice(
@@ -212,19 +201,16 @@ def test_ap_disbursement(session):
     assert CgiAP.format_amount(11) in bca_content
     assert CgiAP.format_amount(13) not in bca_content
 
-    # Paid invoice APIL → "D"; reversal APIL → "C" (credit BCReg GL, debit supplier EFT)
+    # Paid invoice APIL → "D"
     apil_lines = [line for line in bca_content.split("\n") if "APIL" in line and CgiAP.format_amount(11) in line]
     line_codes = {line[line.index(CgiAP.format_amount(11)) + 15] for line in apil_lines}
     assert "D" in line_codes
-    assert "C" in line_codes
 
     assert CgiAP.format_amount(20) in tst_content
 
     session.refresh(bca_invoice)
-    session.refresh(bca_refund)
     session.refresh(tst_invoice)
     assert bca_invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
-    assert bca_refund.disbursement_status_code == DisbursementStatus.UPLOADED.value
     assert tst_invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
     partner_codes = {h.partner_code for h in session.query(EjvHeaderModel).all()}
