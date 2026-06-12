@@ -13,13 +13,13 @@
 # limitations under the License.
 """Model for per-partner CAS supplier credentials used in non-government AP disbursements."""
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import Boolean, ForeignKey
 
-from .base_model import BaseModel
+from .audit import Audit
 from .db import db
 
 
-class NonGovDisbursementConfig(BaseModel):
+class NonGovDisbursementConfig(Audit):
     """CAS supplier details for non-government partners paid via AP/EFT through CGI."""
 
     __tablename__ = "non_gov_disbursement_config"
@@ -29,9 +29,17 @@ class NonGovDisbursementConfig(BaseModel):
             "corp_type_code",
             "cas_supplier_number",
             "cas_supplier_site",
+            "disabled",
+            "created_by",
+            "created_name",
+            "created_on",
+            "updated_by",
+            "updated_name",
+            "updated_on",
         ]
     }
 
     corp_type_code = db.Column(db.String(10), ForeignKey("corp_types.code"), primary_key=True)
-    cas_supplier_number = db.Column(db.String(50), nullable=False)
-    cas_supplier_site = db.Column(db.String(10), nullable=False)
+    cas_supplier_number = db.Column(db.String(50), nullable=True)
+    cas_supplier_site = db.Column(db.String(10), nullable=True)
+    disabled = db.Column(Boolean, nullable=False, default=False)

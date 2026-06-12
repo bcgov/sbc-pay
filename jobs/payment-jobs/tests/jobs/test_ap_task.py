@@ -161,10 +161,14 @@ def test_ap_disbursement(session):
     """AP disbursement: multi-partner, GST calc (statutory only), reversal C line code, status updates."""
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCA", "OLAARTOQ")
 
-    NonGovDisbursementConfigModel(corp_type_code="BCA", cas_supplier_number="BCA999", cas_supplier_site="001").save()
+    NonGovDisbursementConfigModel(
+        corp_type_code="BCA", cas_supplier_number="BCA999", cas_supplier_site="001", created_by="test"
+    ).save()
     CorpTypeModel(code="TST", description="Test Partner", created_by="test").save()
     tst_dist = factory_distribution(name="Test Partner")
-    NonGovDisbursementConfigModel(corp_type_code="TST", cas_supplier_number="TST123", cas_supplier_site="001").save()
+    NonGovDisbursementConfigModel(
+        corp_type_code="TST", cas_supplier_number="TST123", cas_supplier_site="001", created_by="test"
+    ).save()
 
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
 
@@ -230,7 +234,9 @@ def test_ap_disbursement(session):
 def test_ap_disbursement_edge_cases(session):
     """No upload when config absent; no upload when config present but no eligible invoices."""
     # Case 1: config present, no invoices → no upload
-    NonGovDisbursementConfigModel(corp_type_code="BCA", cas_supplier_number="BCA999", cas_supplier_site="001").save()
+    NonGovDisbursementConfigModel(
+        corp_type_code="BCA", cas_supplier_number="BCA999", cas_supplier_site="001", created_by="test"
+    ).save()
     session.flush()
     with patch("tasks.common.cgi_ejv.CgiEjv.upload") as mock_upload:
         ApTask.create_ap_files()

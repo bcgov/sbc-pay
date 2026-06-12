@@ -325,7 +325,9 @@ class ApTask(CgiAP):
     def _create_non_gov_disbursement_file(cls):  # pylint:disable=too-many-locals
         """Create AP file for disbursement for non government entities without a GL code via EFT and upload to CGI."""
         ap_flow = APFlow.NON_GOV_TO_EFT
-        configs: list[NonGovDisbursementConfigModel] = NonGovDisbursementConfigModel.query.all()
+        configs: list[NonGovDisbursementConfigModel] = NonGovDisbursementConfigModel.query.filter_by(
+            disabled=False
+        ).all()
         if not configs:
             current_app.logger.warning(
                 "No non gov disbursement config found; at-least config for BCA should be present."
@@ -333,10 +335,13 @@ class ApTask(CgiAP):
             return
 
         for config in configs:
+            if not config.cas_supplier_number or not config.cas_supplier_site:
+                current_app.logger.warning(
+                    f"Skipping {config.corp_type_code}: missing cas_supplier_number or cas_supplier_site."
+                )
+                continue
             partner = CorpTypeModel.find_by_code(config.corp_type_code)
-            total_invoices: list[InvoiceModel] = cls.get_invoices_for_disbursement(
-                partner
-            )
+            total_invoices: list[InvoiceModel] = cls.get_invoices_for_disbursement(partner)
             # + cls.get_invoices_for_refund_reversal(partner)
             # TODO commenting out refund reversals as the current approach won't support for this case.
 
