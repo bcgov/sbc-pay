@@ -180,7 +180,7 @@ class CgiAP(CgiEjv):
         """Return vendor number."""
         match ap_flow:
             case APFlow.NON_GOV_TO_EFT:
-                return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<9}"
+                return f"{supplier_number:<9}"
             case APFlow.ROUTING_SLIP_TO_CHEQUE | APFlow.EFT_TO_CHEQUE:
                 return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
             case APFlow.EFT_TO_EFT:
@@ -193,7 +193,7 @@ class CgiAP(CgiEjv):
         """Return distribution vendor number."""
         match ap_flow:
             case APFlow.NON_GOV_TO_EFT:
-                return f"{current_app.config.get('BCA_SUPPLIER_NUMBER'):<30}"
+                return f"{supplier_number:<30}"
             case APFlow.ROUTING_SLIP_TO_CHEQUE | APFlow.EFT_TO_CHEQUE:
                 return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
             case APFlow.EFT_TO_EFT:
@@ -206,7 +206,7 @@ class CgiAP(CgiEjv):
         """Return location."""
         match ap_flow:
             case APFlow.NON_GOV_TO_EFT:
-                return f"{current_app.config.get('BCA_SUPPLIER_LOCATION'):<3}"
+                return f"{supplier_site:<3}"
             case APFlow.ROUTING_SLIP_TO_CHEQUE | APFlow.EFT_TO_CHEQUE:
                 return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
             case APFlow.EFT_TO_EFT:
