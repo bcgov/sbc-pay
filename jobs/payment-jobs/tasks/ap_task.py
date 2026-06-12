@@ -336,7 +336,9 @@ class ApTask(CgiAP):
             partner = CorpTypeModel.find_by_code(config.corp_type_code)
             total_invoices: list[InvoiceModel] = cls.get_invoices_for_disbursement(
                 partner
-            ) + cls.get_invoices_for_refund_reversal(partner)
+            )
+            # + cls.get_invoices_for_refund_reversal(partner)
+            # TODO commenting out refund reversals as the current approach won't support for this case.
 
             current_app.logger.info(
                 f"Partner {config.corp_type_code}: found {len(total_invoices)} invoices to disburse."
