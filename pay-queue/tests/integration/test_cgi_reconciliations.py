@@ -20,7 +20,6 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 from datetime import UTC, datetime
 from unittest.mock import Mock
 
-import pytest
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sqlalchemy import text
 
@@ -37,7 +36,6 @@ from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db

@@ -589,7 +589,7 @@ def _process_ap_header_eft(line) -> bool:
 
 def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
     has_errors = False
-    invoice_id = line[19:69].strip()
+    invoice_id = int(line[19:69].strip())
     invoice = InvoiceModel.find_by_id(invoice_id)
     ap_header_return_code = line[414:418]
     ap_header_error_message = line[418:568]
