@@ -14,7 +14,7 @@ import sqlalchemy as sa
 # Please ignore those lines and don't include in migration.
 
 revision = 'd22c3e446ce8'
-down_revision = '9b1c4d7e8f90'
+down_revision = 'd4e5f6a7b8c9'
 branch_labels = None
 depends_on = None
 
