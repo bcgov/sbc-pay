@@ -1114,8 +1114,12 @@ def factory_fee_schedule_model(
     variable=False,
     show_on_pricelist=False,
     gst_added=False,
+    statutory_fees_gst_added: bool = None,
+    service_fees_gst_added: bool = None,
 ) -> FeeSchedule:
     """Return the fee schedule model."""
+    statutory_fees_gst_added = gst_added if statutory_fees_gst_added is None else statutory_fees_gst_added
+    service_fees_gst_added = gst_added if service_fees_gst_added is None else service_fees_gst_added
     fee_schedule = FeeSchedule(
         filing_type_code=filing_type.code,
         corp_type_code=corp_type.code,
@@ -1125,6 +1129,8 @@ def factory_fee_schedule_model(
         variable=variable,
         show_on_pricelist=show_on_pricelist,
         gst_added=gst_added,
+        statutory_fees_gst_added=statutory_fees_gst_added,
+        service_fees_gst_added=service_fees_gst_added,
         created_by="TEST",
     )
     if service_fee:
