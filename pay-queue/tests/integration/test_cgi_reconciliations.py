@@ -20,7 +20,6 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 from datetime import UTC, datetime
 from unittest.mock import Mock
 
-import pytest
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sqlalchemy import text
 
@@ -37,7 +36,6 @@ from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
@@ -1533,39 +1531,20 @@ def test_failed_eft_refund_reconciliations(session, app, client):
     assert eft_refund2.disbursement_status_code == DisbursementStatus.ERRORED.value
 
 
-@pytest.mark.skip(reason="Unused, BCA not currently in production")
 def test_successful_ap_disbursement(session, app, client):
-    """Test Reconciliations worker for ap disbursement."""
-    # 1. Create invoice.
-    # 2. Create a AP reconciliation file.
-    # 3. Assert the status.
-    invoice_ids = []
+    """Test Reconciliations worker for ap disbursement — two PAID invoices both succeed."""
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
-    invoice = factory_invoice(
-        payment_account=account,
-        status_code=InvoiceStatus.PAID.value,
-        total=10,
-        corp_type_code="BCA",
-    )
-
-    invoice_ids.append(invoice.id)
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCA", "OLAARTOQ")
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
-    line.save()
 
-    refund_invoice = factory_invoice(
-        payment_account=account,
-        status_code=InvoiceStatus.REFUNDED.value,
-        total=10,
-        disbursement_status_code=DisbursementStatus.COMPLETED.value,
-        corp_type_code="BCA",
+    invoice_1 = factory_invoice(
+        payment_account=account, status_code=InvoiceStatus.PAID.value, total=10, corp_type_code="BCA"
     )
-    invoice_ids.append(refund_invoice.id)
+    factory_payment_line_item(invoice_1.id, fee_schedule_id=fee_schedule.fee_schedule_id).save()
 
-    line = factory_payment_line_item(refund_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
-    line.save()
-
-    factory_refund(invoice_id=refund_invoice.id)
+    invoice_2 = factory_invoice(
+        payment_account=account, status_code=InvoiceStatus.PAID.value, total=20, corp_type_code="BCA"
+    )
+    factory_payment_line_item(invoice_2.id, fee_schedule_id=fee_schedule.fee_schedule_id).save()
 
     file_ref = f"INBOX.{datetime.now()}"
     ejv_file = EjvFileModel(
@@ -1581,33 +1560,23 @@ def test_successful_ap_disbursement(session, app, client):
         payment_account_id=account.id,
     ).save()
 
-    EjvLinkModel(
-        link_id=invoice.id,
-        link_type=EJVLinkType.INVOICE.value,
-        ejv_header_id=ejv_header.id,
-        disbursement_status_code=DisbursementStatus.UPLOADED.value,
-    ).save()
-
-    EjvLinkModel(
-        link_id=refund_invoice.id,
-        link_type=EJVLinkType.INVOICE.value,
-        ejv_header_id=ejv_header.id,
-        disbursement_status_code=DisbursementStatus.UPLOADED.value,
-    ).save()
+    for inv in (invoice_1, invoice_2):
+        EjvLinkModel(
+            link_id=inv.id,
+            link_type=EJVLinkType.INVOICE.value,
+            ejv_header_id=ejv_header.id,
+            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ).save()
 
     ack_file_name = f"ACK.{file_ref}"
-
     with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
         jv_file.write("")
         jv_file.close()
 
     upload_to_google_bucket(str.encode(""), ack_file_name)
-
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-
-    invoice_str = [str(invoice_id).zfill(9) for invoice_id in invoice_ids]
+    invoice_str = [str(inv.id).zfill(9) for inv in (invoice_1, invoice_2)]
     feedback_content = (
         f"APBG...........{str(ejv_file_id).zfill(9)}....\n"
         f"APBH...0000................................................................................."
@@ -1668,7 +1637,6 @@ def test_successful_ap_disbursement(session, app, client):
     )
 
     feedback_file_name = f"FEEDBACK.{file_ref}"
-
     with open(feedback_file_name, "a+", encoding="utf-8") as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
@@ -1680,19 +1648,14 @@ def test_successful_ap_disbursement(session, app, client):
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
-    for invoice_id in invoice_ids:
-        invoice = InvoiceModel.find_by_id(invoice_id)
-        if invoice.invoice_status_code == InvoiceStatus.PAID.value:
-            assert invoice.disbursement_status_code == DisbursementStatus.COMPLETED.value
-            assert invoice.disbursement_date is not None
-        if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
-            assert invoice.disbursement_status_code == DisbursementStatus.REVERSED.value
-            assert invoice.disbursement_reversal_date is not None
-            refund = RefundModel.find_by_invoice_id(invoice.id)
-            assert refund.gl_posted is not None
+    for inv_id in (invoice_1.id, invoice_2.id):
+        inv = InvoiceModel.find_by_id(inv_id)
+        assert inv.disbursement_status_code == DisbursementStatus.COMPLETED.value
+        assert inv.disbursement_date is not None
+        inv_link = db.session.query(EjvLinkModel).filter(EjvLinkModel.link_id == inv_id).one_or_none()
+        assert inv_link.disbursement_status_code == DisbursementStatus.COMPLETED.value
 
 
-@pytest.mark.skip(reason="Unused, BCA not currently in production")
 def test_failure_ap_disbursement(session, app, client):
     """Test Reconciliations worker for ap disbursement."""
     # 1. Create invoice.

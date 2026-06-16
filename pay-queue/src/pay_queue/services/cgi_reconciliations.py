@@ -589,7 +589,7 @@ def _process_ap_header_eft(line) -> bool:
 
 def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
     has_errors = False
-    invoice_id = line[19:69].strip()
+    invoice_id = int(line[19:69].strip())
     invoice = InvoiceModel.find_by_id(invoice_id)
     ap_header_return_code = line[414:418]
     ap_header_error_message = line[418:568]
@@ -611,7 +611,20 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
         current_app.logger.error(
             f"AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}",
         )
+    # elif invoice.invoice_status_code in (
+    #     InvoiceStatus.REFUNDED.value,
+    #     InvoiceStatus.REFUND_REQUESTED.value,
+    #     InvoiceStatus.CREDITED.value,
+    # ):
+    #     # Refund reversals are not yet sent via AP task.
+    #     # Re-enable when reversal support is added to ap_task._create_non_gov_disbursement_file.
+    #     invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
+    #     invoice.disbursement_reversal_date = datetime.now(tz=UTC)
+    #     refund = RefundModel.find_by_invoice_id(invoice.id)
+    #     if refund:
+    #         refund.gl_posted = datetime.now()
+    #         refund.save()
     else:
-        # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.
-        raise NotImplementedError("This is not implemented yet.")
+        invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+        invoice.disbursement_date = datetime.now(tz=UTC)
     return has_errors
