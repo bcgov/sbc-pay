@@ -308,6 +308,8 @@ def test_fee_schedule_gst_properties(session):
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         created_by="TEST",
     )
     fee_schedule_model.save()
@@ -348,6 +350,8 @@ def test_fee_schedule_gst_properties_disabled(session):
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=False,
+        statutory_fees_gst_added=False,
+        service_fees_gst_added=False,
         created_by="TEST",
     )
     fee_schedule_model.save()
@@ -376,6 +380,8 @@ def test_fee_schedule_gst_properties_with_zero_fees(session):
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         created_by="TEST",
     )
     fee_schedule_model.save()
@@ -404,6 +410,8 @@ def test_fee_schedule_gst_properties_rounding(session):
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         created_by="TEST",
     )
     fee_schedule_model.save()

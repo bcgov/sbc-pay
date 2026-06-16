@@ -61,7 +61,8 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._service_fees = Decimal("0")
         self._service_fee_code: str = None
         self._variable: bool = False
-        self._gst_added: bool = False
+        self._service_fees_gst_added: bool = False
+        self._statutory_fees_gst_added: bool = False
 
     @property
     def _dao(self):
@@ -82,7 +83,8 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._filing_type: str = self._dao.filing_type.description
         self._service_fee_code: str = self._dao.service_fee_code
         self._variable: bool = self._dao.variable
-        self._gst_added: bool = self._dao.gst_added
+        self._service_fees_gst_added: bool = self._dao.service_fees_gst_added
+        self._statutory_fees_gst_added: bool = self._dao.statutory_fees_gst_added
 
     @property
     def fee_schedule_id(self):
@@ -229,7 +231,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def service_fees_gst(self):
         """Return the GST amount calculated."""
-        if self._gst_added:
+        if self._service_fees_gst_added:
             gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC))
             return round(self.service_fees * gst_rate, 2)
         return 0
@@ -237,7 +239,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def statutory_fees_gst(self):
         """Return the GST amount calculated."""
-        if self._gst_added:
+        if self._statutory_fees_gst_added:
             gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC))
             return round(self.total_excluding_service_fees * gst_rate, 2)
         return 0
@@ -276,15 +278,40 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._dao.service_fee_code = value
 
     @property
+    def service_fees_gst_added(self):
+        """Return service fees GST flag."""
+        return self._service_fees_gst_added
+
+    @service_fees_gst_added.setter
+    def service_fees_gst_added(self, value: bool):
+        """Set service fees GST flag."""
+        self._service_fees_gst_added = value
+        self._dao.service_fees_gst_added = value
+
+    @property
+    def statutory_fees_gst_added(self):
+        """Return statutory fees GST flag."""
+        return self._statutory_fees_gst_added
+
+    @statutory_fees_gst_added.setter
+    def statutory_fees_gst_added(self, value: bool):
+        """Set statutory fees GST flag."""
+        self._statutory_fees_gst_added = value
+        self._dao.statutory_fees_gst_added = value
+
+    @property
     def gst_added(self):
-        """Return the gst_added flag."""
-        return self._gst_added
+        """Backward-compatible GST flag getter."""
+        return self._service_fees_gst_added or self._statutory_fees_gst_added
 
     @gst_added.setter
     def gst_added(self, value: bool):
-        """Set the gst_added flag."""
-        self._gst_added = value
+        """Backward-compatible GST flag setter."""
+        self._service_fees_gst_added = value
+        self._statutory_fees_gst_added = value
         self._dao.gst_added = value
+        self._dao.service_fees_gst_added = value
+        self._dao.statutory_fees_gst_added = value
 
     @property
     def variable(self) -> bool:
@@ -418,12 +445,12 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         return service_fees
 
     @staticmethod
-    def get_gst_amount_expression(amount_expr):
+    def get_gst_amount_expression(amount_expr, gst_flag_expr):
         """Return calculated GST amount."""
         return func.coalesce(
             case(
                 (
-                    FeeScheduleModel.gst_added.is_(True),
+                    gst_flag_expr,
                     func.round(TaxRateModel.rate * func.coalesce(amount_expr, 0), 2),
                 ),
                 else_=0,
@@ -434,11 +461,13 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @staticmethod
     def get_gst_expressions(main_fee_code, service_fee_code):
         """Return GST break down amounts."""
-        main_fee_gst = FeeSchedule.get_gst_amount_expression(main_fee_code.amount).label("main_fee_gst")
-        service_fee_gst = FeeSchedule.get_gst_amount_expression(service_fee_code.amount).label("service_fee_gst")
-        total_gst = FeeSchedule.get_gst_amount_expression(
-            func.coalesce(main_fee_code.amount, 0) + func.coalesce(service_fee_code.amount, 0)
-        ).label("total_gst")
+        main_fee_gst = FeeSchedule.get_gst_amount_expression(
+            main_fee_code.amount, FeeScheduleModel.statutory_fees_gst_added.is_(True)
+        ).label("main_fee_gst")
+        service_fee_gst = FeeSchedule.get_gst_amount_expression(
+            service_fee_code.amount, FeeScheduleModel.service_fees_gst_added.is_(True)
+        ).label("service_fee_gst")
+        total_gst = (main_fee_gst + service_fee_gst).label("total_gst")
         return main_fee_gst, service_fee_gst, total_gst
 
     @staticmethod
@@ -474,7 +503,10 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
             .outerjoin(
                 TaxRateModel,
                 and_(
-                    FeeScheduleModel.gst_added.is_(True),
+                    (
+                        FeeScheduleModel.statutory_fees_gst_added.is_(True)
+                        | FeeScheduleModel.service_fees_gst_added.is_(True)
+                    ),
                     TaxRateModel.tax_type == TAX_CLASSIFICATION_GST,
                     TaxRateModel.start_date <= func.coalesce(FeeScheduleModel.fee_end_date, infinity_date),
                     FeeScheduleModel.fee_start_date <= func.coalesce(TaxRateModel.effective_end_date, infinity_date),

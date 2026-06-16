@@ -540,6 +540,43 @@ def test_get_fee_with_gst_disabled(client, jwt, session):
     assert response_data["processingFees"] == 0.0
 
 
+def test_get_fee_with_service_fee_gst_only(client, jwt, session):
+    """Test that fee endpoint applies GST to service fee only when configured."""
+    corp_type_code = "TEST_COR4"
+    filing_type_code = "TEST_FIL4"
+    fee_code = "TEST_FEE4"
+    service_fee_code = "SRVFE4"
+
+    service_fee_obj = factory_fee_model(service_fee_code, 25.00)
+
+    factory_fee_schedule_model(
+        factory_filing_type_model(filing_type_code, "Test Filing Type 4"),
+        factory_corp_type_model(corp_type_code, "Test Corporation Type 4"),
+        factory_fee_model(fee_code, 200.00),
+        service_fee=service_fee_obj,
+        show_on_pricelist=True,
+        statutory_fees_gst_added=False,
+        service_fees_gst_added=True,
+    )
+
+    token = jwt.create_jwt(get_claims(role=Role.EDITOR.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.get(f"/api/v1/fees/{corp_type_code}/{filing_type_code}", headers=headers)
+
+    assert rv.status_code == 200
+    response_data = rv.json
+    assert response_data["filingFees"] == 200.0
+    assert response_data["serviceFees"] == 25.0
+
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
+    expected_service_gst = float(round(25.0 * float(gst_rate), 2))
+    expected_total = 200.0 + 25.0 + expected_service_gst
+
+    assert response_data["tax"]["gst"] == expected_service_gst
+    assert response_data["total"] == expected_total
+
+
 def test_fees_detail_query_by_product_code_expired_end_date(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     factory_fee_schedule_model(
