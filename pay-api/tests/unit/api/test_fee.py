@@ -545,7 +545,7 @@ def test_get_fee_with_service_fee_gst_only(client, jwt, session):
     corp_type_code = "TEST_COR4"
     filing_type_code = "TEST_FIL4"
     fee_code = "TEST_FEE4"
-    service_fee_code = "SERVICE_FE4"
+    service_fee_code = "SRVFE4"
 
     service_fee_obj = factory_fee_model(service_fee_code, 25.00)
 

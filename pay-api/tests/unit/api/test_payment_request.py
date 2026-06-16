@@ -1471,6 +1471,8 @@ def test_payment_request_gst_and_service_fees_calculation(session, client, jwt, 
         priority_fee_code=priority_fee_code,
         future_effective_fee_code=future_effective_fee_code,
         gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         show_on_pricelist=True,
         created_by="TEST",
     )
@@ -1616,8 +1618,10 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
         fee_code=fee_code,
         fee_start_date=datetime.now(tz=UTC).date(),
         gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         show_on_pricelist=True,
-        service_fee=service_fee_code_model,
+        service_fee_code=service_fee_code_model.code,
         created_by="TEST",
     )
     fee_schedule_with_gst.save()
