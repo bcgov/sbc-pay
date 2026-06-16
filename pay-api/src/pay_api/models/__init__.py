@@ -50,6 +50,7 @@ from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
 from .invoice_reference_status_code import InvoiceReferenceStatusCode, InvoiceReferenceStatusCodeSchema
 from .invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
 from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
+from .non_gov_disbursement_config import NonGovDisbursementConfig
 from .non_sufficient_funds import NonSufficientFunds, NonSufficientFundsSchema
 from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
 from .partner_disbursements import PartnerDisbursements

@@ -34,7 +34,7 @@ class APFlow(Enum):
 
     EFT_TO_CHEQUE = "EFT_TO_CHEQUE"
     EFT_TO_EFT = "EFT_TO_EFT"
-    NON_GOV_TO_EFT = "NON_GOV_TO_EFT"  # reserved for BCA only they are crown corp, can't pay via GL only EFT
+    NON_GOV_TO_EFT = "NON_GOV_TO_EFT"  # for non-government partners without a GL code, paid via EFT through CGI
     ROUTING_SLIP_TO_CHEQUE = "ROUTING_SLIP_TO_CHEQUE"
 
 
@@ -141,6 +141,7 @@ class APLine:
         line_item: LineItemModel,
         line_number: int,
         distribution: str,
+        ap_supplier: APSupplier = None,
     ):
         """Build dataclass object from invoice."""
         # Note the invoice_date should be the payment_date in the future.
@@ -156,4 +157,5 @@ class APLine:
             ],
             distribution=distribution,
             ap_flow="",
+            ap_supplier=ap_supplier or APSupplier(),
         )
