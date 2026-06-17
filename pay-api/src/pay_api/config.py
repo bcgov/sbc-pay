@@ -137,6 +137,8 @@ class _Config:  # pylint: disable=too-few-public-methods
     CFS_INVOICE_PREFIX = os.getenv("CFS_INVOICE_PREFIX", "REG")
     CFS_RECEIPT_PREFIX = os.getenv("CFS_RECEIPT_PREFIX", "RCPT")
     CFS_PARTY_PREFIX = os.getenv("CFS_PARTY_PREFIX", "BCR-")
+    # Intentionally set lower to facilitate faster recovery from CFS outages / issues
+    CFS_TOKEN_CACHE_TIMEOUT = int(os.getenv("CFS_TOKEN_CACHE_TIMEOUT", "300"))
     PAY_CONNECTOR_AUTH = os.getenv("PAY_CONNECTOR_AUTH", "")
 
     # EFT Config
