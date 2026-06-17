@@ -15,7 +15,7 @@ DOCKER_NAME:=pay-queue
 setup: install ## Setup the project
 
 clean: clean-build clean-pyc clean-test ## Clean the project
-	rm -rf venv/
+	rm -rf .venv/
 
 clean-build: ## Clean build files
 	rm -fr build/
@@ -37,7 +37,7 @@ clean-test: ## clean test files
 	rm -fr htmlcov/
 
 install: clean 
-	pip install poetry==2.3.2;\
+	pip install poetry==2.3.4;\
 	poetry install
 
 #################################################################################
