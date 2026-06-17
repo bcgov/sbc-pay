@@ -2443,7 +2443,7 @@ python-dotenv = "1.0.1"
 pytz = "2024.1"
 requests = "2.33.0"
 rsa = "4.9"
-sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
+sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", branch = "master", subdirectory = "python"}
 semver = "3.0.2"
 setuptools = "^78.1.1"
 six = "1.16.0"
@@ -2462,7 +2462,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/bcgov/sbc-pay.git"
 reference = "main"
-resolved_reference = "f4f20fe7185b77ff19b3cd7c817a626a8b813464"
+resolved_reference = "4ed4bd8391f525ce8c83ae82eb0248e8975fe2dd"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3013,8 +3013,8 @@ jaeger-client = "*"
 [package.source]
 type = "git"
 url = "https://github.com/bcgov/sbc-common-components.git"
-reference = "HEAD"
-resolved_reference = "523a1e7439f0ea3cb56a683253b7e923b44d88c2"
+reference = "master"
+resolved_reference = "cc91b7b54797f24f2dd063910477064c4d67fe0a"
 subdirectory = "python"
 
 [[package]]
