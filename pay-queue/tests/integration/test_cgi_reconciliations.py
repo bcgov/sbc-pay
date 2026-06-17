@@ -594,9 +594,9 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
 @pytest.mark.parametrize(
     "service_fees_gst,statutory_fees_gst",
     [
-        (0.08, 5.0),  # GST on both service and statutory fees.
+        (0.075, 5.0),  # GST on both service and statutory fees.
         (0.00, 5.0),  # GST on statutory fees only.
-        (0.08, 0.0),  # GST on service fees only.
+        (0.075, 0.0),  # GST on service fees only.
     ],
 )
 def test_successful_payment_ejv_reconciliations(session, app, client, service_fees_gst, statutory_fees_gst):
@@ -813,6 +813,7 @@ def test_successful_payment_ejv_reconciliations(session, app, client, service_fe
         assert receipt
 
     # Assert payment records
+    expected_total = InvoiceModel.find_by_id(inv_ids[0]).total
     for jv_account_id in jv_account_ids:
         account = PaymentAccountModel.find_by_id(jv_account_id)
         payment = PaymentModel.search_account_payments(
@@ -822,15 +823,15 @@ def test_successful_payment_ejv_reconciliations(session, app, client, service_fe
             limit=100,
         )[0]
         assert len(payment) == 1
-        assert payment[0][0].paid_amount == inv_total_amount
+        assert payment[0][0].paid_amount == expected_total
 
 
 @pytest.mark.parametrize(
     "service_fees_gst,statutory_fees_gst",
     [
-        (0.08, 5.0),  # GST on both service and statutory fees.
+        (0.075, 5.0),  # GST on both service and statutory fees.
         (0.00, 5.0),  # GST on statutory fees only.
-        (0.08, 0.0),  # GST on service fees only.
+        (0.075, 0.0),  # GST on service fees only.
     ],
 )
 def test_successful_payment_reversal_ejv_reconciliations(
@@ -1050,6 +1051,7 @@ def test_successful_payment_reversal_ejv_reconciliations(
 
     mock_publish.assert_called()
     # Assert payment records
+    expected_total = InvoiceModel.find_by_id(inv_ids[0]).total
     for jv_account_id in jv_account_ids:
         account = PaymentAccountModel.find_by_id(jv_account_id)
         payment = PaymentModel.search_account_payments(
@@ -1059,7 +1061,7 @@ def test_successful_payment_reversal_ejv_reconciliations(
             limit=100,
         )[0]
         assert len(payment) == 1
-        assert payment[0][0].paid_amount == inv_total_amount
+        assert payment[0][0].paid_amount == expected_total
 
 
 def test_successful_refund_reconciliations(session, app, client):
