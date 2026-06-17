@@ -17,8 +17,9 @@
 Test-Suite to ensure that the CFS Service layer is working as expected.
 """
 
+import secrets
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from requests import ConnectTimeout
 
@@ -26,6 +27,7 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.constants import TAX_CLASSIFICATION_GST
+from pay_api.utils.enums import PaymentSystem
 from tests.utilities.base_test import factory_distribution_code
 
 cfs_service = CFSService()
@@ -286,3 +288,93 @@ def test_build_lines_with_gst_fees(session):
     _verify_line_structure(statutory_gst_line, Decimal("5.00"))
     _verify_line_structure(service_gst_line, Decimal("0.50"))
     _verify_line_structure(combined_gst_line, Decimal("3.75"))  # 2.50 + 1.25 from combined GST test
+
+
+def _mock_token_response(access_token: str) -> MagicMock:
+    mock = MagicMock()
+    mock.json.return_value = {"access_token": access_token}
+    return mock
+
+
+def test_get_token_caches_within_timeout(session, app):
+    """Token is fetched once and the same object is returned on a second call before timeout."""
+    token = secrets.token_hex(32)
+    timeout = app.config["CFS_TOKEN_CACHE_TIMEOUT"]
+
+    with (
+        patch("pay_api.services.cfs_service.time.time") as mock_time,
+        patch("pay_api.services.oauth_service.requests.post", return_value=_mock_token_response(token)) as mock_post,
+    ):
+        mock_time.return_value = 1000.0
+        first = CFSService.get_token()
+
+        mock_time.return_value = 1000.0 + timeout - 1
+        second = CFSService.get_token()
+
+    assert mock_post.call_count == 1
+    assert first.json().get("access_token") == token
+    assert second is first
+
+
+def test_get_token_refetches_after_timeout(session, app):
+    """A new token is fetched after the cache entry expires."""
+    first_token = secrets.token_hex(32)
+    second_token = secrets.token_hex(32)
+
+    start = 1000.0
+    timeout = app.config["CFS_TOKEN_CACHE_TIMEOUT"]
+
+    with (
+        patch("pay_api.services.cfs_service.time.time") as mock_time,
+        patch("pay_api.services.oauth_service.requests.post") as mock_post,
+    ):
+        mock_post.side_effect = [_mock_token_response(first_token), _mock_token_response(second_token)]
+
+        mock_time.return_value = start
+        first = CFSService.get_token()
+
+        mock_time.return_value = start + timeout + 1
+        second = CFSService.get_token()
+
+    assert mock_post.call_count == 2
+    assert first.json().get("access_token") == first_token
+    assert second.json().get("access_token") == second_token
+    assert second is not first
+
+
+def test_get_token_paybc_and_fas_cached_separately(session, app):
+    """PAYBC and FAS tokens are stored under separate cache keys."""
+    paybc_token = secrets.token_hex(32)
+    fas_token = secrets.token_hex(32)
+
+    with (
+        patch.dict(app.config, {"CFS_FAS_CLIENT_ID": "TEST_FAS", "CFS_FAS_CLIENT_SECRET": "TEST_FAS"}),
+        patch("pay_api.services.oauth_service.requests.post") as mock_post,
+    ):
+        mock_post.side_effect = [_mock_token_response(paybc_token), _mock_token_response(fas_token)]
+
+        paybc = CFSService.get_token(PaymentSystem.PAYBC)
+        fas = CFSService.get_token(PaymentSystem.FAS)
+
+        paybc_cached = CFSService.get_token(PaymentSystem.PAYBC)
+        fas_cached = CFSService.get_token(PaymentSystem.FAS)
+
+    assert mock_post.call_count == 2
+    assert paybc.json().get("access_token") == paybc_token
+    assert fas.json().get("access_token") == fas_token
+    assert paybc_cached is paybc
+    assert fas_cached is fas
+
+
+def test_get_token_clears_cache_on_bad_response(session):
+    """A response without an access_token clears the stale cache entry."""
+    bad_response = MagicMock()
+    bad_response.json.return_value = {}
+
+    with patch("pay_api.services.oauth_service.requests.post", return_value=bad_response):
+        result = CFSService.get_token()
+
+    from pay_api.services.cfs_service import _token_cache
+
+    assert result is bad_response
+    assert "cfs_token_PAYBC" not in _token_cache

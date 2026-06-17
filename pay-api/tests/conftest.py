@@ -24,6 +24,7 @@ from sqlalchemy import create_engine, event, text
 from pay_api import create_app, setup_jwt_manager
 from pay_api import jwt as _jwt
 from pay_api.models import db as _db
+from pay_api.services.cfs_service import _token_cache as _cfs_token_cache
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.cache import cache
 
@@ -150,6 +151,14 @@ def setup_code_service(session, app):
     with app.app_context():
         cache.clear()
         CodeService.build_all_codes_cache()
+
+
+@pytest.fixture(autouse=True)
+def clear_cfs_token_cache():
+    """Reset the module-level CFS token cache before and after each test."""
+    _cfs_token_cache.clear()
+    yield
+    _cfs_token_cache.clear()
 
 
 @pytest.fixture()

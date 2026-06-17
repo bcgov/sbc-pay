@@ -15,13 +15,14 @@
 
 import base64
 import re
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any
 
 from flask import current_app
-from requests import HTTPError
+from requests import HTTPError, Response
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -70,6 +71,9 @@ class ProcessingContext:
     lines_map: dict
     index: int
     negate: bool
+
+
+_token_cache: dict[str, tuple[Response, float]] = {}
 
 
 class CFSService(OAuthService):
@@ -467,6 +471,14 @@ class CFSService(OAuthService):
     def get_token(payment_system=PaymentSystem.PAYBC):
         """Generate oauth token from PayBC/FAS which will be used for all communication."""
         current_app.logger.debug("<Getting token")
+        cache_key = f"cfs_token_{payment_system.value}"
+        now = time.time()
+        if cache_key in _token_cache:
+            cached_response, expires_at = _token_cache[cache_key]
+            if now < expires_at:
+                current_app.logger.debug(">Getting token (cached)")
+                return cached_response
+
         token_url = current_app.config.get("CFS_BASE_URL", None) + "/oauth/token"
         match payment_system:
             case PaymentSystem.PAYBC:
@@ -487,6 +499,11 @@ class CFSService(OAuthService):
             data,
             additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
+        if token_response.json().get("access_token"):
+            timeout = current_app.config.get("CFS_TOKEN_CACHE_TIMEOUT")
+            _token_cache[cache_key] = (token_response, now + timeout)
+        else:
+            _token_cache.pop(cache_key, None)
         current_app.logger.debug(">Getting token")
         return token_response
 
