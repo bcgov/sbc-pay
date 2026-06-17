@@ -34,6 +34,7 @@ from .utils import helper_add_identifier_event_to_queue
         QueueMessageTypes.INCORPORATION.value,
         QueueMessageTypes.REGISTRATION.value,
         QueueMessageTypes.CONTINUATION_IN.value,
+        QueueMessageTypes.AMALGAMATION_APPLICATION.value,
     ],
 )
 def test_update_payment(session, app, client, message_type):
