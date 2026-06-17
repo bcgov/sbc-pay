@@ -50,7 +50,16 @@ def generate_fs_create_form(context):
     """Generate the create form."""
     generate_create_form(
         context,
-        ["fee", "future_effective_fee", "priority_fee", "service_fee", "distribution_codes", "gst_added", "comments"],
+        [
+            "fee",
+            "future_effective_fee",
+            "priority_fee",
+            "service_fee",
+            "distribution_codes",
+            "statutory_fees_gst_added",
+            "service_fees_gst_added",
+            "comments",
+        ],
     )
 
 
@@ -59,7 +68,16 @@ def generate_fs_edit_form(context):
     """Generate the edit form."""
     generate_edit_form(
         context,
-        ["fee", "future_effective_fee", "priority_fee", "service_fee", "distribution_codes", "gst_added", "comments"],
+        [
+            "fee",
+            "future_effective_fee",
+            "priority_fee",
+            "service_fee",
+            "distribution_codes",
+            "statutory_fees_gst_added",
+            "service_fees_gst_added",
+            "comments",
+        ],
     )
 
 
