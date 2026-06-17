@@ -20,6 +20,7 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 from datetime import UTC, datetime
 from unittest.mock import Mock
 
+import pytest
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sqlalchemy import text
 
@@ -590,7 +591,15 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     assert partner_disbursement.processed_on
 
 
-def test_successful_payment_ejv_reconciliations(session, app, client):
+@pytest.mark.parametrize(
+    "service_fees_gst,statutory_fees_gst",
+    [
+        (0.08, 5.0),  # GST on both service and statutory fees.
+        (0.00, 5.0),  # GST on statutory fees only.
+        (0.08, 0.0),  # GST on service fees only.
+    ],
+)
+def test_successful_payment_ejv_reconciliations(session, app, client, service_fees_gst, statutory_fees_gst):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -648,7 +657,8 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
     jv_accounts = [jv_account_1, jv_account_2, jv_account_3, jv_account_4]
     inv_ids = []
     jv_account_ids = []
-    inv_total_amount = 106.5  # 100 + 1.5 + 5.0 GST
+    inv_total_amount = round(100 + 1.5 + service_fees_gst + statutory_fees_gst, 2)
+    zero_gst_amount = f"{0:.2f}".zfill(15)
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
         inv = factory_invoice(
@@ -665,8 +675,8 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
             filing_fees=100,
             total=100,
             service_fees=1.5,
-            service_fees_gst=0.075,  # 5% GST on service fees (1.5 * 0.05)
-            statutory_fees_gst=5.0,  # 5% GST on filing fees (100 * 0.05)
+            service_fees_gst=service_fees_gst,
+            statutory_fees_gst=statutory_fees_gst,
             fee_dist_id=dist_code.distribution_code_id,
         )
         inv_ids.append(inv.id)
@@ -687,6 +697,10 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         service_fee_amount = f"{line.service_fees:.2f}".zfill(15)
         statutory_fees_gst_amount = f"{line.statutory_fees_gst:.2f}".zfill(15)
         service_fees_gst_amount = f"{line.service_fees_gst:.2f}".zfill(15)
+        if statutory_fees_gst == 0:
+            assert statutory_fees_gst_amount == zero_gst_amount
+        if service_fees_gst == 0:
+            assert service_fees_gst_amount == zero_gst_amount
 
         # one JD has a shortened width (outside of spec).
         jh_and_jd = (
@@ -744,6 +758,12 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
             f"............................................................................................"
             f"..................................CGI\n"
         )
+        if statutory_fees_gst == 0:
+            assert f"{statutory_fees_gst_amount}D" in jh_and_jd
+            assert f"{statutory_fees_gst_amount}C" in jh_and_jd
+        if service_fees_gst == 0:
+            assert f"{service_fees_gst_amount}D" in jh_and_jd
+            assert f"{service_fees_gst_amount}C" in jh_and_jd
         feedback_content = feedback_content + jh_and_jd
     feedback_content = (
         feedback_content + f"..BT.......FI0000000{ejv_header.id}000000000000002{inv_total}0000......."
@@ -805,7 +825,17 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         assert payment[0][0].paid_amount == inv_total_amount
 
 
-def test_successful_payment_reversal_ejv_reconciliations(session, app, client, mocker):
+@pytest.mark.parametrize(
+    "service_fees_gst,statutory_fees_gst",
+    [
+        (0.08, 5.0),  # GST on both service and statutory fees.
+        (0.00, 5.0),  # GST on statutory fees only.
+        (0.08, 0.0),  # GST on service fees only.
+    ],
+)
+def test_successful_payment_reversal_ejv_reconciliations(
+    session, app, client, mocker, service_fees_gst, statutory_fees_gst
+):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -867,7 +897,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
     jv_accounts = [jv_account_1, jv_account_3]
     inv_ids = []
     jv_account_ids = []
-    inv_total_amount = 106.5  # 100 + 1.5 + 5.0 GST
+    inv_total_amount = round(100 + 1.5 + service_fees_gst + statutory_fees_gst, 2)
+    zero_gst_amount = f"{0:.2f}".zfill(15)
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
         inv = factory_invoice(
@@ -884,8 +915,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
             filing_fees=100,
             total=100,
             service_fees=1.5,
-            service_fees_gst=0.075,  # 5% GST on service fees (1.5 * 0.05)
-            statutory_fees_gst=5.0,  # 5% GST on filing fees (100 * 0.05)
+            service_fees_gst=service_fees_gst,
+            statutory_fees_gst=statutory_fees_gst,
             fee_dist_id=dist_code.distribution_code_id,
         )
         inv_ids.append(inv.id)
@@ -906,6 +937,10 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
         service_fee_amount = f"{line.service_fees:.2f}".zfill(15)
         statutory_fees_gst_amount = f"{line.statutory_fees_gst:.2f}".zfill(15)
         service_fees_gst_amount = f"{line.service_fees_gst:.2f}".zfill(15)
+        if statutory_fees_gst == 0:
+            assert statutory_fees_gst_amount == zero_gst_amount
+        if service_fees_gst == 0:
+            assert service_fees_gst_amount == zero_gst_amount
         jh_and_jd = (
             f"..JH...FI0000000{ejv_header.id}.........................{inv_total}....................."
             f"............................................................................................"
@@ -961,6 +996,12 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
             f"............................................................................................"
             f"..................................CGI\n"
         )
+        if statutory_fees_gst == 0:
+            assert f"{statutory_fees_gst_amount}C" in jh_and_jd
+            assert f"{statutory_fees_gst_amount}D" in jh_and_jd
+        if service_fees_gst == 0:
+            assert f"{service_fees_gst_amount}C" in jh_and_jd
+            assert f"{service_fees_gst_amount}D" in jh_and_jd
         feedback_content = feedback_content + jh_and_jd
     feedback_content = (
         feedback_content + f"..BT.......FI0000000{ejv_header.id}000000000000002{inv_total_amount:.2f}0000......."
