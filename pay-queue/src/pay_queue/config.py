@@ -100,6 +100,7 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     CFS_BASE_URL = os.getenv("CFS_BASE_URL")
     CFS_CLIENT_ID = os.getenv("CFS_CLIENT_ID")
     CFS_CLIENT_SECRET = os.getenv("CFS_CLIENT_SECRET")
+    CFS_TOKEN_CACHE_TIMEOUT = int(os.getenv("CFS_TOKEN_CACHE_TIMEOUT", "300"))
     CONNECT_TIMEOUT = int(os.getenv("CONNECT_TIMEOUT", "10"))
     PAY_CONNECTOR_AUTH = os.getenv("PAY_CONNECTOR_AUTH", "")
 

@@ -500,7 +500,7 @@ class CFSService(OAuthService):
             additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
         )
         if token_response.json().get("access_token"):
-            timeout = current_app.config.get("CFS_TOKEN_CACHE_TIMEOUT")
+            timeout = current_app.config.get("CFS_TOKEN_CACHE_TIMEOUT", "300")
             _token_cache[cache_key] = (token_response, now + timeout)
         else:
             _token_cache.pop(cache_key, None)

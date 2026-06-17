@@ -104,6 +104,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     CFS_BASE_URL = os.getenv("CFS_BASE_URL")
     CFS_CLIENT_ID = os.getenv("CFS_CLIENT_ID")
     CFS_CLIENT_SECRET = os.getenv("CFS_CLIENT_SECRET")
+    CFS_TOKEN_CACHE_TIMEOUT = int(os.getenv("CFS_TOKEN_CACHE_TIMEOUT", "3000"))
     CONNECT_TIMEOUT = int(os.getenv("CONNECT_TIMEOUT", 10))
     GENERATE_RANDOM_INVOICE_NUMBER = os.getenv("CFS_GENERATE_RANDOM_INVOICE_NUMBER", "False")
     PAY_CONNECTOR_AUTH = os.getenv("PAY_CONNECTOR_AUTH", "")
