@@ -326,7 +326,8 @@ def test_product_fees_detail_query_all(session, client, jwt, app):
         corp_type=factory_corp_type_model("XX", "TEST", "PRODUCT_CODE_1"),
         fee_code=factory_fee_model("XXX1", 100),
         show_on_pricelist=True,
-        gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
     )
     fee_schedule2 = factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN2", "TEST"),
@@ -334,7 +335,8 @@ def test_product_fees_detail_query_all(session, client, jwt, app):
         fee_code=factory_fee_model("XXX2", 200),
         service_fee=factory_fee_model("SFEE1", 1.5),
         show_on_pricelist=True,
-        gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
     )
     fee_schedule3 = factory_fee_schedule_model(
         filing_type=factory_filing_type_model("XOTANN3", "TEST"),
@@ -426,7 +428,8 @@ def test_get_fee_with_gst_enabled(client, jwt, session):
         factory_filing_type_model(filing_type_code, "Test Filing Type"),
         factory_corp_type_model(corp_type_code, "Test Corporation Type"),
         factory_fee_model(fee_code, 100.00),
-        gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         show_on_pricelist=True,
     )
 
@@ -472,7 +475,8 @@ def test_get_fee_with_gst_and_service_fees(client, jwt, session):
         factory_corp_type_model(corp_type_code, "Test Corporation Type 2"),
         factory_fee_model(fee_code, 200.00),
         service_fee=service_fee_obj,
-        gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         show_on_pricelist=True,
     )
 
@@ -516,7 +520,8 @@ def test_get_fee_with_gst_disabled(client, jwt, session):
         factory_filing_type_model(filing_type_code, "Test Filing Type 3"),
         factory_corp_type_model(corp_type_code, "Test Corporation Type 3"),
         factory_fee_model(fee_code, 150.00),
-        gst_added=False,
+        statutory_fees_gst_added=False,
+        service_fees_gst_added=False,
         show_on_pricelist=True,
     )
 

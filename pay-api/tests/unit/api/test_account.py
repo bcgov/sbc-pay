@@ -268,7 +268,8 @@ def test_gst_field_serialization_comprehensive(session, client, jwt, app):
         filing_type=filing_type,
         corp_type=corp_type,
         fee_code=fee_code_model,
-        gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         show_on_pricelist=True,
         service_fee=service_fee_code_model,
     )
@@ -295,7 +296,8 @@ def test_gst_field_serialization_comprehensive(session, client, jwt, app):
         filing_type=filing_type_no_gst,
         corp_type=corp_type_no_gst,
         fee_code=fee_code_no_gst_model,
-        gst_added=False,
+        statutory_fees_gst_added=False,
+        service_fees_gst_added=False,
         show_on_pricelist=True,
         service_fee=service_fee_code_no_gst_model,
     )

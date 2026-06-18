@@ -2375,7 +2375,7 @@ python-dotenv = "1.0.1"
 pytz = "2024.1"
 requests = "2.33.0"
 rsa = "4.9"
-sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
+sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", branch = "master", subdirectory = "python"}
 semver = "3.0.2"
 setuptools = "^78.1.1"
 six = "1.16.0"
@@ -2392,9 +2392,9 @@ werkzeug = "^3.1.4"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "main"
-resolved_reference = "f4f20fe7185b77ff19b3cd7c817a626a8b813464"
+url = "https://github.com/jxio/sbc-pay.git"
+reference = "33837"
+resolved_reference = "c920263f93f02781d6528e23b2d45ec61b62b80d"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2986,8 +2986,8 @@ jaeger-client = "*"
 [package.source]
 type = "git"
 url = "https://github.com/bcgov/sbc-common-components.git"
-reference = "HEAD"
-resolved_reference = "22978d810dc4e85c51c3129936686b0a17124e64"
+reference = "master"
+resolved_reference = "cc91b7b54797f24f2dd063910477064c4d67fe0a"
 subdirectory = "python"
 
 [[package]]
@@ -3558,4 +3558,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "d3bae3e3ee7ac90578c466a2ff6a4aa21ba3f0d6d95d2cd3c7b587513ef34e0c"
+content-hash = "30641abe9d3bee03f5c9924135ec0e6e685e1d27f8ce5817358eb6fb540ff736"
