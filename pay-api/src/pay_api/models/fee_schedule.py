@@ -62,7 +62,6 @@ class FeeSchedule(Audit, Versioned):
             "fee_start_date",
             "filing_type_code",
             "future_effective_fee_code",
-            "gst_added",
             "priority_fee_code",
             "service_fees_gst_added",
             "service_fee_code",
@@ -92,7 +91,6 @@ class FeeSchedule(Audit, Versioned):
     service_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     variable = db.Column(Boolean(), default=False, comment="Flag to indicate if the fee is variable")
     show_on_pricelist = db.Column(Boolean(), nullable=False, default=False)
-    gst_added = db.Column(Boolean(), default=False, comment="Flag to indicate if GST is added for this fee schedule")
     statutory_fees_gst_added = db.Column(
         Boolean(),
         default=False,

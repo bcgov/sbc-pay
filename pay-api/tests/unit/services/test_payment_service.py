@@ -444,7 +444,8 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
             corp_type=corp_type,
             fee_code=fee_code,
             service_fee=service_fee,
-            gst_added=gst_enabled,
+            statutory_fees_gst_added=gst_enabled,
+            service_fees_gst_added=gst_enabled,
         )
         for fee_code, service_fee, (_, _, gst_enabled) in zip(fee_codes, service_fee_codes, fee_configs, strict=False)
     ]
@@ -467,7 +468,7 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
     with patch("pay_api.models.tax_rate.TaxRate.get_gst_effective_rate", return_value=Decimal("0.05")):
         # Calculate GST using fee_schedule properties
         invoice_gst_amount = sum(fee.statutory_fees_gst + fee.service_fees_gst for fee in fees)
-        # GST calculated on all fees (all now have gst_added=True):
+        # GST calculated on all fees (all have statutory_fees_gst_added=True and service_fees_gst_added=True):
         # (25.00 + 50.00 + 10.00 + 75.00 + 100.00 + 150.00 + 130.16 + 1003.74 + 99.75 + 465.50 + 200.50 + 63.75)
         # * 0.05 = 118.68
 

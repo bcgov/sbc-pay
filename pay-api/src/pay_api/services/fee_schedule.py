@@ -300,20 +300,6 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._dao.statutory_fees_gst_added = value
 
     @property
-    def gst_added(self):
-        """Backward-compatible GST flag getter."""
-        return self._service_fees_gst_added or self._statutory_fees_gst_added
-
-    @gst_added.setter
-    def gst_added(self, value: bool):
-        """Backward-compatible GST flag setter."""
-        self._service_fees_gst_added = value
-        self._statutory_fees_gst_added = value
-        self._dao.gst_added = value
-        self._dao.service_fees_gst_added = value
-        self._dao.statutory_fees_gst_added = value
-
-    @property
     def variable(self) -> bool:
         """Return the service_fee_code."""
         return self._variable
