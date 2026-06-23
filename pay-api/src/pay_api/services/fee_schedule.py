@@ -313,7 +313,12 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
             "filing_fees": float(self.fee_amount),
             "priority_fees": float(self.priority_fee),
             "future_effective_fees": float(self.future_effective_fee),
-            "tax": {"gst": float(self.service_fees_gst + self.statutory_fees_gst), "pst": float(self.pst)},
+            "tax": {
+                "gst": float(self.service_fees_gst + self.statutory_fees_gst),
+                "filingFeeGst": float(self.statutory_fees_gst),
+                "serviceFeeGst": float(self.service_fees_gst),
+                "pst": float(self.pst),
+            },
             "total": float(self.total),
             "service_fees": float(self._service_fees),
             "processing_fees": 0,

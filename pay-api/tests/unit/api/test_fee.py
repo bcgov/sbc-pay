@@ -455,6 +455,8 @@ def test_get_fee_with_gst_enabled(client, jwt, session):
 
     assert response_data["total"] == expected_total
     assert response_data["tax"]["gst"] == expected_gst
+    assert response_data["tax"]["filingFeeGst"] == expected_gst
+    assert response_data["tax"]["serviceFeeGst"] == 0.0
     assert response_data["tax"]["pst"] == 0.0
     assert response_data["priorityFees"] == 0.0
     assert response_data["futureEffectiveFees"] == 0.0
@@ -504,6 +506,8 @@ def test_get_fee_with_gst_and_service_fees(client, jwt, session):
 
     assert response_data["total"] == expected_total
     assert response_data["tax"]["gst"] == expected_total_gst
+    assert response_data["tax"]["filingFeeGst"] == expected_filing_gst
+    assert response_data["tax"]["serviceFeeGst"] == expected_service_gst
     assert response_data["tax"]["pst"] == 0.0
     assert response_data["priorityFees"] == 0.0
     assert response_data["futureEffectiveFees"] == 0.0
@@ -539,6 +543,8 @@ def test_get_fee_with_gst_disabled(client, jwt, session):
     assert response_data["serviceFees"] == 0.0
     assert response_data["total"] == 150.0  # No GST added
     assert response_data["tax"]["gst"] == 0.0  # GST should be 0
+    assert response_data["tax"]["filingFeeGst"] == 0.0
+    assert response_data["tax"]["serviceFeeGst"] == 0.0
     assert response_data["tax"]["pst"] == 0.0
     assert response_data["priorityFees"] == 0.0
     assert response_data["futureEffectiveFees"] == 0.0
@@ -579,6 +585,8 @@ def test_get_fee_with_service_fee_gst_only(client, jwt, session):
     expected_total = 200.0 + 25.0 + expected_service_gst
 
     assert response_data["tax"]["gst"] == expected_service_gst
+    assert response_data["tax"]["filingFeeGst"] == 0.0
+    assert response_data["tax"]["serviceFeeGst"] == expected_service_gst
     assert response_data["total"] == expected_total
 
 
