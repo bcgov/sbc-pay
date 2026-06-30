@@ -1,0 +1,88 @@
+version: 2
+updates:
+  # Python dependencies — pay-api
+  - package-ecosystem: "pip"
+    directory: "/pay-api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "skip-changelog"
+
+  # Python dependencies — pay-queue
+  - package-ecosystem: "pip"
+    directory: "/pay-queue"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "skip-changelog"
+
+  # Python dependencies — pay-admin
+  - package-ecosystem: "pip"
+    directory: "/pay-admin"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "skip-changelog"
+
+  # Python dependencies — bcol-api
+  - package-ecosystem: "pip"
+    directory: "/bcol-api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "skip-changelog"
+
+  # Python dependencies — payment-jobs
+  - package-ecosystem: "pip"
+    directory: "/jobs/payment-jobs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "skip-changelog"
+
+  # Python dependencies — ftp-poller
+  - package-ecosystem: "pip"
+    directory: "/jobs/ftp-poller"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "skip-changelog"
+
+  # Python dependencies — notebook-report
+  - package-ecosystem: "pip"
+    directory: "/jobs/notebook-report"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "skip-changelog"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "skip-changelog"

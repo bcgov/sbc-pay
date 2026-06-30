@@ -66,6 +66,16 @@ class Error(Enum):
 
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE", HTTPStatus.SERVICE_UNAVAILABLE
     INVALID_REQUEST = "INVALID_REQUEST", HTTPStatus.BAD_REQUEST, "Invalid Request"
+    PAYMENT_REQUIRES_LOGIN = (
+        "PAYMENT_REQUIRES_LOGIN",
+        HTTPStatus.UNAUTHORIZED,
+        "Sign in is required to pay this invoice with a credit card.",
+    )
+    INVOICE_PAYMENT_NOT_READY = (
+        "INVOICE_PAYMENT_NOT_READY",
+        HTTPStatus.BAD_REQUEST,
+        ("Payment cannot be started for this invoice, since invoice reference is not yet available."),
+    )
     PATCH_INVALID_ACTION = "PATCH_INVALID_ACTION", HTTPStatus.BAD_REQUEST
 
     PAYMENT_SEARCH_TOO_MANY_RECORDS = (
@@ -82,6 +92,8 @@ class Error(Enum):
     FROZEN_ACCOUNT = "FROZEN_ACCOUNT", HTTPStatus.BAD_REQUEST
 
     CFS_INVOICES_MISMATCH = "CFS_INVOICES_MISMATCH", HTTPStatus.BAD_REQUEST
+
+    CFS_ACCOUNT_SETUP_IN_PROGRESS = "CFS_ACCOUNT_SETUP_IN_PROGRESS", HTTPStatus.BAD_REQUEST
 
     DOCUMENT_TYPE_INVALID = "DOCUMENT_TYPE_INVALID", HTTPStatus.BAD_REQUEST
 

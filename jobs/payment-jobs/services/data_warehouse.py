@@ -18,29 +18,16 @@ These will get initialized by the application.
 
 # services/data_warehouse.py
 
-from dataclasses import dataclass
-
-from google.cloud.sql.connector import Connector
+from cloud_sql_connector import DBConfig
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 
-@dataclass
-class DBConfig:
-    """Database configuration settings for IAM authentication."""
-
-    instance_connection_name: str  # Format: "project:region:instance"
-    database: str
-    user: str  # IAM user email format: "user@project.iam"
-    enable_iam_auth: bool = True
-
-
 class DataWarehouseDB:
-    """Data Warehouse connection using IAM authentication."""
+    """Data Warehouse connection using cloud_sql_connector."""
 
     def __init__(self, app=None):
         """Initialize the DataWarehouseDB instance."""
-        self.connector = None
         self.engine = None
         if app:
             self.init_app(app)
@@ -48,29 +35,22 @@ class DataWarehouseDB:
     def init_app(self, app, test_connection=True):
         """Initialize with option to skip connection test."""
         try:
-            # Validate configuration
             required_configs = {
                 "DW_UNIX_SOCKET": "Instance connection name",
                 "DW_NAME": "Database name",
                 "DW_IAM_USER": "IAM user email",
             }
-
             missing = [k for k in required_configs if not app.config.get(k)]
             if missing:
                 raise ValueError(f"Missing configs: {', '.join(missing)}")
 
-            self.connector = Connector()
-
             db_config = DBConfig(
-                instance_connection_name=app.config["DW_UNIX_SOCKET"],
+                instance_name=app.config["DW_UNIX_SOCKET"],
                 database=app.config["DW_NAME"],
                 user=app.config["DW_IAM_USER"],
-                enable_iam_auth=True,
-            )
-
-            self.engine = create_engine(
-                "postgresql+pg8000://",
-                creator=lambda: self._get_iam_connection(db_config),
+                ip_type="public",
+                schema="public",
+                driver="pg8000",
                 pool_size=5,
                 max_overflow=2,
                 pool_timeout=10,
@@ -78,25 +58,19 @@ class DataWarehouseDB:
                 connect_args={"use_native_uuid": False},
             )
 
+            self.engine = create_engine(
+                "postgresql+pg8000://",
+                **db_config.get_engine_options(),
+            )
+
             if test_connection:
                 self._test_connection()
 
         except Exception as e:
             app.logger.error(f"Data Warehouse init failed: {str(e)}")
-            if self.connector:
-                self.connector.close()
             raise
 
-    def _get_iam_connection(self, db_config: DBConfig):
-        """Establish connection using IAM authentication."""
-        return self.connector.connect(
-            db_config.instance_connection_name,
-            "pg8000",
-            ip_type="public",
-            db=db_config.database,
-            user=db_config.user,
-            enable_iam_auth=db_config.enable_iam_auth,
-        )
+    # No longer needed: connection is handled by cloud_sql_connector.getconn
 
     def _test_connection(self):
         """Test the database connection using proper SQLAlchemy text() construct."""
@@ -106,9 +80,15 @@ class DataWarehouseDB:
             print(f"Connection successful. Database version: {result[0]}")  # noqa: T201
 
     def teardown(self, exception=None):  # noqa: ARG002 - required by Flask interface
-        """Clean up resources."""
-        if self.connector:
-            self.connector.close()
+        """Clean up resources: dispose engine and close connector."""
+        if self.engine:
+            self.engine.dispose()
+        try:
+            from cloud_sql_connector import close_connector
+
+            close_connector()
+        except ImportError:
+            pass
 
     @property
     def session(self):

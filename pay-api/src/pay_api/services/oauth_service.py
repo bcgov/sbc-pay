@@ -101,12 +101,12 @@ class OAuthService:
                 return response.iter_content()
 
         except (ReqConnectionError, ConnectTimeout) as exc:
-            current_app.logger.error("---Error on POST---")
+            current_app.logger.error(f"---Error on POST--- {endpoint}")
             current_app.logger.error(exc)
             raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
             current_app.logger.error(
-                f"HTTPError on POST with status code {exc.response.status_code if exc.response is not None else ''}"
+                f"HTTPError on POST with status code {exc.response.status_code if exc.response is not None else ''} {endpoint}"
             )
             if exc.response and exc.response.status_code >= 500:
                 raise ServiceUnavailableException(exc) from exc
@@ -176,13 +176,13 @@ class OAuthService:
             )
             response.raise_for_status()
         except (ReqConnectionError, ConnectTimeout) as exc:
-            current_app.logger.error("---Error on GET---")
+            current_app.logger.error(f"---Error on GET--- {endpoint}")
             current_app.logger.error(exc)
             raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
             if exc.response is None or exc.response.status_code != 404:
                 current_app.logger.error(
-                    f"HTTPError on GET with status code {exc.response.status_code if exc.response is not None else ''}"
+                    f"HTTPError on GET with status code {exc.response.status_code if exc.response is not None else ''} {endpoint}"
                 )
             if exc.response is not None:
                 if exc.response.status_code >= 500:

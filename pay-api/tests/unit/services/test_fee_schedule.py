@@ -75,7 +75,7 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
         "filing_fees": 100,
         "service_fees": 0,
         "total": 100,
-        "tax": {"gst": 0, "pst": 0},
+        "tax": {"gst": 0, "filingFeeGst": 0, "serviceFeeGst": 0, "pst": 0},
         "priority_fees": 0,
         "future_effective_fees": 0,
         "processing_fees": 0,
@@ -307,7 +307,8 @@ def test_fee_schedule_gst_properties(session):
         corp_type_code=CORP_TYPE_CODE,
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
-        gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         created_by="TEST",
     )
     fee_schedule_model.save()
@@ -347,7 +348,8 @@ def test_fee_schedule_gst_properties_disabled(session):
         corp_type_code=CORP_TYPE_CODE,
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
-        gst_added=False,
+        statutory_fees_gst_added=False,
+        service_fees_gst_added=False,
         created_by="TEST",
     )
     fee_schedule_model.save()
@@ -375,7 +377,8 @@ def test_fee_schedule_gst_properties_with_zero_fees(session):
         corp_type_code=CORP_TYPE_CODE,
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
-        gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         created_by="TEST",
     )
     fee_schedule_model.save()
@@ -403,7 +406,8 @@ def test_fee_schedule_gst_properties_rounding(session):
         corp_type_code=CORP_TYPE_CODE,
         fee_code=FEE_CODE,
         fee_start_date=datetime.now(tz=UTC).date(),
-        gst_added=True,
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
         created_by="TEST",
     )
     fee_schedule_model.save()

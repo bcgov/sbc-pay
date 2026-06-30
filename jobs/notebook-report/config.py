@@ -3,6 +3,7 @@
 import ast
 import os
 
+from cloud_sql_connector import DBConfig, getconn
 from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
@@ -40,15 +41,32 @@ class Config:
     # Used for local dev runs.
     DISABLE_EMAIL = os.getenv("DISABLE_EMAIL", "false").lower() == "true"
 
-    PAY_USER = os.getenv("PAY_USER", "")
-    PAY_PASSWORD = os.getenv("PAY_PASSWORD", "")
-    PAY_DB_NAME = os.getenv("PAY_DB_NAME", "")
-    PAY_HOST = os.getenv("PAY_HOST", "")
-    PAY_PORT = os.getenv("PAY_PORT", "5432")
-    if DB_UNIX_SOCKET := os.getenv("PAY_DB_UNIX_SOCKET", None):
-        SQLALCHEMY_DATABASE_URI = (
-            f"postgresql+pg8000://{PAY_USER}:{PAY_PASSWORD}@/{PAY_DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432"
-        )
+    # POSTGRESQL
+    DB_USER = os.getenv("PAY_USER", "")
+    DB_NAME = os.getenv("PAY_DB_NAME", "")
+
+    # Cloud SQL connector support
+    CLOUDSQL_INSTANCE_CONNECTION_NAME = os.getenv("CLOUDSQL_INSTANCE", "")
+    DB_IP_TYPE = os.getenv("DATABASE_IP_TYPE", "private").lower()
+
+    if CLOUDSQL_INSTANCE_CONNECTION_NAME:
+        SQLALCHEMY_DATABASE_URI = "postgresql+pg8000://"
     else:
-        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{PAY_USER}:{PAY_PASSWORD}@{PAY_HOST}:{PAY_PORT}/{PAY_DB_NAME}"
+        DB_PASSWORD = os.getenv("PAY_PASSWORD", "")
+        DB_HOST = os.getenv("PAY_HOST", "")
+        DB_PORT = os.getenv("PAY_PORT", "5432")
+        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
     OVERRIDE_CURRENT_DATE = os.getenv("OVERRIDE_CURRENT_DATE", "")
+
+
+def get_conn():
+    """Return a new DBAPI connection via Cloud SQL Connector."""
+    config = DBConfig(
+        instance_name=Config.CLOUDSQL_INSTANCE_CONNECTION_NAME,
+        database=Config.DB_NAME,
+        user=Config.DB_USER,
+        ip_type=Config.DB_IP_TYPE,
+        schema="public",
+    )
+    return getconn(config)

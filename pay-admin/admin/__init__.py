@@ -18,6 +18,7 @@ This module is the API for the Legal Entity system.
 
 import os
 
+from cloud_sql_connector import setup_pg8000_close_event_listener
 from flask import Flask, redirect
 from flask_admin import Admin
 from flask_caching import Cache
@@ -53,6 +54,11 @@ def create_app(run_mode=None):
 
     app.logger.info("init db.")
     db.init_app(app)
+    if run_mode != "testing":
+        with app.app_context():
+            engine = db.engine
+            setup_pg8000_close_event_listener(engine)
+
     ma.init_app(app)
 
     app.logger.info("init flask admin.")

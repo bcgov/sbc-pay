@@ -31,7 +31,7 @@ ENV APP_ENV=${APP_ENV} \
   PIP_DEFAULT_TIMEOUT=100 \
   PIP_ROOT_USER_ACTION=ignore \
   # poetry:
-  POETRY_VERSION=2.3.2 \
+  POETRY_VERSION=2.3.4 \
   POETRY_NO_INTERACTION=1 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_CACHE_DIR='/var/cache/pypoetry' \
@@ -107,4 +107,7 @@ USER web
 FROM development_build AS production_build
 COPY --chown=web:web . /code
 
-CMD gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:app
+ENV OTEL_SDK_DISABLED=true \
+    OTEL_SERVICE_NAME=pay-api
+
+CMD exec gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:app

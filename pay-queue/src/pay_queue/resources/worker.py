@@ -53,6 +53,7 @@ def worker():
             QueueMessageTypes.INCORPORATION.value,
             QueueMessageTypes.REGISTRATION.value,
             QueueMessageTypes.CONTINUATION_IN.value,
+            QueueMessageTypes.AMALGAMATION_APPLICATION.value,
         ]:
             update_temporary_identifier(ce.data)
         else:

@@ -59,13 +59,13 @@ def prefill_form_ft(context):
 @when("the FilingType create form is generated")
 def generate_ft_create_form(context):
     """Generate the create form."""
-    generate_create_form(context, ["code", "description"])
+    generate_create_form(context, ["code", "description", "comments"])
 
 
 @when("the FilingType edit form is generated")
 def generate_ft_edit_form(context):
     """Generate the edit form."""
-    generate_edit_form(context, ["code", "description"])
+    generate_edit_form(context, ["code", "description", "comments"])
 
 
 @when("a new FilingType record is saved")

@@ -689,12 +689,15 @@ def factory_statement_invoices(statement_id: str, invoice_id: str):
 
 
 def activate_pad_account(auth_account_id: str):
-    """Activate the pad account."""
+    """Activate the pad account and populate CFS IDs to simulate a completed CREATE_CFS_ACCOUNTS job run."""
     payment_account = PaymentAccount.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=UTC)
     payment_account.save()
     cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
-    cfs_account.status = "ACTIVE"
+    cfs_account.cfs_party = "11111"
+    cfs_account.cfs_account = "22222"
+    cfs_account.cfs_site = "33333"
+    cfs_account.status = CfsAccountStatus.ACTIVE.value
     cfs_account.save()
 
 
@@ -1110,7 +1113,8 @@ def factory_fee_schedule_model(
     service_fee: FeeCode = None,
     variable=False,
     show_on_pricelist=False,
-    gst_added=False,
+    statutory_fees_gst_added: bool = False,
+    service_fees_gst_added: bool = False,
 ) -> FeeSchedule:
     """Return the fee schedule model."""
     fee_schedule = FeeSchedule(
@@ -1121,7 +1125,8 @@ def factory_fee_schedule_model(
         fee_end_date=fee_end_date,
         variable=variable,
         show_on_pricelist=show_on_pricelist,
-        gst_added=gst_added,
+        statutory_fees_gst_added=statutory_fees_gst_added,
+        service_fees_gst_added=service_fees_gst_added,
         created_by="TEST",
     )
     if service_fee:
@@ -1194,6 +1199,7 @@ def factory_refunds_partial(
     created_name: str = "Test User",
     created_on: datetime = datetime.now(tz=UTC),
     is_credit: bool = None,
+    refund_id: int = None,
 ):
     """Return a RefundsPartial model."""
     if is_credit is None:
@@ -1215,6 +1221,7 @@ def factory_refunds_partial(
         created_name=created_name,
         created_on=created_on,
         is_credit=is_credit,
+        refund_id=refund_id,
     )
     refund_partial.save()
     return refund_partial

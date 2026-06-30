@@ -94,6 +94,7 @@ class DistributionCode(Audit, Versioned, BaseModel):
     service_line = db.Column(db.String(50), nullable=True)
     stob = db.Column(db.String(50), nullable=True)
     project_code = db.Column(db.String(50), nullable=True)
+    comments = db.Column(db.String(250), nullable=True)
 
     start_date = db.Column(db.Date, default=lambda: datetime.now(tz=UTC).date(), nullable=False)
     end_date = db.Column(db.Date, default=None, nullable=True)

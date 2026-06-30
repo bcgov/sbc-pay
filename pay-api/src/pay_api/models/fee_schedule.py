@@ -52,6 +52,7 @@ class FeeSchedule(Audit, Versioned):
     __mapper_args__ = {
         "include_properties": [
             "corp_type_code",
+            "comments",
             "created_by",
             "created_name",
             "created_on",
@@ -61,10 +62,11 @@ class FeeSchedule(Audit, Versioned):
             "fee_start_date",
             "filing_type_code",
             "future_effective_fee_code",
-            "gst_added",
             "priority_fee_code",
+            "service_fees_gst_added",
             "service_fee_code",
             "show_on_pricelist",
+            "statutory_fees_gst_added",
             "updated_by",
             "updated_name",
             "updated_on",
@@ -89,7 +91,17 @@ class FeeSchedule(Audit, Versioned):
     service_fee_code = db.Column(db.String(10), ForeignKey("fee_codes.code"), nullable=True)
     variable = db.Column(Boolean(), default=False, comment="Flag to indicate if the fee is variable")
     show_on_pricelist = db.Column(Boolean(), nullable=False, default=False)
-    gst_added = db.Column(Boolean(), default=False, comment="Flag to indicate if GST is added for this fee schedule")
+    statutory_fees_gst_added = db.Column(
+        Boolean(),
+        default=False,
+        comment="Flag to indicate if GST is added for statutory fees for this fee schedule",
+    )
+    service_fees_gst_added = db.Column(
+        Boolean(),
+        default=False,
+        comment="Flag to indicate if GST is added for service fees for this fee schedule",
+    )
+    comments = db.Column(db.String(250), nullable=True)
 
     filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy="joined", innerjoin=True)
     corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy="joined", innerjoin=True)

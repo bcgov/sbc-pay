@@ -17,9 +17,12 @@ This module is the API for the Payment system.
 """
 
 import os
+import sys
 
+from cloud_sql_connector import setup_pg8000_close_event_listener
 from flask import Flask, request
 from flask_migrate import Migrate, upgrade
+from gcp_tracing import tracing
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 
@@ -42,55 +45,68 @@ def create_app(run_mode=None):
     """Return a configured Flask App using the Factory method."""
     if run_mode is None:
         run_mode = os.getenv("DEPLOYMENT_ENV", "production")
+    # Detect explicit 'db' command (exact match) to avoid false positives
+    # e.g. `flask db upgrade` -> sys.argv[1] == 'db'
+    is_flask_db_command = len(sys.argv) > 1 and sys.argv[1] == "db"
+
     app = Flask(__name__)
     app.env = run_mode
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     flags.init_app(app)
+
     db.init_app(app)
     queue.init_app(app)
     if run_mode != "testing":
+        Migrate(app, db)
         if app.config.get("RUN_MIGRATION") is True:
-            Migrate(app, db)
-            app.logger.info(f"Booting up with CPU count (useful for GCP): {os.cpu_count()}")
-            app.logger.info("Running migration upgrade.")
-            with app.app_context():
-                execute_migrations(app)
-            # Alembic has it's own logging config, we'll need to restore our logging here.
-            setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
-            app.logger.info("Finished migration upgrade.")
+            if is_flask_db_command:
+                app.logger.info("Skipping startup migration execution during flask db command.")
+            else:
+                app.logger.info(f"Booting up with CPU count (useful for GCP): {os.cpu_count()}")
+                app.logger.info("Running migration upgrade.")
+                with app.app_context():
+                    execute_migrations(app)
+                # Alembic has it's own logging config, we'll need to restore our logging here.
+                setup_logging(os.path.join(_Config.PROJECT_ROOT, "logging.conf"), _Config.LOGGING_OVERRIDE_CONFIG)
+                app.logger.info("Finished migration upgrade.")
         else:
+            with app.app_context():
+                engine = db.engine
+                setup_pg8000_close_event_listener(engine)
             app.logger.info("Migrations were executed on prehook.")
+
+    if is_flask_db_command:
+        return app
+
     ma.init_app(app)
     endpoints.init_app(app)
 
     app.after_request(convert_to_camel)
 
+    tracing.init_app(app, db=db)
     setup_jwt_manager(app, jwt)
     ExceptionHandler(app)
     setup_403_logging(app)
+    setup_response_headers(app)
+    register_shellcontext(app)
+    build_cache(app)
+    return app
+
+
+def setup_response_headers(app):
+    """Register after_request handler for CORS and version headers."""
 
     @app.after_request
-    def handle_after_request(response):  # pylint: disable=unused-variable
-        add_version(response)
-        set_access_control_header(response)
-        return response
-
-    def set_access_control_header(response):
+    def handle_after_request(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Headers"] = (
             "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey, Original-Username, "
             "Original-Sub"
         )
-
-    def add_version(response):  # pylint: disable=unused-variable
-        version = get_run_version()
-        response.headers["API"] = f"pay_api/{version}"
+        response.headers["Access-Control-Max-Age"] = "86400"
+        response.headers["API"] = f"pay_api/{get_run_version()}"
         return response
-
-    register_shellcontext(app)
-    build_cache(app)
-    return app
 
 
 def setup_403_logging(app):

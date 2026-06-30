@@ -82,18 +82,20 @@ def test_line_invalid_lookup(session):
 
 
 @pytest.mark.parametrize(
-    "gst_added,has_service_fees,expected_filing_fees,expected_service_fees,expected_statutory_gst,expected_service_gst,"
-    "test_id",
+    "statutory_fees_gst_added,service_fees_gst_added,has_service_fees,"
+    "expected_filing_fees,expected_service_fees,expected_statutory_gst,expected_service_gst,test_id",
     [
-        (True, False, 30.00, 0.00, 1.50, 0.00, "gst_enabled_no_service"),
-        (False, False, 30.00, 0.00, 0.00, 0.00, "gst_disabled_no_service"),
-        (True, True, 30.00, 0.00, 1.50, 0.00, "gst_enabled_with_service"),
+        (True, True, False, 30.00, 0.00, 1.50, 0.00, "both_gst_enabled_no_service"),
+        (False, False, False, 30.00, 0.00, 0.00, 0.00, "both_gst_disabled_no_service"),
+        (True, False, False, 30.00, 0.00, 1.50, 0.00, "statutory_only_no_service"),
+        (False, True, False, 30.00, 0.00, 0.00, 0.00, "service_only_no_service"),
     ],
     ids=lambda x: x[-1] if isinstance(x, tuple) else str(x),
 )
 def test_payment_line_item_gst_calculation(
     session,
-    gst_added,
+    statutory_fees_gst_added,
+    service_fees_gst_added,
     has_service_fees,
     expected_filing_fees,
     expected_service_fees,
@@ -112,8 +114,10 @@ def test_payment_line_item_gst_calculation(
 
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type("CP", "OTANN")
 
-    original_gst_added = fee_schedule.gst_added
-    fee_schedule.gst_added = gst_added
+    original_statutory_fees_gst_added = fee_schedule.statutory_fees_gst_added
+    original_service_fees_gst_added = fee_schedule.service_fees_gst_added
+    fee_schedule.statutory_fees_gst_added = statutory_fees_gst_added
+    fee_schedule.service_fees_gst_added = service_fees_gst_added
     fee_schedule.save()
 
     try:
@@ -134,5 +138,6 @@ def test_payment_line_item_gst_calculation(
             assert saved_line_item.statutory_fees_gst == expected_statutory_gst
             assert saved_line_item.service_fees_gst == expected_service_gst
     finally:
-        fee_schedule.gst_added = original_gst_added
+        fee_schedule.statutory_fees_gst_added = original_statutory_fees_gst_added
+        fee_schedule.service_fees_gst_added = original_service_fees_gst_added
         fee_schedule.save()

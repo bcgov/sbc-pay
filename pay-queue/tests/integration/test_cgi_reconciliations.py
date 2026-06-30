@@ -37,7 +37,6 @@ from pay_api.models import PartnerDisbursements as PartnerDisbursementsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
@@ -592,7 +591,15 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     assert partner_disbursement.processed_on
 
 
-def test_successful_payment_ejv_reconciliations(session, app, client):
+@pytest.mark.parametrize(
+    "service_fees_gst,statutory_fees_gst",
+    [
+        (0.075, 5.0),  # GST on both service and statutory fees.
+        (0.00, 5.0),  # GST on statutory fees only.
+        (0.075, 0.0),  # GST on service fees only.
+    ],
+)
+def test_successful_payment_ejv_reconciliations(session, app, client, service_fees_gst, statutory_fees_gst):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -642,7 +649,7 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
     ejv_file_id = ejv_file.id
 
     feedback_content = (
-        f"GABG...........00000000{ejv_file_id}...\n"
+        f"GABG...........{ejv_file_id:09d}...\n"
         f"..BH...0000................................................................................."
         f".....................................................................CGI\n"
     )
@@ -650,7 +657,8 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
     jv_accounts = [jv_account_1, jv_account_2, jv_account_3, jv_account_4]
     inv_ids = []
     jv_account_ids = []
-    inv_total_amount = 106.5  # 100 + 1.5 + 5.0 GST
+    inv_total_amount = round(100 + 1.5 + service_fees_gst + statutory_fees_gst, 2)
+    zero_gst_amount = f"{0:.2f}".zfill(15)
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
         inv = factory_invoice(
@@ -667,8 +675,8 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
             filing_fees=100,
             total=100,
             service_fees=1.5,
-            service_fees_gst=0.075,  # 5% GST on service fees (1.5 * 0.05)
-            statutory_fees_gst=5.0,  # 5% GST on filing fees (100 * 0.05)
+            service_fees_gst=service_fees_gst,
+            statutory_fees_gst=statutory_fees_gst,
             fee_dist_id=dist_code.distribution_code_id,
         )
         inv_ids.append(inv.id)
@@ -684,71 +692,82 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
             ejv_header_id=ejv_header.id,
             disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).save()
+        fi_journal = f"FI{ejv_header.id:08d}"
         inv_total = f"{inv.total:.2f}".zfill(15)
         pay_line_amount = f"{line.total:.2f}".zfill(15)
         service_fee_amount = f"{line.service_fees:.2f}".zfill(15)
         statutory_fees_gst_amount = f"{line.statutory_fees_gst:.2f}".zfill(15)
         service_fees_gst_amount = f"{line.service_fees_gst:.2f}".zfill(15)
+        if statutory_fees_gst == 0:
+            assert statutory_fees_gst_amount == zero_gst_amount
+        if service_fees_gst == 0:
+            assert service_fees_gst_amount == zero_gst_amount
 
         # one JD has a shortened width (outside of spec).
         jh_and_jd = (
-            f"..JH...FI0000000{ejv_header.id}.........................{inv_total}....................."
+            f"..JH...{fi_journal}.........................{inv_total}....................."
             f"............................................................................................"
             f"............................................................................................"
             f".........0000..............................................................................."
             f".......................................................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000120230529................................................"
+            f"..JD...{fi_journal}0000120230529................................................"
             f"...........{pay_line_amount}D................................................................."
             f"...................................{inv.id}                                             "
             f"                                                 0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000220230529................................................"
+            f"..JD...{fi_journal}0000220230529................................................"
             f"...........{pay_line_amount}C................................................................."
             f"...................................{inv.id}                                             "
             f"                                                               0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000320230529..................................................."
+            f"..JD...{fi_journal}0000320230529..................................................."
             f"........{service_fee_amount}D................................................................."
             f"...................................{inv.id}                                             "
             f"                                                        0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000420230529................................................"
+            f"..JD...{fi_journal}0000420230529................................................"
             f"...........{service_fee_amount}C.............................................................."
             f"......................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000520230529..................................................."
+            f"..JD...{fi_journal}0000520230529..................................................."
             f"........{statutory_fees_gst_amount}D................................................................."
             f"...................................{inv.id}                                             "
             f"                                                        0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000620230529................................................"
+            f"..JD...{fi_journal}0000620230529................................................"
             f"...........{statutory_fees_gst_amount}C.............................................................."
             f"......................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000720230529..................................................."
+            f"..JD...{fi_journal}0000720230529..................................................."
             f"........{service_fees_gst_amount}D................................................................."
             f"...................................{inv.id}                                             "
             f"                                                        0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000820230529................................................"
+            f"..JD...{fi_journal}0000820230529................................................"
             f"...........{service_fees_gst_amount}C.............................................................."
             f"......................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
         )
+        if statutory_fees_gst == 0:
+            assert f"{statutory_fees_gst_amount}D" in jh_and_jd
+            assert f"{statutory_fees_gst_amount}C" in jh_and_jd
+        if service_fees_gst == 0:
+            assert f"{service_fees_gst_amount}D" in jh_and_jd
+            assert f"{service_fees_gst_amount}C" in jh_and_jd
         feedback_content = feedback_content + jh_and_jd
     feedback_content = (
-        feedback_content + f"..BT.......FI0000000{ejv_header.id}000000000000002{inv_total}0000......."
+        feedback_content + f"..BT.......FI{ejv_header.id:08d}000000000000002{inv_total}0000......."
         f"........................................................................."
         f"......................................................................CGI"
     )
@@ -795,6 +814,7 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
         assert receipt
 
     # Assert payment records
+    expected_total = InvoiceModel.find_by_id(inv_ids[0]).total
     for jv_account_id in jv_account_ids:
         account = PaymentAccountModel.find_by_id(jv_account_id)
         payment = PaymentModel.search_account_payments(
@@ -804,10 +824,20 @@ def test_successful_payment_ejv_reconciliations(session, app, client):
             limit=100,
         )[0]
         assert len(payment) == 1
-        assert payment[0][0].paid_amount == inv_total_amount
+        assert payment[0][0].paid_amount == expected_total
 
 
-def test_successful_payment_reversal_ejv_reconciliations(session, app, client, mocker):
+@pytest.mark.parametrize(
+    "service_fees_gst,statutory_fees_gst",
+    [
+        (0.075, 5.0),  # GST on both service and statutory fees.
+        (0.00, 5.0),  # GST on statutory fees only.
+        (0.075, 0.0),  # GST on service fees only.
+    ],
+)
+def test_successful_payment_reversal_ejv_reconciliations(
+    session, app, client, mocker, service_fees_gst, statutory_fees_gst
+):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -861,7 +891,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
     ejv_file_id = ejv_file.id
 
     feedback_content = (
-        f"GABG...........00000000{ejv_file_id}...\n"
+        f"GABG...........{ejv_file_id:09d}...\n"
         f"..BH...0000................................................................................."
         f".....................................................................CGI\n"
     )
@@ -869,7 +899,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
     jv_accounts = [jv_account_1, jv_account_3]
     inv_ids = []
     jv_account_ids = []
-    inv_total_amount = 106.5  # 100 + 1.5 + 5.0 GST
+    inv_total_amount = round(100 + 1.5 + service_fees_gst + statutory_fees_gst, 2)
+    zero_gst_amount = f"{0:.2f}".zfill(15)
     for jv_acc in jv_accounts:
         jv_account_ids.append(jv_acc.id)
         inv = factory_invoice(
@@ -886,8 +917,8 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
             filing_fees=100,
             total=100,
             service_fees=1.5,
-            service_fees_gst=0.075,  # 5% GST on service fees (1.5 * 0.05)
-            statutory_fees_gst=5.0,  # 5% GST on filing fees (100 * 0.05)
+            service_fees_gst=service_fees_gst,
+            statutory_fees_gst=statutory_fees_gst,
             fee_dist_id=dist_code.distribution_code_id,
         )
         inv_ids.append(inv.id)
@@ -903,69 +934,80 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
             ejv_header_id=ejv_header.id,
             disbursement_status_code=DisbursementStatus.UPLOADED.value,
         ).save()
+        fi_journal = f"FI{ejv_header.id:08d}"
         inv_total = f"{inv.total:.2f}".zfill(15)
         pay_line_amount = f"{line.total:.2f}".zfill(15)
         service_fee_amount = f"{line.service_fees:.2f}".zfill(15)
         statutory_fees_gst_amount = f"{line.statutory_fees_gst:.2f}".zfill(15)
         service_fees_gst_amount = f"{line.service_fees_gst:.2f}".zfill(15)
+        if statutory_fees_gst == 0:
+            assert statutory_fees_gst_amount == zero_gst_amount
+        if service_fees_gst == 0:
+            assert service_fees_gst_amount == zero_gst_amount
         jh_and_jd = (
-            f"..JH...FI0000000{ejv_header.id}.........................{inv_total}....................."
+            f"..JH...{fi_journal}.........................{inv_total}....................."
             f"............................................................................................"
             f"............................................................................................"
             f".........0000..............................................................................."
             f".......................................................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000120230529................................................"
+            f"..JD...{fi_journal}0000120230529................................................"
             f"...........{pay_line_amount}C................................................................."
             f"...................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000220230529................................................"
+            f"..JD...{fi_journal}0000220230529................................................"
             f"...........{pay_line_amount}D................................................................."
             f"...................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000320230529..................................................."
+            f"..JD...{fi_journal}0000320230529..................................................."
             f"........{service_fee_amount}C................................................................."
             f"...................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000420230529................................................"
+            f"..JD...{fi_journal}0000420230529................................................"
             f"...........{service_fee_amount}D.............................................................."
             f"......................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000520230529..................................................."
+            f"..JD...{fi_journal}0000520230529..................................................."
             f"........{statutory_fees_gst_amount}C................................................................."
             f"...................................{inv.id}                                             "
             f"                                                        0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000620230529................................................"
+            f"..JD...{fi_journal}0000620230529................................................"
             f"...........{statutory_fees_gst_amount}D.............................................................."
             f"......................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000720230529..................................................."
+            f"..JD...{fi_journal}0000720230529..................................................."
             f"........{service_fees_gst_amount}C................................................................."
             f"...................................{inv.id}                                             "
             f"                                                        0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
-            f"..JD...FI0000000{ejv_header.id}0000820230529................................................"
+            f"..JD...{fi_journal}0000820230529................................................"
             f"...........{service_fees_gst_amount}D.............................................................."
             f"......................................{inv.id}                                             "
             f"                                                                0000........................"
             f"............................................................................................"
             f"..................................CGI\n"
         )
+        if statutory_fees_gst == 0:
+            assert f"{statutory_fees_gst_amount}C" in jh_and_jd
+            assert f"{statutory_fees_gst_amount}D" in jh_and_jd
+        if service_fees_gst == 0:
+            assert f"{service_fees_gst_amount}C" in jh_and_jd
+            assert f"{service_fees_gst_amount}D" in jh_and_jd
         feedback_content = feedback_content + jh_and_jd
     feedback_content = (
-        feedback_content + f"..BT.......FI0000000{ejv_header.id}000000000000002{inv_total_amount:.2f}0000......."
+        feedback_content + f"..BT.......FI{ejv_header.id:08d}000000000000002{inv_total_amount:.2f}0000......."
         f"........................................................................."
         f"......................................................................CGI"
     )
@@ -1011,6 +1053,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
 
     mock_publish.assert_called()
     # Assert payment records
+    expected_total = InvoiceModel.find_by_id(inv_ids[0]).total
     for jv_account_id in jv_account_ids:
         account = PaymentAccountModel.find_by_id(jv_account_id)
         payment = PaymentModel.search_account_payments(
@@ -1020,7 +1063,7 @@ def test_successful_payment_reversal_ejv_reconciliations(session, app, client, m
             limit=100,
         )[0]
         assert len(payment) == 1
-        assert payment[0][0].paid_amount == inv_total_amount
+        assert payment[0][0].paid_amount == expected_total
 
 
 def test_successful_refund_reconciliations(session, app, client):
@@ -1083,7 +1126,7 @@ def test_successful_refund_reconciliations(session, app, client):
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
     feedback_content = (
-        f"APBG...........00000000{ejv_file_id}....\n"
+        f"APBG...........{ejv_file_id:09d}....\n"
         f"APBH...0000................................................................................."
         f".....................................................................CGI\n"
         f"APIH...000000000...{rs_numbers[0]}                                         ................"
@@ -1136,7 +1179,7 @@ def test_successful_refund_reconciliations(session, app, client):
         f"............................0000..........................................................."
         f"........................................................................................"
         f"...CGI\n"
-        f"APBT...........00000000{ejv_file_id}..............................0000....................."
+        f"APBT...........{ejv_file_id:09d}..............................0000....................."
         f"..........................................................................................."
         f"......................................CGI\n"
     )
@@ -1222,7 +1265,7 @@ def test_failed_refund_reconciliations(session, app, client):
     # Just create feedback file to mock the real feedback file.
     # Set first routing slip to be success and second to ve failed
     feedback_content = (
-        f"APBG...........00000000{ejv_file_id}....\n"
+        f"APBG...........{ejv_file_id:09d}....\n"
         f"APBH...0000................................................................................."
         f".....................................................................CGI\n"
         f"APIH...000000000...{rs_numbers[0]}                                         ................"
@@ -1275,7 +1318,7 @@ def test_failed_refund_reconciliations(session, app, client):
         f"............................0001..........................................................."
         f"........................................................................................"
         f"...CGI\n"
-        f"APBT...........00000000{ejv_file_id}..............................0000....................."
+        f"APBT...........{ejv_file_id:09d}..............................0000....................."
         f"..........................................................................................."
         f"......................................CGI\n"
     )
@@ -1349,7 +1392,7 @@ def test_successful_eft_refund_reconciliations(session, app, client):
 
     # Create and upload a feedback file and check the status.
     feedback_content = (
-        f"APBG...........00000000{ejv_file_id}....\n"
+        f"APBG...........{ejv_file_id:09d}....\n"
         f"APBH...0000................................................................................"
         f"......................................................................CGI\n"
         f"APIH...000000000...{eft_refund_ids[0]}                                         ............"
@@ -1390,7 +1433,7 @@ def test_successful_eft_refund_reconciliations(session, app, client):
         f"......................................0000................................................."
         f"..........................................................................................."
         f"..........CGI\n"
-        f"APBT...........00000000{ejv_file_id}..............................0000....................."
+        f"APBT...........{ejv_file_id:09d}..............................0000....................."
         f"..........................................................................................."
         f"......................................CGI\n"
     )
@@ -1463,7 +1506,7 @@ def test_failed_eft_refund_reconciliations(session, app, client):
 
     # Create and upload a feedback file and check the status.
     feedback_content = (
-        f"APBG...........00000000{ejv_file_id}....\n"
+        f"APBG...........{ejv_file_id:09d}....\n"
         f"APBH...0000................................................................................"
         f"......................................................................CGI\n"
         f"APIH...000000000...{eft_refund_ids[0]}                                         ............"
@@ -1504,7 +1547,7 @@ def test_failed_eft_refund_reconciliations(session, app, client):
         f"......................................0001................................................."
         f"..........................................................................................."
         f"..........CGI\n"
-        f"APBT...........00000000{ejv_file_id}..............................0000....................."
+        f"APBT...........{ejv_file_id:09d}..............................0000....................."
         f"..........................................................................................."
         f"......................................CGI\n"
     )
@@ -1533,39 +1576,20 @@ def test_failed_eft_refund_reconciliations(session, app, client):
     assert eft_refund2.disbursement_status_code == DisbursementStatus.ERRORED.value
 
 
-@pytest.mark.skip(reason="Unused, BCA not currently in production")
 def test_successful_ap_disbursement(session, app, client):
-    """Test Reconciliations worker for ap disbursement."""
-    # 1. Create invoice.
-    # 2. Create a AP reconciliation file.
-    # 3. Assert the status.
-    invoice_ids = []
+    """Test Reconciliations worker for ap disbursement — two PAID invoices both succeed."""
     account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
-    invoice = factory_invoice(
-        payment_account=account,
-        status_code=InvoiceStatus.PAID.value,
-        total=10,
-        corp_type_code="BCA",
-    )
-
-    invoice_ids.append(invoice.id)
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("BCA", "OLAARTOQ")
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
-    line.save()
 
-    refund_invoice = factory_invoice(
-        payment_account=account,
-        status_code=InvoiceStatus.REFUNDED.value,
-        total=10,
-        disbursement_status_code=DisbursementStatus.COMPLETED.value,
-        corp_type_code="BCA",
+    invoice_1 = factory_invoice(
+        payment_account=account, status_code=InvoiceStatus.PAID.value, total=10, corp_type_code="BCA"
     )
-    invoice_ids.append(refund_invoice.id)
+    factory_payment_line_item(invoice_1.id, fee_schedule_id=fee_schedule.fee_schedule_id).save()
 
-    line = factory_payment_line_item(refund_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
-    line.save()
-
-    factory_refund(invoice_id=refund_invoice.id)
+    invoice_2 = factory_invoice(
+        payment_account=account, status_code=InvoiceStatus.PAID.value, total=20, corp_type_code="BCA"
+    )
+    factory_payment_line_item(invoice_2.id, fee_schedule_id=fee_schedule.fee_schedule_id).save()
 
     file_ref = f"INBOX.{datetime.now()}"
     ejv_file = EjvFileModel(
@@ -1581,33 +1605,23 @@ def test_successful_ap_disbursement(session, app, client):
         payment_account_id=account.id,
     ).save()
 
-    EjvLinkModel(
-        link_id=invoice.id,
-        link_type=EJVLinkType.INVOICE.value,
-        ejv_header_id=ejv_header.id,
-        disbursement_status_code=DisbursementStatus.UPLOADED.value,
-    ).save()
-
-    EjvLinkModel(
-        link_id=refund_invoice.id,
-        link_type=EJVLinkType.INVOICE.value,
-        ejv_header_id=ejv_header.id,
-        disbursement_status_code=DisbursementStatus.UPLOADED.value,
-    ).save()
+    for inv in (invoice_1, invoice_2):
+        EjvLinkModel(
+            link_id=inv.id,
+            link_type=EJVLinkType.INVOICE.value,
+            ejv_header_id=ejv_header.id,
+            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+        ).save()
 
     ack_file_name = f"ACK.{file_ref}"
-
     with open(ack_file_name, "a+", encoding="utf-8") as jv_file:
         jv_file.write("")
         jv_file.close()
 
     upload_to_google_bucket(str.encode(""), ack_file_name)
-
     add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
-    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
-
-    invoice_str = [str(invoice_id).zfill(9) for invoice_id in invoice_ids]
+    invoice_str = [str(inv.id).zfill(9) for inv in (invoice_1, invoice_2)]
     feedback_content = (
         f"APBG...........{str(ejv_file_id).zfill(9)}....\n"
         f"APBH...0000................................................................................."
@@ -1662,13 +1676,12 @@ def test_successful_ap_disbursement(session, app, client):
         f"............................0000..........................................................."
         f"........................................................................................"
         f"...CGI\n"
-        f"APBT...........00000000{ejv_file_id}..............................0000....................."
+        f"APBT...........{ejv_file_id:09d}..............................0000....................."
         f"..........................................................................................."
         f"......................................CGI\n"
     )
 
     feedback_file_name = f"FEEDBACK.{file_ref}"
-
     with open(feedback_file_name, "a+", encoding="utf-8") as jv_file:
         jv_file.write(feedback_content)
         jv_file.close()
@@ -1680,19 +1693,14 @@ def test_successful_ap_disbursement(session, app, client):
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
-    for invoice_id in invoice_ids:
-        invoice = InvoiceModel.find_by_id(invoice_id)
-        if invoice.invoice_status_code == InvoiceStatus.PAID.value:
-            assert invoice.disbursement_status_code == DisbursementStatus.COMPLETED.value
-            assert invoice.disbursement_date is not None
-        if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
-            assert invoice.disbursement_status_code == DisbursementStatus.REVERSED.value
-            assert invoice.disbursement_reversal_date is not None
-            refund = RefundModel.find_by_invoice_id(invoice.id)
-            assert refund.gl_posted is not None
+    for inv_id in (invoice_1.id, invoice_2.id):
+        inv = InvoiceModel.find_by_id(inv_id)
+        assert inv.disbursement_status_code == DisbursementStatus.COMPLETED.value
+        assert inv.disbursement_date is not None
+        inv_link = db.session.query(EjvLinkModel).filter(EjvLinkModel.link_id == inv_id).one_or_none()
+        assert inv_link.disbursement_status_code == DisbursementStatus.COMPLETED.value
 
 
-@pytest.mark.skip(reason="Unused, BCA not currently in production")
 def test_failure_ap_disbursement(session, app, client):
     """Test Reconciliations worker for ap disbursement."""
     # 1. Create invoice.
@@ -1823,7 +1831,7 @@ def test_failure_ap_disbursement(session, app, client):
         f"............................0001..........................................................."
         f"........................................................................................"
         f"...CGI\n"
-        f"APBT...........00000000{ejv_file_id}..............................0000....................."
+        f"APBT...........{ejv_file_id:09d}..............................0000....................."
         f"..........................................................................................."
         f"......................................CGI\n"
     )
