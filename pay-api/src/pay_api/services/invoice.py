@@ -509,6 +509,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         if not invoice_dao:
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
+        Invoice._check_for_auth(invoice_dao)
+
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice_dao.payment_account_id)
         cfs_account = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
         org_response = OAuthService.get(
@@ -594,8 +596,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
     @staticmethod
     def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES):
-        # Check if user is authorized to perform this action
-        check_auth(dao.business_identifier, one_of_roles=one_of_roles)
+        # Authorize against the invoice's owning account, not the caller-supplied Account-Id header.
+        account_id = dao.payment_account.auth_account_id if dao.payment_account else None
+        check_auth(dao.business_identifier, account_id=account_id, one_of_roles=one_of_roles)
 
     @staticmethod
     def _add_dynamic_fields(invoice: dict[str, any], calculate_dynamic_fields: bool = False) -> dict[str, any]:
