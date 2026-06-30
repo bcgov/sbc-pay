@@ -595,9 +595,12 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return pdf_response, invoice_pdf_dict.get("reportName")
 
     @staticmethod
-    def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES):
-        # Authorize against the invoice's owning account, not the caller-supplied Account-Id header.
+    @user_context
+    def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES, **kwargs):
+        user: UserContext = kwargs["user"]
         account_id = dao.payment_account.auth_account_id if dao.payment_account else None
+        if user.is_system():
+            account_id = None
         check_auth(dao.business_identifier, account_id=account_id, one_of_roles=one_of_roles)
 
     @staticmethod
