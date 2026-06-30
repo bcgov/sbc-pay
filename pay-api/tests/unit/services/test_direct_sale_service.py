@@ -367,6 +367,61 @@ def test_get_receipt(session, public_user_mock):
     assert rcpt is not None
 
 
+_APPROVED_RESPONSE_URL = (
+    "trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=201.00&paymentMethod=CC"
+    "&cardType=VI&authCode=TEST&trnDate=2020-08-11&pbcTxnNumber=1"
+)
+
+
+@pytest.mark.parametrize(
+    "scenario, pay_response_url, get_token_raises, expected_exception",
+    [
+        (
+            "declined_no_connector_call",
+            "trnApproved=0&trnOrderId=1003598&trnAmount=201.00&pbcTxnNumber=1",
+            False,
+            None,
+        ),
+        (
+            "approved_connector_down",
+            None,  # built in test using _APPROVED_RESPONSE_URL + valid hash
+            True,
+            "ServiceUnavailableException",
+        ),
+        (
+            "no_url_connector_down",
+            None,
+            True,
+            "ServiceUnavailableException",
+        ),
+    ],
+)
+def test_get_receipt_pay_connector_scenarios(
+    session, public_user_mock, scenario, pay_response_url, get_token_raises, expected_exception
+):
+    """Assert get_receipt handles declined payments, connector outages, and missing URL correctly."""
+    if scenario == "approved_connector_down":
+        pay_response_url = f"{_APPROVED_RESPONSE_URL}&hashValue={HashingService.encode(_APPROVED_RESPONSE_URL)}"
+
+    payment_account = factory_payment_account()
+    payment_account.save()
+    invoice = factory_invoice(payment_account)
+    invoice.save()
+    invoice_ref = factory_invoice_reference(invoice.id).save()
+    direct_pay_service = DirectSaleService()
+
+    token_side_effect = HTTPError("502 Server Error") if get_token_raises else None
+    with patch.object(DirectSaleService, "get_token", side_effect=token_side_effect) as mock_get_token:
+        if expected_exception:
+            with pytest.raises(Exception) as excinfo:
+                direct_pay_service.get_receipt(payment_account, pay_response_url, invoice_ref)
+            assert excinfo.type.__name__ == expected_exception
+        else:
+            rcpt = direct_pay_service.get_receipt(payment_account, pay_response_url, invoice_ref)
+            assert rcpt is None
+            mock_get_token.assert_not_called()
+
+
 def test_process_cfs_refund_success(session, monkeypatch):
     """Assert refund is successful, when providing a PAID invoice, receipt, a COMPLETED invoice reference."""
     payment_account = factory_payment_account()

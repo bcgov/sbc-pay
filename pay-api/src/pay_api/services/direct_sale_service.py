@@ -53,7 +53,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
-from ..exceptions import BusinessException  # noqa: TID252
+from ..exceptions import BusinessException, ServiceUnavailableException  # noqa: TID252
 from ..utils.errors import Error  # noqa: TID252
 from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT  # noqa: TID252
 from .oauth_service import OAuthService
@@ -311,6 +311,8 @@ class DirectSaleService(PaymentSystemService, OAuthService):
                     f"Transaction approved but hash mismatch for invoice {invoice_reference.invoice_id}"
                 )
                 return None
+            if trn_approved == "0":
+                return None
             # Get the transaction number from args
             paybc_transaction_number = parsed_args.get("pbcTxnNumber")
 
@@ -323,19 +325,21 @@ class DirectSaleService(PaymentSystemService, OAuthService):
             return None
 
         # Call PAYBC web service, get access token and use it in get txn call
-        access_token = self.get_token().json().get("access_token")
-
         paybc_transaction_url: str = current_app.config.get("PAYBC_DIRECT_PAY_BASE_URL")
         paybc_ref_number: str = current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER")
 
-        transaction_response = self.get(
-            f"{paybc_transaction_url}/paybc/payment/{paybc_ref_number}/{paybc_transaction_number}",
-            access_token,
-            AuthHeaderType.BEARER,
-            ContentType.JSON,
-            return_none_if_404=True,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
-        )
+        try:
+            access_token = self.get_token().json().get("access_token")
+            transaction_response = self.get(
+                f"{paybc_transaction_url}/paybc/payment/{paybc_ref_number}/{paybc_transaction_number}",
+                access_token,
+                AuthHeaderType.BEARER,
+                ContentType.JSON,
+                return_none_if_404=True,
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
+            )
+        except Exception as exc:
+            raise ServiceUnavailableException(exc) from exc
 
         if transaction_response:
             response_json = transaction_response.json()
