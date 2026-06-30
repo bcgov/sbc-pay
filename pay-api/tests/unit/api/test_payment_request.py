@@ -1588,6 +1588,101 @@ def test_payment_request_skip_payment(session, client, jwt, app):
     assert rv.json.get("paid") == rv.json.get("total")
 
 
+def _make_cross_account_auth_mock(owner_account_id: str):
+    """Return a RestService.get side-effect that grants edit only for the owner's account."""
+    from unittest.mock import MagicMock
+
+    def _mock(url, *args, **kwargs):
+        m = MagicMock()
+        if owner_account_id in url:
+            m.json.return_value = {"roles": ["edit"], "account": {"id": owner_account_id}}
+        else:
+            m.json.return_value = {"roles": []}
+        return m
+
+    return _mock
+
+
+def test_get_invoice_cross_account_denied(session, client, jwt, app):
+    """GET /payment-requests/<id> must return 403 when Account-Id is not the invoice's owner."""
+    victim_account = factory_payment_account(auth_account_id="VICTIM_999")
+    victim_account.save()
+    invoice = factory_invoice(payment_account=victim_account)
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": "ATTACKER_222",
+    }
+
+    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("VICTIM_999")):
+        rv = client.get(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
+
+    assert rv.status_code == 403
+
+
+def test_get_invoice_owner_allowed(session, client, jwt, app):
+    """GET /payment-requests/<id> must return 200 when Account-Id matches the invoice's owner."""
+    owner_account = factory_payment_account(auth_account_id="OWNER_999")
+    owner_account.save()
+    invoice = factory_invoice(payment_account=owner_account)
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": "OWNER_999",
+    }
+
+    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("OWNER_999")):
+        rv = client.get(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
+
+    assert rv.status_code == 200
+
+
+def test_delete_invoice_cross_account_denied(session, client, jwt, app):
+    """DELETE /payment-requests/<id> must return 403 when Account-Id is not the invoice's owner."""
+    victim_account = factory_payment_account(auth_account_id="VICTIM_999")
+    victim_account.save()
+    invoice = factory_invoice(payment_account=victim_account)
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": "ATTACKER_222",
+    }
+
+    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("VICTIM_999")):
+        rv = client.delete(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
+
+    assert rv.status_code == 403
+
+
+def test_invoice_report_cross_account_denied(session, client, jwt, app):
+    """POST /payment-requests/<id>/reports must return 403 when Account-Id is not the invoice's owner."""
+    victim_account = factory_payment_account(auth_account_id="VICTIM_999")
+    victim_account.save()
+    invoice = factory_invoice(payment_account=victim_account)
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": "ATTACKER_222",
+    }
+
+    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("VICTIM_999")):
+        rv = client.post(f"/api/v1/payment-requests/{invoice.id}/reports", headers=headers)
+
+    assert rv.status_code == 403
+
+
 def test_payment_request_gst_field_behavior(session, client, jwt, app):
     """Test payment-request POST and GET endpoints have proper GST field behavior."""
     token = jwt.create_jwt(get_claims(), token_header)
