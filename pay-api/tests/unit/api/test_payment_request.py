@@ -1588,14 +1588,18 @@ def test_payment_request_skip_payment(session, client, jwt, app):
     assert rv.json.get("paid") == rv.json.get("total")
 
 
-def _make_cross_account_auth_mock(owner_account_id: str):
-    """Return a RestService.get side-effect that grants edit only for the owner's account."""
+def _make_cross_account_auth_mock(caller_account_id: str):
+    """Return a RestService.get side-effect that grants edit only when the URL matches caller_account_id.
+
+    Pass the account the caller is actually a member of. Any orgs/{other}/authorizations call
+    (i.e. the invoice's real owner when the caller is an attacker) gets an empty-roles response.
+    """
     from unittest.mock import MagicMock
 
     def _mock(url, *args, **kwargs):
         m = MagicMock()
-        if owner_account_id in url:
-            m.json.return_value = {"roles": ["edit"], "account": {"id": owner_account_id}}
+        if caller_account_id in url:
+            m.json.return_value = {"roles": ["edit"], "account": {"id": caller_account_id}}
         else:
             m.json.return_value = {"roles": []}
         return m
@@ -1617,7 +1621,7 @@ def test_get_invoice_cross_account_denied(session, client, jwt, app):
         "Account-Id": "ATTACKER_222",
     }
 
-    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("VICTIM_999")):
+    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("ATTACKER_222")):
         rv = client.get(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
 
     assert rv.status_code == 403
@@ -1657,7 +1661,7 @@ def test_delete_invoice_cross_account_denied(session, client, jwt, app):
         "Account-Id": "ATTACKER_222",
     }
 
-    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("VICTIM_999")):
+    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("ATTACKER_222")):
         rv = client.delete(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
 
     assert rv.status_code == 403
@@ -1677,7 +1681,7 @@ def test_invoice_report_cross_account_denied(session, client, jwt, app):
         "Account-Id": "ATTACKER_222",
     }
 
-    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("VICTIM_999")):
+    with patch("pay_api.services.auth.RestService.get", side_effect=_make_cross_account_auth_mock("ATTACKER_222")):
         rv = client.post(f"/api/v1/payment-requests/{invoice.id}/reports", headers=headers)
 
     assert rv.status_code == 403
