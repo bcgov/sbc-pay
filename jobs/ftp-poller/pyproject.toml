@@ -48,7 +48,7 @@ lovely-pytest-docker = "^0.3.1"
 pytest-asyncio = "^1.4.0.0"
 black = "^26.3.1"
 isort = "^6.1.0"
-flake8-pyproject = "^1.2.3"
+flake8-pyproject = "^1.2.4"
 
 [tool.flake8]
 ignore = ["F401","E402", "Q000", "E203", "W503"]
