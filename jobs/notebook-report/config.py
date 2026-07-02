@@ -57,7 +57,7 @@ class Config:
         DB_PORT = os.getenv("PAY_PORT", "5432")
         SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-    OVERRIDE_CURRENT_DATE = os.getenv("OVERRIDE_CURRENT_DATE", "")
+    OVERRIDE_CURRENT_DATE = os.getenv("OVERRIDE_CURRENT_DATE", "2026-07-01")
 
 
 def get_conn():
