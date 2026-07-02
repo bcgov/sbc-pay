@@ -61,7 +61,7 @@ jobs:
       - name: Call AI model (with fallback)
         id: ai
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
         run: |
           set +e
           ENDPOINT="https://models.github.ai/inference/chat/completions"
