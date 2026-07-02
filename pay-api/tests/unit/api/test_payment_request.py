@@ -358,7 +358,7 @@ def test_delete_completed_payment(session, client, jwt, app):
 
 
 def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
-    """Assert that the endpoint returns 202. The payment will be acceoted to delete."""
+    """Assert that deleting a DIRECT_PAY invoice returns 503 when pay-connector is down."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
@@ -374,7 +374,7 @@ def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
         side_effect=ConnectionError("mocked error"),
     ):
         rv = client.delete(f"/api/v1/payment-requests/{pay_id}", headers=headers)
-        assert rv.status_code == 202
+        assert rv.status_code == 503
 
 
 def test_delete_direct_pay_invoice_blocks_deletion(session, client, jwt, app, auth_mock, mocker):
