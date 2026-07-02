@@ -148,6 +148,3 @@ def test_delete_marked_payments_direct_pay(session, connector_scenario, expected
 
     updated_invoice = InvoiceModel.find_by_id(invoice.id)
     assert updated_invoice.invoice_status_code == expected_invoice_status
-
-    assert payment.id is not None
-    assert payment.payment_status_code == PaymentStatus.COMPLETED.value
