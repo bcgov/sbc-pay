@@ -42,7 +42,7 @@ jupyterlab = ">=4.5.7"
 mistune = ">=3.2.1"
 notebook = ">=7.5.6"
 pillow = ">=12.2.0"
-idna = "^3.10"
+idna = "^3.18"
 cloud-sql-connector = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/cloud-sql-connector", branch = "main" }
 pg8000 = "*"
 cryptography = ">=46.0.5"
