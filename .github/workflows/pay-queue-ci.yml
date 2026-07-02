@@ -24,7 +24,7 @@ jobs:
     if: github.repository == 'bcgov/sbc-pay'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: "true"
 
   linting:
@@ -36,7 +36,7 @@ jobs:
         python-version: [3.12]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
@@ -87,7 +87,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
@@ -121,7 +121,7 @@ jobs:
         python-version: [3.12]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: build to check strictness
         id: build
         run: |
