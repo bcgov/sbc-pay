@@ -63,10 +63,19 @@ jobs:
           CI weakening such as removed tests, '|| true', skipped lint), rule
           violations, and significant quality issues. No style nits.
 
-          Where possible, cite the specific function or line number from the diff.
+          STRICT REQUIREMENTS:
+          - Only report findings with concrete evidence visible in the diff.
+            Quote the specific line(s) that prove the problem.
+          - Never use speculative language: "could", "might", "potential",
+            "if X happens", "may lead to". If you cannot quote the problematic
+            line, do not raise the finding.
+          - Never invent scenarios not shown in the diff (e.g. "if the service
+            is down", "if logging captures sensitive data").
+          - For rule violations, quote the exact code that breaks the rule.
 
-          Output markdown: one-line verdict, then terse bullets with file paths
-          and line references. If clean, one sentence.
+          Output markdown: one-line verdict, then terse bullets with file path,
+          line number, and a one-line quote of the offending code. If clean,
+          one sentence.
           SYS
 
           if [ -n "$RULES" ]; then

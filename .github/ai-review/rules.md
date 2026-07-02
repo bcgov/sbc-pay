@@ -17,8 +17,9 @@
 - CI weakening is a blocker: removed tests, added `|| true`, skipped lint, or `ALLOW_SKIP_PAYMENT=True` in non-dev config
 
 ## Dependencies
-- `poetry.lock` changes must be accompanied by a corresponding `pyproject.toml` change — a lock-only change is suspicious
-- Flag any dependency that introduces network calls, file system access, or subprocess execution
+- If `pyproject.toml` changes, `poetry.lock` must also be updated — a pyproject change without a lock update means the lockfile is stale
+- A `poetry.lock`-only change is normal (transitive dependency updates) — do not flag it
+- Flag any new dependency that introduces network calls, file system access, or subprocess execution
 
 ## Payment logic
 - Invoice status transitions must follow the allowed state machine — flag any direct status assignment that skips `InvoiceStatus` enum checks
