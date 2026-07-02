@@ -311,8 +311,6 @@ class DirectSaleService(PaymentSystemService, OAuthService):
                     f"Transaction approved but hash mismatch for invoice {invoice_reference.invoice_id}"
                 )
                 return None
-            if trn_approved == "0":
-                return None
             # Get the transaction number from args
             paybc_transaction_number = parsed_args.get("pbcTxnNumber")
 
@@ -339,6 +337,10 @@ class DirectSaleService(PaymentSystemService, OAuthService):
                 additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
             )
         except Exception as exc:
+            # If the connector is down and the payment was declined, treat as failed — no need to verify.
+            # If approved, we must not proceed without confirmation from PayBC.
+            if trn_approved == "0":
+                return None
             raise ServiceUnavailableException(exc) from exc
 
         if transaction_response:
