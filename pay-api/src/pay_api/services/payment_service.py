@@ -466,10 +466,11 @@ def _paybc_receipt_is_synced(invoice: Invoice):
         # check existing payment status in PayBC and save receipt
         PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
     except Exception as e:
-        current_app.logger.info(
-            f"PAYBC status for invoice {invoice.id} not found during delete check: {str(e)}",
+        current_app.logger.error(
+            f"PAYBC unavailable while verifying invoice {invoice.id} before delete: {str(e)}",
             exc_info=True,
         )
+        raise BusinessException(Error.SERVICE_UNAVAILABLE) from e
     else:
         raise BusinessException(Error.COMPLETED_PAYMENT)
 

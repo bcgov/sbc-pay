@@ -34,6 +34,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.services.payment_line_item import PaymentLineItem
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, RoutingSlipStatus
+from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_corp_type_model,
     factory_distribution_code,
@@ -262,6 +263,24 @@ def test_delete_completed_payment(session, auth_mock):
     with pytest.raises(Exception) as excinfo:
         PaymentService.delete_invoice(invoice.id)
     assert excinfo.type == BusinessException
+
+
+def test_delete_direct_pay_invoice_pay_connector_down(session, auth_mock, public_user_mock):
+    """Assert delete_invoice raises SERVICE_UNAVAILABLE when pay-connector is unreachable for a DIRECT_PAY invoice."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    invoice.save()
+    invoice_reference = factory_invoice_reference(invoice.id).save()
+    factory_payment(invoice_number=invoice_reference.invoice_number).save()
+
+    with patch(
+        "pay_api.services.payment_service.DirectSaleService.query_order_status",
+        side_effect=HTTPError("502 Server Error"),
+    ):
+        with pytest.raises(BusinessException) as excinfo:
+            PaymentService.delete_invoice(invoice.id)
+        assert excinfo.value.code == Error.SERVICE_UNAVAILABLE.code
 
 
 def test_create_bcol_payment(session, public_user_mock):

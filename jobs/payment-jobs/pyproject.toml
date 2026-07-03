@@ -8,7 +8,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pay-api = { git = "https://github.com/jxio/sbc-pay.git", branch = "33837", subdirectory = "pay-api" }
+pay-api = { git = "https://github.com/sumesh85/sbc-pay.git", branch = "34018", subdirectory = "pay-api" }
 mako = "1.3.12"
 pyasn1 = "0.6.3"
 flask = "^3.0.2"
