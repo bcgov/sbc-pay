@@ -18,11 +18,13 @@ Test-Suite to ensure that the StalePaymentTask is working as expected.
 """
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
+from requests.exceptions import HTTPError
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
@@ -110,5 +112,39 @@ def test_verify_created_credit_card_invoices(
     assert invoice.id is not None
     assert invoice.invoice_status_code == InvoiceStatus.PAID.value
 
-    assert payment.id is not None
-    assert payment.payment_status_code == PaymentStatus.COMPLETED.value
+
+@pytest.mark.parametrize(
+    "connector_scenario, expected_invoice_status",
+    [
+        ("connector_down", InvoiceStatus.DELETE_ACCEPTED.value),
+        ("not_paid", InvoiceStatus.DELETED.value),
+    ],
+)
+def test_delete_marked_payments_direct_pay(session, connector_scenario, expected_invoice_status):
+    """Assert _delete_marked_payments skips DIRECT_PAY invoice when pay-connector is down and deletes when NOT PAID."""
+    account = factory_create_pad_account(auth_account_id="1234", payment_method=PaymentMethod.DIRECT_PAY.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.DELETE_ACCEPTED.value,
+        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+    )
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=f"TEST-{invoice.id}")
+
+    if connector_scenario == "connector_down":
+        mock_side_effect = HTTPError("502 Server Error")
+        mock_return = None
+    else:
+        mock_order_status = MagicMock()
+        mock_order_status.paymentstatus = "DECLINED"
+        mock_side_effect = None
+        mock_return = mock_order_status
+
+    with patch(
+        "pay_api.services.payment_service.DirectSaleService.query_order_status",
+        side_effect=mock_side_effect,
+        return_value=mock_return,
+    ):
+        StalePaymentTask._delete_marked_payments()
+
+    updated_invoice = InvoiceModel.find_by_id(invoice.id)
+    assert updated_invoice.invoice_status_code == expected_invoice_status

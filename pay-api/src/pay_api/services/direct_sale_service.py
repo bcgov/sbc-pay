@@ -53,7 +53,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
-from ..exceptions import BusinessException  # noqa: TID252
+from ..exceptions import BusinessException, ServiceUnavailableException  # noqa: TID252
 from ..utils.errors import Error  # noqa: TID252
 from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT  # noqa: TID252
 from .oauth_service import OAuthService
@@ -297,6 +297,7 @@ class DirectSaleService(PaymentSystemService, OAuthService):
         """Get the receipt details by calling PayBC web service."""
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
         current_app.logger.debug(f"Getting receipt details for invoice {invoice_reference.invoice_id}")
+        trn_approved = None
         if pay_response_url:
             parsed_args = parse_url_params(pay_response_url)
 
@@ -323,19 +324,25 @@ class DirectSaleService(PaymentSystemService, OAuthService):
             return None
 
         # Call PAYBC web service, get access token and use it in get txn call
-        access_token = self.get_token().json().get("access_token")
-
         paybc_transaction_url: str = current_app.config.get("PAYBC_DIRECT_PAY_BASE_URL")
         paybc_ref_number: str = current_app.config.get("PAYBC_DIRECT_PAY_REF_NUMBER")
 
-        transaction_response = self.get(
-            f"{paybc_transaction_url}/paybc/payment/{paybc_ref_number}/{paybc_transaction_number}",
-            access_token,
-            AuthHeaderType.BEARER,
-            ContentType.JSON,
-            return_none_if_404=True,
-            additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
-        )
+        try:
+            access_token = self.get_token().json().get("access_token")
+            transaction_response = self.get(
+                f"{paybc_transaction_url}/paybc/payment/{paybc_ref_number}/{paybc_transaction_number}",
+                access_token,
+                AuthHeaderType.BEARER,
+                ContentType.JSON,
+                return_none_if_404=True,
+                additional_headers={"Pay-Connector": current_app.config.get("PAY_CONNECTOR_AUTH")},
+            )
+        except Exception as exc:
+            # If the connector is down and the payment was declined, treat as failed — no need to verify.
+            # If approved, we must not proceed without confirmation from PayBC.
+            if trn_approved == "0":
+                return None
+            raise ServiceUnavailableException(exc) from exc
 
         if transaction_response:
             response_json = transaction_response.json()
