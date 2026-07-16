@@ -1,6 +1,6 @@
 """add_refund_allowed_to_corp_types
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: 968a2e428d4c
 Revises: 13eeb722e368
 Create Date: 2026-07-16 00:00:00.000000
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "a1b2c3d4e5f6"
+revision = "968a2e428d4c"
 down_revision = "13eeb722e368"
 branch_labels = None
 depends_on = None
