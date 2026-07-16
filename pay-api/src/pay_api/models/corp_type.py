@@ -55,6 +55,7 @@ class CorpType(Audit, Versioned, CodeTable):
             "is_online_banking_allowed",
             "payment_methods",
             "product",
+            "refund_allowed",
             "refund_approval",
             "updated_by",
             "updated_name",
@@ -76,6 +77,7 @@ class CorpType(Audit, Versioned, CodeTable):
     product = db.Column(db.String(20), nullable=True)
     payment_methods = db.Column(db.ARRAY(db.String()), nullable=True)
     refund_approval = db.Column(db.Boolean, nullable=False, default=False)
+    refund_allowed = db.Column(db.Boolean, nullable=False, default=True)
 
     def save(self):
         """Save corp type."""

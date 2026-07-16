@@ -1090,7 +1090,11 @@ def factory_fee_model(fee_code: str, amount: float):
 
 
 def factory_corp_type_model(
-    corp_type_code: str, corp_type_description: str, product_code: str = None, refund_approval: bool = False
+    corp_type_code: str,
+    corp_type_description: str,
+    product_code: str = None,
+    refund_approval: bool = False,
+    refund_allowed: bool = True,
 ):
     """Return the corp type model."""
     corp_type = CorpType(
@@ -1098,6 +1102,7 @@ def factory_corp_type_model(
         description=corp_type_description,
         product=product_code,
         refund_approval=refund_approval,
+        refund_allowed=refund_allowed,
         created_by="TEST",
     )
     corp_type.save()

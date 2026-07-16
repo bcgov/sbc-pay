@@ -21,7 +21,7 @@ from .secured_view import SecuredView
 class CorpTypeConfig(SecuredView):
     """Corp Type config."""
 
-    column_list = ["code", "description", "refund_approval"]
+    column_list = ["code", "description", "refund_approval", "refund_allowed"]
 
     column_searchable_list = ("code",)
     column_sortable_list = ("code",)
@@ -40,6 +40,7 @@ class CorpTypeConfig(SecuredView):
         "is_online_banking_allowed": "Is Online Banking allowed",
         "product": "Product to map in account products",
         "refund_approval": "Refund Approval required",
+        "refund_allowed": "Refunds allowed",
     }
 
     form_choices = {}
@@ -54,6 +55,7 @@ class CorpTypeConfig(SecuredView):
         "is_online_banking_allowed",
         "product",
         "refund_approval",
+        "refund_allowed",
         "comments",
         *SecuredView._AUDIT_FIELDS,
     ]

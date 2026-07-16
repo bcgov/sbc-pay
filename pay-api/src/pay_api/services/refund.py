@@ -208,6 +208,11 @@ class RefundService:
                 raise BusinessException(Error.INVALID_REQUEST)
 
     @classmethod
+    def _validate_corp_type_refund_allowed(cls, invoice: InvoiceModel):
+        if not invoice.corp_type.refund_allowed:
+            raise BusinessException(Error.REFUND_NOT_ALLOWED_FOR_CORP_TYPE)
+
+    @classmethod
     def _validate_refundable_state(cls, invoice: InvoiceModel, is_partial: bool):
         if is_partial:
             cls._validate_allow_partial_refund(invoice)
@@ -237,6 +242,22 @@ class RefundService:
         # For refund request creation the system is allowed to create one but not approve or decline
         if (is_system and not allow_system) or (allowed_products and invoice.corp_type.product not in allowed_products):
             raise BusinessException(Error.REFUND_INSUFFICIENT_PRODUCT_AUTHORIZATION)
+
+    @classmethod
+    def _validate_refund_creation(
+        cls,
+        invoice: InvoiceModel,
+        is_partial: bool,
+        user: UserContext,
+        products: list[str],
+    ):
+        """Run all preflight business rules for creating a refund on an invoice."""
+        cls._validate_corp_type_refund_allowed(invoice)
+        cls._validate_corp_type_role(invoice, user.roles)
+        cls._validate_refundable_state(invoice, is_partial)
+        cls.validate_product_authorization(
+            invoice=invoice, allowed_products=products, is_system=user.is_system(), allow_system=True
+        )
 
     @classmethod
     def _validate_refund_approval_flow(cls, invoice: InvoiceModel, user: UserContext) -> dict | None:
@@ -345,11 +366,7 @@ class RefundService:
 
         invoice = InvoiceModel.find_by_id(invoice_id)
         requires_approval = invoice.corp_type.refund_approval
-        cls._validate_corp_type_role(invoice, user.roles)
-        cls._validate_refundable_state(invoice, is_partial_refund)
-        cls.validate_product_authorization(
-            invoice=invoice, allowed_products=products, is_system=user.is_system(), allow_system=True
-        )
+        cls._validate_refund_creation(invoice, is_partial_refund, user, products)
         if requires_approval:
             auth_user = cls._validate_refund_approval_flow(invoice, user)
 
