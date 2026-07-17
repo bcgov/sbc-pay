@@ -19,6 +19,7 @@ from sqlalchemy import and_, exists, func, select
 from sqlalchemy.orm import column_property
 from sqlalchemy.orm.decl_api import declared_attr
 
+from pay_api.models import CorpType
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceSearchModel, PaymentLineItemSchema, PaymentMethod
 from pay_api.models import Refund as RefundModel
@@ -50,34 +51,41 @@ def get_latest_refund_status_expr():
     return select(latest_refund_subq.c.refund_status).scalar_subquery()
 
 
+def get_corp_type_refund_allowed_expr():
+    """Return an EXISTS clause asserting the invoice's corp type permits refunds."""
+    return exists().where(and_(CorpType.code == InvoiceModel.corp_type_code, CorpType.refund_allowed.is_(True)))
+
+
 def get_full_refundable_expr():
     """Get the full refundable expression."""
     return (
-        exists()
-        .where(
-            and_(
-                PaymentMethod.code == InvoiceModel.payment_method_code,
-                InvoiceModel.invoice_status_code == func.any(PaymentMethod.full_refund_statuses),
-            )
+        and_(
+            exists().where(
+                and_(
+                    PaymentMethod.code == InvoiceModel.payment_method_code,
+                    InvoiceModel.invoice_status_code == func.any(PaymentMethod.full_refund_statuses),
+                )
+            ),
+            get_corp_type_refund_allowed_expr(),
         )
-        .label("full_refundable")
-    )
+    ).label("full_refundable")
 
 
 def get_partial_refundable_expr():
     """Get the partial refundable expression."""
     return (
-        exists()
-        .where(
-            and_(
-                PaymentMethod.code == InvoiceModel.payment_method_code,
-                PaymentMethod.partial_refund.is_(True),
-                InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
-                InvoiceModel.refund_date.is_(None),
-            )
+        and_(
+            exists().where(
+                and_(
+                    PaymentMethod.code == InvoiceModel.payment_method_code,
+                    PaymentMethod.partial_refund.is_(True),
+                    InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value,
+                    InvoiceModel.refund_date.is_(None),
+                )
+            ),
+            get_corp_type_refund_allowed_expr(),
         )
-        .label("partial_refundable")
-    )
+    ).label("partial_refundable")
 
 
 class InvoiceCompositeModel(InvoiceModel):
