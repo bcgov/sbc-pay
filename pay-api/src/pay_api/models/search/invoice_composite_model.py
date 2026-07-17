@@ -19,9 +19,8 @@ from sqlalchemy import and_, exists, func, select
 from sqlalchemy.orm import column_property
 from sqlalchemy.orm.decl_api import declared_attr
 
-from pay_api.models import CorpType
+from pay_api.models import CorpType, InvoiceSearchModel, PaymentLineItemSchema, PaymentMethod
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import InvoiceSearchModel, PaymentLineItemSchema, PaymentMethod
 from pay_api.models import Refund as RefundModel
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import InvoiceStatus
@@ -53,7 +52,12 @@ def get_latest_refund_status_expr():
 
 def get_corp_type_refund_allowed_expr():
     """Return an EXISTS clause asserting the invoice's corp type permits refunds."""
-    return exists().where(and_(CorpType.code == InvoiceModel.corp_type_code, CorpType.refund_allowed.is_(True)))
+    return (
+        select(CorpType.code)
+        .where(and_(CorpType.code == InvoiceModel.corp_type_code, CorpType.refund_allowed.is_(True)))
+        .correlate(InvoiceModel)
+        .exists()
+    )
 
 
 def get_full_refundable_expr():
