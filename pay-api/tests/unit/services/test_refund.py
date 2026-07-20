@@ -37,8 +37,10 @@ from pay_api.utils.enums import (
     PaymentStatus,
     TransactionStatus,
 )
+from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext
 from tests.utilities.base_test import (
+    factory_corp_type_model,
     factory_eft_credit,
     factory_eft_credit_invoice_link,
     factory_eft_file,
@@ -64,6 +66,44 @@ def test_create_refund_for_unpaid_invoice(session):
     with pytest.raises(Exception) as excinfo:
         RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
     assert excinfo.type == BusinessException
+
+
+def test_validate_corp_type_refund_allowed_raises_when_disallowed():
+    """Assert the validator raises when the corp type has refunds disabled."""
+    invoice = Mock(spec=InvoiceModel)
+    invoice.corp_type = Mock(refund_allowed=False)
+
+    with pytest.raises(BusinessException) as excinfo:
+        RefundService._validate_corp_type_refund_allowed(invoice)
+    assert excinfo.value.code == Error.REFUND_NOT_ALLOWED_FOR_CORP_TYPE.code
+
+
+def test_validate_corp_type_refund_allowed_passes_when_allowed():
+    """Assert the validator is a no-op when the corp type allows refunds."""
+    invoice = Mock(spec=InvoiceModel)
+    invoice.corp_type = Mock(refund_allowed=True)
+
+    RefundService._validate_corp_type_refund_allowed(invoice)
+
+
+def test_create_refund_blocked_when_corp_type_refund_disallowed(session):
+    """Assert create_refund raises REFUND_NOT_ALLOWED_FOR_CORP_TYPE when the corp type has refunds disabled."""
+    corp_type = factory_corp_type_model(
+        corp_type_code="NORFND",
+        corp_type_description="No refund corp",
+        product_code="NORFND",
+        refund_allowed=False,
+    )
+
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    i = factory_invoice(payment_account=payment_account, corp_type_code=corp_type.code)
+    i.save()
+
+    with pytest.raises(BusinessException) as excinfo:
+        RefundService.create_refund(invoice_id=i.id, request={"reason": "Test"}, products=None)
+    assert excinfo.value.code == Error.REFUND_NOT_ALLOWED_FOR_CORP_TYPE.code
 
 
 @pytest.mark.parametrize(

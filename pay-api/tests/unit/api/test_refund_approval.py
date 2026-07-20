@@ -54,7 +54,11 @@ from tests.utilities.base_test import (
 
 
 def setup_filing_and_account_data(
-    product_code: str, payment_method: str, refund_approval: bool = True, auth_account_id: str = "1234"
+    product_code: str,
+    payment_method: str,
+    refund_approval: bool = True,
+    auth_account_id: str = "1234",
+    refund_allowed: bool = True,
 ) -> CfsAccountModel:
     """Set up supporting filing and account data for refund approval flow."""
     test_code = "REFUNDTEST"
@@ -74,6 +78,7 @@ def setup_filing_and_account_data(
         corp_type_description=f"{test_code} description",
         product_code=product_code.upper(),
         refund_approval=refund_approval,
+        refund_allowed=refund_allowed,
     )
     filing_type = factory_filing_type_model(filing_type_code=test_code, filing_description=f"{test_code} filing")
 
@@ -772,6 +777,41 @@ def test_invoice_composite_full_refund(
     assert invoice_composite["partialRefundable"] is True
     assert invoice_composite["partialRefunds"] is None
     assert invoice_composite["fullRefundable"] is True
+
+
+def test_refund_flags_false_when_corp_type_refund_not_allowed(
+    session, client, jwt, app, monkeypatch, refund_service_mocks, account_admin_mock, send_email_mock
+):
+    """Assert partial/full refundable flags are False on composite GET and payment search when corp type disallows refunds."""
+    payment_method = PaymentMethod.DIRECT_PAY.value
+    cfs_account = setup_filing_and_account_data(
+        product_code="TEST_PRODUCT", payment_method=payment_method, refund_allowed=False
+    )
+    invoice = setup_paid_invoice_data(app, jwt, client, cfs_account, payment_method)
+    requester_headers, _ = get_refund_token_headers(
+        app,
+        jwt,
+        {
+            "requester_name": "TEST_REQUESTER",
+            "requester_roles": [
+                Role.PRODUCT_REFUND_REQUESTER.value,
+                Role.PRODUCT_REFUND_VIEWER.value,
+                Role.VIEW_ALL_TRANSACTIONS.value,
+            ],
+        },
+    )
+
+    rv = client.get(f"/api/v1/payment-requests/{invoice.id}/composite", headers=requester_headers)
+    assert rv.status_code == 200
+    assert rv.json["partialRefundable"] is False
+    assert rv.json["fullRefundable"] is False
+
+    rv = client.post("/api/v1/accounts/1234/payments/queries", data=json.dumps({}), headers=requester_headers)
+    assert rv.status_code == 200
+    matched = next((i for i in rv.json.get("items") or [] if i.get("id") == invoice.id), None)
+    assert matched is not None
+    assert matched["partialRefundable"] is False
+    assert matched["fullRefundable"] is False
 
 
 @pytest.mark.parametrize(
