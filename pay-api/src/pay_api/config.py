@@ -160,6 +160,8 @@ class _Config:  # pylint: disable=too-few-public-methods
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
+    PARTNER_PAY_TOPIC = os.getenv("PARTNER_PAY_TOPIC", "partner-pay-events-dev")
+    PARTNER_CORP_TYPES = os.getenv("PARTNER_CORP_TYPES", "ENV,XYZ")
 
     # API Endpoints
     AUTH_API_URL = os.getenv("AUTH_API_URL", "")

@@ -995,7 +995,8 @@ def _validate_account(inv: InvoiceModel, row: dict[str, str]):
 
 def _publish_payment_event(inv: InvoiceModel):
     """Publish payment message to the queue."""
-    payload = PaymentTransactionService.create_event_payload(invoice=inv, status_code=PaymentStatus.COMPLETED.value)
+    status_code = PaymentStatus.COMPLETED.value
+    payload = PaymentTransactionService.create_event_payload(invoice=inv, status_code=status_code)
     try:
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(
@@ -1004,6 +1005,11 @@ def _publish_payment_event(inv: InvoiceModel):
                 payload=payload,
                 topic=get_topic_for_corp_type(inv.corp_type_code),
                 corp_type=inv.corp_type_code,
+                attributes={
+                    "statusCode": status_code,
+                    "corpTypeCode": inv.corp_type_code,
+                    "paymentMethod": inv.payment_method_code,
+                },
             ),
         )
     except Exception as e:  # NOQA pylint: disable=broad-except

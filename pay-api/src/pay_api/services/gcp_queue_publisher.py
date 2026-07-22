@@ -20,6 +20,7 @@ class QueueMessage:
     topic: str
     ordering_key: str | None = None
     corp_type: str | None = None
+    attributes: dict[str, str] | None = None
 
 
 def publish_to_queue(queue_message: QueueMessage):
@@ -44,4 +45,6 @@ def publish_to_queue(queue_message: QueueMessage):
         kwargs.update({"ordering_key": queue_message.ordering_key})
     if queue_message.corp_type:
         kwargs.update({"corp_type": queue_message.corp_type})
+    if queue_message.attributes:
+        kwargs.update({k: str(v) for k, v in queue_message.attributes.items() if v is not None})
     queue.publish(queue_message.topic, GcpQueue.to_queue_message(cloud_event), **kwargs)

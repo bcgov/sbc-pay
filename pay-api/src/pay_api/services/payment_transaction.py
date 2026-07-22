@@ -590,6 +590,11 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                     payload=PaymentTransaction.create_event_payload(invoice, status_code),
                     topic=get_topic_for_corp_type(invoice.corp_type_code),
                     corp_type=invoice.corp_type_code,
+                    attributes={
+                        "statusCode": status_code,
+                        "corpTypeCode": invoice.corp_type_code,
+                        "paymentMethod": invoice.payment_method_code,
+                    },
                 )
             )
 
