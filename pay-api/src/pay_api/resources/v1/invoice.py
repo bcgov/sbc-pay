@@ -15,18 +15,19 @@
 
 from http import HTTPStatus
 
-from flask import Blueprint, Response, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, g, jsonify, request
 from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
-from pay_api.services import PaymentService
+from pay_api.services import PaymentLinkService, PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import MAKE_PAYMENT
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.enums import Role
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
@@ -63,22 +64,133 @@ def post_invoice():
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    # Check if user is authorized to perform this action
-    business_identifier = get_str_by_path(request_json, "businessInfo/businessIdentifier")
-    corp_type_code = get_str_by_path(request_json, "businessInfo/corpType")
-    authorization = check_auth(
-        business_identifier=business_identifier,
-        corp_type_code=corp_type_code,
-        contains_role=MAKE_PAYMENT,
-    )
+    token_info = getattr(g, "jwt_oidc_token_info", None) or {}
+    roles = (token_info.get("realm_access") or {}).get("roles") or []
+    is_external = Role.CREATE_EXTERNAL_INVOICE.value in roles
+
     try:
-        response, status = (
-            PaymentService.create_invoice(request_json, authorization),
-            HTTPStatus.CREATED,
-        )
+        if is_external:
+            # Partner client_credentials flow — skip business-level authorization
+            # and route the invoice to the SA's adhoc PaymentAccount (keyed by client_id).
+            azp = token_info.get("azp") or token_info.get("clientId")
+            if not azp:
+                return error_to_response(Error.INVALID_REQUEST, invalid_params=[])
+            authorization = {
+                "account": {
+                    "id": f"sa-{azp}",
+                    "paymentInfo": {"methodOfPayment": PaymentMethod.DIRECT_PAY.value},
+                }
+            }
+        else:
+            business_identifier = get_str_by_path(request_json, "businessInfo/businessIdentifier")
+            corp_type_code = get_str_by_path(request_json, "businessInfo/corpType")
+            authorization = check_auth(
+                business_identifier=business_identifier,
+                corp_type_code=corp_type_code,
+                contains_role=MAKE_PAYMENT,
+            )
+
+        response = PaymentService.create_invoice(request_json, authorization)
+
+        if is_external:
+            response = PaymentLinkService.attach_payment_link(response)
+
+        status = HTTPStatus.CREATED
     except (BusinessException, ServiceUnavailableException) as exception:
         return exception.response()
     current_app.logger.debug(">post_invoice")
+    return jsonify(response), status
+
+
+@bp.route("/by-token/<string:token>/link", methods=["POST"])
+@cross_origin(origins="*")
+@_jwt.requires_auth
+def post_link_by_token(token: str):
+    """Link an external invoice (identified by its payment link token) to an authenticated user's account.
+
+    Response is a uniform 404 for any token that doesn't currently resolve
+    (unknown / already-linked / expired / invalidated) — do not leak which failure
+    mode occurred, to avoid enumeration signal.
+    """
+    current_app.logger.debug("<post_link_by_token")
+
+    try:
+        # allow_linked=True so a same-user re-visit with the same URL is idempotent.
+        link = PaymentLinkService.resolve_token(token, allow_linked=True)
+    except BusinessException:
+        return error_to_response(Error.INVALID_REQUEST)
+
+    try:
+        invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=True)
+
+        target_account_id = request.headers.get("Account-Id")
+        if not target_account_id:
+            current_app.logger.info("post_link_by_token: missing Account-Id header")
+            return error_to_response(Error.INVALID_REQUEST)
+
+        current_app.logger.info(
+            "post_link_by_token: calling check_auth for account_id=%s (invoice=%s, linked_at=%s)",
+            target_account_id,
+            link.invoice_id,
+            link.linked_at,
+        )
+        # 403 if the user has no MAKE_PAYMENT authority on the target account.
+        authorization = check_auth(
+            business_identifier=None,
+            account_id=target_account_id,
+            contains_role=MAKE_PAYMENT,
+        )
+
+        target_account = PaymentAccountService.find_account(authorization)
+        if not target_account:
+            payment_method = (
+                get_str_by_path(authorization, "account/paymentInfo/methodOfPayment")
+                or PaymentMethod.DIRECT_PAY.value
+            )
+            target_account = PaymentAccountService.create(
+                {
+                    "accountId": target_account_id,
+                    "paymentInfo": {"methodOfPayment": payment_method},
+                }
+            )
+
+        if link.linked_at is not None:
+            # Idempotent re-visit: the invoice is already linked. Only allow the
+            # user to proceed if they're the same account the link was bound to.
+            # Different account = we do not re-bind — the original owner keeps it.
+            if invoice._dao.payment_account_id != target_account.id:  # pylint: disable=protected-access
+                current_app.logger.info(
+                    "post_link_by_token: token linked to account %s but caller has %s",
+                    invoice._dao.payment_account_id,  # pylint: disable=protected-access
+                    target_account.id,
+                )
+                return error_to_response(Error.INVALID_REQUEST)
+            # No mutation — just return the current invoice DTO. The client uses
+            # invoice_status_code (PAID/CREATED/APPROVED/etc.) to decide what to render.
+        else:
+            # First-time link: invoice must still be in a linkable state.
+            if invoice.invoice_status_code not in (InvoiceStatus.CREATED.value, InvoiceStatus.APPROVED.value):
+                current_app.logger.info(
+                    "post_link_by_token: invoice %s not linkable (status=%s)",
+                    link.invoice_id,
+                    invoice.invoice_status_code,
+                )
+                return error_to_response(Error.INVALID_REQUEST)
+
+            invoice._dao.payment_account_id = target_account.id  # pylint: disable=protected-access
+            invoice._dao.cfs_account_id = target_account.cfs_account_id  # pylint: disable=protected-access
+            invoice.save()
+            PaymentLinkService.mark_linked(link)
+
+        response = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=True).asdict(include_dynamic_fields=True)
+        status = HTTPStatus.OK
+    except ServiceUnavailableException as exception:
+        current_app.logger.exception("post_link_by_token: downstream 503 (auth-api / CFS / etc.)")
+        return exception.response()
+    except BusinessException as exception:
+        return exception.response()
+
+    current_app.logger.debug(">post_link_by_token")
     return jsonify(response), status
 
 

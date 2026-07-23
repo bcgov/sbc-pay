@@ -163,6 +163,12 @@ class _Config:  # pylint: disable=too-few-public-methods
     PARTNER_PAY_TOPIC = os.getenv("PARTNER_PAY_TOPIC", "partner-pay-events-dev")
     PARTNER_CORP_TYPES = os.getenv("PARTNER_CORP_TYPES", "ENV,XYZ")
 
+    # GCP project the topics above live in — used to auto-prefix short topic names
+    # into fully-qualified `projects/<id>/topics/<name>` paths at publish time.
+    # Deployed envs typically already set the FQ path in each topic env var; this
+    # lets local dev keep the short names in config and just set the project once.
+    PUBSUB_PROJECT_ID = os.getenv("PUBSUB_PROJECT_ID", "")
+
     # API Endpoints
     AUTH_API_URL = os.getenv("AUTH_API_URL", "")
     AUTH_API_VERSION = os.getenv("AUTH_API_VERSION", "")
@@ -177,6 +183,12 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     AUTH_WEB_URL = os.getenv("AUTH_WEB_URL", "")
     PAY_WEB_URL = os.getenv("PAY_WEB_URL", "")
+    PAY_NUXT_BASE_URL = os.getenv("PAY_NUXT_BASE_URL", "http://localhost:3001/pay")
+    PAYMENT_LINK_TOKEN_TTL_DAYS = int(os.getenv("PAYMENT_LINK_TOKEN_TTL_DAYS", "30"))
+
+    # Optional APIGEE key for gateway-fronted auth API (e.g. https://test.api.connect.gov.bc.ca/...).
+    # Leave unset when hitting auth-api directly.
+    AUTH_API_KEY = os.getenv("AUTH_API_KEY", "")
     NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "")
     NOTIFY_API_VERSION = os.getenv("NOTIFY_API_VERSION", "")
     NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"
@@ -222,6 +234,11 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     # Used for DEV/TEST/SANDBOX only. If True, will skip payment and return success and send queue message.
     ALLOW_SKIP_PAYMENT = os.getenv("ALLOW_SKIP_PAYMENT", "False").lower() == "true"
+
+    # Used for DEV/POC only. When True, PaymentTransaction.update_transaction fabricates a
+    # receipt from the PayBC callback URL query params instead of calling CFS to verify.
+    # Never enable this outside of local dev.
+    ALLOW_SKIP_PAYBC_VERIFICATION = os.getenv("ALLOW_SKIP_PAYBC_VERIFICATION", "False").lower() == "true"
     ENABLE_403_LOGGING = os.getenv("ENABLE_403_LOGGING", "False").lower() == "true"
     OTEL_SDK_DISABLED = os.getenv("OTEL_SDK_DISABLED", "True").lower() == "true"
 
@@ -346,7 +363,7 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
 
     BCOL_API_ENDPOINT = "http://localhost:8080/bcol-api/"
 
-    VALID_REDIRECT_URLS = ["http://localhost:8080/*"]
+    VALID_REDIRECT_URLS = ["http://localhost:8080/*", "http://localhost:3001/*"]
 
     TRANSACTION_REPORT_DEFAULT_TOTAL = 10
 

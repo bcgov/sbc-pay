@@ -272,37 +272,59 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
-        """Handle conversion of invoice to credit card payment method."""
-        payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
+        """Change an invoice's payment method.
 
-        is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
-        is_not_changing_to_cc = payment_method not in (
-            PaymentMethod.CC.value,
-            PaymentMethod.DIRECT_PAY.value,
-        )
-        # can patch only if the current payment method is OB
-        if is_not_currently_on_ob or is_not_changing_to_cc:
+        Preserves the original narrow behavior (ONLINE_BANKING → CC/DIRECT_PAY on an
+        existing CFS reference just flips the method flag — the CFS invoice stays and
+        can be paid via CC). For any other switch, cancel the current pay-system
+        reference and re-register the invoice via the target method's pay system;
+        the invoice takes on that pay system's default status (CREATED for CC,
+        APPROVED for PAD, SETTLEMENT_SCHEDULED for EFT, etc.).
+        """
+        new_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
+        if not new_method:
             raise BusinessException(Error.INVALID_REQUEST)
 
-        # check if it has any invoice references already created
-        # if there is any invoice ref , send them to the invoiced credit card flow
+        current_method = invoice.payment_method_code
+        if new_method == current_method:
+            return
+
+        if invoice.invoice_status_code not in (InvoiceStatus.CREATED.value, InvoiceStatus.APPROVED.value):
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        if not CodeService.is_payment_method_valid_for_corp_type(invoice.corp_type_code, new_method):
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-        if invoice_reference:
-            invoice.payment_method_code = PaymentMethod.CC.value
-        else:
-            pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                PaymentMethod.DIRECT_PAY.value
-            )
-            payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-            pay_service.create_invoice(
-                payment_account,
-                invoice.payment_line_items,
-                invoice,
-                corp_type_code=invoice.corp_type_code,
-            )
 
-            invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
+        # Preserved auth-web path: OB → CC/DIRECT_PAY with an existing CFS invoice
+        # can be settled via CC by flipping the flag alone (no CFS re-invoke).
+        is_ob_to_cc = (
+            current_method == PaymentMethod.ONLINE_BANKING.value
+            and new_method in (PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
+        )
+        if is_ob_to_cc and invoice_reference:
+            invoice.payment_method_code = PaymentMethod.CC.value
+            invoice.save()
+            return
+
+        # General switch: cancel any prior pay-system reference and re-invoke the
+        # factory for the new method so the invoice is registered correctly.
+        if invoice_reference:
+            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
+            invoice_reference.save()
+
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(new_method)
+        pay_service.create_invoice(
+            payment_account,
+            invoice.payment_line_items,
+            invoice,
+            corp_type_code=invoice.corp_type_code,
+        )
+
+        invoice.payment_method_code = new_method
+        invoice.invoice_status_code = pay_service.get_default_invoice_status()
         invoice.save()
 
     @classmethod
