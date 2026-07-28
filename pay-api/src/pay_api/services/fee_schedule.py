@@ -423,9 +423,10 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         service_fees: float = 0
 
+        # Staff are charged service fees (leadership decision, 2026-07 — see entity#33757).
+        # To exempt staff again, add `not user.is_staff()` back to this condition.
         if (
-            not user.is_staff()
-            and not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles)
+            not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles)
             and fee_schedule_model.fee.amount > 0
             and fee_schedule_model.service_fee
         ):
