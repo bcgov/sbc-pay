@@ -89,8 +89,16 @@ def check_auth(
                 current_app.config.get("AUTH_API_ENDPOINT")
                 + f"entities/{business_identifier}/authorizations?expanded=true"
             )
+            additional_headers = {"Account-Linking-Key": user.linking_key} if user.linking_key else None
             auth_response = (
-                RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json() or {}
+                RestService.get(
+                    auth_url,
+                    bearer_token,
+                    AuthHeaderType.BEARER,
+                    ContentType.JSON,
+                    additional_headers=additional_headers,
+                ).json()
+                or {}
             )
 
             roles: list = auth_response.get("roles", [])

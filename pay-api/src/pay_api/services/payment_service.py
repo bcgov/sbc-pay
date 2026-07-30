@@ -222,7 +222,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             )
             payment_account = PaymentAccount.create(
                 {
-                    "accountId": get_str_by_path(authorization, "account/id"),
+                    "accountId": get_str_by_path(authorization, "account/paymentAccountId")
+                    or get_str_by_path(authorization, "account/id"),
                     "paymentInfo": {"methodOfPayment": payment_method},
                 }
             )
