@@ -162,3 +162,23 @@ def test_get_account_info_with_contact(session, public_user_mock, contacts, expe
         )
 
     assert account_info["contact"] == expected_contact
+
+
+@pytest.mark.parametrize(
+    "linking_key_header,expected_additional_headers",
+    [
+        ("some-linking-key", {"Account-Linking-Key": "some-linking-key"}),
+        (None, None),
+    ],
+)
+def test_check_auth_forwards_linking_key_for_business_identifier(
+    app, session, public_user_mock, linking_key_header, expected_additional_headers
+):
+    """Assert check_auth forwards the Account-Linking-Key header on the business-identifier branch."""
+    headers = {"Account-Linking-Key": linking_key_header} if linking_key_header else {}
+    with app.test_request_context(headers=headers):
+        with patch("pay_api.services.auth.RestService.get") as mock_get:
+            mock_get.return_value.json.return_value = {"roles": [EDIT_ROLE], "account": {"id": "1234"}}
+            check_auth("CP0001234", contains_role=EDIT_ROLE)
+
+        assert mock_get.call_args.kwargs["additional_headers"] == expected_additional_headers

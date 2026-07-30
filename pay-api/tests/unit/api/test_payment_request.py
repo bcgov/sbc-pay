@@ -31,6 +31,7 @@ from pay_api.models import CorpType, FeeCode, FilingType
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models.tax_rate import TaxRate
@@ -1879,3 +1880,83 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
         assert line_item["gst"] == 0, "Line item GST amount should be 0 when invoice has no GST"
         assert "statutoryFeesGst" not in line_item, "statutoryFeesGst should be hidden when invoice has no GST"
         assert "serviceFeesGst" not in line_item, "serviceFeesGst should be hidden when invoice has no GST"
+
+
+@pytest.mark.parametrize(
+    "linking_key_header",
+    [
+        {"Account-Linking-Key": "test-linking-key"},
+        {},
+    ],
+)
+def test_payment_request_creation_with_linking_key(
+    session, client, jwt, app, linking_key_auth_mock, linking_key_header
+):
+    """Assert invoice is created under the vendor account when a linking key is provided
+    and under the source account otherwise (paymentAccountId falls back to account.id).
+    """
+    source_account_id = "88888"
+    vendor_account_id = "99999"
+    expected_account_id = vendor_account_id if linking_key_header else source_account_id
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        **linking_key_header,
+    }
+
+    with patch(
+        "pay_api.services.auth.RestService.get",
+        side_effect=linking_key_auth_mock(source_account_id, vendor_account_id),
+    ) as mock_get:
+        rv = client.post("/api/v1/payment-requests", data=json.dumps(get_payment_request()), headers=headers)
+
+    assert rv.status_code == 201
+
+    called_additional_headers = mock_get.call_args.kwargs.get("additional_headers")
+    if linking_key_header:
+        assert called_additional_headers == linking_key_header
+    else:
+        assert called_additional_headers is None
+
+    # Assert the invoice's payment account resolves to the expected (vendor vs source) auth account id.
+    invoice = InvoiceModel.find_by_id(rv.json.get("id"))
+    payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+    assert payment_account.auth_account_id == expected_account_id
+
+
+def test_payment_request_creation_account_id_ignores_linking_key(session, client, jwt, app, linking_key_auth_mock):
+    """Assert Account-Linking-Key has no effect when the caller already has an Account-Id present.
+
+    Vendor-account invoice creation via a linking key is used when only business_identifier exists for check_auth
+    (i.e. business-filing invoices). When Account-Id is present, check_auth
+    takes the org-based branch instead, which never forwards Account-Linking-Key to auth-api, so
+    the invoice must still be created under the source account.
+    """
+    source_account_id = "77777"
+    vendor_account_id = "99999"
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": source_account_id,
+        "Account-Linking-Key": "attempted-linking-key",
+    }
+
+    with patch(
+        "pay_api.services.auth.RestService.get",
+        side_effect=linking_key_auth_mock(source_account_id, vendor_account_id),
+    ) as mock_get:
+        rv = client.post("/api/v1/payment-requests", data=json.dumps(get_payment_request()), headers=headers)
+
+    assert rv.status_code == 201
+
+    # Linking key should not be included as this is not a business-filing invoice.
+    called_additional_headers = mock_get.call_args.kwargs.get("additional_headers")
+    assert not called_additional_headers or "Account-Linking-Key" not in called_additional_headers
+
+    invoice = InvoiceModel.find_by_id(rv.json.get("id"))
+    payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+    assert payment_account.auth_account_id == source_account_id

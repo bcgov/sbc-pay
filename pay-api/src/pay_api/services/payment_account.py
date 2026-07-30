@@ -514,7 +514,9 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
     def find_account(cls, authorization: dict[str, Any]) -> PaymentAccount | None:
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug("<find_payment_account")
-        auth_account_id: str = get_str_by_path(authorization, "account/id")
+        auth_account_id: str = get_str_by_path(authorization, "account/paymentAccountId") or get_str_by_path(
+            authorization, "account/id"
+        )
         return PaymentAccount.find_by_auth_account_id(auth_account_id)
 
     @classmethod
