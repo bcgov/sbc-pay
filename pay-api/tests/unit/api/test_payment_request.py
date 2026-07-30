@@ -1892,9 +1892,7 @@ def test_payment_request_gst_field_behavior(session, client, jwt, app):
 def test_payment_request_creation_with_linking_key(
     session, client, jwt, app, linking_key_auth_mock, linking_key_header
 ):
-    """Assert invoice is created under the vendor account when a linking key is provided
-    and under the source account otherwise (paymentAccountId falls back to account.id).
-    """
+    """Assert invoice is created under the appropriate account based on the presence of a linking key."""
     source_account_id = "88888"
     vendor_account_id = "99999"
     expected_account_id = vendor_account_id if linking_key_header else source_account_id
