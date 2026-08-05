@@ -69,18 +69,16 @@ def check_auth(
 
         if account_id:
             auth_url = current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{account_id}/authorizations?expanded=true"
-            additional_headers = {}
+            additional_headers = None
             if corp_type_code:
-                additional_headers["Product-Code"] = product_code
-            if apikey := current_app.config.get("AUTH_API_KEY"):
-                additional_headers["x-apikey"] = apikey
+                additional_headers = {"Product-Code": product_code}
             auth_response = (
                 RestService.get(
                     auth_url,
                     bearer_token,
                     AuthHeaderType.BEARER,
                     ContentType.JSON,
-                    additional_headers=additional_headers or None,
+                    additional_headers=additional_headers,
                 ).json()
                 or {}
             )
@@ -91,14 +89,14 @@ def check_auth(
                 current_app.config.get("AUTH_API_ENDPOINT")
                 + f"entities/{business_identifier}/authorizations?expanded=true"
             )
-            entity_headers = {"x-apikey": apikey} if (apikey := current_app.config.get("AUTH_API_KEY")) else None
+            additional_headers = {"Account-Linking-Key": user.linking_key} if user.linking_key else None
             auth_response = (
                 RestService.get(
                     auth_url,
                     bearer_token,
                     AuthHeaderType.BEARER,
                     ContentType.JSON,
-                    additional_headers=entity_headers,
+                    additional_headers=additional_headers,
                 ).json()
                 or {}
             )
