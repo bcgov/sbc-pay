@@ -301,44 +301,42 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def _convert_invoice_payment_method(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
-        """Change an invoice's payment method.
+        """Switch an unpaid invoice's payment method.
 
-        Preserves the original narrow behavior (ONLINE_BANKING → CC/DIRECT_PAY on an
-        existing CFS reference just flips the method flag — the CFS invoice stays and
-        can be paid via CC). For any other switch, cancel the current pay-system
-        reference and re-register the invoice via the target method's pay system;
-        the invoice takes on that pay system's default status (CREATED for CC,
-        APPROVED for PAD, SETTLEMENT_SCHEDULED for EFT, etc.).
+        Allowed only while the invoice is still CREATED (no pay system has taken
+        ownership yet) and only between the user-selectable methods CC, DIRECT_PAY,
+        ONLINE_BANKING, PAD. APPROVED PAD invoices are already released to the
+        settlement pipeline and must not be switched here — auth-web's outstanding-
+        balance flow uses CFS credit-memo consolidation for that case instead.
+
+        Cancels any prior pay-system reference and re-registers the invoice via the
+        target method's pay system; the invoice takes on that pay system's default
+        status (CREATED for CC/DIRECT_PAY/OB, APPROVED for PAD).
         """
+        _SWITCHABLE_METHODS = {
+            PaymentMethod.CC.value,
+            PaymentMethod.DIRECT_PAY.value,
+            PaymentMethod.ONLINE_BANKING.value,
+            PaymentMethod.PAD.value,
+        }
+
         new_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
         if not new_method:
             raise BusinessException(Error.INVALID_REQUEST)
 
-        current_method = invoice.payment_method_code
-        if new_method == current_method:
+        if new_method == invoice.payment_method_code:
             return
 
-        if invoice.invoice_status_code not in (InvoiceStatus.CREATED.value, InvoiceStatus.APPROVED.value):
+        if invoice.invoice_status_code != InvoiceStatus.CREATED.value:
             raise BusinessException(Error.INVALID_REQUEST)
+
+        if invoice.payment_method_code not in _SWITCHABLE_METHODS or new_method not in _SWITCHABLE_METHODS:
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
         if not CodeService.is_payment_method_valid_for_corp_type(invoice.corp_type_code, new_method):
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-
-        # Preserved auth-web path: OB → CC/DIRECT_PAY with an existing CFS invoice
-        # can be settled via CC by flipping the flag alone (no CFS re-invoke).
-        is_ob_to_cc = (
-            current_method == PaymentMethod.ONLINE_BANKING.value
-            and new_method in (PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
-        )
-        if is_ob_to_cc and invoice_reference:
-            invoice.payment_method_code = PaymentMethod.CC.value
-            invoice.save()
-            return
-
-        # General switch: cancel any prior pay-system reference and re-invoke the
-        # factory for the new method so the invoice is registered correctly.
         if invoice_reference:
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.save()

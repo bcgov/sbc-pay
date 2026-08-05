@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service for opaque payment link tokens used by the express-checkout flow.
 
-Tokens are nanoids (21 chars, URL-safe alphabet, ~126 bits entropy) stored in
+Tokens are nanoids (21 chars, URL-safe alphabet) stored in
 `invoice_payment_links`. Knowing a token allows a user to view an invoice
 summary, link it to their auth account, and pay it — but not to enumerate
 other invoices or view any invoice they weren't given the token for.
@@ -169,7 +169,10 @@ class PaymentLinkService:
                 )
                 raise BusinessException(Error.INVALID_REQUEST)
         else:
-            if invoice.invoice_status_code not in (InvoiceStatus.CREATED.value, InvoiceStatus.APPROVED.value):
+            # Express-checkout invoices are created as DIRECT_PAY / CREATED. Method switch
+            # (to PAD/OB/etc.) can only happen after redemption, so any status other than
+            # CREATED here means the invoice was tampered with or already moved on.
+            if invoice.invoice_status_code != InvoiceStatus.CREATED.value:
                 current_app.logger.info(
                     "payment link %s not linkable (invoice %s status=%s)",
                     link.token,
