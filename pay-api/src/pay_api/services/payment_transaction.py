@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import uuid  # noqa: TC003
 from datetime import UTC, datetime
-from urllib.parse import parse_qs, urlparse
 
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -454,18 +453,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             receipt_details = None
             current_app.logger.error(f"Exception while grabbing receipt: {str(exc)}", exc_info=True)
 
-        # POC-only escape hatch: when CFS/PayBC verification isn't reachable from
-        # local dev, accept the PayBC callback query params as authoritative.
-        # Guarded by ALLOW_SKIP_PAYBC_VERIFICATION — never enable outside dev.
-        if not receipt_details and current_app.config.get("ALLOW_SKIP_PAYBC_VERIFICATION"):
-            fake = PaymentTransaction._fake_receipt_from_paybc_url(pay_response_url, invoices)
-            if fake:
-                current_app.logger.warning(
-                    "ALLOW_SKIP_PAYBC_VERIFICATION active — fabricating receipt %s from callback URL",
-                    fake[0],
-                )
-                receipt_details = fake
-
         current_app.logger.info(f"Receipt details for {payment.invoice_number} : {receipt_details}")
         if receipt_details:
             PaymentTransaction._update_receipt_details(invoices, payment, receipt_details, transaction_dao)
@@ -498,36 +485,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
         current_app.logger.debug(">update_transaction")
         return transaction
-
-    @staticmethod
-    def _fake_receipt_from_paybc_url(pay_response_url: str, invoices):
-        """POC-only. Fabricate a (receipt_number, receipt_date, amount) tuple from
-        the PayBC callback query params. Only returns a tuple when the callback
-        indicates approval (trnApproved=1) — otherwise None (transaction fails).
-        """
-        try:
-            qs = parse_qs(urlparse(pay_response_url).query)
-        except Exception:  # noqa: BLE001
-            return None
-
-        approved = (qs.get("trnApproved", ["0"])[0] or "0") == "1"
-        if not approved:
-            return None
-
-        receipt_number = (
-            (qs.get("pbcTxnNumber") or qs.get("trnOrderId") or [""])[0]
-            or f"POC-{uuid.uuid4().hex[:12]}"
-        )
-
-        amount = None
-        try:
-            amount = float(qs.get("trnAmount", [""])[0])
-        except (ValueError, TypeError):
-            amount = None
-        if amount is None and invoices:
-            amount = float(invoices[0].total or 0)
-
-        return receipt_number, datetime.now(tz=UTC), float(amount or 0)
 
     @staticmethod
     def _update_receipt_details(invoices, payment, receipt_details, transaction_dao):
@@ -633,18 +590,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                     payload=PaymentTransaction.create_event_payload(invoice, status_code),
                     topic=get_topic_for_corp_type(invoice.corp_type_code),
                     corp_type=invoice.corp_type_code,
-                    attributes={
-                        "statusCode": status_code,
-                        "corpTypeCode": invoice.corp_type_code,
-                        "paymentMethod": invoice.payment_method_code,
-                    },
                 )
             )
 
-        except Exception:  # NOQA pylint: disable=broad-except
-            current_app.logger.exception(
-                "Notification to Queue failed, marking the transaction %s as EVENT_FAILED",
-                transaction_dao.id,
+        except Exception as e:  # NOQA pylint: disable=broad-except
+            current_app.logger.error(e)
+            current_app.logger.warning(
+                f"Notification to Queue failed, marking the transaction : {transaction_dao.id} as EVENT_FAILED",
+                e,
             )
             transaction_dao.status_code = TransactionStatus.EVENT_FAILED.value
         current_app.logger.debug(">publish_status")
