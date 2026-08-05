@@ -48,6 +48,7 @@ from .invoice_reference import InvoiceReference
 from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
+from .payment_link import PaymentLinkService
 from .payment_transaction import PaymentTransaction
 
 
@@ -177,6 +178,34 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return invoice.asdict(include_dynamic_fields=True)
 
     @classmethod
+    @user_context
+    def create_express_checkout_invoice(cls, payment_request: dict[str, Any], **kwargs) -> dict:
+        """Create an invoice via the express-checkout (partner service-account) flow.
+
+        Skips business-level authorization, routes to an adhoc PaymentAccount keyed by
+        the SA's client id, and requires the corp type to have express checkout enabled.
+        Returns the invoice DTO with `paymentUrl` merged in.
+        """
+        user: UserContext = kwargs["user"]
+        client_id = user.client_id
+        if not client_id:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        corp_type = get_str_by_path(payment_request, "businessInfo/corpType")
+        if not corp_type or not CodeService.is_express_checkout_enabled(corp_type):
+            raise BusinessException(Error.EXPRESS_CHECKOUT_NOT_ENABLED)
+
+        authorization = {
+            "account": {
+                "id": f"sa-{client_id}",
+                "paymentInfo": {"methodOfPayment": PaymentMethod.DIRECT_PAY.value},
+            }
+        }
+
+        response = cls.create_invoice(payment_request, authorization)
+        return PaymentLinkService.attach_payment_link(response)
+
+    @classmethod
     def _handle_invoice(cls, invoice, invoice_reference, pay_service, skip_payment):
         """Handle invoice related operations."""
         # Note this flow is for DEV/TEST/SANDBOX ONLY.
@@ -271,7 +300,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account.save()
 
     @classmethod
-    def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
+    def _convert_invoice_payment_method(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
         """Change an invoice's payment method.
 
         Preserves the original narrow behavior (ONLINE_BANKING → CC/DIRECT_PAY on an
@@ -341,7 +370,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if is_apply_credit:
             cls._apply_credit(invoice)
         else:
-            cls._convert_invoice_to_credit_card(invoice, payment_request)
+            cls._convert_invoice_payment_method(invoice, payment_request)
         current_app.logger.debug(">update_invoice")
         return invoice.asdict()
 

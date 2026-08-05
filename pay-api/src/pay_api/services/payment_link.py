@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service for opaque payment link tokens used by the external-invoice flow.
+"""Service for opaque payment link tokens used by the express-checkout flow.
 
 Tokens are nanoids (21 chars, URL-safe alphabet, ~126 bits entropy) stored in
 `invoice_payment_links`. Knowing a token allows a user to view an invoice
@@ -25,9 +25,18 @@ from flask import current_app
 from nanoid import generate as nanoid_generate
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import db
+from pay_api.services.auth import check_auth
+from pay_api.services.code import Code as CodeService
+from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
+from pay_api.utils.constants import MAKE_PAYMENT
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import UserContext, user_context
+from pay_api.utils.util import get_str_by_path
 
 _TOKEN_LEN = 21
 
@@ -63,31 +72,34 @@ class PaymentLinkService:
     def resolve_token(cls, token: str, allow_linked: bool = False) -> InvoicePaymentLinkModel:
         """Return the link row iff it is usable for the caller's intent.
 
-        Rejects unknown / invalidated / expired tokens unconditionally.
+        Rejects unknown / expired tokens unconditionally.
         Rejects already-consumed (`linked_at`) tokens unless `allow_linked=True`,
         which callers use for idempotent re-visits (same user returning with the
-        same link — see `post_link_by_token`).
+        same link — see `redeem`).
+
+        TTL comes from the invoice's corp type (`payment_link_ttl_days`) with a
+        fallback to the global `PAYMENT_LINK_TOKEN_TTL_DAYS` config.
 
         Raises Error.INVALID_REQUEST (BusinessException) for any rejection.
         Callers surface it as a uniform response — do not distinguish failure
         modes to the client, to avoid enumeration signal.
         """
-        link = InvoicePaymentLinkModel.find_by_token(token)
-        if not link:
+        row = (
+            db.session.query(InvoicePaymentLinkModel, InvoiceModel.corp_type_code)
+            .join(InvoiceModel, InvoiceModel.id == InvoicePaymentLinkModel.invoice_id)
+            .filter(InvoicePaymentLinkModel.token == token)
+            .first()
+        )
+        if not row:
             raise BusinessException(Error.INVALID_REQUEST)
-        if link.invalidated_at is not None:
-            raise BusinessException(Error.INVALID_REQUEST)
+        link, corp_type_code = row
         if not allow_linked and link.linked_at is not None:
             raise BusinessException(Error.INVALID_REQUEST)
-        ttl_days = int(current_app.config.get("PAYMENT_LINK_TOKEN_TTL_DAYS", 30))
+
+        ttl_days = CodeService.get_payment_link_ttl_days(corp_type_code)
         if link.created_at < datetime.now(tz=UTC) - timedelta(days=ttl_days):
             raise BusinessException(Error.INVALID_REQUEST)
         return link
-
-    @classmethod
-    def resolve_active_token(cls, token: str) -> InvoicePaymentLinkModel:
-        """Back-compat alias — first-time-link path (rejects consumed tokens)."""
-        return cls.resolve_token(token, allow_linked=False)
 
     @classmethod
     def mark_linked(cls, link: InvoicePaymentLinkModel) -> None:
@@ -95,3 +107,80 @@ class PaymentLinkService:
         link.linked_at = datetime.now(tz=UTC)
         db.session.add(link)
         db.session.commit()
+
+    @classmethod
+    def find_invoice_by_token(cls, token: str) -> dict:
+        """Return the invoice DTO for a valid payment link token.
+
+        Used by the read-only GET /payment-links/{token} lookup so the pay-nuxt
+        summary screen can render before the user has linked their account.
+        """
+        link = cls.resolve_token(token, allow_linked=True)
+        invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=True)
+        return invoice.asdict(include_dynamic_fields=True)
+
+    @classmethod
+    @user_context
+    def redeem(cls, token: str, **kwargs) -> dict:
+        """Bind the invoice behind `token` to the caller's auth account and return its DTO.
+
+        Account is taken from the Account-Id header via UserContext. This method calls
+        check_auth itself to enforce MAKE_PAYMENT on the target account. Idempotent
+        for the same account (re-visit returns current state); rejects if a different
+        account tries to claim an already-linked invoice or the invoice has advanced
+        past a linkable status.
+        """
+        user: UserContext = kwargs["user"]
+        target_account_id = user.account_id
+        if not target_account_id:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        # 403 if the user has no MAKE_PAYMENT authority on the target account.
+        authorization = check_auth(
+            business_identifier=None,
+            account_id=target_account_id,
+            contains_role=MAKE_PAYMENT,
+        )
+
+        link = cls.resolve_token(token, allow_linked=True)
+        invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=True)
+
+        target_account = PaymentAccountService.find_account(authorization)
+        if not target_account:
+            payment_method = (
+                get_str_by_path(authorization, "account/paymentInfo/methodOfPayment")
+                or PaymentMethod.DIRECT_PAY.value
+            )
+            target_account = PaymentAccountService.create(
+                {
+                    "accountId": target_account_id,
+                    "paymentInfo": {"methodOfPayment": payment_method},
+                }
+            )
+
+        if link.linked_at is not None:
+            # Idempotent re-visit: same account gets the current state; different account is rejected.
+            if invoice.payment_account_id != target_account.id:
+                current_app.logger.info(
+                    "payment link %s already bound to account %s but caller has %s",
+                    link.token,
+                    invoice.payment_account_id,
+                    target_account.id,
+                )
+                raise BusinessException(Error.INVALID_REQUEST)
+        else:
+            if invoice.invoice_status_code not in (InvoiceStatus.CREATED.value, InvoiceStatus.APPROVED.value):
+                current_app.logger.info(
+                    "payment link %s not linkable (invoice %s status=%s)",
+                    link.token,
+                    link.invoice_id,
+                    invoice.invoice_status_code,
+                )
+                raise BusinessException(Error.INVALID_REQUEST)
+
+            invoice.payment_account_id = target_account.id
+            invoice.cfs_account_id = target_account.cfs_account_id
+            invoice.save()
+            cls.mark_linked(link)
+
+        return InvoiceService.find_by_id(link.invoice_id, skip_auth_check=True).asdict(include_dynamic_fields=True)

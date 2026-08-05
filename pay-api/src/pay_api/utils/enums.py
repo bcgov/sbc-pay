@@ -229,7 +229,7 @@ class Role(Enum):
     VIEW_STATEMENT_SETTINGS = "view_statement_settings"
     VIEW_ACCOUNT_TRANSACTIONS = "view_account_transactions"
     API_USER = "api_user"
-    CREATE_EXTERNAL_INVOICE = "create_external_invoice"
+    CREATE_EXPRESS_CHECKOUT_INVOICE = "create_express_checkout_invoice"
     CSO_REFUNDS = "cso_refunds"
     # General role for security check, used with RolePattern.PRODUCT_VIEW_TRANSACTION to determine allowed products
     PRODUCT_REFUND_VIEWER = "product_refund_viewer"

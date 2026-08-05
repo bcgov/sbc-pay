@@ -325,13 +325,8 @@ def get_topic_for_corp_type(corp_type: str):
     # Will fix this promptly and move this away so it doesn't cause circular dependencies.
     from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel  # noqa: TID252
 
-    # Phase 1 (POC): env-var allowlist routes designated partner corp types to the dedicated
-    # partner topic. Phase 2 will replace this with an `is_partner` flag on CorpType.
-    partner_corp_types = {
-        c.strip() for c in (current_app.config.get("PARTNER_CORP_TYPES") or "").split(",") if c.strip()
-    }
-    if corp_type in partner_corp_types:
-        return current_app.config.get("PARTNER_PAY_TOPIC")
+    if CodeService.is_express_checkout_enabled(corp_type):
+        return current_app.config.get("EXPRESS_CHECKOUT_PAY_TOPIC")
 
     if corp_type == CorpType.NRO.value:
         return current_app.config.get("NAMEX_PAY_TOPIC")

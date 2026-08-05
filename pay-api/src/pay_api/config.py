@@ -160,14 +160,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
-    PARTNER_PAY_TOPIC = os.getenv("PARTNER_PAY_TOPIC", "partner-pay-events-dev")
-    PARTNER_CORP_TYPES = os.getenv("PARTNER_CORP_TYPES", "ENV,XYZ")
-
-    # GCP project the topics above live in — used to auto-prefix short topic names
-    # into fully-qualified `projects/<id>/topics/<name>` paths at publish time.
-    # Deployed envs typically already set the FQ path in each topic env var; this
-    # lets local dev keep the short names in config and just set the project once.
-    PUBSUB_PROJECT_ID = os.getenv("PUBSUB_PROJECT_ID", "")
+    EXPRESS_CHECKOUT_PAY_TOPIC = os.getenv("EXPRESS_CHECKOUT_PAY_TOPIC", "express-checkout-pay-events-dev")
 
     # API Endpoints
     AUTH_API_URL = os.getenv("AUTH_API_URL", "")
@@ -235,10 +228,6 @@ class _Config:  # pylint: disable=too-few-public-methods
     # Used for DEV/TEST/SANDBOX only. If True, will skip payment and return success and send queue message.
     ALLOW_SKIP_PAYMENT = os.getenv("ALLOW_SKIP_PAYMENT", "False").lower() == "true"
 
-    # Used for DEV/POC only. When True, PaymentTransaction.update_transaction fabricates a
-    # receipt from the PayBC callback URL query params instead of calling CFS to verify.
-    # Never enable this outside of local dev.
-    ALLOW_SKIP_PAYBC_VERIFICATION = os.getenv("ALLOW_SKIP_PAYBC_VERIFICATION", "False").lower() == "true"
     ENABLE_403_LOGGING = os.getenv("ENABLE_403_LOGGING", "False").lower() == "true"
     OTEL_SDK_DISABLED = os.getenv("OTEL_SDK_DISABLED", "True").lower() == "true"
 
@@ -363,7 +352,7 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
 
     BCOL_API_ENDPOINT = "http://localhost:8080/bcol-api/"
 
-    VALID_REDIRECT_URLS = ["http://localhost:8080/*", "http://localhost:3001/*"]
+    VALID_REDIRECT_URLS = ["http://localhost:8080/*"]
 
     TRANSACTION_REPORT_DEFAULT_TOTAL = 10
 
