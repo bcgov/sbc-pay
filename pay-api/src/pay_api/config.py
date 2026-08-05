@@ -179,9 +179,6 @@ class _Config:  # pylint: disable=too-few-public-methods
     PAY_NUXT_BASE_URL = os.getenv("PAY_NUXT_BASE_URL", "http://localhost:3001/pay")
     PAYMENT_LINK_TOKEN_TTL_DAYS = int(os.getenv("PAYMENT_LINK_TOKEN_TTL_DAYS", "30"))
 
-    # Optional APIGEE key for gateway-fronted auth API (e.g. https://test.api.connect.gov.bc.ca/...).
-    # Leave unset when hitting auth-api directly.
-    AUTH_API_KEY = os.getenv("AUTH_API_KEY", "")
     NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "")
     NOTIFY_API_VERSION = os.getenv("NOTIFY_API_VERSION", "")
     NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"
@@ -227,7 +224,6 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     # Used for DEV/TEST/SANDBOX only. If True, will skip payment and return success and send queue message.
     ALLOW_SKIP_PAYMENT = os.getenv("ALLOW_SKIP_PAYMENT", "False").lower() == "true"
-
     ENABLE_403_LOGGING = os.getenv("ENABLE_403_LOGGING", "False").lower() == "true"
     OTEL_SDK_DISABLED = os.getenv("OTEL_SDK_DISABLED", "True").lower() == "true"
 
