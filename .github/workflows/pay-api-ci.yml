@@ -8,6 +8,7 @@ on:
       - feature-*
     paths:
       - "pay-api/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
