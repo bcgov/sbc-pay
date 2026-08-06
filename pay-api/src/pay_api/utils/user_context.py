@@ -62,6 +62,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._sub: str = token_info.get("sub", None)
         self._login_source: str = token_info.get("loginSource", None)
         self._account_id: str = get_auth_account_id()
+        self._linking_key: str = get_account_linking_key()
         self._name = token_info.get("name", None)
         self._product_code: str = token_info.get("product_code", None)
         self._client_id: str = _sanitize_user_sub(token_info.get("azp", None) or token_info.get("clientId", None))
@@ -107,6 +108,11 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def account_id(self) -> str:
         """Return the account_id."""
         return self._account_id
+
+    @property
+    def linking_key(self) -> str:
+        """Return the account linking key."""
+        return self._linking_key
 
     @property
     def permission(self) -> list[str]:
@@ -185,6 +191,11 @@ def get_auth_account_id() -> str:
     if not account_id:
         account_id = request.headers["Account-Id"] if request and "Account-Id" in request.headers else None
     return account_id
+
+
+def get_account_linking_key() -> str:
+    """Return the account linking key from the header."""
+    return request.headers.get("Account-Linking-Key") if request else None
 
 
 def get_original_user_sub(is_system: bool) -> str:

@@ -15,7 +15,7 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
-from unittest.mock import DEFAULT, patch
+from unittest.mock import DEFAULT, MagicMock, patch
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -165,6 +165,26 @@ def clear_cfs_token_cache():
 def auth_mock(monkeypatch):
     """Mock check_auth."""
     monkeypatch.setattr("pay_api.services.auth.check_auth", lambda *args, **kwargs: None)  # noqa: ARG005
+
+
+@pytest.fixture()
+def linking_key_auth_mock():
+    """Return a factory for a RestService.get side-effect mimicking auth-api's linking-key authorization response."""
+
+    def _factory(source_account_id: str, vendor_account_id: str, roles: list = None):
+        def _mock(url, *args, **kwargs):  # noqa: ARG001
+            additional_headers = kwargs.get("additional_headers") or {}
+            payment_account_id = vendor_account_id if "Account-Linking-Key" in additional_headers else source_account_id
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "roles": roles or ["edit", "view", "make_payment"],
+                "account": {"id": source_account_id, "paymentAccountId": payment_account_id},
+            }
+            return mock_response
+
+        return _mock
+
+    return _factory
 
 
 @pytest.fixture()
