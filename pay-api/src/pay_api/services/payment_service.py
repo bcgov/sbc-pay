@@ -51,6 +51,15 @@ from .payment_line_item import PaymentLineItem
 from .payment_link import PaymentLinkService
 from .payment_transaction import PaymentTransaction
 
+_SWITCHABLE_METHODS = frozenset(
+    {
+        PaymentMethod.CC.value,
+        PaymentMethod.DIRECT_PAY.value,
+        PaymentMethod.ONLINE_BANKING.value,
+        PaymentMethod.PAD.value,
+    }
+)
+
 
 class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
@@ -314,13 +323,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         target method's pay system; the invoice takes on that pay system's default
         status (CREATED for CC/DIRECT_PAY/OB, APPROVED for PAD).
         """
-        _SWITCHABLE_METHODS = {
-            PaymentMethod.CC.value,
-            PaymentMethod.DIRECT_PAY.value,
-            PaymentMethod.ONLINE_BANKING.value,
-            PaymentMethod.PAD.value,
-        }
-
         new_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
         if not new_method:
             raise BusinessException(Error.INVALID_REQUEST)

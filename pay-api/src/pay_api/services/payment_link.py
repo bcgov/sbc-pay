@@ -148,8 +148,7 @@ class PaymentLinkService:
         target_account = PaymentAccountService.find_account(authorization)
         if not target_account:
             payment_method = (
-                get_str_by_path(authorization, "account/paymentInfo/methodOfPayment")
-                or PaymentMethod.DIRECT_PAY.value
+                get_str_by_path(authorization, "account/paymentInfo/methodOfPayment") or PaymentMethod.DIRECT_PAY.value
             )
             target_account = PaymentAccountService.create(
                 {

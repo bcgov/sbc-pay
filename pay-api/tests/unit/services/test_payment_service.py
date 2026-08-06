@@ -370,6 +370,62 @@ def test_patch_online_banking_payment_to_cc(session, public_user_mock):
     assert invoice_response.get("payment_method") == PaymentMethod.CC.value
 
 
+def _fresh_switchable_invoice(
+    payment_method: str = PaymentMethod.DIRECT_PAY.value,
+    status: str = InvoiceStatus.CREATED.value,
+):
+    account = factory_payment_account()
+    account.save()
+    invoice = factory_invoice(payment_account=account, payment_method_code=payment_method, status_code=status)
+    invoice.save()
+    return invoice
+
+
+def test_convert_noop_when_target_matches_current(session, public_user_mock):
+    """Same-method request returns without raising."""
+    invoice = _fresh_switchable_invoice(payment_method=PaymentMethod.DIRECT_PAY.value)
+    PaymentService._convert_invoice_payment_method(
+        invoice, {"paymentInfo": {"methodOfPayment": PaymentMethod.DIRECT_PAY.value}}
+    )
+
+
+def test_convert_rejects_when_status_not_created(session, public_user_mock):
+    """APPROVED (released PAD) can no longer be switched."""
+    invoice = _fresh_switchable_invoice(
+        payment_method=PaymentMethod.PAD.value,
+        status=InvoiceStatus.APPROVED.value,
+    )
+    with pytest.raises(BusinessException):
+        PaymentService._convert_invoice_payment_method(
+            invoice, {"paymentInfo": {"methodOfPayment": PaymentMethod.CC.value}}
+        )
+
+
+def test_convert_rejects_target_outside_allowlist(session, public_user_mock):
+    """Target method outside {CC, DIRECT_PAY, ONLINE_BANKING, PAD} is rejected."""
+    invoice = _fresh_switchable_invoice(payment_method=PaymentMethod.DIRECT_PAY.value)
+    with pytest.raises(BusinessException):
+        PaymentService._convert_invoice_payment_method(
+            invoice, {"paymentInfo": {"methodOfPayment": PaymentMethod.EFT.value}}
+        )
+
+
+def test_convert_rejects_source_outside_allowlist(session, public_user_mock):
+    """Source method outside the allowlist is rejected regardless of target."""
+    invoice = _fresh_switchable_invoice(payment_method=PaymentMethod.EFT.value)
+    with pytest.raises(BusinessException):
+        PaymentService._convert_invoice_payment_method(
+            invoice, {"paymentInfo": {"methodOfPayment": PaymentMethod.CC.value}}
+        )
+
+
+def test_convert_rejects_missing_payment_method_in_payload(session, public_user_mock):
+    """Empty paymentInfo → INVALID_REQUEST before any status/method check."""
+    invoice = _fresh_switchable_invoice()
+    with pytest.raises(BusinessException):
+        PaymentService._convert_invoice_payment_method(invoice, {"paymentInfo": {}})
+
+
 def test_create_eft_payment(session, public_user_mock):
     """Assert that the payment records are created."""
     factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
