@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - release/*
+      - feature-*
     paths:
       - "jobs/payment-jobs/**"
       - "pay-api/src/pay_api/models/**"

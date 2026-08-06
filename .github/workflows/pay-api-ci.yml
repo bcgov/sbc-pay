@@ -5,8 +5,10 @@ on:
     branches:
       - main
       - release/*
+      - feature-*
     paths:
       - "pay-api/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
