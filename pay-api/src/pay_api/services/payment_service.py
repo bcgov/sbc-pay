@@ -345,9 +345,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
 
         # OB → CC/DIRECT_PAY with an existing CFS reference: settle the same CFS invoice via CC.
-        is_ob_to_cc = (
-            current_method == PaymentMethod.ONLINE_BANKING.value
-            and new_method in (PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
+        is_ob_to_cc = current_method == PaymentMethod.ONLINE_BANKING.value and new_method in (
+            PaymentMethod.CC.value,
+            PaymentMethod.DIRECT_PAY.value,
         )
         if is_ob_to_cc and invoice_reference:
             invoice.payment_method_code = PaymentMethod.CC.value
