@@ -319,27 +319,41 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         settlement pipeline and must not be switched here — auth-web's outstanding-
         balance flow uses CFS credit-memo consolidation for that case instead.
 
-        Cancels any prior pay-system reference and re-registers the invoice via the
-        target method's pay system; the invoice takes on that pay system's default
-        status (CREATED for CC/DIRECT_PAY/OB, APPROVED for PAD).
+        For OB → CC/DIRECT_PAY with an existing active CFS reference, flip the method
+        flag and keep the CFS invoice — PayBC settles that same CFS invoice via CC.
+        For every other switch, cancel any prior pay-system reference and re-register
+        the invoice via the target method's pay system; the invoice takes on that pay
+        system's default status (CREATED for CC/DIRECT_PAY/OB, APPROVED for PAD).
         """
         new_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
         if not new_method:
             raise BusinessException(Error.INVALID_REQUEST)
 
-        if new_method == invoice.payment_method_code:
+        current_method = invoice.payment_method_code
+        if new_method == current_method:
             return
 
         if invoice.invoice_status_code != InvoiceStatus.CREATED.value:
             raise BusinessException(Error.INVALID_REQUEST)
 
-        if invoice.payment_method_code not in _SWITCHABLE_METHODS or new_method not in _SWITCHABLE_METHODS:
+        if current_method not in _SWITCHABLE_METHODS or new_method not in _SWITCHABLE_METHODS:
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
         if not CodeService.is_payment_method_valid_for_corp_type(invoice.corp_type_code, new_method):
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+
+        # OB → CC/DIRECT_PAY with an existing CFS reference: settle the same CFS invoice via CC.
+        is_ob_to_cc = (
+            current_method == PaymentMethod.ONLINE_BANKING.value
+            and new_method in (PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
+        )
+        if is_ob_to_cc and invoice_reference:
+            invoice.payment_method_code = PaymentMethod.CC.value
+            invoice.save()
+            return
+
         if invoice_reference:
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.save()
