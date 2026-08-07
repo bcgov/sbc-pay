@@ -46,6 +46,7 @@ from .fee_code import FeeCode, FeeCodeSchema
 from .fee_schedule import FeeDetailsSchema, FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .invoice import Invoice, InvoiceSchema, InvoiceSearchModel
+from .invoice_payment_link import InvoicePaymentLink
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
 from .invoice_reference_status_code import InvoiceReferenceStatusCode, InvoiceReferenceStatusCodeSchema
 from .invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema

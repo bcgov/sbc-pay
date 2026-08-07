@@ -325,6 +325,9 @@ def get_topic_for_corp_type(corp_type: str):
     # Will fix this promptly and move this away so it doesn't cause circular dependencies.
     from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel  # noqa: TID252
 
+    if CodeService.is_express_checkout_enabled(corp_type):
+        return current_app.config.get("EXPRESS_CHECKOUT_PAY_TOPIC")
+
     if corp_type == CorpType.NRO.value:
         return current_app.config.get("NAMEX_PAY_TOPIC")
     product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get("product")

@@ -48,7 +48,17 @@ from .invoice_reference import InvoiceReference
 from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
+from .payment_link import PaymentLinkService
 from .payment_transaction import PaymentTransaction
+
+_SWITCHABLE_METHODS = frozenset(
+    {
+        PaymentMethod.CC.value,
+        PaymentMethod.DIRECT_PAY.value,
+        PaymentMethod.ONLINE_BANKING.value,
+        PaymentMethod.PAD.value,
+    }
+)
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
@@ -177,6 +187,34 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return invoice.asdict(include_dynamic_fields=True)
 
     @classmethod
+    @user_context
+    def create_express_checkout_invoice(cls, payment_request: dict[str, Any], **kwargs) -> dict:
+        """Create an invoice via the express-checkout (partner service-account) flow.
+
+        Skips business-level authorization, routes to an adhoc PaymentAccount keyed by
+        the SA's client id, and requires the corp type to have express checkout enabled.
+        Returns the invoice DTO with `paymentUrl` merged in.
+        """
+        user: UserContext = kwargs["user"]
+        client_id = user.client_id
+        if not client_id:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        corp_type = get_str_by_path(payment_request, "businessInfo/corpType")
+        if not corp_type or not CodeService.is_express_checkout_enabled(corp_type):
+            raise BusinessException(Error.EXPRESS_CHECKOUT_NOT_ENABLED)
+
+        authorization = {
+            "account": {
+                "id": f"sa-{client_id}",
+                "paymentInfo": {"methodOfPayment": PaymentMethod.DIRECT_PAY.value},
+            }
+        }
+
+        response = cls.create_invoice(payment_request, authorization)
+        return PaymentLinkService.attach_payment_link(response)
+
+    @classmethod
     def _handle_invoice(cls, invoice, invoice_reference, pay_service, skip_payment):
         """Handle invoice related operations."""
         # Note this flow is for DEV/TEST/SANDBOX ONLY.
@@ -272,38 +310,65 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account.save()
 
     @classmethod
-    def _convert_invoice_to_credit_card(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
-        """Handle conversion of invoice to credit card payment method."""
-        payment_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
+    def _convert_invoice_payment_method(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
+        """Switch an unpaid invoice's payment method.
 
-        is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
-        is_not_changing_to_cc = payment_method not in (
+        Allowed only while the invoice is still CREATED (no pay system has taken
+        ownership yet) and only between the user-selectable methods CC, DIRECT_PAY,
+        ONLINE_BANKING, PAD. APPROVED PAD invoices are already released to the
+        settlement pipeline and must not be switched here — auth-web's outstanding-
+        balance flow uses CFS credit-memo consolidation for that case instead.
+
+        For OB → CC/DIRECT_PAY with an existing active CFS reference, flip the method
+        flag and keep the CFS invoice — PayBC settles that same CFS invoice via CC.
+        For every other switch, cancel any prior pay-system reference and re-register
+        the invoice via the target method's pay system; the invoice takes on that pay
+        system's default status (CREATED for CC/DIRECT_PAY/OB, APPROVED for PAD).
+        """
+        new_method = get_str_by_path(payment_request, "paymentInfo/methodOfPayment")
+        if not new_method:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        current_method = invoice.payment_method_code
+        if new_method == current_method:
+            return
+
+        if invoice.invoice_status_code != InvoiceStatus.CREATED.value:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        if current_method not in _SWITCHABLE_METHODS or new_method not in _SWITCHABLE_METHODS:
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
+        if not CodeService.is_payment_method_valid_for_corp_type(invoice.corp_type_code, new_method):
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
+        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+
+        # OB → CC/DIRECT_PAY with an existing CFS reference: settle the same CFS invoice via CC.
+        is_ob_to_cc = current_method == PaymentMethod.ONLINE_BANKING.value and new_method in (
             PaymentMethod.CC.value,
             PaymentMethod.DIRECT_PAY.value,
         )
-        # can patch only if the current payment method is OB
-        if is_not_currently_on_ob or is_not_changing_to_cc:
-            raise BusinessException(Error.INVALID_REQUEST)
-
-        # check if it has any invoice references already created
-        # if there is any invoice ref , send them to the invoiced credit card flow
-
-        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-        if invoice_reference:
+        if is_ob_to_cc and invoice_reference:
             invoice.payment_method_code = PaymentMethod.CC.value
-        else:
-            pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                PaymentMethod.DIRECT_PAY.value
-            )
-            payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-            pay_service.create_invoice(
-                payment_account,
-                invoice.payment_line_items,
-                invoice,
-                corp_type_code=invoice.corp_type_code,
-            )
+            invoice.save()
+            return
 
-            invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
+        if invoice_reference:
+            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
+            invoice_reference.save()
+
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(new_method)
+        pay_service.create_invoice(
+            payment_account,
+            invoice.payment_line_items,
+            invoice,
+            corp_type_code=invoice.corp_type_code,
+        )
+
+        invoice.payment_method_code = new_method
+        invoice.invoice_status_code = pay_service.get_default_invoice_status()
         invoice.save()
 
     @classmethod
@@ -320,7 +385,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if is_apply_credit:
             cls._apply_credit(invoice)
         else:
-            cls._convert_invoice_to_credit_card(invoice, payment_request)
+            cls._convert_invoice_payment_method(invoice, payment_request)
         current_app.logger.debug(">update_invoice")
         return invoice.asdict()
 

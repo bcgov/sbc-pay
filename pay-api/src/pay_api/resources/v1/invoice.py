@@ -28,6 +28,7 @@ from pay_api.utils.constants import MAKE_PAYMENT
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_str_by_path
 
 bp = Blueprint("INVOICE", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/payment-requests")
@@ -63,19 +64,19 @@ def post_invoice():
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    # Check if user is authorized to perform this action
-    business_identifier = get_str_by_path(request_json, "businessInfo/businessIdentifier")
-    corp_type_code = get_str_by_path(request_json, "businessInfo/corpType")
-    authorization = check_auth(
-        business_identifier=business_identifier,
-        corp_type_code=corp_type_code,
-        contains_role=MAKE_PAYMENT,
-    )
     try:
-        response, status = (
-            PaymentService.create_invoice(request_json, authorization),
-            HTTPStatus.CREATED,
-        )
+        if Role.CREATE_EXPRESS_CHECKOUT_INVOICE.value in (UserContext().roles or []):
+            response = PaymentService.create_express_checkout_invoice(request_json)
+        else:
+            business_identifier = get_str_by_path(request_json, "businessInfo/businessIdentifier")
+            corp_type_code = get_str_by_path(request_json, "businessInfo/corpType")
+            authorization = check_auth(
+                business_identifier=business_identifier,
+                corp_type_code=corp_type_code,
+                contains_role=MAKE_PAYMENT,
+            )
+            response = PaymentService.create_invoice(request_json, authorization)
+        status = HTTPStatus.CREATED
     except (BusinessException, ServiceUnavailableException) as exception:
         return exception.response()
     current_app.logger.debug(">post_invoice")

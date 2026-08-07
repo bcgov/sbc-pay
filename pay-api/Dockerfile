@@ -111,3 +111,4 @@ ENV OTEL_SDK_DISABLED=true \
     OTEL_SERVICE_NAME=pay-api
 
 CMD exec gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:app
+
