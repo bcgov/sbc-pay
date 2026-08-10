@@ -358,8 +358,14 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.save()
 
+        # A CC target requires an existing CFS invoice for PayBC to settle against. Without one
+        # (no active reference at this point), route through DirectSaleService (DIRECT_PAY) — the
+        # pay-connector direct sale API — which doesn't need a CFS invoice. Business rule, not a
+        # legacy hardcode: OB/DIRECT_PAY invoices without a CFS reference can only be paid this way.
+        target_method = PaymentMethod.DIRECT_PAY.value if new_method == PaymentMethod.CC.value else new_method
+
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(new_method)
+        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(target_method)
         pay_service.create_invoice(
             payment_account,
             invoice.payment_line_items,
@@ -367,7 +373,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             corp_type_code=invoice.corp_type_code,
         )
 
-        invoice.payment_method_code = new_method
+        invoice.payment_method_code = target_method
         invoice.invoice_status_code = pay_service.get_default_invoice_status()
         invoice.save()
 
