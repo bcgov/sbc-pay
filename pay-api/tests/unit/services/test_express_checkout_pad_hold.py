@@ -28,7 +28,9 @@ from tests.utilities.base_test import factory_invoice, factory_payment_account
 def _fresh_invoice(payment_method: str, corp_type_code: str = "CP"):
     account = factory_payment_account()
     account.save()
-    invoice = factory_invoice(payment_account=account, payment_method_code=payment_method, corp_type_code=corp_type_code)
+    invoice = factory_invoice(
+        payment_account=account, payment_method_code=payment_method, corp_type_code=corp_type_code
+    )
     invoice.save()
     return invoice
 
