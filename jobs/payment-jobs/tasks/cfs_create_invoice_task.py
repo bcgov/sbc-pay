@@ -433,9 +433,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         or produce garbage. Once the customer redeems the link, `redeem` moves the invoice
         to their real account and it leaves this subquery naturally.
         """
-        return db.session.query(InvoicePaymentLinkModel.invoice_id).filter(
-            InvoicePaymentLinkModel.linked_at.is_(None)
-        )
+        return db.session.query(InvoicePaymentLinkModel.invoice_id).filter(InvoicePaymentLinkModel.linked_at.is_(None))
 
     @classmethod
     def _create_eft_invoices(cls):
