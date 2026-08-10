@@ -109,6 +109,25 @@ class PaymentLinkService:
         db.session.commit()
 
     @classmethod
+    def stamp_partner_notified(cls, invoice_id: int) -> None:
+        """Stamp partner_notified_at on the invoice's link row, if any.
+
+        No-op for non-express-checkout invoices (no link row exists) and idempotent
+        for already-notified rows. Called from every path that publishes a partner
+        event so the link row records when the partner was told.
+        """
+        link = (
+            db.session.query(InvoicePaymentLinkModel)
+            .filter(InvoicePaymentLinkModel.invoice_id == invoice_id)
+            .filter(InvoicePaymentLinkModel.partner_notified_at.is_(None))
+            .first()
+        )
+        if link:
+            link.partner_notified_at = datetime.now(tz=UTC)
+            db.session.add(link)
+            db.session.commit()
+
+    @classmethod
     def find_invoice_by_token(cls, token: str) -> dict:
         """Return the invoice DTO for a valid payment link token.
 

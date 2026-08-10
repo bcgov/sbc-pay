@@ -41,7 +41,7 @@ class PaymentLinkCleanupTask:  # pylint: disable=too-few-public-methods
     @classmethod
     def cleanup_expired_links(cls) -> int:
         """Process expired unclaimed links. Returns the count of invoices marked DELETED."""
-        default_ttl = int(current_app.config.get("PAYMENT_LINK_TOKEN_TTL_DAYS", 30))
+        default_ttl = current_app.config["PAYMENT_LINK_TOKEN_TTL_DAYS"]
         now = datetime.now(tz=UTC)
 
         candidates = (

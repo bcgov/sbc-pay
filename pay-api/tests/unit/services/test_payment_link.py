@@ -88,3 +88,41 @@ def test_resolve_token_allows_consumed_when_flag_set(session, app):
     """resolve_token returns a consumed token when allow_linked=True (idempotent re-visit)."""
     link = _make_link(days_old=0, linked=True)
     assert PaymentLinkService.resolve_token(link.token, allow_linked=True).token == link.token
+
+
+def test_stamp_partner_notified_noop_when_no_link(session, app):
+    """stamp_partner_notified silently does nothing when no link row exists (regular invoice)."""
+    account = factory_payment_account()
+    account.save()
+    invoice = factory_invoice(payment_account=account)
+    invoice.save()
+
+    # No link row for this invoice. Should not raise and should not touch anything.
+    PaymentLinkService.stamp_partner_notified(invoice.id)
+
+    assert InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).count() == 0
+
+
+def test_stamp_partner_notified_stamps_when_link_present(session, app):
+    """stamp_partner_notified sets partner_notified_at when link row exists with NULL timestamp."""
+    link = _make_link(days_old=0, linked=True)
+    assert link.partner_notified_at is None
+
+    PaymentLinkService.stamp_partner_notified(link.invoice_id)
+
+    refreshed = InvoicePaymentLinkModel.find_by_token(link.token)
+    assert refreshed.partner_notified_at is not None
+
+
+def test_stamp_partner_notified_is_idempotent(session, app):
+    """stamp_partner_notified does not clobber a previously set partner_notified_at."""
+    link = _make_link(days_old=0, linked=True)
+    original = datetime(2026, 1, 1, tzinfo=UTC)
+    link.partner_notified_at = original
+    db.session.add(link)
+    db.session.commit()
+
+    PaymentLinkService.stamp_partner_notified(link.invoice_id)
+
+    refreshed = InvoicePaymentLinkModel.find_by_token(link.token)
+    assert refreshed.partner_notified_at == original
