@@ -22,7 +22,6 @@ from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import db
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code, InvoiceStatus, PaymentMethod
-
 from tasks.payment_link_cleanup_task import PaymentLinkCleanupTask
 
 from .factory import factory_create_direct_pay_account, factory_invoice
