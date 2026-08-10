@@ -29,7 +29,9 @@ from pay_api.models import Credit as CreditModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import db
 
 # from pay_api.models import Payment as PaymentModel
 from pay_api.services import CFSService, email_service
@@ -609,3 +611,51 @@ def test_create_online_banking_invoice_exception_handling(session):
 
     inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
     assert inv_ref is None
+
+
+def _stamp_unclaimed_link(invoice_id: int) -> None:
+    """Attach an unlinked invoice_payment_links row — marks the invoice as express-checkout not-yet-redeemed."""
+    link = InvoicePaymentLinkModel(token=f"tok-{invoice_id}", invoice_id=invoice_id)  # noqa: S106
+    db.session.add(link)
+    db.session.commit()
+
+
+def test_create_pad_invoice_skips_unclaimed_express_checkout(session):
+    """PAD invoices with an unclaimed express-checkout link row must NOT hit CFS."""
+    account = factory_create_pad_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        created_on=datetime.now(tz=UTC) - timedelta(days=1),
+        total=10,
+        status_code=InvoiceStatus.APPROVED.value,
+        payment_method_code=None,
+    )
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
+    factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id).save()
+    _stamp_unclaimed_link(invoice.id)
+
+    with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
+        CreateInvoiceTask.create_invoices()
+
+    mock_create_invoice.assert_not_called()
+    assert InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None
+
+
+def test_create_online_banking_invoice_skips_unclaimed_express_checkout(session):
+    """OB invoices with an unclaimed express-checkout link row must NOT hit CFS."""
+    account = factory_create_online_banking_account(auth_account_id="1", status=CfsAccountStatus.ACTIVE.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        created_on=datetime.now(tz=UTC) - timedelta(days=1),
+        total=10,
+        payment_method_code=None,
+    )
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
+    factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id).save()
+    _stamp_unclaimed_link(invoice.id)
+
+    with patch("tasks.cfs_create_invoice_task.CFSService.create_account_invoice") as mock_create_invoice:
+        CreateInvoiceTask.create_invoices()
+
+    mock_create_invoice.assert_not_called()
+    assert InvoiceReferenceModel.find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None

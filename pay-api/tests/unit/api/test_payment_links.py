@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code, PaymentMethod, Role
@@ -103,11 +104,13 @@ def test_get_payment_link_rejects_unknown_token(session, client, jwt, app):
 
 
 def test_redeem_binds_invoice_to_caller_account(session, client, jwt, app):
-    """POST /payment-links/{token}/redemption rebinds the invoice to the caller's account."""
+    """POST /payment-links/{token}/redemption rebinds the invoice from the SA adhoc account to the caller's."""
     _enable_express_checkout()
     target_account = factory_payment_account(auth_account_id="9999")
     target_account.save()
 
+    # Create an express-checkout invoice via the SA path. It should land on the SA adhoc account
+    # (sa-<azp>) — NOT on target_account yet, and the link row should be unclaimed.
     created = client.post(
         "/api/v1/payment-requests",
         data=json.dumps(get_payment_request()),
@@ -116,6 +119,17 @@ def test_redeem_binds_invoice_to_caller_account(session, client, jwt, app):
     token = created.json["paymentUrl"].rsplit("/", 1)[-1]
     invoice_id = created.json["id"]
 
+    # Initial state: on the SA adhoc account, link row exists but unclaimed.
+    initial_invoice = InvoiceService.find_by_id(invoice_id, skip_auth_check=True)
+    sa_account = PaymentAccountModel.find_by_auth_account_id("sa-partner-client")
+    assert sa_account is not None
+    assert initial_invoice.payment_account_id == sa_account.id
+    assert initial_invoice.payment_account_id != target_account.id
+    initial_link = InvoicePaymentLinkModel.find_by_token(token)
+    assert initial_link is not None
+    assert initial_link.linked_at is None
+
+    # Redeem: caller is on target_account (Account-Id header 9999). Link binds invoice to their account.
     user_headers = {
         "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
         "content-type": "application/json",
@@ -125,10 +139,12 @@ def test_redeem_binds_invoice_to_caller_account(session, client, jwt, app):
     with patch("pay_api.services.payment_link.check_auth", return_value=auth_response):
         rv = client.post(f"/api/v1/payment-links/{token}/redemption", headers=user_headers)
 
+    # Post-redemption: invoice moved to target_account, link row stamped as consumed.
     assert rv.status_code == 200
-    assert InvoiceService.find_by_id(invoice_id, skip_auth_check=True).payment_account_id == target_account.id
-    link = InvoicePaymentLinkModel.find_by_token(token)
-    assert link.linked_at is not None
+    bound_invoice = InvoiceService.find_by_id(invoice_id, skip_auth_check=True)
+    assert bound_invoice.payment_account_id == target_account.id
+    consumed_link = InvoicePaymentLinkModel.find_by_token(token)
+    assert consumed_link.linked_at is not None
 
 
 def test_redeem_rejects_second_account(session, client, jwt, app):

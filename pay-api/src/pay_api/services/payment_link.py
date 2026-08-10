@@ -50,7 +50,7 @@ class PaymentLinkService:
 
     @staticmethod
     def _build_url(token: str) -> str:
-        base = current_app.config.get("PAY_NUXT_BASE_URL", "").rstrip("/")
+        base = current_app.config.get("EXPRESS_CHECKOUT_URL", "").rstrip("/")
         return f"{base}/{token}"
 
     @classmethod

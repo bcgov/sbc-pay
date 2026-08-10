@@ -176,7 +176,7 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     AUTH_WEB_URL = os.getenv("AUTH_WEB_URL", "")
     PAY_WEB_URL = os.getenv("PAY_WEB_URL", "")
-    PAY_NUXT_BASE_URL = os.getenv("PAY_NUXT_BASE_URL", "http://localhost:3001/pay")
+    EXPRESS_CHECKOUT_URL = os.getenv("EXPRESS_CHECKOUT_URL", "http://localhost:3001/pay")
     PAYMENT_LINK_TOKEN_TTL_DAYS = int(os.getenv("PAYMENT_LINK_TOKEN_TTL_DAYS", "30"))
 
     NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "")
