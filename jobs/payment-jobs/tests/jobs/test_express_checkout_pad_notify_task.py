@@ -22,7 +22,6 @@ from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import db
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code, InvoiceStatus, PaymentMethod
-
 from tasks.express_checkout_pad_notify_task import ExpressCheckoutPadNotifyTask
 
 from .factory import factory_create_pad_account, factory_invoice
@@ -61,9 +60,7 @@ def test_drain_publishes_and_stamps_when_past_hold_window(session, app):
     invoice = _paid_pad_invoice(paid_days_ago=10)
     link = _link_for(invoice.id)
 
-    with patch(
-        "tasks.express_checkout_pad_notify_task.gcp_queue_publisher.publish_to_queue"
-    ) as mock_publish:
+    with patch("tasks.express_checkout_pad_notify_task.gcp_queue_publisher.publish_to_queue") as mock_publish:
         count = ExpressCheckoutPadNotifyTask.notify_due_invoices()
 
     assert count == 1
@@ -78,9 +75,7 @@ def test_drain_skips_when_still_within_hold_window(session, app):
     invoice = _paid_pad_invoice(paid_days_ago=0)
     _link_for(invoice.id)
 
-    with patch(
-        "tasks.express_checkout_pad_notify_task.gcp_queue_publisher.publish_to_queue"
-    ) as mock_publish:
+    with patch("tasks.express_checkout_pad_notify_task.gcp_queue_publisher.publish_to_queue") as mock_publish:
         count = ExpressCheckoutPadNotifyTask.notify_due_invoices()
 
     assert count == 0
@@ -94,11 +89,10 @@ def test_drain_logs_warning_and_skips_when_link_row_missing(session, app):
     # Existing link row is already notified — the query filter should skip it.
     _link_for(invoice.id, notified=True)
 
-    with patch(
-        "tasks.express_checkout_pad_notify_task.gcp_queue_publisher.publish_to_queue"
-    ) as mock_publish, patch(
-        "tasks.express_checkout_pad_notify_task.current_app.logger.warning"
-    ) as mock_warn:
+    with (
+        patch("tasks.express_checkout_pad_notify_task.gcp_queue_publisher.publish_to_queue") as mock_publish,
+        patch("tasks.express_checkout_pad_notify_task.current_app.logger.warning") as mock_warn,
+    ):
         count = ExpressCheckoutPadNotifyTask.notify_due_invoices()
 
     assert count == 0

@@ -40,8 +40,8 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.code import Code as CodeService
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
+from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.auth_event import AuthEvent, LockAccountDetails
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
@@ -667,9 +667,8 @@ def _process_paid_invoices(inv_references, row):
         if inv.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
             current_app.logger.info("Publishing payment event for OB. Invoice : %s", inv.id)
             _publish_payment_event(inv)
-        elif (
-            inv.payment_method_code == PaymentMethod.PAD.value
-            and CodeService.is_express_checkout_enabled(inv.corp_type_code)
+        elif inv.payment_method_code == PaymentMethod.PAD.value and CodeService.is_express_checkout_enabled(
+            inv.corp_type_code
         ):
             current_app.logger.info(
                 "Holding partner publish for express-checkout PAD invoice %s until reversal window elapses.",
