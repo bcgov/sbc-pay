@@ -160,6 +160,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
+    EXPRESS_CHECKOUT_PAY_TOPIC = os.getenv("EXPRESS_CHECKOUT_PAY_TOPIC", "express-checkout-pay-events-dev")
 
     # API Endpoints
     AUTH_API_URL = os.getenv("AUTH_API_URL", "")
@@ -175,6 +176,9 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     AUTH_WEB_URL = os.getenv("AUTH_WEB_URL", "")
     PAY_WEB_URL = os.getenv("PAY_WEB_URL", "")
+    EXPRESS_CHECKOUT_URL = os.getenv("EXPRESS_CHECKOUT_URL", "http://localhost:3001/pay")
+    PAYMENT_LINK_TOKEN_TTL_DAYS = int(os.getenv("PAYMENT_LINK_TOKEN_TTL_DAYS", "30"))
+
     NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "")
     NOTIFY_API_VERSION = os.getenv("NOTIFY_API_VERSION", "")
     NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"

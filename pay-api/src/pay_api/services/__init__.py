@@ -33,6 +33,7 @@ from .invoice_search import InvoiceSearch as InvoiceSearchService
 from .non_sufficient_funds import NonSufficientFundsService
 from .partner_disbursements import PartnerDisbursements
 from .payment import Payment
+from .payment_link import PaymentLinkService
 from .payment_service import PaymentService
 from .payment_transaction import PaymentTransaction as TransactionService
 from .receipt import Receipt as ReceiptService
