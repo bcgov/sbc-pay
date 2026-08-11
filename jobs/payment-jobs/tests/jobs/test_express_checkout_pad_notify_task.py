@@ -20,7 +20,6 @@ from unittest.mock import patch
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import db
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
-
 from tasks.express_checkout_pad_notify_task import ExpressCheckoutPadNotifyTask
 
 from .factory import factory_create_pad_account, factory_invoice
