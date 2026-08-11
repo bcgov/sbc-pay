@@ -17,10 +17,10 @@
 from datetime import UTC, datetime
 from unittest.mock import patch
 
-from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
+from pay_api.models import db
 from pay_api.services.pad_service import PadService
-from pay_api.utils.cache import cache
-from pay_api.utils.enums import Code, PaymentMethod
+from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.util import subtract_business_days
 from tests.utilities.base_test import factory_invoice, factory_payment_account
 
@@ -35,27 +35,27 @@ def _fresh_invoice(payment_method: str, corp_type_code: str = "CP"):
     return invoice
 
 
-def _enable_express_checkout(corp_type_code: str = "CP"):
-    corp_type = CorpTypeModel.find_by_code(corp_type_code)
-    corp_type.is_express_checkout_enabled = True
-    corp_type.save()
-    cache.delete(Code.CORP_TYPE.value)
+def _attach_link(invoice_id: int) -> None:
+    """Attach an invoice_payment_links row — marks the invoice as express-checkout."""
+    link = InvoicePaymentLinkModel(token=f"tok-{invoice_id}", invoice_id=invoice_id)  # noqa: S106
+    db.session.add(link)
+    db.session.commit()
 
 
 def test_pad_complete_post_invoice_skips_publish_for_express_checkout(session, app):
-    """Create-time publish is suppressed for express-checkout PAD invoices."""
-    _enable_express_checkout()
+    """PAD invoice with a link row (express-checkout) suppresses the create-time publish."""
     invoice = _fresh_invoice(payment_method=PaymentMethod.PAD.value)
+    _attach_link(invoice.id)
 
     with patch.object(PadService, "release_payment_or_reversal") as mock_release:
         PadService().complete_post_invoice(invoice, invoice_reference=None)
     mock_release.assert_not_called()
 
 
-def test_pad_complete_post_invoice_publishes_regular(session, app):
-    """Regular (non-express-checkout) PAD publishes at create-time as today."""
-    # CP corp type is not express-checkout-enabled by default.
+def test_pad_complete_post_invoice_publishes_regular_pad(session, app):
+    """Regular PAD invoice (no link row) publishes at create-time, even if its corp type is express-checkout enabled."""
     invoice = _fresh_invoice(payment_method=PaymentMethod.PAD.value)
+    # Deliberately no link row — this is a regular customer's invoice.
 
     with patch.object(PadService, "release_payment_or_reversal") as mock_release:
         PadService().complete_post_invoice(invoice, invoice_reference=None)

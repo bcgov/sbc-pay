@@ -38,7 +38,6 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.code import Code as CodeService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_link import PaymentLinkService
@@ -661,14 +660,14 @@ def _process_paid_invoices(inv_references, row):
         db.session.add(receipt)
         # Publish to the queue if it's an Online Banking payment. (Regular PAD publishes at
         # create-time via PadService.complete_post_invoice; nothing extra here for it.)
-        # For express-checkout PAD, the create-time publish is suppressed inside
-        # PadService.complete_post_invoice; the drain job (ExpressCheckoutPadNotifyTask)
-        # publishes once the CAS reversal window elapses. No publish from here either.
+        # Express-checkout PAD (identified by presence of an invoice_payment_links row) has its
+        # create-time publish suppressed in PadService.complete_post_invoice; the drain job
+        # (ExpressCheckoutPadNotifyTask) publishes once the CAS reversal window elapses.
         if inv.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
             current_app.logger.info("Publishing payment event for OB. Invoice : %s", inv.id)
             _publish_payment_event(inv)
-        elif inv.payment_method_code == PaymentMethod.PAD.value and CodeService.is_express_checkout_enabled(
-            inv.corp_type_code
+        elif inv.payment_method_code == PaymentMethod.PAD.value and PaymentLinkService.is_express_checkout_invoice(
+            inv.id
         ):
             current_app.logger.info(
                 "Holding partner publish for express-checkout PAD invoice %s until reversal window elapses.",

@@ -109,6 +109,16 @@ class PaymentLinkService:
         db.session.commit()
 
     @classmethod
+    def is_express_checkout_invoice(cls, invoice_id: int) -> bool:
+        """Return True iff the invoice was created via the express-checkout flow.
+
+        Presence of an `invoice_payment_links` row is the source of truth for
+        express-checkout — corp-type flags only govern partner topic routing,
+        not whether a given invoice actually went through the express-checkout path.
+        """
+        return db.session.query(InvoicePaymentLinkModel.token).filter_by(invoice_id=invoice_id).first() is not None
+
+    @classmethod
     def stamp_partner_notified(cls, invoice_id: int) -> None:
         """Stamp partner_notified_at on the invoice's link row, if any.
 

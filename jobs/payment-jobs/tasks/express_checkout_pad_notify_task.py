@@ -13,14 +13,15 @@
 # limitations under the License.
 """Drain the held partner notifications for express-checkout PAD invoices.
 
-For each express-checkout PAD invoice that reached PAID at least
-`EXPRESS_CHECKOUT_PAD_HOLD_DAYS` business days ago and has not yet been
-notified (invoice_payment_links.partner_notified_at IS NULL), publish the
-payment event to the partner topic and stamp the timestamp.
+For each express-checkout PAD invoice (identified by the presence of an
+`invoice_payment_links` row) that reached PAID at least
+`EXPRESS_CHECKOUT_PAD_HOLD_DAYS` business days ago and hasn't been notified
+(`partner_notified_at IS NULL`), publish the payment event to the partner
+topic and stamp the timestamp.
 
-If a reversal happened during the hold window, the invoice will no longer
-be in PAID status and this job will naturally skip it — the NSF flow
-publishes the reversal on its own.
+If a reversal happened during the hold window, the invoice will no longer be
+in PAID status and this job will naturally skip it — the NSF flow publishes
+the reversal on its own.
 """
 
 from datetime import UTC, datetime
@@ -28,7 +29,6 @@ from datetime import UTC, datetime
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
 
-from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import db
@@ -48,10 +48,13 @@ class ExpressCheckoutPadNotifyTask:  # pylint: disable=too-few-public-methods
         hold_days = current_app.config["EXPRESS_CHECKOUT_PAD_HOLD_DAYS"]
         cutoff = subtract_business_days(datetime.now(tz=UTC), hold_days)
 
+        # Inner-join on invoice_payment_links so we only see express-checkout invoices.
+        # Corp-type flag governs topic routing (see get_topic_for_corp_type); it does NOT
+        # decide whether an invoice went through express-checkout.
         candidates = (
-            db.session.query(InvoiceModel)
-            .join(CorpTypeModel, CorpTypeModel.code == InvoiceModel.corp_type_code)
-            .filter(CorpTypeModel.is_express_checkout_enabled.is_(True))
+            db.session.query(InvoiceModel, InvoicePaymentLinkModel)
+            .join(InvoicePaymentLinkModel, InvoicePaymentLinkModel.invoice_id == InvoiceModel.id)
+            .filter(InvoicePaymentLinkModel.partner_notified_at.is_(None))
             .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value)
             .filter(InvoiceModel.payment_date.isnot(None))
@@ -60,20 +63,7 @@ class ExpressCheckoutPadNotifyTask:  # pylint: disable=too-few-public-methods
         )
 
         published = 0
-        for invoice in candidates:
-            link = (
-                db.session.query(InvoicePaymentLinkModel)
-                .filter(InvoicePaymentLinkModel.invoice_id == invoice.id)
-                .filter(InvoicePaymentLinkModel.partner_notified_at.is_(None))
-                .first()
-            )
-            if not link:
-                current_app.logger.warning(
-                    "ExpressCheckoutPadNotifyTask: no unnotified link row for invoice_id=%s; skipping.",
-                    invoice.id,
-                )
-                continue
-
+        for invoice, link in candidates:
             try:
                 cls._publish(invoice)
                 link.partner_notified_at = datetime.now(tz=UTC)
