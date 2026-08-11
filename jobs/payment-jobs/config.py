@@ -141,6 +141,9 @@ class _Config:  # pylint: disable=too-few-public-methods
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
+    EXPRESS_CHECKOUT_PAY_TOPIC = os.getenv("EXPRESS_CHECKOUT_PAY_TOPIC", "express-checkout-pay-events-dev")
+    EXPRESS_CHECKOUT_PAD_HOLD_DAYS = int(os.getenv("EXPRESS_CHECKOUT_PAD_HOLD_DAYS", "3"))
+    PAYMENT_LINK_TOKEN_TTL_DAYS = int(os.getenv("PAYMENT_LINK_TOKEN_TTL_DAYS", "30"))
 
     CFS_ACCOUNT_DESCRIPTION = os.getenv("CFS_ACCOUNT_DESCRIPTION", "BCR")
     CFS_INVOICE_PREFIX = os.getenv("CFS_INVOICE_PREFIX", "REG")

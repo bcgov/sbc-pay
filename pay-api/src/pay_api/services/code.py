@@ -131,10 +131,9 @@ class Code:
     @classmethod
     def get_payment_link_ttl_days(cls, corp_type: str) -> int:
         """Return the corp type's payment link TTL, falling back to the global config default."""
-        default = int(current_app.config.get("PAYMENT_LINK_TOKEN_TTL_DAYS", 30))
         record = cls.find_code_value_by_type_and_code(CodeValue.CORP_TYPE.value, corp_type)
         ttl = record.get("payment_link_ttl_days") if record else None
-        return ttl if ttl is not None else default
+        return ttl if ttl is not None else current_app.config["PAYMENT_LINK_TOKEN_TTL_DAYS"]
 
     @classmethod
     def is_payment_method_valid_for_corp_type(cls, corp_type: str, payment_method: str) -> bool:

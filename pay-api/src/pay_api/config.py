@@ -162,6 +162,11 @@ class _Config:  # pylint: disable=too-few-public-methods
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
     EXPRESS_CHECKOUT_PAY_TOPIC = os.getenv("EXPRESS_CHECKOUT_PAY_TOPIC", "express-checkout-pay-events-dev")
 
+    # Hold window (business days) between CAS marking an express-checkout PAD invoice PAID
+    # and the corresponding partner-topic notification. Tracks the CAS reversal SLA — after
+    # this window, PAD is deemed successful and safe to notify the partner.
+    EXPRESS_CHECKOUT_PAD_HOLD_DAYS = int(os.getenv("EXPRESS_CHECKOUT_PAD_HOLD_DAYS", "3"))
+
     # API Endpoints
     AUTH_API_URL = os.getenv("AUTH_API_URL", "")
     AUTH_API_VERSION = os.getenv("AUTH_API_VERSION", "")

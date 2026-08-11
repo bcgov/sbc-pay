@@ -250,6 +250,16 @@ def get_next_day(val: datetime):
     return val + timedelta(days=1)
 
 
+def subtract_business_days(dt: datetime, n: int) -> datetime:
+    """Return dt minus n business days, skipping weekends and BC statutory holidays."""
+    counter = 0
+    while counter < n:
+        dt = dt - timedelta(days=1)
+        if not is_holiday(dt):
+            counter += 1
+    return dt
+
+
 def get_outstanding_txns_from_date() -> datetime:
     """Return the date value which can be used as start date to calculate outstanding PAD transactions."""
     days_interval: int = current_app.config.get("OUTSTANDING_TRANSACTION_DAYS")
