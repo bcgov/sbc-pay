@@ -34,7 +34,7 @@ bp = Blueprint("INVOICE", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/pay
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST"])
+@cross_origin(methods=["GET", "POST"])
 @_jwt.requires_roles([Role.SYSTEM.value])
 def get_invoices():
     """Get the invoice records."""
@@ -52,7 +52,7 @@ def get_invoices():
 
 
 @bp.route("", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 def post_invoice():
     """Create the payment request records."""
@@ -83,7 +83,7 @@ def post_invoice():
 
 
 @bp.route("/<int:invoice_id>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "DELETE", "PATCH"])
+@cross_origin(methods=["GET", "DELETE", "PATCH"])
 @_jwt.requires_auth
 def get_invoice(invoice_id):
     """Get the invoice records."""
@@ -98,7 +98,7 @@ def get_invoice(invoice_id):
 
 
 @bp.route("/<int:invoice_id>", methods=["DELETE"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 def delete_invoice(invoice_id):
     """Soft delete the invoice records."""
@@ -117,7 +117,7 @@ def delete_invoice(invoice_id):
 
 
 @bp.route("/<int:invoice_id>", methods=["PATCH"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 def patch_invoice(invoice_id: int = None):
     """Update the payment method for an online banking ."""
@@ -145,7 +145,7 @@ def patch_invoice(invoice_id: int = None):
 
 
 @bp.route("/<int:invoice_id>/composite", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "DELETE", "PATCH"])
+@cross_origin(methods=["GET", "DELETE", "PATCH"])
 @_jwt.requires_auth
 def get_invoice_composite(invoice_id):
     """Get the invoice records."""
@@ -160,7 +160,7 @@ def get_invoice_composite(invoice_id):
 
 
 @bp.route("/<int:invoice_id>/reports", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.requires_auth
 def post_invoice_report(invoice_id: int = None):
     """Update the payment method for an online banking ."""
