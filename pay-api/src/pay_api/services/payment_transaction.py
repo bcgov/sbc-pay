@@ -605,7 +605,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         except Exception:  # NOQA pylint: disable=broad-except
             current_app.logger.exception(
                 "Notification to Queue (Topic : %s) failed, marking the transaction %s as EVENT_FAILED",
-                topic, transaction_dao.id,
+                topic,
+                transaction_dao.id,
             )
             transaction_dao.status_code = TransactionStatus.EVENT_FAILED.value
         current_app.logger.debug(">publish_status")
