@@ -4,20 +4,36 @@ import requests
 from github import Github
 
 
-def get_issues_from_repo(target, latest_release_only=False):
-    """Get issue ids from repos on github."""
+def check_response(response, operation):
+    """Raise if Zenhub returned an HTTP error or a GraphQL errors payload."""
+    if response.status_code != 200:
+        raise RuntimeError(f'{operation} failed: HTTP {response.status_code} - {response.text[:500]}')
+    data = response.json()
+    if data.get('errors'):
+        messages = '; '.join(error.get('message', str(error)) for error in data['errors'])
+        raise RuntimeError(f'{operation} failed: {messages}')
+    return data
+
+
+def get_issues_from_repo(target, latest_release_only=False, tag=None):
+    """Get issue ids from repos on github.
+
+    Pass tag to read exactly that release (via the by-tag endpoint), which avoids
+    depending on the ordering/freshness of the release list endpoint.
+    """
     issue_ids = []
     release_names = []
     release_dates = []
     g = Github(os.getenv("GITHUB_ACCESS_TOKEN"))
     repository_owner = 'bcgov'
     repo = g.get_repo(f"{repository_owner}/{target}")
-    for release in repo.get_releases():
+    releases = [repo.get_release(tag)] if tag else repo.get_releases()
+    for release in releases:
         release_names.append(release.title)
         release_dates.append(release.created_at)
         pattern = re.compile(
             r'^\s*(?:\*\s*)?(?:'         # optional "*" bullet prefix
-            r'(\d+)\s*-\s*'              # group 1: "123 -" or "123-"
+            r'(\d+)\s*[-:]\s*'           # group 1: "123 -", "123-", or "123:"
             r'|(\d+)\s*&\s*(\d+)\s*-'    # groups 2,3: "123 & 456 -"
             r'|(\d+)(?=\s+\S)'           # group 4: "123 description"
             r')'
@@ -33,7 +49,7 @@ def get_issues_from_repo(target, latest_release_only=False):
                 elif match.group(4):  # "123 description"
                     issue_ids.append(match.group(4))
 
-        if latest_release_only:
+        if latest_release_only or tag:
             break
     issue_ids = list(set(issue_ids))
     return issue_ids, release_names, release_dates
@@ -46,10 +62,10 @@ def add_issues_to_release(issue_id: int, zenhub_release_hash: str):
     },
     json={
         "operationName": "addIssuesToReleases",
-        "query": "mutation addIssuesToReleases($AddIssuesToReleasesInput: AddIssuesToReleasesInput!) {  addIssuesToReleases(input: $AddIssuesToReleasesInput) {    releases {      id      title      state      startOn      endOn      closedAt      __typename    }    __typename  }}}",
+        "query": "mutation addIssuesToReleases($AddIssuesToReleasesInput: AddIssuesToReleasesInput!) {  addIssuesToReleases(input: $AddIssuesToReleasesInput) {    releases {      id      title      state      startOn      endOn      closedAt      __typename    }    __typename  }}",
         "variables": {"AddIssuesToReleasesInput":{"issueIds":[issue_id],"releaseIds":[zenhub_release_hash]}},
     }, timeout=60000)
-    assert response.status_code == 200
+    check_response(response, 'addIssuesToReleases')
   
 def get_issue_id(issue_number):
     """Get issue from Zenhub."""
@@ -67,9 +83,11 @@ def get_issue_id(issue_number):
                 "workspaceId": os.getenv("TARGET_ZENHUB_WORKSPACE_ID")
             }
         }, timeout=60000)
-    assert response.status_code == 200
-    data = response.json()
-    return data.get('data').get('issueByInfo').get('id')
+    data = check_response(response, f'getGHIssueFull(#{issue_number})')
+    issue = (data.get('data') or {}).get('issueByInfo')
+    if issue is None:
+        return None
+    return issue.get('id')
 
 def get_workspace_release_for_report(release_name):
     """Get workspace release for report."""
@@ -89,8 +107,7 @@ def get_workspace_release_for_report(release_name):
           },
           "query": "query getWorkspaceReleasesForReport($workspaceId: ID!, $pageSize: Int, $after: String, $query: String, $state: ReleaseStateInput, $repositoryIds: [ID!], $ids: [ID!]) {  workspace(id: $workspaceId) {    id    releases(      first: $pageSize      query: $query      after: $after      state: $state      repositoryIds: $repositoryIds      ids: $ids     ) {      totalCount      pageInfo {        hasNextPage        hasPreviousPage        endCursor        __typename      }      nodes {        ...ReleaseForReport        __typename      }      __typename    }    __typename  }}fragment ReleaseForReport on Release {  id  title  state  endOn  closedAt  startOn  description  issuesCount  __typename}"
         }, timeout=60000)
-    assert response.status_code == 200
-    data = response.json()
+    data = check_response(response, 'getWorkspaceReleasesForReport')
     nodes = data.get('data').get('workspace').get('releases').get('nodes')
     if nodes:
         return nodes[0].get('id')
@@ -117,6 +134,5 @@ def create_release(release_name, release_date):
         },
         "query": "mutation createRelease($input: CreateReleaseInput!) {  createRelease(input: $input) {    release {      id      title      startOn      endOn      __typename    }    __typename  }}"
     }, timeout=60000)
-    assert response.status_code == 200
-    data = response.json()
+    data = check_response(response, 'createRelease')
     return data.get('data').get('createRelease').get('release').get('id')

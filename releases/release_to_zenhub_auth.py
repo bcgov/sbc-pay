@@ -12,7 +12,16 @@ if release_id is None:
     print(f'Zenhub release created id: {release_id} - {target_release_name}')
 else:
     print(f'Zenhub release found id: {release_id} - {target_release_name}')
+added, skipped = 0, []
 for issue in auth_release_issue_ids:
     issue_id = get_issue_id(issue)
+    if issue_id is None:
+        skipped.append(issue)
+        print(f'Skipping issue {issue} - not found in Zenhub repository')
+        continue
     add_issues_to_release(issue_id, release_id)
+    added += 1
     print(f'Adding issue {issue} - {issue_id} to Zenhub release {release_id}')
+print(f'\nDone. Added {added} issue(s) to {target_release_name}.')
+if skipped:
+    print(f'Skipped {len(skipped)}: {", ".join(skipped)}')
