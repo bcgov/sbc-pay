@@ -584,12 +584,13 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             status_code = "TRANSACTION_FAILED"
 
         try:
+            topic = get_topic_for_corp_type(invoice.corp_type_code)
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_API.value,
                     message_type=QueueMessageTypes.PAYMENT.value,
                     payload=PaymentTransaction.create_event_payload(invoice, status_code),
-                    topic=get_topic_for_corp_type(invoice.corp_type_code),
+                    topic=topic,
                     corp_type=invoice.corp_type_code,
                     attributes={
                         "statusCode": status_code,
@@ -603,8 +604,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
         except Exception:  # NOQA pylint: disable=broad-except
             current_app.logger.exception(
-                "Notification to Queue failed, marking the transaction %s as EVENT_FAILED",
-                transaction_dao.id,
+                "Notification to Queue (Topic : %s) failed, marking the transaction %s as EVENT_FAILED",
+                topic, transaction_dao.id,
             )
             transaction_dao.status_code = TransactionStatus.EVENT_FAILED.value
         current_app.logger.debug(">publish_status")

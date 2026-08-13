@@ -134,7 +134,7 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
-    EXPRESS_CHECKOUT_PAY_TOPIC = os.getenv("EXPRESS_CHECKOUT_PAY_TOPIC", "express-checkout-pay-events-dev")
+    EXPRESS_CHECKOUT_PAY_TOPIC = os.getenv("EXPRESS_CHECKOUT_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     EXPRESS_CHECKOUT_PAD_HOLD_DAYS = int(os.getenv("EXPRESS_CHECKOUT_PAD_HOLD_DAYS", "3"))
 
     # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
