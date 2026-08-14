@@ -108,7 +108,10 @@ class OAuthService:
             current_app.logger.error(
                 f"HTTPError on POST with status code {exc.response.status_code if exc.response is not None else ''} {endpoint}"
             )
-            if exc.response and exc.response.status_code >= 500:
+            # `if exc.response` is a trap — Response.__bool__ returns False for any
+            # non-2xx (implemented as .ok), so a 502 here evaluates falsy and skips
+            # the 5xx-to-ServiceUnavailable conversion. Same fix as OAuthService.get.
+            if exc.response is not None and exc.response.status_code >= 500:
                 raise ServiceUnavailableException(exc) from exc
             raise exc
         finally:
