@@ -198,7 +198,7 @@ class CFSService(OAuthService):
                 }
             else:
                 current_app.logger.debug(
-                    "<Bank validation HTTP exception- {}",
+                    "<Bank validation HTTP exception- %s",
                     bank_validation_response_obj.text,
                 )
                 validation_response = {
@@ -207,7 +207,7 @@ class CFSService(OAuthService):
                 }
 
         except ServiceUnavailableException as exc:  # suppress all other errors
-            current_app.logger.debug("<Bank validation ServiceUnavailableException exception- {}", exc.error)
+            current_app.logger.debug("<Bank validation ServiceUnavailableException exception- %s", exc.error)
             validation_response = {
                 "status_code": HTTPStatus.SERVICE_UNAVAILABLE.value,
                 "message": [str(exc.error)],
