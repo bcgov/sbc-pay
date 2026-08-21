@@ -235,6 +235,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         failures = []
         for routing_slip in routing_slips:
             cfs_account = None
+            child_routing_slips: list[RoutingSlipModel] = []
+            reversed_numbers: list[str] = []
             remaining_amount_snapshot = routing_slip.remaining_amount
             cas_version_suffix_snapshot = routing_slip.cas_version_suffix
             try:
@@ -250,10 +252,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 )
 
                 # Reverse all child routing slips, as all linked routing slips are also considered as VOID.
-                child_routing_slips: list[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
+                child_routing_slips = RoutingSlipModel.find_children(routing_slip.number)
                 for rs in (routing_slip, *child_routing_slips):
                     receipt_number = rs.generate_cas_receipt_number()
                     CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
+                    # Track this so a failure partway through the group can report exactly which
+                    # members already had their CAS receipt reversed - those can't be re-reversed.
+                    reversed_numbers.append(rs.number)
                 # Void routing slips aren't supposed to have pending transactions, so no need to look at invoices.
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
                 routing_slip.remaining_amount = 0
@@ -283,7 +288,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                         f"Rollback failed for Routing Slip number:={routing_slip.number}, ERROR : {str(rollback_error)}",
                         exc_info=True,
                     )
-                failures.append((routing_slip.number, cls._failure_message(e, rollback_ok)))
+                all_numbers = [routing_slip.number] + [rs.number for rs in child_routing_slips]
+                not_yet_reversed = [number for number in all_numbers if number not in reversed_numbers]
+                partial_state_note = (
+                    f"Already reversed in CAS: {reversed_numbers or 'none'}; not yet reversed: {not_yet_reversed}."
+                )
+                message = f"{cls._failure_message(e, rollback_ok)} {partial_state_note}"
+                failures.append((routing_slip.number, message))
                 continue
 
         cls._notify_job_failures(

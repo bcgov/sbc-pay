@@ -291,6 +291,34 @@ def test_process_void_rollback_on_cas_failure(session):
     assert rs.cas_version_suffix == 1
 
 
+def test_process_void_reports_partial_reversal(session):
+    """If one member of a parent+children VOID group reverses and another fails, say exactly which."""
+    parent_number = "333333333"
+    child_number = "333333334"
+    factory_routing_slip_account(number=parent_number, status=CfsAccountStatus.ACTIVE.value, total=10)
+    factory_routing_slip_account(number=child_number, status=CfsAccountStatus.ACTIVE.value, total=10)
+    parent_rs = RoutingSlipModel.find_by_number(parent_number)
+    child_rs = RoutingSlipModel.find_by_number(child_number)
+    child_rs.status = RoutingSlipStatus.LINKED.value
+    child_rs.parent_number = parent_rs.number
+    child_rs.save()
+    parent_rs.status = RoutingSlipStatus.VOID.value
+    parent_rs.save()
+
+    # First call (the parent itself) succeeds, second call (the child) fails.
+    with patch(
+        "pay_api.services.CFSService.reverse_rs_receipt_in_cfs",
+        side_effect=[None, Exception("cas is down")],
+    ):
+        with patch("tasks.routing_slip_task.JobFailureNotification") as mock_notification:
+            RoutingSlipTask.process_void()
+            error_messages = mock_notification.call_args.kwargs["error_messages"]
+            combined = " ".join(m["error"] for m in error_messages)
+            assert parent_number in combined
+            assert child_number in combined
+            assert "Already reversed in CAS" in combined
+
+
 def test_process_correction(session):
     """Test Routing slip set to CORRECTION."""
     number = "1111111"
