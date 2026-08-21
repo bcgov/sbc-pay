@@ -90,6 +90,43 @@ def test_link_rs(session):
             mock_create_cfs.assert_not_called()
 
 
+def test_link_rs_rollback_on_cas_failure(session):
+    """A failed link should roll the child back to HOLD, restore the parent's balance, and notify once."""
+    child_rs_number = "1234"
+    parent_rs_number = "89799"
+    child_total = 100
+    parent_total = 50
+    factory_routing_slip_account(
+        number=child_rs_number, status=CfsAccountStatus.ACTIVE.value, total=child_total, remaining_amount=0
+    )
+    factory_routing_slip_account(
+        number=parent_rs_number,
+        status=CfsAccountStatus.ACTIVE.value,
+        total=parent_total,
+        # Simulates do_link having already transferred the child's balance onto the parent.
+        remaining_amount=parent_total + child_total,
+    )
+    child_rs = RoutingSlipModel.find_by_number(child_rs_number)
+    parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
+    child_rs.status = RoutingSlipStatus.LINKED.value
+    child_rs.parent_number = parent_rs.number
+    child_rs.save()
+
+    with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs"):
+        with patch.object(CFSService, "get_receipt", return_value={"status": "REV"}):
+            with patch("pay_api.services.CFSService.create_cfs_receipt", side_effect=Exception("cas is down")):
+                with patch("tasks.routing_slip_task.JobFailureNotification") as mock_notification:
+                    RoutingSlipTask.link_routing_slips()
+                    mock_notification.return_value.send_notification.assert_called_once()
+
+    child_rs = RoutingSlipModel.find_by_number(child_rs_number)
+    parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
+    assert child_rs.status == RoutingSlipStatus.HOLD.value
+    assert child_rs.parent_number is None
+    assert float(child_rs.remaining_amount) == child_total
+    assert float(parent_rs.remaining_amount) == parent_total
+
+
 def test_process_nsf(session):
     """Test process NSF."""
     # 1. Link 2 child routing slips with parent.
@@ -202,6 +239,29 @@ def test_process_void(session):
         mock_cfs_reverse_2.assert_not_called()
 
 
+def test_process_void_rollback_on_cas_failure(session):
+    """A failed void should restore cfs_account status, remaining_amount and cas_version_suffix, and notify once."""
+    number = "222222222"
+    factory_routing_slip_account(number=number, status=CfsAccountStatus.ACTIVE.value, total=10, remaining_amount=10)
+    rs = RoutingSlipModel.find_by_number(number)
+    rs.status = RoutingSlipStatus.VOID.value
+    rs.save()
+
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(rs.payment_account_id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.INTERNAL.value)
+
+    with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs", side_effect=Exception("cas is down")):
+        with patch("tasks.routing_slip_task.JobFailureNotification") as mock_notification:
+            RoutingSlipTask.process_void()
+            mock_notification.return_value.send_notification.assert_called_once()
+
+    rs = RoutingSlipModel.find_by_number(number)
+    cfs_account = CfsAccountModel.find_by_id(cfs_account.id)
+    assert cfs_account.status == CfsAccountStatus.ACTIVE.value
+    assert float(rs.remaining_amount) == 10
+    assert rs.cas_version_suffix == 1
+
+
 def test_process_correction(session):
     """Test Routing slip set to CORRECTION."""
     number = "1111111"
@@ -244,6 +304,25 @@ def test_process_correction(session):
 
     assert rs.status == RoutingSlipStatus.COMPLETE.value
     assert rs.cas_version_suffix == 2
+
+
+def test_process_correction_rollback_on_cas_failure(session):
+    """A failed correction should restore cas_version_suffix and notify once."""
+    number = "1111112"
+    factory_routing_slip_account(number=number, status=CfsAccountStatus.ACTIVE.value, total=900)
+    rs = RoutingSlipModel.find_by_number(number)
+    rs.status = RoutingSlipStatus.CORRECTION.value
+    rs.save()
+
+    with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs"):
+        with patch("pay_api.services.CFSService.create_cfs_receipt", side_effect=Exception("cas is down")):
+            with patch("tasks.routing_slip_task.JobFailureNotification") as mock_notification:
+                RoutingSlipTask.process_correction()
+                mock_notification.return_value.send_notification.assert_called_once()
+
+    rs = RoutingSlipModel.find_by_number(number)
+    assert rs.status == RoutingSlipStatus.CORRECTION.value
+    assert rs.cas_version_suffix == 1
 
 
 def test_link_to_nsf_rs(session):
