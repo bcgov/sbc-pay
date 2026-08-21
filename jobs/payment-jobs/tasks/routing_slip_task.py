@@ -66,7 +66,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             # 4. Change the status.
             cfs_account = None
             parent_rs = None
-            parent_rs_remaining_snapshot = None
+            parent_rs_remaining_after_sync_link = None
             try:
                 current_app.logger.debug(f"Linking Routing Slip: {routing_slip.number}")
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(routing_slip.payment_account_id)
@@ -81,7 +81,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
                 # apply receipt to parent cfs account
                 parent_rs = RoutingSlipModel.find_by_number(routing_slip.parent_number)
-                parent_rs_remaining_snapshot = parent_rs.remaining_amount
+                parent_rs_remaining_after_sync_link = parent_rs.remaining_amount
                 parent_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
                     parent_rs.payment_account_id
                 )
@@ -119,8 +119,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
                     exc_info=True,
                 )
-                cls._rollback_failed_link(routing_slip, parent_rs, parent_rs_remaining_snapshot)
-                failures.append((routing_slip.number, str(e)))
+                rollback_ok = cls._rollback_failed_link(routing_slip, parent_rs, parent_rs_remaining_after_sync_link)
+                failures.append((routing_slip.number, cls._failure_message(e, rollback_ok)))
                 continue
 
         cls._notify_job_failures(
@@ -159,11 +159,17 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     payment_account.id, PaymentMethod.INTERNAL.value
                 )
 
-                CFSService.reverse_rs_receipt_in_cfs(
-                    cfs_account,
-                    rs.generate_cas_receipt_number(),
-                    ReverseOperation.CORRECTION.value,
-                )
+                # Skip if a previous, partially-failed attempt already reversed this receipt in CAS -
+                # reversing an already-reversed receipt is not guaranteed to be safe to retry.
+                if (
+                    CFSService.get_receipt(cfs_account, rs.generate_cas_receipt_number()).get("status")
+                    != CfsReceiptStatus.REV.value
+                ):
+                    CFSService.reverse_rs_receipt_in_cfs(
+                        cfs_account,
+                        rs.generate_cas_receipt_number(),
+                        ReverseOperation.CORRECTION.value,
+                    )
                 # Update the version, which generates a new receipt number. This is to avoid duplicate receipt number.
                 rs.cas_version_suffix += 1
                 # Recreate the receipt with the modified total.
@@ -194,9 +200,17 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 # Note: this only undoes the cas_version_suffix bump. If the original CAS receipt was
                 # already reversed before the failure, that reversal itself can't be undone from here -
                 # it needs the same manual recovery as any other CAS-side failure.
-                rs.cas_version_suffix = cas_version_suffix_snapshot
-                rs.save()
-                failures.append((rs.number, str(e)))
+                rollback_ok = True
+                try:
+                    rs.cas_version_suffix = cas_version_suffix_snapshot
+                    rs.save()
+                except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
+                    rollback_ok = False
+                    current_app.logger.error(
+                        f"Rollback failed for Routing Slip number:={rs.number}, ERROR : {str(rollback_error)}",
+                        exc_info=True,
+                    )
+                failures.append((rs.number, cls._failure_message(e, rollback_ok)))
                 continue
 
         cls._notify_job_failures(
@@ -256,12 +270,20 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 # Note: this only undoes our own DB-side changes for this attempt. Any receipt that
                 # was already reversed in CAS before the failure can't be undone from here - it needs
                 # the same manual recovery as any other CAS-side failure.
-                if cfs_account is not None:
-                    cfs_account.status = CfsAccountStatus.ACTIVE.value
-                routing_slip.remaining_amount = remaining_amount_snapshot
-                routing_slip.cas_version_suffix = cas_version_suffix_snapshot
-                routing_slip.save()
-                failures.append((routing_slip.number, str(e)))
+                rollback_ok = True
+                try:
+                    if cfs_account is not None:
+                        cfs_account.status = CfsAccountStatus.ACTIVE.value
+                    routing_slip.remaining_amount = remaining_amount_snapshot
+                    routing_slip.cas_version_suffix = cas_version_suffix_snapshot
+                    routing_slip.save()
+                except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
+                    rollback_ok = False
+                    current_app.logger.error(
+                        f"Rollback failed for Routing Slip number:={routing_slip.number}, ERROR : {str(rollback_error)}",
+                        exc_info=True,
+                    )
+                failures.append((routing_slip.number, cls._failure_message(e, rollback_ok)))
                 continue
 
         cls._notify_job_failures(
@@ -417,8 +439,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         cls,
         routing_slip: RoutingSlipModel,
         parent_rs: RoutingSlipModel,
-        parent_rs_remaining_snapshot: Decimal,
-    ) -> None:
+        parent_rs_remaining_after_sync_link: Decimal,
+    ) -> bool:
         """Undo the do_link changes so a failed link doesn't leave a half-migrated routing slip.
 
         - db.session.rollback() (called by the caller before this) only undoes changes made during
@@ -429,22 +451,34 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
           reversed before the failure. HOLD blocks any spend either way, so it's safe regardless.
           ACTIVE would be wrong if the receipt is gone and the balance isn't backed by anything in CAS.
         - cfs_account is left as-is for the same reason.
-        - A person must check the real CAS state (see the routing slip unlink runbook) before moving
-          this back to ACTIVE.
+        - A person must check the real CAS receipt state for this routing slip before moving it back
+          to ACTIVE.
+
+        Returns False if the rollback itself failed - the caller should treat that as more urgent
+        than a routine CAS failure, since the routing slip's state is then unknown, not just on HOLD.
         """
         try:
-            if parent_rs is not None and parent_rs_remaining_snapshot is not None:
-                parent_rs.remaining_amount = parent_rs_remaining_snapshot - routing_slip.total
+            if parent_rs is not None and parent_rs_remaining_after_sync_link is not None:
+                parent_rs.remaining_amount = parent_rs_remaining_after_sync_link - routing_slip.total
                 parent_rs.save()
             routing_slip.status = RoutingSlipStatus.HOLD.value
             routing_slip.parent_number = None
             routing_slip.remaining_amount = routing_slip.total
             routing_slip.save()
+            return True
         except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(
                 f"Rollback failed for Routing Slip number:={routing_slip.number}, ERROR : {str(rollback_error)}",
                 exc_info=True,
             )
+            return False
+
+    @staticmethod
+    def _failure_message(error: Exception, rollback_ok: bool) -> str:
+        """Build the failure message, flagging when the rollback itself failed as more urgent."""
+        if rollback_ok:
+            return str(error)
+        return f"URGENT - rollback also failed, routing slip state is unknown. Original error: {error}"
 
     @classmethod
     def _notify_job_failures(cls, failures: list[tuple[str, str]], subject: str, file_name: str, job_name: str) -> None:
