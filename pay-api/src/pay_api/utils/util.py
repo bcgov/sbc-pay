@@ -337,7 +337,7 @@ def get_topic_for_corp_type(corp_type: str):
     ones — via `current_app.config`. The convention is on the config key NAME:
     `<CORP_TYPE_UPPER>_PAY_TOPIC` → topic name (matches the existing
     `BUSINESS_PAY_TOPIC` / `NAMEX_PAY_TOPIC` style). Partner keys are populated
-    dynamically from env vars at boot (see config._load_partner_topic_env),
+    dynamically from env vars at boot,
     so onboarding a partner requires no code change here — just the 1Password
     field, one line in vaults.gcp.env, and a redeploy.
     """
