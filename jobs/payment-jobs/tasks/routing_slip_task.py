@@ -192,18 +192,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     f"Error on Processing CORRECTION for :={rs.number}, routing slip : {rs.id}, ERROR : {str(e)}",
                     exc_info=True,
                 )
-                # Only the cas_version_suffix bump is undone. A reversal that already went through in
-                # CAS stays reversed - the next run detects that and skips re-reversing it.
-                rollback_ok = True
-                try:
-                    rs.cas_version_suffix = cas_version_suffix_snapshot
-                    rs.save()
-                except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
-                    rollback_ok = False
-                    current_app.logger.error(
-                        f"Rollback failed for Routing Slip number:={rs.number}, ERROR : {str(rollback_error)}",
-                        exc_info=True,
-                    )
+                rollback_ok = cls._rollback_failed_correction(rs, cas_version_suffix_snapshot)
                 failures.append((rs.number, cls._failure_message(e, rollback_ok)))
                 continue
 
@@ -268,31 +257,12 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
                     exc_info=True,
                 )
-                # Only our own DB-side changes are undone. Receipts already reversed in CAS stay
-                # reversed - the next run detects that and skips re-reversing them.
-                rollback_ok = True
-                try:
-                    if cfs_account is not None:
-                        cfs_account.status = CfsAccountStatus.ACTIVE.value
-                    routing_slip.remaining_amount = remaining_amount_snapshot
-                    routing_slip.cas_version_suffix = cas_version_suffix_snapshot
-                    routing_slip.save()
-                except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
-                    rollback_ok = False
-                    current_app.logger.error(
-                        f"Rollback failed for Routing Slip number:={routing_slip.number}, ERROR : {str(rollback_error)}",
-                        exc_info=True,
-                    )
-                message = cls._failure_message(e, rollback_ok)
-                if reversed_numbers:
-                    # Only worth saying when the group was partly processed - these receipts are
-                    # already reversed in CAS and can't be re-reversed on a retry.
-                    all_numbers = [routing_slip.number] + [rs.number for rs in child_routing_slips]
-                    not_yet_reversed = [number for number in all_numbers if number not in reversed_numbers]
-                    message += (
-                        f" Already reversed in CAS: {', '.join(reversed_numbers)};"
-                        f" not yet reversed: {', '.join(not_yet_reversed) or 'none'}."
-                    )
+                rollback_ok = cls._rollback_failed_void(
+                    routing_slip, cfs_account, remaining_amount_snapshot, cas_version_suffix_snapshot
+                )
+                message = cls._failure_message(e, rollback_ok) + cls._partial_reversal_note(
+                    routing_slip, child_routing_slips, reversed_numbers
+                )
                 failures.append((routing_slip.number, message))
                 continue
 
@@ -483,14 +453,68 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             )
             return False
 
+    @classmethod
+    def _rollback_failed_correction(cls, routing_slip: RoutingSlipModel, cas_version_suffix: int) -> bool:
+        """Undo the version bump from a failed correction. See _rollback_failed_link for the pattern.
+
+        A reversal that already went through in CAS stays reversed - the next run detects that and
+        skips re-reversing it.
+        """
+        try:
+            routing_slip.cas_version_suffix = cas_version_suffix
+            routing_slip.save()
+            return True
+        except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
+            current_app.logger.error(
+                f"Rollback failed for Routing Slip number:={routing_slip.number}, ERROR : {str(rollback_error)}",
+                exc_info=True,
+            )
+            return False
+
+    @classmethod
+    def _rollback_failed_void(
+        cls,
+        routing_slip: RoutingSlipModel,
+        cfs_account: CfsAccountModel,
+        remaining_amount: Decimal,
+        cas_version_suffix: int,
+    ) -> bool:
+        """Undo our own changes from a failed void. See _rollback_failed_link for the pattern.
+
+        Receipts already reversed in CAS stay reversed - the next run detects that and skips
+        re-reversing them.
+        """
+        try:
+            if cfs_account is not None:
+                cfs_account.status = CfsAccountStatus.ACTIVE.value
+            routing_slip.remaining_amount = remaining_amount
+            routing_slip.cas_version_suffix = cas_version_suffix
+            routing_slip.save()
+            return True
+        except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
+            current_app.logger.error(
+                f"Rollback failed for Routing Slip number:={routing_slip.number}, ERROR : {str(rollback_error)}",
+                exc_info=True,
+            )
+            return False
+
+    @staticmethod
+    def _partial_reversal_note(
+        routing_slip: RoutingSlipModel, child_routing_slips: list[RoutingSlipModel], reversed_numbers: list[str]
+    ) -> str:
+        """Describe which members of a void group were already reversed in CAS, if any were."""
+        if not reversed_numbers:
+            return ""
+        all_numbers = [routing_slip.number] + [rs.number for rs in child_routing_slips]
+        not_yet_reversed = [number for number in all_numbers if number not in reversed_numbers]
+        return (
+            f" Already reversed in CAS: {', '.join(reversed_numbers)};"
+            f" not yet reversed: {', '.join(not_yet_reversed) or 'none'}."
+        )
+
     @staticmethod
     def _receipt_already_reversed(cfs_account: CfsAccountModel, receipt_number: str) -> bool:
-        """Whether CAS already has this receipt as reversed.
-
-        A partially-failed earlier attempt can leave the receipt reversed in CAS while our own
-        records still look untouched. Reversing an already-reversed receipt isn't guaranteed to be
-        safe, so callers skip that step when this returns True.
-        """
+        """Whether CAS already has this receipt as reversed."""
         return CFSService.get_receipt(cfs_account, receipt_number).get("status") == CfsReceiptStatus.REV.value
 
     @staticmethod
