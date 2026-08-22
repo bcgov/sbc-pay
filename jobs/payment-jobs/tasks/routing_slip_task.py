@@ -238,11 +238,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 child_routing_slips = RoutingSlipModel.find_children(routing_slip.number)
                 for rs in (routing_slip, *child_routing_slips):
                     receipt_number = rs.generate_cas_receipt_number()
-                    # An earlier attempt may have failed partway through this same group.
                     if not cls._receipt_already_reversed(cfs_account, receipt_number):
                         CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
-                    # Track this so a failure partway through the group can report exactly which
-                    # members already had their CAS receipt reversed.
                     reversed_numbers.append(rs.number)
                 # Void routing slips aren't supposed to have pending transactions, so no need to look at invoices.
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
@@ -455,11 +452,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _rollback_failed_correction(cls, routing_slip: RoutingSlipModel, cas_version_suffix: int) -> bool:
-        """Undo the version bump from a failed correction. See _rollback_failed_link for the pattern.
-
-        A reversal that already went through in CAS stays reversed - the next run detects that and
-        skips re-reversing it.
-        """
+        """Undo the version bump from a failed correction. See _rollback_failed_link for the pattern."""
         try:
             routing_slip.cas_version_suffix = cas_version_suffix
             routing_slip.save()
@@ -479,11 +472,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         remaining_amount: Decimal,
         cas_version_suffix: int,
     ) -> bool:
-        """Undo our own changes from a failed void. See _rollback_failed_link for the pattern.
-
-        Receipts already reversed in CAS stay reversed - the next run detects that and skips
-        re-reversing them.
-        """
+        """Undo our own changes from a failed void. See _rollback_failed_link for the pattern."""
         try:
             if cfs_account is not None:
                 cfs_account.status = CfsAccountStatus.ACTIVE.value
