@@ -256,16 +256,18 @@ def test_process_void(session):
     parent_rs.status = RoutingSlipStatus.VOID.value
     parent_rs.save()
 
-    with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs") as mock_cfs_reverse:
-        RoutingSlipTask.process_void()
-        mock_cfs_reverse.assert_called()
+    with patch.object(CFSService, "get_receipt", return_value={}):
+        with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs") as mock_cfs_reverse:
+            RoutingSlipTask.process_void()
+            mock_cfs_reverse.assert_called()
 
     # Assert the records.
     assert float(RoutingSlipModel.find_by_number(parent_rs.number).remaining_amount) == 0
 
-    with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs") as mock_cfs_reverse_2:
-        RoutingSlipTask.process_void()
-        mock_cfs_reverse_2.assert_not_called()
+    with patch.object(CFSService, "get_receipt", return_value={}):
+        with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs") as mock_cfs_reverse_2:
+            RoutingSlipTask.process_void()
+            mock_cfs_reverse_2.assert_not_called()
 
 
 def test_process_void_rollback_on_cas_failure(session):
@@ -279,10 +281,11 @@ def test_process_void_rollback_on_cas_failure(session):
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(rs.payment_account_id)
     cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.INTERNAL.value)
 
-    with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs", side_effect=Exception("cas is down")):
-        with patch("tasks.routing_slip_task.JobFailureNotification") as mock_notification:
-            RoutingSlipTask.process_void()
-            mock_notification.return_value.send_notification.assert_called_once()
+    with patch.object(CFSService, "get_receipt", return_value={}):
+        with patch("pay_api.services.CFSService.reverse_rs_receipt_in_cfs", side_effect=Exception("cas is down")):
+            with patch("tasks.routing_slip_task.JobFailureNotification") as mock_notification:
+                RoutingSlipTask.process_void()
+                mock_notification.return_value.send_notification.assert_called_once()
 
     rs = RoutingSlipModel.find_by_number(number)
     cfs_account = CfsAccountModel.find_by_id(cfs_account.id)
@@ -306,17 +309,18 @@ def test_process_void_reports_partial_reversal(session):
     parent_rs.save()
 
     # First call (the parent itself) succeeds, second call (the child) fails.
-    with patch(
-        "pay_api.services.CFSService.reverse_rs_receipt_in_cfs",
-        side_effect=[None, Exception("cas is down")],
-    ):
-        with patch("tasks.routing_slip_task.JobFailureNotification") as mock_notification:
-            RoutingSlipTask.process_void()
-            error_messages = mock_notification.call_args.kwargs["error_messages"]
-            combined = " ".join(m["error"] for m in error_messages)
-            assert parent_number in combined
-            assert child_number in combined
-            assert "Already reversed in CAS" in combined
+    with patch.object(CFSService, "get_receipt", return_value={}):
+        with patch(
+            "pay_api.services.CFSService.reverse_rs_receipt_in_cfs",
+            side_effect=[None, Exception("cas is down")],
+        ):
+            with patch("tasks.routing_slip_task.JobFailureNotification") as mock_notification:
+                RoutingSlipTask.process_void()
+                error_messages = mock_notification.call_args.kwargs["error_messages"]
+                combined = " ".join(m["error"] for m in error_messages)
+                assert parent_number in combined
+                assert child_number in combined
+                assert "Already reversed in CAS" in combined
 
 
 def test_process_correction(session):
