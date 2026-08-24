@@ -160,7 +160,16 @@ class _Config:  # pylint: disable=too-few-public-methods
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
-    EXPRESS_CHECKOUT_PAY_TOPIC = os.getenv("EXPRESS_CHECKOUT_PAY_TOPIC", "express-checkout-pay-events-dev")
+
+    # Auto-load partner (express-checkout) topic env vars into the config class.
+    # Convention: env var name `<CORP_TYPE_UPPER>_PAY_TOPIC`, value = literal topic
+    # name (populated per env from 1Password → vaults.gcp.env). Onboarding a
+    # partner requires no code change — just adding the env var.
+    # Already-declared internal topics above are effectively re-set to the same
+    # value from env (no-op); this loop only *adds* net-new partner keys.
+    for _k, _v in os.environ.items():
+        if _k.endswith("_PAY_TOPIC"):
+            locals()[_k] = _v
 
     # Hold window (business days) between CAS marking an express-checkout PAD invoice PAID
     # and the corresponding partner-topic notification. Tracks the CAS reversal SLA — after
