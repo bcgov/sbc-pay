@@ -118,7 +118,9 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
                     exc_info=True,
                 )
-                rollback_ok = cls._rollback_failed_link(routing_slip, parent_rs, parent_rs_remaining_after_sync_link)
+                rollback_ok = cls._rollback_and_hold_failed_link(
+                    routing_slip, parent_rs, parent_rs_remaining_after_sync_link
+                )
                 failures.append((routing_slip.number, cls._failure_message(e, rollback_ok)))
                 continue
 
@@ -412,7 +414,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         return (pending_invoice_count > 0, pending_invoice_count)
 
     @classmethod
-    def _rollback_failed_link(
+    def _rollback_and_hold_failed_link(
         cls,
         routing_slip: RoutingSlipModel,
         parent_rs: RoutingSlipModel,
@@ -452,7 +454,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _rollback_failed_correction(cls, routing_slip: RoutingSlipModel, cas_version_suffix: int) -> bool:
-        """Undo the version bump from a failed correction. See _rollback_failed_link for the pattern."""
+        """Undo the version bump from a failed correction. See _rollback_and_hold_failed_link for the pattern."""
         try:
             routing_slip.cas_version_suffix = cas_version_suffix
             routing_slip.save()
@@ -472,7 +474,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         remaining_amount: Decimal,
         cas_version_suffix: int,
     ) -> bool:
-        """Undo our own changes from a failed void. See _rollback_failed_link for the pattern."""
+        """Undo our own changes from a failed void. See _rollback_and_hold_failed_link for the pattern."""
         try:
             if cfs_account is not None:
                 cfs_account.status = CfsAccountStatus.ACTIVE.value
