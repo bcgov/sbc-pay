@@ -91,6 +91,8 @@ def run(job_name, argument=None):
     from tasks.distribution_task import DistributionTask
     from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
     from tasks.ejv_payment_task import EjvPaymentTask
+    from tasks.express_checkout_pad_notify_task import ExpressCheckoutPadNotifyTask
+    from tasks.payment_link_cleanup_task import PaymentLinkCleanupTask
     from tasks.stale_payment_task import StalePaymentTask
     from tasks.statement_notification_task import StatementNotificationTask
     from tasks.statement_task import StatementTask
@@ -161,6 +163,10 @@ def run(job_name, argument=None):
                 AdhocInvoiceStatusCheckTask.check_invoice_statuses()
             case "PERMISSION_CHECK":
                 PayJobPermissionCheckTask.check()
+            case "CLEANUP_PAYMENT_LINKS":
+                PaymentLinkCleanupTask.cleanup_expired_links()
+            case "EXPRESS_CHECKOUT_PAD_NOTIFY":
+                ExpressCheckoutPadNotifyTask.notify_due_invoices()
             case _:
                 application.logger.warning(f"job_name={job_name} status=unknown_job")
                 return

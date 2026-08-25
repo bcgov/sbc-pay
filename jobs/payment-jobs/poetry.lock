@@ -2059,6 +2059,18 @@ files = [
 ]
 
 [[package]]
+name = "nanoid"
+version = "2.0.0"
+description = "A tiny, secure, URL-friendly, unique string ID generator for Python"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "nanoid-2.0.0-py3-none-any.whl", hash = "sha256:90aefa650e328cffb0893bbd4c236cfd44c48bc1f2d0b525ecc53c3187b653bb"},
+    {file = "nanoid-2.0.0.tar.gz", hash = "sha256:5a80cad5e9c6e9ae3a41fa2fb34ae189f7cb420b2a5d8f82bd9d23466e4efa68"},
+]
+
+[[package]]
 name = "opentelemetry-api"
 version = "1.42.1"
 description = "OpenTelemetry Python API"
@@ -2360,6 +2372,7 @@ mako = "1.3.12"
 markupsafe = "2.1.5"
 marshmallow = "3.21.1"
 marshmallow-sqlalchemy = "1.0.0"
+nanoid = "^2.0.0"
 opentelemetry-instrumentation-sqlalchemy = "^0.63b1"
 packaging = "24.0"
 proto-plus = "1.28.0"
@@ -2392,9 +2405,9 @@ werkzeug = "^3.1.4"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "main"
-resolved_reference = "19ffc5da8333965f140e5fe34de892c3d029190b"
+url = "https://github.com/sumesh85/sbc-pay.git"
+reference = "34304-2"
+resolved_reference = "9df89684365840a61a315345225e4e162e1a9af4"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3558,4 +3571,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "d3bae3e3ee7ac90578c466a2ff6a4aa21ba3f0d6d95d2cd3c7b587513ef34e0c"
+content-hash = "b1b329259ccbffb99d831b4e0cc3ebd16f19ddf099a784c674f973ad3832e609"

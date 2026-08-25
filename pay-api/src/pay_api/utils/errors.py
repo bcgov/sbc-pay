@@ -26,6 +26,12 @@ class Error(Enum):
 
     INVALID_PAYMENT_METHOD = "INVALID_PAYMENT_METHOD", HTTPStatus.BAD_REQUEST
 
+    EXPRESS_CHECKOUT_NOT_ENABLED = (
+        "EXPRESS_CHECKOUT_NOT_ENABLED",
+        HTTPStatus.BAD_REQUEST,
+        "Express checkout is not enabled for this corp type.",
+    )
+
     INVALID_TRANSACTION = "INVALID_TRANSACTION", HTTPStatus.BAD_REQUEST
 
     INVALID_REFUND = "INVALID_REFUND", HTTPStatus.BAD_REQUEST

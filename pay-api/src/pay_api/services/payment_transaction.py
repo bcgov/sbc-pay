@@ -34,6 +34,7 @@ from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
+from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.dataclasses import PaymentToken
 from pay_api.utils.enums import (
@@ -583,21 +584,29 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             status_code = "TRANSACTION_FAILED"
 
         try:
+            topic = get_topic_for_corp_type(invoice.corp_type_code)
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_API.value,
                     message_type=QueueMessageTypes.PAYMENT.value,
                     payload=PaymentTransaction.create_event_payload(invoice, status_code),
-                    topic=get_topic_for_corp_type(invoice.corp_type_code),
+                    topic=topic,
                     corp_type=invoice.corp_type_code,
+                    attributes={
+                        "statusCode": status_code,
+                        "corpTypeCode": invoice.corp_type_code,
+                        "paymentMethod": invoice.payment_method_code,
+                    },
                 )
             )
+            # Stamp partner_notified_at on the express-checkout link row (no-op otherwise).
+            PaymentLinkService.stamp_partner_notified(invoice.id)
 
-        except Exception as e:  # NOQA pylint: disable=broad-except
-            current_app.logger.error(e)
-            current_app.logger.warning(
-                f"Notification to Queue failed, marking the transaction : {transaction_dao.id} as EVENT_FAILED",
-                e,
+        except Exception:  # NOQA pylint: disable=broad-except
+            current_app.logger.exception(
+                "Notification to Queue (Topic : %s) failed, marking the transaction %s as EVENT_FAILED",
+                topic,
+                transaction_dao.id,
             )
             transaction_dao.status_code = TransactionStatus.EVENT_FAILED.value
         current_app.logger.debug(">publish_status")

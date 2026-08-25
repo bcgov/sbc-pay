@@ -25,6 +25,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
@@ -266,6 +267,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             db.session.query(InvoiceModel.payment_account_id)
             .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value)
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value)
+            .filter(InvoiceModel.id.notin_(cls._unclaimed_express_checkout_invoice_ids()))
             .subquery()
         )
 
@@ -287,6 +289,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value)
                 .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value)
                 .filter(InvoiceModel.id.notin_(cls._active_invoice_reference_subquery()))
+                .filter(InvoiceModel.id.notin_(cls._unclaimed_express_checkout_invoice_ids()))
                 .order_by(InvoiceModel.created_on.desc())
                 .all()
             )
@@ -423,6 +426,16 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         )
 
     @classmethod
+    def _unclaimed_express_checkout_invoice_ids(cls):
+        """Invoice IDs still parked on an SA adhoc account (link row exists, unredeemed).
+
+        The SA account has no real CFS banking info, so CFS invoice creation would fail
+        or produce garbage. Once the customer redeems the link, `redeem` moves the invoice
+        to their real account and it leaves this subquery naturally.
+        """
+        return db.session.query(InvoicePaymentLinkModel.invoice_id).filter(InvoicePaymentLinkModel.linked_at.is_(None))
+
+    @classmethod
     def _create_eft_invoices(cls):
         """Create EFT invoices in CFS."""
         # Note we can't roll up for EFT, because doing refunds for invoices it's not possible to get the line
@@ -527,6 +540,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         invoices: list[InvoiceModel] = (
             InvoiceModel.query.filter_by(payment_method_code=payment_method.value)
             .filter_by(invoice_status_code=InvoiceStatus.CREATED.value)
+            .filter(InvoiceModel.id.notin_(cls._unclaimed_express_checkout_invoice_ids()))
             .order_by(InvoiceModel.created_on.asc())
             .all()
         )

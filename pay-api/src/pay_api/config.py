@@ -161,6 +161,21 @@ class _Config:  # pylint: disable=too-few-public-methods
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
 
+    # Auto-load partner (express-checkout) topic env vars into the config class.
+    # Convention: env var name `<CORP_TYPE_UPPER>_PAY_TOPIC`, value = literal topic
+    # name (populated per env from 1Password → vaults.gcp.env). Onboarding a
+    # partner requires no code change — just adding the env var.
+    # Already-declared internal topics above are effectively re-set to the same
+    # value from env (no-op); this loop only *adds* net-new partner keys.
+    for _k, _v in os.environ.items():
+        if _k.endswith("_PAY_TOPIC"):
+            locals()[_k] = _v
+
+    # Hold window (business days) between CAS marking an express-checkout PAD invoice PAID
+    # and the corresponding partner-topic notification. Tracks the CAS reversal SLA — after
+    # this window, PAD is deemed successful and safe to notify the partner.
+    EXPRESS_CHECKOUT_PAD_HOLD_DAYS = int(os.getenv("EXPRESS_CHECKOUT_PAD_HOLD_DAYS", "3"))
+
     # API Endpoints
     AUTH_API_URL = os.getenv("AUTH_API_URL", "")
     AUTH_API_VERSION = os.getenv("AUTH_API_VERSION", "")
@@ -175,6 +190,9 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     AUTH_WEB_URL = os.getenv("AUTH_WEB_URL", "")
     PAY_WEB_URL = os.getenv("PAY_WEB_URL", "")
+    EXPRESS_CHECKOUT_URL = os.getenv("EXPRESS_CHECKOUT_URL", "http://localhost:3001/pay")
+    PAYMENT_LINK_TOKEN_TTL_DAYS = int(os.getenv("PAYMENT_LINK_TOKEN_TTL_DAYS", "30"))
+
     NOTIFY_API_URL = os.getenv("NOTIFY_API_URL", "")
     NOTIFY_API_VERSION = os.getenv("NOTIFY_API_VERSION", "")
     NOTIFY_API_ENDPOINT = f"{NOTIFY_API_URL + NOTIFY_API_VERSION}/"

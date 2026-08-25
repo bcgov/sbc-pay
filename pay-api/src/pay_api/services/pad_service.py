@@ -27,6 +27,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
+from pay_api.services.payment_link import PaymentLinkService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
@@ -154,6 +155,17 @@ class PadService(PaymentSystemService, CFSService):
         **kwargs,  # noqa: ARG002
     ) -> None:
         """Complete any post invoice activities if needed."""
+        # Express-checkout PAD invoices (identified by the presence of an invoice_payment_links row)
+        # hold the create-time notification. Customer's money hasn't moved yet (CFS ack + reversal
+        # window still pending); the drain job publishes once safe. Regular PAD invoices for the
+        # same corp type publish normally here.
+        # Reversals go directly through release_payment_or_reversal from refund.py and are unaffected.
+        if PaymentLinkService.is_express_checkout_invoice(invoice.id):
+            current_app.logger.info(
+                "Skipping create-time publish for express-checkout PAD invoice %s; drain job will handle.",
+                invoice.id,
+            )
+            return
         # Publish message to the queue with payment token, so that they can release records on their side.
         self.release_payment_or_reversal(invoice=invoice)
 

@@ -134,6 +134,12 @@ class _Config:  # pylint: disable=too-few-public-methods,protected-access
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
+    # Auto-load partner (express-checkout) topic env vars — see pay-api config
+    # and utils.util.get_topic_for_corp_type. Convention: `<CORP_TYPE_UPPER>_PAY_TOPIC`.
+    for _k, _v in os.environ.items():
+        if _k.endswith("_PAY_TOPIC"):
+            locals()[_k] = _v
+    EXPRESS_CHECKOUT_PAD_HOLD_DAYS = int(os.getenv("EXPRESS_CHECKOUT_PAD_HOLD_DAYS", "3"))
 
     # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
     PAY_AUDIENCE_SUB = os.getenv("PAY_AUDIENCE_SUB", None)

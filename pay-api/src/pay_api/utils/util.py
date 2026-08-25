@@ -250,6 +250,16 @@ def get_next_day(val: datetime):
     return val + timedelta(days=1)
 
 
+def subtract_business_days(dt: datetime, n: int) -> datetime:
+    """Return dt minus n business days, skipping weekends and BC statutory holidays."""
+    counter = 0
+    while counter < n:
+        dt = dt - timedelta(days=1)
+        if not is_holiday(dt):
+            counter += 1
+    return dt
+
+
 def get_outstanding_txns_from_date() -> datetime:
     """Return the date value which can be used as start date to calculate outstanding PAD transactions."""
     days_interval: int = current_app.config.get("OUTSTANDING_TRANSACTION_DAYS")
@@ -321,9 +331,21 @@ def cents_to_decimal(amount: int):
 
 
 def get_topic_for_corp_type(corp_type: str):
-    """Return a topic to direct the queue message to."""
+    """Return a topic to direct the queue message to.
+
+    Partner (express-checkout-enabled) corp types resolve exactly like internal
+    ones — via `current_app.config`. The convention is on the config key NAME:
+    `<CORP_TYPE_UPPER>_PAY_TOPIC` → topic name (matches the existing
+    `BUSINESS_PAY_TOPIC` / `NAMEX_PAY_TOPIC` style). Partner keys are populated
+    dynamically from env vars at boot,
+    so onboarding a partner requires no code change here — just the 1Password
+    field, one line in vaults.gcp.env, and a redeploy.
+    """
     # Will fix this promptly and move this away so it doesn't cause circular dependencies.
     from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel  # noqa: TID252
+
+    if CodeService.is_express_checkout_enabled(corp_type):
+        return current_app.config.get(f"{corp_type.upper()}_PAY_TOPIC")
 
     if corp_type == CorpType.NRO.value:
         return current_app.config.get("NAMEX_PAY_TOPIC")

@@ -65,6 +65,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._linking_key: str = get_account_linking_key()
         self._name = token_info.get("name", None)
         self._product_code: str = token_info.get("product_code", None)
+        self._client_id: str = _sanitize_user_sub(token_info.get("azp", None) or token_info.get("clientId", None))
         self._permission = _get_permission()
         self.original_username = get_original_username(self.is_system())
         self.original_sub = get_original_user_sub(self.is_system())
@@ -122,6 +123,11 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def product_code(self) -> str:
         """Return the product_code."""
         return self._product_code
+
+    @property
+    def client_id(self) -> str:
+        """Return the OAuth client id (JWT azp claim); populated for service-account tokens."""
+        return self._client_id
 
     def has_role(self, role_name: str) -> bool:
         """Return True if the user has the role."""
