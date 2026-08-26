@@ -17,6 +17,7 @@
 Test-Suite to ensure that the CreateAccountTask for routing slip is working as expected.
 """
 
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -58,9 +59,10 @@ def test_link_rs(session):
     factory_routing_slip_account(number=parent_rs_number, status=CfsAccountStatus.ACTIVE.value)
     child_rs = RoutingSlipModel.find_by_number(child_rs_number)
     parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
-    # Do Link
+    # Do Link - use an old routing_slip_date to prove rcpt_date sent to CAS is today's date, not this.
     child_rs.status = RoutingSlipStatus.LINKED.value
     child_rs.parent_number = parent_rs.number
+    child_rs.routing_slip_date = datetime(2024, 1, 1, tzinfo=UTC)
     child_rs.save()
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(child_rs.payment_account_id)
 
@@ -74,6 +76,9 @@ def test_link_rs(session):
                 mock_cfs_reverse.assert_called_with(cfs_account, child_rs.number, ReverseOperation.LINK.value)
                 mock_create_cfs.assert_called()
                 mock_get_receipt.assert_called()
+                # 34715: CAS rejects backdated receipts - rcpt_date must be today, not routing_slip_date.
+                sent_rcpt_date = mock_create_cfs.call_args.kwargs["rcpt_date"]
+                assert sent_rcpt_date == datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
     # child_rs = RoutingSlipModel.find_by_number(child_rs_number)
     # parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
@@ -351,6 +356,8 @@ def test_process_correction(session):
     rs = RoutingSlipModel.find_by_number(number)
     rs.status = RoutingSlipStatus.CORRECTION.value
     rs.total = 900
+    # Old date, to prove rcpt_date sent to CAS is today's date, not this (ticket 34715).
+    rs.routing_slip_date = datetime(2024, 1, 1, tzinfo=UTC)
     rs.save()
 
     session.commit()
@@ -363,6 +370,8 @@ def test_process_correction(session):
                     mock_reverse.assert_called()
                     mock_get_invoice.assert_called()
                     mock_create_receipt.assert_called()
+                    sent_rcpt_date = mock_create_receipt.call_args.kwargs["rcpt_date"]
+                    assert sent_rcpt_date == datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
     assert rs.status == RoutingSlipStatus.COMPLETE.value
     assert rs.cas_version_suffix == 2
