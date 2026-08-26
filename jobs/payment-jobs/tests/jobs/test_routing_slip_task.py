@@ -76,7 +76,7 @@ def test_link_rs(session):
                 mock_cfs_reverse.assert_called_with(cfs_account, child_rs.number, ReverseOperation.LINK.value)
                 mock_create_cfs.assert_called()
                 mock_get_receipt.assert_called()
-                # 34715: CAS rejects backdated receipts - rcpt_date must be today, not routing_slip_date.
+                # CAS rejects backdated receipts - rcpt_date must be today, not routing_slip_date.
                 sent_rcpt_date = mock_create_cfs.call_args.kwargs["rcpt_date"]
                 assert sent_rcpt_date == datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
@@ -356,7 +356,7 @@ def test_process_correction(session):
     rs = RoutingSlipModel.find_by_number(number)
     rs.status = RoutingSlipStatus.CORRECTION.value
     rs.total = 900
-    # Old date, to prove rcpt_date sent to CAS is today's date, not this (ticket 34715).
+    # Old date, to prove rcpt_date sent to CAS is today's date, not this.
     rs.routing_slip_date = datetime(2024, 1, 1, tzinfo=UTC)
     rs.save()
 
