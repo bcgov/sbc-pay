@@ -194,7 +194,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     f"Error on Processing CORRECTION for :={rs.number}, routing slip : {rs.id}, ERROR : {str(e)}",
                     exc_info=True,
                 )
-                rollback_ok = cls._rollback_failed_correction(rs, cas_version_suffix_snapshot)
+                rollback_ok = cls._rollback_and_hold_failed_correction(rs, cas_version_suffix_snapshot)
                 failures.append((rs.number, cls._failure_message(e, rollback_ok)))
                 continue
 
@@ -256,7 +256,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     f"routing slip : {routing_slip.id}, ERROR : {str(e)}",
                     exc_info=True,
                 )
-                rollback_ok = cls._rollback_failed_void(
+                rollback_ok = cls._rollback_and_hold_failed_void(
                     routing_slip, cfs_account, remaining_amount_snapshot, cas_version_suffix_snapshot
                 )
                 message = cls._failure_message(e, rollback_ok) + cls._partial_reversal_note(
@@ -453,10 +453,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             return False
 
     @classmethod
-    def _rollback_failed_correction(cls, routing_slip: RoutingSlipModel, cas_version_suffix: int) -> bool:
+    def _rollback_and_hold_failed_correction(cls, routing_slip: RoutingSlipModel, cas_version_suffix: int) -> bool:
         """Undo the version bump from a failed correction. See _rollback_and_hold_failed_link for the pattern."""
         try:
             routing_slip.cas_version_suffix = cas_version_suffix
+            routing_slip.status = RoutingSlipStatus.HOLD.value
             routing_slip.save()
             return True
         except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
@@ -467,7 +468,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             return False
 
     @classmethod
-    def _rollback_failed_void(
+    def _rollback_and_hold_failed_void(
         cls,
         routing_slip: RoutingSlipModel,
         cfs_account: CfsAccountModel,
@@ -480,6 +481,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 cfs_account.status = CfsAccountStatus.ACTIVE.value
             routing_slip.remaining_amount = remaining_amount
             routing_slip.cas_version_suffix = cas_version_suffix
+            routing_slip.status = RoutingSlipStatus.HOLD.value
             routing_slip.save()
             return True
         except Exception as rollback_error:  # NOQA # pylint: disable=broad-except
