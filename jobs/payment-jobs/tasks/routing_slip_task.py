@@ -92,7 +92,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 CFSService.create_cfs_receipt(
                     cfs_account=parent_cfs_account,
                     rcpt_number=receipt_number,
-                    rcpt_date=routing_slip.routing_slip_date.strftime("%Y-%m-%d"),
+                    rcpt_date=datetime.now(tz=UTC).strftime("%Y-%m-%d"),
                     amount=routing_slip.total,
                     payment_method=parent_payment_account.payment_method,
                     access_token=CFSService.get_token(PaymentSystem.FAS).json().get("access_token"),
@@ -173,7 +173,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 CFSService.create_cfs_receipt(
                     cfs_account=cfs_account,
                     rcpt_number=rs.generate_cas_receipt_number(),
-                    rcpt_date=rs.routing_slip_date.strftime("%Y-%m-%d"),
+                    rcpt_date=datetime.now(tz=UTC).strftime("%Y-%m-%d"),
                     amount=rs.total,
                     payment_method=payment_account.payment_method,
                     access_token=CFSService.get_token(PaymentSystem.FAS).json().get("access_token"),
