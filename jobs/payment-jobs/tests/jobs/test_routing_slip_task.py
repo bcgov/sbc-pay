@@ -276,7 +276,7 @@ def test_process_void(session):
 
 
 def test_process_void_rollback_on_cas_failure(session):
-    """A failed void should restore cfs_account status, remaining_amount and cas_version_suffix, and notify once."""
+    """A failed void should restore cfs_account/remaining_amount/cas_version_suffix, go to HOLD, and notify once."""
     number = "222222222"
     factory_routing_slip_account(number=number, status=CfsAccountStatus.ACTIVE.value, total=10, remaining_amount=10)
     rs = RoutingSlipModel.find_by_number(number)
@@ -297,6 +297,7 @@ def test_process_void_rollback_on_cas_failure(session):
     assert cfs_account.status == CfsAccountStatus.ACTIVE.value
     assert float(rs.remaining_amount) == 10
     assert rs.cas_version_suffix == 1
+    assert rs.status == RoutingSlipStatus.HOLD.value
 
 
 def test_process_void_reports_partial_reversal(session):
@@ -378,7 +379,7 @@ def test_process_correction(session):
 
 
 def test_process_correction_rollback_on_cas_failure(session):
-    """A failed correction should restore cas_version_suffix and notify once."""
+    """A failed correction should restore cas_version_suffix, go to HOLD, and notify once."""
     number = "1111112"
     factory_routing_slip_account(number=number, status=CfsAccountStatus.ACTIVE.value, total=900)
     rs = RoutingSlipModel.find_by_number(number)
@@ -393,7 +394,7 @@ def test_process_correction_rollback_on_cas_failure(session):
                     mock_notification.return_value.send_notification.assert_called_once()
 
     rs = RoutingSlipModel.find_by_number(number)
-    assert rs.status == RoutingSlipStatus.CORRECTION.value
+    assert rs.status == RoutingSlipStatus.HOLD.value
     assert rs.cas_version_suffix == 1
 
 
