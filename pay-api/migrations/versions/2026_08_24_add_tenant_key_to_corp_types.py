@@ -20,6 +20,9 @@ def upgrade():
         batch_op.add_column(sa.Column("tenant_key", sa.String(length=50), nullable=True))
         batch_op.create_index(batch_op.f("ix_corp_types_tenant_key"), ["tenant_key"], unique=False)
 
+    with op.batch_alter_table("corp_types_history", schema=None) as batch_op:
+        batch_op.add_column(sa.Column("tenant_key", sa.String(length=50), nullable=True))
+
     with op.batch_alter_table("invoice_payment_links", schema=None) as batch_op:
         batch_op.add_column(sa.Column("tenant_key", sa.String(length=50), nullable=True))
         batch_op.create_index(
@@ -31,6 +34,9 @@ def downgrade():
     with op.batch_alter_table("invoice_payment_links", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_invoice_payment_links_tenant_key"))
     op.execute("ALTER TABLE invoice_payment_links DROP COLUMN IF EXISTS tenant_key")
+
+    with op.batch_alter_table("corp_types_history", schema=None) as batch_op:
+        batch_op.drop_column("tenant_key")
 
     with op.batch_alter_table("corp_types", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_corp_types_tenant_key"))
