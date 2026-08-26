@@ -37,7 +37,7 @@ bp = Blueprint("ACCOUNTS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/ac
 
 
 @bp.route("", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def post_account():
@@ -74,7 +74,7 @@ def post_account():
 
 
 @bp.route("/search/eft", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_accounts():
@@ -91,7 +91,7 @@ def get_eft_accounts():
 
 # NOTE: STRR and BAR use this route to check the PAD status and/or payment method, be careful when changing.
 @bp.route("/<string:account_number>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "PUT", "DELETE"])
+@cross_origin(methods=["GET", "PUT", "DELETE"])
 @_jwt.requires_auth
 def get_account(account_number: str):
     """Get payment account details."""
@@ -113,7 +113,7 @@ def get_account(account_number: str):
 
 
 @bp.route("/<string:account_number>/eft", methods=["PATCH"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def patch_account(account_number: str):
     """Enable eft for an account."""
@@ -132,7 +132,7 @@ def patch_account(account_number: str):
 
 
 @bp.route("/<string:account_number>", methods=["PUT"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def put_account(account_number: str):
     """Update the payment account records."""
@@ -162,7 +162,7 @@ def put_account(account_number: str):
 
 
 @bp.route("/<string:account_number>", methods=["DELETE"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def delete_account(account_number: str):
     """Delete payment account details."""
@@ -184,7 +184,7 @@ def delete_account(account_number: str):
 
 
 @bp.route("/<string:account_number>/fees", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST", "DELETE"])
+@cross_origin(methods=["GET", "POST", "DELETE"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
 def get_account_fees(account_number: str):
@@ -199,7 +199,7 @@ def get_account_fees(account_number: str):
 
 
 @bp.route("/<string:account_number>/fees", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
 def post_account_fees(account_number: str):
@@ -223,7 +223,7 @@ def post_account_fees(account_number: str):
 
 
 @bp.route("/<string:account_number>/fees", methods=["DELETE"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
 def delete_account_fees(account_number: str):
@@ -235,7 +235,7 @@ def delete_account_fees(account_number: str):
 
 
 @bp.route("/<string:account_number>/fees/<string:product>", methods=["PUT", "OPTIONS"])
-@cross_origin(origins="*", methods=["PUT"])
+@cross_origin(methods=["PUT"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
 def put_account_fee_product(account_number: str, product: str):
@@ -264,7 +264,7 @@ def put_account_fee_product(account_number: str, product: str):
 
 
 @bp.route("/<string:account_number>/payments/queries", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.requires_auth
 def post_search_purchase_history(account_number: str):
     """Search purchase history."""
@@ -343,7 +343,7 @@ def _check_purchase_history_auth(any_org_transactions: bool, account_number: str
 
 
 @bp.route("/<string:account_number>/payments/reports", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.requires_auth
 def post_account_purchase_report(account_number: str):
     """Create the account purchase report."""

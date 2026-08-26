@@ -36,7 +36,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST"])
+@cross_origin(methods=["GET", "POST"])
 @_jwt.requires_auth
 def get_account_notifications(account_id):
     """Get all statements records for an account."""
@@ -56,7 +56,7 @@ def get_account_notifications(account_id):
 
 
 @bp.route("", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 def post_account_notification(account_id):
     """Update the statement settings ."""

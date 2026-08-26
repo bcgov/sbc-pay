@@ -25,89 +25,89 @@ def test_preflight_fas_refund(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
 
 def test_preflight_fas_routing_slip(app, client, jwt, session):
     """Assert preflight responses for fas routing slips are correct."""
     rv = client.options("/api/v1/fas/routing-slips", headers={"Access-Control-Request-Method": "POST"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
     rv = client.options(
         "/api/v1/fas/routing-slips/queries",
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
     rv = client.options(
         "/api/v1/fas/routing-slips/2023-09-05/reports",
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
     rv = client.options("/api/v1/fas/routing-slips/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, PATCH")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, PATCH")
 
     rv = client.options(
         "/api/v1/fas/routing-slips/1/links",
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
     rv = client.options(
         "/api/v1/fas/routing-slips/links",
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
     rv = client.options(
         "/api/v1/fas/routing-slips/1/comments",
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, POST")
 
 
 def test_preflight_account(app, client, jwt, session):
     """Assert preflight responses for accounts are correct."""
     rv = client.options("/api/v1/accounts", headers={"Access-Control-Request-Method": "POST"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
     rv = client.options("/api/v1/accounts/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "DELETE, GET, PUT")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "DELETE, GET, PUT")
 
     rv = client.options("/api/v1/accounts/1/fees", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "DELETE, GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "DELETE, GET, POST")
 
     rv = client.options(
         "/api/v1/accounts/1/fees/PRODUCT_CODE",
         headers={"Access-Control-Request-Method": "PUT"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "PUT")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "PUT")
 
     rv = client.options(
         "/api/v1/accounts/1/payments/queries",
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
     rv = client.options(
         "/api/v1/accounts/1/payments/reports",
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
 
 def test_preflight_account_statements(app, client, jwt, session):
@@ -117,14 +117,14 @@ def test_preflight_account_statements(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
     rv = client.options(
         "/api/v1/accounts/1/statements/1",
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
 
 def test_preflight_account_statement_notifications(app, client, jwt, session):
@@ -134,7 +134,7 @@ def test_preflight_account_statement_notifications(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, POST")
 
 
 def test_preflight_account_statement_settings(app, client, jwt, session):
@@ -144,7 +144,7 @@ def test_preflight_account_statement_settings(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, POST")
 
 
 def test_preflight_bank_accounts(app, client, jwt, session):
@@ -154,36 +154,36 @@ def test_preflight_bank_accounts(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
 
 def test_preflight_code(app, client, jwt, session):
     """Assert preflight responses for codes are correct."""
     rv = client.options("/api/v1/codes/CODETYPE", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
     rv = client.options("/api/v1/codes/CODETYPE/CODE", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
 
 def test_preflight_distributions(app, client, jwt, session):
     """Assert preflight responses for distributions are correct."""
     rv = client.options("/api/v1/fees/distributions", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, POST")
 
     rv = client.options("/api/v1/fees/distributions/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, PUT")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, PUT")
 
     rv = client.options(
         "/api/v1/fees/distributions/1/schedules",
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, POST")
 
 
 def test_preflight_fee(app, client, jwt, session):
@@ -193,32 +193,32 @@ def test_preflight_fee(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
 
 def test_preflight_fee_schedule(app, client, jwt, session):
     """Assert preflight responses for fee schedule are correct."""
     rv = client.options("/api/v1/fees/schedules", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
 
 def test_preflight_invoice(app, client, jwt, session):
     """Assert preflight responses for invoice are correct."""
     rv = client.options("/api/v1/payment-requests", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, POST")
 
     rv = client.options("/api/v1/payment-requests/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "DELETE, GET, PATCH")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "DELETE, GET, PATCH")
 
     rv = client.options(
         "/api/v1/payment-requests/1/reports",
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
 
 def test_preflight_invoice_receipt(app, client, jwt, session):
@@ -228,7 +228,7 @@ def test_preflight_invoice_receipt(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, POST")
 
 
 def test_preflight_invoices(app, client, jwt, session):
@@ -238,14 +238,14 @@ def test_preflight_invoices(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
 
 def test_preflight_payment(app, client, jwt, session):
     """Assert preflight responses for payments are correct."""
     rv = client.options("/api/v1/accounts/1/payments", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, POST")
 
 
 def test_preflight_refund(app, client, jwt, session):
@@ -255,46 +255,46 @@ def test_preflight_refund(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
 
 def test_preflight_eft_shortnames(app, client, jwt, session):
     """Assert preflight responses for eft shortnames are correct."""
     rv = client.options("/api/v1/eft-shortnames", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
     rv = client.options("/api/v1/eft-shortnames/1", headers={"Access-Control-Request-Method": "GET"})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, PATCH")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, PATCH")
 
     rv = client.options(
         "/api/v1/eft-shortnames/summaries",
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
     rv = client.options(
         "/api/v1/eft-shortnames/1/links",
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET, PATCH, POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET, PATCH, POST")
 
     rv = client.options(
         "/api/v1/eft-shortnames/1/history",
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
 
     rv = client.options(
         "/api/v1/eft-shortnames/1/payment",
         headers={"Access-Control-Request-Method": "POST"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "POST")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "POST")
 
 
 def test_preflight_documents(app, client, jwt, session):
@@ -304,7 +304,33 @@ def test_preflight_documents(app, client, jwt, session):
         headers={"Access-Control-Request-Method": "GET"},
     )
     assert rv.status_code == 200
-    assert_access_control_headers(rv, "*", "GET")
+    assert_access_control_headers(rv, "https://dev.bcregistry.gov.bc.ca", "GET")
+
+
+def test_allowed_origin_is_echoed_back(app, client, jwt, session):
+    """Assert a configured origin is echoed back with the Vary header set, instead of a wildcard."""
+    rv = client.options(
+        "/api/v1/documents",
+        headers={
+            "Access-Control-Request-Method": "GET",
+            "Origin": "https://dev.bcregistry.gov.bc.ca",
+        },
+    )
+    assert rv.status_code == 200
+    assert rv.headers["Access-Control-Allow-Origin"] == "https://dev.bcregistry.gov.bc.ca"
+    assert rv.headers["Vary"] == "Origin"
+
+
+def test_disallowed_origin_is_not_echoed_back(app, client, jwt, session):
+    """Assert an origin that is not in CORS_ORIGINS does not get an Access-Control-Allow-Origin header."""
+    rv = client.options(
+        "/api/v1/documents",
+        headers={
+            "Access-Control-Request-Method": "GET",
+            "Origin": "https://malicious.example.com",
+        },
+    )
+    assert "Access-Control-Allow-Origin" not in rv.headers
 
 
 def assert_access_control_headers(rv, origins: str, methods: str):
