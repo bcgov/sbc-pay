@@ -453,7 +453,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             return False
 
     @classmethod
-    def _rollback_failed_correction(cls, routing_slip: RoutingSlipModel, cas_version_suffix: int) -> bool:
+    def _rollback_and_hold_failed_correction(cls, routing_slip: RoutingSlipModel, cas_version_suffix: int) -> bool:
         """Undo the version bump from a failed correction. See _rollback_and_hold_failed_link for the pattern."""
         try:
             routing_slip.cas_version_suffix = cas_version_suffix
