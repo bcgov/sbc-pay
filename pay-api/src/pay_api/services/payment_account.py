@@ -260,7 +260,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         account_request: dict[str, any],
         payment_account: PaymentAccountModel,
         is_sandbox: bool = False,
-        scope: Scope = None
+        scope: Scope = None,
     ):
         """Update and save payment account and CFS account model."""
         # pylint:disable=cyclic-import, import-outside-toplevel
@@ -465,7 +465,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         account_fee.save()
 
     @classmethod
-    def update(cls, auth_account_id: str, account_request: dict[str, Any], scope:Scope=None) -> PaymentAccount:
+    def update(cls, auth_account_id: str, account_request: dict[str, Any], scope: Scope = None) -> PaymentAccount:
         """Create or update payment account record."""
         current_app.logger.debug("<update payment account")
         try:

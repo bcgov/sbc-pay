@@ -460,9 +460,7 @@ def test_update_with_scope_cfs_account_preserves_default_payment_method(session)
 def test_update_with_scope_cfs_account_creates_ob_cfs_account(session):
     """Assert that scope=cfs_account creates an OB CfsAccount linked to the payment account."""
     pad_account = PaymentAccountService.create(get_linked_pad_account_payload(account_id=90002))
-    assert (
-        CfsAccountModel.find_effective_by_payment_method(pad_account.id, PaymentMethod.ONLINE_BANKING.value) is None
-    )
+    assert CfsAccountModel.find_effective_by_payment_method(pad_account.id, PaymentMethod.ONLINE_BANKING.value) is None
 
     PaymentAccountService.update(
         pad_account.auth_account_id,
