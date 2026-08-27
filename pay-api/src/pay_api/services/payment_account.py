@@ -45,7 +45,7 @@ from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.dataclasses import AccountUnlockEvent, PaymentInfoChangeEvent, PaymentMethodChangeEvent
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, QueueSources, StatementFrequency
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, QueueSources, Scope, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -260,6 +260,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         account_request: dict[str, any],
         payment_account: PaymentAccountModel,
         is_sandbox: bool = False,
+        scope: Scope = None
     ):
         """Update and save payment account and CFS account model."""
         # pylint:disable=cyclic-import, import-outside-toplevel
@@ -268,10 +269,15 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         previous_payment = payment_account.payment_method
         payment_account.auth_account_id = str(account_request.get("accountId"))
 
-        # If the payment method is CC, set the payment_method as DIRECT_PAY
-        if payment_method := get_str_by_path(account_request, "paymentInfo/methodOfPayment"):
-            cls._check_and_handle_payment_method(payment_account, payment_method)
+        # Requested payment method from the request. Kept separate from
+        # `payment_account.payment_method` so scope=cfs_account can provision the
+        # CfsAccount for this method without stamping it as the account default.
+        payment_method = get_str_by_path(account_request, "paymentInfo/methodOfPayment")
 
+        # Skip stamping the account's default under scope=cfs_account
+        # (invoice-only provisioning — see express-checkout).
+        if scope != Scope.CFS_ACCOUNT and payment_method:
+            cls._check_and_handle_payment_method(payment_account, payment_method)
             payment_account.payment_method = payment_method
             cls._handle_bcol_updates(payment_account, account_request, payment_method)
 
@@ -325,10 +331,13 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
     @classmethod
     def _handle_payment_details(cls, details: PaymentDetails):
         # pylint: disable=too-many-arguments
+        # Look up the CfsAccount for the requested method (via the pay_system),
+        # NOT `payment_account.payment_method`. Under scope=cfs_account, the
+        # account's default hasn't been flipped, so the two would disagree and
+        # we'd hit the wrong CfsAccount (or none).
+        target_payment_method = details.pay_system.get_payment_method_code()
         cfs_account = (
-            CfsAccountModel.find_effective_by_payment_method(
-                details.payment_account.id, details.payment_account.payment_method
-            )
+            CfsAccountModel.find_effective_by_payment_method(details.payment_account.id, target_payment_method)
             if details.payment_account.id
             else None
         )
@@ -338,7 +347,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                     identifier=details.payment_account.auth_account_id,
                     contact_info=details.account_request.get("contactInfo"),
                     payment_info=details.account_request.get("paymentInfo"),
-                    payment_method=details.payment_account.payment_method,
+                    payment_method=target_payment_method,
                 )
                 if cfs_account:
                     cfs_account.payment_account = details.payment_account
@@ -347,7 +356,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                 ActivityLogPublisher.publish_payment_info_change_event(
                     PaymentInfoChangeEvent(
                         account_id=details.payment_account.auth_account_id,
-                        payment_method=details.payment_account.payment_method,
+                        payment_method=target_payment_method,
                         source=QueueSources.PAY_API.value,
                     )
                 )
@@ -456,13 +465,13 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         account_fee.save()
 
     @classmethod
-    def update(cls, auth_account_id: str, account_request: dict[str, Any]) -> PaymentAccount:
+    def update(cls, auth_account_id: str, account_request: dict[str, Any], scope:Scope=None) -> PaymentAccount:
         """Create or update payment account record."""
         current_app.logger.debug("<update payment account")
         try:
             # future: need to use for_update for this, as the account may be updated by another thread.
             account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-            PaymentAccount._save_account(account_request, account)
+            PaymentAccount._save_account(account_request, account, scope=scope)
         except ServiceUnavailableException as e:
             current_app.logger.error(e)
             raise
