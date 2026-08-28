@@ -33,7 +33,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["POST", "OPTIONS"])
-@cross_origin(methods=["POST"])
+@cross_origin(origins="*", methods=["POST"])
 @_jwt.requires_auth
 def post_bank_account_validate():
     """Validate the bank account details against CFS."""

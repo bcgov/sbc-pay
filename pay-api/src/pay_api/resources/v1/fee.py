@@ -32,7 +32,7 @@ bp = Blueprint("FEES", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/fees")
 
 
 @bp.route("/<string:corp_type>/<string:filing_type_code>", methods=["GET", "OPTIONS"])
-@cross_origin(methods=["GET"])
+@cross_origin(origins="*", methods=["GET"])
 @_jwt.has_one_of_roles([Role.VIEWER.value, Role.EDITOR.value, Role.STAFF.value])
 def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
     """Calculate the fee for the filing using the corp type/filing type and return fee."""
@@ -65,7 +65,7 @@ def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(methods=["GET"])
+@cross_origin(origins="*", methods=["GET"])
 def get_products_fees():
     """Get Products Fees - the cost of a filing and the list of filings."""
     request_data = ProductFeeGetRequest.from_dict(request.args.to_dict())

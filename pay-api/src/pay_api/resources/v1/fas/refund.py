@@ -34,7 +34,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["POST", "OPTIONS"])
-@cross_origin(methods=["POST"])
+@cross_origin(origins="*", methods=["POST"])
 @_jwt.has_one_of_roles([Role.FAS_REFUND.value, Role.FAS_REFUND_APPROVER.value])
 def post_fas_refund(routing_slip_number):
     """Create the Refund for the Invoice."""

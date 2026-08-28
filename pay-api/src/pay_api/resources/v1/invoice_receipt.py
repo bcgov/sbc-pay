@@ -31,7 +31,7 @@ bp = Blueprint(
 
 
 @bp.route("/receipts", methods=["GET", "OPTIONS"])
-@cross_origin(methods=["GET", "POST"])
+@cross_origin(origins="*", methods=["GET", "POST"])
 @_jwt.requires_auth
 def get_invoice_receipt(invoice_id):
     """Return the receipt details."""
@@ -50,7 +50,7 @@ def get_invoice_receipt(invoice_id):
 
 
 @bp.route("/receipts", methods=["POST"])
-@cross_origin()
+@cross_origin(origins="*")
 @_jwt.requires_auth
 def post_invoice_receipt(invoice_id):
     """Create the Receipt for the Invoice."""
