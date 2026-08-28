@@ -28,7 +28,7 @@ from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.pad_service import PadService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Scope, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_outstanding_txns_from_date
 from tests.utilities.base_test import (
@@ -428,3 +428,56 @@ def test_update_pad_bank_info_no_error_when_bank_unchanged(session):
     }
 
     PadService().update_account(name="Test", cfs_account=cfs_account, payment_info=same_payment_info)
+
+
+def get_ob_scope_update_payload(account_id: int = 90001):
+    """Return a payload for switching to OB via `scope=cfs_account`."""
+    return {
+        "accountId": account_id,
+        "accountName": "Test Account",
+        "paymentInfo": {"methodOfPayment": PaymentMethod.ONLINE_BANKING.value, "billable": True},
+        "contactInfo": {
+            "addressLine1": "1000 Douglas Street",
+            "city": "Victoria",
+            "province": "BC",
+            "postalCode": "V8V1V1",
+            "country": "CA",
+        },
+    }
+
+
+def test_update_with_scope_cfs_account_preserves_default_payment_method(session):
+    """Assert that scope=cfs_account leaves the account's default payment_method untouched."""
+    pad_account = PaymentAccountService.create(get_linked_pad_account_payload(account_id=90001))
+    updated = PaymentAccountService.update(
+        pad_account.auth_account_id,
+        get_ob_scope_update_payload(account_id=90001),
+        Scope.CFS_ACCOUNT,
+    )
+    assert updated.payment_method == PaymentMethod.PAD.value
+
+
+def test_update_with_scope_cfs_account_creates_ob_cfs_account(session):
+    """Assert that scope=cfs_account creates an OB CfsAccount linked to the payment account."""
+    pad_account = PaymentAccountService.create(get_linked_pad_account_payload(account_id=90002))
+    assert CfsAccountModel.find_effective_by_payment_method(pad_account.id, PaymentMethod.ONLINE_BANKING.value) is None
+
+    PaymentAccountService.update(
+        pad_account.auth_account_id,
+        get_ob_scope_update_payload(account_id=90002),
+        Scope.CFS_ACCOUNT,
+    )
+
+    ob_cfs = CfsAccountModel.find_effective_by_payment_method(pad_account.id, PaymentMethod.ONLINE_BANKING.value)
+    assert ob_cfs is not None
+    assert ob_cfs.payment_method == PaymentMethod.ONLINE_BANKING.value
+
+
+def test_update_without_scope_still_stamps_default_payment_method(session):
+    """Assert that update without scope still switches the account's default payment_method (regression)."""
+    cc_account = PaymentAccountService.create(get_basic_account_payload())
+    updated = PaymentAccountService.update(
+        cc_account.auth_account_id,
+        get_ob_scope_update_payload(account_id=cc_account.auth_account_id),
+    )
+    assert updated.payment_method == PaymentMethod.ONLINE_BANKING.value
