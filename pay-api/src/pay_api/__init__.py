@@ -99,7 +99,17 @@ def setup_response_headers(app):
 
     @app.after_request
     def handle_after_request(response):
-        response.headers["Access-Control-Allow-Origin"] = "*"
+        origin = request.headers.get("Origin")
+        if origin and origin in app.config.get("CORS_ORIGINS", []):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Vary"] = "Origin"
+        elif response.headers.get("Access-Control-Allow-Origin") == "*":
+            # sbc_common_components.ExceptionHandler sets a wildcard unconditionally on
+            # error responses (401/404/etc.) before this hook runs. Strip it here so it
+            # never survives for a non-matching or missing Origin. Only ever removes a
+            # literal "*" -- never touches a real domain value flask-cors itself may have
+            # set on a decorated route's own preflight handling.
+            del response.headers["Access-Control-Allow-Origin"]
         response.headers["Access-Control-Allow-Headers"] = (
             "Authorization, Content-Type, registries-trace-id, Account-Id, App-Name, x-apikey, Original-Username, "
             "Original-Sub"
@@ -123,7 +133,11 @@ def setup_403_logging(app):
             app.logger.error(f"403 Forbidden - {request.method} {request.url} - {user_name} - {roles}")
 
             message = {"message": getattr(error, "message", error.description)}
-            headers = {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}
+            headers = {"Content-Type": "application/json"}
+            origin = request.headers.get("Origin")
+            if origin and origin in app.config.get("CORS_ORIGINS", []):
+                headers["Access-Control-Allow-Origin"] = origin
+                headers["Vary"] = "Origin"
             return message, error.code, headers
 
 

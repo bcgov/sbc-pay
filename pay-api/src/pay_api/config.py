@@ -247,6 +247,10 @@ class _Config:  # pylint: disable=too-few-public-methods
     # To bypass 25MB limit for CloudRun on HTTP/1.1 requests.
     ENABLE_GZIP_BODY = _get_config("ENABLE_GZIP_BODY", default="True").lower() == "true"
 
+    # Comma separated list of browser origins allowed to make cross-origin requests to this API.
+    # An empty list blocks all cross-origin browser requests (fail closed) - populate per environment.
+    CORS_ORIGINS = [origin.strip() for origin in _get_config("CORS_ORIGINS", default="").split(",") if origin.strip()]
+
     TESTING = False
     DEBUG = True
 
@@ -384,6 +388,8 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
 
     # Prism does not support gzip body to decompress to validate JSON.
     ENABLE_GZIP_BODY = False
+
+    CORS_ORIGINS = ["https://dev.bcregistry.gov.bc.ca"]
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
