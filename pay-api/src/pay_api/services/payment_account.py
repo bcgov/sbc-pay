@@ -330,11 +330,6 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
     @classmethod
     def _handle_payment_details(cls, details: PaymentDetails):
-        # pylint: disable=too-many-arguments
-        # Look up the CfsAccount for the requested method (via the pay_system),
-        # NOT `payment_account.payment_method`. Under scope=cfs_account, the
-        # account's default hasn't been flipped, so the two would disagree and
-        # we'd hit the wrong CfsAccount (or none).
         target_payment_method = details.pay_system.get_payment_method_code()
         cfs_account = (
             CfsAccountModel.find_effective_by_payment_method(details.payment_account.id, target_payment_method)
