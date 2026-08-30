@@ -38,7 +38,7 @@ gcp-queue = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirect
 cloud-sql-connector = { git = "https://github.com/bcgov/sbc-connect-common.git", subdirectory = "python/cloud-sql-connector", branch = "main" }
 
 greenlet = "3.0.3"
-gunicorn = "23.0.0"
+gunicorn = "26.0.0"
 holidays = "0.37"
 idna = "3.7"
 itsdangerous = "^2.1.2"
