@@ -598,6 +598,10 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     @user_context
     def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES, **kwargs):
         user: UserContext = kwargs["user"]
+        # Check auth by business identifier if account linking key is also present.
+        if user.linking_key and dao.business_identifier:
+            check_auth(dao.business_identifier, one_of_roles=one_of_roles)
+            return
         account_id = dao.payment_account.auth_account_id if dao.payment_account else None
         if user.is_system():
             account_id = None

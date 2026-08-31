@@ -1958,3 +1958,61 @@ def test_payment_request_creation_account_id_ignores_linking_key(session, client
     invoice = InvoiceModel.find_by_id(rv.json.get("id"))
     payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
     assert payment_account.auth_account_id == source_account_id
+
+
+def test_get_invoice_linking_key_allows_business_filing_access(session, client, jwt, app, linking_key_auth_mock):
+    """Assert a linking-key holder can fetch a business-filing invoice they don't directly own.
+
+    _check_for_auth routes to check_auth without an account_id (business_identifier only) when a
+    linking key is present and the invoice has a business_identifier.
+    """
+    vendor_account = factory_payment_account(auth_account_id="VENDOR_777")
+    vendor_account.save()
+    invoice = factory_invoice(payment_account=vendor_account, business_identifier="CP0001234")
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Linking-Key": "test-linking-key",
+    }
+
+    with patch(
+        "pay_api.services.auth.RestService.get",
+        side_effect=linking_key_auth_mock("SOURCE_555", "VENDOR_777"),
+    ) as mock_get:
+        rv = client.get(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
+
+    assert rv.status_code == 200
+
+    called_additional_headers = mock_get.call_args.kwargs.get("additional_headers")
+    assert called_additional_headers == {"Account-Linking-Key": "test-linking-key"}
+
+
+def test_get_invoice_linking_key_denied_for_non_business_invoice(session, client, jwt, app, linking_key_auth_mock):
+    """Assert a linking key does not grant access to a non-business-filing invoice."""
+    owner_account = factory_payment_account(auth_account_id="OWNER_999")
+    owner_account.save()
+    invoice = factory_invoice(payment_account=owner_account, business_identifier=None)
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Linking-Key": "test-linking-key",
+    }
+
+    with patch(
+        "pay_api.services.auth.RestService.get",
+        side_effect=linking_key_auth_mock("OWNER_999", "VENDOR_777", roles=[]),
+    ) as mock_get:
+        rv = client.get(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
+
+    assert rv.status_code == 403
+
+    # No business identifier so the account id check should be used which does not use
+    # the account linking key
+    called_additional_headers = mock_get.call_args.kwargs.get("additional_headers")
+    assert not called_additional_headers or "Account-Linking-Key" not in called_additional_headers

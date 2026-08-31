@@ -19,6 +19,7 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 
 import json
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -26,6 +27,8 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import PaymentMethod, Role
 from tests.utilities.base_test import (
+    factory_invoice,
+    factory_payment_account,
     get_claims,
     get_payment_request,
     get_payment_request_with_no_contact_info,
@@ -297,3 +300,82 @@ def test_get_receipt(session, client, jwt, app):
 
     pay_receipt = client.get(f"/api/v1/payment-requests/{inovice_id}/receipts", headers=headers)
     assert pay_receipt.status_code == 200
+
+
+def test_post_receipt_linking_key_allows_business_filing_access(session, client, jwt, app, linking_key_auth_mock):
+    """Assert a linking-key can generate a receipt PDF for a business-filing invoice."""
+    vendor_account = factory_payment_account(auth_account_id="VENDOR_777")
+    vendor_account.save()
+    invoice = factory_invoice(
+        payment_account=vendor_account,
+        business_identifier="CP0001234",
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Linking-Key": "test-linking-key",
+    }
+    filing_data = {
+        "corpName": "CP0001234",
+        "filingDateTime": "June 27, 2019",
+        "fileName": "director-change",
+    }
+
+    with patch(
+        "pay_api.services.auth.RestService.get",
+        side_effect=linking_key_auth_mock("SOURCE_555", "VENDOR_777"),
+    ) as mock_get:
+        rv = client.post(
+            f"/api/v1/payment-requests/{invoice.id}/receipts",
+            data=json.dumps(filing_data),
+            headers=headers,
+        )
+
+    assert rv.status_code == 201
+    called_additional_headers = mock_get.call_args.kwargs.get("additional_headers")
+    assert called_additional_headers == {"Account-Linking-Key": "test-linking-key"}
+
+
+def test_post_receipt_linking_key_denied_for_non_business_invoice(session, client, jwt, app, linking_key_auth_mock):
+    """Assert a linking key does not grant access to generate a receipt for a non-business-filing invoice."""
+    owner_account = factory_payment_account(auth_account_id="OWNER_999")
+    owner_account.save()
+    invoice = factory_invoice(
+        payment_account=owner_account,
+        business_identifier=None,
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Linking-Key": "test-linking-key",
+    }
+    filing_data = {
+        "corpName": "CP0001234",
+        "filingDateTime": "June 27, 2019",
+        "fileName": "director-change",
+    }
+
+    with patch(
+        "pay_api.services.auth.RestService.get",
+        side_effect=linking_key_auth_mock("OWNER_999", "VENDOR_777", roles=[]),
+    ) as mock_get:
+        rv = client.post(
+            f"/api/v1/payment-requests/{invoice.id}/receipts",
+            data=json.dumps(filing_data),
+            headers=headers,
+        )
+
+    assert rv.status_code == 403
+
+    # No business identifier so the account id check should be used which does not use
+    # the account linking key
+    called_additional_headers = mock_get.call_args.kwargs.get("additional_headers")
+    assert not called_additional_headers or "Account-Linking-Key" not in called_additional_headers
