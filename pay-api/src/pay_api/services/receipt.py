@@ -106,7 +106,9 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
             if has_product_role:
                 invoice_data = Invoice.find_product_invoice_id(invoice_identifier, products)
             else:
-                invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
+                invoice_data = Invoice.find_by_id(
+                    invoice_identifier, skip_auth_check=skip_auth_check, allow_linking_key=True
+                )
 
         is_pending_invoice = (
             invoice_data.payment_method_code

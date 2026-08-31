@@ -177,7 +177,7 @@ def linking_key_auth_mock():
             payment_account_id = vendor_account_id if "Account-Linking-Key" in additional_headers else source_account_id
             mock_response = MagicMock()
             mock_response.json.return_value = {
-                "roles": roles or ["edit", "view", "make_payment"],
+                "roles": ["edit", "view", "make_payment"] if roles is None else roles,
                 "account": {"id": source_account_id, "paymentAccountId": payment_account_id},
             }
             return mock_response

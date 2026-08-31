@@ -24,7 +24,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
-from flask import current_app
+from flask import abort, current_app
 from requests.exceptions import ConnectionError
 
 from pay_api.models import CorpType, FeeCode, FilingType
@@ -36,6 +36,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models.tax_rate import TaxRate
 from pay_api.schemas import utils as schema_utils
+from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role, RoutingSlipStatus, TransactionStatus
 from tests.utilities.base_test import (
     activate_pad_account,
@@ -1958,3 +1959,66 @@ def test_payment_request_creation_account_id_ignores_linking_key(session, client
     invoice = InvoiceModel.find_by_id(rv.json.get("id"))
     payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
     assert payment_account.auth_account_id == source_account_id
+
+
+def _authorize_via_linking_key_only(business_identifier, account_id=None, **kwargs):  # noqa: ARG001
+    """Mock check_auth: authorize only when called via the business-identifier/linking-key branch."""
+    if account_id is None:
+        return {"roles": ["edit", "view", "make_payment"]}
+    abort(403)
+
+
+def test_get_invoice_linking_key_allows_business_filing_access(session, client, jwt, app):
+    """Assert a linking-key holder can fetch a business-filing invoice they don't directly own.
+
+    _check_for_auth routes to check_auth without an account_id (business_identifier only) when a
+    linking key is present and the invoice has a business_identifier.
+    """
+    vendor_account = factory_payment_account(auth_account_id="VENDOR_777")
+    vendor_account.save()
+    invoice = factory_invoice(payment_account=vendor_account, business_identifier="CP0001234")
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Linking-Key": "test-linking-key",
+    }
+
+    with patch("pay_api.services.invoice.check_auth", side_effect=_authorize_via_linking_key_only) as mock_check_auth:
+        rv = client.get(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
+
+    assert rv.status_code == 200
+
+    mock_check_auth.assert_called_once()
+    called_args, called_kwargs = mock_check_auth.call_args
+    assert called_args[0] == "CP0001234"  # business_identifier
+    assert called_kwargs.get("account_id") is None
+    assert called_kwargs.get("one_of_roles") == ALL_ALLOWED_ROLES
+
+
+def test_get_invoice_linking_key_denied_for_non_business_invoice(session, client, jwt, app):
+    """Assert a linking key does not grant access to a non-business-filing invoice."""
+    owner_account = factory_payment_account(auth_account_id="OWNER_999")
+    owner_account.save()
+    invoice = factory_invoice(payment_account=owner_account, business_identifier=None)
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Linking-Key": "test-linking-key",
+    }
+
+    with patch("pay_api.services.invoice.check_auth", side_effect=_authorize_via_linking_key_only) as mock_check_auth:
+        rv = client.get(f"/api/v1/payment-requests/{invoice.id}", headers=headers)
+
+    assert rv.status_code == 403
+
+    mock_check_auth.assert_called_once()
+    called_args, called_kwargs = mock_check_auth.call_args
+    assert called_args[0] is None  # business_identifier
+    assert called_kwargs.get("account_id") == "OWNER_999"
+    assert called_kwargs.get("one_of_roles") == ALL_ALLOWED_ROLES
