@@ -37,6 +37,7 @@ def check_auth(
     business_identifier: str,
     account_id: str = None,
     corp_type_code: str = None,
+    allow_linking_key: bool = False,
     **kwargs,
 ):  # pylint: disable=unused-argument, too-many-branches, too-many-statements
     """Authorize the user for the business entity and return authorization response."""
@@ -89,7 +90,9 @@ def check_auth(
                 current_app.config.get("AUTH_API_ENDPOINT")
                 + f"entities/{business_identifier}/authorizations?expanded=true"
             )
-            additional_headers = {"Account-Linking-Key": user.linking_key} if user.linking_key else None
+            additional_headers = (
+                {"Account-Linking-Key": user.linking_key} if allow_linking_key and user.linking_key else None
+            )
             auth_response = (
                 RestService.get(
                     auth_url,

@@ -22,9 +22,11 @@ from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
+from flask import abort
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import PaymentMethod, Role
 from tests.utilities.base_test import (
     factory_invoice,
@@ -302,7 +304,14 @@ def test_get_receipt(session, client, jwt, app):
     assert pay_receipt.status_code == 200
 
 
-def test_post_receipt_linking_key_allows_business_filing_access(session, client, jwt, app, linking_key_auth_mock):
+def _authorize_via_linking_key_only(business_identifier, account_id=None, **kwargs):  # noqa: ARG001
+    """Mock check_auth: authorize only when called via the business-identifier/linking-key branch."""
+    if account_id is None:
+        return {"roles": ["edit", "view", "make_payment"]}
+    abort(403)
+
+
+def test_post_receipt_linking_key_allows_business_filing_access(session, client, jwt, app):
     """Assert a linking-key can generate a receipt PDF for a business-filing invoice."""
     vendor_account = factory_payment_account(auth_account_id="VENDOR_777")
     vendor_account.save()
@@ -325,10 +334,7 @@ def test_post_receipt_linking_key_allows_business_filing_access(session, client,
         "fileName": "director-change",
     }
 
-    with patch(
-        "pay_api.services.auth.RestService.get",
-        side_effect=linking_key_auth_mock("SOURCE_555", "VENDOR_777"),
-    ) as mock_get:
+    with patch("pay_api.services.invoice.check_auth", side_effect=_authorize_via_linking_key_only) as mock_check_auth:
         rv = client.post(
             f"/api/v1/payment-requests/{invoice.id}/receipts",
             data=json.dumps(filing_data),
@@ -336,11 +342,15 @@ def test_post_receipt_linking_key_allows_business_filing_access(session, client,
         )
 
     assert rv.status_code == 201
-    called_additional_headers = mock_get.call_args.kwargs.get("additional_headers")
-    assert called_additional_headers == {"Account-Linking-Key": "test-linking-key"}
+
+    mock_check_auth.assert_called_once()
+    called_args, called_kwargs = mock_check_auth.call_args
+    assert called_args[0] == "CP0001234"  # business_identifier
+    assert called_kwargs.get("account_id") is None
+    assert called_kwargs.get("one_of_roles") == ALL_ALLOWED_ROLES
 
 
-def test_post_receipt_linking_key_denied_for_non_business_invoice(session, client, jwt, app, linking_key_auth_mock):
+def test_post_receipt_linking_key_denied_for_non_business_invoice(session, client, jwt, app):
     """Assert a linking key does not grant access to generate a receipt for a non-business-filing invoice."""
     owner_account = factory_payment_account(auth_account_id="OWNER_999")
     owner_account.save()
@@ -363,10 +373,7 @@ def test_post_receipt_linking_key_denied_for_non_business_invoice(session, clien
         "fileName": "director-change",
     }
 
-    with patch(
-        "pay_api.services.auth.RestService.get",
-        side_effect=linking_key_auth_mock("OWNER_999", "VENDOR_777", roles=[]),
-    ) as mock_get:
+    with patch("pay_api.services.invoice.check_auth", side_effect=_authorize_via_linking_key_only) as mock_check_auth:
         rv = client.post(
             f"/api/v1/payment-requests/{invoice.id}/receipts",
             data=json.dumps(filing_data),
@@ -375,7 +382,8 @@ def test_post_receipt_linking_key_denied_for_non_business_invoice(session, clien
 
     assert rv.status_code == 403
 
-    # No business identifier so the account id check should be used which does not use
-    # the account linking key
-    called_additional_headers = mock_get.call_args.kwargs.get("additional_headers")
-    assert not called_additional_headers or "Account-Linking-Key" not in called_additional_headers
+    mock_check_auth.assert_called_once()
+    called_args, called_kwargs = mock_check_auth.call_args
+    assert called_args[0] is None  # business_identifier
+    assert called_kwargs.get("account_id") == "OWNER_999"
+    assert called_kwargs.get("one_of_roles") == ALL_ALLOWED_ROLES

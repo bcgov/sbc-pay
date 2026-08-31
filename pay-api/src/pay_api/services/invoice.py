@@ -408,7 +408,12 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_by_id(identifier: int, skip_auth_check: bool = False, one_of_roles=ALL_ALLOWED_ROLES):
+    def find_by_id(
+        identifier: int,
+        skip_auth_check: bool = False,
+        one_of_roles=ALL_ALLOWED_ROLES,
+        allow_linking_key: bool = False,
+    ):
         """Find invoice by id."""
         invoice_dao = InvoiceModel.find_by_id(identifier)
 
@@ -416,7 +421,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
         if not skip_auth_check:
-            Invoice._check_for_auth(invoice_dao, one_of_roles)
+            Invoice._check_for_auth(invoice_dao, one_of_roles, allow_linking_key=allow_linking_key)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
@@ -509,7 +514,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         if not invoice_dao:
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
-        Invoice._check_for_auth(invoice_dao)
+        Invoice._check_for_auth(invoice_dao, allow_linking_key=True)
 
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice_dao.payment_account_id)
         cfs_account = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
@@ -596,11 +601,11 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
     @staticmethod
     @user_context
-    def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES, **kwargs):
+    def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES, allow_linking_key: bool = False, **kwargs):
         user: UserContext = kwargs["user"]
         # Check auth by business identifier if account linking key is also present.
-        if user.linking_key and dao.business_identifier:
-            check_auth(dao.business_identifier, one_of_roles=one_of_roles)
+        if allow_linking_key and user.linking_key and dao.business_identifier:
+            check_auth(dao.business_identifier, one_of_roles=one_of_roles, allow_linking_key=True)
             return
         account_id = dao.payment_account.auth_account_id if dao.payment_account else None
         if user.is_system():

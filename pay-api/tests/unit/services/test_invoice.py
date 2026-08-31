@@ -17,11 +17,14 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
 from pay_api.services.invoice import Invoice as Invoice_service
+from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
     factory_invoice,
@@ -128,3 +131,36 @@ def test_invoice_with_temproary_business_identifier(session):
     assert invoice.business_identifier is not None
     invoice_dict = invoice.asdict()
     assert invoice_dict.get("business_identifier") is None
+
+
+@pytest.mark.parametrize(
+    "allow_linking_key,has_linking_key,business_identifier,expected_account_id",
+    [
+        (True, True, "CP0001234", None),  # linking-key branch: no account_id
+        (False, True, "CP0001234", "VENDOR_777"),  # linking-key not allowed, use account id only
+        (True, True, None, "VENDOR_777"),  # no business_identifier - account id only
+        (True, False, "CP0001234", "VENDOR_777"),  # no linking key present - use account
+    ],
+)
+def test_check_for_auth_linking_key(
+    session, monkeypatch, allow_linking_key, has_linking_key, business_identifier, expected_account_id
+):
+    """Assert _check_for_auth only takes the linking-key/business-identifier branch when explicitly allowed."""
+    payment_account = factory_payment_account(auth_account_id="VENDOR_777")
+    payment_account.save()
+    invoice_dao = factory_invoice(payment_account=payment_account, business_identifier=business_identifier)
+    invoice_dao.save()
+
+    monkeypatch.setattr(
+        "pay_api.utils.user_context.get_account_linking_key",
+        lambda: "test-linking-key" if has_linking_key else None,
+    )
+
+    with patch("pay_api.services.invoice.check_auth", return_value={"roles": []}) as mock_check_auth:
+        Invoice_service._check_for_auth(invoice_dao, allow_linking_key=allow_linking_key)  # pylint: disable=protected-access
+
+    mock_check_auth.assert_called_once()
+    called_args, called_kwargs = mock_check_auth.call_args
+    assert called_args[0] == business_identifier
+    assert called_kwargs.get("account_id") == expected_account_id
+    assert called_kwargs.get("one_of_roles") == ALL_ALLOWED_ROLES

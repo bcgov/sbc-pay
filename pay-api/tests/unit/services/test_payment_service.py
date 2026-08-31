@@ -33,6 +33,7 @@ from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.services.payment_line_item import PaymentLineItem
 from pay_api.services.payment_service import PaymentService
+from pay_api.utils.constants import ALL_ALLOWED_ROLES, EDIT_ROLE
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
@@ -536,3 +537,63 @@ def test_calculate_gst_invoice_versus_pli(session, public_user_mock):
                 line_item.total + line_item.service_fees + line_item.statutory_fees_gst + line_item.service_fees_gst
                 == expected_total
             )
+
+
+def test_patch_invoice_excludes_linking_key(session, public_user_mock, monkeypatch):
+    """Assert update_invoice (PATCH) never takes the linking-key/business-identifier auth branch."""
+    payment_account = factory_payment_account(
+        auth_account_id="VENDOR_777", payment_method_code=PaymentMethod.ONLINE_BANKING.value
+    )
+    payment_account.save()
+    invoice = factory_invoice(
+        payment_account=payment_account,
+        business_identifier="CP0001234",
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+    )
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
+    monkeypatch.setattr("pay_api.utils.user_context.get_account_linking_key", lambda: "test-linking-key")
+
+    with patch("pay_api.services.invoice.check_auth", return_value={"roles": [EDIT_ROLE]}) as mock_check_auth:
+        response = PaymentService.update_invoice(
+            invoice.id, {"paymentInfo": {"methodOfPayment": PaymentMethod.CC.value}}
+        )
+
+    assert response.get("payment_method") == PaymentMethod.CC.value
+
+    mock_check_auth.assert_called_once()
+    called_args, called_kwargs = mock_check_auth.call_args
+    assert called_args[0] == "CP0001234"
+    assert called_kwargs.get("account_id") == "VENDOR_777"
+    assert called_kwargs.get("one_of_roles") == ALL_ALLOWED_ROLES
+    assert called_kwargs.get("allow_linking_key") in (None, False)
+
+
+def test_accept_delete_excludes_linking_key(session, public_user_mock, monkeypatch):
+    """Assert accept_delete (DELETE) never takes the linking-key/business-identifier auth branch."""
+    payment_account = factory_payment_account(auth_account_id="VENDOR_777")
+    payment_account.save()
+    invoice = factory_invoice(
+        payment_account=payment_account,
+        business_identifier="CP0001234",
+        payment_method_code=PaymentMethod.PAD.value,
+    )
+    invoice.save()
+
+    monkeypatch.setattr("pay_api.utils.user_context.get_account_linking_key", lambda: "test-linking-key")
+
+    with (
+        patch("pay_api.services.payment_service.Thread") as mock_thread,
+        patch("pay_api.services.invoice.check_auth", return_value={"roles": [EDIT_ROLE]}) as mock_check_auth,
+    ):
+        PaymentService.accept_delete(invoice.id)
+
+    mock_thread.assert_called_once()
+
+    mock_check_auth.assert_called_once()
+    called_args, called_kwargs = mock_check_auth.call_args
+    assert called_args[0] == "CP0001234"
+    assert called_kwargs.get("account_id") == "VENDOR_777"
+    assert called_kwargs.get("one_of_roles") == [EDIT_ROLE]
+    assert called_kwargs.get("allow_linking_key") in (None, False)
