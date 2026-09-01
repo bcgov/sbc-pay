@@ -54,14 +54,9 @@ def get_payment_link(token: str):
 def post_payment_link_transaction(token: str):
     """Start a payment transaction for the invoice behind the token, without signing in.
 
-    Keyed on the token rather than the invoice id so the sequential id stays off the
-    unauthenticated surface. Otherwise the same contract as
-    POST /payment-requests/{invoice_id}/transactions — the caller redirects to
-    `paySystemUrl`, and PayBC returns to the existing PATCH route.
-
-    Resolving the token here and handing the invoice id to TransactionService keeps the
-    clientSystemUrl redirect validation in one place, and avoids an import cycle between
-    the payment-link and transaction services.
+    Same contract as POST /payment-requests/{invoice_id}/transactions — caller redirects
+    to `paySystemUrl`, PayBC returns to the existing PATCH route — except the token has to
+    be presented, so a caller can only pay the invoice they were sent a link for.
     """
     current_app.logger.debug("<post_payment_link_transaction")
     request_json = request.get_json()
