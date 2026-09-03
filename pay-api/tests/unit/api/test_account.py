@@ -943,12 +943,9 @@ def test_put_account_scope_cfs_account_returns_cfs_block_for_online_banking(sess
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
     # Start with a PAD account so the account default is PAD; scope=cfs_account must not change it.
-    rv = client.post(
-        "/api/v1/accounts",
-        data=json.dumps(get_linked_pad_account_payload()),
-        headers=headers,
-    )
-    auth_account_id = rv.json.get("accountId")
+    pad_payload = get_linked_pad_account_payload()
+    client.post("/api/v1/accounts", data=json.dumps(pad_payload), headers=headers)
+    auth_account_id = pad_payload["accountId"]
 
     rv = client.put(
         f"/api/v1/accounts/{auth_account_id}?scope=cfs_account",

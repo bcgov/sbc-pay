@@ -104,8 +104,6 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
 
     def _populate_cfs_details(self, payment_method: str) -> None:
         """Populate cfs_* fields from the effective CFS account for the given payment method."""
-        if not payment_method:
-            return
         cfs_account = CfsAccountModel.find_effective_by_payment_method(self.__dao.id, payment_method)
         if not cfs_account:
             return
