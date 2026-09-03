@@ -609,3 +609,9 @@ class ActivityAction(Enum):
     EFT_OVERDUE_UNLOCK = "EFT_OVERDUE_UNLOCK"
     PAYMENT_METHOD_CHANGE = "PAYMENT_METHOD_CHANGE"
     PAYMENT_INFO_CHANGE = "PAYMENT_INFO_CHANGE"
+
+
+class Scope(Enum):
+    """Scope paramater passed on payment account update."""
+
+    CFS_ACCOUNT = "cfs_account"
