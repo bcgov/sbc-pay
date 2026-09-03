@@ -85,6 +85,9 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         self.bank_account_number: str = None
         self.cfs_account_id: int = None
         self.cfs_account_status: str = None
+        # Set by update() under scope=cfs_account so asdict() surfaces the
+        # provisioned CFS account (its method may differ from the account default).
+        self._cfs_payment_method_override: str = None
 
     @property
     def _dao(self):
@@ -97,7 +100,11 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         self.__dao = value
         if not hasattr(self.__dao, "id"):
             return
-        cfs_account = CfsAccountModel.find_effective_by_payment_method(self.__dao.id, self.__dao.payment_method)
+        self._populate_cfs_details(self.__dao.payment_method)
+
+    def _populate_cfs_details(self, payment_method: str) -> None:
+        """Populate cfs_* fields from the effective CFS account for the given payment method."""
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(self.__dao.id, payment_method)
         if not cfs_account:
             return
         self.cfs_account: str = cfs_account.cfs_account
@@ -471,8 +478,19 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             current_app.logger.error(e)
             raise
 
+        result = cls.find_by_id(account.id)
+
+        # Under scope=cfs_account the account's default payment_method is intentionally
+        # unchanged; populate cfs_* from the just-provisioned method so the response
+        # (and the resource's ACCEPTED/OK check) reflects it.
+        if scope == Scope.CFS_ACCOUNT:
+            requested_method = get_str_by_path(account_request, "paymentInfo/methodOfPayment")
+            if requested_method:
+                result._cfs_payment_method_override = requested_method  # pylint:disable=protected-access
+                result._populate_cfs_details(requested_method)  # pylint:disable=protected-access
+
         current_app.logger.debug(">update payment account")
-        return cls.find_by_id(account.id)
+        return result
 
     @staticmethod
     def _get_payment_based_on_pad_activation(account: PaymentAccountModel, previous_payment: str) -> tuple[str, str]:
@@ -597,8 +615,11 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         user: UserContext = kwargs["user"]
         account_schema = PaymentAccountSchema()
         d = account_schema.dump(self._dao)
+        # Under scope=cfs_account the request-driven method wins over the (unchanged)
+        # account default so the caller sees the CFS account they just provisioned.
+        effective_method = self._cfs_payment_method_override or self.payment_method
         # Add cfs account values based on role and payment method. For system roles, return bank details.
-        is_cfs_payment_method = self.payment_method in (
+        is_cfs_payment_method = effective_method in (
             PaymentMethod.PAD.value,
             PaymentMethod.ONLINE_BANKING.value,
             PaymentMethod.EFT.value,
@@ -612,7 +633,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             # Future - open this up for all payment methods, include a list.
             cfs_info = CfsAccountModel.find_effective_by_payment_method(
                 self.id,
-                PaymentMethod.PAD.value if is_future_pad else self.payment_method,
+                PaymentMethod.PAD.value if is_future_pad else effective_method,
             )
             cfs_account = {
                 "cfsAccountNumber": cfs_info.cfs_account,
