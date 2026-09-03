@@ -107,14 +107,14 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         cfs_account = CfsAccountModel.find_effective_by_payment_method(self.__dao.id, payment_method)
         if not cfs_account:
             return
-        self.cfs_account = cfs_account.cfs_account
-        self.cfs_party = cfs_account.cfs_party
-        self.cfs_site = cfs_account.cfs_site
-        self.bank_number = cfs_account.bank_number
-        self.bank_branch_number = cfs_account.bank_branch_number
-        self.bank_account_number = cfs_account.bank_account_number
-        self.cfs_account_id = cfs_account.id
-        self.cfs_account_status = cfs_account.status
+        self.cfs_account: str = cfs_account.cfs_account
+        self.cfs_party: str = cfs_account.cfs_party
+        self.cfs_site: str = cfs_account.cfs_site
+        self.bank_number: str = cfs_account.bank_number
+        self.bank_branch_number: str = cfs_account.bank_branch_number
+        self.bank_account_number: str = cfs_account.bank_account_number
+        self.cfs_account_id: int = cfs_account.id
+        self.cfs_account_status: str = cfs_account.status
 
     def __getattr__(self, name):
         """Dynamic way of getting the properties from the DAO, anything not in __init__."""
