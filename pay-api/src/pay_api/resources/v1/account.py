@@ -104,12 +104,13 @@ def get_account(account_number: str):
         account_id=account_number,
         one_of_roles=[EDIT_ROLE, VIEW_ROLE],
     )
-    response, status = (
-        PaymentAccountService.find_by_auth_account_id(account_number).asdict(),
-        HTTPStatus.OK,
-    )
+    service = PaymentAccountService.find_by_auth_account_id(account_number)
+    # Optional ?payment_method=... surfaces the cfsAccount block for a specific
+    # method's CFS row instead of the account's default (express-checkout).
+    if payment_method := request.args.get("payment_method"):
+        service._cfs_payment_method_override = payment_method  # pylint:disable=protected-access
     current_app.logger.debug(">get_account")
-    return jsonify(response), status
+    return jsonify(service.asdict()), HTTPStatus.OK
 
 
 @bp.route("/<string:account_number>/eft", methods=["PATCH"])
