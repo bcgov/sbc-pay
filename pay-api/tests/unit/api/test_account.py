@@ -937,6 +937,54 @@ def test_update_online_banking_account_when_cfs_up(session, client, jwt, app):
     assert rv.status_code == 202
 
 
+def test_put_account_scope_cfs_account_returns_cfs_block_for_online_banking(session, client, jwt, app):
+    """Assert PUT /accounts/{id}?scope=cfs_account surfaces the OB cfsAccount block."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    # Start with a PAD account so the account default is PAD; scope=cfs_account must not change it.
+    rv = client.post(
+        "/api/v1/accounts",
+        data=json.dumps(get_linked_pad_account_payload()),
+        headers=headers,
+    )
+    auth_account_id = rv.json.get("accountId")
+
+    rv = client.put(
+        f"/api/v1/accounts/{auth_account_id}?scope=cfs_account",
+        data=json.dumps(
+            {
+                "accountId": auth_account_id,
+                "accountName": "Test Account",
+                "paymentInfo": {"methodOfPayment": PaymentMethod.ONLINE_BANKING.value, "billable": True},
+                "contactInfo": {
+                    "addressLine1": "1000 Douglas Street",
+                    "city": "Victoria",
+                    "province": "BC",
+                    "postalCode": "V8V1V1",
+                    "country": "CA",
+                },
+            }
+        ),
+        headers=headers,
+    )
+
+    # Default payment_method stays PAD (scope=cfs_account contract).
+    assert rv.json.get("paymentMethod") == PaymentMethod.PAD.value
+
+    # Response surfaces the freshly-provisioned OB CFS block, not the PAD default.
+    cfs_block = rv.json.get("cfsAccount")
+    assert cfs_block is not None
+    assert cfs_block.get("paymentMethod") == PaymentMethod.ONLINE_BANKING.value
+    assert cfs_block.get("status") in (CfsAccountStatus.PENDING.value, CfsAccountStatus.ACTIVE.value)
+
+    # Resource picks 202 when the OB CFS lands as PENDING (the scoped-lookup path works).
+    if cfs_block.get("status") == CfsAccountStatus.PENDING.value:
+        assert rv.status_code == 202
+    else:
+        assert rv.status_code == 200
+
+
 def test_update_name(session, client, jwt, app):
     """Assert that the payment records are created with 200."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)

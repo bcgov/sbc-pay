@@ -447,7 +447,7 @@ def get_ob_scope_update_payload(account_id: int = 90001):
 
 
 def test_update_with_scope_cfs_account_preserves_default_payment_method(session):
-    """Assert that scope=cfs_account leaves the account's default payment_method untouched."""
+    """Assert scope=cfs_account leaves the account default untouched but surfaces the OB CFS."""
     pad_account = PaymentAccountService.create(get_linked_pad_account_payload(account_id=90001))
     updated = PaymentAccountService.update(
         pad_account.auth_account_id,
@@ -456,13 +456,20 @@ def test_update_with_scope_cfs_account_preserves_default_payment_method(session)
     )
     assert updated.payment_method == PaymentMethod.PAD.value
 
+    # Response reflects the freshly-provisioned OB CFS, not the PAD default.
+    ob_cfs = CfsAccountModel.find_effective_by_payment_method(updated.id, PaymentMethod.ONLINE_BANKING.value)
+    assert ob_cfs is not None
+    assert updated.cfs_account_id == ob_cfs.id
+    assert updated.cfs_account_status == ob_cfs.status
+    assert updated._cfs_payment_method_override == PaymentMethod.ONLINE_BANKING.value  # pylint:disable=protected-access
+
 
 def test_update_with_scope_cfs_account_creates_ob_cfs_account(session):
     """Assert that scope=cfs_account creates an OB CfsAccount linked to the payment account."""
     pad_account = PaymentAccountService.create(get_linked_pad_account_payload(account_id=90002))
     assert CfsAccountModel.find_effective_by_payment_method(pad_account.id, PaymentMethod.ONLINE_BANKING.value) is None
 
-    PaymentAccountService.update(
+    updated = PaymentAccountService.update(
         pad_account.auth_account_id,
         get_ob_scope_update_payload(account_id=90002),
         Scope.CFS_ACCOUNT,
@@ -471,6 +478,9 @@ def test_update_with_scope_cfs_account_creates_ob_cfs_account(session):
     ob_cfs = CfsAccountModel.find_effective_by_payment_method(pad_account.id, PaymentMethod.ONLINE_BANKING.value)
     assert ob_cfs is not None
     assert ob_cfs.payment_method == PaymentMethod.ONLINE_BANKING.value
+    # Returned service points at the same OB CFS row.
+    assert updated.cfs_account_id == ob_cfs.id
+    assert updated.cfs_account_status == ob_cfs.status
 
 
 def test_update_without_scope_still_stamps_default_payment_method(session):
