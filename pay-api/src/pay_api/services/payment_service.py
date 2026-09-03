@@ -333,7 +333,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if new_method == current_method:
             return
 
-        if invoice.invoice_status_code != InvoiceStatus.CREATED.value:
+        if invoice.invoice_status_code not in (InvoiceStatus.CREATED.value, InvoiceStatus.SETTLEMENT_SCHEDULED.value):
             raise BusinessException(Error.INVALID_REQUEST)
 
         if current_method not in _SWITCHABLE_METHODS or new_method not in _SWITCHABLE_METHODS:
