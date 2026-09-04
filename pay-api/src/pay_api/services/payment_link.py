@@ -144,8 +144,8 @@ class PaymentLinkService:
         Used by the read-only GET /payment-links/{token} lookup so the pay-nuxt
         summary screen can render before the user has linked their account.
 
-        Pre-redemption (`linked_at is None`) any authenticated caller may read the
-        summary — the token is the credential. Once the link has been consumed,
+        Pre-redemption (`linked_at is None`) any caller may read the summary, signed in
+        or not — the token is the credential. Once the link has been consumed,
         defer to Invoice._check_for_auth so only the account bound to the invoice
         can read it (auth-api round-trip spoof-proofs the Account-Id header).
         """
