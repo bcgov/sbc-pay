@@ -51,7 +51,7 @@ class PaymentLinkService:
     @staticmethod
     def _build_url(token: str) -> str:
         base = current_app.config.get("EXPRESS_CHECKOUT_URL", "").rstrip("/")
-        return f"{base}/{token}"
+        return f"{base}/pay/{token}"
 
     @classmethod
     def attach_payment_link(cls, invoice_dto: dict) -> dict:
@@ -143,9 +143,15 @@ class PaymentLinkService:
 
         Used by the read-only GET /payment-links/{token} lookup so the pay-nuxt
         summary screen can render before the user has linked their account.
+
+        Pre-redemption (`linked_at is None`) any authenticated caller may read the
+        summary — the token is the credential. Once the link has been consumed,
+        defer to Invoice._check_for_auth so only the account bound to the invoice
+        can read it (auth-api round-trip spoof-proofs the Account-Id header).
         """
         link = cls.resolve_token(token, allow_linked=True)
-        invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=True)
+        skip_auth = link.linked_at is None
+        invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=skip_auth)
         return invoice.asdict(include_dynamic_fields=True)
 
     @classmethod
