@@ -37,9 +37,14 @@ bp = Blueprint("PAYMENT_LINKS", __name__, url_prefix=f"{EndpointEnum.API_V1.valu
 
 @bp.route("/<string:token>", methods=["GET", "OPTIONS"])
 @cross_origin(origins="*", methods=["GET"])
-@_jwt.requires_auth
 def get_payment_link(token: str):
-    """Return the invoice DTO the payment link refers to."""
+    """Return the invoice DTO the payment link refers to.
+
+    a guest who paid by card comes back from
+    PayBC with no session and still needs the invoice to render their receipt. Holding
+    the token is the authorization — it resolves to exactly one invoice and can't be
+    used to reach any other.
+    """
     current_app.logger.debug("<get_payment_link")
     try:
         response = PaymentLinkService.find_invoice_by_token(token)
