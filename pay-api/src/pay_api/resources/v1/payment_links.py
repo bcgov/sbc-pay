@@ -21,10 +21,12 @@ can pay.
 
 from http import HTTPStatus
 
-from flask import Blueprint, current_app, jsonify
+from flask import Blueprint, current_app, jsonify, request
 from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
+from pay_api.schemas import utils as schema_utils
+from pay_api.services import TransactionService
 from pay_api.services.payment_link import PaymentLinkService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
@@ -45,6 +47,35 @@ def get_payment_link(token: str):
         return error_to_response(Error.INVALID_REQUEST)
     current_app.logger.debug(">get_payment_link")
     return jsonify(response), HTTPStatus.OK
+
+
+@bp.route("/<string:token>/transactions", methods=["POST"])
+@cross_origin(origins="*", methods=["POST"])
+def post_payment_link_transaction(token: str):
+    """Start a payment transaction for the invoice behind the token, without signing in.
+
+    Same contract as POST /payment-requests/{invoice_id}/transactions — caller redirects
+    to `paySystemUrl`, PayBC returns to the existing PATCH route — except the token has to
+    be presented, so a caller can only pay the invoice they were sent a link for.
+    """
+    current_app.logger.debug("<post_payment_link_transaction")
+    request_json = request.get_json()
+
+    valid_format, errors = schema_utils.validate(request_json, "transaction_request")
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+    try:
+        # allow_linked: a payer who already redeemed the link can still pay through it.
+        link = PaymentLinkService.resolve_token(token, allow_linked=True)
+        response = TransactionService.create_transaction_for_invoice(link.invoice_id, request_json).asdict()
+    except ServiceUnavailableException as exception:
+        current_app.logger.exception("payment link transaction: downstream 503")
+        return exception.response()
+    except BusinessException:
+        return error_to_response(Error.INVALID_REQUEST)
+    current_app.logger.debug(">post_payment_link_transaction")
+    return jsonify(response), HTTPStatus.CREATED
 
 
 @bp.route("/<string:token>/redemption", methods=["POST"])

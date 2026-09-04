@@ -47,6 +47,25 @@ def _express_checkout_headers(jwt, azp: str = "partner-client"):
     return {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
 
+# Matches the URLs already whitelisted by TestConfig.VALID_REDIRECT_URLS — DIRECT_PAY
+# invoices have their clientSystemUrl checked against that list.
+TRANSACTION_BODY = {
+    "clientSystemUrl": "http://localhost:8080/coops-web/transactions/transaction_id=abcd",
+    "payReturnUrl": "http://localhost:8080/pay-web",
+}
+
+
+def _create_express_checkout_invoice(client, jwt):
+    """Create an express-checkout invoice and return (token, invoice_id)."""
+    created = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request()),
+        headers=_express_checkout_headers(jwt),
+    )
+    assert created.status_code == 201
+    return created.json["paymentUrl"].rsplit("/", 1)[-1], created.json["id"]
+
+
 def test_create_express_checkout_invoice_returns_payment_url(session, client, jwt, app):
     """POST /payment-requests with the express-checkout role returns a 201 + paymentUrl."""
     _enable_express_checkout()
@@ -176,3 +195,53 @@ def test_redeem_rejects_second_account(session, client, jwt, app):
 
     assert _redeem_as("1111").status_code == 200
     assert _redeem_as("2222").status_code == 400
+
+
+def test_transaction_without_login_returns_pay_system_url(session, client, jwt, app):
+    """POST /payment-links/{token}/transactions starts a transaction with no Authorization header.
+
+    This is the whole point of the route — an anonymous payer holding the link can reach
+    PayBC without signing in, and the invoice stays on the SA account while they do.
+    """
+    _enable_express_checkout()
+    token, invoice_id = _create_express_checkout_invoice(client, jwt)
+
+    rv = client.post(
+        f"/api/v1/payment-links/{token}/transactions",
+        data=json.dumps(TRANSACTION_BODY),
+        headers={"content-type": "application/json"},  # deliberately no Authorization
+    )
+
+    assert rv.status_code == 201
+    assert rv.json.get("paySystemUrl")
+
+    # The payer never redeemed, so the invoice is still parked on the SA adhoc account.
+    sa_account = PaymentAccountModel.find_by_auth_account_id("sa-partner-client")
+    assert InvoiceService.find_by_id(invoice_id, skip_auth_check=True).payment_account_id == sa_account.id
+
+
+def test_transaction_rejects_unknown_token(session, client, jwt, app):
+    """An unknown token gets the same 400 as any other failure — no enumeration signal."""
+    rv = client.post(
+        "/api/v1/payment-links/does-not-exist/transactions",
+        data=json.dumps(TRANSACTION_BODY),
+        headers={"content-type": "application/json"},
+    )
+    assert rv.status_code == 400
+
+
+def test_transaction_rejects_disallowed_redirect_url(session, client, jwt, app):
+    """Redirect URLs are still checked against VALID_REDIRECT_URLS on this route.
+
+    Guards the delegation to TransactionService — if this route ever stopped going through
+    it, an open redirect would slip in silently.
+    """
+    _enable_express_checkout()
+    token, _ = _create_express_checkout_invoice(client, jwt)
+
+    rv = client.post(
+        f"/api/v1/payment-links/{token}/transactions",
+        data=json.dumps({**TRANSACTION_BODY, "clientSystemUrl": "http://evil.example.com/steal"}),
+        headers={"content-type": "application/json"},
+    )
+    assert rv.status_code == 400
