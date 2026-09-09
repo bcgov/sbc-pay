@@ -26,7 +26,10 @@ class QueueMessage:
 def publish_to_queue(queue_message: QueueMessage):
     """Publish to GCP PubSub Queue using queue."""
     if queue_message.topic is None:
-        current_app.logger.info("Skipping queue message topic not set.")
+        current_app.logger.info(                
+          "Skipping queue message topic not set. source=%s type=%s corp_type=%s",
+          queue_message.source, queue_message.message_type, queue_message.corp_type,                                   
+      )
         return
 
     # Create a SimpleCloudEvent from the QueueMessage
