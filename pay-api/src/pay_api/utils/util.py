@@ -345,13 +345,20 @@ def get_topic_for_corp_type(corp_type: str):
     from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel  # noqa: TID252
 
     express_enabled = CodeService.is_express_checkout_enabled(corp_type)
-    partner_topic = current_app.config.get(f"{corp_type.upper()}_PAY_TOPIC") if express_enabled else None
+    config_key = f"{corp_type.upper()}_PAY_TOPIC"
+    partner_topic = current_app.config.get(config_key) if express_enabled else None
     # TODO Remove — POC diagnostic for ENV corp_type routing.
+    import os as _os  # noqa: PLC0415
     current_app.logger.info(
-        "get_topic_for_corp_type: corp_type=%s express_enabled=%s topic=%s",
+        "get_topic_for_corp_type: corp_type=%s express_enabled=%s "
+        "config[%s]=%r os.getenv[%s]=%r env_has_key=%s",
         corp_type,
         express_enabled,
+        config_key,
         partner_topic,
+        config_key,
+        _os.getenv(config_key),
+        config_key in _os.environ,
     )
     if express_enabled:
         return partner_topic
