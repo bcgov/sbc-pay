@@ -344,8 +344,17 @@ def get_topic_for_corp_type(corp_type: str):
     # Will fix this promptly and move this away so it doesn't cause circular dependencies.
     from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel  # noqa: TID252
 
-    if CodeService.is_express_checkout_enabled(corp_type):
-        return current_app.config.get(f"{corp_type.upper()}_PAY_TOPIC")
+    express_enabled = CodeService.is_express_checkout_enabled(corp_type)
+    partner_topic = current_app.config.get(f"{corp_type.upper()}_PAY_TOPIC") if express_enabled else None
+    # TODO Remove — POC diagnostic for ENV corp_type routing.
+    current_app.logger.info(
+        "get_topic_for_corp_type: corp_type=%s express_enabled=%s topic=%s",
+        corp_type,
+        express_enabled,
+        partner_topic,
+    )
+    if express_enabled:
+        return partner_topic
 
     if corp_type == CorpType.NRO.value:
         return current_app.config.get("NAMEX_PAY_TOPIC")
