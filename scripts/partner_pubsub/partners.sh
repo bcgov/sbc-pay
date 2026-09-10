@@ -49,3 +49,34 @@ subscribers_for() {
         *)          echo "" ;;
     esac
 }
+
+# Optional direct webhook delivery. Leave the URL empty for topic-only
+# partners. The audience is what the partner validates in Pub/Sub's OIDC JWT;
+# if it is blank, provision-webhooks.sh uses the webhook URL as the audience.
+# Do not put credentials or shared secrets in this file.
+webhook_url_for() {
+    case "${1}_${2}" in
+        sites_dev)  echo "https://hooks.example.com/pay-events" ;;
+        sites_test) echo "" ;;
+        sites_prod) echo "" ;;
+        *)          echo "" ;;
+    esac
+}
+
+webhook_audience_for() {
+    case "${1}_${2}" in
+        sites_dev)  echo "" ;;
+        sites_test) echo "" ;;
+        sites_prod) echo "" ;;
+        *)          echo "" ;;
+    esac
+}
+
+# A single service account is used by Pub/Sub to mint OIDC tokens for all
+# partner webhook push subscriptions in an environment.
+webhook_delivery_sa_name_for_env() {
+    case "$1" in
+        dev|test|prod) echo "pay-events-webhook-delivery" ;;
+        *)             echo "" ;;
+    esac
+}
