@@ -21,15 +21,17 @@ can pay.
 
 from http import HTTPStatus
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request
 from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.schemas import utils as schema_utils
-from pay_api.services import TransactionService
+from pay_api.services import ReceiptService, TransactionService
 from pay_api.services.payment_link import PaymentLinkService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
+from pay_api.utils.enums import InvoiceStatus
 from pay_api.utils.errors import Error
 
 bp = Blueprint("PAYMENT_LINKS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/payment-links")
@@ -81,6 +83,38 @@ def post_payment_link_transaction(token: str):
         return error_to_response(Error.INVALID_REQUEST)
     current_app.logger.debug(">post_payment_link_transaction")
     return jsonify(response), HTTPStatus.CREATED
+
+
+@bp.route("/<string:token>/receipts", methods=["POST"])
+@cross_origin(origins="*", methods=["POST"])
+def post_payment_link_receipt(token: str):
+    """Return the receipt PDF for the invoice behind the token, without signing in."""
+    current_app.logger.debug("<post_payment_link_receipt")
+    request_json = request.get_json()
+
+    valid_format, errors = schema_utils.validate(request_json, "payment_receipt_input")
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+    try:
+        # allow_linked: a payer who redeemed the link can still fetch the receipt through it.
+        link = PaymentLinkService.resolve_token(token, allow_linked=True)
+        invoice = InvoiceModel.find_by_id(link.invoice_id)
+        if invoice.invoice_status_code not in InvoiceStatus.paid_statuses():
+            return error_to_response(Error.INVALID_REQUEST)
+        pdf = ReceiptService.create_receipt(
+            link.invoice_id, request_json, skip_auth_check=True, use_service_account=True
+        )
+    except BusinessException:
+        return error_to_response(Error.INVALID_REQUEST)
+
+    response = Response(pdf, HTTPStatus.CREATED)
+    file_name = request_json.get("fileName") or "payment_receipt"
+    response.headers.set("Content-Disposition", "attachment", filename=f"{file_name}.pdf")
+    response.headers.set("Content-Type", "application/pdf")
+    response.headers.set("Access-Control-Expose-Headers", "Content-Disposition")
+    current_app.logger.debug(">post_payment_link_receipt")
+    return response
 
 
 @bp.route("/<string:token>/redemption", methods=["POST"])

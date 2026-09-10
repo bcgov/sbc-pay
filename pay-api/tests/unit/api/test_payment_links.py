@@ -15,16 +15,20 @@
 """Tests for the express-checkout invoice + payment-link endpoints."""
 
 import json
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.cache import cache
-from pay_api.utils.enums import Code, PaymentMethod, Role
+from pay_api.utils.enums import Code, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
+    factory_invoice_reference,
     factory_payment_account,
+    factory_receipt,
     get_claims,
     get_payment_request,
     token_header,
@@ -53,6 +57,24 @@ TRANSACTION_BODY = {
     "clientSystemUrl": "http://localhost:8080/coops-web/transactions/transaction_id=abcd",
     "payReturnUrl": "http://localhost:8080/pay-web",
 }
+
+RECEIPT_BODY = {"filingDateTime": "June 27, 2019", "fileName": "payment_receipt"}
+
+
+def _settle_invoice(invoice_id: int):
+    """Put an invoice in the state a completed card payment leaves it in.
+
+    A receipt can only be rendered from a settled invoice: `Receipt.get_receipt_details`
+    reads the receipt row and the COMPLETED invoice reference, both written by the
+    payment reconciliation. Flipping the status alone isn't enough.
+    """
+    invoice = InvoiceModel.find_by_id(invoice_id)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.payment_date = datetime.now(tz=UTC)
+    invoice.paid = invoice.total
+    invoice.save()
+    factory_invoice_reference(invoice_id, status_code=InvoiceReferenceStatus.COMPLETED.value).save()
+    factory_receipt(invoice_id, receipt_amount=float(invoice.total)).save()
 
 
 def _create_express_checkout_invoice(client, jwt):
@@ -242,6 +264,39 @@ def test_transaction_rejects_disallowed_redirect_url(session, client, jwt, app):
     rv = client.post(
         f"/api/v1/payment-links/{token}/transactions",
         data=json.dumps({**TRANSACTION_BODY, "clientSystemUrl": "http://evil.example.com/steal"}),
+        headers={"content-type": "application/json"},
+    )
+    assert rv.status_code == 400
+
+
+def test_receipt_without_login_returns_pdf(session, client, jwt, app):
+    """POST /payment-links/{token}/receipts issues the receipt with no Authorization header.
+
+    a guest who paid by card has no session, and the link is their only route to a receipt: no account, no email.
+    """
+    _enable_express_checkout()
+    token, invoice_id = _create_express_checkout_invoice(client, jwt)
+    _settle_invoice(invoice_id)
+
+    with patch("pay_api.services.receipt.get_service_account_token", return_value="sa-token"):
+        rv = client.post(
+            f"/api/v1/payment-links/{token}/receipts",
+            data=json.dumps(RECEIPT_BODY),
+            headers={"content-type": "application/json"},
+        )
+
+    assert rv.status_code == 201
+    assert rv.headers["Content-Type"] == "application/pdf"
+
+
+def test_receipt_rejects_unpaid_invoice(session, client, jwt, app):
+    """Nothing to receipt before payment — the pre-payment document is /reports."""
+    _enable_express_checkout()
+    token, _ = _create_express_checkout_invoice(client, jwt)
+
+    rv = client.post(
+        f"/api/v1/payment-links/{token}/receipts",
+        data=json.dumps(RECEIPT_BODY),
         headers={"content-type": "application/json"},
     )
     assert rv.status_code == 400

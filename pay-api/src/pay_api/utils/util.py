@@ -349,9 +349,9 @@ def get_topic_for_corp_type(corp_type: str):
     partner_topic = current_app.config.get(config_key) if express_enabled else None
     # TODO Remove — POC diagnostic for ENV corp_type routing.
     import os as _os  # noqa: PLC0415
+
     current_app.logger.info(
-        "get_topic_for_corp_type: corp_type=%s express_enabled=%s "
-        "config[%s]=%r os.getenv[%s]=%r env_has_key=%s",
+        "get_topic_for_corp_type: corp_type=%s express_enabled=%s config[%s]=%r os.getenv[%s]=%r env_has_key=%s",
         corp_type,
         express_enabled,
         config_key,

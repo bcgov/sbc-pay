@@ -41,6 +41,7 @@ from pay_api.utils.product_auth_util import ProductAuthUtil
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date
 
+from .auth import get_service_account_token
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
@@ -62,9 +63,14 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         invoice_identifier: str,
         filing_data: dict[str, Any],
         skip_auth_check: bool = False,
+        use_service_account: bool = False,
         **kwargs,
     ):
-        """Create receipt."""
+        """Create receipt.
+
+        `use_service_account` is for callers with no signed-in user — an express-checkout
+        guest authorized by a payment-link token.
+        """
         current_app.logger.debug("<create receipt initiated")
         receipt_dict = {
             "templateName": "payment_receipt",
@@ -82,7 +88,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
 
         pdf_response = OAuthService.post(
             current_app.config.get("REPORT_API_BASE_URL"),
-            kwargs["user"].bearer_token,
+            get_service_account_token() if use_service_account else kwargs["user"].bearer_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
             receipt_dict,
