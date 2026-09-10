@@ -15,6 +15,7 @@
 """Tests for the express-checkout invoice + payment-link endpoints."""
 
 import json
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from pay_api.models import CorpType as CorpTypeModel
@@ -23,9 +24,11 @@ from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.cache import cache
-from pay_api.utils.enums import Code, InvoiceStatus, PaymentMethod, Role
+from pay_api.utils.enums import Code, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
+    factory_invoice_reference,
     factory_payment_account,
+    factory_receipt,
     get_claims,
     get_payment_request,
     token_header,
@@ -56,6 +59,22 @@ TRANSACTION_BODY = {
 }
 
 RECEIPT_BODY = {"filingDateTime": "June 27, 2019", "fileName": "payment_receipt"}
+
+
+def _settle_invoice(invoice_id: int):
+    """Put an invoice in the state a completed card payment leaves it in.
+
+    A receipt can only be rendered from a settled invoice: `Receipt.get_receipt_details`
+    reads the receipt row and the COMPLETED invoice reference, both written by the
+    payment reconciliation. Flipping the status alone isn't enough.
+    """
+    invoice = InvoiceModel.find_by_id(invoice_id)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.payment_date = datetime.now(tz=UTC)
+    invoice.paid = invoice.total
+    invoice.save()
+    factory_invoice_reference(invoice_id, status_code=InvoiceReferenceStatus.COMPLETED.value).save()
+    factory_receipt(invoice_id, receipt_amount=float(invoice.total)).save()
 
 
 def _create_express_checkout_invoice(client, jwt):
@@ -257,9 +276,7 @@ def test_receipt_without_login_returns_pdf(session, client, jwt, app):
     """
     _enable_express_checkout()
     token, invoice_id = _create_express_checkout_invoice(client, jwt)
-    invoice = InvoiceModel.find_by_id(invoice_id)
-    invoice.invoice_status_code = InvoiceStatus.PAID.value
-    invoice.save()
+    _settle_invoice(invoice_id)
 
     with patch("pay_api.services.receipt.get_service_account_token", return_value="sa-token"):
         rv = client.post(

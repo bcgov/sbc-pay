@@ -160,7 +160,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
     ASSETS_PAY_TOPIC = os.getenv("ASSETS_PAY_TOPIC", "assets-pay-notification-dev")
-    ENV_PAY_TOPIC = os.getenv("ENV_PAY_TOPIC") #TODO Remove - just for POC
+    ENV_PAY_TOPIC = os.getenv("ENV_PAY_TOPIC")  # TODO Remove - just for POC
 
     # Auto-load partner (express-checkout) topic env vars into the config class.
     # Convention: env var name `<CORP_TYPE_UPPER>_PAY_TOPIC`, value = literal topic
