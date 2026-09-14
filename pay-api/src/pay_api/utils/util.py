@@ -31,6 +31,8 @@ from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 
+from pay_api.utils.constants import EXPRESS_CHECKOUT_ACCOUNT_PREFIX
+
 from .constants import DT_FULL_FORMAT, DT_SHORT_FORMAT
 from .converter import Converter
 from .enums import Code, CorpType, Product, StatementFrequency
@@ -435,3 +437,19 @@ def get_statement_currency_string(value):
 def is_string_empty(val: str):
     """Check if a string has a value."""
     return not (val and val.strip())
+
+
+def hide_express_checkout_account(invoice: dict) -> dict:
+    """Blank the adhoc SA account on a serialized invoice, in place.
+
+    Express-checkout invoices are parked on `sa-<client_id>` until a payer redeems the
+    link, and an anonymous payer never redeems — so the account stays on that adhoc row
+    forever. It is internal routing, meaningless to a payer, and it surfaces as
+    "Account Number: sa-..." on receipts. A redeemed invoice carries a real account and
+    is left untouched.
+    """
+    account = invoice.get("payment_account") or {}
+    if str(account.get("account_id") or "").startswith(EXPRESS_CHECKOUT_ACCOUNT_PREFIX):
+        account["account_id"] = None
+        account["account_name"] = None
+    return invoice

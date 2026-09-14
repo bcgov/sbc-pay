@@ -36,7 +36,7 @@ from pay_api.utils.constants import MAKE_PAYMENT
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_str_by_path
+from pay_api.utils.util import get_str_by_path, hide_express_checkout_account
 
 _TOKEN_LEN = 21
 
@@ -152,7 +152,9 @@ class PaymentLinkService:
         link = cls.resolve_token(token, allow_linked=True)
         skip_auth = link.linked_at is None
         invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=skip_auth)
-        return invoice.asdict(include_dynamic_fields=True)
+        # This response reaches anyone holding the link, signed in or not — don't hand
+        # them the adhoc SA account the unredeemed invoice is parked on.
+        return hide_express_checkout_account(invoice.asdict(include_dynamic_fields=True))
 
     @classmethod
     @user_context
