@@ -39,7 +39,7 @@ from pay_api.utils.enums import (
 from pay_api.utils.errors import Error
 from pay_api.utils.product_auth_util import ProductAuthUtil
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date
+from pay_api.utils.util import get_local_formatted_date, hide_express_checkout_account
 
 from .auth import get_service_account_token
 from .invoice import Invoice
@@ -143,7 +143,8 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         receipt_details["paymentMethod"] = payment_method.code
         if invoice_data.payment_method_code != PaymentSystem.INTERNAL.value:
             receipt_details["paymentMethodDescription"] = payment_method.description
-        receipt_details["invoice"] = camelcase_dict(invoice_data.asdict(), {})
+        # Blank the adhoc SA account before camelising
+        receipt_details["invoice"] = camelcase_dict(hide_express_checkout_account(invoice_data.asdict()), {})
         # Format date to display in report.
 
         receipt_date = Receipt.get_receipt_date(filing_data.get("isRefund"), invoice_data)

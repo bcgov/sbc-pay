@@ -23,6 +23,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
@@ -155,6 +156,9 @@ def test_get_payment_link_returns_invoice(session, client, jwt, app):
     assert rv.status_code == 200
     assert rv.json["id"] == invoice_id
     assert rv.json["returnUrl"] == "http://localhost:8080/done"
+    # This route is open to anyone holding the link — the adhoc SA account the unredeemed
+    # invoice is parked on is internal routing and must not be handed out.
+    assert rv.json["paymentAccount"]["accountId"] is None
 
 
 def test_get_payment_link_rejects_unknown_token(session, client, jwt, app):
@@ -312,3 +316,14 @@ def test_receipt_rejects_unpaid_invoice(session, client, jwt, app):
         headers={"content-type": "application/json"},
     )
     assert rv.status_code == 400
+
+
+def test_receipt_omits_the_adhoc_service_account(session, client, jwt, app):
+    """An anonymous payer's receipt must not print the internal `sa-<client_id>` account."""
+    _enable_express_checkout()
+    _, invoice_id = _create_express_checkout_invoice(client, jwt)
+    _settle_invoice(invoice_id)
+
+    details = ReceiptService.get_receipt_details({}, invoice_id, skip_auth_check=True)
+
+    assert details["invoice"]["paymentAccount"]["accountId"] is None

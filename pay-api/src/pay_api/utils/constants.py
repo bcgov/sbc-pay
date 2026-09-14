@@ -72,3 +72,7 @@ REFUND_SUCCESS_MESSAGES = {
 }
 
 TAX_CLASSIFICATION_GST = "GST"
+
+# Express-checkout invoices are parked on an adhoc PaymentAccount keyed by the partner's
+# client id until a payer redeems the link.
+EXPRESS_CHECKOUT_ACCOUNT_PREFIX = "sa-"
