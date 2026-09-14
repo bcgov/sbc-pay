@@ -2460,9 +2460,9 @@ werkzeug = "^3.1.4"
 
 [package.source]
 type = "git"
-url = "https://github.com/ochiu/sbc-pay.git"
-reference = "pytz-version-update"
-resolved_reference = "e9f1da3b9fec0f72ce2b11b4aacc729531d492f4"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "main"
+resolved_reference = "f79088f6bcdfc1f7e8ad60959720817d01320229"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3619,4 +3619,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "c204c299ea4087e2f9c2a9554b1bcc3bbb83b2f37d617e73e7c68b7e513fadaa"
+content-hash = "7dc412e16aececb22dc753bafbe562c77bc6d6645e5867def4ca865251c3c679"
