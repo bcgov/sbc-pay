@@ -74,6 +74,7 @@ def post_invoice():
                 business_identifier=business_identifier,
                 corp_type_code=corp_type_code,
                 contains_role=MAKE_PAYMENT,
+                allow_linking_key=True,
             )
             response = PaymentService.create_invoice(request_json, authorization)
         status = HTTPStatus.CREATED
@@ -90,7 +91,7 @@ def get_invoice(invoice_id):
     """Get the invoice records."""
     try:
         response, status = (
-            InvoiceService.find_by_id(invoice_id).asdict(include_dynamic_fields=True),
+            InvoiceService.find_by_id(invoice_id, allow_linking_key=True).asdict(include_dynamic_fields=True),
             HTTPStatus.OK,
         )
     except BusinessException as exception:

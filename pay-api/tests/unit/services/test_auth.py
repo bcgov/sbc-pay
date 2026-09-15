@@ -179,6 +179,17 @@ def test_check_auth_forwards_linking_key_for_business_identifier(
     with app.test_request_context(headers=headers):
         with patch("pay_api.services.auth.RestService.get") as mock_get:
             mock_get.return_value.json.return_value = {"roles": [EDIT_ROLE], "account": {"id": "1234"}}
-            check_auth("CP0001234", contains_role=EDIT_ROLE)
+            check_auth("CP0001234", contains_role=EDIT_ROLE, allow_linking_key=True)
 
         assert mock_get.call_args.kwargs["additional_headers"] == expected_additional_headers
+
+
+def test_check_auth_never_forwards_linking_key_without_explicit_opt_in(app, session, public_user_mock):
+    """Assert check_auth never forwards Account-Linking-Key when allow_linking_key is left at its default."""
+    headers = {"Account-Linking-Key": "some-linking-key"}
+    with app.test_request_context(headers=headers):
+        with patch("pay_api.services.auth.RestService.get") as mock_get:
+            mock_get.return_value.json.return_value = {"roles": [EDIT_ROLE], "account": {"id": "1234"}}
+            check_auth("CP0001234", account_id=None, contains_role=EDIT_ROLE)
+
+        assert mock_get.call_args.kwargs["additional_headers"] is None

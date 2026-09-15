@@ -2659,14 +2659,14 @@ cli = ["click (>=5.0)"]
 
 [[package]]
 name = "pytz"
-version = "2024.1"
+version = "2026.3"
 description = "World timezone definitions, modern and historical"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "pytz-2024.1-py2.py3-none-any.whl", hash = "sha256:328171f4e3623139da4983451950b28e95ac706e13f3f2630a879749e7a8b319"},
-    {file = "pytz-2024.1.tar.gz", hash = "sha256:2a29735ea9c18baf14b448846bde5a48030ed267578472d8955cd0e7443a9812"},
+    {file = "pytz-2026.3-py2.py3-none-any.whl", hash = "sha256:f2c90c10a28a593365fe42a654c5a4dc20bc48ad13451735db1c9adb94e039be"},
+    {file = "pytz-2026.3.tar.gz", hash = "sha256:3a30feb7a1a04cf0fa0be1624415930843b02f012eb800380f36f906a723e4ae"},
 ]
 
 [[package]]
@@ -3341,4 +3341,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "1415c1a124e9ab26a6e0668f0493d0f4d6dd29785fcfdab19262744f199ef278"
+content-hash = "e0b2b41231e484d9c2b995de3a83095696fe708bd3d3869beb75008d20c404b1"
