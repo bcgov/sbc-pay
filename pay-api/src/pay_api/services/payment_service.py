@@ -28,6 +28,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
 from pay_api.services.direct_sale_service import STATUS_PAID, DirectSaleService
+from pay_api.services.email_service import send_receipt_notification
 from pay_api.utils.constants import EDIT_ROLE, EXPRESS_CHECKOUT_ACCOUNT_PREFIX
 from pay_api.utils.enums import (
     InvoiceReferenceStatus,
@@ -233,6 +234,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 invoice_id=invoice_reference.invoice_id,
                 receipt_date=datetime.now(tz=UTC),
             ).save()
+            send_receipt_notification(invoice)
             Payment.create(
                 payment_method=pay_service.get_payment_method_code(),
                 payment_system=pay_service.get_payment_system_code(),

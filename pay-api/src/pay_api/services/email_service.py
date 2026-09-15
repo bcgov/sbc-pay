@@ -22,10 +22,13 @@ from attrs import define
 from flask import copy_current_request_context, current_app, has_request_context
 from jinja2 import Environment, FileSystemLoader
 
-from pay_api.services.auth import get_service_account_token
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.services.auth import get_account_admin_users, get_service_account_token
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import AuthHeaderType, ContentType, RefundStatus
+from pay_api.utils.constants import EXPRESS_CHECKOUT_ACCOUNT_PREFIX
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, RefundStatus
 from pay_api.utils.serializable import Serializable
+from pay_api.utils.util import get_local_formatted_date
 
 _executor = ThreadPoolExecutor(max_workers=5)
 
@@ -144,6 +147,81 @@ def _render_credit_add_notification_template(params: dict) -> str:
     env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
     template = env.get_template("credit_add_notification.html")
     return template.render(params)
+
+
+def _render_receipt_notification_template(params: dict) -> str:
+    """Render the post-payment receipt notification template."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root_dir = os.path.dirname(current_dir)
+    templates_dir = os.path.join(project_root_dir, "templates")
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+    template = env.get_template("receipt_notification.html")
+    return template.render(params)
+
+
+def send_receipt_notification(invoice):
+    """Email the account's admins and coordinators that an invoice has been paid.
+
+    Called wherever a receipt row is written — the moment a payment settles. Note that is
+    not one place: card payments settle in pay-api on the PayBC return, while OB and PAD
+    settle later in pay-queue's reconciliation, so this is called from both services.
+
+    Best-effort by design: the money has already moved, so a mail failure must never
+    surface to the payer or roll anything back.
+
+    Skipped for express-checkout invoices still parked on the adhoc `sa-<client_id>`
+    account. An anonymous payer never redeems their link, so there is no real account and
+    no admins to notify — they reach their receipt through the payment link instead.
+    """
+    try:
+        payment_account = invoice.payment_account
+        auth_account_id = payment_account.auth_account_id if payment_account else None
+        if not auth_account_id or auth_account_id.startswith(EXPRESS_CHECKOUT_ACCOUNT_PREFIX):
+            return
+
+        members = (
+            get_account_admin_users(auth_account_id, use_service_account=True, roles="ADMIN,COORDINATOR").get("members")
+            or []
+        )
+        recipients = [
+            contacts[0].get("email")
+            for member in members
+            if (user := member.get("user")) and (contacts := user.get("contacts"))
+        ]
+        if not recipients:
+            current_app.logger.info("No admin/coordinator contacts for account %s; skipping.", auth_account_id)
+            return
+
+        account_name = payment_account.name or ""
+        branch_name = payment_account.branch_name
+        account_name_with_branch = (
+            f"{account_name}-{branch_name}" if branch_name and branch_name not in account_name else account_name
+        )
+        invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
+            invoice.id, InvoiceReferenceStatus.COMPLETED.value
+        )
+        # "Transaction detail" has to read the same as the fee summary the payer saw, so it
+        # comes from the same line-item descriptions rather than a separate wording.
+        transaction_detail = ", ".join(
+            line.description for line in (invoice.payment_line_items or []) if line.description
+        )
+        html_body = _render_receipt_notification_template(
+            {
+                "amount": f"{float(invoice.total):.2f}",
+                "account_number": auth_account_id,
+                "account_name_with_branch": account_name_with_branch,
+                "invoice_number": invoice_reference.invoice_number if invoice_reference else "",
+                "payment_method": invoice.payment_method_code,
+                "transaction_detail": transaction_detail,
+                "transaction_date": get_local_formatted_date(invoice.payment_date or invoice.created_on),
+                "transactions_url": (
+                    f"{current_app.config.get('AUTH_WEB_URL')}/account/{auth_account_id}/settings/transactions"
+                ),
+            }
+        )
+        send_email_async(recipients, f"Payment received for invoice {invoice.id}", html_body)
+    except Exception:  # NOQA # pylint: disable=broad-except
+        current_app.logger.exception("Receipt notification failed for invoice %s", getattr(invoice, "id", None))
 
 
 @define

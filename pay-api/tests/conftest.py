@@ -288,7 +288,8 @@ def rest_call_mock(monkeypatch):
 def admin_users_mock(monkeypatch):
     """Mock auth rest call to get org admins."""
 
-    def get_account_admin_users(auth_account_id):
+    # **kwargs so callers passing use_service_account / roles don't blow up on the stub.
+    def get_account_admin_users(auth_account_id, **kwargs):  # noqa: ARG001
         return {
             "members": [
                 {
