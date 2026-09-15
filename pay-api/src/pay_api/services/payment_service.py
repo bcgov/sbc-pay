@@ -28,7 +28,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.receipt import Receipt
 from pay_api.services.code import Code as CodeService
 from pay_api.services.direct_sale_service import STATUS_PAID, DirectSaleService
-from pay_api.utils.constants import EDIT_ROLE, EXPRESS_CHECKOUT_ACCOUNT_PREFIX
+from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import (
     InvoiceReferenceStatus,
     InvoiceStatus,
@@ -206,7 +206,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         authorization = {
             "account": {
-                "id": f"{EXPRESS_CHECKOUT_ACCOUNT_PREFIX}{client_id}",
+                "id": f"sa-{client_id}",
                 "paymentInfo": {"methodOfPayment": PaymentMethod.DIRECT_PAY.value},
             }
         }
