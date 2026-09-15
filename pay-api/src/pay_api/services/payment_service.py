@@ -211,8 +211,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             }
         }
 
+        email = payment_request.get("email")
+        return_url = payment_request.get("returnUrl")
         response = cls.create_invoice(payment_request, authorization)
-        return PaymentLinkService.attach_payment_link(response)
+        return PaymentLinkService.attach_payment_link(response, email=email, return_url=return_url)
 
     @classmethod
     def _handle_invoice(cls, invoice, invoice_reference, pay_service, skip_payment):

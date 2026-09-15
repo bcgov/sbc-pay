@@ -1519,6 +1519,14 @@ components:
                 type: string
               value:
                 type: string
+        email:
+          type: string
+          format: email
+          description: Email address to notify if the payment link is not redeemed. Express-checkout invoices only.
+        returnUrl:
+          type: string
+          format: uri
+          description: Partner URL to redirect the payer to after payment. Express-checkout invoices only.
       required:
         - filingInfo
         - businessInfo
@@ -1748,6 +1756,14 @@ components:
           type: string
         updatedName:
           type: string
+        paymentUrl:
+          type: string
+          format: uri
+          description: Opaque payment link URL. Present only on express-checkout invoices.
+        returnUrl:
+          type: string
+          format: uri
+          description: Partner redirect URL after payment. Present when supplied at express-checkout invoice creation.
     Transaction:
       type: object
       properties:
