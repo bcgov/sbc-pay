@@ -104,7 +104,7 @@ def test_create_express_checkout_invoice_returns_payment_url(session, client, jw
 
 
 def test_create_express_checkout_invoice_stores_email_and_return_url(session, client, jwt, app):
-    """email and returnUrl in the creation request are persisted on the payment link row."""
+    """Email and returnUrl in the creation request are persisted on the payment link row."""
     _enable_express_checkout()
     _, invoice_id = _create_express_checkout_invoice(
         client, jwt, extra_body={"email": "payer@example.com", "returnUrl": "https://partner.example.com/done"}
