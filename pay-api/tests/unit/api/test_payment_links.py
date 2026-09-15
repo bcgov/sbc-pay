@@ -115,6 +115,19 @@ def test_create_express_checkout_invoice_stores_email_and_return_url(session, cl
     assert link.return_url == "https://partner.example.com/done"
 
 
+def test_create_express_checkout_invoice_rejects_unlisted_return_url(session, client, jwt, app):
+    """POST /payment-requests returns 400 when returnUrl is not in VALID_REDIRECT_URLS."""
+    _enable_express_checkout()
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps({**get_payment_request(), "returnUrl": "https://evil.example.com/steal"}),
+        headers=_express_checkout_headers(jwt),
+    )
+    assert rv.status_code == 400
+    assert rv.json.get("type") == "INVALID_REDIRECT_URI"
+
+
 def test_create_express_checkout_invoice_rejected_when_corp_type_disabled(session, client, jwt, app):
     """POST /payment-requests returns 400 EXPRESS_CHECKOUT_NOT_ENABLED for a corp type without the flag."""
     # No _enable_express_checkout — CP corp type is disabled by default.

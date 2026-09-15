@@ -39,7 +39,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import generate_transaction_number, get_str_by_path
+from pay_api.utils.util import generate_transaction_number, get_str_by_path, is_valid_redirect_url
 
 from .base_payment_system import PaymentSystemService  # noqa: TC001
 from .fee_schedule import FeeSchedule
@@ -213,6 +213,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         email = payment_request.get("email")
         return_url = payment_request.get("returnUrl")
+        if return_url and not is_valid_redirect_url(return_url):
+            raise BusinessException(Error.INVALID_REDIRECT_URI)
+
         response = cls.create_invoice(payment_request, authorization)
         return PaymentLinkService.attach_payment_link(response, email=email, return_url=return_url)
 
