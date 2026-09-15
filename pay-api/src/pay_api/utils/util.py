@@ -31,8 +31,6 @@ from flask import current_app
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 
-from pay_api.utils.constants import EXPRESS_CHECKOUT_ACCOUNT_PREFIX
-
 from .constants import DT_FULL_FORMAT, DT_SHORT_FORMAT
 from .converter import Converter
 from .enums import Code, CorpType, Product, StatementFrequency
@@ -439,17 +437,11 @@ def is_string_empty(val: str):
     return not (val and val.strip())
 
 
-def hide_express_checkout_account(invoice: dict) -> dict:
-    """Blank the adhoc SA account on a serialized invoice, in place.
-
-    Express-checkout invoices are parked on `sa-<client_id>` until a payer redeems the
-    link, and an anonymous payer never redeems — so the account stays on that adhoc row
-    forever. It is internal routing, meaningless to a payer, and it surfaces as
-    "Account Number: sa-..." on receipts. A redeemed invoice carries a real account and
-    is left untouched.
-    """
-    account = invoice.get("payment_account") or {}
-    if str(account.get("account_id") or "").startswith(EXPRESS_CHECKOUT_ACCOUNT_PREFIX):
+def hide_stub_account(invoice_dto: dict, is_unredeemed_link: bool = False) -> dict:
+    """Blank the account number on a serialized invoice standing on an internal stub account, in place."""
+    account = invoice_dto.get("payment_account") or {}
+    account_id = str(account.get("account_id") or "")
+    if account_id and (not account_id.isdigit() or is_unredeemed_link):
         account["account_id"] = None
         account["account_name"] = None
-    return invoice
+    return invoice_dto
