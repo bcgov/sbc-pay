@@ -48,7 +48,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortnames():
@@ -79,7 +79,7 @@ def get_eft_shortnames():
 
 
 @bp.route("/summaries", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname_summaries():
@@ -109,7 +109,7 @@ def get_eft_shortname_summaries():
 
 
 @bp.route("/<int:short_name_id>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "PATCH"])
+@cross_origin(methods=["GET", "PATCH"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname(short_name_id: int):
@@ -125,7 +125,7 @@ def get_eft_shortname(short_name_id: int):
 
 
 @bp.route("/<int:short_name_id>", methods=["PATCH"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def patch_eft_shortname(short_name_id: int):
@@ -147,7 +147,7 @@ def patch_eft_shortname(short_name_id: int):
 
 
 @bp.route("/<int:short_name_id>/history", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname_history(short_name_id: int):
@@ -166,7 +166,7 @@ def get_eft_shortname_history(short_name_id: int):
 
 
 @bp.route("/<int:short_name_id>/links", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST", "PATCH"])
+@cross_origin(methods=["GET", "POST", "PATCH"])
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname_links(short_name_id: int):
     """Get EFT short name account links."""
@@ -188,7 +188,7 @@ def get_eft_shortname_links(short_name_id: int):
 
 
 @bp.route("/<int:short_name_id>/links", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def post_eft_shortname_link(short_name_id: int):
     """Create EFT short name to account link."""
@@ -212,7 +212,7 @@ def post_eft_shortname_link(short_name_id: int):
 
 
 @bp.route("/<int:short_name_id>/links/<int:short_name_link_id>", methods=["PATCH"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def patch_eft_shortname_link(short_name_id: int, short_name_link_id: int):
@@ -236,7 +236,7 @@ def patch_eft_shortname_link(short_name_id: int, short_name_link_id: int):
 
 
 @bp.route("/<int:short_name_id>/payment", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def post_eft_statement_payment(short_name_id: int):
     """Perform EFT short name payment action on statement."""
@@ -263,7 +263,7 @@ def post_eft_statement_payment(short_name_id: int):
 
 
 @bp.route("/shortname-refund", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST", "PATCH"])
+@cross_origin(methods=["GET", "POST", "PATCH"])
 @_jwt.has_one_of_roles([Role.EFT_REFUND.value, Role.EFT_REFUND_APPROVER.value])
 def get_shortname_refunds():
     """Get all short name refunds."""
@@ -275,7 +275,7 @@ def get_shortname_refunds():
 
 
 @bp.route("/shortname-refund", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.EFT_REFUND.value, Role.EFT_REFUND_APPROVER.value])
 def post_shortname_refund():
     """Create the Refund for the Shortname."""
@@ -293,7 +293,7 @@ def post_shortname_refund():
 
 
 @bp.route("/shortname-refund/<int:eft_refund_id>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST", "PATCH"])
+@cross_origin(methods=["GET", "POST", "PATCH"])
 @_jwt.has_one_of_roles([Role.EFT_REFUND.value, Role.EFT_REFUND_APPROVER.value])
 def get_shortname_refund_by_id(eft_refund_id: int):
     """Get EFT short name refund."""
@@ -316,7 +316,7 @@ def get_shortname_refund_by_id(eft_refund_id: int):
 
 
 @bp.route("/shortname-refund/<int:eft_refund_id>", methods=["PATCH"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.EFT_REFUND_APPROVER.value, Role.MANAGE_EFT.value])
 def patch_shortname_refund(eft_refund_id: int):

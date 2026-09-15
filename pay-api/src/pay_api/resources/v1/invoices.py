@@ -31,7 +31,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 def get_invoice_by_id(invoice_id):
     """Subject to remove once the change has been notified to teams."""

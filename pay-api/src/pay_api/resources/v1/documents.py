@@ -29,7 +29,7 @@ bp = Blueprint("DOCUMENTS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/d
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 def get_documents():
     """Get Pay documents."""

@@ -33,7 +33,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 def get_non_sufficient_funds(account_id: str):
     """Get non sufficient funds."""
@@ -53,7 +53,7 @@ def get_non_sufficient_funds(account_id: str):
 
 
 @bp.route("/statement", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.requires_auth
 def get_non_sufficient_funds_statement_pdf(account_id: str):
     """Get non sufficient funds statement pdf."""
