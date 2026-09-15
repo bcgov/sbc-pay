@@ -37,7 +37,11 @@ from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.auth import get_account_admin_users
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.email_service import _render_credit_add_notification_template, send_email
+from pay_api.services.email_service import (
+    _render_credit_add_notification_template,
+    send_email,
+    send_receipt_notification,
+)
 from pay_api.services.flags import flags
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -457,6 +461,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         receipt.invoice_id = invoice.id
         receipt.receipt_date = current_time
         receipt.save()
+        send_receipt_notification(invoice)
 
 
 def skip_invoice_for_sandbox(function):

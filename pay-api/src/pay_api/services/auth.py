@@ -153,14 +153,18 @@ def check_auth(
 
 
 @user_context
-def get_account_admin_users(auth_account_id, use_service_account=False, **kwargs):
-    """Retrieve account admin users."""
+def get_account_admin_users(auth_account_id, use_service_account=False, roles: str = "ADMIN", **kwargs):
+    """Retrieve account admin users.
+
+    `roles` is passed through to auth-api as-is; it accepts a comma-separated list, so
+    "ADMIN,COORDINATOR" reaches both. Defaults to ADMIN so existing callers are unchanged.
+    """
     token = kwargs["user"].bearer_token
     if use_service_account:
         token = get_service_account_token()
     # User Token only works for STAFF and ADMINS of the org
     return RestService.get(
-        current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{auth_account_id}/members?status=ACTIVE&roles=ADMIN",
+        current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{auth_account_id}/members?status=ACTIVE&roles={roles}",
         token,
         AuthHeaderType.BEARER,
         ContentType.JSON,
