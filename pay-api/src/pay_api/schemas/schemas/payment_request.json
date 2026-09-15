@@ -45,6 +45,18 @@
     },
     "skipPayment": {
       "type": "boolean"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "maxLength": 254,
+      "description": "Email address to notify if the payment link is not redeemed. Express-checkout invoices only."
+    },
+    "returnUrl": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 2048,
+      "description": "Partner URL to redirect the payer to after payment. Express-checkout invoices only."
     }
   }
 }

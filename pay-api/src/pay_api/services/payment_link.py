@@ -54,14 +54,19 @@ class PaymentLinkService:
         return f"{base}/pay/{token}"
 
     @classmethod
-    def attach_payment_link(cls, invoice_dto: dict) -> dict:
+    def attach_payment_link(
+        cls,
+        invoice_dto: dict,
+        email: str | None = None,
+        return_url: str | None = None,
+    ) -> dict:
         """Persist a new link row for the invoice and merge `paymentUrl` into its DTO."""
         invoice_id = invoice_dto.get("id")
         if not invoice_id:
             return invoice_dto
 
         token = cls._generate_token()
-        link = InvoicePaymentLinkModel(token=token, invoice_id=invoice_id)
+        link = InvoicePaymentLinkModel(token=token, invoice_id=invoice_id, email=email, return_url=return_url)
         db.session.add(link)
         db.session.commit()
 
@@ -152,7 +157,10 @@ class PaymentLinkService:
         link = cls.resolve_token(token, allow_linked=True)
         skip_auth = link.linked_at is None
         invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=skip_auth)
-        return invoice.asdict(include_dynamic_fields=True)
+        result = invoice.asdict(include_dynamic_fields=True)
+        if link.return_url:
+            result["returnUrl"] = link.return_url
+        return result
 
     @classmethod
     @user_context
