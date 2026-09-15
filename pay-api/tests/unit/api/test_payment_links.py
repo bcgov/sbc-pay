@@ -107,12 +107,12 @@ def test_create_express_checkout_invoice_stores_email_and_return_url(session, cl
     """Email and returnUrl in the creation request are persisted on the payment link row."""
     _enable_express_checkout()
     _, invoice_id = _create_express_checkout_invoice(
-        client, jwt, extra_body={"email": "payer@example.com", "returnUrl": "https://partner.example.com/done"}
+        client, jwt, extra_body={"email": "payer@example.com", "returnUrl": "http://localhost:8080/done"}
     )
 
     link = InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice_id).one()
     assert link.email == "payer@example.com"
-    assert link.return_url == "https://partner.example.com/done"
+    assert link.return_url == "http://localhost:8080/done"
 
 
 def test_create_express_checkout_invoice_rejects_unlisted_return_url(session, client, jwt, app):
@@ -144,7 +144,7 @@ def test_get_payment_link_returns_invoice(session, client, jwt, app):
     """GET /payment-links/{token} returns the invoice DTO including returnUrl for a valid token."""
     _enable_express_checkout()
     token, invoice_id = _create_express_checkout_invoice(
-        client, jwt, extra_body={"returnUrl": "https://partner.example.com/done"}
+        client, jwt, extra_body={"returnUrl": "http://localhost:8080/done"}
     )
 
     user_headers = {
@@ -154,7 +154,7 @@ def test_get_payment_link_returns_invoice(session, client, jwt, app):
     rv = client.get(f"/api/v1/payment-links/{token}", headers=user_headers)
     assert rv.status_code == 200
     assert rv.json["id"] == invoice_id
-    assert rv.json["returnUrl"] == "https://partner.example.com/done"
+    assert rv.json["returnUrl"] == "http://localhost:8080/done"
 
 
 def test_get_payment_link_rejects_unknown_token(session, client, jwt, app):
