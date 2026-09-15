@@ -35,6 +35,8 @@ class InvoicePaymentLink(BaseModel):
             "created_at",
             "linked_at",
             "partner_notified_at",
+            "email",
+            "return_url",
         ]
     }
 
@@ -44,6 +46,9 @@ class InvoicePaymentLink(BaseModel):
     linked_at = db.Column(db.DateTime(timezone=True), nullable=True)
     # Stamped by the express-checkout PAD notify job after the CAS reversal window elapses.
     partner_notified_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    # Captured at invoice creation time for unlinked-invoice notification delivery.
+    email = db.Column(db.String(254), nullable=True)
+    return_url = db.Column(db.String(2048), nullable=True)
 
     @classmethod
     def find_by_token(cls, token: str) -> "InvoicePaymentLink | None":

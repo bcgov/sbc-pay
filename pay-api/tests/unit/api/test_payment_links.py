@@ -77,11 +77,12 @@ def _settle_invoice(invoice_id: int):
     factory_receipt(invoice_id, receipt_amount=float(invoice.total)).save()
 
 
-def _create_express_checkout_invoice(client, jwt):
+def _create_express_checkout_invoice(client, jwt, extra_body: dict = None):
     """Create an express-checkout invoice and return (token, invoice_id)."""
+    body = {**get_payment_request(), **(extra_body or {})}
     created = client.post(
         "/api/v1/payment-requests",
-        data=json.dumps(get_payment_request()),
+        data=json.dumps(body),
         headers=_express_checkout_headers(jwt),
     )
     assert created.status_code == 201
@@ -102,6 +103,31 @@ def test_create_express_checkout_invoice_returns_payment_url(session, client, jw
     assert rv.json.get("paymentUrl").rsplit("/", 1)[-1]  # token appended
 
 
+def test_create_express_checkout_invoice_stores_email_and_return_url(session, client, jwt, app):
+    """Email and returnUrl in the creation request are persisted on the payment link row."""
+    _enable_express_checkout()
+    _, invoice_id = _create_express_checkout_invoice(
+        client, jwt, extra_body={"email": "payer@example.com", "returnUrl": "http://localhost:8080/done"}
+    )
+
+    link = InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice_id).one()
+    assert link.email == "payer@example.com"
+    assert link.return_url == "http://localhost:8080/done"
+
+
+def test_create_express_checkout_invoice_rejects_unlisted_return_url(session, client, jwt, app):
+    """POST /payment-requests returns 400 when returnUrl is not in VALID_REDIRECT_URLS."""
+    _enable_express_checkout()
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps({**get_payment_request(), "returnUrl": "https://evil.example.com/steal"}),
+        headers=_express_checkout_headers(jwt),
+    )
+    assert rv.status_code == 400
+    assert rv.json.get("type") == "INVALID_REDIRECT_URI"
+
+
 def test_create_express_checkout_invoice_rejected_when_corp_type_disabled(session, client, jwt, app):
     """POST /payment-requests returns 400 EXPRESS_CHECKOUT_NOT_ENABLED for a corp type without the flag."""
     # No _enable_express_checkout — CP corp type is disabled by default.
@@ -115,15 +141,11 @@ def test_create_express_checkout_invoice_rejected_when_corp_type_disabled(sessio
 
 
 def test_get_payment_link_returns_invoice(session, client, jwt, app):
-    """GET /payment-links/{token} returns the invoice DTO for a valid token."""
+    """GET /payment-links/{token} returns the invoice DTO including returnUrl for a valid token."""
     _enable_express_checkout()
-
-    created = client.post(
-        "/api/v1/payment-requests",
-        data=json.dumps(get_payment_request()),
-        headers=_express_checkout_headers(jwt),
+    token, invoice_id = _create_express_checkout_invoice(
+        client, jwt, extra_body={"returnUrl": "http://localhost:8080/done"}
     )
-    token = created.json["paymentUrl"].rsplit("/", 1)[-1]
 
     user_headers = {
         "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
@@ -131,7 +153,8 @@ def test_get_payment_link_returns_invoice(session, client, jwt, app):
     }
     rv = client.get(f"/api/v1/payment-links/{token}", headers=user_headers)
     assert rv.status_code == 200
-    assert rv.json["id"] == created.json["id"]
+    assert rv.json["id"] == invoice_id
+    assert rv.json["returnUrl"] == "http://localhost:8080/done"
 
 
 def test_get_payment_link_rejects_unknown_token(session, client, jwt, app):
@@ -152,13 +175,7 @@ def test_redeem_binds_invoice_to_caller_account(session, client, jwt, app):
 
     # Create an express-checkout invoice via the SA path. It should land on the SA adhoc account
     # (sa-<azp>) — NOT on target_account yet, and the link row should be unclaimed.
-    created = client.post(
-        "/api/v1/payment-requests",
-        data=json.dumps(get_payment_request()),
-        headers=_express_checkout_headers(jwt),
-    )
-    token = created.json["paymentUrl"].rsplit("/", 1)[-1]
-    invoice_id = created.json["id"]
+    token, invoice_id = _create_express_checkout_invoice(client, jwt)
 
     # Initial state: on the SA adhoc account, link row exists but unclaimed.
     initial_invoice = InvoiceService.find_by_id(invoice_id, skip_auth_check=True)
@@ -196,12 +213,7 @@ def test_redeem_rejects_second_account(session, client, jwt, app):
     second_account = factory_payment_account(auth_account_id="2222")
     second_account.save()
 
-    created = client.post(
-        "/api/v1/payment-requests",
-        data=json.dumps(get_payment_request()),
-        headers=_express_checkout_headers(jwt),
-    )
-    token = created.json["paymentUrl"].rsplit("/", 1)[-1]
+    token, _ = _create_express_checkout_invoice(client, jwt)
 
     def _redeem_as(account_id: str):
         headers = {

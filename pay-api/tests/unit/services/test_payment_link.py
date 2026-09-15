@@ -28,13 +28,18 @@ from pay_api.utils.enums import Code
 from tests.utilities.base_test import factory_invoice, factory_payment_account
 
 
-def _make_link(days_old: int = 0, linked: bool = False):
-    """Create an invoice + link row `days_old` old, optionally already linked."""
+def _make_invoice():
+    """Create and persist a payment account + invoice, returning the invoice."""
     account = factory_payment_account()
     account.save()
     invoice = factory_invoice(payment_account=account)
     invoice.save()
+    return invoice
 
+
+def _make_link(days_old: int = 0, linked: bool = False):
+    """Create an invoice + link row `days_old` old, optionally already linked."""
+    invoice = _make_invoice()
     link = InvoicePaymentLinkModel(token="tok-test-token", invoice_id=invoice.id)  # noqa: S106
     link.created_at = datetime.now(tz=UTC) - timedelta(days=days_old)
     if linked:
@@ -45,16 +50,31 @@ def _make_link(days_old: int = 0, linked: bool = False):
 
 
 def test_attach_payment_link_adds_payment_url(session, app):
-    """attach_payment_link merges a paymentUrl and persists a link row."""
-    account = factory_payment_account()
-    account.save()
-    invoice = factory_invoice(payment_account=account)
-    invoice.save()
+    """attach_payment_link merges a paymentUrl, persists a link row, and email/return_url default to None."""
+    invoice = _make_invoice()
 
     dto = PaymentLinkService.attach_payment_link({"id": invoice.id})
 
     assert dto.get("paymentUrl")
-    assert InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).count() == 1
+    link = InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).one()
+    assert link.email is None
+    assert link.return_url is None
+
+
+def test_attach_payment_link_stores_email_and_return_url(session, app):
+    """attach_payment_link persists email and return_url on the link row."""
+    invoice = _make_invoice()
+
+    dto = PaymentLinkService.attach_payment_link(
+        {"id": invoice.id},
+        email="user@example.com",
+        return_url="https://partner.example.com/done",
+    )
+
+    assert dto.get("paymentUrl")
+    link = InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).one()
+    assert link.email == "user@example.com"
+    assert link.return_url == "https://partner.example.com/done"
 
 
 def test_resolve_token_accepts_fresh_unlinked(session, app):
@@ -92,12 +112,8 @@ def test_resolve_token_allows_consumed_when_flag_set(session, app):
 
 def test_stamp_partner_notified_noop_when_no_link(session, app):
     """stamp_partner_notified silently does nothing when no link row exists (regular invoice)."""
-    account = factory_payment_account()
-    account.save()
-    invoice = factory_invoice(payment_account=account)
-    invoice.save()
+    invoice = _make_invoice()
 
-    # No link row for this invoice. Should not raise and should not touch anything.
     PaymentLinkService.stamp_partner_notified(invoice.id)
 
     assert InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).count() == 0
