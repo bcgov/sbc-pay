@@ -2406,8 +2406,8 @@ werkzeug = "^3.1.4"
 [package.source]
 type = "git"
 url = "https://github.com/sumesh85/sbc-pay.git"
-reference = "34304-2"
-resolved_reference = "f6fb457f07b48d63da608d44df1395d1770f0de3"
+reference = "34533"
+resolved_reference = "86e7e124c64481a6a3fc7f41d1b155baee0d6a5a"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3571,4 +3571,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "b1b329259ccbffb99d831b4e0cc3ebd16f19ddf099a784c674f973ad3832e609"
+content-hash = "64114ea80debfbccc1ca758219995ec589eb37e9e964c30f6e7f25d7552d1ce8"
