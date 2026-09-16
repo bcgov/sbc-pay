@@ -58,13 +58,9 @@ class ExpressCheckoutReminderTask:  # pylint: disable=too-few-public-methods
         for invoice, link in candidates:
             try:
                 payment_url = f"{base_url}/pay/{link.token}"
-                description = ", ".join(
-                    li.description
-                    for li in (invoice.payment_line_items or [])
-                    if li.description
-                )
+                description = ", ".join(li.description for li in (invoice.payment_line_items or []) if li.description)
                 default_ttl = current_app.config.get("PAYMENT_LINK_TOKEN_TTL_DAYS", 30)
-                ttl_days = (invoice.corp_type.payment_link_ttl_days or default_ttl)
+                ttl_days = invoice.corp_type.payment_link_ttl_days or default_ttl
                 expiry_date = link.created_at + timedelta(days=ttl_days)
                 expiry_days = (expiry_date.date() - datetime.now(tz=UTC).date()).days
                 expiry_date_str = f"{expiry_date.strftime('%B')} {expiry_date.day}, {expiry_date.year}"

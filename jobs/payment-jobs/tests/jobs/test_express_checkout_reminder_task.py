@@ -105,9 +105,9 @@ def test_expiry_uses_corp_type_ttl(session, app):
     "invoice_days,link_kwargs",
     [
         (0, {"created_days_ago": 0}),  # link too new
-        (2, {"notified": True}),        # already notified
-        (2, {"linked": True}),          # already redeemed
-        (2, {"email": None}),           # no email supplied
+        (2, {"notified": True}),  # already notified
+        (2, {"linked": True}),  # already redeemed
+        (2, {"email": None}),  # no email supplied
     ],
 )
 def test_skips_reminder(session, app, invoice_days, link_kwargs):
