@@ -28,6 +28,7 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException, e
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import ReceiptService, TransactionService
+from pay_api.services.flags import flags
 from pay_api.services.payment_link import PaymentLinkService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
@@ -37,8 +38,14 @@ from pay_api.utils.errors import Error
 bp = Blueprint("PAYMENT_LINKS", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/payment-links")
 
 
+@bp.before_request
+def _check_feature_enabled():
+    if flags.is_on("disable-payment-links", default=False):
+        return {"message": "Payment links are not available."}, HTTPStatus.NOT_IMPLEMENTED
+
+
 @bp.route("/<string:token>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 def get_payment_link(token: str):
     """Return the invoice DTO the payment link refers to.
 
@@ -57,7 +64,7 @@ def get_payment_link(token: str):
 
 
 @bp.route("/<string:token>/transactions", methods=["POST"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 def post_payment_link_transaction(token: str):
     """Start a payment transaction for the invoice behind the token, without signing in.
 
@@ -86,7 +93,7 @@ def post_payment_link_transaction(token: str):
 
 
 @bp.route("/<string:token>/receipts", methods=["POST"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 def post_payment_link_receipt(token: str):
     """Return the receipt PDF for the invoice behind the token, without signing in."""
     current_app.logger.debug("<post_payment_link_receipt")
@@ -118,7 +125,7 @@ def post_payment_link_receipt(token: str):
 
 
 @bp.route("/<string:token>/redemption", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 def post_payment_link_redemption(token: str):
     """Bind the invoice behind the payment link to the caller's auth account.

@@ -16,6 +16,7 @@
 
 import json
 from datetime import UTC, datetime
+from http import HTTPStatus
 from unittest.mock import patch
 
 from pay_api.models import CorpType as CorpTypeModel
@@ -312,3 +313,29 @@ def test_receipt_rejects_unpaid_invoice(session, client, jwt, app):
         headers={"content-type": "application/json"},
     )
     assert rv.status_code == 400
+
+
+def test_payment_links_disabled_by_flag(session, client, jwt, app):
+    """Assert that all payment link endpoints return 501 when disable-payment-links flag is on."""
+    _enable_express_checkout()
+    token, _ = _create_express_checkout_invoice(client, jwt)
+
+    with patch("pay_api.resources.v1.payment_links.flags.is_on", return_value=True):
+        assert client.get(f"/api/v1/payment-links/{token}").status_code == HTTPStatus.NOT_IMPLEMENTED
+        assert (
+            client.post(
+                f"/api/v1/payment-links/{token}/transactions",
+                data=json.dumps(TRANSACTION_BODY),
+                headers={"content-type": "application/json"},
+            ).status_code
+            == HTTPStatus.NOT_IMPLEMENTED
+        )
+        assert (
+            client.post(
+                f"/api/v1/payment-links/{token}/receipts",
+                data=json.dumps(RECEIPT_BODY),
+                headers={"content-type": "application/json"},
+            ).status_code
+            == HTTPStatus.NOT_IMPLEMENTED
+        )
+        assert client.post(f"/api/v1/payment-links/{token}/redemption").status_code == HTTPStatus.NOT_IMPLEMENTED
