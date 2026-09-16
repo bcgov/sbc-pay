@@ -140,9 +140,7 @@ def test_mixed_origin_config(app, client, jwt, session, cors_origins_override, o
         ("https://bad.example.com", False),
     ],
 )
-def test_regex_config_origins_toplevel_wildcard(
-    app, client, jwt, session, cors_origins_override, origin, should_match
-):
+def test_regex_config_origins_toplevel_wildcard(app, client, jwt, session, cors_origins_override, origin, should_match):
     """A top-level wildcard covers any subdomain."""
     cors_origins_override(TOPLEVEL_WILDCARD_ORIGINS_ENV_VALUE)
 
