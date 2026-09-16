@@ -58,5 +58,5 @@ class InvoicePaymentLink(BaseModel):
     @classmethod
     def is_unredeemed_for_invoice(cls, invoice_id: int) -> bool:
         """Return True if the invoice has a link row nobody has claimed yet."""
-        row = cls.query.with_entities(cls.linked_at).filter_by(invoice_id=invoice_id).first()
+        row = cls.query.with_entities(cls.linked_at).filter_by(invoice_id=invoice_id).one_or_none()
         return row is not None and row.linked_at is None
