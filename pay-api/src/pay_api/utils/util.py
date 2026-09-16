@@ -435,3 +435,13 @@ def get_statement_currency_string(value):
 def is_string_empty(val: str):
     """Check if a string has a value."""
     return not (val and val.strip())
+
+
+def hide_stub_account(invoice_dto: dict, is_unredeemed_link: bool = False) -> dict:
+    """Blank the account number on a serialized invoice standing on an internal stub account, in place."""
+    account = invoice_dto.get("payment_account") or {}
+    account_id = str(account.get("account_id") or "")
+    if account_id and (not account_id.isdigit() or is_unredeemed_link):
+        account["account_id"] = None
+        account["account_name"] = None
+    return invoice_dto
