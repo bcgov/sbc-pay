@@ -41,6 +41,28 @@ class StatementNotificationInfo:
     short_name_links_count: int
 
 
+def publish_express_checkout_reminder(
+    email: str, payment_url: str, total: str, description: str = "", expiry_days: int = 0, expiry_date: str = ""
+) -> None:
+    """Publish a payer reminder for an unclaimed express-checkout invoice to the account mailer queue."""
+    payload = {
+        "emailAddresses": email,
+        "paymentUrl": payment_url,
+        "total": total,
+        "description": description,
+        "expiryDays": expiry_days,
+        "expiryDate": expiry_date,
+    }
+    gcp_queue_publisher.publish_to_queue(
+        gcp_queue_publisher.QueueMessage(
+            source=QueueSources.PAY_JOBS.value,
+            message_type=QueueMessageTypes.EXPRESS_CHECKOUT_PAYMENT_REMINDER.value,
+            payload=payload,
+            topic=current_app.config.get("ACCOUNT_MAILER_TOPIC"),
+        )
+    )
+
+
 def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, additional_params=None):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been activated. Using the event spec.

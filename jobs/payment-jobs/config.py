@@ -147,6 +147,8 @@ class _Config:  # pylint: disable=too-few-public-methods
         if _k.endswith("_PAY_TOPIC"):
             locals()[_k] = _v
     EXPRESS_CHECKOUT_PAD_HOLD_DAYS = int(os.getenv("EXPRESS_CHECKOUT_PAD_HOLD_DAYS", "3"))
+    EXPRESS_CHECKOUT_REMINDER_AFTER_DAYS = int(os.getenv("EXPRESS_CHECKOUT_REMINDER_AFTER_DAYS", "1"))
+    EXPRESS_CHECKOUT_URL = os.getenv("EXPRESS_CHECKOUT_URL", "http://localhost:3001")
     PAYMENT_LINK_TOKEN_TTL_DAYS = int(os.getenv("PAYMENT_LINK_TOKEN_TTL_DAYS", "30"))
 
     CFS_ACCOUNT_DESCRIPTION = os.getenv("CFS_ACCOUNT_DESCRIPTION", "BCR")

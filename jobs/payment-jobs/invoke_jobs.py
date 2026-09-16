@@ -92,6 +92,7 @@ def run(job_name, argument=None):
     from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
     from tasks.ejv_payment_task import EjvPaymentTask
     from tasks.express_checkout_pad_notify_task import ExpressCheckoutPadNotifyTask
+    from tasks.express_checkout_reminder_task import ExpressCheckoutReminderTask
     from tasks.payment_link_cleanup_task import PaymentLinkCleanupTask
     from tasks.stale_payment_task import StalePaymentTask
     from tasks.statement_notification_task import StatementNotificationTask
@@ -167,6 +168,8 @@ def run(job_name, argument=None):
                 PaymentLinkCleanupTask.cleanup_expired_links()
             case "EXPRESS_CHECKOUT_PAD_NOTIFY":
                 ExpressCheckoutPadNotifyTask.notify_due_invoices()
+            case "NOTIFY_EXPRESS_CHECKOUT_UNPAID":
+                ExpressCheckoutReminderTask.notify_unpaid_invoices()
             case _:
                 application.logger.warning(f"job_name={job_name} status=unknown_job")
                 return
