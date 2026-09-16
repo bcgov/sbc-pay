@@ -160,18 +160,14 @@ def _render_receipt_notification_template(params: dict) -> str:
 
 
 def send_receipt_notification(invoice):
-    """Email the account's admins and coordinators that an invoice has been paid.
+    """Email the account's admins and coordinators after a payment settles.
 
-    Called wherever a receipt row is written — the moment a payment settles. Note that is
-    not one place: card payments settle in pay-api on the PayBC return, while OB and PAD
-    settle later in pay-queue's reconciliation, so this is called from both services.
+    Called from both pay-api and pay-queue — card payments settle on the PayBC return,
+    OB and PAD later in reconciliation.
 
-    Best-effort by design: the money has already moved, so a mail failure must never
-    surface to the payer or roll anything back.
-
-    Skipped while an express-checkout link is still unredeemed: the invoice is parked on
-    the adhoc account, so there is no real account and no admins to notify. An anonymous
-    payer never redeems, and reaches their receipt through the payment link instead.
+    Skipped for unredeemed express-checkout invoices: there is no real account to notify,
+    and the payer reaches their receipt through the link. Mail failures are logged and
+    never affect the payment.
     """
     try:
         payment_account = invoice.payment_account
@@ -184,9 +180,11 @@ def send_receipt_notification(invoice):
             or []
         )
         recipients = [
-            contacts[0].get("email")
+            email
             for member in members
-            if (user := member.get("user")) and (contacts := user.get("contacts"))
+            if (user := member.get("user"))
+            and (contacts := user.get("contacts"))
+            and (email := contacts[0].get("email"))
         ]
         if not recipients:
             current_app.logger.info("No admin/coordinator contacts for account %s; skipping.", auth_account_id)
@@ -200,8 +198,7 @@ def send_receipt_notification(invoice):
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value
         )
-        # "Transaction detail" has to read the same as the fee summary the payer saw, so it
-        # comes from the same line-item descriptions rather than a separate wording.
+        # Must read the same as the fee summary, so use its line-item descriptions.
         transaction_detail = ", ".join(
             line.description for line in (invoice.payment_line_items or []) if line.description
         )

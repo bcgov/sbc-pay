@@ -92,3 +92,15 @@ def test_receipt_notification_skipped_for_anonymous_payment(session, app):
 
     mock_users.assert_not_called()
     mock_send.assert_not_called()
+
+
+def test_receipt_notification_skips_members_without_an_email(session, app):
+    """A member whose contact carries no email must not end up in the recipient list."""
+    invoice = _paid_invoice("1234")
+    members = {"members": [{"user": {"contacts": [{}]}}, {"user": {"contacts": [{"email": "owner@example.com"}]}}]}
+
+    with patch("pay_api.services.email_service.get_account_admin_users", return_value=members):
+        with patch("pay_api.services.email_service.send_email_async") as mock_send:
+            send_receipt_notification(invoice)
+
+    assert mock_send.call_args.args[0] == ["owner@example.com"]
