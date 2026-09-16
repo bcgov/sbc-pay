@@ -38,7 +38,6 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.email_service import send_receipt_notification
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_link import PaymentLinkService
@@ -659,9 +658,6 @@ def _process_paid_invoices(inv_references, row):
         receipt.invoice_id = inv.id
         receipt.receipt_number = receipt_number
         db.session.add(receipt)
-        # OB and PAD settle here rather than in pay-api, so this is where their payers get
-        # told.
-        send_receipt_notification(inv)
         # Publish to the queue if it's an Online Banking payment. (Regular PAD publishes at
         # create-time via PadService.complete_post_invoice; nothing extra here for it.)
         # Express-checkout PAD (identified by presence of an invoice_payment_links row) has its
