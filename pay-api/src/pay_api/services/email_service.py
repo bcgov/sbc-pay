@@ -222,7 +222,9 @@ def send_receipt_notification(invoice):
                 "transaction_detail": transaction_detail,
                 "transaction_date": get_local_formatted_date(invoice.payment_date or invoice.created_on),
                 "transactions_url": (
-                    f"{current_app.config.get('AUTH_WEB_URL')}/account/{auth_account_id}/settings/transactions"
+                    ""
+                    if is_guest
+                    else f"{current_app.config.get('AUTH_WEB_URL')}/account/{auth_account_id}/settings/transactions"
                 ),
             }
         )

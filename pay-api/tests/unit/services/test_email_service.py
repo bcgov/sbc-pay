@@ -55,11 +55,7 @@ ADMIN_MEMBERS = {
 
 
 def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False, link_email: str = None):
-    """Return a settled invoice sitting on the given auth account.
-
-    `unredeemed_link` adds the payment-link row an express-checkout invoice carries,
-    left unclaimed — the state an anonymous payer leaves behind.
-    """
+    """Create a paid invoice, optionally with an unredeemed payment link."""
     payment_account = factory_payment_account(auth_account_id=auth_account_id)
     payment_account.save()
     invoice = factory_invoice(payment_account, status_code=InvoiceStatus.PAID.value)
@@ -71,7 +67,7 @@ def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False, link_emai
 
 
 def test_receipt_notification_reaches_admins_and_coordinators(session, app):
-    """Both roles are asked for — the ticket is addressed to the owner *and* coordinators."""
+    """The ticket is addressed to the owner and coordinators, so both roles are requested."""
     invoice = _paid_invoice("1234")
 
     with patch("pay_api.services.email_service.get_account_admin_users", return_value=ADMIN_MEMBERS) as mock_users:
