@@ -155,8 +155,7 @@ def _render_receipt_notification_template(params: dict) -> str:
     project_root_dir = os.path.dirname(current_dir)
     templates_dir = os.path.join(project_root_dir, "templates")
     env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-    template = env.get_template("receipt_notification.html")
-    return template.render(params)
+    return env.get_template("receipt_notification.html").render(params)
 
 
 def send_receipt_notification(invoice):
@@ -165,36 +164,47 @@ def send_receipt_notification(invoice):
     Called from both pay-api and pay-queue — card payments settle on the PayBC return,
     OB and PAD later in reconciliation.
 
-    Skipped for unredeemed express-checkout invoices: there is no real account to notify,
-    and the payer reaches their receipt through the link. Mail failures are logged and
-    never affect the payment.
+    An express-checkout invoice whose link nobody claimed has no account and no admins, so
+    it goes to the address the partner supplied at invoice creation, and the template drops
+    the account rows. Without that address there is nobody to tell.
+
+    Mail failures are logged and never affect the payment.
     """
     try:
         payment_account = invoice.payment_account
         auth_account_id = payment_account.auth_account_id if payment_account else None
-        if not auth_account_id or InvoicePaymentLinkModel.is_unredeemed_for_invoice(invoice.id):
-            return
+        unredeemed_link = InvoicePaymentLinkModel.find_unredeemed_for_invoice(invoice.id)
+        is_guest = unredeemed_link is not None
 
-        members = (
-            get_account_admin_users(auth_account_id, use_service_account=True, roles="ADMIN,COORDINATOR").get("members")
-            or []
-        )
-        recipients = [
-            email
-            for member in members
-            if (user := member.get("user"))
-            and (contacts := user.get("contacts"))
-            and (email := contacts[0].get("email"))
-        ]
+        if is_guest:
+            recipients = [unredeemed_link.email] if unredeemed_link.email else []
+            account_name_with_branch = ""
+        elif not auth_account_id:
+            return
+        else:
+            members = (
+                get_account_admin_users(auth_account_id, use_service_account=True, roles="ADMIN,COORDINATOR").get(
+                    "members"
+                )
+                or []
+            )
+            recipients = [
+                email
+                for member in members
+                if (user := member.get("user"))
+                and (contacts := user.get("contacts"))
+                and (email := contacts[0].get("email"))
+            ]
+            account_name = payment_account.name or ""
+            branch_name = payment_account.branch_name
+            account_name_with_branch = (
+                f"{account_name}-{branch_name}" if branch_name and branch_name not in account_name else account_name
+            )
+
         if not recipients:
-            current_app.logger.info("No admin/coordinator contacts for account %s; skipping.", auth_account_id)
+            current_app.logger.info("No one to send the receipt for invoice %s to; skipping.", invoice.id)
             return
 
-        account_name = payment_account.name or ""
-        branch_name = payment_account.branch_name
-        account_name_with_branch = (
-            f"{account_name}-{branch_name}" if branch_name and branch_name not in account_name else account_name
-        )
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value
         )
@@ -205,7 +215,7 @@ def send_receipt_notification(invoice):
         html_body = _render_receipt_notification_template(
             {
                 "amount": f"{float(invoice.total):.2f}",
-                "account_number": auth_account_id,
+                "account_number": "" if is_guest else auth_account_id,
                 "account_name_with_branch": account_name_with_branch,
                 "invoice_number": invoice_reference.invoice_number if invoice_reference else "",
                 "payment_method": invoice.payment_method_code,

@@ -54,7 +54,7 @@ ADMIN_MEMBERS = {
 }
 
 
-def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False):
+def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False, link_email: str = None):
     """Return a settled invoice sitting on the given auth account.
 
     `unredeemed_link` adds the payment-link row an express-checkout invoice carries,
@@ -66,7 +66,7 @@ def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False):
     invoice.save()
     factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value).save()
     if unredeemed_link:
-        InvoicePaymentLinkModel(token=f"tok-{invoice.id}", invoice_id=invoice.id).save()
+        InvoicePaymentLinkModel(token=f"tok-{invoice.id}", invoice_id=invoice.id, email=link_email).save()
     return invoice
 
 
@@ -82,8 +82,8 @@ def test_receipt_notification_reaches_admins_and_coordinators(session, app):
     assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
 
 
-def test_receipt_notification_skipped_for_anonymous_payment(session, app):
-    """An express-checkout invoice never redeemed has no real account, so nobody to notify."""
+def test_receipt_notification_skipped_when_guest_left_no_email(session, app):
+    """No account and no address the partner gave us — there is nobody to tell."""
     invoice = _paid_invoice("sa-partner-client", unredeemed_link=True)
 
     with patch("pay_api.services.email_service.get_account_admin_users") as mock_users:
@@ -104,3 +104,17 @@ def test_receipt_notification_skips_members_without_an_email(session, app):
             send_receipt_notification(invoice)
 
     assert mock_send.call_args.args[0] == ["owner@example.com"]
+
+
+def test_receipt_notification_goes_to_the_guest_email(session, app):
+    """An unredeemed link carries the payer's address, so the receipt goes there."""
+    invoice = _paid_invoice("sa-partner-client", unredeemed_link=True, link_email="payer@example.com")
+
+    with patch("pay_api.services.email_service.get_account_admin_users") as mock_users:
+        with patch("pay_api.services.email_service.send_email_async") as mock_send:
+            send_receipt_notification(invoice)
+
+    mock_users.assert_not_called()
+    assert mock_send.call_args.args[0] == ["payer@example.com"]
+    # The guest template drops the account rows — they have no account.
+    assert "Account number" not in mock_send.call_args.args[2]
