@@ -28,7 +28,7 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 from pay_api.utils.dataclasses import PurchaseHistorySearch
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.enums import CfsAccountStatus, ContentType, PaymentMethod, Role, RolePattern
+from pay_api.utils.enums import CfsAccountStatus, ContentType, PaymentMethod, Role, RolePattern, Scope
 from pay_api.utils.errors import Error
 from pay_api.utils.product_auth_util import ProductAuthUtil
 from pay_api.utils.user_context import UserContext, user_context
@@ -104,12 +104,13 @@ def get_account(account_number: str):
         account_id=account_number,
         one_of_roles=[EDIT_ROLE, VIEW_ROLE],
     )
-    response, status = (
-        PaymentAccountService.find_by_auth_account_id(account_number).asdict(),
-        HTTPStatus.OK,
-    )
+    service = PaymentAccountService.find_by_auth_account_id(account_number)
+    # Optional ?payment_method=... surfaces the cfsAccount block for a specific
+    # method's CFS row instead of the account's default (express-checkout).
+    if payment_method := request.args.get("payment_method"):
+        service._cfs_payment_method_override = payment_method  # pylint:disable=protected-access
     current_app.logger.debug(">get_account")
-    return jsonify(response), status
+    return jsonify(service.asdict()), HTTPStatus.OK
 
 
 @bp.route("/<string:account_number>/eft", methods=["PATCH"])
@@ -138,14 +139,16 @@ def put_account(account_number: str):
     """Update the payment account records."""
     current_app.logger.info(f"<put_account {account_number}")
     request_json = request.get_json()
-    current_app.logger.debug(request_json)
+    scope_value = request.args.get("scope", None)
+    scope = Scope(scope_value) if scope_value else None
+    current_app.logger.debug("scope = %s", scope)
     # Validate the input request
     valid_format, errors = schema_utils.validate(request_json, "account_info")
 
     if not valid_format:
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
     try:
-        response = PaymentAccountService.update(account_number, request_json)
+        response = PaymentAccountService.update(account_number, request_json, scope)
     except ServiceUnavailableException as exception:
         return exception.response()
     except BusinessException as exception:

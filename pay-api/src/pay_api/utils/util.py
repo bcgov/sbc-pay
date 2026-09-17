@@ -250,6 +250,16 @@ def get_next_day(val: datetime):
     return val + timedelta(days=1)
 
 
+def subtract_business_days(dt: datetime, n: int) -> datetime:
+    """Return dt minus n business days, skipping weekends and BC statutory holidays."""
+    counter = 0
+    while counter < n:
+        dt = dt - timedelta(days=1)
+        if not is_holiday(dt):
+            counter += 1
+    return dt
+
+
 def get_outstanding_txns_from_date() -> datetime:
     """Return the date value which can be used as start date to calculate outstanding PAD transactions."""
     days_interval: int = current_app.config.get("OUTSTANDING_TRANSACTION_DAYS")
@@ -321,9 +331,37 @@ def cents_to_decimal(amount: int):
 
 
 def get_topic_for_corp_type(corp_type: str):
-    """Return a topic to direct the queue message to."""
+    """Return a topic to direct the queue message to.
+
+    Partner (express-checkout-enabled) corp types resolve exactly like internal
+    ones — via `current_app.config`. The convention is on the config key NAME:
+    `<CORP_TYPE_UPPER>_PAY_TOPIC` → topic name (matches the existing
+    `BUSINESS_PAY_TOPIC` / `NAMEX_PAY_TOPIC` style). Partner keys are populated
+    dynamically from env vars at boot,
+    so onboarding a partner requires no code change here — just the 1Password
+    field, one line in vaults.gcp.env, and a redeploy.
+    """
     # Will fix this promptly and move this away so it doesn't cause circular dependencies.
     from ..services.code import Code as CodeService  # pylint: disable=import-outside-toplevel  # noqa: TID252
+
+    express_enabled = CodeService.is_express_checkout_enabled(corp_type)
+    config_key = f"{corp_type.upper()}_PAY_TOPIC"
+    partner_topic = current_app.config.get(config_key) if express_enabled else None
+    # TODO Remove — POC diagnostic for ENV corp_type routing.
+    import os as _os  # noqa: PLC0415
+
+    current_app.logger.info(
+        "get_topic_for_corp_type: corp_type=%s express_enabled=%s config[%s]=%r os.getenv[%s]=%r env_has_key=%s",
+        corp_type,
+        express_enabled,
+        config_key,
+        partner_topic,
+        config_key,
+        _os.getenv(config_key),
+        config_key in _os.environ,
+    )
+    if express_enabled:
+        return partner_topic
 
     if corp_type == CorpType.NRO.value:
         return current_app.config.get("NAMEX_PAY_TOPIC")
@@ -397,3 +435,13 @@ def get_statement_currency_string(value):
 def is_string_empty(val: str):
     """Check if a string has a value."""
     return not (val and val.strip())
+
+
+def hide_stub_account(invoice_dto: dict, is_unredeemed_link: bool = False) -> dict:
+    """Blank the account number on a serialized invoice standing on an internal stub account, in place."""
+    account = invoice_dto.get("payment_account") or {}
+    account_id = str(account.get("account_id") or "")
+    if account_id and (not account_id.isdigit() or is_unredeemed_link):
+        account["account_id"] = None
+        account["account_name"] = None
+    return invoice_dto

@@ -20,6 +20,7 @@ from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import AppliedCredits as AppliedCreditsModel
+from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Receipt as ReceiptModel
@@ -39,8 +40,9 @@ from pay_api.utils.enums import (
 from pay_api.utils.errors import Error
 from pay_api.utils.product_auth_util import ProductAuthUtil
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date
+from pay_api.utils.util import get_local_formatted_date, hide_stub_account
 
+from .auth import get_service_account_token
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
@@ -62,9 +64,14 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         invoice_identifier: str,
         filing_data: dict[str, Any],
         skip_auth_check: bool = False,
+        use_service_account: bool = False,
         **kwargs,
     ):
-        """Create receipt."""
+        """Create receipt.
+
+        `use_service_account` is for callers with no signed-in user — an express-checkout
+        guest authorized by a payment-link token.
+        """
         current_app.logger.debug("<create receipt initiated")
         receipt_dict = {
             "templateName": "payment_receipt",
@@ -82,7 +89,7 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
 
         pdf_response = OAuthService.post(
             current_app.config.get("REPORT_API_BASE_URL"),
-            kwargs["user"].bearer_token,
+            get_service_account_token() if use_service_account else kwargs["user"].bearer_token,
             AuthHeaderType.BEARER,
             ContentType.JSON,
             receipt_dict,
@@ -139,7 +146,13 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         receipt_details["paymentMethod"] = payment_method.code
         if invoice_data.payment_method_code != PaymentSystem.INTERNAL.value:
             receipt_details["paymentMethodDescription"] = payment_method.description
-        receipt_details["invoice"] = camelcase_dict(invoice_data.asdict(), {})
+        # Blank the adhoc SA account before camelising
+        receipt_details["invoice"] = camelcase_dict(
+            hide_stub_account(
+                invoice_data.asdict(), InvoicePaymentLinkModel.is_unredeemed_for_invoice(invoice_data.id)
+            ),
+            {},
+        )
         # Format date to display in report.
 
         receipt_date = Receipt.get_receipt_date(filing_data.get("isRefund"), invoice_data)

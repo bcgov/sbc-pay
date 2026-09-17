@@ -52,11 +52,14 @@ class CorpType(Audit, Versioned, CodeTable):
             "created_on",
             "description",
             "has_partner_disbursements",
+            "is_express_checkout_enabled",
             "is_online_banking_allowed",
+            "payment_link_ttl_days",
             "payment_methods",
             "product",
             "refund_allowed",
             "refund_approval",
+            "tenant_key",
             "updated_by",
             "updated_name",
             "updated_on",
@@ -78,6 +81,9 @@ class CorpType(Audit, Versioned, CodeTable):
     payment_methods = db.Column(db.ARRAY(db.String()), nullable=True)
     refund_approval = db.Column(db.Boolean, nullable=False, default=False)
     refund_allowed = db.Column(db.Boolean, nullable=False, default=True)
+    is_express_checkout_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    payment_link_ttl_days = db.Column(db.Integer, nullable=True)
+    tenant_key = db.Column(db.String(50), nullable=True, index=True)
 
     def save(self):
         """Save corp type."""

@@ -18,13 +18,14 @@ Test-Suite to ensure that the util functions are working as expected.
 """
 
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.util import get_nearest_business_day, is_valid_redirect_url
+from pay_api.utils.util import get_nearest_business_day, get_topic_for_corp_type, is_valid_redirect_url
 
 
 def test_next_business_day(session):
@@ -157,3 +158,41 @@ def test_validate_redirect_url(app, redirect_url, valid_urls, expected_result):
     app.config["VALID_REDIRECT_URLS"] = valid_urls
     with app.app_context():
         assert is_valid_redirect_url(redirect_url) == expected_result
+
+
+# ---------------------------------------------------------------------------
+# get_topic_for_corp_type
+# ---------------------------------------------------------------------------
+def test_get_topic_partner_returns_config_value(session, app):
+    """Express-checkout-enabled corp type resolves to its dedicated app.config value."""
+    app.config["CP_PAY_TOPIC"] = "pay-events-cp-dev"
+    with app.app_context(), patch("pay_api.services.code.Code.is_express_checkout_enabled", return_value=True):
+        assert get_topic_for_corp_type("CP") == "pay-events-cp-dev"
+
+
+def test_get_topic_partner_config_missing_returns_none(session, app):
+    """Express-checkout enabled but the config key isn't set — return None (nothing to publish to)."""
+    app.config.pop("CP_PAY_TOPIC", None)
+    with app.app_context(), patch("pay_api.services.code.Code.is_express_checkout_enabled", return_value=True):
+        assert get_topic_for_corp_type("CP") is None
+
+
+def test_get_topic_nro_returns_namex_topic(session, app):
+    """NRO corp type routes to the NAMEX topic (internal routing unchanged)."""
+    app.config["NAMEX_PAY_TOPIC"] = "namex-pay-dev"
+    with app.app_context(), patch("pay_api.services.code.Code.is_express_checkout_enabled", return_value=False):
+        assert get_topic_for_corp_type("NRO") == "namex-pay-dev"
+
+
+def test_get_topic_business_product_returns_business_topic(session, app):
+    """A BUSINESS-product corp type (CP) routes to BUSINESS_PAY_TOPIC when not express-checkout enabled."""
+    app.config["BUSINESS_PAY_TOPIC"] = "business-pay-dev"
+    with app.app_context(), patch("pay_api.services.code.Code.is_express_checkout_enabled", return_value=False):
+        # CP is BUSINESS product by default.
+        assert get_topic_for_corp_type("CP") == "business-pay-dev"
+
+
+def test_get_topic_unknown_corp_type_returns_none(session, app):
+    """Corp type with no matching internal branch and no partner flag → None."""
+    with app.app_context(), patch("pay_api.services.code.Code.is_express_checkout_enabled", return_value=False):
+        assert get_topic_for_corp_type("DOES_NOT_EXIST") is None

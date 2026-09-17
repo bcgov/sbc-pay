@@ -40,6 +40,7 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
+from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.auth_event import AuthEvent, LockAccountDetails
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
@@ -657,10 +658,21 @@ def _process_paid_invoices(inv_references, row):
         receipt.invoice_id = inv.id
         receipt.receipt_number = receipt_number
         db.session.add(receipt)
-        # Publish to the queue if it's an Online Banking payment
+        # Publish to the queue if it's an Online Banking payment. (Regular PAD publishes at
+        # create-time via PadService.complete_post_invoice; nothing extra here for it.)
+        # Express-checkout PAD (identified by presence of an invoice_payment_links row) has its
+        # create-time publish suppressed in PadService.complete_post_invoice; the drain job
+        # (ExpressCheckoutPadNotifyTask) publishes once the CAS reversal window elapses.
         if inv.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
             current_app.logger.info("Publishing payment event for OB. Invoice : %s", inv.id)
             _publish_payment_event(inv)
+        elif inv.payment_method_code == PaymentMethod.PAD.value and PaymentLinkService.is_express_checkout_invoice(
+            inv.id
+        ):
+            current_app.logger.info(
+                "Holding partner publish for express-checkout PAD invoice %s until reversal window elapses.",
+                inv.id,
+            )
 
 
 def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
@@ -995,7 +1007,8 @@ def _validate_account(inv: InvoiceModel, row: dict[str, str]):
 
 def _publish_payment_event(inv: InvoiceModel):
     """Publish payment message to the queue."""
-    payload = PaymentTransactionService.create_event_payload(invoice=inv, status_code=PaymentStatus.COMPLETED.value)
+    status_code = PaymentStatus.COMPLETED.value
+    payload = PaymentTransactionService.create_event_payload(invoice=inv, status_code=status_code)
     try:
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(
@@ -1004,8 +1017,15 @@ def _publish_payment_event(inv: InvoiceModel):
                 payload=payload,
                 topic=get_topic_for_corp_type(inv.corp_type_code),
                 corp_type=inv.corp_type_code,
+                attributes={
+                    "statusCode": status_code,
+                    "corpTypeCode": inv.corp_type_code,
+                    "paymentMethod": inv.payment_method_code,
+                },
             ),
         )
+        # Stamp partner_notified_at on the express-checkout link row (no-op otherwise).
+        PaymentLinkService.stamp_partner_notified(inv.id)
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning("Notification to Queue failed for the Payment Event - %s", payload)

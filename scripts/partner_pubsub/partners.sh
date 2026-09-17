@@ -1,0 +1,82 @@
+# Adding a partner:
+#   1. Append the partner's code to PARTNERS
+#   2. Add a `<code>_<env>) echo "..."` case to subscribers_for()
+#      (space-separated IAM members; empty is fine)
+
+# Which GCP project hosts partner topics per env.
+project_id_for_env() {
+    case "$1" in
+        dev)  echo "mvnjri-dev" ;;
+        test) echo "TODO" ;;
+        prod) echo "TODO" ;;
+        *)    echo "" ;;
+    esac
+}
+
+# sbc-pay's service accounts that publish to partner topics (cross-project grant).
+# Space-separated list of fully-qualified IAM members.
+publishers_for_env() {
+    case "$1" in
+        dev)
+            echo "serviceAccount:sa-api@gtksf3-dev.iam.gserviceaccount.com \
+                  serviceAccount:sa-job@gtksf3-dev.iam.gserviceaccount.com \
+                  serviceAccount:sa-pubsub@gtksf3-dev.iam.gserviceaccount.com"
+            ;;
+        test)
+            echo "serviceAccount:sa-api@gtksf3-test.iam.gserviceaccount.com \
+                  serviceAccount:sa-job@gtksf3-test.iam.gserviceaccount.com \
+                  serviceAccount:sa-pubsub@gtksf3-test.iam.gserviceaccount.com"
+            ;;
+        prod)
+            echo "serviceAccount:sa-api@gtksf3-prod.iam.gserviceaccount.com \
+                  serviceAccount:sa-job@gtksf3-prod.iam.gserviceaccount.com \
+                  serviceAccount:sa-pubsub@gtksf3-prod.iam.gserviceaccount.com"
+            ;;
+        *) echo "" ;;
+    esac
+}
+
+# Partner codes (lowercase). Drives topic naming: pay-events-<code>-<env>.
+PARTNERS="sites"
+
+# Partner subscriber IAM members. Space-separated per <code>_<env>.
+# Empty = only sbc-pay publishes; nobody consumes yet.
+subscribers_for() {
+    case "${1}_${2}" in
+        sites_dev)  echo "" ;;
+        sites_test) echo "" ;;
+        sites_prod) echo "" ;;
+        *)          echo "" ;;
+    esac
+}
+
+# Optional direct webhook delivery. Leave the URL empty for topic-only
+# partners. The audience is what the partner validates in Pub/Sub's OIDC JWT;
+# if it is blank, provision-webhooks.sh uses the webhook URL as the audience.
+# Do not put credentials or shared secrets in this file.
+webhook_url_for() {
+    case "${1}_${2}" in
+        sites_dev)  echo "https://hooks.example.com/pay-events" ;;
+        sites_test) echo "" ;;
+        sites_prod) echo "" ;;
+        *)          echo "" ;;
+    esac
+}
+
+webhook_audience_for() {
+    case "${1}_${2}" in
+        sites_dev)  echo "" ;;
+        sites_test) echo "" ;;
+        sites_prod) echo "" ;;
+        *)          echo "" ;;
+    esac
+}
+
+# A single service account is used by Pub/Sub to mint OIDC tokens for all
+# partner webhook push subscriptions in an environment.
+webhook_delivery_sa_name_for_env() {
+    case "$1" in
+        dev|test|prod) echo "pay-events-webhook-delivery" ;;
+        *)             echo "" ;;
+    esac
+}

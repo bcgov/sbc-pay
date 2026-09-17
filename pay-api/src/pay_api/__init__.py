@@ -21,6 +21,7 @@ import sys
 
 from cloud_sql_connector import setup_pg8000_close_event_listener
 from flask import Flask, request
+from flask_cors.core import try_match_any_pattern
 from flask_migrate import Migrate, upgrade
 from gcp_tracing import tracing
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
@@ -100,7 +101,7 @@ def setup_response_headers(app):
     @app.after_request
     def handle_after_request(response):
         origin = request.headers.get("Origin")
-        if origin and origin in app.config.get("CORS_ORIGINS", []):
+        if origin and try_match_any_pattern(origin, app.config.get("CORS_ORIGINS", []), caseSensitive=False):
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Vary"] = "Origin"
         elif response.headers.get("Access-Control-Allow-Origin") == "*":
@@ -135,7 +136,7 @@ def setup_403_logging(app):
             message = {"message": getattr(error, "message", error.description)}
             headers = {"Content-Type": "application/json"}
             origin = request.headers.get("Origin")
-            if origin and origin in app.config.get("CORS_ORIGINS", []):
+            if origin and try_match_any_pattern(origin, app.config.get("CORS_ORIGINS", []), caseSensitive=False):
                 headers["Access-Control-Allow-Origin"] = origin
                 headers["Vary"] = "Origin"
             return message, error.code, headers

@@ -43,16 +43,42 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     def create_account(
         self,
-        identifier: str,  # noqa: ARG002
-        contact_info: dict[str, Any],  # noqa: ARG002
+        identifier: str,
+        contact_info: dict[str, Any],
         payment_info: dict[str, Any],  # noqa: ARG002
         **kwargs,  # noqa: ARG002
     ) -> CfsAccountModel:
-        """Create an account for the online banking."""
-        # Create CFS Account model instance and set the status as PENDING
+        """Create an account for online banking.
+
+        Attempt CAS creation synchronously so the caller (invoice flow, org
+        create/update) can proceed with a live account. Fail-open on any CAS
+        error: return a PENDING CfsAccount and let `CreateAccountTask` retry.
+        """
         cfs_account = CfsAccountModel()
-        cfs_account.status = CfsAccountStatus.PENDING.value
         cfs_account.payment_method = PaymentMethod.ONLINE_BANKING.value
+
+        if not contact_info:
+            cfs_account.status = CfsAccountStatus.PENDING.value
+            return cfs_account
+
+        try:
+            details = self.create_cfs_account(
+                identifier=identifier,
+                contact_info=contact_info,
+                receipt_method=None,
+            )
+            cfs_account.cfs_party = details.get("party_number")
+            cfs_account.cfs_account = details.get("account_number")
+            cfs_account.cfs_site = details.get("site_number")
+            cfs_account.payment_instrument_number = details.get("payment_instrument_number")
+            cfs_account.status = CfsAccountStatus.ACTIVE.value
+        except Exception as exc:  # pylint: disable=broad-except
+            current_app.logger.warning(
+                "CAS online banking account create failed for %s; leaving PENDING for retry: %s",
+                identifier,
+                exc,
+            )
+            cfs_account.status = CfsAccountStatus.PENDING.value
         return cfs_account
 
     def create_invoice(

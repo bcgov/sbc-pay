@@ -123,6 +123,19 @@ class Code:
         return {corp_type.product: corp_type.payment_methods or []} if corp_type else {product_code: []}
 
     @classmethod
+    def is_express_checkout_enabled(cls, corp_type: str) -> bool:
+        """Return True if the corp type has express checkout turned on."""
+        record = cls.find_code_value_by_type_and_code(CodeValue.CORP_TYPE.value, corp_type)
+        return bool(record and record.get("is_express_checkout_enabled"))
+
+    @classmethod
+    def get_payment_link_ttl_days(cls, corp_type: str) -> int:
+        """Return the corp type's payment link TTL, falling back to the global config default."""
+        record = cls.find_code_value_by_type_and_code(CodeValue.CORP_TYPE.value, corp_type)
+        ttl = record.get("payment_link_ttl_days") if record else None
+        return ttl if ttl is not None else current_app.config["PAYMENT_LINK_TOKEN_TTL_DAYS"]
+
+    @classmethod
     def is_payment_method_valid_for_corp_type(cls, corp_type: str, payment_method: str) -> bool:
         """Check if the given corp_type has the specified payment_method."""
         record = CorpType.query.with_entities(CorpType.payment_methods).filter_by(code=corp_type).first()

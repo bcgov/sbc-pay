@@ -86,6 +86,7 @@ def get_claims(
     login_source: str = None,
     roles: list = [],
     product_code: str = "BUSINESS",
+    azp: str = None,
 ):
     """Return the claim with the role param."""
     claim = {
@@ -104,6 +105,8 @@ def get_claims(
         "roles": [f"{role}", *roles],
         "product_code": product_code,
     }
+    if azp:
+        claim["azp"] = azp
     return claim
 
 
