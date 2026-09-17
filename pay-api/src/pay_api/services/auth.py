@@ -153,18 +153,27 @@ def check_auth(
 
 
 @user_context
-def get_account_admin_users(auth_account_id, use_service_account=False, **kwargs):
-    """Retrieve account admin users."""
+def get_account_members(auth_account_id, use_service_account=False, roles: str = "ADMIN", **kwargs):
+    """Retrieve an account's active members, filtered by role.
+
+    `roles` goes to auth-api as-is; it accepts a comma-separated list, so "ADMIN,COORDINATOR"
+    returns both.
+    """
     token = kwargs["user"].bearer_token
     if use_service_account:
         token = get_service_account_token()
     # User Token only works for STAFF and ADMINS of the org
     return RestService.get(
-        current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{auth_account_id}/members?status=ACTIVE&roles=ADMIN",
+        current_app.config.get("AUTH_API_ENDPOINT") + f"orgs/{auth_account_id}/members?status=ACTIVE&roles={roles}",
         token,
         AuthHeaderType.BEARER,
         ContentType.JSON,
     ).json()
+
+
+def get_account_admin_users(auth_account_id, use_service_account=False):
+    """Retrieve account admin users."""
+    return get_account_members(auth_account_id, use_service_account)
 
 
 def get_emails_with_keycloak_role(role: str) -> list[str]:

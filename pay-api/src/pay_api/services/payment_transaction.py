@@ -29,6 +29,7 @@ from pay_api.models import PaymentTransactionSchema
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.base_payment_system import PaymentSystemService  # noqa: TC001
+from pay_api.services.email_service import send_receipt_notification
 from pay_api.services.flags import flags
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
@@ -472,6 +473,10 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
         # Publish message to unlock account if account is locked.
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
+            # After the save above — the receipt rows are committed, so the mail can't
+            # describe a payment that later rolls back.
+            for invoice in invoices:
+                send_receipt_notification(invoice)
             active_failed_payments = Payment.get_failed_payments(auth_account_id=payment_account.auth_account_id)
             current_app.logger.info("active_failed_payments %s", active_failed_payments)
             # Note this will take some thought if we have multiple payment methods running at once in the future.
