@@ -378,6 +378,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             corp_type_code=invoice.corp_type_code,
         )
 
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, target_method)
+        invoice.cfs_account_id = cfs_account.id if cfs_account else None
         invoice.payment_method_code = target_method
         invoice.invoice_status_code = pay_service.get_default_invoice_status()
         invoice.save()

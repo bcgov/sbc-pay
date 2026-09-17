@@ -336,6 +336,7 @@ def test_patch_online_banking_payment_to_cc(session, public_user_mock):
     """Assert that the payment records are created."""
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.ONLINE_BANKING.value).save()
     payment_account.save()
+    ob_cfs_id = CfsAccount.find_by_account_id(payment_account.id)[0].id
     # payment.save()
     payment_response = PaymentService.create_invoice(
         get_payment_request_with_service_fees(business_identifier="CP0002000"),
@@ -349,6 +350,8 @@ def test_patch_online_banking_payment_to_cc(session, public_user_mock):
 
     invoice_response = PaymentService.update_invoice(invoice_id, request)
     assert invoice_response.get("payment_method") == PaymentMethod.CC.value
+    # OB→CC with an existing CFS reference keeps the OB CFS account so PayBC can settle it.
+    assert invoice_response.get("cfs_account_id") == ob_cfs_id
 
 
 def _fresh_switchable_invoice(
@@ -581,10 +584,12 @@ def test_patch_invoice_excludes_linking_key(session, public_user_mock, monkeypat
         auth_account_id="VENDOR_777", payment_method_code=PaymentMethod.ONLINE_BANKING.value
     )
     payment_account.save()
+    ob_cfs = CfsAccount.find_by_account_id(payment_account.id)[0]
     invoice = factory_invoice(
         payment_account=payment_account,
         business_identifier="CP0001234",
         payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+        cfs_account_id=ob_cfs.id,
     )
     invoice.save()
     factory_invoice_reference(invoice.id).save()
@@ -597,6 +602,8 @@ def test_patch_invoice_excludes_linking_key(session, public_user_mock, monkeypat
         )
 
     assert response.get("payment_method") == PaymentMethod.CC.value
+    # OB→CC with an existing CFS reference keeps the OB CFS account so PayBC can settle it.
+    assert response.get("cfs_account_id") == ob_cfs.id
 
     mock_check_auth.assert_called_once()
     called_args, called_kwargs = mock_check_auth.call_args
