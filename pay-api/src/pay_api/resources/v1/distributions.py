@@ -34,7 +34,7 @@ bp = Blueprint(
 
 
 @bp.route("/<int:distribution_code_id>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "PUT"])
+@cross_origin(methods=["GET", "PUT"])
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def get_fee_distribution(distribution_code_id: int):
     """Return distribution by provided id."""
@@ -50,7 +50,7 @@ def get_fee_distribution(distribution_code_id: int):
 
 
 @bp.route("/<int:distribution_code_id>", methods=["PUT"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def put_fee_distribution(distribution_code_id: int):
     """Update distribution from the payload."""
@@ -71,7 +71,7 @@ def put_fee_distribution(distribution_code_id: int):
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST"])
+@cross_origin(methods=["GET", "POST"])
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def get_fee_distributions():
     """Return all distributions."""
@@ -87,7 +87,7 @@ def get_fee_distributions():
 
 
 @bp.route("", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def post_fee_distribution():
     """Create a new distribution from the payload."""
@@ -108,7 +108,7 @@ def post_fee_distribution():
 
 
 @bp.route("/<int:distribution_code_id>/schedules", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST"])
+@cross_origin(methods=["GET", "POST"])
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def get_fee_distribution_schedules(distribution_code_id: int):
     """Return all fee schedules linked to the distribution."""
@@ -124,7 +124,7 @@ def get_fee_distribution_schedules(distribution_code_id: int):
 
 
 @bp.route("/<int:distribution_code_id>/schedules", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
 def post_fee_distribution_schedule(distribution_code_id: int):
     """Create link between distribution and fee schedule."""

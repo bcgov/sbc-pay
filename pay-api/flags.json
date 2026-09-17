@@ -4,6 +4,7 @@
         "bool-flag": true,
         "integer-flag": 10,
         "queue-message-for-reversals": true,
-        "remove-premium-restrictions": true
+        "remove-premium-restrictions": true,
+        "disable-payment-links": false
     }
 }

@@ -26,7 +26,7 @@ bp = Blueprint("FEE_SCHEDULE", __name__, url_prefix=f"{EndpointEnum.API_V1.value
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 def get_fee_schedules():
     """Calculate the fee for the filing using the corp type/filing type and return fee."""
     try:

@@ -31,14 +31,14 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 def get_invoice_by_id(invoice_id):
     """Subject to remove once the change has been notified to teams."""
     try:
         response = {"items": []}
 
-        response["items"].append(InvoiceService.find_by_id(invoice_id).asdict())
+        response["items"].append(InvoiceService.find_by_id(invoice_id, allow_linking_key=True).asdict())
     except BusinessException as exception:
         return exception.response()
     return jsonify(response), HTTPStatus.OK

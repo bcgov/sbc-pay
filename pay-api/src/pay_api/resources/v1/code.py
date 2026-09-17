@@ -25,14 +25,14 @@ bp = Blueprint("CODES", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/codes
 
 
 @bp.route("/<string:code_type>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 def get_codes_by_type(code_type):
     """Return all codes based on code_type."""
     return CodeService.find_code_values_by_type(code_type), HTTPStatus.OK
 
 
 @bp.route("/<string:code_type>/<string:code>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 def get_code(code_type, code):
     """Return all codes based on code_type."""
     return CodeService.find_code_value_by_type_and_code(code_type, code), HTTPStatus.OK
@@ -40,7 +40,7 @@ def get_code(code_type, code):
 
 @bp.route("/valid_payment_methods", methods=["GET", "OPTIONS"])
 @bp.route("/valid_payment_methods/<string:product_code>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 def get_valid_payment_methods(product_code=None):
     """Return all valid payment methods based on product code."""
     return CodeService.find_valid_payment_methods_by_product_code(product_code), HTTPStatus.OK

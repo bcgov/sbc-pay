@@ -36,7 +36,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.has_one_of_roles([Role.FAS_CREATE.value])
 def post_routing_slip():
     """Create routing slip."""
@@ -57,7 +57,7 @@ def post_routing_slip():
 
 
 @bp.route("/queries", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.has_one_of_roles([Role.FAS_SEARCH.value])
 def post_search_routing_slips():
     """Get routing slips."""
@@ -85,7 +85,7 @@ def post_search_routing_slips():
 
 
 @bp.route("/<string:date>/reports", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.has_one_of_roles([Role.FAS_REPORTS.value])
 def post_routing_slip_report(date: str):
     """Create routing slip report."""
@@ -107,7 +107,7 @@ def post_routing_slip_report(date: str):
 
 
 @bp.route("/<string:routing_slip_number>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "PATCH"])
+@cross_origin(methods=["GET", "PATCH"])
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
 def get_routing_slip(routing_slip_number: str):
     """Get routing slip."""
@@ -126,7 +126,7 @@ def get_routing_slip(routing_slip_number: str):
 
 
 @bp.route("/<string:routing_slip_number>", methods=["PATCH"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.FAS_EDIT.value])
 def patch_routing_slip(routing_slip_number: str):
     """Patch routing slip."""
@@ -148,7 +148,7 @@ def patch_routing_slip(routing_slip_number: str):
 
 
 @bp.route("/<string:routing_slip_number>/links", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value, Role.FAS_LINK.value])
 def get_routing_slip_links(routing_slip_number: str):
     """Get routing slip links ;ie parent/child details."""
@@ -164,7 +164,7 @@ def get_routing_slip_links(routing_slip_number: str):
 
 
 @bp.route("/links", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.has_one_of_roles([Role.FAS_LINK.value])
 def post_routing_slip_link():
     """Get routing slip links ;ie parent/child details."""
@@ -191,7 +191,7 @@ def post_routing_slip_link():
 
 
 @bp.route("/<string:routing_slip_number>/comments", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST"])
+@cross_origin(methods=["GET", "POST"])
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
 def get_routing_slip_comments(routing_slip_number: str):
     """Get comments for a slip."""
@@ -210,7 +210,7 @@ def get_routing_slip_comments(routing_slip_number: str):
 
 
 @bp.route("/<string:routing_slip_number>/comments", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
 def post_routing_slip_comment(routing_slip_number: str):
     """Create comment for a slip."""

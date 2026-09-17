@@ -2407,7 +2407,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/sumesh85/sbc-pay.git"
 reference = "34304-2"
-resolved_reference = "9df89684365840a61a315345225e4e162e1a9af4"
+resolved_reference = "f6fb457f07b48d63da608d44df1395d1770f0de3"
 subdirectory = "pay-api"
 
 [[package]]

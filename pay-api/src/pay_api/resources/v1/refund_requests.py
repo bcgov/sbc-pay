@@ -35,7 +35,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.requires_auth
 def get_refund_requests():
     """Get refund requests."""
@@ -72,8 +72,8 @@ def get_refund_requests():
 
 
 @bp.route("/<int:refund_id>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
-@cross_origin(origins="*")
+@cross_origin(methods=["GET"])
+@cross_origin()
 @_jwt.requires_auth
 def get_refund_request(refund_id: int):
     """Get refund request."""

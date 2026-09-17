@@ -35,7 +35,7 @@ bp = Blueprint(
 
 
 @bp.route("/refunds", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.requires_auth
 def post_refund(invoice_id):
     """Create the Refund for the Invoice."""
@@ -59,7 +59,7 @@ def post_refund(invoice_id):
 
 
 @bp.route("/refunds/manual", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def post_manual_refund(invoice_id: int):
@@ -75,7 +75,7 @@ def post_manual_refund(invoice_id: int):
 
 
 @bp.route("/refunds/<int:refund_id>", methods=["PATCH"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 def patch_refund(invoice_id: int, refund_id: int):
     """Patch refund."""

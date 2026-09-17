@@ -30,7 +30,7 @@ bp = Blueprint("TRANSACTIONS", __name__, url_prefix=f"{EndpointEnum.API_V1.value
 
 
 @bp.route("/payment-requests/<int:invoice_id>/transactions", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST"])
+@cross_origin(methods=["GET", "POST"])
 @_jwt.requires_auth
 def get_transactions(invoice_id):
     """Get all transaction records for a invoice."""
@@ -42,7 +42,7 @@ def get_transactions(invoice_id):
 
 @bp.route("/payment-requests/<int:invoice_id>/transactions", methods=["POST"])
 @bp.route("/payments/<int:payment_id>/transactions", methods=["POST", "OPTIONS"])
-@cross_origin(origins="*", methods=["POST"])
+@cross_origin(methods=["POST"])
 def post_transaction(invoice_id: int = None, payment_id: int = None):
     """Create the Transaction records."""
     current_app.logger.info("<post_transaction")
@@ -81,7 +81,7 @@ def post_transaction(invoice_id: int = None, payment_id: int = None):
     "/payments/<int:payment_id>/transactions/<uuid:transaction_id>",
     methods=["GET", "OPTIONS"],
 )
-@cross_origin(origins="*", methods=["GET", "PATCH"])
+@cross_origin(methods=["GET", "PATCH"])
 @_jwt.requires_auth
 def get_transaction(invoice_id: int = None, payment_id: int = None, transaction_id=None):
     """Get the Transaction record."""
@@ -108,7 +108,7 @@ def get_transaction(invoice_id: int = None, payment_id: int = None, transaction_
     methods=["PATCH"],
 )
 @bp.route("/payments/<int:payment_id>/transactions/<uuid:transaction_id>", methods=["PATCH"])
-@cross_origin(origins="*")
+@cross_origin()
 def patch_transaction(invoice_id: int = None, payment_id: int = None, transaction_id=None):
     """Update the transaction record by querying payment system."""
     current_app.logger.info(
@@ -131,7 +131,7 @@ def patch_transaction(invoice_id: int = None, payment_id: int = None, transactio
 
 
 @bp.route("/valid-redirect-url", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 def post_is_valid_redirect_url():
     """Check if the redirect URL is valid."""
     current_app.logger.info("<is_valid_redirect_url")

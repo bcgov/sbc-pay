@@ -36,7 +36,7 @@ bp = Blueprint(
 
 
 @bp.route("", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET", "POST"])
+@cross_origin(methods=["GET", "POST"])
 @_jwt.requires_auth
 def get_account_payments(account_id: str):
     """Get account payments."""
@@ -59,7 +59,7 @@ def get_account_payments(account_id: str):
 
 
 @bp.route("", methods=["POST"])
-@cross_origin(origins="*")
+@cross_origin()
 @_jwt.requires_auth
 def post_account_payment(account_id: str):
     """Create account payments."""

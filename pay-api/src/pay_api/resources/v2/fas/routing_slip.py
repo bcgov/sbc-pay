@@ -32,7 +32,7 @@ bp = Blueprint(
 
 
 @bp.route("/<string:routing_slip_number>", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", methods=["GET"])
+@cross_origin(methods=["GET"])
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
 def get_routing_slip(routing_slip_number: str):
     """Get routing slip."""
