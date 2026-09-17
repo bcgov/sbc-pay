@@ -37,6 +37,7 @@ class InvoicePaymentLink(BaseModel):
             "partner_notified_at",
             "email",
             "return_url",
+            "notified_at",
         ]
     }
 
@@ -49,6 +50,8 @@ class InvoicePaymentLink(BaseModel):
     # Captured at invoice creation time for unlinked-invoice notification delivery.
     email = db.Column(db.String(254), nullable=True)
     return_url = db.Column(db.String(2048), nullable=True)
+    # Stamped when the payer reminder email has been sent for this unclaimed invoice.
+    notified_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     @classmethod
     def find_by_token(cls, token: str) -> "InvoicePaymentLink | None":

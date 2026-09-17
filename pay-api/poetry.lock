@@ -2757,7 +2757,7 @@ jaeger-client = "*"
 type = "git"
 url = "https://github.com/bcgov/sbc-common-components.git"
 reference = "master"
-resolved_reference = "cc91b7b54797f24f2dd063910477064c4d67fe0a"
+resolved_reference = "67bb5e775370970aa7b674b1185d195a51fd7eeb"
 subdirectory = "python"
 
 [[package]]
