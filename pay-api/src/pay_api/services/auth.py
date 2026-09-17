@@ -153,11 +153,11 @@ def check_auth(
 
 
 @user_context
-def get_account_admin_users(auth_account_id, use_service_account=False, roles: str = "ADMIN", **kwargs):
-    """Retrieve account admin users.
+def get_account_members(auth_account_id, use_service_account=False, roles: str = "ADMIN", **kwargs):
+    """Retrieve an account's active members, filtered by role.
 
-    `roles` is passed through to auth-api as-is; it accepts a comma-separated list, so
-    "ADMIN,COORDINATOR" reaches both. Defaults to ADMIN so existing callers are unchanged.
+    `roles` goes to auth-api as-is; it accepts a comma-separated list, so "ADMIN,COORDINATOR"
+    returns both.
     """
     token = kwargs["user"].bearer_token
     if use_service_account:
@@ -169,6 +169,11 @@ def get_account_admin_users(auth_account_id, use_service_account=False, roles: s
         AuthHeaderType.BEARER,
         ContentType.JSON,
     ).json()
+
+
+def get_account_admin_users(auth_account_id, use_service_account=False):
+    """Retrieve account admin users."""
+    return get_account_members(auth_account_id, use_service_account)
 
 
 def get_emails_with_keycloak_role(role: str) -> list[str]:

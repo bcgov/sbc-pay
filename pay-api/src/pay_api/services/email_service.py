@@ -24,7 +24,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.services.auth import get_account_admin_users, get_service_account_token
+from pay_api.services.auth import get_account_members, get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, RefundStatus
 from pay_api.utils.serializable import Serializable
@@ -183,9 +183,7 @@ def send_receipt_notification(invoice):
             return
         else:
             members = (
-                get_account_admin_users(auth_account_id, use_service_account=True, roles="ADMIN,COORDINATOR").get(
-                    "members"
-                )
+                get_account_members(auth_account_id, use_service_account=True, roles="ADMIN,COORDINATOR").get("members")
                 or []
             )
             recipients = [

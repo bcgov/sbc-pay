@@ -70,7 +70,7 @@ def test_receipt_notification_reaches_admins_and_coordinators(session, app):
     """The ticket is addressed to the owner and coordinators, so both roles are requested."""
     invoice = _paid_invoice("1234")
 
-    with patch("pay_api.services.email_service.get_account_admin_users", return_value=ADMIN_MEMBERS) as mock_users:
+    with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS) as mock_users:
         with patch("pay_api.services.email_service.send_email_async") as mock_send:
             send_receipt_notification(invoice)
 
@@ -82,7 +82,7 @@ def test_receipt_notification_skipped_when_guest_left_no_email(session, app):
     """No account and no address the partner gave us — there is nobody to tell."""
     invoice = _paid_invoice("sa-partner-client", unredeemed_link=True)
 
-    with patch("pay_api.services.email_service.get_account_admin_users") as mock_users:
+    with patch("pay_api.services.email_service.get_account_members") as mock_users:
         with patch("pay_api.services.email_service.send_email_async") as mock_send:
             send_receipt_notification(invoice)
 
@@ -95,7 +95,7 @@ def test_receipt_notification_skips_members_without_an_email(session, app):
     invoice = _paid_invoice("1234")
     members = {"members": [{"user": {"contacts": [{}]}}, {"user": {"contacts": [{"email": "owner@example.com"}]}}]}
 
-    with patch("pay_api.services.email_service.get_account_admin_users", return_value=members):
+    with patch("pay_api.services.email_service.get_account_members", return_value=members):
         with patch("pay_api.services.email_service.send_email_async") as mock_send:
             send_receipt_notification(invoice)
 
@@ -106,7 +106,7 @@ def test_receipt_notification_goes_to_the_guest_email(session, app):
     """An unredeemed link carries the payer's address, so the receipt goes there."""
     invoice = _paid_invoice("sa-partner-client", unredeemed_link=True, link_email="payer@example.com")
 
-    with patch("pay_api.services.email_service.get_account_admin_users") as mock_users:
+    with patch("pay_api.services.email_service.get_account_members") as mock_users:
         with patch("pay_api.services.email_service.send_email_async") as mock_send:
             send_receipt_notification(invoice)
 
