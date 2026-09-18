@@ -351,7 +351,7 @@ def test_patch_online_banking_payment_to_cc(session, public_user_mock):
     invoice_response = PaymentService.update_invoice(invoice_id, request)
     assert invoice_response.get("payment_method") == PaymentMethod.CC.value
     # OB→CC with an existing CFS reference keeps the OB CFS account so PayBC can settle it.
-    assert invoice_response.get("cfs_account_id") == ob_cfs_id
+    assert Invoice.find_by_id(invoice_id).cfs_account_id == ob_cfs_id
 
 
 def _fresh_switchable_invoice(
@@ -603,7 +603,7 @@ def test_patch_invoice_excludes_linking_key(session, public_user_mock, monkeypat
 
     assert response.get("payment_method") == PaymentMethod.CC.value
     # OB→CC with an existing CFS reference keeps the OB CFS account so PayBC can settle it.
-    assert response.get("cfs_account_id") == ob_cfs.id
+    assert Invoice.find_by_id(invoice.id).cfs_account_id == ob_cfs.id
 
     mock_check_auth.assert_called_once()
     called_args, called_kwargs = mock_check_auth.call_args
