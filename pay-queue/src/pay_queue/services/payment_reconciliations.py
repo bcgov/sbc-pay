@@ -992,7 +992,20 @@ def _get_payment_account(row) -> PaymentAccountModel:
     )
     if not all(payment_account.id == payment_accounts[0].id for payment_account in payment_accounts):
         raise Exception("Multiple unique payment accounts for cfs_account.")  # pylint: disable=broad-exception-raised
-    return payment_accounts[0] if payment_accounts else None
+    if not payment_accounts:
+        # Every caller dereferences the result, so returning None surfaces as an opaque
+        # AttributeError that says nothing about which row is at fault. Name the row instead.
+        if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
+            return None
+        raise Exception(  # pylint: disable=broad-exception-raised
+            f"No payment account found for CFS account {account_number}. "
+            f"Record type: {_get_row_value(row, Column.RECORD_TYPE)}, "
+            f"source transaction: {_get_row_value(row, Column.SOURCE_TXN_NO)}, "
+            f"target transaction: {_get_row_value(row, Column.TARGET_TXN_NO)}. "
+            "The CFS account either does not exist, or is not in ACTIVE/FREEZE/INACTIVE status "
+            "(for example PENDING_PAD_ACTIVATION) at the time the file was processed."
+        )
+    return payment_accounts[0]
 
 
 def _validate_account(inv: InvoiceModel, row: dict[str, str]):
