@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.services.email_service import send_email, send_receipt_notification
+from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus
 from tests.utilities.base_test import factory_invoice, factory_invoice_reference, factory_payment_account
 
@@ -114,3 +115,19 @@ def test_receipt_notification_goes_to_the_guest_email(session, app):
     assert mock_send.call_args.args[0] == ["payer@example.com"]
     # The guest template drops the account rows — they have no account.
     assert "Account number" not in mock_send.call_args.args[2]
+
+
+def test_receipt_notification_accepts_the_invoice_service_object(session, app):
+    """The service wrapper has no `payment_account` relationship, only `payment_account_id`.
+
+    Every pay-api call site passes that wrapper rather than the model.
+    """
+    model_invoice = _paid_invoice("1234")
+    service_invoice = InvoiceService.find_by_id(model_invoice.id, skip_auth_check=True)
+    assert not hasattr(service_invoice, "payment_account")
+
+    with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
+        with patch("pay_api.services.email_service.send_email_async") as mock_send:
+            send_receipt_notification(service_invoice)
+
+    assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
