@@ -24,6 +24,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.auth import get_account_members, get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, RefundStatus
@@ -171,7 +172,10 @@ def send_receipt_notification(invoice):
     Mail failures are logged and never affect the payment.
     """
     try:
-        payment_account = invoice.payment_account
+        payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+        if not payment_account:
+            current_app.logger.info("No payment account found for invoice %s", invoice.id)
+            return
         auth_account_id = payment_account.auth_account_id if payment_account else None
         unredeemed_link = InvoicePaymentLinkModel.find_unredeemed_for_invoice(invoice.id)
         is_guest = unredeemed_link is not None
