@@ -19,6 +19,10 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 from unittest.mock import patch
 
+import pytest
+from requests.exceptions import HTTPError as RequestsHTTPError
+from werkzeug.exceptions import Forbidden
+
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
@@ -170,6 +174,40 @@ def test_get_payment_link_rejects_unknown_token(session, client, jwt, app):
         "content-type": "application/json",
     }
     rv = client.get("/api/v1/payment-links/does-not-exist", headers=user_headers)
+    assert rv.status_code == 400
+
+
+@pytest.mark.parametrize("auth_exc", [RequestsHTTPError(), Forbidden()])
+def test_get_payment_link_claimed_by_other_account_returns_400(session, client, jwt, app, auth_exc):
+    """GET /payment-links/{token} returns 400 (not 500) when auth check fails for a claimed link.
+
+    Covers both paths: auth-api returning 4xx (RequestsHTTPError) and
+    auth-api returning empty roles causing abort(403) (WerkzeugHTTPException).
+    """
+    _enable_express_checkout()
+    token, _ = _create_express_checkout_invoice(client, jwt)
+
+    # Redeem the link so linked_at is set — GET will now run the auth check.
+    first_account = factory_payment_account(auth_account_id="1111")
+    first_account.save()
+    auth_response = {"account": {"id": "1111", "paymentInfo": {"methodOfPayment": PaymentMethod.DIRECT_PAY.value}}}
+    redeem_headers = {
+        "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
+        "content-type": "application/json",
+        "Account-Id": "1111",
+    }
+    with patch("pay_api.services.payment_link.check_auth", return_value=auth_response):
+        assert client.post(f"/api/v1/payment-links/{token}/redemption", headers=redeem_headers).status_code == 200
+
+    # Simulate the auth check failing for a different caller.
+    get_headers = {
+        "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
+        "content-type": "application/json",
+        "Account-Id": "9999",
+    }
+    with patch("pay_api.services.payment_link.InvoiceService.find_by_id", side_effect=auth_exc):
+        rv = client.get(f"/api/v1/payment-links/{token}", headers=get_headers)
+
     assert rv.status_code == 400
 
 
