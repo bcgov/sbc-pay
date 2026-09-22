@@ -2475,7 +2475,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/Jxio/sbc-pay.git"
 reference = "34532-attachment"
-resolved_reference = "f4099a1e630beda6d96f76dc1f41dfbd46ad1aeb"
+resolved_reference = "ab9c9586cb91fdbf702e9d3d71c363f9b387956f"
 subdirectory = "pay-api"
 
 [[package]]
