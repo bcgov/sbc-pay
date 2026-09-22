@@ -219,9 +219,19 @@ def _save_payment(  # pylint: disable=too-many-arguments
     payment.payment_system_code = pay_service.get_payment_system_code()
     payment.invoice_number = inv_number
     payment.invoice_amount = invoice_amount
-    if payment_account is None and current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
-        current_app.logger.warning("Payment account not found for invoice number %s skipping creation", inv_number)
-        return
+    if payment_account is None:
+        if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
+            current_app.logger.warning("Payment account not found for invoice number %s skipping creation", inv_number)
+            return
+        # Without this the failure surfaces as an AttributeError on the line below, which says
+        # nothing about which row is at fault.
+        raise Exception(  # pylint: disable=broad-exception-raised
+            f"No payment account found for CFS account {_get_row_value(row, Column.CUSTOMER_ACC)}. "
+            f"Record type: {_get_row_value(row, Column.RECORD_TYPE)}, "
+            f"source transaction: {receipt_number}, invoice number: {inv_number}. "
+            "The CFS account either does not exist, or was not in ACTIVE/FREEZE/INACTIVE status "
+            "(for example PENDING_PAD_ACTIVATION) when the file was processed."
+        )
     payment.payment_account_id = payment_account.id
     payment.payment_date = payment_date
     payment.paid_amount = paid_amount
@@ -992,20 +1002,7 @@ def _get_payment_account(row) -> PaymentAccountModel:
     )
     if not all(payment_account.id == payment_accounts[0].id for payment_account in payment_accounts):
         raise Exception("Multiple unique payment accounts for cfs_account.")  # pylint: disable=broad-exception-raised
-    if not payment_accounts:
-        # Every caller dereferences the result, so returning None surfaces as an opaque
-        # AttributeError that says nothing about which row is at fault. Name the row instead.
-        if current_app.config.get("SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT"):
-            return None
-        raise Exception(  # pylint: disable=broad-exception-raised
-            f"No payment account found for CFS account {account_number}. "
-            f"Record type: {_get_row_value(row, Column.RECORD_TYPE)}, "
-            f"source transaction: {_get_row_value(row, Column.SOURCE_TXN_NO)}, "
-            f"target transaction: {_get_row_value(row, Column.TARGET_TXN_NO)}. "
-            "The CFS account either does not exist, or is not in ACTIVE/FREEZE/INACTIVE status "
-            "(for example PENDING_PAD_ACTIVATION) at the time the file was processed."
-        )
-    return payment_accounts[0]
+    return payment_accounts[0] if payment_accounts else None
 
 
 def _validate_account(inv: InvoiceModel, row: dict[str, str]):
