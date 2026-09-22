@@ -14,6 +14,7 @@
 
 """Tests for Email Service."""
 
+import base64
 import json
 from unittest.mock import patch
 
@@ -131,3 +132,58 @@ def test_receipt_notification_accepts_the_invoice_service_object(session, app):
             send_receipt_notification(service_invoice)
 
     assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
+
+
+def test_receipt_notification_attaches_the_receipt_pdf(session, app):
+    """A settled invoice ships the receipt, which is what the email body promises."""
+    invoice = _paid_invoice("1234")
+
+    with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
+        with patch("pay_api.services.email_service.ReceiptService.create_receipt", return_value=[b"%PDF-", b"fake"]):
+            with patch("pay_api.services.email_service.send_email_async") as mock_send:
+                send_receipt_notification(invoice)
+
+    attachments = mock_send.call_args.args[3]
+    assert base64.b64decode(attachments[0]["fileBytes"]) == b"%PDF-fake"
+    # notify-api's AttachmentRequest contract — a wrong key is silently dropped.
+    assert attachments[0] == {
+        "fileName": f"bcregistry-receipt-{invoice.id}.pdf",
+        "fileBytes": attachments[0]["fileBytes"],
+        "attachOrder": "1",
+    }
+
+
+def test_receipt_notification_still_sends_when_the_receipt_cannot_be_built(session, app):
+    """report-api failing must not cost the payer their confirmation email."""
+    invoice = _paid_invoice("1234")
+
+    with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
+        with patch(
+            "pay_api.services.email_service.ReceiptService.create_receipt", side_effect=Exception("report-api down")
+        ):
+            with patch("pay_api.services.email_service.send_email_async") as mock_send:
+                send_receipt_notification(invoice)
+
+    assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
+    assert mock_send.call_args.args[3] == []
+
+
+def test_receipt_notification_leaves_the_pending_decision_to_the_receipt_service(session, app):
+    """Whether a pending invoice has a receipt is the receipt service's call, not ours.
+
+    It refuses an unpaid card invoice and renders a "payment pending" receipt for PAD and
+    EFT, so this module asks unconditionally and attaches whatever comes back.
+    """
+    invoice = _paid_invoice("1234")
+    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+    invoice.save()
+
+    with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
+        with patch(
+            "pay_api.services.email_service.ReceiptService.create_receipt", return_value=[b"%PDF-pending"]
+        ) as mock_receipt:
+            with patch("pay_api.services.email_service.send_email_async") as mock_send:
+                send_receipt_notification(invoice)
+
+    mock_receipt.assert_called_once()
+    assert base64.b64decode(mock_send.call_args.args[3][0]["fileBytes"]) == b"%PDF-pending"

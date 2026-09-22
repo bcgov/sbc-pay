@@ -14,6 +14,7 @@
 
 """This manages all of the email notification service."""
 
+import base64
 import os
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
@@ -27,6 +28,7 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.auth import get_account_members, get_service_account_token
 from pay_api.services.oauth_service import OAuthService
+from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, RefundStatus
 from pay_api.utils.serializable import Serializable
 from pay_api.utils.util import get_local_formatted_date
@@ -34,7 +36,20 @@ from pay_api.utils.util import get_local_formatted_date
 _executor = ThreadPoolExecutor(max_workers=5)
 
 
-def send_email(recipients: list[str], subject: str, body: str):
+def _pdf_attachment(file_name: str, content: bytes, order: int = 1) -> dict:
+    """Shape a PDF into notify-api's attachment contract.
+
+    See `AttachmentRequest` in bcros-common/notify-service: `fileName` and `attachOrder`
+    are required, and it accepts either `fileBytes` or `fileUrl` — we inline the bytes.
+    """
+    return {
+        "fileName": file_name,
+        "fileBytes": base64.b64encode(content).decode("utf-8"),
+        "attachOrder": str(order),
+    }
+
+
+def send_email(recipients: list[str], subject: str, body: str, attachments: list[dict] | None = None):
     """Send the email notification."""
     # Note if we send HTML in the body, we aren't sending through GCNotify,
     # ideally we'd like to send through GCNotify.
@@ -45,9 +60,12 @@ def send_email(recipients: list[str], subject: str, body: str):
     success = False
 
     for recipient in recipients:
+        content = {"subject": subject, "body": body}
+        if attachments:
+            content["attachments"] = attachments
         notify_body = {
             "recipients": recipient,
-            "content": {"subject": subject, "body": body},
+            "content": content,
         }
 
         try:
@@ -68,35 +86,36 @@ def send_email(recipients: list[str], subject: str, body: str):
     return success
 
 
-def send_email_async(recipients: list[str], subject: str, body: str):
+def send_email_async(recipients: list[str], subject: str, body: str, attachments: list[dict] | None = None):
     """Send the email notification asynchronously using ThreadExecutor.
 
     Args:
         recipients: List of email recipients
         subject: Email subject
         body: Email body
+        attachments: Optional notify-api attachment dicts
 
     Returns:
         Future object representing the asynchronous email sending task
     """
     app = current_app._get_current_object()
 
-    def _send_email_task(recipients_list, email_subject, email_body):
+    def _send_email_task(recipients_list, email_subject, email_body, email_attachments):
         """Send the email notification in background thread."""
         if has_request_context():
 
             @copy_current_request_context
             def _inner():
-                return send_email(recipients_list, email_subject, email_body)
+                return send_email(recipients_list, email_subject, email_body, email_attachments)
         else:
 
             def _inner():
                 with app.app_context():
-                    return send_email(recipients_list, email_subject, email_body)
+                    return send_email(recipients_list, email_subject, email_body, email_attachments)
 
         return _inner()
 
-    return _executor.submit(_send_email_task, recipients, subject, body)
+    return _executor.submit(_send_email_task, recipients, subject, body, attachments)
 
 
 @define
@@ -157,6 +176,29 @@ def _render_receipt_notification_template(params: dict) -> str:
     templates_dir = os.path.join(project_root_dir, "templates")
     env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
     return env.get_template("receipt_notification.html").render(params)
+
+
+def _receipt_attachment(invoice) -> list[dict]:
+    """Return the receipt PDF as a notify-api attachment, or [] if one can't be produced.
+
+    Whether an invoice has a receipt yet is the receipt service's call, not this module's —
+    it refuses an unpaid card invoice and renders a "payment pending" receipt for PAD and
+    EFT. Either way this stays defensive: an email without the receipt beats no email, and
+    the body already tells the reader a pending receipt will follow.
+    """
+    try:
+        pdf = b"".join(
+            ReceiptService.create_receipt(
+                invoice.id,
+                {"filingDateTime": get_local_formatted_date(invoice.created_on)},
+                skip_auth_check=True,
+                use_service_account=True,
+            )
+        )
+        return [_pdf_attachment(f"bcregistry-receipt-{invoice.id}.pdf", pdf)]
+    except Exception:  # NOQA # pylint: disable=broad-except
+        current_app.logger.exception("Could not build the receipt attachment for invoice %s", invoice.id)
+        return []
 
 
 def send_receipt_notification(invoice):
@@ -230,7 +272,12 @@ def send_receipt_notification(invoice):
                 ),
             }
         )
-        send_email_async(recipients, f"Payment received for invoice {invoice.id}", html_body)
+        send_email_async(
+            recipients,
+            f"Payment received for invoice {invoice.id}",
+            html_body,
+            _receipt_attachment(invoice),
+        )
     except Exception:  # NOQA # pylint: disable=broad-except
         current_app.logger.exception("Receipt notification failed for invoice %s", getattr(invoice, "id", None))
 
