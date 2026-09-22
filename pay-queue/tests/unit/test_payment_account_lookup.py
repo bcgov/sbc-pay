@@ -14,21 +14,29 @@
 
 """Unit tests for the CFS account lookup in payment reconciliations."""
 
+from datetime import UTC, datetime
+
 import pytest
 
 from pay_api.models import CfsAccount, PaymentAccount
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
-from pay_queue.services.payment_reconciliations import _get_payment_account
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentStatus
+from pay_queue.services.payment_reconciliations import (
+    _get_payment_account,
+    _get_payment_by_inv_number_and_status,
+    _save_payment,
+)
 
 CFS_ACCOUNT_NUMBER = "4101"
+INVOICE_NUMBER = "REGT00000001"
+SOURCE_TXN_NUMBER = "12345678"
 
 
 def _row(account_number: str) -> dict[str, str]:
     """Build a settlement row the way _build_source_txns does - lower cased keys."""
     return {
-        "record type": "BOLP",
-        "source transaction number": "12345678",
-        "target transaction number": "REG00000001",
+        "record type": "PADP",
+        "source transaction number": SOURCE_TXN_NUMBER,
+        "target transaction number": INVOICE_NUMBER,
         "customer account": account_number,
     }
 
@@ -51,6 +59,20 @@ def _create_account(status: str, account_number: str = CFS_ACCOUNT_NUMBER) -> Pa
     return account
 
 
+def _save_payment_for(account_number: str):
+    """Call _save_payment for a settlement row pointing at the given CFS account."""
+    _save_payment(
+        datetime.now(tz=UTC),
+        INVOICE_NUMBER,
+        10,
+        10,
+        _row(account_number),
+        PaymentStatus.COMPLETED.value,
+        PaymentMethod.PAD.value,
+        SOURCE_TXN_NUMBER,
+    )
+
+
 @pytest.mark.parametrize(
     "status",
     [
@@ -59,27 +81,11 @@ def _create_account(status: str, account_number: str = CFS_ACCOUNT_NUMBER) -> Pa
         CfsAccountStatus.INACTIVE.value,
     ],
 )
-def test_returns_account_for_matchable_status(session, status):
-    """Assert the account is returned for every status the lookup accepts."""
+def test_lookup_returns_account_for_matchable_status(session, status):
+    """Assert the lookup accepts every status a settled invoice can legitimately be in."""
     account = _create_account(status)
 
     assert _get_payment_account(_row(CFS_ACCOUNT_NUMBER)).id == account.id
-
-
-def test_raises_naming_the_row_when_cfs_account_is_unknown(session):
-    """Assert the error identifies the row, rather than surfacing as an AttributeError."""
-    _create_account(CfsAccountStatus.ACTIVE.value)
-
-    with pytest.raises(Exception) as excinfo:
-        _get_payment_account(_row("999999"))
-
-    message = str(excinfo.value)
-    assert "999999" in message
-    assert "BOLP" in message
-    assert "12345678" in message
-    assert "REG00000001" in message
-    # The likely cause is spelled out, so the alert email is actionable on its own.
-    assert "PENDING_PAD_ACTIVATION" in message
 
 
 @pytest.mark.parametrize(
@@ -89,22 +95,54 @@ def test_raises_naming_the_row_when_cfs_account_is_unknown(session):
         CfsAccountStatus.PENDING_PAD_ACTIVATION.value,
     ],
 )
-def test_raises_when_cfs_account_is_in_a_transient_status(session, status):
-    """Assert a transient status fails the lookup rather than silently matching.
+def test_lookup_returns_none_for_transient_status(session, status):
+    """Assert a transient status does not match.
 
     This is the real-world trigger - an account sitting in PENDING_PAD_ACTIVATION when the
     settlement file is processed, which self-heals once the activation job runs.
     """
     _create_account(status)
 
+    assert _get_payment_account(_row(CFS_ACCOUNT_NUMBER)) is None
+
+
+def test_save_payment_raises_naming_the_row(session):
+    """Assert the error identifies the row, rather than surfacing as an AttributeError.
+
+    _save_payment runs inside the try/except that builds the reconciliation failure email,
+    so whatever is raised here is what lands in that email.
+    """
+    _create_account(CfsAccountStatus.ACTIVE.value)
+
     with pytest.raises(Exception) as excinfo:
-        _get_payment_account(_row(CFS_ACCOUNT_NUMBER))
+        _save_payment_for("999999")
 
-    assert CFS_ACCOUNT_NUMBER in str(excinfo.value)
+    message = str(excinfo.value)
+    assert "999999" in message
+    assert "PADP" in message
+    assert SOURCE_TXN_NUMBER in message
+    assert INVOICE_NUMBER in message
+    # The likely cause is spelled out, so the alert email is actionable on its own.
+    assert "PENDING_PAD_ACTIVATION" in message
 
 
-def test_returns_none_instead_of_raising_in_test_environments(session, app, monkeypatch):
+def test_save_payment_skips_in_test_environments(session, app, monkeypatch):
     """Assert SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT keeps the old lenient behaviour."""
     monkeypatch.setitem(app.config, "SKIP_EXCEPTION_FOR_TEST_ENVIRONMENT", True)
 
-    assert _get_payment_account(_row("999999")) is None
+    _save_payment_for("999999")
+    session.commit()
+
+    assert _get_payment_by_inv_number_and_status(INVOICE_NUMBER, PaymentStatus.COMPLETED.value) is None
+
+
+def test_save_payment_creates_record_when_account_matches(session):
+    """Assert the happy path still writes a payment row."""
+    account = _create_account(CfsAccountStatus.ACTIVE.value)
+
+    _save_payment_for(CFS_ACCOUNT_NUMBER)
+    session.commit()
+
+    payment = _get_payment_by_inv_number_and_status(INVOICE_NUMBER, PaymentStatus.COMPLETED.value)
+    assert payment is not None
+    assert payment.payment_account_id == account.id
