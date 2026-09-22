@@ -16,12 +16,20 @@
 
 import base64
 import json
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
-from pay_api.services.email_service import send_email, send_receipt_notification
+from pay_api.models import Receipt as ReceiptModel
+from pay_api.services.email_service import _send_receipt_notification, send_email
 from pay_api.services.invoice import Invoice as InvoiceService
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.enums import (
+    AuthHeaderType,
+    ContentType,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+    PaymentMethod,
+)
 from tests.utilities.base_test import factory_invoice, factory_invoice_reference, factory_payment_account
 
 
@@ -56,11 +64,14 @@ ADMIN_MEMBERS = {
 }
 
 
-def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False, link_email: str = None):
+def _paid_invoice(
+    auth_account_id: str, unredeemed_link: bool = False, link_email: str = None, payment_method: str = None
+):
     """Create a paid invoice, optionally with an unredeemed payment link."""
     payment_account = factory_payment_account(auth_account_id=auth_account_id)
     payment_account.save()
-    invoice = factory_invoice(payment_account, status_code=InvoiceStatus.PAID.value)
+    kwargs = {"payment_method_code": payment_method} if payment_method else {}
+    invoice = factory_invoice(payment_account, status_code=InvoiceStatus.PAID.value, **kwargs)
     invoice.save()
     factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value).save()
     if unredeemed_link:
@@ -73,8 +84,8 @@ def test_receipt_notification_reaches_admins_and_coordinators(session, app):
     invoice = _paid_invoice("1234")
 
     with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS) as mock_users:
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(invoice)
+        with patch("pay_api.services.email_service.send_email") as mock_send:
+            _send_receipt_notification(invoice.id)
 
     assert mock_users.call_args.kwargs["roles"] == "ADMIN,COORDINATOR"
     assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
@@ -85,8 +96,8 @@ def test_receipt_notification_skipped_when_guest_left_no_email(session, app):
     invoice = _paid_invoice("sa-partner-client", unredeemed_link=True)
 
     with patch("pay_api.services.email_service.get_account_members") as mock_users:
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(invoice)
+        with patch("pay_api.services.email_service.send_email") as mock_send:
+            _send_receipt_notification(invoice.id)
 
     mock_users.assert_not_called()
     mock_send.assert_not_called()
@@ -98,8 +109,8 @@ def test_receipt_notification_skips_members_without_an_email(session, app):
     members = {"members": [{"user": {"contacts": [{}]}}, {"user": {"contacts": [{"email": "owner@example.com"}]}}]}
 
     with patch("pay_api.services.email_service.get_account_members", return_value=members):
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(invoice)
+        with patch("pay_api.services.email_service.send_email") as mock_send:
+            _send_receipt_notification(invoice.id)
 
     assert mock_send.call_args.args[0] == ["owner@example.com"]
 
@@ -109,8 +120,8 @@ def test_receipt_notification_goes_to_the_guest_email(session, app):
     invoice = _paid_invoice("sa-partner-client", unredeemed_link=True, link_email="payer@example.com")
 
     with patch("pay_api.services.email_service.get_account_members") as mock_users:
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(invoice)
+        with patch("pay_api.services.email_service.send_email") as mock_send:
+            _send_receipt_notification(invoice.id)
 
     mock_users.assert_not_called()
     assert mock_send.call_args.args[0] == ["payer@example.com"]
@@ -128,8 +139,8 @@ def test_receipt_notification_accepts_the_invoice_service_object(session, app):
     assert not hasattr(service_invoice, "payment_account")
 
     with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(service_invoice)
+        with patch("pay_api.services.email_service.send_email") as mock_send:
+            _send_receipt_notification(service_invoice.id)
 
     assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
 
@@ -139,9 +150,12 @@ def test_receipt_notification_attaches_the_receipt_pdf(session, app):
     invoice = _paid_invoice("1234")
 
     with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
-        with patch("pay_api.services.email_service.ReceiptService.create_receipt", return_value=[b"%PDF-", b"fake"]):
-            with patch("pay_api.services.email_service.send_email_async") as mock_send:
-                send_receipt_notification(invoice)
+        with patch(
+            "pay_api.services.email_service.ReceiptService.create_receipt",
+            return_value=SimpleNamespace(content=b"%PDF-fake"),
+        ):
+            with patch("pay_api.services.email_service.send_email") as mock_send:
+                _send_receipt_notification(invoice.id)
 
     attachments = mock_send.call_args.args[3]
     assert base64.b64decode(attachments[0]["fileBytes"]) == b"%PDF-fake"
@@ -161,29 +175,43 @@ def test_receipt_notification_still_sends_when_the_receipt_cannot_be_built(sessi
         with patch(
             "pay_api.services.email_service.ReceiptService.create_receipt", side_effect=Exception("report-api down")
         ):
-            with patch("pay_api.services.email_service.send_email_async") as mock_send:
-                send_receipt_notification(invoice)
+            with patch("pay_api.services.email_service.send_email") as mock_send:
+                _send_receipt_notification(invoice.id)
 
     assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
     assert mock_send.call_args.args[3] == []
 
 
-def test_receipt_notification_leaves_the_pending_decision_to_the_receipt_service(session, app):
-    """Whether a pending invoice has a receipt is the receipt service's call, not ours.
+def test_receipt_notification_asks_the_receipt_service_and_attaches_what_it_returns(session, app):
+    """The pending decision belongs to the receipt service, so let it make one for real.
 
-    It refuses an unpaid card invoice and renders a "payment pending" receipt for PAD and
-    EFT, so this module asks unconditionally and attaches whatever comes back.
+    Only the report-api hop is mocked here: `create_receipt` itself runs, and renders a
+    "payment pending" receipt for a PAD invoice that has not settled.
     """
-    invoice = _paid_invoice("1234")
+    invoice = _paid_invoice("1234", payment_method=PaymentMethod.PAD.value)
     invoice.invoice_status_code = InvoiceStatus.APPROVED.value
     invoice.save()
 
     with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
-        with patch(
-            "pay_api.services.email_service.ReceiptService.create_receipt", return_value=[b"%PDF-pending"]
-        ) as mock_receipt:
-            with patch("pay_api.services.email_service.send_email_async") as mock_send:
-                send_receipt_notification(invoice)
+        with patch("pay_api.services.receipt.get_service_account_token", return_value="token"):  # noqa: S106
+            with patch(
+                "pay_api.services.receipt.OAuthService.post", return_value=SimpleNamespace(content=b"%PDF-pend")
+            ):
+                with patch("pay_api.services.email_service.send_email") as mock_send:
+                    _send_receipt_notification(invoice.id)
 
-    mock_receipt.assert_called_once()
-    assert base64.b64decode(mock_send.call_args.args[3][0]["fileBytes"]) == b"%PDF-pending"
+    assert base64.b64decode(mock_send.call_args.args[3][0]["fileBytes"]) == b"%PDF-pend"
+
+
+def test_receipt_notification_sends_without_an_attachment_when_there_is_no_receipt(session, app):
+    """An unpaid card invoice has no receipt — the receipt service refuses, we send anyway."""
+    invoice = _paid_invoice("1234")
+    invoice.invoice_status_code = InvoiceStatus.CREATED.value
+    invoice.save()
+    ReceiptModel.query.filter_by(invoice_id=invoice.id).delete()
+
+    with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
+        with patch("pay_api.services.email_service.send_email") as mock_send:
+            _send_receipt_notification(invoice.id)
+
+    assert mock_send.call_args.args[3] == []

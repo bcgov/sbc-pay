@@ -23,6 +23,7 @@ from attrs import define
 from flask import copy_current_request_context, current_app, has_request_context
 from jinja2 import Environment, FileSystemLoader
 
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -187,14 +188,12 @@ def _receipt_attachment(invoice) -> list[dict]:
     the body already tells the reader a pending receipt will follow.
     """
     try:
-        pdf = b"".join(
-            ReceiptService.create_receipt(
-                invoice.id,
-                {"filingDateTime": get_local_formatted_date(invoice.created_on)},
-                skip_auth_check=True,
-                use_service_account=True,
-            )
-        )
+        pdf = ReceiptService.create_receipt(
+            invoice.id,
+            {"filingDateTime": get_local_formatted_date(invoice.created_on)},
+            skip_auth_check=True,
+            use_service_account=True,
+        ).content
         return [_pdf_attachment(f"bcregistry-receipt-{invoice.id}.pdf", pdf)]
     except Exception:  # NOQA # pylint: disable=broad-except
         current_app.logger.exception("Could not build the receipt attachment for invoice %s", invoice.id)
@@ -202,6 +201,27 @@ def _receipt_attachment(invoice) -> list[dict]:
 
 
 def send_receipt_notification(invoice):
+    """Queue the receipt notification for the invoice; returns without doing any of it.
+
+    Everything below — the auth-api member lookup, rendering the receipt through report-api,
+    and the notify-api call — happens on a worker thread. Callers are on the PayBC return
+    path and the reconciliation loop, and none of that work should sit in front of them.
+
+    Only the invoice id crosses the thread boundary. The row is re-read there, so the caller
+    must have committed: a receipt still pending in the caller's session is invisible to the
+    worker's.
+    """
+    invoice_id = invoice.id
+    app = current_app._get_current_object()  # pylint: disable=protected-access
+
+    def _task():
+        with app.app_context():
+            _send_receipt_notification(invoice_id)
+
+    return _executor.submit(_task)
+
+
+def _send_receipt_notification(invoice_id: int):
     """Email the account's admins and coordinators after a payment settles.
 
     Called from both pay-api and pay-queue — card payments settle on the PayBC return,
@@ -214,6 +234,10 @@ def send_receipt_notification(invoice):
     Mail failures are logged and never affect the payment.
     """
     try:
+        invoice = InvoiceModel.find_by_id(invoice_id)
+        if not invoice:
+            current_app.logger.info("Invoice %s is gone; nothing to notify about.", invoice_id)
+            return
         payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         if not payment_account:
             current_app.logger.info("No payment account found for invoice %s", invoice.id)
@@ -272,14 +296,14 @@ def send_receipt_notification(invoice):
                 ),
             }
         )
-        send_email_async(
+        send_email(
             recipients,
             f"Payment received for invoice {invoice.id}",
             html_body,
             _receipt_attachment(invoice),
         )
     except Exception:  # NOQA # pylint: disable=broad-except
-        current_app.logger.exception("Receipt notification failed for invoice %s", getattr(invoice, "id", None))
+        current_app.logger.exception("Receipt notification failed for invoice %s", invoice_id)
 
 
 @define
