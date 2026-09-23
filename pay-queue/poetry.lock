@@ -2475,7 +2475,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/Jxio/sbc-pay.git"
 reference = "34532-attachment"
-resolved_reference = "96a4e67b8f0d9fe1b4b62cf3a4a3baa2685199bc"
+resolved_reference = "6aba3a83142b52c9184fd48f27a8958dd9d82a4b"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3027,7 +3027,7 @@ jaeger-client = "*"
 type = "git"
 url = "https://github.com/bcgov/sbc-common-components.git"
 reference = "master"
-resolved_reference = "cc91b7b54797f24f2dd063910477064c4d67fe0a"
+resolved_reference = "da7c83ab2c85111e88d2f5493ee99e56c5aa4345"
 subdirectory = "python"
 
 [[package]]
