@@ -371,6 +371,7 @@ def _process_file_content(
 
         # Commit the transaction and process next row.
         db.session.commit()
+        _notify_settled_invoices()
 
     # Create payment records for lines other than PAD
     try:
@@ -632,6 +633,16 @@ def _process_credit_on_invoices(row, error_messages: list[dict[str, any]]) -> bo
     return has_errors
 
 
+_PENDING_RECEIPTS = "receipt_notifications"
+
+
+def _notify_settled_invoices():
+    """Send receipt notifications for the invoices committed by the last commit."""
+    for invoice_id in db.session.info.pop(_PENDING_RECEIPTS, []):
+        if invoice := InvoiceModel.find_by_id(invoice_id):
+            send_receipt_notification(invoice)
+
+
 def _process_paid_invoices(inv_references, row):
     """Process PAID invoices.
 
@@ -669,9 +680,8 @@ def _process_paid_invoices(inv_references, row):
         receipt.invoice_id = inv.id
         receipt.receipt_number = receipt_number
         db.session.add(receipt)
-        # OB and PAD settle here rather than in pay-api, so this is where their payers get
-        # told.
-        send_receipt_notification(inv)
+        # Hold the id until the caller commits, so a row that rolls back never gets a receipt.
+        db.session.info.setdefault(_PENDING_RECEIPTS, []).append(inv.id)
         # Publish to the queue if it's an Online Banking payment. (Regular PAD publishes at
         # create-time via PadService.complete_post_invoice; nothing extra here for it.)
         # Express-checkout PAD (identified by presence of an invoice_payment_links row) has its

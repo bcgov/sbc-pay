@@ -14,7 +14,7 @@
 
 """This manages all of the email notification service."""
 
-import base64
+import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
@@ -22,35 +22,24 @@ from decimal import Decimal
 from attrs import define
 from flask import copy_current_request_context, current_app, has_request_context
 from jinja2 import Environment, FileSystemLoader
+from sbc_common_components.utils.enums import QueueMessageTypes
 
-from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.services.auth import get_account_members, get_service_account_token
+from pay_api.services import gcp_queue_publisher
+from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.receipt import Receipt as ReceiptService
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, RefundStatus
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, QueueSources, RefundStatus
+from pay_api.utils.json_util import DecimalEncoder
 from pay_api.utils.serializable import Serializable
 from pay_api.utils.util import get_local_formatted_date
 
 _executor = ThreadPoolExecutor(max_workers=5)
 
 
-def _pdf_attachment(file_name: str, content: bytes, order: int = 1) -> dict:
-    """Shape a PDF into notify-api's attachment contract.
-
-    See `AttachmentRequest` in bcros-common/notify-service: `fileName` and `attachOrder`
-    are required, and it accepts either `fileBytes` or `fileUrl` — we inline the bytes.
-    """
-    return {
-        "fileName": file_name,
-        "fileBytes": base64.b64encode(content).decode("utf-8"),
-        "attachOrder": str(order),
-    }
-
-
-def send_email(recipients: list[str], subject: str, body: str, attachments: list[dict] | None = None):
+def send_email(recipients: list[str], subject: str, body: str):
     """Send the email notification."""
     # Note if we send HTML in the body, we aren't sending through GCNotify,
     # ideally we'd like to send through GCNotify.
@@ -61,12 +50,9 @@ def send_email(recipients: list[str], subject: str, body: str, attachments: list
     success = False
 
     for recipient in recipients:
-        content = {"subject": subject, "body": body}
-        if attachments:
-            content["attachments"] = attachments
         notify_body = {
             "recipients": recipient,
-            "content": content,
+            "content": {"subject": subject, "body": body},
         }
 
         try:
@@ -87,36 +73,35 @@ def send_email(recipients: list[str], subject: str, body: str, attachments: list
     return success
 
 
-def send_email_async(recipients: list[str], subject: str, body: str, attachments: list[dict] | None = None):
+def send_email_async(recipients: list[str], subject: str, body: str):
     """Send the email notification asynchronously using ThreadExecutor.
 
     Args:
         recipients: List of email recipients
         subject: Email subject
         body: Email body
-        attachments: Optional notify-api attachment dicts
 
     Returns:
         Future object representing the asynchronous email sending task
     """
     app = current_app._get_current_object()
 
-    def _send_email_task(recipients_list, email_subject, email_body, email_attachments):
+    def _send_email_task(recipients_list, email_subject, email_body):
         """Send the email notification in background thread."""
         if has_request_context():
 
             @copy_current_request_context
             def _inner():
-                return send_email(recipients_list, email_subject, email_body, email_attachments)
+                return send_email(recipients_list, email_subject, email_body)
         else:
 
             def _inner():
                 with app.app_context():
-                    return send_email(recipients_list, email_subject, email_body, email_attachments)
+                    return send_email(recipients_list, email_subject, email_body)
 
         return _inner()
 
-    return _executor.submit(_send_email_task, recipients, subject, body, attachments)
+    return _executor.submit(_send_email_task, recipients, subject, body)
 
 
 @define
@@ -170,107 +155,45 @@ def _render_credit_add_notification_template(params: dict) -> str:
     return template.render(params)
 
 
-def _render_receipt_notification_template(params: dict) -> str:
-    """Render the post-payment receipt notification template."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root_dir = os.path.dirname(current_dir)
-    templates_dir = os.path.join(project_root_dir, "templates")
-    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-    return env.get_template("receipt_notification.html").render(params)
-
-
-def _receipt_attachment(invoice) -> list[dict]:
-    """Return the receipt PDF as a notify-api attachment, or [] if one can't be produced.
-
-    Whether an invoice has a receipt yet is the receipt service's call, not this module's —
-    it refuses an unpaid card invoice and renders a "payment pending" receipt for PAD and
-    EFT. Either way this stays defensive: an email without the receipt beats no email, and
-    the body already tells the reader a pending receipt will follow.
-    """
+def _receipt_template_vars(invoice) -> dict | None:
+    """Return the report-api vars for the receipt PDF, or None when there is no receipt yet."""
     try:
-        pdf = ReceiptService.create_receipt(
-            invoice.id,
-            {"filingDateTime": get_local_formatted_date(invoice.created_on)},
-            skip_auth_check=True,
-            use_service_account=True,
-        ).content
-        return [_pdf_attachment(f"bcregistry-receipt-{invoice.id}.pdf", pdf)]
+        filing_data = {"filingDateTime": get_local_formatted_date(invoice.created_on)}
+        details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True)
+        # The queue encodes with plain json, which can't take the Decimals in here.
+        return json.loads(json.dumps({**details, **filing_data}, cls=DecimalEncoder))
     except Exception:  # NOQA # pylint: disable=broad-except
-        current_app.logger.exception("Could not build the receipt attachment for invoice %s", invoice.id)
-        return []
+        current_app.logger.exception("Could not build the receipt vars for invoice %s", invoice.id)
+        return None
 
 
 def send_receipt_notification(invoice):
-    """Queue the receipt notification for the invoice; returns without doing any of it.
-
-    Everything below — the auth-api member lookup, rendering the receipt through report-api,
-    and the notify-api call — happens on a worker thread. Callers are on the PayBC return
-    path and the reconciliation loop, and none of that work should sit in front of them.
-
-    Only the invoice id crosses the thread boundary. The row is re-read there, so the caller
-    must have committed: a receipt still pending in the caller's session is invisible to the
-    worker's.
-    """
-    invoice_id = invoice.id
-    app = current_app._get_current_object()  # pylint: disable=protected-access
-
-    def _task():
-        with app.app_context():
-            _send_receipt_notification(invoice_id)
-
-    return _executor.submit(_task)
-
-
-def _send_receipt_notification(invoice_id: int):
-    """Email the account's admins and coordinators after a payment settles.
+    """Ask account-mailer to email the receipt after a payment settles.
 
     Called from both pay-api and pay-queue — card payments settle on the PayBC return,
-    OB and PAD later in reconciliation.
+    OB and PAD later in reconciliation. Only database reads happen here; the recipient
+    lookup, PDF render and send run in account-mailer.
 
-    An express-checkout invoice whose link nobody claimed has no account and no admins, so
-    it goes to the address the partner supplied at invoice creation, and the template drops
-    the account rows. Without that address there is nobody to tell.
+    An express-checkout invoice whose link nobody claimed has no account, so it goes to the
+    address the partner supplied at invoice creation. Without that address there is nobody
+    to tell.
 
-    Mail failures are logged and never affect the payment.
+    Failures are logged and never affect the payment.
     """
     try:
-        invoice = InvoiceModel.find_by_id(invoice_id)
-        if not invoice:
-            current_app.logger.info("Invoice %s is gone; nothing to notify about.", invoice_id)
-            return
         payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         if not payment_account:
             current_app.logger.info("No payment account found for invoice %s", invoice.id)
             return
-        auth_account_id = payment_account.auth_account_id if payment_account else None
         unredeemed_link = InvoicePaymentLinkModel.find_unredeemed_for_invoice(invoice.id)
-        is_guest = unredeemed_link is not None
-
-        if is_guest:
-            recipients = [unredeemed_link.email] if unredeemed_link.email else []
-            account_name_with_branch = ""
-        elif not auth_account_id:
-            return
+        if unredeemed_link:
+            if not unredeemed_link.email:
+                current_app.logger.info("No one to send the receipt for invoice %s to; skipping.", invoice.id)
+                return
+            recipient = {"emailAddresses": unredeemed_link.email}
+        elif payment_account.auth_account_id:
+            recipient = {"accountId": payment_account.auth_account_id}
         else:
-            members = (
-                get_account_members(auth_account_id, use_service_account=True, roles="ADMIN,COORDINATOR").get("members")
-                or []
-            )
-            recipients = [
-                email
-                for member in members
-                if (user := member.get("user"))
-                and (contacts := user.get("contacts"))
-                and (email := contacts[0].get("email"))
-            ]
-            account_name = payment_account.name or ""
-            branch_name = payment_account.branch_name
-            account_name_with_branch = (
-                f"{account_name}-{branch_name}" if branch_name and branch_name not in account_name else account_name
-            )
-
-        if not recipients:
-            current_app.logger.info("No one to send the receipt for invoice %s to; skipping.", invoice.id)
             return
 
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
@@ -280,30 +203,25 @@ def _send_receipt_notification(invoice_id: int):
         transaction_detail = ", ".join(
             line.description for line in (invoice.payment_line_items or []) if line.description
         )
-        html_body = _render_receipt_notification_template(
-            {
-                "amount": f"{float(invoice.total):.2f}",
-                "account_number": "" if is_guest else auth_account_id,
-                "account_name_with_branch": account_name_with_branch,
-                "invoice_number": invoice_reference.invoice_number if invoice_reference else "",
-                "payment_method": invoice.payment_method_code,
-                "transaction_detail": transaction_detail,
-                "transaction_date": get_local_formatted_date(invoice.payment_date or invoice.created_on),
-                "transactions_url": (
-                    ""
-                    if is_guest
-                    else f"{current_app.config.get('AUTH_WEB_URL')}/account/{auth_account_id}/settings/transactions"
-                ),
-            }
-        )
-        send_email(
-            recipients,
-            f"Payment received for invoice {invoice.id}",
-            html_body,
-            _receipt_attachment(invoice),
+        gcp_queue_publisher.publish_to_queue(
+            gcp_queue_publisher.QueueMessage(
+                source=QueueSources.PAY_API.value,
+                message_type=QueueMessageTypes.PAYMENT_RECEIPT.value,
+                payload={
+                    **recipient,
+                    "invoiceId": invoice.id,
+                    "amount": f"{float(invoice.total):.2f}",
+                    "invoiceNumber": invoice_reference.invoice_number if invoice_reference else "",
+                    "paymentMethod": invoice.payment_method_code,
+                    "transactionDetail": transaction_detail,
+                    "transactionDate": get_local_formatted_date(invoice.payment_date or invoice.created_on),
+                    "templateVars": _receipt_template_vars(invoice),
+                },
+                topic=current_app.config.get("ACCOUNT_MAILER_TOPIC"),
+            )
         )
     except Exception:  # NOQA # pylint: disable=broad-except
-        current_app.logger.exception("Receipt notification failed for invoice %s", invoice_id)
+        current_app.logger.exception("Receipt notification failed for invoice %s", getattr(invoice, "id", None))
 
 
 @define
