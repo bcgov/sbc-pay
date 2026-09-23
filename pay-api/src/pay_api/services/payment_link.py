@@ -24,6 +24,7 @@ from datetime import UTC, datetime, timedelta
 from flask import current_app
 from nanoid import generate as nanoid_generate
 from requests.exceptions import HTTPError as RequestsHTTPError
+from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
@@ -159,10 +160,12 @@ class PaymentLinkService:
         skip_auth = link.linked_at is None
         try:
             invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=skip_auth)
-        except RequestsHTTPError as err:
-            # auth-api denied access — the caller's JWT doesn't belong to the account that
-            # claimed this link. Surface as INVALID_REQUEST so the route returns 400 rather
-            # than letting the HTTPError and a 500.
+        except (RequestsHTTPError, WerkzeugHTTPException) as err:
+            # Two paths both mean the caller has no access to the claimed link:
+            # 1. auth-api returns 4xx → RestService re-raises requests.HTTPError
+            # 2. auth-api returns 200/empty roles → abort(403) → werkzeug Forbidden
+            #    (handle_403_error then crashes on user_name[:5] with no @jwt.requires_auth)
+            # Convert both to INVALID_REQUEST so the route returns 400, not 500.
             raise BusinessException(Error.INVALID_REQUEST) from err
         # This response reaches anyone holding the link, signed in or not — don't hand
         # them the adhoc SA account the unredeemed invoice is parked on.
