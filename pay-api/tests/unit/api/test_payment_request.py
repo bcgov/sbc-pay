@@ -865,7 +865,7 @@ def test_payment_creation_with_service_fees(session, client, jwt, app):
 
 
 def test_payment_creation_with_service_fees_for_zero_fees(session, client, jwt, app):
-    """Assert that the service fee is zero if it's a free filing."""
+    """Assert that the service fee still applies to a zero dollar filing."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
 
@@ -876,7 +876,7 @@ def test_payment_creation_with_service_fees_for_zero_fees(session, client, jwt, 
     )
     assert rv.status_code == 201
     assert rv.json.get("_links") is not None
-    assert rv.json.get("serviceFees") == 0
+    assert rv.json.get("serviceFees") == 1.5
 
     assert schema_utils.validate(rv.json, "invoice")[0]
 
