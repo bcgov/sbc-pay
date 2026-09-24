@@ -275,6 +275,32 @@ def test_redeem_rejects_second_account(session, client, jwt, app):
     assert _redeem_as("2222").status_code == 400
 
 
+def test_redeem_rejects_nsf_account(session, client, jwt, app):
+    """Redemption is blocked, with the specific PAD_CURRENTLY_NSF type, for an NSF-suspended account."""
+    _enable_express_checkout()
+    target_account = factory_payment_account(
+        auth_account_id="9999",
+        payment_method_code=PaymentMethod.PAD.value,
+        has_nsf_invoices=datetime.now(tz=UTC),
+    )
+    target_account.save()
+    token, _ = _create_express_checkout_invoice(client, jwt)
+
+    user_headers = {
+        "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
+        "content-type": "application/json",
+        "Account-Id": "9999",
+    }
+    auth_response = {"account": {"id": "9999", "paymentInfo": {"methodOfPayment": PaymentMethod.PAD.value}}}
+    with patch("pay_api.services.payment_link.check_auth", return_value=auth_response):
+        rv = client.post(f"/api/v1/payment-links/{token}/redemption", headers=user_headers)
+
+    assert rv.status_code == 400
+    assert rv.json["type"] == "PAD_CURRENTLY_NSF"
+    # The invoice must not have been rebound - the blocker fires before that happens.
+    assert InvoicePaymentLinkModel.find_by_token(token).linked_at is None
+
+
 def test_transaction_without_login_returns_pay_system_url(session, client, jwt, app):
     """POST /payment-links/{token}/transactions starts a transaction with no Authorization header.
 
