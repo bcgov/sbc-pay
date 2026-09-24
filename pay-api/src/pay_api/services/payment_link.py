@@ -215,6 +215,15 @@ class PaymentLinkService:
                 }
             )
 
+        # Local import to avoid a circular dependency (factory -> pad_service -> payment_link).
+        from pay_api.factory.payment_system_factory import (
+            PaymentSystemFactory,  # pylint: disable=import-outside-toplevel
+        )
+
+        PaymentSystemFactory.create_from_payment_method(target_account.payment_method).ensure_no_payment_blockers(
+            target_account
+        )
+
         if link.linked_at is not None:
             # Idempotent re-visit: same account gets the current state; different account is rejected.
             if invoice.payment_account_id != target_account.id:
