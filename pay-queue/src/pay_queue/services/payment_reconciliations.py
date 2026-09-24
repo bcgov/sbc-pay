@@ -626,7 +626,11 @@ def _process_credit_on_invoices(row, error_messages: list[dict[str, any]]) -> bo
                 "Partially PAID using credit memo. Ignoring as the credit memo payment is already captured.",
             )
         else:
-            error_msg = f"Target Transaction status is received as {target_txn_status} for CMAP, and cannot process."
+            error_msg = (
+                f"Target Transaction status is received as '{target_txn_status}' for CMAP "
+                f"(original {_get_row_value(row, Column.TARGET_TXN_ORIGINAL)}, "
+                f"outstanding {_get_row_value(row, Column.TARGET_TXN_OUTSTANDING)}), and cannot process."
+            )
             has_errors = True
             _csv_error_handling(row, error_msg, error_messages)
     return has_errors
