@@ -99,8 +99,11 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         return pdf_response
 
     @staticmethod
-    def get_receipt_details(filing_data, invoice_identifier, skip_auth_check):
-        """Return receipt details."""
+    def get_receipt_details(filing_data, invoice_identifier, skip_auth_check, include_links: bool = True):
+        """Return receipt details.
+
+        `include_links=False` for callers outside pay-api, where url_for can't build `_links`.
+        """
         receipt_details: dict = {}
         invoice_data = None
         # invoice number mandatory
@@ -149,7 +152,8 @@ class Receipt:  # pylint: disable=too-many-instance-attributes
         # Blank the adhoc SA account before camelising
         receipt_details["invoice"] = camelcase_dict(
             hide_stub_account(
-                invoice_data.asdict(), InvoicePaymentLinkModel.is_unredeemed_for_invoice(invoice_data.id)
+                invoice_data.asdict(include_links=include_links),
+                InvoicePaymentLinkModel.is_unredeemed_for_invoice(invoice_data.id),
             ),
             {},
         )

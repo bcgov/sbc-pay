@@ -18,6 +18,7 @@ import json
 from unittest.mock import patch
 
 from sbc_common_components.utils.enums import QueueMessageTypes
+from werkzeug.routing import BuildError
 
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.services.email_service import send_email, send_receipt_notification
@@ -131,6 +132,17 @@ def test_receipt_notification_carries_the_receipt_vars(session, app):
     assert payload["templateVars"]["invoice"]["id"] == invoice.id
     assert payload["templateVars"]["receiptNumber"]
     assert payload["templateVars"]["filingDateTime"]
+
+
+def test_receipt_notification_builds_receipt_vars_outside_pay_api(session, app):
+    """pay-queue has no INVOICE routes, so url_for can't build `_links` there."""
+    invoice = _paid_invoice("1234")
+
+    with patch("flask_marshmallow.fields.url_for", side_effect=BuildError("INVOICE.get_invoice", {}, "GET")):
+        payload = _published(invoice).payload
+
+    assert payload["templateVars"]["invoice"]["id"] == invoice.id
+    assert "_links" not in payload["templateVars"]["invoice"]
 
 
 def test_receipt_notification_still_sent_without_receipt_vars(session, app):
