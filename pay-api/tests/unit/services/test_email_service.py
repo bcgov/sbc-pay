@@ -17,11 +17,24 @@
 import json
 from unittest.mock import patch
 
+from sbc_common_components.utils.enums import QueueMessageTypes
+from werkzeug.routing import BuildError
+
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.services.email_service import send_email, send_receipt_notification
 from pay_api.services.invoice import Invoice as InvoiceService
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus
-from tests.utilities.base_test import factory_invoice, factory_invoice_reference, factory_payment_account
+from pay_api.utils.enums import (
+    AuthHeaderType,
+    ContentType,
+    InvoiceReferenceStatus,
+    InvoiceStatus,
+)
+from tests.utilities.base_test import (
+    factory_invoice,
+    factory_invoice_reference,
+    factory_payment_account,
+    factory_receipt,
+)
 
 
 def test_send_email(app, monkeypatch):
@@ -47,14 +60,6 @@ def test_send_email(app, monkeypatch):
         assert result is True
 
 
-ADMIN_MEMBERS = {
-    "members": [
-        {"user": {"contacts": [{"email": "owner@example.com"}]}},
-        {"user": {"contacts": [{"email": "coordinator@example.com"}]}},
-    ]
-}
-
-
 def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False, link_email: str = None):
     """Create a paid invoice, optionally with an unredeemed payment link."""
     payment_account = factory_payment_account(auth_account_id=auth_account_id)
@@ -62,59 +67,47 @@ def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False, link_emai
     invoice = factory_invoice(payment_account, status_code=InvoiceStatus.PAID.value)
     invoice.save()
     factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value).save()
+    factory_receipt(invoice.id).save()
     if unredeemed_link:
         InvoicePaymentLinkModel(token=f"tok-{invoice.id}", invoice_id=invoice.id, email=link_email).save()
     return invoice
 
 
-def test_receipt_notification_reaches_admins_and_coordinators(session, app):
-    """The ticket is addressed to the owner and coordinators, so both roles are requested."""
+def _published(invoice):
+    """Run send_receipt_notification and return what it put on the mailer topic, or None."""
+    with patch("pay_api.services.email_service.gcp_queue_publisher.publish_to_queue") as mock_publish:
+        send_receipt_notification(invoice)
+    return mock_publish.call_args.args[0] if mock_publish.called else None
+
+
+def test_receipt_notification_goes_to_the_account(session, app):
+    """account-mailer looks up the admins and coordinators, so only the account id is sent."""
     invoice = _paid_invoice("1234")
 
-    with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS) as mock_users:
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(invoice)
+    message = _published(invoice)
 
-    assert mock_users.call_args.kwargs["roles"] == "ADMIN,COORDINATOR"
-    assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
+    assert message.message_type == QueueMessageTypes.PAYMENT_RECEIPT.value
+    assert message.topic == app.config.get("ACCOUNT_MAILER_TOPIC")
+    assert message.payload["accountId"] == "1234"
+    assert "emailAddresses" not in message.payload
+    assert message.payload["invoiceId"] == invoice.id
+
+
+def test_receipt_notification_goes_to_the_guest_email(session, app):
+    """An unredeemed link carries the payer's address, and there is no account to name."""
+    invoice = _paid_invoice("sa-partner-client", unredeemed_link=True, link_email="payer@example.com")
+
+    message = _published(invoice)
+
+    assert message.payload["emailAddresses"] == "payer@example.com"
+    assert "accountId" not in message.payload
 
 
 def test_receipt_notification_skipped_when_guest_left_no_email(session, app):
     """No account and no address the partner gave us — there is nobody to tell."""
     invoice = _paid_invoice("sa-partner-client", unredeemed_link=True)
 
-    with patch("pay_api.services.email_service.get_account_members") as mock_users:
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(invoice)
-
-    mock_users.assert_not_called()
-    mock_send.assert_not_called()
-
-
-def test_receipt_notification_skips_members_without_an_email(session, app):
-    """A member whose contact carries no email must not end up in the recipient list."""
-    invoice = _paid_invoice("1234")
-    members = {"members": [{"user": {"contacts": [{}]}}, {"user": {"contacts": [{"email": "owner@example.com"}]}}]}
-
-    with patch("pay_api.services.email_service.get_account_members", return_value=members):
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(invoice)
-
-    assert mock_send.call_args.args[0] == ["owner@example.com"]
-
-
-def test_receipt_notification_goes_to_the_guest_email(session, app):
-    """An unredeemed link carries the payer's address, so the receipt goes there."""
-    invoice = _paid_invoice("sa-partner-client", unredeemed_link=True, link_email="payer@example.com")
-
-    with patch("pay_api.services.email_service.get_account_members") as mock_users:
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(invoice)
-
-    mock_users.assert_not_called()
-    assert mock_send.call_args.args[0] == ["payer@example.com"]
-    # The guest template drops the account rows — they have no account.
-    assert "Account number" not in mock_send.call_args.args[2]
+    assert _published(invoice) is None
 
 
 def test_receipt_notification_accepts_the_invoice_service_object(session, app):
@@ -126,8 +119,39 @@ def test_receipt_notification_accepts_the_invoice_service_object(session, app):
     service_invoice = InvoiceService.find_by_id(model_invoice.id, skip_auth_check=True)
     assert not hasattr(service_invoice, "payment_account")
 
-    with patch("pay_api.services.email_service.get_account_members", return_value=ADMIN_MEMBERS):
-        with patch("pay_api.services.email_service.send_email_async") as mock_send:
-            send_receipt_notification(service_invoice)
+    assert _published(service_invoice).payload["accountId"] == "1234"
 
-    assert mock_send.call_args.args[0] == ["owner@example.com", "coordinator@example.com"]
+
+def test_receipt_notification_carries_the_receipt_vars(session, app):
+    """account-mailer renders the PDF from these, so they must survive the queue's json encoding."""
+    invoice = _paid_invoice("1234")
+
+    payload = _published(invoice).payload
+
+    json.dumps(payload)
+    assert payload["templateVars"]["invoice"]["id"] == invoice.id
+    assert payload["templateVars"]["receiptNumber"]
+    assert payload["templateVars"]["filingDateTime"]
+
+
+def test_receipt_notification_builds_receipt_vars_outside_pay_api(session, app):
+    """pay-queue has no INVOICE routes, so url_for can't build `_links` there."""
+    invoice = _paid_invoice("1234")
+
+    with patch("flask_marshmallow.fields.url_for", side_effect=BuildError("INVOICE.get_invoice", {}, "GET")):
+        payload = _published(invoice).payload
+
+    assert payload["templateVars"]["invoice"]["id"] == invoice.id
+    assert "_links" not in payload["templateVars"]["invoice"]
+
+
+def test_receipt_notification_still_sent_without_receipt_vars(session, app):
+    """A receipt that can't be described yet must not cost the payer their confirmation email."""
+    invoice = _paid_invoice("1234")
+
+    with patch(
+        "pay_api.services.email_service.ReceiptService.get_receipt_details", side_effect=Exception("no receipt")
+    ):
+        message = _published(invoice)
+
+    assert message.payload["templateVars"] is None

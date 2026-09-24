@@ -14,6 +14,7 @@
 
 """This manages all of the email notification service."""
 
+import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
@@ -21,13 +22,17 @@ from decimal import Decimal
 from attrs import define
 from flask import copy_current_request_context, current_app, has_request_context
 from jinja2 import Environment, FileSystemLoader
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.services.auth import get_account_members, get_service_account_token
+from pay_api.services import gcp_queue_publisher
+from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, RefundStatus
+from pay_api.services.receipt import Receipt as ReceiptService
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, QueueSources, RefundStatus
+from pay_api.utils.json_util import DecimalEncoder
 from pay_api.utils.serializable import Serializable
 from pay_api.utils.util import get_local_formatted_date
 
@@ -150,61 +155,46 @@ def _render_credit_add_notification_template(params: dict) -> str:
     return template.render(params)
 
 
-def _render_receipt_notification_template(params: dict) -> str:
-    """Render the post-payment receipt notification template."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root_dir = os.path.dirname(current_dir)
-    templates_dir = os.path.join(project_root_dir, "templates")
-    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-    return env.get_template("receipt_notification.html").render(params)
+def _receipt_template_vars(invoice) -> dict | None:
+    """Return the report-api vars for the receipt PDF, or None when there is no receipt yet."""
+    try:
+        filing_data = {"filingDateTime": get_local_formatted_date(invoice.created_on)}
+        # pay-queue calls this too, and url_for can't build `_links` there.
+        details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True, include_links=False)
+        # The queue encodes with plain json, which can't take the Decimals in here.
+        return json.loads(json.dumps({**details, **filing_data}, cls=DecimalEncoder))
+    except Exception:  # NOQA # pylint: disable=broad-except
+        current_app.logger.exception("Could not build the receipt vars for invoice %s", invoice.id)
+        return None
 
 
 def send_receipt_notification(invoice):
-    """Email the account's admins and coordinators after a payment settles.
+    """Ask account-mailer to email the receipt after a payment settles.
 
     Called from both pay-api and pay-queue — card payments settle on the PayBC return,
-    OB and PAD later in reconciliation.
+    OB and PAD later in reconciliation. Only database reads happen here; the recipient
+    lookup, PDF render and send run in account-mailer.
 
-    An express-checkout invoice whose link nobody claimed has no account and no admins, so
-    it goes to the address the partner supplied at invoice creation, and the template drops
-    the account rows. Without that address there is nobody to tell.
+    An express-checkout invoice whose link nobody claimed has no account, so it goes to the
+    address the partner supplied at invoice creation. Without that address there is nobody
+    to tell.
 
-    Mail failures are logged and never affect the payment.
+    Failures are logged and never affect the payment.
     """
     try:
         payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         if not payment_account:
             current_app.logger.info("No payment account found for invoice %s", invoice.id)
             return
-        auth_account_id = payment_account.auth_account_id if payment_account else None
         unredeemed_link = InvoicePaymentLinkModel.find_unredeemed_for_invoice(invoice.id)
-        is_guest = unredeemed_link is not None
-
-        if is_guest:
-            recipients = [unredeemed_link.email] if unredeemed_link.email else []
-            account_name_with_branch = ""
-        elif not auth_account_id:
-            return
+        if unredeemed_link:
+            if not unredeemed_link.email:
+                current_app.logger.info("No one to send the receipt for invoice %s to; skipping.", invoice.id)
+                return
+            recipient = {"emailAddresses": unredeemed_link.email}
+        elif payment_account.auth_account_id:
+            recipient = {"accountId": payment_account.auth_account_id}
         else:
-            members = (
-                get_account_members(auth_account_id, use_service_account=True, roles="ADMIN,COORDINATOR").get("members")
-                or []
-            )
-            recipients = [
-                email
-                for member in members
-                if (user := member.get("user"))
-                and (contacts := user.get("contacts"))
-                and (email := contacts[0].get("email"))
-            ]
-            account_name = payment_account.name or ""
-            branch_name = payment_account.branch_name
-            account_name_with_branch = (
-                f"{account_name}-{branch_name}" if branch_name and branch_name not in account_name else account_name
-            )
-
-        if not recipients:
-            current_app.logger.info("No one to send the receipt for invoice %s to; skipping.", invoice.id)
             return
 
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
@@ -214,23 +204,23 @@ def send_receipt_notification(invoice):
         transaction_detail = ", ".join(
             line.description for line in (invoice.payment_line_items or []) if line.description
         )
-        html_body = _render_receipt_notification_template(
-            {
-                "amount": f"{float(invoice.total):.2f}",
-                "account_number": "" if is_guest else auth_account_id,
-                "account_name_with_branch": account_name_with_branch,
-                "invoice_number": invoice_reference.invoice_number if invoice_reference else "",
-                "payment_method": invoice.payment_method_code,
-                "transaction_detail": transaction_detail,
-                "transaction_date": get_local_formatted_date(invoice.payment_date or invoice.created_on),
-                "transactions_url": (
-                    ""
-                    if is_guest
-                    else f"{current_app.config.get('AUTH_WEB_URL')}/account/{auth_account_id}/settings/transactions"
-                ),
-            }
+        gcp_queue_publisher.publish_to_queue(
+            gcp_queue_publisher.QueueMessage(
+                source=QueueSources.PAY_API.value,
+                message_type=QueueMessageTypes.PAYMENT_RECEIPT.value,
+                payload={
+                    **recipient,
+                    "invoiceId": invoice.id,
+                    "amount": f"{float(invoice.total):.2f}",
+                    "invoiceNumber": invoice_reference.invoice_number if invoice_reference else "",
+                    "paymentMethod": invoice.payment_method_code,
+                    "transactionDetail": transaction_detail,
+                    "transactionDate": get_local_formatted_date(invoice.payment_date or invoice.created_on),
+                    "templateVars": _receipt_template_vars(invoice),
+                },
+                topic=current_app.config.get("ACCOUNT_MAILER_TOPIC"),
+            )
         )
-        send_email_async(recipients, f"Payment received for invoice {invoice.id}", html_body)
     except Exception:  # NOQA # pylint: disable=broad-except
         current_app.logger.exception("Receipt notification failed for invoice %s", getattr(invoice, "id", None))
 
