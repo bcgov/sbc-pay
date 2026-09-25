@@ -21,10 +21,12 @@ rather than reading environment variables directly or by accessing this configur
 
 import base64
 import os
+import re
 import sys
 
 from cloud_sql_connector import DBConfig
 from dotenv import find_dotenv, load_dotenv
+from flask_cors.core import probably_regex, re_fix
 
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
@@ -66,6 +68,30 @@ def _get_config(config_key: str, **kwargs):
     else:
         value = os.getenv(config_key)
     return value
+
+
+def parse_cors_origins(raw_value: str) -> list:
+    """Parse a comma separated CORS_ORIGINS value into literals and compiled regex patterns.
+
+    pay_api.__init__ matches origins with flask_cors.core.try_match_any_pattern, which only
+    treats an entry as a regex when it is already a compiled re.Pattern - a raw regex string
+    is compared literally and would never match. Compile here, once at startup, mirroring
+    flask-cors' own pipeline (re_fix, then compile when probably_regex). An invalid pattern
+    raises immediately so a bad vault value fails loudly instead of silently matching nothing.
+    """
+    origins = []
+    for value in raw_value.split(","):
+        if not (value := value.strip()):
+            continue
+        value = re_fix(value)
+        if not probably_regex(value):
+            origins.append(value)
+            continue
+        try:
+            origins.append(re.compile(value, re.IGNORECASE))
+        except re.error as exc:
+            raise ValueError(f"Invalid regular expression in CORS_ORIGINS: {value!r}") from exc
+    return origins
 
 
 class _Config:  # pylint: disable=too-few-public-methods
@@ -250,7 +276,7 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     # Comma separated list of browser origins allowed to make cross-origin requests to this API.
     # An empty list blocks all cross-origin browser requests (fail closed) - populate per environment.
-    CORS_ORIGINS = [origin.strip() for origin in _get_config("CORS_ORIGINS", default="").split(",") if origin.strip()]
+    CORS_ORIGINS = parse_cors_origins(_get_config("CORS_ORIGINS", default=""))
 
     TESTING = False
     DEBUG = True

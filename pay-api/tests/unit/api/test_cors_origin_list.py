@@ -16,7 +16,7 @@
 
 import pytest
 
-from pay_api.config import _get_config
+from pay_api.config import _get_config, parse_cors_origins
 
 LITERAL_ORIGINS_ENV_VALUE = (
     "https://app.bcregistry.gov.bc.ca,https://pay.bcregistry.gov.bc.ca,"
@@ -42,9 +42,7 @@ def cors_origins_override(app, monkeypatch):
 
     def _apply(env_value):
         monkeypatch.setenv("CORS_ORIGINS", env_value)
-        app.config["CORS_ORIGINS"] = [
-            origin.strip() for origin in _get_config("CORS_ORIGINS", default="").split(",") if origin.strip()
-        ]
+        app.config["CORS_ORIGINS"] = parse_cors_origins(_get_config("CORS_ORIGINS", default=""))
         return app.config["CORS_ORIGINS"]
 
     yield _apply
