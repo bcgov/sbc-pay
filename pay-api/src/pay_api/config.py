@@ -21,10 +21,12 @@ rather than reading environment variables directly or by accessing this configur
 
 import base64
 import os
+import re
 import sys
 
 from cloud_sql_connector import DBConfig
 from dotenv import find_dotenv, load_dotenv
+from flask_cors.core import probably_regex
 
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
@@ -250,7 +252,11 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     # Comma separated list of browser origins allowed to make cross-origin requests to this API.
     # An empty list blocks all cross-origin browser requests (fail closed) - populate per environment.
-    CORS_ORIGINS = [origin.strip() for origin in _get_config("CORS_ORIGINS", default="").split(",") if origin.strip()]
+    CORS_ORIGINS = [
+        re.compile(origin, re.IGNORECASE) if probably_regex(origin) else origin
+        for origin in (o.strip() for o in _get_config("CORS_ORIGINS", default="").split(","))
+        if origin
+    ]
 
     TESTING = False
     DEBUG = True
