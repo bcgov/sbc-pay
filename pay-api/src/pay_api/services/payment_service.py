@@ -316,15 +316,32 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 raise NotImplementedError(f"Payment method {cfs_account.payment_method} invalid Online Banking only.")
         payment_account.save()
 
+    @staticmethod
+    def _validate_switch_allowed(current_method: str, new_method: str, payment_account: PaymentAccount):
+        """Raise if the account's payment method doesn't allow switching the invoice from current to new method.
+
+        EFT is outside the switchable allowlist and is tied to the account: an EFT account can only use EFT,
+        and any other account can never switch to it.
+        """
+        is_eft_account = payment_account.payment_method == PaymentMethod.EFT.value
+        is_eft_target = new_method == PaymentMethod.EFT.value
+        if is_eft_account != is_eft_target:
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
+        is_target_switchable = is_eft_target or new_method in _SWITCHABLE_METHODS
+        if current_method not in _SWITCHABLE_METHODS or not is_target_switchable:
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
     @classmethod
     def _convert_invoice_payment_method(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
         """Switch an unpaid invoice's payment method.
 
         Allowed only while the invoice is still CREATED (no pay system has taken
         ownership yet) and only between the user-selectable methods CC, DIRECT_PAY,
-        ONLINE_BANKING, PAD. APPROVED PAD invoices are already released to the
-        settlement pipeline and must not be switched here — auth-web's outstanding-
-        balance flow uses CFS credit-memo consolidation for that case instead.
+        ONLINE_BANKING, PAD. EFT accounts are the exception: they can only switch to EFT.
+        APPROVED PAD invoices are already released to the settlement pipeline and must
+        not be switched here — auth-web's outstanding-balance flow uses CFS credit-memo
+        consolidation for that case instead.
 
         For OB → CC/DIRECT_PAY with an existing active CFS reference, flip the method
         flag and keep the CFS invoice — PayBC settles that same CFS invoice via CC.
@@ -343,8 +360,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if invoice.invoice_status_code not in (InvoiceStatus.CREATED.value, InvoiceStatus.SETTLEMENT_SCHEDULED.value):
             raise BusinessException(Error.INVALID_REQUEST)
 
-        if current_method not in _SWITCHABLE_METHODS or new_method not in _SWITCHABLE_METHODS:
-            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        cls._validate_switch_allowed(current_method, new_method, payment_account)
 
         if not CodeService.is_payment_method_valid_for_corp_type(invoice.corp_type_code, new_method):
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
@@ -371,7 +388,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         # legacy hardcode: OB/DIRECT_PAY invoices without a CFS reference can only be paid this way.
         target_method = PaymentMethod.DIRECT_PAY.value if new_method == PaymentMethod.CC.value else new_method
 
-        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(target_method)
         pay_service.create_invoice(
             payment_account,

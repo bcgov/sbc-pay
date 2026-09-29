@@ -394,6 +394,36 @@ def test_convert_rejects_target_outside_allowlist(session, public_user_mock):
         )
 
 
+def test_convert_to_eft_when_payment_account_is_eft(session, public_user_mock):
+    """A CREATED invoice can be switched to EFT when the linked payment account's method is EFT."""
+    account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
+    invoice = factory_invoice(
+        payment_account=account,
+        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+        status_code=InvoiceStatus.CREATED.value,
+    ).save()
+    PaymentService._convert_invoice_payment_method(
+        invoice, {"paymentInfo": {"methodOfPayment": PaymentMethod.EFT.value}}
+    )
+    updated = Invoice.find_by_id(invoice.id)
+    assert updated.payment_method_code == PaymentMethod.EFT.value
+    assert updated.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+def test_convert_rejects_other_method_when_payment_account_is_eft(session, public_user_mock):
+    """An EFT payment account can't switch an invoice to any other payment method."""
+    account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
+    invoice = factory_invoice(
+        payment_account=account,
+        payment_method_code=PaymentMethod.DIRECT_PAY.value,
+        status_code=InvoiceStatus.CREATED.value,
+    ).save()
+    with pytest.raises(BusinessException):
+        PaymentService._convert_invoice_payment_method(
+            invoice, {"paymentInfo": {"methodOfPayment": PaymentMethod.CC.value}}
+        )
+
+
 def test_convert_rejects_source_outside_allowlist(session, public_user_mock):
     """Source method outside the allowlist is rejected regardless of target."""
     invoice = _fresh_switchable_invoice(payment_method=PaymentMethod.EFT.value)
