@@ -60,6 +60,8 @@ _SWITCHABLE_METHODS = frozenset(
         PaymentMethod.PAD.value,
     }
 )
+# Only allowed as a switch target when the payment account itself uses the method.
+_ACCOUNT_BOUND_METHODS = frozenset({PaymentMethod.EFT.value, PaymentMethod.PAD.value})
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
@@ -316,15 +318,32 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 raise NotImplementedError(f"Payment method {cfs_account.payment_method} invalid Online Banking only.")
         payment_account.save()
 
+    @staticmethod
+    def _validate_switch_allowed(current_method: str, new_method: str, payment_account: PaymentAccount):
+        """Raise if the invoice can't be switched from current_method to new_method for this payment account.
+
+        EFT and PAD can only be switched to when the account itself uses that method.
+        An EFT account is locked to EFT; PAD accounts can still switch to the other methods.
+        """
+        account_method = payment_account.payment_method
+        if new_method in _ACCOUNT_BOUND_METHODS and account_method != new_method:
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+        if account_method == PaymentMethod.EFT.value and new_method != PaymentMethod.EFT.value:
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
+        if current_method not in _SWITCHABLE_METHODS or new_method not in _SWITCHABLE_METHODS | _ACCOUNT_BOUND_METHODS:
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
     @classmethod
     def _convert_invoice_payment_method(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
         """Switch an unpaid invoice's payment method.
 
         Allowed only while the invoice is still CREATED (no pay system has taken
         ownership yet) and only between the user-selectable methods CC, DIRECT_PAY,
-        ONLINE_BANKING, PAD. APPROVED PAD invoices are already released to the
-        settlement pipeline and must not be switched here — auth-web's outstanding-
-        balance flow uses CFS credit-memo consolidation for that case instead.
+        ONLINE_BANKING, PAD. EFT accounts are the exception: they can only switch to EFT.
+        APPROVED PAD invoices are already released to the settlement pipeline and must
+        not be switched here — auth-web's outstanding-balance flow uses CFS credit-memo
+        consolidation for that case instead.
 
         For OB → CC/DIRECT_PAY with an existing active CFS reference, flip the method
         flag and keep the CFS invoice — PayBC settles that same CFS invoice via CC.
@@ -343,8 +362,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if invoice.invoice_status_code not in (InvoiceStatus.CREATED.value, InvoiceStatus.SETTLEMENT_SCHEDULED.value):
             raise BusinessException(Error.INVALID_REQUEST)
 
-        if current_method not in _SWITCHABLE_METHODS or new_method not in _SWITCHABLE_METHODS:
-            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        cls._validate_switch_allowed(current_method, new_method, payment_account)
 
         if not CodeService.is_payment_method_valid_for_corp_type(invoice.corp_type_code, new_method):
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
@@ -371,7 +390,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         # legacy hardcode: OB/DIRECT_PAY invoices without a CFS reference can only be paid this way.
         target_method = PaymentMethod.DIRECT_PAY.value if new_method == PaymentMethod.CC.value else new_method
 
-        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(target_method)
         pay_service.create_invoice(
             payment_account,
@@ -385,6 +403,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         invoice.payment_method_code = target_method
         invoice.invoice_status_code = pay_service.get_default_invoice_status()
         invoice.save()
+        # Same as a newly created invoice, e.g. EFT/PAD release the record to the partner.
+        pay_service.complete_post_invoice(invoice, None)
 
     @classmethod
     def update_invoice(
