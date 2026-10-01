@@ -326,6 +326,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         An EFT account is locked to EFT; PAD accounts can still switch to the other methods.
         """
         account_method = payment_account.payment_method
+        current_app.logger.debug("account_method --->%s", account_method)
+        current_app.logger.debug("current_method --->%s", current_method)
+        current_app.logger.debug("new_method --->%s", new_method)
+
         if new_method in _ACCOUNT_BOUND_METHODS and account_method != new_method:
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
         if account_method == PaymentMethod.EFT.value and new_method != PaymentMethod.EFT.value:
