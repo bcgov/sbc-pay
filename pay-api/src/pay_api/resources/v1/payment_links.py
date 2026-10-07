@@ -140,7 +140,10 @@ def post_payment_link_redemption(token: str):
     except ServiceUnavailableException as exception:
         current_app.logger.exception("payment link redemption: downstream 503")
         return exception.response()
-    except BusinessException:
+    except BusinessException as exception:
+        # NSF/overdue message is sent with meanginful code.
+        if exception.code in (Error.PAD_CURRENTLY_NSF.code, Error.EFT_INVOICES_OVERDUE.code):
+            return exception.response()
         return error_to_response(Error.INVALID_REQUEST)
     current_app.logger.debug(">post_payment_link_redemption")
     return jsonify(response), HTTPStatus.OK
