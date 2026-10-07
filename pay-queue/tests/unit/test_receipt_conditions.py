@@ -25,13 +25,18 @@ from pay_queue.services.payment_reconciliations import _calculate_receipt_applie
 @pytest.mark.parametrize(
     "receipt_amount,payment_method,unapplied_amount,invoices,expected_applied",
     [
-        (100.0, "Online Banking Payments", 0, [], "100.0"),
+        # An unused on-account (ONAC) online banking receipt: CFS reports unapplied_amount 0 and no invoices.
+        # Nothing has been applied, so the full receipt is still available as credit.
+        (4000.0, "Online Banking Payments", 0, [], "0.0"),
+        (100.0, "Online Banking Payments", 0, [], "0.0"),
         (100.0, "Online Banking Payments", 50, [], "0.0"),
+        # A consumed receipt lists the invoice; CFS can report a negative unapplied_amount for it.
+        (31.5, "Online Banking Payments", -63, [{"amount_applied": 31.5}], "31.5"),
         (100.0, "BCR-PAD Daily", 0, [], "0.0"),
         (100.0, "Other Method", 0, [{"amount_applied": 25.0}], "25.0"),
         (100.0, "Online Banking Payments", 0, [{"amount_applied": 25.0}], "25.0"),
         (100.0, "Online Banking Payments", 0, [{"amount_applied": 25.0}, {"amount_applied": 30.0}], "55.0"),
-        (150.0, ReceiptMethod.ONLINE_BANKING.value, 0, [], "150.0"),
+        (150.0, ReceiptMethod.ONLINE_BANKING.value, 0, [], "0.0"),
         (
             100.0,
             "BCR-PAD Daily",
