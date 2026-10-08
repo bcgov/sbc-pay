@@ -53,7 +53,10 @@ RUN apt-get update \
     ca-certificates \
     openssl \
   && curl -sSL 'https://install.python-poetry.org' | python - \
-  && poetry --version
+  && poetry --version \
+  # Cleaning cache:
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Install SSL certificates for paybc.gov.bc.ca
 # Old certificates (deprecated, will be removed after Nov 24, 2025)
@@ -72,10 +75,7 @@ RUN update-ca-certificates \
         echo "Certificate expired: $cert"; \
         exit 1; \
       fi; \
-    done \
-  # Cleaning cache:
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-  && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+    done
 
 WORKDIR /code
 
