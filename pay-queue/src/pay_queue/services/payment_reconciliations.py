@@ -57,14 +57,7 @@ from pay_api.utils.enums import (
 )
 from pay_api.utils.util import generate_consolidated_transaction_number, get_topic_for_corp_type
 from pay_queue import config
-from pay_queue.enums import (
-    Column,
-    ReceiptMethod,
-    RecordType,
-    SourceTransaction,
-    Status,
-    TargetTransaction,
-)
+from pay_queue.enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 from pay_queue.services.email_service import EmailParams, send_error_email
 from pay_queue.util import get_object_from_bucket_folder
 
@@ -916,18 +909,12 @@ def _fetch_credit_memo_payment_method(credit, cfs_account_pad, cfs_account_ob, c
 
 
 def _calculate_receipt_applied_amount(receipt: dict) -> Decimal:
-    """Calculate the applied amount from a receipt."""
-    receipt_amount = Decimal(str(receipt.get("receipt_amount")))
-    invoices = receipt.get("invoices", [])
+    """Calculate the applied amount from a receipt.
 
-    if (
-        receipt.get("payment_method") == ReceiptMethod.ONLINE_BANKING.value
-        and not invoices
-        and receipt.get("unapplied_amount") == 0
-    ):
-        return receipt_amount
-
-    return sum((Decimal(str(invoice.get("amount_applied"))) for invoice in invoices), Decimal("0"))
+    Only the invoices listed on the receipt count as applied. Do not infer "applied" from unapplied_amount: CFS reports
+    0 for an on-account receipt that no invoice has used (ONAC), and negative values for others.
+    """
+    return sum((Decimal(str(invoice.get("amount_applied"))) for invoice in receipt.get("invoices", [])), Decimal("0"))
 
 
 def _fetch_receipt_pad_then_ob(credit, cfs_account_pad, cfs_account_ob):
