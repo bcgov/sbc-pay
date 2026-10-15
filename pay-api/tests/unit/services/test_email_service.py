@@ -29,6 +29,7 @@ from pay_api.utils.enums import (
     InvoiceReferenceStatus,
     InvoiceStatus,
 )
+from pay_api.utils.util import get_local_formatted_date
 from tests.utilities.base_test import (
     factory_invoice,
     factory_invoice_reference,
@@ -131,7 +132,7 @@ def test_receipt_notification_carries_the_receipt_vars(session, app):
     json.dumps(payload)
     assert payload["templateVars"]["invoice"]["id"] == invoice.id
     assert payload["templateVars"]["receiptNumber"]
-    assert payload["templateVars"]["filingDateTime"]
+    assert payload["templateVars"]["filingDateTime"] == get_local_formatted_date(invoice.created_on, "%b %d, %Y")
 
 
 def test_receipt_notification_builds_receipt_vars_outside_pay_api(session, app):
