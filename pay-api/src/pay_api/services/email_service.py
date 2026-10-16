@@ -158,7 +158,7 @@ def _render_credit_add_notification_template(params: dict) -> str:
 def _receipt_template_vars(invoice) -> dict | None:
     """Return the report-api vars for the receipt PDF, or None when there is no receipt yet."""
     try:
-        filing_data = {"filingDateTime": get_local_formatted_date(invoice.created_on)}
+        filing_data = {"filingDateTime": get_local_formatted_date(invoice.created_on, "%b %d, %Y")}
         # pay-queue calls this too, and url_for can't build `_links` there.
         details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True, include_links=False)
         # The queue encodes with plain json, which can't take the Decimals in here.

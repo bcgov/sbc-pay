@@ -1,6 +1,24 @@
 exclude: '^$'
 fail_fast: false
 repos:
+  # Shared gitleaks rules: https://github.com/bcgov/bcregistry-sre/tree/main/git-hooks
+  # Downloads them for .gitleaks.toml to extend (refreshed every 24h); blocks the
+  # commit if they can't be downloaded, instead of scanning with no rules.
+  - repo: local
+    hooks:
+      - id: shared-gitleaks-rules
+        name: shared gitleaks rules
+        language: system
+        always_run: true
+        pass_filenames: false
+        entry: >-
+          bash -c 'f=.git/info/bcregistry-sre/gitleaks-base.toml;
+          [ -n "$(find $f -mmin -1440 2>/dev/null)" ] && exit 0;
+          mkdir -p .git/info/bcregistry-sre;
+          curl -fsSL --max-time 30 https://raw.githubusercontent.com/bcgov/bcregistry-sre/main/git-hooks/gitleaks-base.toml -o $f.tmp && [ -s $f.tmp ] && mv -f $f.tmp $f && exit 0;
+          rm -f $f.tmp;
+          [ -f $f ] && echo Could not refresh shared gitleaks rules, using the earlier copy && exit 0;
+          echo Shared gitleaks rules missing - check you can reach raw.githubusercontent.com; exit 1'
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.26.0
     hooks:
