@@ -190,7 +190,6 @@ def get_auth_account_id() -> str:
     if account_id := _get_token_info().get("Account-Id", None):
         return account_id
     if g and "account_id" in g:
-        # check_auth already resolved the account (None if the business has no account), don't fall back to the header.
         return str(g.account_id) if g.account_id is not None else None
     return request.headers["Account-Id"] if request and "Account-Id" in request.headers else None
 
