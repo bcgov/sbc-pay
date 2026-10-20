@@ -17,18 +17,21 @@ from __future__ import annotations
 
 import uuid  # noqa: TC003
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from flask import current_app
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.base_payment_system import PaymentSystemService  # noqa: TC001
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.email_service import send_receipt_notification
 from pay_api.services.flags import flags
 from pay_api.services.gcp_queue_publisher import QueueMessage
@@ -39,6 +42,7 @@ from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.dataclasses import PaymentToken
 from pay_api.utils.enums import (
+    CfsAccountStatus,
     CorpType,
     InvoiceReferenceStatus,
     InvoiceStatus,
@@ -499,6 +503,19 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         payment.payment_date = datetime.now(tz=UTC)
         transaction_dao.status_code = TransactionStatus.COMPLETED.value
 
+        if float(payment.paid_amount) < float(payment.invoice_amount) and PaymentTransaction._is_settled_in_cfs(
+            invoices, payment
+        ):
+            # PayBC charges what CAS says is due. CAS can settle part of an NSF balance itself (e.g. by applying a
+            # credit memo), so a lower charge is still a full payment.
+            current_app.logger.warning(
+                "CAS shows %s as settled. Paid : %s, Owed- %s. Treating the payment as complete.",
+                payment.invoice_number,
+                payment.paid_amount,
+                payment.invoice_amount,
+            )
+            payment.invoice_amount = payment.paid_amount
+
         if float(payment.paid_amount) < float(payment.invoice_amount):
             current_app.logger.critical(
                 "ALERT : Paid Amount is less than owed amount.  Paid : %s, Owed- %s",
@@ -540,6 +557,23 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                     ]:
                         current_app.logger.info(f"Release record for invoice : {invoice.id} ")
                         PaymentTransaction.publish_status(transaction_dao, invoice)
+
+    @staticmethod
+    def _is_settled_in_cfs(invoices, payment) -> bool:
+        """Return True if CAS shows nothing due on the invoice of an NSF retry payment."""
+        if payment.payment_method_code != PaymentMethod.CC.value or not invoices:
+            return False
+        cfs_account = CfsAccountModel.find_by_id(invoices[0].cfs_account_id) if invoices[0].cfs_account_id else None
+        # Only NSF retries, so ordinary credit card payments don't call CAS.
+        if not cfs_account or cfs_account.status != CfsAccountStatus.FREEZE.value:
+            return False
+        try:
+            cfs_invoice = CFSService.get_invoice(cfs_account, payment.invoice_number)
+        except Exception:  # NOQA # pylint: disable=broad-except
+            current_app.logger.error(f"Could not get CFS invoice {payment.invoice_number}", exc_info=True)
+            return False
+        amount_due = cfs_invoice.get("amount_due")
+        return amount_due is not None and Decimal(str(amount_due)) == 0
 
     @staticmethod
     def __wrap_dao(transaction_dao):

@@ -445,7 +445,7 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
                 has_errors = True
                 _csv_error_handling(row, error_msg, error_messages)
                 return has_errors
-            _process_paid_invoices(inv_references, row)
+            has_errors = _process_paid_invoices(inv_references, row, error_messages)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() or record_type in (
             RecordType.PADR.value,
             RecordType.PAYR.value,
@@ -527,7 +527,7 @@ def _process_unconsolidated_invoices(row, error_messages: list[dict[str, any]]) 
             # Handle fully PAID and Partially Paid scenarios.
             if target_txn_status.lower() == Status.PAID.value.lower():
                 current_app.logger.debug("Fully PAID payment.")
-                _process_paid_invoices(inv_references, row)
+                has_errors = _process_paid_invoices(inv_references, row, error_messages)
             elif target_txn_status.lower() == Status.PARTIAL.value.lower():
                 current_app.logger.info("Partially PAID.")
                 # As per validation above, get first and only inv ref
@@ -614,7 +614,7 @@ def _process_credit_on_invoices(row, error_messages: list[dict[str, any]]) -> bo
 
         if target_txn_status.lower() == Status.PAID.value.lower():
             current_app.logger.debug("Fully PAID payment.")
-            _process_paid_invoices(inv_references, row)
+            has_errors = _process_paid_invoices(inv_references, row, error_messages)
         elif target_txn_status.lower() == Status.PARTIAL.value.lower():
             current_app.logger.info(
                 "Partially PAID using credit memo. Ignoring as the credit memo payment is already captured.",
@@ -640,7 +640,7 @@ def _notify_settled_invoices():
             send_receipt_notification(invoice)
 
 
-def _process_paid_invoices(inv_references, row):
+def _process_paid_invoices(inv_references, row, error_messages: list[dict[str, any]]) -> bool:
     """Process PAID invoices.
 
     Update invoices as PAID
@@ -652,7 +652,15 @@ def _process_paid_invoices(inv_references, row):
         invoice = InvoiceModel.find_by_id(inv_ref.invoice_id)
         if invoice.payment_method_code == PaymentMethod.CC.value:
             current_app.logger.info("Cannot mark CC invoices as PAID.")
-            return
+            # An NSF fee invoice is CC. CAS settled the NSF balance outside PayBC, so the account stays frozen.
+            if NonSufficientFundsService.exists_for_invoice_number(inv_ref.invoice_number):
+                error_msg = (
+                    f"CAS reports {inv_ref.invoice_number} as PAID, but it has an unpaid NSF fee invoice "
+                    f"{invoice.id}. The account stays frozen until this is fixed manually."
+                )
+                _csv_error_handling(row, error_msg, error_messages)
+                return True
+            return False
 
     receipt_date = datetime.strptime(_get_row_value(row, Column.APP_DATE), "%d-%b-%y")
     receipt_number = _get_row_value(row, Column.SOURCE_TXN_NO)
@@ -666,6 +674,10 @@ def _process_paid_invoices(inv_references, row):
             inv_ref.id,
             inv_ref.invoice_id,
         )
+        # Refunded before CAS settled it, the refund credit memo is the customer's money back.
+        if inv.invoice_status_code == InvoiceStatus.CREDITED.value:
+            current_app.logger.info("Invoice %s was refunded before it was settled, keeping it CREDITED.", inv.id)
+            continue
 
         inv.invoice_status_code = InvoiceStatus.PAID.value
         inv.payment_date = receipt_date
@@ -694,6 +706,7 @@ def _process_paid_invoices(inv_references, row):
                 "Holding partner publish for express-checkout PAD invoice %s until reversal window elapses.",
                 inv.id,
             )
+    return False
 
 
 def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
@@ -750,6 +763,23 @@ def _process_failed_payments(row):
         )
         return False
 
+    # Find the invoice_reference for this invoice and mark it as ACTIVE.
+    inv_references: list[InvoiceReferenceModel] = (
+        db.session.query(InvoiceReferenceModel)
+        .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value)
+        .filter(InvoiceReferenceModel.invoice_number == inv_number)
+        .all()
+    )
+    # A refunded invoice has an unused credit memo for the same amount, which CAS applies to the reversed invoice.
+    # Charging an NSF for it would make the customer pay for a refunded filing.
+    unrefunded_inv_references = [ref for ref in inv_references if not _is_refunded_to_unused_credit_memo(ref)]
+    if inv_references and not unrefunded_inv_references:
+        current_app.logger.warning(
+            "Ignoring NSF message for invoice : %s as all its invoices were refunded to unused credit memos",
+            inv_number,
+        )
+        return False
+
     # Set CFS Account Status.
     cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
@@ -764,16 +794,9 @@ def _process_failed_payments(row):
             inv_number,
         )
         return False
-    # Find the invoice_reference for this invoice and mark it as ACTIVE.
-    inv_references: list[InvoiceReferenceModel] = (
-        db.session.query(InvoiceReferenceModel)
-        .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value)
-        .filter(InvoiceReferenceModel.invoice_number == inv_number)
-        .all()
-    )
 
     # Update status to ACTIVE, if it was marked COMPLETED
-    for inv_reference in inv_references:
+    for inv_reference in unrefunded_inv_references:
         inv_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         # Find receipt and delete it.
         receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=inv_reference.invoice_id)
@@ -790,6 +813,20 @@ def _process_failed_payments(row):
     # Adjust CFS invoice
     CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
     return True
+
+
+def _is_refunded_to_unused_credit_memo(inv_reference: InvoiceReferenceModel) -> bool:
+    """Return True if the invoice was fully refunded to credit memos that CAS hasn't applied yet."""
+    invoice = InvoiceModel.find_by_id(inv_reference.invoice_id)
+    credit_memos = (
+        db.session.query(CreditModel)
+        .filter(CreditModel.created_invoice_id == invoice.id)
+        .filter(CreditModel.is_credit_memo.is_(True))
+        .all()
+    )
+    refunded = sum((Decimal(str(credit.amount)) for credit in credit_memos), Decimal("0"))
+    remaining = sum((Decimal(str(credit.remaining_amount)) for credit in credit_memos), Decimal("0"))
+    return bool(credit_memos) and refunded >= invoice.total and remaining >= invoice.total
 
 
 def _create_credit_records(csv_content: str):
