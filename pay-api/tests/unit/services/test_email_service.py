@@ -15,6 +15,7 @@
 """Tests for Email Service."""
 
 import json
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from sbc_common_components.utils.enums import QueueMessageTypes
@@ -61,16 +62,26 @@ def test_send_email(app, monkeypatch):
         assert result is True
 
 
-def _paid_invoice(auth_account_id: str, unredeemed_link: bool = False, link_email: str = None):
-    """Create a paid invoice, optionally with an unredeemed payment link."""
+def _paid_invoice(
+    auth_account_id: str,
+    unredeemed_link: bool = False,
+    link_email: str = None,
+    express_checkout: bool = True,
+):
+    """Create a paid express-checkout invoice."""
     payment_account = factory_payment_account(auth_account_id=auth_account_id)
     payment_account.save()
     invoice = factory_invoice(payment_account, status_code=InvoiceStatus.PAID.value)
     invoice.save()
     factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value).save()
     factory_receipt(invoice.id).save()
-    if unredeemed_link:
-        InvoicePaymentLinkModel(token=f"tok-{invoice.id}", invoice_id=invoice.id, email=link_email).save()
+    if express_checkout:
+        InvoicePaymentLinkModel(
+            token=f"tok-{invoice.id}",
+            invoice_id=invoice.id,
+            email=link_email,
+            linked_at=None if unredeemed_link else datetime.now(tz=UTC),
+        ).save()
     return invoice
 
 
@@ -79,6 +90,13 @@ def _published(invoice):
     with patch("pay_api.services.email_service.gcp_queue_publisher.publish_to_queue") as mock_publish:
         send_receipt_notification(invoice)
     return mock_publish.call_args.args[0] if mock_publish.called else None
+
+
+def test_receipt_notification_skipped_for_non_express_checkout(session, app):
+    """#34532 is express checkout only."""
+    invoice = _paid_invoice("1234", express_checkout=False)
+
+    assert _published(invoice) is None
 
 
 def test_receipt_notification_goes_to_the_account(session, app):
