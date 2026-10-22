@@ -30,6 +30,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
+from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, QueueSources, RefundStatus
 from pay_api.utils.json_util import DecimalEncoder
@@ -175,6 +176,11 @@ def send_receipt_notification(invoice):
     OB and PAD later in reconciliation. Only database reads happen here; the recipient
     lookup, PDF render and send run in account-mailer.
 
+    Express checkout only. The payer there is a guest rather than a team member, so nobody
+    on the account hears about the payment otherwise. Account-paid invoices already surface
+    in the account's own transaction list, and notifying on every one of those was not the
+    intent of #34532.
+
     An express-checkout invoice whose link nobody claimed has no account, so it goes to the
     address the partner supplied at invoice creation. Without that address there is nobody
     to tell.
@@ -182,6 +188,8 @@ def send_receipt_notification(invoice):
     Failures are logged and never affect the payment.
     """
     try:
+        if not PaymentLinkService.is_express_checkout_invoice(invoice.id):
+            return
         payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         if not payment_account:
             current_app.logger.info("No payment account found for invoice %s", invoice.id)
