@@ -43,7 +43,6 @@ from pay_api.utils.enums import (
     QueueSources,
 )
 from pay_queue.enums import RecordType, SourceTransaction, Status, TargetTransaction
-from pay_queue.services.payment_reconciliations import _process_paid_invoices
 
 from .factory import (
     factory_create_eft_account,
@@ -1016,22 +1015,6 @@ def test_pad_reconciliations_keeps_refunded_invoice_credited(session, app, clien
     assert InvoiceModel.find_by_id(invoice_id).invoice_status_code == InvoiceStatus.CREDITED.value
     assert InvoiceReferenceModel.find_by_id(inv_ref_id).status_code == InvoiceReferenceStatus.COMPLETED.value
     assert ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id, receipt_number) is None
-
-
-def test_paid_row_for_nsf_invoice_is_reported(session, app):
-    """Assert a CAS PAID row that can't be applied because of the NSF fee invoice is reported as an error."""
-    pay_account = factory_create_pad_account(status=CfsAccountStatus.FREEZE.value, account_number="1234")
-    invoice_number = "1234567890"
-    nsf_fee_invoice = factory_invoice(payment_account=pay_account, total=30, payment_method_code=PaymentMethod.CC.value)
-    inv_ref = factory_invoice_reference(invoice_id=nsf_fee_invoice.id, invoice_number=invoice_number)
-    NonSufficientFundsService.save_non_sufficient_funds(
-        invoice_id=nsf_fee_invoice.id, invoice_number=invoice_number, cfs_account="1234", description="NSF"
-    )
-
-    error_messages = []
-    assert _process_paid_invoices([inv_ref], {}, error_messages)
-    assert len(error_messages) == 1
-    assert invoice_number in error_messages[0]["error"]
 
 
 @pytest.mark.skip(reason="This is handled in the eft-job, similar to routing slips.")

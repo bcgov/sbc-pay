@@ -445,7 +445,7 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
                 has_errors = True
                 _csv_error_handling(row, error_msg, error_messages)
                 return has_errors
-            has_errors = _process_paid_invoices(inv_references, row, error_messages)
+            _process_paid_invoices(inv_references, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() or record_type in (
             RecordType.PADR.value,
             RecordType.PAYR.value,
@@ -527,7 +527,7 @@ def _process_unconsolidated_invoices(row, error_messages: list[dict[str, any]]) 
             # Handle fully PAID and Partially Paid scenarios.
             if target_txn_status.lower() == Status.PAID.value.lower():
                 current_app.logger.debug("Fully PAID payment.")
-                has_errors = _process_paid_invoices(inv_references, row, error_messages)
+                _process_paid_invoices(inv_references, row)
             elif target_txn_status.lower() == Status.PARTIAL.value.lower():
                 current_app.logger.info("Partially PAID.")
                 # As per validation above, get first and only inv ref
@@ -614,7 +614,7 @@ def _process_credit_on_invoices(row, error_messages: list[dict[str, any]]) -> bo
 
         if target_txn_status.lower() == Status.PAID.value.lower():
             current_app.logger.debug("Fully PAID payment.")
-            has_errors = _process_paid_invoices(inv_references, row, error_messages)
+            _process_paid_invoices(inv_references, row)
         elif target_txn_status.lower() == Status.PARTIAL.value.lower():
             current_app.logger.info(
                 "Partially PAID using credit memo. Ignoring as the credit memo payment is already captured.",
@@ -640,7 +640,7 @@ def _notify_settled_invoices():
             send_receipt_notification(invoice)
 
 
-def _process_paid_invoices(inv_references, row, error_messages: list[dict[str, any]]) -> bool:
+def _process_paid_invoices(inv_references, row):
     """Process PAID invoices.
 
     Update invoices as PAID
@@ -652,15 +652,7 @@ def _process_paid_invoices(inv_references, row, error_messages: list[dict[str, a
         invoice = InvoiceModel.find_by_id(inv_ref.invoice_id)
         if invoice.payment_method_code == PaymentMethod.CC.value:
             current_app.logger.info("Cannot mark CC invoices as PAID.")
-            # An NSF fee invoice is CC. CAS settled the NSF balance outside PayBC, so the account stays frozen.
-            if NonSufficientFundsService.exists_for_invoice_number(inv_ref.invoice_number):
-                error_msg = (
-                    f"CAS reports {inv_ref.invoice_number} as PAID, but it has an unpaid NSF fee invoice "
-                    f"{invoice.id}. The account stays frozen until this is fixed manually."
-                )
-                _csv_error_handling(row, error_msg, error_messages)
-                return True
-            return False
+            return
 
     receipt_date = datetime.strptime(_get_row_value(row, Column.APP_DATE), "%d-%b-%y")
     receipt_number = _get_row_value(row, Column.SOURCE_TXN_NO)
@@ -706,7 +698,6 @@ def _process_paid_invoices(inv_references, row, error_messages: list[dict[str, a
                 "Holding partner publish for express-checkout PAD invoice %s until reversal window elapses.",
                 inv.id,
             )
-    return False
 
 
 def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
