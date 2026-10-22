@@ -176,10 +176,7 @@ def send_receipt_notification(invoice):
     OB and PAD later in reconciliation. Only database reads happen here; the recipient
     lookup, PDF render and send run in account-mailer.
 
-    Express checkout only. The payer there is a guest rather than a team member, so nobody
-    on the account hears about the payment otherwise. Account-paid invoices already surface
-    in the account's own transaction list, and notifying on every one of those was not the
-    intent of #34532.
+    Express checkout only.
 
     An express-checkout invoice whose link nobody claimed has no account, so it goes to the
     address the partner supplied at invoice creation. Without that address there is nobody
