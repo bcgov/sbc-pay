@@ -754,19 +754,22 @@ def _process_failed_payments(row):
         )
         return False
 
-    # Find the invoice_reference for this invoice and mark it as ACTIVE.
+    # The invoices this reversal undoes: the ones the PAD payment marked as paid (COMPLETED references).
     inv_references: list[InvoiceReferenceModel] = (
         db.session.query(InvoiceReferenceModel)
         .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value)
         .filter(InvoiceReferenceModel.invoice_number == inv_number)
         .all()
     )
-    # A refunded invoice has an unused credit memo for the same amount, which CAS applies to the reversed invoice.
-    # Charging an NSF for it would make the customer pay for a refunded filing.
+    # Skip invoices that were fully refunded and whose refund credit memo is still unused. CAS applies that credit
+    # memo to the reversed invoice automatically, so nothing is owed for them; an NSF would charge the customer
+    # for a filing they were refunded. Checked before freezing the account, so a skip has no side effects.
+    # If every invoice was refunded, ignore the reversal (no freeze, no NSF fee, no lock). Otherwise run the NSF
+    # flow for the invoices that weren't refunded.
     unrefunded_inv_references = [ref for ref in inv_references if not _is_refunded_to_unused_credit_memo(ref)]
     if inv_references and not unrefunded_inv_references:
         current_app.logger.warning(
-            "Ignoring NSF message for invoice : %s as all its invoices were refunded to unused credit memos",
+            "Ignoring NSF message for invoice : %s as all its invoices were refunded",
             inv_number,
         )
         return False
@@ -786,7 +789,7 @@ def _process_failed_payments(row):
         )
         return False
 
-    # Update status to ACTIVE, if it was marked COMPLETED
+    # Mark the invoices that weren't refunded as unpaid again. Refunded invoices are left as they are.
     for inv_reference in unrefunded_inv_references:
         inv_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         # Find receipt and delete it.
@@ -807,17 +810,12 @@ def _process_failed_payments(row):
 
 
 def _is_refunded_to_unused_credit_memo(inv_reference: InvoiceReferenceModel) -> bool:
-    """Return True if the invoice was fully refunded to credit memos that CAS hasn't applied yet."""
+    """Return True if the invoice was fully refunded to a credit memo that CAS hasn't applied yet."""
     invoice = InvoiceModel.find_by_id(inv_reference.invoice_id)
-    credit_memos = (
-        db.session.query(CreditModel)
-        .filter(CreditModel.created_invoice_id == invoice.id)
-        .filter(CreditModel.is_credit_memo.is_(True))
-        .all()
-    )
-    refunded = sum((Decimal(str(credit.amount)) for credit in credit_memos), Decimal("0"))
-    remaining = sum((Decimal(str(credit.remaining_amount)) for credit in credit_memos), Decimal("0"))
-    return bool(credit_memos) and refunded >= invoice.total and remaining >= invoice.total
+    if not invoice.refund or invoice.refund < invoice.total:
+        return False
+    credit_memos = CreditModel.query.filter_by(created_invoice_id=invoice.id, is_credit_memo=True).all()
+    return sum(credit.remaining_amount for credit in credit_memos) >= invoice.total
 
 
 def _create_credit_records(csv_content: str):

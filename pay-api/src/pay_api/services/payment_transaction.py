@@ -42,7 +42,6 @@ from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.dataclasses import PaymentToken
 from pay_api.utils.enums import (
-    CfsAccountStatus,
     CorpType,
     InvoiceReferenceStatus,
     InvoiceStatus,
@@ -506,7 +505,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if float(payment.paid_amount) < float(payment.invoice_amount) and PaymentTransaction._is_settled_in_cfs(
             invoices, payment
         ):
-            # PayBC charges what CAS says is due. CAS can settle part of an NSF balance itself (e.g. by applying a
+            # PayBC charges what CAS says is due. CAS can settle part of an invoice itself (e.g. by applying a
             # credit memo), so a lower charge is still a full payment.
             current_app.logger.warning(
                 "CAS shows %s as settled. Paid : %s, Owed- %s. Treating the payment as complete.",
@@ -560,13 +559,10 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
     @staticmethod
     def _is_settled_in_cfs(invoices, payment) -> bool:
-        """Return True if CAS shows nothing due on the invoice of an NSF retry payment."""
-        if payment.payment_method_code != PaymentMethod.CC.value or not invoices:
+        """Return True if CAS shows nothing due on the invoice the payment was for."""
+        if not invoices or not invoices[0].cfs_account_id:
             return False
-        cfs_account = CfsAccountModel.find_by_id(invoices[0].cfs_account_id) if invoices[0].cfs_account_id else None
-        # Only NSF retries, so ordinary credit card payments don't call CAS.
-        if not cfs_account or cfs_account.status != CfsAccountStatus.FREEZE.value:
-            return False
+        cfs_account = CfsAccountModel.find_by_id(invoices[0].cfs_account_id)
         try:
             cfs_invoice = CFSService.get_invoice(cfs_account, payment.invoice_number)
         except Exception:  # NOQA # pylint: disable=broad-except

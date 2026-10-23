@@ -772,6 +772,38 @@ def test_patch_transaction_for_nsf_payment_settled_in_cfs(session, monkeypatch, 
         assert cfs_account.status == CfsAccountStatus.FREEZE.value
 
 
+def test_patch_transaction_settled_in_cfs_for_active_account(session, monkeypatch):
+    """Assert a lower PayBC charge completes for any account when CAS shows nothing due, not only NSF."""
+    inv_number = "REG00002"
+    payment_account = factory_payment_account(payment_method_code="PAD").save()
+    cfs_account_id = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value).id
+    invoice = factory_invoice(payment_account, total=61.50, cfs_account_id=cfs_account_id)
+    invoice.save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice.id, invoice_number=inv_number).save()
+    payment = factory_payment(
+        payment_status_code="CREATED",
+        payment_account_id=payment_account.id,
+        invoice_number=inv_number,
+        invoice_amount=61.50,
+        payment_method_code=PaymentMethod.CC.value,
+    )
+    payment.save()
+
+    def get_receipt(cls, payment_account, pay_response_url: str, invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
+        return "1234567890", datetime.now(tz=UTC), 30.00
+
+    monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
+    txn = PaymentTransactionService.create_transaction_for_payment(payment.id, get_paybc_transaction_request())
+    with patch("pay_api.services.payment_transaction.CFSService.get_invoice", return_value={"amount_due": 0}):
+        PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")
+
+    payment = Payment.find_by_id(payment.id)
+    assert payment.payment_status_code == "COMPLETED"
+    assert payment.invoice_amount == 30
+    assert Invoice.find_by_id(invoice.id).invoice_status_code == InvoiceStatus.PAID.value
+
+
 def test_patch_transaction_for_eft_overdue(session, monkeypatch):
     """Assert we can unlock for EFT."""
     inv_number_1 = "REG00001"

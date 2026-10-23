@@ -860,6 +860,8 @@ def test_pad_reversal_on_refunded_invoice(mock_auth_event, session, app, client,
         status_code=invoice_status,
     )
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=31.5, total=31.5)
+    invoice.refund = 31.5
+    invoice.save()
     invoice_number = "1234567890"
     receipt_number = "9999999999"
     factory_invoice_reference(
@@ -898,6 +900,8 @@ def test_pad_reversal_on_refunded_invoice_with_used_credit_memo(mock_auth_event,
         status_code=InvoiceStatus.CREDITED.value,
     )
     factory_payment_line_item(invoice_id=invoice.id, filing_fees=31.5, total=31.5)
+    invoice.refund = 31.5
+    invoice.save()
     invoice_number = "1234567890"
     factory_invoice_reference(
         invoice_id=invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.COMPLETED.value
@@ -935,6 +939,8 @@ def test_pad_reversal_on_partly_refunded_invoice(mock_auth_event, session, app, 
         status_code=InvoiceStatus.CREDITED.value,
     )
     factory_payment_line_item(invoice_id=refunded_invoice.id, filing_fees=31.5, total=31.5)
+    refunded_invoice.refund = 31.5
+    refunded_invoice.save()
     refunded_ref_id = factory_invoice_reference(
         invoice_id=refunded_invoice.id,
         invoice_number=invoice_number,
