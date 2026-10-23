@@ -858,24 +858,20 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
-name = "Flask-Caching"
-version = "2.3.0"
+name = "flask-caching"
+version = "2.3.1"
 description = "Adds caching support to Flask applications."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "Flask_Caching-2.3.1-py3-none-any.whl", hash = "sha256:d3efcf600e5925ea5a2fcb810f13b341ae984f5b52c00e9d9070392f3ca10761"},
+    {file = "flask_caching-2.3.1.tar.gz", hash = "sha256:65d7fd1b4eebf810f844de7de6258254b3248296ee429bdcb3f741bcbf7b98c9"},
+]
 
 [package.dependencies]
 cachelib = ">=0.9.0"
 Flask = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/pallets-eco/flask-caching.git"
-reference = "master"
-resolved_reference = "494d49882537a6cbcfe3cb41c4df05ae8acf60ce"
 
 [[package]]
 name = "flask-cors"
@@ -3337,4 +3333,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "4641bd4f99fc77bfa161b225cf1103e9d2ad28f79ac230b86b2b3e303e756cb2"
+content-hash = "2e94157f3b6b7d07ff85e90690729a2305c2d7951a6c3baada42eda918aefc95"
