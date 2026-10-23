@@ -2411,7 +2411,7 @@ cryptography = "46.0.5"
 dpath = "2.1.6"
 expiringdict = "1.2.2"
 flask = "3.1.3"
-flask-caching = {git = "https://github.com/pallets-eco/flask-caching.git", branch = "master"}
+flask-caching = "2.3.1"
 flask-cors = "6.0.0"
 flask-executor = "^1.0.0"
 flask-jwt-oidc = "^0.9.0"
@@ -2471,7 +2471,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/sumesh85/sbc-pay.git"
 reference = "35158"
-resolved_reference = "bcc0e542333757fcb87c7368c27a75fb455b7a48"
+resolved_reference = "c73b124e7ceb61b3db142f065d0e65baf2bc4e02"
 subdirectory = "pay-api"
 
 [[package]]
