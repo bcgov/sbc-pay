@@ -94,6 +94,18 @@ def list_has_column_ct(context, column):
     assert column in columns, f"Expected '{column}' in list columns, got: {columns}"
 
 
+@then(parsers.parse('"{column}" should be searchable'))
+def column_searchable_ct(context, column):
+    """Assert the column can be searched on."""
+    assert column in CorpTypeConfig.column_searchable_list
+
+
+@then(parsers.parse('"{column}" should be sortable'))
+def column_sortable_ct(context, column):
+    """Assert the column can be sorted on."""
+    assert column in CorpTypeConfig.column_sortable_list
+
+
 @then(parsers.parse('the default sort column should be "{column}"'))
 def default_sort_ct(context, column):
     """Assert default sort."""
