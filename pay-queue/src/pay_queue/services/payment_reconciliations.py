@@ -666,6 +666,10 @@ def _process_paid_invoices(inv_references, row):
             inv_ref.id,
             inv_ref.invoice_id,
         )
+        # Refunded before CAS settled it, the refund credit memo is the customer's money back.
+        if inv.invoice_status_code == InvoiceStatus.CREDITED.value:
+            current_app.logger.info("Invoice %s was refunded before it was settled, keeping it CREDITED.", inv.id)
+            continue
 
         inv.invoice_status_code = InvoiceStatus.PAID.value
         inv.payment_date = receipt_date
@@ -750,6 +754,26 @@ def _process_failed_payments(row):
         )
         return False
 
+    # The invoices this reversal undoes: the ones the PAD payment marked as paid (COMPLETED references).
+    inv_references: list[InvoiceReferenceModel] = (
+        db.session.query(InvoiceReferenceModel)
+        .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value)
+        .filter(InvoiceReferenceModel.invoice_number == inv_number)
+        .all()
+    )
+    # Skip invoices that were fully refunded and whose refund credit memo is still unused. CAS applies that credit
+    # memo to the reversed invoice automatically, so nothing is owed for them; an NSF would charge the customer
+    # for a filing they were refunded. Checked before freezing the account, so a skip has no side effects.
+    # If every invoice was refunded, ignore the reversal (no freeze, no NSF fee, no lock). Otherwise run the NSF
+    # flow for the invoices that weren't refunded.
+    unrefunded_inv_references = [ref for ref in inv_references if not _is_refunded_to_unused_credit_memo(ref)]
+    if inv_references and not unrefunded_inv_references:
+        current_app.logger.warning(
+            "Ignoring NSF message for invoice : %s as all its invoices were refunded",
+            inv_number,
+        )
+        return False
+
     # Set CFS Account Status.
     cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
@@ -764,16 +788,9 @@ def _process_failed_payments(row):
             inv_number,
         )
         return False
-    # Find the invoice_reference for this invoice and mark it as ACTIVE.
-    inv_references: list[InvoiceReferenceModel] = (
-        db.session.query(InvoiceReferenceModel)
-        .filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value)
-        .filter(InvoiceReferenceModel.invoice_number == inv_number)
-        .all()
-    )
 
-    # Update status to ACTIVE, if it was marked COMPLETED
-    for inv_reference in inv_references:
+    # Mark the invoices that weren't refunded as unpaid again. Refunded invoices are left as they are.
+    for inv_reference in unrefunded_inv_references:
         inv_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         # Find receipt and delete it.
         receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=inv_reference.invoice_id)
@@ -790,6 +807,15 @@ def _process_failed_payments(row):
     # Adjust CFS invoice
     CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
     return True
+
+
+def _is_refunded_to_unused_credit_memo(inv_reference: InvoiceReferenceModel) -> bool:
+    """Return True if the invoice was fully refunded to a credit memo that CAS hasn't applied yet."""
+    invoice = InvoiceModel.find_by_id(inv_reference.invoice_id)
+    if not invoice.refund or invoice.refund < invoice.total:
+        return False
+    credit_memos = CreditModel.query.filter_by(created_invoice_id=invoice.id, is_credit_memo=True).all()
+    return sum(credit.remaining_amount for credit in credit_memos) >= invoice.total
 
 
 def _create_credit_records(csv_content: str):
