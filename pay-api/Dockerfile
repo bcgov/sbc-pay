@@ -52,7 +52,10 @@ RUN apt-get update \
     wait-for-it \
     ca-certificates \
     openssl \
-  && curl -sSL 'https://install.python-poetry.org' | python - \
+  # Poetry from PyPI at the pinned POETRY_VERSION, in its own venv (no remote installer script):
+  && python -m venv /opt/poetry \
+  && /opt/poetry/bin/pip install "poetry==${POETRY_VERSION}" \
+  && ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry \
   && poetry --version
 
 # Install SSL certificates for paybc.gov.bc.ca
