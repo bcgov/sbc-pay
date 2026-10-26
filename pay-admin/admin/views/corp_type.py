@@ -21,10 +21,10 @@ from .secured_view import SecuredView
 class CorpTypeConfig(SecuredView):
     """Corp Type config."""
 
-    column_list = ["code", "description", "refund_approval", "refund_allowed"]
+    column_list = ["code", "description", "product", "refund_approval", "refund_allowed"]
 
-    column_searchable_list = ("code",)
-    column_sortable_list = ("code",)
+    column_searchable_list = ("code", "product")
+    column_sortable_list = ("code", "product")
 
     column_default_sort = "code"
 

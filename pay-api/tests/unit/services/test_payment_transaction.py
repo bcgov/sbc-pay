@@ -711,6 +711,99 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
     assert payment_account.has_nsf_invoices is None
 
 
+@pytest.mark.parametrize("cfs_amount_due, expected_status", [(0, "COMPLETED"), (30, "CREATED")])
+def test_patch_transaction_for_nsf_payment_settled_in_cfs(session, monkeypatch, cfs_amount_due, expected_status):
+    """Assert an NSF retry that PayBC charged less for completes only when CAS shows nothing due."""
+    # CAS applied a credit memo to part of the NSF balance, so PayBC charged 30 while pay-db expects 61.50.
+    inv_number_1 = "REG00001"
+    payment_account = factory_payment_account(
+        cfs_account_status=CfsAccountStatus.FREEZE.value,
+        payment_method_code="PAD",
+        has_nsf_invoices=datetime.now(tz=UTC),
+    ).save()
+    cfs_account_id = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value).id
+    invoice_1 = factory_invoice(payment_account, total=31.50, cfs_account_id=cfs_account_id)
+    invoice_1.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+
+    nsf_charge_invoice = factory_invoice(
+        payment_account, total=30, payment_method_code=PaymentMethod.CC.value, cfs_account_id=cfs_account_id
+    )
+    nsf_charge_invoice.save()
+    factory_payment_line_item(invoice_id=nsf_charge_invoice.id, fee_schedule_id=1).save()
+    factory_invoice_reference(nsf_charge_invoice.id, invoice_number=inv_number_1).save()
+
+    factory_payment(
+        payment_status_code="FAILED",
+        payment_account_id=payment_account.id,
+        invoice_number=inv_number_1,
+        invoice_amount=31.50,
+        payment_method_code=PaymentMethod.PAD.value,
+    ).save()
+    payment_2 = factory_payment(
+        payment_status_code="CREATED",
+        payment_account_id=payment_account.id,
+        invoice_number=inv_number_1,
+        invoice_amount=61.50,
+        payment_method_code=PaymentMethod.CC.value,
+    )
+    payment_2.save()
+
+    def get_receipt(cls, payment_account, pay_response_url: str, invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
+        return "1234567890", datetime.now(tz=UTC), 30.00
+
+    monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
+    txn = PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())
+    with patch(
+        "pay_api.services.payment_transaction.CFSService.get_invoice", return_value={"amount_due": cfs_amount_due}
+    ):
+        txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")
+
+    payment_2 = Payment.find_by_id(payment_2.id)
+    assert payment_2.payment_status_code == expected_status
+    cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
+    if expected_status == "COMPLETED":
+        assert payment_2.invoice_amount == 30
+        assert cfs_account.status == CfsAccountStatus.ACTIVE.value
+        assert payment_account.has_nsf_invoices is None
+    else:
+        assert payment_2.invoice_amount == 61.50
+        assert cfs_account.status == CfsAccountStatus.FREEZE.value
+
+
+def test_patch_transaction_settled_in_cfs_for_active_account(session, monkeypatch):
+    """Assert a lower PayBC charge completes for any account when CAS shows nothing due, not only NSF."""
+    inv_number = "REG00002"
+    payment_account = factory_payment_account(payment_method_code="PAD").save()
+    cfs_account_id = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value).id
+    invoice = factory_invoice(payment_account, total=61.50, cfs_account_id=cfs_account_id)
+    invoice.save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice.id, invoice_number=inv_number).save()
+    payment = factory_payment(
+        payment_status_code="CREATED",
+        payment_account_id=payment_account.id,
+        invoice_number=inv_number,
+        invoice_amount=61.50,
+        payment_method_code=PaymentMethod.CC.value,
+    )
+    payment.save()
+
+    def get_receipt(cls, payment_account, pay_response_url: str, invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
+        return "1234567890", datetime.now(tz=UTC), 30.00
+
+    monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
+    txn = PaymentTransactionService.create_transaction_for_payment(payment.id, get_paybc_transaction_request())
+    with patch("pay_api.services.payment_transaction.CFSService.get_invoice", return_value={"amount_due": 0}):
+        PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")
+
+    payment = Payment.find_by_id(payment.id)
+    assert payment.payment_status_code == "COMPLETED"
+    assert payment.invoice_amount == 30
+    assert Invoice.find_by_id(invoice.id).invoice_status_code == InvoiceStatus.PAID.value
+
+
 def test_patch_transaction_for_eft_overdue(session, monkeypatch):
     """Assert we can unlock for EFT."""
     inv_number_1 = "REG00001"

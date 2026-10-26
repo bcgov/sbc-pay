@@ -1,10 +1,16 @@
 Feature: CorpType admin view
 
-  Scenario: List view shows code, description and refund_approval columns
+  Scenario: List view shows code, description, product and refund_approval columns
     Given the CorpType admin view is loaded
     Then the list columns should include "code"
     And the list columns should include "description"
+    And the list columns should include "product"
     And the list columns should include "refund_approval"
+
+  Scenario: Product can be searched and sorted on
+    Given the CorpType admin view is loaded
+    Then "product" should be searchable
+    And "product" should be sortable
 
   Scenario: All list columns are in the declared column_list
     Given the CorpType admin view is loaded
