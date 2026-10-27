@@ -980,6 +980,59 @@ def test_pad_reversal_on_partly_refunded_invoice(mock_auth_event, session, app, 
     mock_auth_event.assert_called_once()
 
 
+@patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+def test_pad_second_reversal_on_frozen_account_reverts_invoices(mock_auth_event, session, app, client):
+    """Assert a return on an already frozen account still reverts its invoices, without a second NSF fee."""
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+
+    first_invoice_number = "1111111111"
+    first_invoice = factory_invoice(
+        payment_account=pay_account,
+        total=50,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_payment_line_item(invoice_id=first_invoice.id, filing_fees=50, total=50)
+    factory_invoice_reference(
+        invoice_id=first_invoice.id,
+        invoice_number=first_invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+
+    # Billed under a different consolidated invoice number, so the inv_number dedup guards don't apply.
+    second_invoice_number = "2222222222"
+    second_invoice = factory_invoice(
+        payment_account=pay_account,
+        total=70,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_payment_line_item(invoice_id=second_invoice.id, filing_fees=70, total=70)
+    second_ref_id = factory_invoice_reference(
+        invoice_id=second_invoice.id,
+        invoice_number=second_invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    ).id
+    second_invoice_id = second_invoice.id
+    pay_account_id = pay_account.id
+
+    _create_padr_settlement(client, cfs_account_number, "9999999999", first_invoice_number, 50)
+    assert NonSufficientFundsService.exists_for_invoice_number(first_invoice_number)
+
+    _create_padr_settlement(client, cfs_account_number, "8888888888", second_invoice_number, 70)
+
+    # The invoices must come back for collection even though the account was already frozen.
+    assert InvoiceModel.find_by_id(second_invoice_id).invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    assert InvoiceModel.find_by_id(second_invoice_id).paid == 0
+    assert InvoiceReferenceModel.find_by_id(second_ref_id).status_code == InvoiceReferenceStatus.ACTIVE.value
+    # No second $30 fee, and the account is locked only once.
+    assert not NonSufficientFundsService.exists_for_invoice_number(second_invoice_number)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
+    assert cfs_account.status == CfsAccountStatus.FREEZE.value
+    mock_auth_event.assert_called_once()
+
+
 def test_pad_reconciliations_keeps_refunded_invoice_credited(session, app, client):
     """Assert a PAD payment for an invoice refunded before settlement leaves it CREDITED."""
     cfs_account_number = "1234"
