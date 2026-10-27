@@ -782,12 +782,6 @@ def _process_failed_payments(row):
     payment_account.has_nsf_invoices = datetime.now(tz=UTC)
     # Call CFS to stop any further PAD transactions on this account.
     CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
-    if is_already_frozen:
-        current_app.logger.info(
-            "Ignoring NSF message for invoice : %s as the account is already FREEZE",
-            inv_number,
-        )
-        return False
 
     # Mark the invoices that weren't refunded as unpaid again. Refunded invoices are left as they are.
     for inv_reference in unrefunded_inv_references:
@@ -800,6 +794,18 @@ def _process_failed_payments(row):
         invoice = InvoiceModel.find_by_id(identifier=inv_reference.invoice_id)
         invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
         invoice.paid = 0
+
+    # A return on an account that is already frozen is a *new* return on a different consolidated
+    # invoice number - the two dedup guards above already rejected a repeat of the same number.
+    # The invoices above still have to be reverted, otherwise they stay PAID and drop out of every
+    # collection path. Only the fee is skipped: the account is already locked and the customer has
+    # already been notified, and whether a second $30 applies is a Finance policy question.
+    if is_already_frozen:
+        current_app.logger.info(
+            "Account is already FREEZE; reverted the invoices for %s without raising a second NSF fee",
+            inv_number,
+        )
+        return False
 
     # Create an invoice for NSF for this account
     reason_description = _get_row_value(row, Column.REVERSAL_REASON_DESC)
