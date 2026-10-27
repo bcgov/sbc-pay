@@ -821,9 +821,13 @@ def test_pad_reversal_reconciliations(session, app, client):
     assert ReceiptModel.find_by_id(receipt_id2) is None
 
 
-def _create_padr_settlement(client, cfs_account_number, receipt_number, invoice_number, total):
-    """Upload and process a settlement file with one PADR row."""
-    file_name = "cas_settlement_file.csv"
+def _create_padr_settlement(
+    client, cfs_account_number, receipt_number, invoice_number, total, file_name="cas_settlement_file.csv"
+):
+    """Upload and process a settlement file with one PADR row.
+
+    Settlement files are deduped by name, so a test sending two returns has to name them apart.
+    """
     row = [
         RecordType.PADR.value,
         SourceTransaction.PAD.value,
@@ -1017,10 +1021,14 @@ def test_pad_second_reversal_on_frozen_account_reverts_invoices(mock_auth_event,
     second_invoice_id = second_invoice.id
     pay_account_id = pay_account.id
 
-    _create_padr_settlement(client, cfs_account_number, "9999999999", first_invoice_number, 50)
+    _create_padr_settlement(
+        client, cfs_account_number, "9999999999", first_invoice_number, 50, file_name="cas_settlement_day6.csv"
+    )
     assert NonSufficientFundsService.exists_for_invoice_number(first_invoice_number)
 
-    _create_padr_settlement(client, cfs_account_number, "8888888888", second_invoice_number, 70)
+    _create_padr_settlement(
+        client, cfs_account_number, "8888888888", second_invoice_number, 70, file_name="cas_settlement_day7.csv"
+    )
 
     # The invoices must come back for collection even though the account was already frozen.
     assert InvoiceModel.find_by_id(second_invoice_id).invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
