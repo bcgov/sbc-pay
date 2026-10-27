@@ -277,14 +277,14 @@ typecheck = ["mypy"]
 
 [[package]]
 name = "blinker"
-version = "1.7.0"
+version = "1.9.0"
 description = "Fast, simple object-to-object and broadcast signaling"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "blinker-1.7.0-py3-none-any.whl", hash = "sha256:c3f865d4d54db7abc53758a01601cf343fe55b84c1de4e3fa910e420b438d5b9"},
-    {file = "blinker-1.7.0.tar.gz", hash = "sha256:e6820ff6fa4e4d1d8e2747c2283749c3f547e4fee112b98555cdcdae32996182"},
+    {file = "blinker-1.9.0-py3-none-any.whl", hash = "sha256:ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc"},
+    {file = "blinker-1.9.0.tar.gz", hash = "sha256:b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf"},
 ]
 
 [[package]]
@@ -880,46 +880,43 @@ python-dateutil = ">=2.4"
 
 [[package]]
 name = "flask"
-version = "3.0.2"
+version = "3.1.3"
 description = "A simple framework for building complex web applications."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "flask-3.0.2-py3-none-any.whl", hash = "sha256:3232e0e9c850d781933cf0207523d1ece087eb8d87b23777ae38456e2fbe7c6e"},
-    {file = "flask-3.0.2.tar.gz", hash = "sha256:822c03f4b799204250a7ee84b1eddc40665395333973dfb9deebfe425fefcb7d"},
+    {file = "flask-3.1.3-py3-none-any.whl", hash = "sha256:f4bcbefc124291925f1a26446da31a5178f9483862233b23c0c96a20701f670c"},
+    {file = "flask-3.1.3.tar.gz", hash = "sha256:0ef0e52b8a9cd932855379197dd8f94047b359ca0a78695144304cb45f87c9eb"},
 ]
 
 [package.dependencies]
-blinker = ">=1.6.2"
+blinker = ">=1.9.0"
 click = ">=8.1.3"
-itsdangerous = ">=2.1.2"
-Jinja2 = ">=3.1.2"
-Werkzeug = ">=3.0.0"
+itsdangerous = ">=2.2.0"
+jinja2 = ">=3.1.2"
+markupsafe = ">=2.1.1"
+werkzeug = ">=3.1.0"
 
 [package.extras]
 async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
-name = "Flask-Caching"
-version = "2.3.0"
+name = "flask-caching"
+version = "2.3.1"
 description = "Adds caching support to Flask applications."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "Flask_Caching-2.3.1-py3-none-any.whl", hash = "sha256:d3efcf600e5925ea5a2fcb810f13b341ae984f5b52c00e9d9070392f3ca10761"},
+    {file = "flask_caching-2.3.1.tar.gz", hash = "sha256:65d7fd1b4eebf810f844de7de6258254b3248296ee429bdcb3f741bcbf7b98c9"},
+]
 
 [package.dependencies]
 cachelib = ">=0.9.0"
 Flask = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/pallets-eco/flask-caching.git"
-reference = "master"
-resolved_reference = "494d49882537a6cbcfe3cb41c4df05ae8acf60ce"
 
 [[package]]
 name = "flask-cors"
@@ -957,26 +954,21 @@ test = ["flask-sqlalchemy", "pytest"]
 
 [[package]]
 name = "flask-jwt-oidc"
-version = "0.8.1"
+version = "0.9.0"
 description = "Opinionated flask oidc client"
 optional = false
-python-versions = ">=3.9,<4"
+python-versions = "<4,>=3.9.2"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "flask_jwt_oidc-0.9.0-py3-none-any.whl", hash = "sha256:7ce75f002e7a1ef3639366bf03f62b86e9a3afbd2d1818cbcb71a196b027e55c"},
+    {file = "flask_jwt_oidc-0.9.0.tar.gz", hash = "sha256:6c6169b52b73dbdc06f2e11b9481f382c4125a1b181f88f7270992200cda69a3"},
+]
 
 [package.dependencies]
-cachelib = "^0.13.0"
-cryptography = ">=3.4.0"
-Flask = ">=2"
-pyjwt = "^2.8.0"
-six = "^1.16.0"
-
-[package.source]
-type = "git"
-url = "https://github.com/seeker25/flask-jwt-oidc.git"
-reference = "main"
-resolved_reference = "bba7bb26625b213f4be817b01f28fb8bbb5b05d1"
+cachelib = ">=0.13.0"
+cryptography = ">=44.0.0"
+Flask = ">=3.1.3"
+pyjwt = ">=2.12.1"
 
 [[package]]
 name = "flask-marshmallow"
@@ -2346,11 +2338,11 @@ croniter = "2.0.2"
 cryptography = "46.0.5"
 dpath = "2.1.6"
 expiringdict = "1.2.2"
-flask = "3.0.2"
-flask-caching = {git = "https://github.com/pallets-eco/flask-caching.git", branch = "master"}
+flask = "3.1.3"
+flask-caching = "2.3.1"
 flask-cors = "6.0.0"
 flask-executor = "^1.0.0"
-flask-jwt-oidc = {git = "https://github.com/seeker25/flask-jwt-oidc.git", branch = "main"}
+flask-jwt-oidc = "^0.9.0"
 flask-marshmallow = "1.2.0"
 flask-migrate = "4.0.7"
 flask-moment = "1.0.5"
@@ -2407,7 +2399,7 @@ werkzeug = "^3.1.4"
 type = "git"
 url = "https://github.com/bcgov/sbc-pay.git"
 reference = "main"
-resolved_reference = "a9c895d59dea227cdffe50c80598a6dc042eae44"
+resolved_reference = "a5efeff480424f7d9e1a76a4b8cfa13c31afb1d9"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2663,21 +2655,18 @@ tests-numpy = ["numpy", "pyhamcrest[tests]"]
 
 [[package]]
 name = "pyjwt"
-version = "2.12.0"
+version = "2.15.1"
 description = "JSON Web Token implementation in Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pyjwt-2.12.0-py3-none-any.whl", hash = "sha256:9bb459d1bdd0387967d287f5656bf7ec2b9a26645d1961628cda1764e087fd6e"},
-    {file = "pyjwt-2.12.0.tar.gz", hash = "sha256:2f62390b667cd8257de560b850bb5a883102a388829274147f1d724453f8fb02"},
+    {file = "pyjwt-2.15.1-py3-none-any.whl", hash = "sha256:42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193"},
+    {file = "pyjwt-2.15.1.tar.gz", hash = "sha256:4f259e80cdfb6b3fc18a7de51fd1ef9ec79652f25019bae68975ca2468a34df8"},
 ]
 
 [package.extras]
 crypto = ["cryptography (>=3.4.0)"]
-dev = ["coverage[toml] (==7.10.7)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=8.4.2,<9.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
-docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
-tests = ["coverage[toml] (==7.10.7)", "pytest (>=8.4.2,<9.0.0)"]
 
 [[package]]
 name = "pynacl"
@@ -3571,4 +3560,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "d3bae3e3ee7ac90578c466a2ff6a4aa21ba3f0d6d95d2cd3c7b587513ef34e0c"
+content-hash = "fcb6b467ddec93dce667bd6b7b1315e5a6b97c6165b1f8fe367a69bcc004491f"

@@ -31,7 +31,7 @@ ENV APP_ENV=${APP_ENV} \
   PIP_DEFAULT_TIMEOUT=100 \
   PIP_ROOT_USER_ACTION=ignore \
   # poetry:
-  POETRY_VERSION=2.3.2 \
+  POETRY_VERSION=2.3.4 \
   POETRY_NO_INTERACTION=1 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_CACHE_DIR='/var/cache/pypoetry' \
@@ -49,7 +49,10 @@ RUN apt-get update \
     git \
     libpq-dev \
     wait-for-it \
-  && curl -sSL 'https://install.python-poetry.org' | python - \
+  # Poetry from PyPI at the pinned POETRY_VERSION, in its own venv (no remote installer script):
+  && python -m venv /opt/poetry \
+  && /opt/poetry/bin/pip install "poetry==${POETRY_VERSION}" \
+  && ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry \
   && poetry --version \
   # Cleaning cache:
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \

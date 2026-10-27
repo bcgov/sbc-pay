@@ -30,6 +30,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.auth import get_service_account_token
 from pay_api.services.oauth_service import OAuthService
+from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, QueueSources, RefundStatus
 from pay_api.utils.json_util import DecimalEncoder
@@ -158,7 +159,7 @@ def _render_credit_add_notification_template(params: dict) -> str:
 def _receipt_template_vars(invoice) -> dict | None:
     """Return the report-api vars for the receipt PDF, or None when there is no receipt yet."""
     try:
-        filing_data = {"filingDateTime": get_local_formatted_date(invoice.created_on)}
+        filing_data = {"filingDateTime": get_local_formatted_date(invoice.created_on, "%b %d, %Y")}
         # pay-queue calls this too, and url_for can't build `_links` there.
         details = ReceiptService.get_receipt_details(filing_data, invoice.id, skip_auth_check=True, include_links=False)
         # The queue encodes with plain json, which can't take the Decimals in here.
@@ -175,6 +176,8 @@ def send_receipt_notification(invoice):
     OB and PAD later in reconciliation. Only database reads happen here; the recipient
     lookup, PDF render and send run in account-mailer.
 
+    Express checkout only.
+
     An express-checkout invoice whose link nobody claimed has no account, so it goes to the
     address the partner supplied at invoice creation. Without that address there is nobody
     to tell.
@@ -182,6 +185,8 @@ def send_receipt_notification(invoice):
     Failures are logged and never affect the payment.
     """
     try:
+        if not PaymentLinkService.is_express_checkout_invoice(invoice.id):
+            return
         payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         if not payment_account:
             current_app.logger.info("No payment account found for invoice %s", invoice.id)

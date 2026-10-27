@@ -29,9 +29,11 @@ from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.utils.enums import (
     CfsAccountStatus,
     InvoiceReferenceStatus,
@@ -817,6 +819,269 @@ def test_pad_reversal_reconciliations(session, app, client):
     # Receipt should be deleted
     assert ReceiptModel.find_by_id(receipt_id1) is None
     assert ReceiptModel.find_by_id(receipt_id2) is None
+
+
+def _create_padr_settlement(
+    client, cfs_account_number, receipt_number, invoice_number, total, file_name="cas_settlement_file.csv"
+):
+    """Upload and process a settlement file with one PADR row.
+
+    Settlement files are deduped by name, so a test sending two returns has to name them apart.
+    """
+    row = [
+        RecordType.PADR.value,
+        SourceTransaction.PAD.value,
+        receipt_number,
+        100001,
+        datetime.now().strftime("%d-%b-%y"),
+        0,
+        cfs_account_number,
+        "INV",
+        invoice_number,
+        total,
+        total,
+        Status.NOT_PAID.value,
+    ]
+    create_and_upload_settlement_file(file_name, [row])
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
+
+
+@pytest.mark.parametrize("invoice_status", [InvoiceStatus.CREDITED.value, InvoiceStatus.PAID.value])
+@patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+def test_pad_reversal_on_refunded_invoice(mock_auth_event, session, app, client, invoice_status):
+    """Assert a PADR on an invoice refunded to an unused credit memo doesn't freeze the account or charge NSF."""
+    # PAID covers invoices refunded before the fix, where the PADP flipped CREDITED to PAID.
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=31.5,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=invoice_status,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=31.5, total=31.5)
+    invoice.refund = 31.5
+    invoice.save()
+    invoice_number = "1234567890"
+    receipt_number = "9999999999"
+    factory_invoice_reference(
+        invoice_id=invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.COMPLETED.value
+    )
+    CreditModel(
+        cfs_identifier="CM-1",
+        is_credit_memo=True,
+        amount=31.5,
+        remaining_amount=31.5,
+        account_id=pay_account.id,
+        created_invoice_id=invoice.id,
+    ).save()
+    invoice_id = invoice.id
+    pay_account_id = pay_account.id
+
+    _create_padr_settlement(client, cfs_account_number, receipt_number, invoice_number, 31.5)
+
+    assert InvoiceModel.find_by_id(invoice_id).invoice_status_code == invoice_status
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
+    assert cfs_account.status == CfsAccountStatus.ACTIVE.value
+    assert PaymentAccountModel.find_by_id(pay_account_id).has_nsf_invoices is None
+    assert not NonSufficientFundsService.exists_for_invoice_number(invoice_number)
+    mock_auth_event.assert_not_called()
+
+
+@patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+def test_pad_reversal_on_refunded_invoice_with_used_credit_memo(mock_auth_event, session, app, client):
+    """Assert a PADR still goes through NSF when the refund credit memo was already used."""
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=31.5,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.CREDITED.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=31.5, total=31.5)
+    invoice.refund = 31.5
+    invoice.save()
+    invoice_number = "1234567890"
+    factory_invoice_reference(
+        invoice_id=invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.COMPLETED.value
+    )
+    CreditModel(
+        cfs_identifier="CM-1",
+        is_credit_memo=True,
+        amount=31.5,
+        remaining_amount=0,
+        account_id=pay_account.id,
+        created_invoice_id=invoice.id,
+    ).save()
+    invoice_id = invoice.id
+    pay_account_id = pay_account.id
+
+    _create_padr_settlement(client, cfs_account_number, "9999999999", invoice_number, 31.5)
+
+    assert InvoiceModel.find_by_id(invoice_id).invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
+    assert cfs_account.status == CfsAccountStatus.FREEZE.value
+    assert NonSufficientFundsService.exists_for_invoice_number(invoice_number)
+    mock_auth_event.assert_called_once()
+
+
+@patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+def test_pad_reversal_on_partly_refunded_invoice(mock_auth_event, session, app, client):
+    """Assert a PADR resets only the invoices that weren't refunded, and still goes through NSF."""
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice_number = "1234567890"
+    refunded_invoice = factory_invoice(
+        payment_account=pay_account,
+        total=31.5,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.CREDITED.value,
+    )
+    factory_payment_line_item(invoice_id=refunded_invoice.id, filing_fees=31.5, total=31.5)
+    refunded_invoice.refund = 31.5
+    refunded_invoice.save()
+    refunded_ref_id = factory_invoice_reference(
+        invoice_id=refunded_invoice.id,
+        invoice_number=invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    ).id
+    CreditModel(
+        cfs_identifier="CM-1",
+        is_credit_memo=True,
+        amount=31.5,
+        remaining_amount=31.5,
+        account_id=pay_account.id,
+        created_invoice_id=refunded_invoice.id,
+    ).save()
+    paid_invoice = factory_invoice(
+        payment_account=pay_account,
+        total=50,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_payment_line_item(invoice_id=paid_invoice.id, filing_fees=50, total=50)
+    paid_ref_id = factory_invoice_reference(
+        invoice_id=paid_invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.COMPLETED.value
+    ).id
+    refunded_invoice_id = refunded_invoice.id
+    paid_invoice_id = paid_invoice.id
+    pay_account_id = pay_account.id
+
+    _create_padr_settlement(client, cfs_account_number, "9999999999", invoice_number, 81.5)
+
+    assert InvoiceModel.find_by_id(refunded_invoice_id).invoice_status_code == InvoiceStatus.CREDITED.value
+    assert InvoiceReferenceModel.find_by_id(refunded_ref_id).status_code == InvoiceReferenceStatus.COMPLETED.value
+    assert InvoiceModel.find_by_id(paid_invoice_id).invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    assert InvoiceReferenceModel.find_by_id(paid_ref_id).status_code == InvoiceReferenceStatus.ACTIVE.value
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
+    assert cfs_account.status == CfsAccountStatus.FREEZE.value
+    assert NonSufficientFundsService.exists_for_invoice_number(invoice_number)
+    mock_auth_event.assert_called_once()
+
+
+@patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+def test_pad_second_reversal_on_frozen_account_reverts_invoices(mock_auth_event, session, app, client):
+    """Assert a return on an already frozen account still reverts its invoices, without a second NSF fee."""
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+
+    first_invoice_number = "1111111111"
+    first_invoice = factory_invoice(
+        payment_account=pay_account,
+        total=50,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_payment_line_item(invoice_id=first_invoice.id, filing_fees=50, total=50)
+    factory_invoice_reference(
+        invoice_id=first_invoice.id,
+        invoice_number=first_invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    )
+
+    # Billed under a different consolidated invoice number, so the inv_number dedup guards don't apply.
+    second_invoice_number = "2222222222"
+    second_invoice = factory_invoice(
+        payment_account=pay_account,
+        total=70,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.PAID.value,
+    )
+    factory_payment_line_item(invoice_id=second_invoice.id, filing_fees=70, total=70)
+    second_ref_id = factory_invoice_reference(
+        invoice_id=second_invoice.id,
+        invoice_number=second_invoice_number,
+        status_code=InvoiceReferenceStatus.COMPLETED.value,
+    ).id
+    second_invoice_id = second_invoice.id
+    pay_account_id = pay_account.id
+
+    _create_padr_settlement(
+        client, cfs_account_number, "9999999999", first_invoice_number, 50, file_name="cas_settlement_day6.csv"
+    )
+    assert NonSufficientFundsService.exists_for_invoice_number(first_invoice_number)
+
+    _create_padr_settlement(
+        client, cfs_account_number, "8888888888", second_invoice_number, 70, file_name="cas_settlement_day7.csv"
+    )
+
+    # The invoices must come back for collection even though the account was already frozen.
+    assert InvoiceModel.find_by_id(second_invoice_id).invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    assert InvoiceModel.find_by_id(second_invoice_id).paid == 0
+    assert InvoiceReferenceModel.find_by_id(second_ref_id).status_code == InvoiceReferenceStatus.ACTIVE.value
+    # No second $30 fee, and the account is locked only once.
+    assert not NonSufficientFundsService.exists_for_invoice_number(second_invoice_number)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
+    assert cfs_account.status == CfsAccountStatus.FREEZE.value
+    mock_auth_event.assert_called_once()
+
+
+def test_pad_reconciliations_keeps_refunded_invoice_credited(session, app, client):
+    """Assert a PAD payment for an invoice refunded before settlement leaves it CREDITED."""
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=31.5,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.CREDITED.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=31.5, total=31.5)
+    invoice_number = "1234567890"
+    receipt_number = "9999999999"
+    inv_ref_id = factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number).id
+    invoice_id = invoice.id
+
+    file_name = "cas_settlement_file.csv"
+    row = [
+        RecordType.PAD.value,
+        SourceTransaction.PAD.value,
+        receipt_number,
+        100001,
+        datetime.now().strftime("%d-%b-%y"),
+        31.5,
+        cfs_account_number,
+        "INV",
+        invoice_number,
+        31.5,
+        0,
+        Status.PAID.value,
+    ]
+    create_and_upload_settlement_file(file_name, [row])
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
+
+    assert InvoiceModel.find_by_id(invoice_id).invoice_status_code == InvoiceStatus.CREDITED.value
+    assert InvoiceReferenceModel.find_by_id(inv_ref_id).status_code == InvoiceReferenceStatus.COMPLETED.value
+    assert ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id, receipt_number) is None
 
 
 @pytest.mark.skip(reason="This is handled in the eft-job, similar to routing slips.")
