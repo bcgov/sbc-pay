@@ -100,7 +100,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         initial_payment_method = _get_payment_method(payment_request, payment_account)
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
-        fees = _calculate_fees(corp_type, filing_info)
+        # Exempt GST on EJV (GOVM Accounts)
+        fees = _calculate_fees(corp_type, filing_info, exempt_gst=initial_payment_method == PaymentMethod.EJV.value)
 
         # Create payment system instance from factory
         pay_service: PaymentSystemService = PaymentSystemFactory.create(
@@ -493,7 +494,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug(">accept_delete")
 
 
-def _calculate_fees(corp_type, filing_info):
+def _calculate_fees(corp_type, filing_info, exempt_gst: bool = False):
     """Calculate and return the fees based on the filing type codes."""
     fees = []
     service_fee_applied: bool = False
@@ -508,6 +509,7 @@ def _calculate_fees(corp_type, filing_info):
             is_future_effective=filing_type_info.get("futureEffective"),
             waive_fees=filing_type_info.get("waiveFees"),
             quantity=filing_type_info.get("quantity"),
+            exempt_gst=exempt_gst,
         )
         # If service fee is already applied, do not charge again.
         if service_fee_applied:

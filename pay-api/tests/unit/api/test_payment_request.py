@@ -40,6 +40,12 @@ from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role, RoutingSlipStatus, TransactionStatus
 from tests.utilities.base_test import (
     activate_pad_account,
+    factory_corp_type_model,
+    factory_distribution_code,
+    factory_distribution_link,
+    factory_fee_model,
+    factory_fee_schedule_model,
+    factory_filing_type_model,
     factory_invoice,
     factory_invoice_reference,
     factory_payment,
@@ -1304,6 +1310,117 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
     assert rv.json.get("total") == 28.5  # Wills Notice : 17, Alias : 5 each for 2, service fee 1.0
     assert rv.json.get("lineItems")[0]["serviceFees"] == 1.5
     assert rv.json.get("lineItems")[1]["serviceFees"] == 0
+
+
+def _gst_fee_schedule(code: str, payment_methods: list):
+    """Create a GST enabled fee schedule for tests."""
+    corp_type = factory_corp_type_model(f"{code}C", "TEST")
+    corp_type.payment_methods = payment_methods
+    corp_type.save()
+    filing_type = factory_filing_type_model(f"{code}F", "TEST")
+    schedule = factory_fee_schedule_model(
+        filing_type,
+        corp_type,
+        factory_fee_model(f"{code}M", 100),
+        service_fee=factory_fee_model(f"{code}S", 1.5),
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
+    )
+    service_dist = factory_distribution_code(f"{code}svc").save()
+    dist = factory_distribution_code(f"{code}main", service_fee_dist_id=service_dist.distribution_code_id).save()
+    factory_distribution_link(dist.distribution_code_id, schedule.fee_schedule_id).save()
+    return corp_type.code, filing_type.code
+
+
+def _gst_payment_request(corp_type: str, filing_type: str):
+    """Return a payment request payload for a gst enabled fee schedule."""
+    return {
+        "businessInfo": {
+            "businessIdentifier": "CP0001234",
+            "corpType": corp_type,
+            "businessName": "ABC Corp",
+            "contactInfo": {
+                "city": "Victoria",
+                "postalCode": "V8P2P2",
+                "province": "BC",
+                "addressLine1": "100 Douglas Street",
+                "country": "CA",
+            },
+        },
+        "filingInfo": {"filingTypes": [{"filingTypeCode": filing_type}]},
+    }
+
+
+def test_create_ejv_payment_request_exempts_gst(session, client, jwt, app):
+    """Assert GST is not charged on EJV invoices, even for a GST enabled fee schedule."""
+    corp_type, filing_type = _gst_fee_schedule("EX_GST", [PaymentMethod.EJV.value])
+
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    rv = client.post(
+        "/api/v1/accounts",
+        data=json.dumps(get_gov_account_payload(account_id=1234)),
+        headers=headers,
+    )
+    auth_account_id = rv.json.get("accountId")
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json",
+        "Account-Id": auth_account_id,
+    }
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(_gst_payment_request(corp_type, filing_type)),
+        headers=headers,
+    )
+
+    assert rv.status_code == 201
+    assert rv.json.get("paymentMethod") == PaymentMethod.EJV.value
+    assert rv.json.get("total") == 101.5
+    # GST lines are not included when they are zero (partner backwards compatibility).
+    assert "gst" not in rv.json
+    for line_item in rv.json.get("lineItems"):
+        assert "statutoryFeesGst" not in line_item
+        assert "serviceFeesGst" not in line_item
+
+    invoice = InvoiceModel.find_by_id(rv.json.get("id"))
+    assert invoice.gst == 0
+    for line in invoice.payment_line_items:
+        assert line.statutory_fees_gst == 0
+        assert line.service_fees_gst == 0
+
+    # Assert fee schedule configuration was not changed
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type)
+    assert fee_schedule.statutory_fees_gst_added is True
+    assert fee_schedule.service_fees_gst_added is True
+
+
+def test_create_non_ejv_payment_request_still_charges_gst(session, client, jwt, app):
+    """Assert gst exemption does not apply to non EJV payment method."""
+    corp_type, filing_type = _gst_fee_schedule("CHRG_GST", [PaymentMethod.DIRECT_PAY.value])
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(_gst_payment_request(corp_type, filing_type)),
+        headers=headers,
+    )
+
+    assert rv.status_code == 201
+    assert rv.json.get("paymentMethod") == PaymentMethod.DIRECT_PAY.value
+
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
+    expected_gst = round(Decimal(str(100)) * gst_rate, 2) + round(Decimal(str(1.5)) * gst_rate, 2)
+    assert expected_gst > 0
+    assert rv.json.get("gst") == float(expected_gst)
+    assert rv.json.get("total") == float(Decimal(str(100)) + Decimal(str(1.5)) + expected_gst)
+
+    invoice = InvoiceModel.find_by_id(rv.json.get("id"))
+    assert invoice.gst == expected_gst
+    assert sum(line.statutory_fees_gst + line.service_fees_gst for line in invoice.payment_line_items) == expected_gst
 
 
 def test_create_ejv_payment_request_non_billable_account(session, client, jwt, app):
