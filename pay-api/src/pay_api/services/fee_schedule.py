@@ -63,6 +63,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._variable: bool = False
         self._service_fees_gst_added: bool = False
         self._statutory_fees_gst_added: bool = False
+        self._exempt_gst: bool = False
 
     @property
     def _dao(self):
@@ -231,7 +232,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def service_fees_gst(self):
         """Return the GST amount calculated."""
-        if self._service_fees_gst_added:
+        if self._service_fees_gst_added and not self._exempt_gst:
             gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC))
             return round(self.service_fees * gst_rate, 2)
         return 0
@@ -239,7 +240,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def statutory_fees_gst(self):
         """Return the GST amount calculated."""
-        if self._statutory_fees_gst_added:
+        if self._statutory_fees_gst_added and not self._exempt_gst:
             gst_rate = TaxRateModel.get_gst_effective_rate(datetime.now(tz=UTC))
             return round(self.total_excluding_service_fees * gst_rate, 2)
         return 0
@@ -300,6 +301,19 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._dao.statutory_fees_gst_added = value
 
     @property
+    def exempt_gst(self):
+        """Return whether GST is exempt for this calculation."""
+        return self._exempt_gst
+
+    @exempt_gst.setter
+    def exempt_gst(self, value: bool):
+        """Exempt this calculation from GST, regardless of the schedule's GST flags.
+
+        e.g. GOVM Accounts
+        """
+        self._exempt_gst = value
+
+    @property
     def variable(self) -> bool:
         """Return the service_fee_code."""
         return self._variable
@@ -351,6 +365,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         fee_schedule = FeeSchedule()
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
         fee_schedule.quantity = kwargs.get("quantity")
+        fee_schedule.exempt_gst = kwargs.get("exempt_gst", False)
 
         # Find fee overrides for account.
         account_fee = AccountFeeModel.find_by_auth_account_id_and_corp_type(user.account_id, corp_type)

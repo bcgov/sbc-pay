@@ -339,6 +339,69 @@ def test_fee_schedule_gst_properties(session):
     assert fee_schedule.total == expected_total
 
 
+def test_fee_schedule_gst_exempt(session):
+    """Assert exempt_gst does not include GST even though the schedule has them enabled."""
+    create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
+
+    fee_schedule_model = FeesScheduleModel(
+        filing_type_code=FILING_TYPE_CODE,
+        corp_type_code=CORP_TYPE_CODE,
+        fee_code=FEE_CODE,
+        fee_start_date=datetime.now(tz=UTC).date(),
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
+        created_by="TEST",
+    )
+    fee_schedule_model.save()
+
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
+        corp_type=CORP_TYPE_CODE,
+        filing_type_code=FILING_TYPE_CODE,
+        valid_date=datetime.now(tz=UTC),
+        exempt_gst=True,
+    )
+
+    fee_schedule.service_fees = Decimal("10.00")
+    fee_schedule.priority_fee = Decimal("5.00")
+    fee_schedule.future_effective_fee = Decimal("15.00")
+
+    assert fee_schedule.service_fees_gst == 0
+    assert fee_schedule.statutory_fees_gst == 0
+    assert fee_schedule.total_excluding_service_fees == Decimal("100.00") + Decimal("5.00") + Decimal("15.00")
+    assert fee_schedule.total == Decimal("100.00") + Decimal("5.00") + Decimal("15.00") + Decimal("10.00")
+    assert fee_schedule.asdict()["tax"] == {"gst": 0, "filingFeeGst": 0, "serviceFeeGst": 0, "pst": 0}
+
+    fs = FeesScheduleModel.find_by_filing_type_and_corp_type(CORP_TYPE_CODE, FILING_TYPE_CODE, datetime.now(tz=UTC))
+    assert fs.statutory_fees_gst_added is True
+    assert fs.service_fees_gst_added is True
+
+
+def test_fee_schedule_gst_not_exempt_by_default(session):
+    """Assert gst is not exempt by default."""
+    create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
+
+    fee_schedule_model = FeesScheduleModel(
+        filing_type_code=FILING_TYPE_CODE,
+        corp_type_code=CORP_TYPE_CODE,
+        fee_code=FEE_CODE,
+        fee_start_date=datetime.now(tz=UTC).date(),
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
+        created_by="TEST",
+    )
+    fee_schedule_model.save()
+
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(
+        corp_type=CORP_TYPE_CODE, filing_type_code=FILING_TYPE_CODE, valid_date=datetime.now(tz=UTC)
+    )
+    fee_schedule.service_fees = Decimal("10.00")
+
+    assert fee_schedule.exempt_gst is False
+    gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
+    assert fee_schedule.service_fees_gst == round(Decimal("10.00") * gst_rate, 2)
+    assert fee_schedule.statutory_fees_gst == round(Decimal("100.00") * gst_rate, 2)
+
+
 def test_fee_schedule_gst_properties_disabled(session):
     """Test GST calculation properties when GST is disabled."""
     create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
