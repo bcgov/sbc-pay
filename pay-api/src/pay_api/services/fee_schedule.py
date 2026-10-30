@@ -31,10 +31,11 @@ from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeDetailsSchema, FeeScheduleSchema, db
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import FilingType as FilingTypeModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import TaxRate as TaxRateModel
 from pay_api.utils.cache import cache
 from pay_api.utils.constants import TAX_CLASSIFICATION_GST
-from pay_api.utils.enums import Role
+from pay_api.utils.enums import PaymentMethod, Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 
@@ -312,6 +313,17 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         e.g. GOVM Accounts
         """
         self._exempt_gst = value
+
+    @staticmethod
+    def is_gst_exempt(payment_account: PaymentAccountModel) -> bool:
+        """Return True if the payment account is exempt from GST."""
+        return payment_account.payment_method in {PaymentMethod.EJV.value}
+
+    @staticmethod
+    def is_gst_exempt_for_auth_account(auth_account_id: str) -> bool:
+        """Return True when the payment account for the auth account is exempt from GST."""
+        payment_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        return payment_account is not None and FeeSchedule.is_gst_exempt(payment_account)
 
     @property
     def variable(self) -> bool:

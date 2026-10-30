@@ -26,6 +26,7 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import DEFAULT_JURISDICTION, DT_SHORT_FORMAT
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
+from pay_api.utils.user_context import get_auth_account_id
 from pay_api.utils.util import convert_to_bool
 
 bp = Blueprint("FEES", __name__, url_prefix=f"{EndpointEnum.API_V1.value}/fees")
@@ -45,6 +46,9 @@ def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
     if _jwt.validate_roles([Role.STAFF.value]):
         waive_fees = convert_to_bool(request.args.get("waiveFees", "False"))
 
+    auth_account_id = get_auth_account_id()
+    exempt_gst = FeeSchedule.is_gst_exempt_for_auth_account(auth_account_id) if auth_account_id else False
+
     try:
         response, status = (
             FeeSchedule.find_by_corp_type_and_filing_type(
@@ -56,6 +60,7 @@ def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
                 is_future_effective=is_future_effective,
                 waive_fees=waive_fees,
                 quantity=quantity,
+                exempt_gst=exempt_gst,
             ).asdict(),
             HTTPStatus.OK,
         )
