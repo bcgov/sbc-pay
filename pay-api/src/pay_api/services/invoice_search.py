@@ -18,7 +18,7 @@ from datetime import datetime
 
 from dateutil import parser
 from flask import current_app
-from sqlalchemy import String, and_, cast, exists, func, or_, select
+from sqlalchemy import String, and_, cast, exists, false, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload, lazyload, load_only, noload, with_expression
 
 from pay_api.exceptions import BusinessException
@@ -206,17 +206,34 @@ class InvoiceSearch:
             query = query.filter(Invoice.created_name.ilike(f"%{created_by}%"))  # pylint: disable=no-member
         if created_name := search_filter.get("createdName", None):
             query = query.filter(Invoice.created_name.ilike(f"%{created_name}%"))  # pylint: disable=no-member
-        if invoice_id := search_filter.get("id", None):
-            query = query.filter(cast(Invoice.id, String).like(f"%{invoice_id}%"))
-        if invoice_number := search_filter.get("invoiceNumber", None):
-            if include_joins:
-                query = query.join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-            query = query.filter(InvoiceReference.invoice_number.ilike(f"%{invoice_number}%"))
+
+        if auth_account_id:
+            if invoice_id := search_filter.get("id", None):
+                query = query.filter(cast(Invoice.id, String).like(f"%{invoice_id}%"))
+            if invoice_number := search_filter.get("invoiceNumber", None):
+                if include_joins:
+                    query = query.join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+                query = query.filter(InvoiceReference.invoice_number.ilike(f"%{invoice_number}%"))
+        else:
+            # Without an account (staff search) transition to perfect match filters for more performant search
+            # as it will search all invoices in the system
+            query = cls.filter_with_no_account(query, search_filter, include_joins)
 
         query = cls.filter_corp_type(query, search_filter)
         query = cls.filter_payment(query, search_filter)
         query = cls.filter_details(query, search_filter, include_joins)
         query = InvoiceService.filter_date(query, search_filter)
+        return query
+
+    @classmethod
+    def filter_with_no_account(cls, query, search_filter: dict, include_joins=False):
+        """For filtering criteria when searching without an account."""
+        if invoice_id := search_filter.get("id", None):
+            query = query.filter(Invoice.id == int(invoice_id) if invoice_id.strip().isdigit() else false())
+        if invoice_number := search_filter.get("invoiceNumber", None):
+            if include_joins:
+                query = query.join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+            query = query.filter(InvoiceReference.invoice_number == invoice_number)
         return query
 
     @staticmethod

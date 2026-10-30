@@ -193,7 +193,6 @@ def test_payment_with_no_active_invoice(session):
             None,
             None,
         ),
-        ("id", None, False, 1, "id", None),
         (
             "payment_method_no_match",
             {"paymentMethod": PaymentMethod.EFT.value},
@@ -203,6 +202,8 @@ def test_payment_with_no_active_invoice(session):
             None,
         ),
         ("id", None, False, 1, "id", None),
+        ("id_view_all_exact_match", None, True, 1, "id", None),
+        ("id_view_all_non_numeric", {"id": "abc"}, True, 0, None, None),
         (
             "payment_method_credit_card_match",
             {"paymentMethod": PaymentMethod.CC.value},
@@ -229,14 +230,8 @@ def test_payment_with_no_active_invoice(session):
         ),
         ("payment_method_nofee", {"paymentMethod": "NO_FEE"}, False, 1, None, None),
         ("invoice_number", {"invoiceNumber": "31"}, False, 1, "invoice_number", "1231"),
-        (
-            "invoice_number_view_all",
-            {"invoiceNumber": "31"},
-            True,
-            2,
-            "invoice_number",
-            "1231",
-        ),
+        ("invoice_number_view_all", {"invoiceNumber": "1231"}, True, 2, "invoice_number", "1231"),
+        ("invoice_number_view_all_no_match", {"invoiceNumber": "12"}, True, 0, None, None),
         ("account_name", {"accountName": "account 1"}, False, 3, None, None),
         ("account_name_view_all_1", {"accountName": "account 2"}, True, 1, None, None),
         ("account_name_view_all_2", {"accountName": "account"}, True, 4, None, None),
@@ -261,7 +256,7 @@ def test_search_payment_history(
         )
         invoice.save()
         if expected_key == "id" and not search_filter:
-            search_filter = {"id": invoice.id}
+            search_filter = {"id": str(invoice.id)}
             expected_value = invoice.id
         factory_invoice_reference(invoice_id=invoice.id, invoice_number=f"123{i}").save()
         line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description=f"test{i}")
@@ -278,7 +273,7 @@ def test_search_payment_history(
     )
     invoice.save()
     if expected_key == "id" and not search_filter:
-        search_filter = {"id": invoice.id}
+        search_filter = {"id": str(invoice.id)}
         expected_value = invoice.id
     factory_invoice_reference(invoice.id, invoice_number="1231").save()
     line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description="test1")
