@@ -101,7 +101,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
         # Exempt GST on EJV (GOVM Accounts)
-        fees = _calculate_fees(corp_type, filing_info, exempt_gst=initial_payment_method == PaymentMethod.EJV.value)
+        fees = _calculate_fees(corp_type, filing_info, exempt_gst=FeeSchedule.is_gst_exempt(payment_account._dao))
 
         # Create payment system instance from factory
         pay_service: PaymentSystemService = PaymentSystemFactory.create(

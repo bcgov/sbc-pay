@@ -103,11 +103,15 @@ def generate_fee_schedule(
     return corp_type.code, filing_type.code
 
 
-def generate_payment_account(auth_account_id, *, product, apply_filing_fees=True, service_fee_code=None):
-    """Create an account fee override."""
-    account = factory_payment_account(auth_account_id=auth_account_id)
-    account.save()
-    payment_account = PaymentAccount.find_by_auth_account_id(auth_account_id)
+def generate_payment_account(auth_account_id, *, payment_method=None):
+    """Create a payment account."""
+    factory_payment_account(auth_account_id=auth_account_id, payment_method_code=payment_method).save()
+    return PaymentAccount.find_by_auth_account_id(auth_account_id)
+
+
+def generate_account_override(auth_account_id, *, product, apply_filing_fees=True, service_fee_code=None):
+    """Create an account fee override for a payment account."""
+    payment_account = generate_payment_account(auth_account_id)
     AccountFee(
         account_id=payment_account.id,
         apply_filing_fees=apply_filing_fees,
@@ -339,7 +343,7 @@ def test_fees_account_override(  # pylint: disable=too-many-arguments
 ):
     """Assert fees applies the account override."""
     corp_type, filing_type = generate_fee_schedule(code, product=BUSINESS_SEARCH, with_distribution=False)
-    generate_payment_account(
+    generate_account_override(
         "8001", product=BUSINESS_SEARCH, apply_filing_fees=apply_filing_fees, service_fee_code=service_fee_code
     )
 
@@ -353,7 +357,7 @@ def test_fees_account_override(  # pylint: disable=too-many-arguments
 def test_account_override_scoped_to_product(session, client, jwt, app):
     """Assert override is applied to one product."""
     corp_type, filing_type = generate_fee_schedule("OVU", product="OTHER_PRODUCT", with_distribution=False)
-    generate_payment_account("8002", product=BUSINESS_SEARCH, apply_filing_fees=False, service_fee_code=NO_FEE_CODE)
+    generate_account_override("8002", product=BUSINESS_SEARCH, apply_filing_fees=False, service_fee_code=NO_FEE_CODE)
 
     rv = call_get_fees(client, get_headers(jwt, "general", account_id="8002"), corp_type, filing_type)
 
@@ -459,7 +463,7 @@ def test_fees_service_fee_gst(  # pylint: disable=too-many-arguments
         with_distribution=False,
     )
     if account_id:
-        generate_payment_account(account_id, product=BUSINESS_SEARCH, service_fee_code=NO_FEE_CODE)
+        generate_account_override(account_id, product=BUSINESS_SEARCH, service_fee_code=NO_FEE_CODE)
 
     rv = call_get_fees(client, get_headers(jwt, caller, account_id=account_id), corp_type, filing_type)
 

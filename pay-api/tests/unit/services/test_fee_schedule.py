@@ -25,7 +25,11 @@ import pytest
 from pay_api import services
 from pay_api.models import CorpType, FeeCode, FilingType, TaxRate
 from pay_api.models import FeeSchedule as FeesScheduleModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.services.fee_schedule import FeeSchedule as FeeScheduleService
+from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.errors import Error
+from tests.utilities.base_test import factory_payment_account
 
 CORP_TYPE_CODE = "CPX"
 FILING_TYPE_CODE = "OTANNX"
@@ -400,6 +404,43 @@ def test_fee_schedule_gst_not_exempt_by_default(session):
     gst_rate = TaxRate.get_gst_effective_rate(datetime.now(tz=UTC))
     assert fee_schedule.service_fees_gst == round(Decimal("10.00") * gst_rate, 2)
     assert fee_schedule.statutory_fees_gst == round(Decimal("100.00") * gst_rate, 2)
+
+
+@pytest.mark.parametrize(
+    "payment_method,expected",
+    [
+        (PaymentMethod.EJV.value, True),
+        (PaymentMethod.DIRECT_PAY.value, False),
+        (PaymentMethod.PAD.value, False),
+        (PaymentMethod.EFT.value, False),
+        (PaymentMethod.CC.value, False),
+        (PaymentMethod.ONLINE_BANKING.value, False),
+        (PaymentMethod.DRAWDOWN.value, False),
+        (PaymentMethod.INTERNAL.value, False),
+        (None, False),
+    ],
+)
+def test_is_gst_exempt(payment_method, expected):
+    """Assert GST exemption on payment account method."""
+    payment_account = PaymentAccountModel(payment_method=payment_method)
+
+    assert FeeScheduleService.is_gst_exempt(payment_account) is expected
+
+
+@pytest.mark.parametrize(
+    "payment_method,expected",
+    [(PaymentMethod.EJV.value, True), (PaymentMethod.PAD.value, False)],
+)
+def test_is_gst_exempt_for_auth_account(session, payment_method, expected):
+    """Assert GST exemption on auth account id."""
+    factory_payment_account(auth_account_id="3333", payment_method_code=payment_method).save()
+
+    assert FeeScheduleService.is_gst_exempt_for_auth_account("3333") is expected
+
+
+def test_is_gst_exempt_for_auth_account_not_found(session):
+    """Assert if a non existing account is used GST is not exempt."""
+    assert FeeScheduleService.is_gst_exempt_for_auth_account("does-not-exist") is False
 
 
 def test_fee_schedule_gst_properties_disabled(session):

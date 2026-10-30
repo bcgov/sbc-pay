@@ -22,12 +22,13 @@ from datetime import UTC, datetime, timedelta
 
 from pay_api.models import TaxRate
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import Role
+from pay_api.utils.enums import PaymentMethod, Role
 from tests.utilities.base_test import (
     factory_corp_type_model,
     factory_fee_model,
     factory_fee_schedule_model,
     factory_filing_type_model,
+    factory_payment_account,
     get_claims,
     get_gov_account_payload,
     token_header,
@@ -534,6 +535,39 @@ def test_get_fee_with_gst_and_service_fees(client, jwt, session):
     assert response_data["priorityFees"] == 0.0
     assert response_data["futureEffectiveFees"] == 0.0
     assert response_data["processingFees"] == 0.0
+
+
+def test_get_fee_with_gst_exempt_account(client, jwt, session):
+    """Assert that fee endpoint properly calculates fee exemption."""
+    corp_type_code = "TEST_COR5"
+    filing_type_code = "TEST_FIL5"
+    fee_code = "TEST_FEE5"
+    service_fee_code = "SERVICE_F5"
+
+    factory_fee_schedule_model(
+        factory_filing_type_model(filing_type_code, "Test Filing Type 5"),
+        factory_corp_type_model(corp_type_code, "Test Corporation Type 5"),
+        factory_fee_model(fee_code, 200.00),
+        service_fee=factory_fee_model(service_fee_code, 25.00),
+        statutory_fees_gst_added=True,
+        service_fees_gst_added=True,
+    )
+    factory_payment_account(auth_account_id="4567", payment_method_code=PaymentMethod.EJV.value).save()
+
+    token = jwt.create_jwt(get_claims(role=Role.EDITOR.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json", "Account-Id": "4567"}
+
+    rv = client.get(f"/api/v1/fees/{corp_type_code}/{filing_type_code}", headers=headers)
+
+    assert rv.status_code == 200
+    response_data = rv.json
+
+    assert response_data["filingFees"] == 200.0
+    assert response_data["serviceFees"] == 25.0
+    assert response_data["total"] == 225.0
+    assert response_data["tax"]["gst"] == 0.0
+    assert response_data["tax"]["filingFeeGst"] == 0.0
+    assert response_data["tax"]["serviceFeeGst"] == 0.0
 
 
 def test_get_fee_with_gst_disabled(client, jwt, session):
