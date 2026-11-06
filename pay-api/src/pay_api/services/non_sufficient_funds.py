@@ -41,6 +41,23 @@ from pay_api.utils.user_context import user_context
 
 from .oauth_service import OAuthService
 
+# Invoice statuses that still count as owing for an NSF / overdue balance.
+# NSF rows statuses may change due to OPS / refunds / cancellations in certain scenarios
+# and they need to not count towards the remaining outstanding balance.
+# These statuses are specifically for when joined with non_sufficient_funds table
+#   CREATED - PAD: the NSF fee invoice (paid by credit card)
+#   SETTLEMENT_SCHED - PAD NSF (Failed payment by settlement files)
+#   PARTIAL_PAID - invoices with an amount still owing.
+#   OVERDUE - EFT: invoices past overdue date set by eft_task job.
+#   APPROVED - EFT: invoices that have been reversed and back to APPROVED.
+NSF_OUTSTANDING_STATUSES = (
+    InvoiceStatus.CREATED.value,
+    InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+    InvoiceStatus.PARTIAL.value,
+    InvoiceStatus.OVERDUE.value,
+    InvoiceStatus.APPROVED.value,
+)
+
 
 class NonSufficientFundsService:
     """Service to manage Non-Sufficient Funds related operations."""
@@ -104,7 +121,7 @@ class NonSufficientFundsService:
             )
             .filter(
                 PaymentAccountModel.auth_account_id == account_id,
-                InvoiceModel.invoice_status_code != InvoiceStatus.PAID.value,
+                InvoiceModel.invoice_status_code.in_(NSF_OUTSTANDING_STATUSES),
             )
             .distinct(InvoiceModel.id)
             .group_by(InvoiceModel.id, InvoiceReferenceModel.id, NonSufficientFunds.description)
@@ -139,7 +156,7 @@ class NonSufficientFundsService:
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
             .filter(
                 PaymentAccountModel.auth_account_id == account_id,
-                InvoiceModel.invoice_status_code != InvoiceStatus.PAID.value,
+                InvoiceModel.invoice_status_code.in_(NSF_OUTSTANDING_STATUSES),
             )
             .group_by(InvoiceModel.id)
             .subquery()
