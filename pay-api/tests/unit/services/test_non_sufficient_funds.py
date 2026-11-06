@@ -17,6 +17,8 @@
 Test-Suite to ensure that the Non-Sufficient Funds layer is working as expected.
 """
 
+import pytest
+
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.services import NonSufficientFundsService
 from pay_api.utils.enums import InvoiceStatus, StatementFrequency
@@ -134,3 +136,87 @@ def test_find_all_non_sufficient_funds_invoices(session):
     assert find_non_sufficient_funds["total_amount_remaining"] == 30.0
     assert find_non_sufficient_funds["nsf_amount"] == 30.0
     assert find_non_sufficient_funds["reason"] == "EFT invoice overdue"
+
+
+def _create_invoice_with_nsf_row(status_code: str, total: int, paid: int):
+    """Generate test NSF and account data."""
+    invoice_number = "REG00000001"
+    payment_account = factory_payment_account()
+    payment_account.save()
+    invoice = factory_invoice(payment_account=payment_account, status_code=status_code, paid=paid, total=total)
+    invoice.save()
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type("CP", "OTANN")
+    factory_payment_line_item(
+        invoice_id=invoice.id,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        description="Annual Report",
+        total=total,
+        filing_fees=0,
+    ).save()
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number).save()
+    factory_non_sufficient_funds(invoice_id=invoice.id, invoice_number=invoice_number, description="NSF").save()
+    settings = factory_statement_settings(
+        payment_account_id=payment_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+    ).save()
+    statement = factory_statement(
+        payment_account_id=payment_account.id,
+        frequency=StatementFrequency.MONTHLY.value,
+        statement_settings_id=settings.id,
+    ).save()
+    factory_statement_invoices(statement_id=statement.id, invoice_id=invoice.id).save()
+    return payment_account
+
+
+@pytest.mark.parametrize(
+    "status_code, paid, expected_remaining",
+    [
+        (InvoiceStatus.CREATED.value, 0, 30.0),
+        (InvoiceStatus.SETTLEMENT_SCHEDULED.value, 0, 30.0),
+        (InvoiceStatus.PARTIAL.value, 10, 20.0),
+        (InvoiceStatus.OVERDUE.value, 0, 30.0),
+        (InvoiceStatus.APPROVED.value, 0, 30.0),
+    ],
+)
+def test_find_all_non_sufficient_funds_invoices_includes_outstanding(session, status_code, paid, expected_remaining):
+    """Assert invoices NSF outstanding balance statuses are included."""
+    payment_account = _create_invoice_with_nsf_row(status_code, total=30, paid=paid)
+
+    result = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
+        account_id=payment_account.auth_account_id
+    )
+
+    assert result["total"] == 1
+    assert len(result["invoices"]) == 1
+    assert len(result["statements"]) == 1
+    assert result["total_amount_remaining"] == expected_remaining
+    assert result["reason"] == "NSF"
+
+
+@pytest.mark.parametrize(
+    "status_code, paid",
+    [
+        (InvoiceStatus.PAID.value, 30),
+        (InvoiceStatus.CREDITED.value, 30),
+        (InvoiceStatus.CREDITED.value, 0),
+        (InvoiceStatus.CANCELLED.value, 0),
+        (InvoiceStatus.DELETED.value, 0),
+        (InvoiceStatus.REFUND_REQUESTED.value, 30),
+        (InvoiceStatus.REFUNDED.value, 30),
+    ],
+)
+def test_find_all_non_sufficient_funds_invoices_excludes_not_outstanding(session, status_code, paid):
+    """Assert invoices statuses that are not outstanding with and NSF row do not appear."""
+    payment_account = _create_invoice_with_nsf_row(status_code, total=30, paid=paid)
+
+    result = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
+        account_id=payment_account.auth_account_id
+    )
+
+    assert result["total"] == 0
+    assert result["invoices"] == []
+    assert result["statements"] == []
+    assert result["total_amount"] == 0
+    assert result["total_amount_remaining"] == 0
+    assert result["nsf_amount"] == 0
+    assert result["reason"] == "None"
