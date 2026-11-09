@@ -832,17 +832,17 @@ def test_pad_nsf_failure_before_commit_rolls_back_row(session, app, client, mock
         message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
     )
 
-    # The NSF row left nothing behind, so it can be reprocessed.
+    # Nothing from the NSF row was saved.
     assert not NonSufficientFundsService.exists_for_invoice_number(nsf_invoice_number)
     assert not PaymentAccountModel.find_by_id(nsf_account_id).has_nsf_invoices
     cfs_account = CfsAccountModel.find_effective_by_payment_method(nsf_account_id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.ACTIVE.value
     mock_lock.assert_not_called()
     mock_adjustment.assert_not_called()
-    # The FAILED payment is still recorded for the row, which is why a retry needs it removed first.
+    # Still recorded by _create_payment_records, so a retry needs it removed first.
     assert PaymentModel.find_payment_by_invoice_number_and_status(nsf_invoice_number, PaymentStatus.FAILED.value)
 
-    # The error is reported and the rest of the file is still processed.
+    # The error is reported and the next row is still processed.
     mock_send_error_email.assert_called_once()
     error_messages = mock_send_error_email.call_args[0][0].error_messages
     assert len(error_messages) == 1
