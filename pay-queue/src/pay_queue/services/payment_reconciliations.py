@@ -453,8 +453,9 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
         ):
             current_app.logger.info("NOT PAID. NSF identified.")
             # NSF Condition. Publish to account events for NSF.
+            errors_before = len(error_messages)
             try:
-                nsf_invoice = _process_failed_payments(row)
+                should_lock = _process_failed_payments(row, error_messages)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 # Nothing NSF-related for this row is committed yet, so a rollback leaves no partial NSF behind.
                 # _create_payment_records still records a FAILED payment for the row after the loop, and the
@@ -468,7 +469,7 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
                     e,
                 )
                 return True
-            if nsf_invoice:
+            if should_lock:
                 # Send mailer and account events to update status and send email notification
                 AuthEvent.publish_lock_account_event(
                     LockAccountDetails(
@@ -484,10 +485,7 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
                         reversal_reason=_get_row_value(row, Column.REVERSAL_REASON_DESC),
                     ),
                 )
-                # Last, so a CFS failure can't stop the lock. The NSF is committed, so the duplicate-NSF guard
-                # skips this row on any replay and the adjustment is never posted twice.
-                if not _add_nsf_adjustment(row, nsf_invoice, inv_number, error_messages):
-                    has_errors = True
+            has_errors = len(error_messages) > errors_before or has_errors
         else:
             error_msg = f"Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}."
             has_errors = True
@@ -748,15 +746,15 @@ def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
     db.session.add(receipt)
 
 
-def _process_failed_payments(row) -> InvoiceModel | None:
-    """Handle failed payments. Return the committed NSF fee invoice when the account should be locked."""
+def _process_failed_payments(row, error_messages: list[dict[str, any]]) -> bool:
+    """Handle failed payments. Return True when the account should be locked."""
     # 1. Check if there is an NSF record for this account, if there isn't, proceed.
     # 2. SET cfs_account status to FREEZE.
     # 3. Call CFS API to stop further PAD on this account.
     # 4. Reverse the invoice_reference status to ACTIVE, invoice status to SETTLEMENT_SCHED, and delete receipt.
     # 5. Create an NSF invoice for this account.
     # 6. Create invoice reference for the newly created NSF invoice.
-    # 7. The caller locks the account, then adjusts the invoice in CFS to include the NSF fee.
+    # 7. Adjust invoice in CFS to include NSF fees.
     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
     payment_account = _get_payment_account(row)
     payment_account = PaymentAccountModel.find_by_auth_account_id(payment_account.auth_account_id)
@@ -765,14 +763,14 @@ def _process_failed_payments(row) -> InvoiceModel | None:
     payment = PaymentModel.find_payment_by_invoice_number_and_status(inv_number, PaymentStatus.FAILED.value)
     if payment:
         current_app.logger.info("Ignoring duplicate NSF message for invoice : %s ", inv_number)
-        return None
+        return False
     # If there is an NSF row, it means it's a duplicate NSF event. Ignore it.
     if NonSufficientFundsService.exists_for_invoice_number(inv_number):
         current_app.logger.info(
             "Ignoring duplicate NSF event for account: %s ",
             payment_account.auth_account_id,
         )
-        return None
+        return False
 
     # The invoices this reversal undoes: the ones the PAD payment marked as paid (COMPLETED references).
     inv_references: list[InvoiceReferenceModel] = (
@@ -792,7 +790,7 @@ def _process_failed_payments(row) -> InvoiceModel | None:
             "Ignoring NSF message for invoice : %s as all its invoices were refunded",
             inv_number,
         )
-        return None
+        return False
 
     # Set CFS Account Status.
     cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
@@ -825,31 +823,26 @@ def _process_failed_payments(row) -> InvoiceModel | None:
             "Account is already FREEZE; reverted the invoices for %s without raising a second NSF fee",
             inv_number,
         )
-        return None
+        return False
 
     # Create an invoice for NSF for this account. Everything above and the NSF records are committed together,
     # so a failure before this point leaves no partial NSF behind.
     reason_description = _get_row_value(row, Column.REVERSAL_REASON_DESC)
-    nsf_invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account, reason_description)
+    invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account, reason_description)
     db.session.commit()
-    return nsf_invoice
-
-
-def _add_nsf_adjustment(row, nsf_invoice: InvoiceModel, inv_number: str, error_messages: list[dict[str, any]]) -> bool:
-    """Add the NSF fee to the reversed invoice in CFS. Return False and report the error when CFS fails."""
-    cfs_account = CfsAccountModel.find_by_id(nsf_invoice.cfs_account_id)
+    # Adjust CFS invoice. The NSF is committed, so the duplicate-NSF guard above rejects any retry of this row
+    # and the adjustment is never posted twice. A CFS failure here must not stop the lock.
     try:
-        CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=nsf_invoice.total)
-        return True
+        CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
     except Exception as e:  # NOQA # pylint: disable=broad-except
         _csv_error_handling(
             row,
-            f"NSF adjustment of {nsf_invoice.total} failed in CFS for invoice {inv_number}. "
-            "The account is locked; add the adjustment in CAS manually.",
+            f"NSF adjustment of {invoice.total} failed in CFS for invoice {inv_number}. "
+            "Add the adjustment in CAS manually.",
             error_messages,
             e,
         )
-        return False
+    return True
 
 
 def _is_refunded_to_unused_credit_memo(inv_reference: InvoiceReferenceModel) -> bool:
