@@ -460,7 +460,7 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
                 db.session.rollback()
                 _csv_error_handling(
                     row,
-                    f"NSF processing failed for invoice {inv_number}; the account was not frozen or locked. "
+                    f"NSF processing failed for invoice {inv_number}. PAD may already be stopped in CAS. "
                     "To retry, delete the FAILED payment for this invoice number and reprocess the row.",
                     error_messages,
                     e,
