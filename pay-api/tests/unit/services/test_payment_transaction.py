@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment
@@ -653,7 +654,7 @@ def test_create_transaction_for_completed_nsf_payment(session):
     assert excinfo.value.code == Error.INVALID_PAYMENT_ID.name
 
 
-def test_patch_transaction_for_nsf_payment(session, monkeypatch):
+def test_patch_transaction_for_nsf_payment(session, app, monkeypatch):
     """Assert that the payment is saved to the table."""
     # Create a FAILED payment (NSF), then clone the payment to create another one for CC payment
     # Create a transaction and assert it's success.
@@ -697,8 +698,10 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
         return "1234567890", datetime.now(tz=UTC), 100.00
 
     monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
+    monkeypatch.setitem(app.config, "PAD_NSF_NOTIFY_EMAILS", "rev@gov.bc.ca")
     txn = PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())
-    txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")
+    with patch("pay_api.services.payment_account.gcp_queue_publisher.publish_to_queue") as mock_publish:
+        txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")
 
     assert txn.status_code == "COMPLETED"
     payment_2 = Payment.find_by_id(payment_2.id)
@@ -709,6 +712,14 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
     cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == "ACTIVE"
     assert payment_account.has_nsf_invoices is None
+
+    unlock_messages = [
+        c.args[0]
+        for c in mock_publish.call_args_list
+        if c.args[0].message_type == QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value
+    ]
+    assert len(unlock_messages) == 1
+    assert unlock_messages[0].payload["additionalEmails"] == "rev@gov.bc.ca"
 
 
 @pytest.mark.parametrize("cfs_amount_due, expected_status", [(0, "COMPLETED"), (30, "CREATED")])

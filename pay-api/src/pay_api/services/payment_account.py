@@ -731,6 +731,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         """Unlock frozen accounts."""
         pay_account = PaymentAccountModel.find_by_id(payment_account_id)
         unlocked = False
+        additional_emails = None
         if pay_account.has_nsf_invoices:
             current_app.logger.info(f"Unlocking PAD Frozen Account {pay_account.auth_account_id}")
             cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, PaymentMethod.PAD.value)
@@ -740,6 +741,8 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
             unlocked = True
+            # BCROS Revenue gets the NSF lock email; tell them it's repaid so collections stop.
+            additional_emails = current_app.config.get("PAD_NSF_NOTIFY_EMAILS")
         elif pay_account.has_overdue_invoices:
             # Reverse original invoices here, because users can still cancel out of CC payment process and pay via EFT.
             # Note we do the opposite of this in the EFT task, but at a smaller scale (one invoice at a time.)
@@ -764,6 +767,8 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         payload = pay_account_service.create_account_event_payload(
             QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value, receipt_info=receipt_info
         )
+        if additional_emails:
+            payload["additionalEmails"] = additional_emails
 
         try:
             gcp_queue_publisher.publish_to_queue(
