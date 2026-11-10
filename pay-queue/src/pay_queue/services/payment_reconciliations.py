@@ -32,6 +32,7 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import NonSufficientFunds as NonSufficientFundsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
@@ -452,7 +453,20 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
         ):
             current_app.logger.info("NOT PAID. NSF identified.")
             # NSF Condition. Publish to account events for NSF.
-            if _process_failed_payments(row):
+            try:
+                should_lock, adjustment_failed = _process_failed_payments(row, error_messages)
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                # Nothing is committed yet, so roll back the whole row.
+                db.session.rollback()
+                _csv_error_handling(
+                    row,
+                    f"NSF processing failed for invoice {inv_number}. PAD may already be stopped in CAS. "
+                    "To retry, delete the FAILED payment for this invoice number and reprocess the row.",
+                    error_messages,
+                    e,
+                )
+                return True
+            if should_lock:
                 # Send mailer and account events to update status and send email notification
                 AuthEvent.publish_lock_account_event(
                     LockAccountDetails(
@@ -468,6 +482,7 @@ def _process_consolidated_invoices(row, error_messages: list[dict[str, any]]) ->
                         reversal_reason=_get_row_value(row, Column.REVERSAL_REASON_DESC),
                     ),
                 )
+            has_errors = adjustment_failed
         else:
             error_msg = f"Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}."
             has_errors = True
@@ -728,8 +743,8 @@ def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
     db.session.add(receipt)
 
 
-def _process_failed_payments(row):
-    """Handle failed payments."""
+def _process_failed_payments(row, error_messages: list[dict[str, any]]) -> tuple[bool, bool]:
+    """Handle failed payments. Return (should_lock, adjustment_failed)."""
     # 1. Check if there is an NSF record for this account, if there isn't, proceed.
     # 2. SET cfs_account status to FREEZE.
     # 3. Call CFS API to stop further PAD on this account.
@@ -745,14 +760,14 @@ def _process_failed_payments(row):
     payment = PaymentModel.find_payment_by_invoice_number_and_status(inv_number, PaymentStatus.FAILED.value)
     if payment:
         current_app.logger.info("Ignoring duplicate NSF message for invoice : %s ", inv_number)
-        return False
+        return False, False
     # If there is an NSF row, it means it's a duplicate NSF event. Ignore it.
     if NonSufficientFundsService.exists_for_invoice_number(inv_number):
         current_app.logger.info(
             "Ignoring duplicate NSF event for account: %s ",
             payment_account.auth_account_id,
         )
-        return False
+        return False, False
 
     # The invoices this reversal undoes: the ones the PAD payment marked as paid (COMPLETED references).
     inv_references: list[InvoiceReferenceModel] = (
@@ -772,7 +787,7 @@ def _process_failed_payments(row):
             "Ignoring NSF message for invoice : %s as all its invoices were refunded",
             inv_number,
         )
-        return False
+        return False, False
 
     # Set CFS Account Status.
     cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
@@ -805,14 +820,25 @@ def _process_failed_payments(row):
             "Account is already FREEZE; reverted the invoices for %s without raising a second NSF fee",
             inv_number,
         )
-        return False
+        return False, False
 
     # Create an invoice for NSF for this account
     reason_description = _get_row_value(row, Column.REVERSAL_REASON_DESC)
     invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account, reason_description)
-    # Adjust CFS invoice
-    CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
-    return True
+    db.session.commit()
+    # Adjust CFS invoice. A failure here must not stop the lock.
+    try:
+        CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
+    except Exception as e:  # NOQA # pylint: disable=broad-except
+        _csv_error_handling(
+            row,
+            f"NSF adjustment of {invoice.total} failed in CFS for invoice {inv_number}. "
+            "Add the adjustment in CAS manually.",
+            error_messages,
+            e,
+        )
+        return True, True
+    return True, False
 
 
 def _is_refunded_to_unused_credit_memo(inv_reference: InvoiceReferenceModel) -> bool:
@@ -1172,14 +1198,15 @@ def _create_nsf_invoice(
         created_on=datetime.now(),
         created_by="SYSTEM",
     )
-    invoice = invoice.save()
+    # Committed by the caller.
+    invoice = invoice.flush()
 
-    NonSufficientFundsService.save_non_sufficient_funds(
+    NonSufficientFundsModel(
         invoice_id=invoice.id,
         invoice_number=inv_number,
         cfs_account=cfs_account.cfs_account,
         description=reason_description,
-    )
+    ).flush()
 
     distribution: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id,
@@ -1198,7 +1225,7 @@ def _create_nsf_invoice(
         service_fees=0,
         fee_distribution_id=distribution.distribution_code_id if distribution else 1,
     )
-    line_item.save()
+    line_item.flush()
 
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel(
         invoice_id=invoice.id,
@@ -1208,7 +1235,7 @@ def _create_nsf_invoice(
         ).reference_number,
         status_code=InvoiceReferenceStatus.ACTIVE.value,
     )
-    inv_ref.save()
+    inv_ref.flush()
 
     return invoice
 

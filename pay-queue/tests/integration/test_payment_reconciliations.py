@@ -714,6 +714,143 @@ def test_pad_nsf_reconciliations(mock_auth_event, session, app, client):
     assert call_args.source == QueueSources.PAY_QUEUE.value
 
 
+def test_pad_nsf_adjustment_failure_still_locks(session, app, client, mocker):
+    """A CFS adjustment failure must not skip the lock, and must reach the reconciliation error email."""
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number=cfs_account_number)
+    invoice = factory_invoice(payment_account=pay_account, total=100, payment_method_code=PaymentMethod.PAD.value)
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=100.0, total=100.0)
+    invoice_number = "1234567890"
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
+    invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    invoice.save()
+    pay_account_id = pay_account.id
+
+    mock_lock = mocker.patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+    mocker.patch(
+        "pay_queue.services.payment_reconciliations.CFSService.add_nsf_adjustment",
+        side_effect=Exception("CFS 502"),
+    )
+    mock_send_error_email = mocker.patch("pay_queue.services.payment_reconciliations.send_error_email")
+
+    file_name: str = "cas_settlement_file.csv"
+    row = [
+        RecordType.PAD.value,
+        SourceTransaction.PAD.value,
+        "1234567890",
+        100001,
+        datetime.now().strftime("%d-%b-%y"),
+        0,
+        cfs_account_number,
+        "INV",
+        invoice_number,
+        100,
+        100,
+        Status.NOT_PAID.value,
+    ]
+    create_and_upload_settlement_file(file_name, [row])
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
+
+    assert NonSufficientFundsService.exists_for_invoice_number(invoice_number)
+    assert PaymentAccountModel.find_by_id(pay_account_id).has_nsf_invoices
+    mock_lock.assert_called_once()
+    mock_send_error_email.assert_called_once()
+    error_messages = mock_send_error_email.call_args[0][0].error_messages
+    assert len(error_messages) == 1
+    assert "NSF adjustment of" in error_messages[0]["error"]
+    assert session.query(CasSettlementModel).filter(CasSettlementModel.file_name == file_name).one().processed_on
+
+
+def test_pad_nsf_failure_before_commit_rolls_back_row(session, app, client, mocker):
+    """A CFS failure before the NSF is committed rolls the row back, reports it, and the file carries on."""
+    nsf_account = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value, account_number="1234")
+    nsf_invoice = factory_invoice(payment_account=nsf_account, total=100, payment_method_code=PaymentMethod.PAD.value)
+    factory_payment_line_item(invoice_id=nsf_invoice.id, filing_fees=100.0, total=100.0)
+    nsf_invoice_number = "1234567890"
+    factory_invoice_reference(invoice_id=nsf_invoice.id, invoice_number=nsf_invoice_number)
+    nsf_invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    nsf_invoice.save()
+    nsf_account_id = nsf_account.id
+
+    paid_account = factory_create_pad_account(
+        auth_account_id="5678", status=CfsAccountStatus.ACTIVE.value, account_number="5678"
+    )
+    paid_invoice = factory_invoice(payment_account=paid_account, total=50, payment_method_code=PaymentMethod.PAD.value)
+    factory_payment_line_item(invoice_id=paid_invoice.id, filing_fees=50.0, total=50.0)
+    paid_invoice_number = "5678901234"
+    factory_invoice_reference(invoice_id=paid_invoice.id, invoice_number=paid_invoice_number)
+    paid_invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    paid_invoice.save()
+    paid_invoice_id = paid_invoice.id
+
+    mock_lock = mocker.patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+    mock_adjustment = mocker.patch("pay_queue.services.payment_reconciliations.CFSService.add_nsf_adjustment")
+    mocker.patch(
+        "pay_queue.services.payment_reconciliations.CFSService.update_site_receipt_method",
+        side_effect=Exception("CFS 502"),
+    )
+    mock_send_error_email = mocker.patch("pay_queue.services.payment_reconciliations.send_error_email")
+
+    file_name: str = "cas_settlement_file.csv"
+    date = datetime.now().strftime("%d-%b-%y")
+    nsf_row = [
+        RecordType.PAD.value,
+        SourceTransaction.PAD.value,
+        "1234567890",
+        100001,
+        date,
+        0,
+        "1234",
+        "INV",
+        nsf_invoice_number,
+        100,
+        100,
+        Status.NOT_PAID.value,
+    ]
+    paid_row = [
+        RecordType.PAD.value,
+        SourceTransaction.PAD.value,
+        "5678901234",
+        100002,
+        date,
+        50,
+        "5678",
+        "INV",
+        paid_invoice_number,
+        50,
+        0,
+        Status.PAID.value,
+    ]
+    create_and_upload_settlement_file(file_name, [nsf_row, paid_row])
+    add_file_event_to_queue_and_process(
+        client,
+        file_name=file_name,
+        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+    )
+
+    # Nothing from the NSF row was saved.
+    assert not NonSufficientFundsService.exists_for_invoice_number(nsf_invoice_number)
+    assert not PaymentAccountModel.find_by_id(nsf_account_id).has_nsf_invoices
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(nsf_account_id, PaymentMethod.PAD.value)
+    assert cfs_account.status == CfsAccountStatus.ACTIVE.value
+    mock_lock.assert_not_called()
+    mock_adjustment.assert_not_called()
+    # Still recorded by _create_payment_records, so a retry needs it removed first.
+    assert PaymentModel.find_payment_by_invoice_number_and_status(nsf_invoice_number, PaymentStatus.FAILED.value)
+
+    # The error is reported and the next row is still processed.
+    mock_send_error_email.assert_called_once()
+    error_messages = mock_send_error_email.call_args[0][0].error_messages
+    assert len(error_messages) == 1
+    assert "NSF processing failed" in error_messages[0]["error"]
+    assert InvoiceModel.find_by_id(paid_invoice_id).invoice_status_code == InvoiceStatus.PAID.value
+    assert session.query(CasSettlementModel).filter(CasSettlementModel.file_name == file_name).one().processed_on
+
+
 def test_pad_reversal_reconciliations(session, app, client):
     """Test Reconciliations worker for NSF."""
     # 1. Create payment account
