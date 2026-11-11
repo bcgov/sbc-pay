@@ -156,6 +156,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     # PUB/SUB - PUB: auth-event-dev, account-mailer-dev, business-pay-dev, namex-pay-dev
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
     AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", "auth-event-dev")
+    PAD_NSF_NOTIFY_EMAILS = os.getenv("PAD_NSF_NOTIFY_EMAILS", "")
     BUSINESS_PAY_TOPIC = os.getenv("BUSINESS_PAY_TOPIC", "business-pay-dev")
     NAMEX_PAY_TOPIC = os.getenv("NAMEX_PAY_TOPIC", "namex-pay-dev")
     STRR_PAY_TOPIC = os.getenv("STRR_PAY_TOPIC", BUSINESS_PAY_TOPIC)
