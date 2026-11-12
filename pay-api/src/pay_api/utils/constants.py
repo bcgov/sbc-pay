@@ -21,6 +21,11 @@ DEFAULT_POSTAL_CODE = "NANANA"
 DEFAULT_CURRENCY = "CAD"
 RECEIPT_METHOD_PAD_DAILY = "BCR-PAD Daily"
 RECEIPT_METHOD_PAD_STOP = "BCR-PAD Stop"
+# PAD return reason codes where the customer disputes the debit; these block PAD on the account.
+# Blank covers a return with no reason code.
+PAD_RESTRICT_REASON_CODES = frozenset(
+    {"", "903", "905", "907", "908", "911", "914", "915", "916", "919", "PAYMENT REVERSAL"}
+)
 
 CFS_BATCH_SOURCE = "BC REG MANUAL_OTHER"
 CFS_CM_BATCH_SOURCE = "MANUAL-OTHER"

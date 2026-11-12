@@ -281,6 +281,10 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         # CfsAccount for this method without stamping it as the account default.
         payment_method = get_str_by_path(account_request, "paymentInfo/methodOfPayment")
 
+        # Covers both switching to PAD and updating bank details.
+        if payment_method == PaymentMethod.PAD.value and payment_account.restrict_pad:
+            raise BusinessException(Error.PAD_PAYMENT_METHOD_RESTRICTED)
+
         # Skip stamping the account's default under scope=cfs_account
         # (invoice-only provisioning — see express-checkout).
         if scope != Scope.CFS_ACCOUNT and payment_method:
@@ -713,6 +717,7 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
                     "receiptNumber": receipt_info["receiptNumber"],
                     "paymentMethodDescription": receipt_info["paymentMethodDescription"],
                     "invoice": receipt_info["invoice"],
+                    "restrictPad": bool(self.restrict_pad),
                 }
             )
         if event_type == QueueMessageTypes.PAD_ACCOUNT_CREATE.value:
@@ -735,7 +740,9 @@ class PaymentAccount:  # pylint: disable=too-many-instance-attributes, too-many-
         if pay_account.has_nsf_invoices:
             current_app.logger.info(f"Unlocking PAD Frozen Account {pay_account.auth_account_id}")
             cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, PaymentMethod.PAD.value)
-            CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
+            # A PAD-restricted account stays on PAD Stop in CAS; the user picks a new payment method.
+            if not pay_account.restrict_pad:
+                CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
             pay_account.has_nsf_invoices = None
             pay_account.save()
             cfs_account.status = CfsAccountStatus.ACTIVE.value

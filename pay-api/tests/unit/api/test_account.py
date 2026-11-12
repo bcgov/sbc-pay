@@ -874,6 +874,33 @@ def test_update_pad_account_when_cfs_up(session, client, jwt, app):
     assert rv.status_code == 200
 
 
+def test_pad_restricted_account_update(session, client, jwt, app):
+    """Assert PAD bank-detail updates are rejected while PAD is restricted."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+    rv = client.post(
+        "/api/v1/accounts",
+        data=json.dumps(get_unlinked_pad_account_payload()),
+        headers=headers,
+    )
+    auth_account_id = rv.json.get("accountId")
+    activate_pad_account(auth_account_id)
+    pay_account = PaymentAccount.find_by_auth_account_id(auth_account_id)
+    pay_account.restrict_pad = True
+    pay_account.save()
+
+    rv = client.get(f"/api/v1/accounts/{auth_account_id}", headers=headers)
+    assert rv.json.get("restrictPad") is True
+
+    rv = client.put(
+        f"/api/v1/accounts/{auth_account_id}",
+        data=json.dumps(get_unlinked_pad_account_payload(bank_account="11111111")),
+        headers=headers,
+    )
+    assert rv.status_code == 422
+    assert rv.json.get("type") == "PAD_PAYMENT_METHOD_RESTRICTED"
+
+
 def test_switch_eft_account_when_cfs_up(session, client, jwt, app, admin_users_mock):
     """Assert that the payment records are created with 202."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
