@@ -654,7 +654,8 @@ def test_create_transaction_for_completed_nsf_payment(session):
     assert excinfo.value.code == Error.INVALID_PAYMENT_ID.name
 
 
-def test_patch_transaction_for_nsf_payment(session, app, monkeypatch):
+@pytest.mark.parametrize("pad_restricted", [False, True])
+def test_patch_transaction_for_nsf_payment(session, app, monkeypatch, pad_restricted):
     """Assert that the payment is saved to the table."""
     # Create a FAILED payment (NSF), then clone the payment to create another one for CC payment
     # Create a transaction and assert it's success.
@@ -665,6 +666,8 @@ def test_patch_transaction_for_nsf_payment(session, app, monkeypatch):
         payment_method_code="PAD",
         has_nsf_invoices=datetime.now(tz=UTC),
     ).save()
+    payment_account.restrict_pad = pad_restricted
+    payment_account.save()
     invoice_1 = factory_invoice(payment_account, total=100)
     invoice_1.save()
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
@@ -700,9 +703,14 @@ def test_patch_transaction_for_nsf_payment(session, app, monkeypatch):
     monkeypatch.setattr("pay_api.services.direct_pay_service.DirectPayService.get_receipt", get_receipt)
     monkeypatch.setitem(app.config, "PAD_NSF_NOTIFY_EMAILS", "rev@gov.bc.ca")
     txn = PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())
-    with patch("pay_api.services.payment_account.gcp_queue_publisher.publish_to_queue") as mock_publish:
+    with (
+        patch("pay_api.services.payment_account.gcp_queue_publisher.publish_to_queue") as mock_publish,
+        patch("pay_api.services.payment_account.CFSService.update_site_receipt_method") as mock_receipt_method,
+    ):
         txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url="receipt_number=123451")
 
+    # A PAD-restricted account stays on PAD Stop in CAS.
+    assert mock_receipt_method.called is not pad_restricted
     assert txn.status_code == "COMPLETED"
     payment_2 = Payment.find_by_id(payment_2.id)
     assert payment_2.payment_status_code == "COMPLETED"
@@ -710,8 +718,9 @@ def test_patch_transaction_for_nsf_payment(session, app, monkeypatch):
     invoice_1 = Invoice.find_by_id(invoice_1.id)
     assert invoice_1.invoice_status_code == "PAID"
     cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
-    assert cfs_account.status == "ACTIVE"
+    assert cfs_account.status == CfsAccountStatus.ACTIVE.value
     assert payment_account.has_nsf_invoices is None
+    assert payment_account.payment_method == PaymentMethod.PAD.value
 
     unlock_messages = [
         c.args[0]
@@ -720,6 +729,7 @@ def test_patch_transaction_for_nsf_payment(session, app, monkeypatch):
     ]
     assert len(unlock_messages) == 1
     assert unlock_messages[0].payload["additionalEmails"] == "rev@gov.bc.ca"
+    assert unlock_messages[0].payload["restrictPad"] is pad_restricted
 
 
 @pytest.mark.parametrize("cfs_amount_due, expected_status", [(0, "COMPLETED"), (30, "CREATED")])

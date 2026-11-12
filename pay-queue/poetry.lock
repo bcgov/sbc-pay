@@ -2469,9 +2469,9 @@ werkzeug = "^3.1.4"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "main"
-resolved_reference = "a5efeff480424f7d9e1a76a4b8cfa13c31afb1d9"
+url = "https://github.com/sumesh85/sbc-pay.git"
+reference = "35308-pad-block"
+resolved_reference = "1e6b6d22a9e81e45a9120a02c2f840b05ec3e155"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3625,4 +3625,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "abce2df14cd57ba7f064f2ead8fce1a32f5da6e5283a027761fd1937c214d488"
+content-hash = "e802ee5bd2b52de067c7fed9f9916783bd132aa3cc04fa941b2746687fe8317c"
