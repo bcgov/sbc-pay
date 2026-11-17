@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "payment-jobs"
-version = "0.1.0"
+version = "2.2.0"
 description = ""
 authors = ["Travis Semple <travis8814@gmail.com>"]
 readme = "README.md"

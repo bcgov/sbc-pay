@@ -880,24 +880,20 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
-name = "Flask-Caching"
+name = "flask-caching"
 version = "2.3.1"
 description = "Adds caching support to Flask applications."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "Flask_Caching-2.3.1-py3-none-any.whl", hash = "sha256:d3efcf600e5925ea5a2fcb810f13b341ae984f5b52c00e9d9070392f3ca10761"},
+    {file = "flask_caching-2.3.1.tar.gz", hash = "sha256:65d7fd1b4eebf810f844de7de6258254b3248296ee429bdcb3f741bcbf7b98c9"},
+]
 
 [package.dependencies]
 cachelib = ">=0.9.0"
 Flask = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/pallets-eco/flask-caching.git"
-reference = "master"
-resolved_reference = "e59bc040cd47cd2b43e501d636d43d442c50b3ff"
 
 [[package]]
 name = "flask-cors"
@@ -2469,9 +2465,9 @@ werkzeug = "^3.1.4"
 
 [package.source]
 type = "git"
-url = "https://github.com/sumesh85/sbc-pay.git"
-reference = "35308-pad-block"
-resolved_reference = "1e6b6d22a9e81e45a9120a02c2f840b05ec3e155"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "main"
+resolved_reference = "a5efeff480424f7d9e1a76a4b8cfa13c31afb1d9"
 subdirectory = "pay-api"
 
 [[package]]
@@ -3625,4 +3621,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "e802ee5bd2b52de067c7fed9f9916783bd132aa3cc04fa941b2746687fe8317c"
+content-hash = "ed674aca4a5a38a227ebbe9f4fe4a974d298654bdde79f105edb85463920afae"
