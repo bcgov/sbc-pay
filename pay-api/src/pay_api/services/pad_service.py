@@ -51,6 +51,12 @@ class PadService(PaymentSystemService, CFSService):
         """Return CREATED as the default invoice status."""
         return InvoiceStatus.APPROVED.value
 
+    def ensure_no_payment_blockers(self, payment_account: PaymentAccount) -> None:
+        """Ensure no payment blockers are present, including a PAD restriction."""
+        super().ensure_no_payment_blockers(payment_account)
+        if payment_account.restrict_pad:
+            raise BusinessException(Error.PAD_PAYMENT_METHOD_RESTRICTED)
+
     def create_account(
         self,
         identifier: str,  # noqa: ARG002

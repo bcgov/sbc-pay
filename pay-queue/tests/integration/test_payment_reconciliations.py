@@ -621,7 +621,19 @@ def test_pad_reconciliations_with_credit_memo(session, app, client):
 
 
 @patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
-def test_pad_nsf_reconciliations(mock_auth_event, session, app, client):
+@pytest.mark.parametrize(
+    "reason_code, reason_desc, expect_pad_restricted",
+    [
+        ("901", "NSF", False),
+        ("915", "No agreement existed", True),
+        ("905", "Account closed", True),
+        ("PAYMENT REVERSAL", "Payment reversed", True),
+        ("", "", True),
+    ],
+)
+def test_pad_nsf_reconciliations(
+    mock_auth_event, session, app, client, reason_code, reason_desc, expect_pad_restricted
+):
     """Test Reconciliations worker for NSF."""
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -678,6 +690,8 @@ def test_pad_nsf_reconciliations(mock_auth_event, session, app, client):
         total,
         total,
         Status.NOT_PAID.value,
+        reason_code,
+        reason_desc,
     ]
     create_and_upload_settlement_file(file_name, [row])
     add_file_event_to_queue_and_process(
@@ -705,6 +719,7 @@ def test_pad_nsf_reconciliations(mock_auth_event, session, app, client):
     )
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
     assert pay_account.has_nsf_invoices
+    assert bool(PaymentAccountModel.find_by_id(pay_account_id).restrict_pad) is expect_pad_restricted
 
     # Verify ActivityLogPublisher was called for NSF lock event
     mock_auth_event.assert_called_once()

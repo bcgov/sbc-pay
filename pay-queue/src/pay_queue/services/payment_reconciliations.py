@@ -45,7 +45,7 @@ from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_link import PaymentLinkService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.auth_event import AuthEvent, LockAccountDetails
-from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
+from pay_api.utils.constants import PAD_RESTRICT_REASON_CODES, RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     CfsAccountStatus,
     InvoiceReferenceStatus,
@@ -795,6 +795,10 @@ def _process_failed_payments(row, error_messages: list[dict[str, any]]) -> tuple
     current_app.logger.info("setting payment account id : %s status as FREEZE", payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
     payment_account.has_nsf_invoices = datetime.now(tz=UTC)
+    reason_code = (_get_row_value(row, Column.REVERSAL_REASON_CODE) or "").strip().upper()
+    if reason_code in PAD_RESTRICT_REASON_CODES:
+        current_app.logger.info("Return reason '%s' for account %s, restricting PAD", reason_code, payment_account.id)
+        payment_account.restrict_pad = True
     # Call CFS to stop any further PAD transactions on this account.
     CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
 

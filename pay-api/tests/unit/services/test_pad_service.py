@@ -24,6 +24,7 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.services.pad_service import PadService
 from pay_api.utils.enums import PaymentMethod
+from pay_api.utils.errors import Error
 from tests.utilities.base_test import factory_payment_account
 
 pad_service = PadService()
@@ -70,3 +71,14 @@ def test_has_payment_blockers(session):
     with pytest.raises(BusinessException):
         pad_service.ensure_no_payment_blockers(payment_account)
     assert True
+
+
+def test_pad_restricted_is_payment_blocker(session):
+    """A PAD-restricted account can't create PAD invoices."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
+    payment_account.restrict_pad = True
+    payment_account.save()
+
+    with pytest.raises(BusinessException) as excinfo:
+        pad_service.ensure_no_payment_blockers(payment_account)
+    assert excinfo.value.code == Error.PAD_PAYMENT_METHOD_RESTRICTED.name

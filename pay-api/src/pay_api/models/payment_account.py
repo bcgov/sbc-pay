@@ -59,6 +59,7 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
             "pad_tos_accepted_date",
             "payment_method",
             "restrict_ejv",
+            "restrict_pad",
             "statement_notification_enabled",
         ]
     }
@@ -90,6 +91,7 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
     billable = db.Column(Boolean(), default=True)
     eft_enable = db.Column(Boolean(), nullable=False, default=False)
     restrict_ejv = db.Column(Boolean(), nullable=False, server_default="f")
+    restrict_pad = db.Column(Boolean(), nullable=False, server_default="f")
 
     # before this date , the account shouldn't get used
     pad_activation_date = db.Column(db.DateTime, nullable=True)
