@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ftp-poller"
-version = "2.2.0"
+version = "2.2.1"
 description = ""
 authors = ["Travis Semple <travis8814@gmail.com>"]
 readme = "README.md"
@@ -10,20 +10,20 @@ package-mode = false
 python = "^3.12"
 flask = "^3.1.3"
 flask-restplus = "^0.13.0"
-python-dotenv = "^1.0.1"
+python-dotenv = "^1.2.2"
 jsonschema = "4.17.3"
 requests = "^2.31.0"
-werkzeug = "^3.0.1"
+werkzeug = "^3.1.9"
 pysftp = "^0.2.9"
 jaeger-client = "^4.8.0"
-urllib3 = "2.7.0"
+urllib3 = "^2.8.0"
 itsdangerous = "^2.1.2"
 jinja2 = "^3.1.3"
 launchdarkly-server-sdk = "^8.2.1"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python", branch = "master"}
-pay-api = { git = "https://github.com/bcgov/sbc-pay.git", branch = "main", subdirectory = "pay-api" }
-mako = "1.3.12"
-pyasn1 = "0.6.3"
+pay-api = { git = "https://github.com/sumesh85/sbc-pay.git", branch = "dependabot-fixes", subdirectory = "pay-api" }
+mako = "^1.4.2"
+pyasn1 = "^0.6.5"
 wheel = "^0.46.2"
 
 
@@ -46,7 +46,7 @@ pylint = "^3.1.0"
 pylint-flask = "^0.6"
 lovely-pytest-docker = "^0.3.1"
 pytest-asyncio = "^1.4.0.0"
-black = "^26.3.1"
+black = "^26.10.1"
 isort = "^6.1.0"
 flake8-pyproject = "^1.2.3"
 
