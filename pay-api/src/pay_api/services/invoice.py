@@ -618,14 +618,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         if calculate_dynamic_fields:
             # Include redirect_for_payment flag
             redirect_for_payment: bool = False
-            action_required_types = (
-                PaymentMethod.DIRECT_PAY.value,
-                PaymentMethod.CC.value,
-                PaymentMethod.ONLINE_BANKING.value,
-            )
             if (
                 invoice.get("status_code") == InvoiceStatus.CREATED.value
-                and invoice.get("payment_method") in action_required_types
+                and invoice.get("payment_method") in PaymentMethod.ActionRequired
             ):
                 redirect_for_payment = True
 

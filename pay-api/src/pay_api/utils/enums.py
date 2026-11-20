@@ -179,6 +179,11 @@ PaymentMethod.Order = [
     PaymentMethod.EJV,
 ]
 
+# Methods where the user must complete payment outside the API (drives isPaymentActionRequired).
+PaymentMethod.ActionRequired = frozenset(
+    {PaymentMethod.DIRECT_PAY.value, PaymentMethod.CC.value, PaymentMethod.ONLINE_BANKING.value}
+)
+
 
 class StatementTitles(Enum):
     """Statement Titles by Payment Method."""
