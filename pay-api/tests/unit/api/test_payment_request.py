@@ -2139,3 +2139,37 @@ def test_get_invoice_linking_key_denied_for_non_business_invoice(session, client
     assert called_args[0] is None  # business_identifier
     assert called_kwargs.get("account_id") == "OWNER_999"
     assert called_kwargs.get("one_of_roles") == ALL_ALLOWED_ROLES
+
+
+@pytest.mark.parametrize(
+    "payment_method",
+    [PaymentMethod.DIRECT_PAY.value, PaymentMethod.CC.value, PaymentMethod.ONLINE_BANKING.value],
+)
+def test_payment_request_api_user_payment_required(session, client, jwt, app, payment_method):
+    """Assert API users get 402 for paid filings needing a payment action, but zero-fee filings succeed."""
+    token = jwt.create_jwt(get_claims(roles=[Role.API_USER.value]), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=payment_method)),
+        headers=headers,
+    )
+    assert rv.status_code == 402
+    assert rv.json.get("type") == "INVALID_PAYMENT_METHOD"
+
+    rv = client.post("/api/v1/payment-requests", data=json.dumps(get_zero_dollar_payment_request()), headers=headers)
+    assert rv.status_code == 201
+
+
+def test_payment_request_non_api_user_direct_pay_allowed(session, client, jwt, app):
+    """Assert non-API users are unaffected by the API-user 402 check."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {"Authorization": f"Bearer {token}", "content-type": "application/json"}
+
+    rv = client.post(
+        "/api/v1/payment-requests",
+        data=json.dumps(get_payment_request_with_payment_method(payment_method=PaymentMethod.DIRECT_PAY.value)),
+        headers=headers,
+    )
+    assert rv.status_code == 201
