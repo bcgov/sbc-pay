@@ -28,10 +28,12 @@ from pay_api.models import AppliedCredits as AppliedCreditsModel
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
+from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.utils.enums import (
@@ -1157,6 +1159,7 @@ def test_pad_second_reversal_on_frozen_account_reverts_invoices(mock_auth_event,
     ).id
     second_invoice_id = second_invoice.id
     pay_account_id = pay_account.id
+    auth_account_id = pay_account.auth_account_id
 
     _create_padr_settlement(
         client, cfs_account_number, "9999999999", first_invoice_number, 50, file_name="cas_settlement_day6.csv"
@@ -1171,8 +1174,19 @@ def test_pad_second_reversal_on_frozen_account_reverts_invoices(mock_auth_event,
     assert InvoiceModel.find_by_id(second_invoice_id).invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
     assert InvoiceModel.find_by_id(second_invoice_id).paid == 0
     assert InvoiceReferenceModel.find_by_id(second_ref_id).status_code == InvoiceReferenceStatus.ACTIVE.value
+    # The second return is recorded, so it counts towards the balance the customer is shown.
+    assert NonSufficientFundsService.exists_for_invoice_number(second_invoice_number)
+    nsf = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=auth_account_id)
+    # 50 + 70 for the two returns, plus a single $30 fee from the first.
+    assert nsf["total_amount_remaining"] == 150
     # No second $30 fee, and the account is locked only once.
-    assert not NonSufficientFundsService.exists_for_invoice_number(second_invoice_number)
+    nsf_fees = (
+        InvoiceModel.query.join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
+        .join(FeeScheduleModel, FeeScheduleModel.fee_schedule_id == PaymentLineItemModel.fee_schedule_id)
+        .filter(InvoiceModel.payment_account_id == pay_account_id, FeeScheduleModel.filing_type_code == "NSF")
+        .count()
+    )
+    assert nsf_fees == 1
     cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
     mock_auth_event.assert_called_once()
