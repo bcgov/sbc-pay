@@ -28,10 +28,12 @@ from pay_api.models import AppliedCredits as AppliedCreditsModel
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
+from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.utils.enums import (
@@ -1172,6 +1174,7 @@ def test_pad_second_reversal_on_frozen_account_reverts_invoices(mock_auth_event,
     ).id
     second_invoice_id = second_invoice.id
     pay_account_id = pay_account.id
+    auth_account_id = pay_account.auth_account_id
 
     _create_padr_settlement(
         client, cfs_account_number, "9999999999", first_invoice_number, 50, file_name="cas_settlement_day6.csv"
@@ -1186,11 +1189,56 @@ def test_pad_second_reversal_on_frozen_account_reverts_invoices(mock_auth_event,
     assert InvoiceModel.find_by_id(second_invoice_id).invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
     assert InvoiceModel.find_by_id(second_invoice_id).paid == 0
     assert InvoiceReferenceModel.find_by_id(second_ref_id).status_code == InvoiceReferenceStatus.ACTIVE.value
+    # The second return is recorded, so it counts towards the balance the customer is shown.
+    assert NonSufficientFundsService.exists_for_invoice_number(second_invoice_number)
+    nsf = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=auth_account_id)
+    # 50 + 70 for the two returns, plus a single $30 fee from the first.
+    assert nsf["total_amount_remaining"] == 150
     # No second $30 fee, and the account is locked only once.
-    assert not NonSufficientFundsService.exists_for_invoice_number(second_invoice_number)
+    nsf_fees = (
+        InvoiceModel.query.join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
+        .join(FeeScheduleModel, FeeScheduleModel.fee_schedule_id == PaymentLineItemModel.fee_schedule_id)
+        .filter(InvoiceModel.payment_account_id == pay_account_id, FeeScheduleModel.filing_type_code == "NSF")
+        .count()
+    )
+    assert nsf_fees == 1
     cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
     mock_auth_event.assert_called_once()
+
+
+@patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+def test_pad_reversal_on_frozen_account_without_paid_invoices(mock_auth_event, session, app, client):
+    """Assert a return on a frozen account with nothing to revert adds no NSF row and no fee."""
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.FREEZE.value, account_number=cfs_account_number)
+
+    # Never settled as PAID in pay, so the reference is still ACTIVE and there is nothing to revert.
+    invoice_number = "3333333333"
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=50,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=50, total=50)
+    ref_id = factory_invoice_reference(
+        invoice_id=invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.ACTIVE.value
+    ).id
+    pay_account_id = pay_account.id
+
+    _create_padr_settlement(client, cfs_account_number, "9999999999", invoice_number, 50)
+
+    assert not NonSufficientFundsService.exists_for_invoice_number(invoice_number)
+    assert InvoiceReferenceModel.find_by_id(ref_id).status_code == InvoiceReferenceStatus.ACTIVE.value
+    nsf_fees = (
+        InvoiceModel.query.join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
+        .join(FeeScheduleModel, FeeScheduleModel.fee_schedule_id == PaymentLineItemModel.fee_schedule_id)
+        .filter(InvoiceModel.payment_account_id == pay_account_id, FeeScheduleModel.filing_type_code == "NSF")
+        .count()
+    )
+    assert nsf_fees == 0
+    mock_auth_event.assert_not_called()
 
 
 def test_pad_reconciliations_keeps_refunded_invoice_credited(session, app, client):

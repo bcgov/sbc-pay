@@ -820,6 +820,16 @@ def _process_failed_payments(row, error_messages: list[dict[str, any]]) -> tuple
     # collection path. Only the fee is skipped: the account is already locked and the customer has
     # already been notified, and whether a second $30 applies is a Finance policy question.
     if is_already_frozen:
+        # NSF balance (NonSufficientFundsService) only includes invoice numbers with a non_sufficient_funds row.
+        # Without it these reverted invoices are owed but not shown, so the account unlocks after paying less.
+        # No fee invoice on a second return, so point at one of the returned invoices (as eft_statement_due_task does).
+        if unrefunded_inv_references:
+            NonSufficientFundsModel(
+                invoice_id=unrefunded_inv_references[0].invoice_id,
+                invoice_number=inv_number,
+                cfs_account=cfs_account.cfs_account,
+                description=_get_row_value(row, Column.REVERSAL_REASON_DESC),
+            ).flush()
         current_app.logger.info(
             "Account is already FREEZE; reverted the invoices for %s without raising a second NSF fee",
             inv_number,
