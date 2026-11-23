@@ -1192,6 +1192,40 @@ def test_pad_second_reversal_on_frozen_account_reverts_invoices(mock_auth_event,
     mock_auth_event.assert_called_once()
 
 
+@patch("pay_queue.services.payment_reconciliations.AuthEvent.publish_lock_account_event")
+def test_pad_reversal_on_frozen_account_without_paid_invoices(mock_auth_event, session, app, client):
+    """Assert a return on a frozen account with nothing to revert adds no NSF row and no fee."""
+    cfs_account_number = "1234"
+    pay_account = factory_create_pad_account(status=CfsAccountStatus.FREEZE.value, account_number=cfs_account_number)
+
+    # Never settled as PAID in pay, so the reference is still ACTIVE and there is nothing to revert.
+    invoice_number = "3333333333"
+    invoice = factory_invoice(
+        payment_account=pay_account,
+        total=50,
+        payment_method_code=PaymentMethod.PAD.value,
+        status_code=InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+    )
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=50, total=50)
+    ref_id = factory_invoice_reference(
+        invoice_id=invoice.id, invoice_number=invoice_number, status_code=InvoiceReferenceStatus.ACTIVE.value
+    ).id
+    pay_account_id = pay_account.id
+
+    _create_padr_settlement(client, cfs_account_number, "9999999999", invoice_number, 50)
+
+    assert not NonSufficientFundsService.exists_for_invoice_number(invoice_number)
+    assert InvoiceReferenceModel.find_by_id(ref_id).status_code == InvoiceReferenceStatus.ACTIVE.value
+    nsf_fees = (
+        InvoiceModel.query.join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
+        .join(FeeScheduleModel, FeeScheduleModel.fee_schedule_id == PaymentLineItemModel.fee_schedule_id)
+        .filter(InvoiceModel.payment_account_id == pay_account_id, FeeScheduleModel.filing_type_code == "NSF")
+        .count()
+    )
+    assert nsf_fees == 0
+    mock_auth_event.assert_not_called()
+
+
 def test_pad_reconciliations_keeps_refunded_invoice_credited(session, app, client):
     """Assert a PAD payment for an invoice refunded before settlement leaves it CREDITED."""
     cfs_account_number = "1234"
