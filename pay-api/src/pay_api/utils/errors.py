@@ -84,6 +84,11 @@ class Error(Enum):
         HTTPStatus.BAD_REQUEST,
         ("Payment cannot be started for this invoice, since invoice reference is not yet available."),
     )
+    CFS_INVOICE_BALANCE_MISMATCH = (
+        "CFS_INVOICE_BALANCE_MISMATCH",
+        HTTPStatus.BAD_REQUEST,
+        "The invoice balance in CAS doesn't match the amount owing; it may already have been paid.",
+    )
     PATCH_INVALID_ACTION = "PATCH_INVALID_ACTION", HTTPStatus.BAD_REQUEST
 
     PAYMENT_SEARCH_TOO_MANY_RECORDS = (

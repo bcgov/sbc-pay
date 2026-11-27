@@ -22,7 +22,11 @@ from unittest.mock import patch
 import pytest
 from werkzeug.exceptions import HTTPException
 
-from pay_api.services.auth import check_auth, get_account_info_with_contact
+from pay_api.services.auth import (
+    check_auth,
+    get_account_admin_and_coordinator_emails,
+    get_account_info_with_contact,
+)
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 from pay_api.utils.user_context import UserContext, get_original_user_sub, get_original_username
 
@@ -193,3 +197,39 @@ def test_check_auth_never_forwards_linking_key_without_explicit_opt_in(app, sess
             check_auth("CP0001234", account_id=None, contains_role=EDIT_ROLE)
 
         assert mock_get.call_args.kwargs["additional_headers"] is None
+
+
+def test_get_account_admin_and_coordinator_emails(app):
+    """Active admins' and coordinators' first contact emails are returned; members without one are skipped."""
+    members = {
+        "members": [
+            {"user": {"contacts": [{"email": "admin@example.com"}, {"email": "second@example.com"}]}},
+            {"user": {"contacts": [{"email": "coord@example.com"}]}},
+            {"user": {"contacts": []}},
+            {"user": {"contacts": [{"email": None}]}},
+            {"user": None},
+        ]
+    }
+    with (
+        app.app_context(),
+        patch("pay_api.services.auth.get_service_account_token", return_value="sa-token"),
+        patch("pay_api.services.auth.RestService.get") as mock_get,
+    ):
+        mock_get.return_value.json.return_value = members
+        emails = get_account_admin_and_coordinator_emails("1234")
+
+    assert emails == ["admin@example.com", "coord@example.com"]
+    url, token = mock_get.call_args.args[:2]
+    assert url.endswith("orgs/1234/members?status=ACTIVE&roles=ADMIN,COORDINATOR")
+    assert token == "sa-token"  # noqa: S105
+
+
+def test_get_account_admin_and_coordinator_emails_no_members(app):
+    """An org with no matching members yields no recipients."""
+    with (
+        app.app_context(),
+        patch("pay_api.services.auth.get_service_account_token", return_value="sa-token"),
+        patch("pay_api.services.auth.RestService.get") as mock_get,
+    ):
+        mock_get.return_value.json.return_value = {}
+        assert get_account_admin_and_coordinator_emails("1234") == []

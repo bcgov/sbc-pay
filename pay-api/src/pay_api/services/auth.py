@@ -167,6 +167,23 @@ def get_account_admin_users(auth_account_id, use_service_account=False, **kwargs
     ).json()
 
 
+def get_account_admin_and_coordinator_emails(auth_account_id) -> list[str]:
+    """Return the emails of an org's active admins and coordinators, read with the service account."""
+    response = RestService.get(
+        current_app.config.get("AUTH_API_ENDPOINT")
+        + f"orgs/{auth_account_id}/members?status=ACTIVE&roles=ADMIN,COORDINATOR",
+        get_service_account_token(),
+        AuthHeaderType.BEARER,
+        ContentType.JSON,
+    ).json()
+    emails = []
+    for member in response.get("members") or []:
+        contacts = (member.get("user") or {}).get("contacts") or []
+        if contacts and (email := contacts[0].get("email")):
+            emails.append(email)
+    return emails
+
+
 def get_emails_with_keycloak_role(role: str) -> list[str]:
     """Retrieve emails with the specified keycloak role."""
     users = get_users_with_keycloak_role(role)

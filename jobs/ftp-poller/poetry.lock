@@ -2702,9 +2702,9 @@ werkzeug = "^3.1.9"
 
 [package.source]
 type = "git"
-url = "https://github.com/sumesh85/sbc-pay.git"
-reference = "dependabot-fixes"
-resolved_reference = "389c56fbd9cc223aeb9dd620ea93d02cad428b4b"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "main"
+resolved_reference = "cdbd708ab26e121fdad546e3eb9a76501995aea7"
 subdirectory = "pay-api"
 
 [[package]]
@@ -4226,4 +4226,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "2ec97730233160dcf1a7a854defc6cda9feadd4587eb44900ba8e5dce241f013"
+content-hash = "2b44570fedff04bbb6da0c4d51cad7ee01b9eb00a013be79745770aab7edf9bc"

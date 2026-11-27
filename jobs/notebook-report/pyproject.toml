@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "notebook-report"
-version = "2.2.2"
+version = "2.3.0"
 description = ""
 authors = ["Travis Semple <travis8814@gmail.com>"]
 readme = "README.md"
