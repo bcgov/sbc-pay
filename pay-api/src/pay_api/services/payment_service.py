@@ -118,8 +118,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if user.is_api_user() and (
             not current_app.config.get("ENVIRONMENT_NAME") == "sandbox" and not user.is_system()
         ):
-            if payment_method_code in [PaymentMethod.DIRECT_PAY.value, PaymentMethod.ONLINE_BANKING.value]:
-                raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+            if payment_method_code in PaymentMethod.ActionRequired:
+                raise BusinessException(Error.INVALID_PAYMENT_METHOD_API_USER)
 
         current_app.logger.info(
             f"Creating Payment Request : "
