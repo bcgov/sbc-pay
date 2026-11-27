@@ -2,7 +2,7 @@
 name = "pay-admin"
 version = "2.2.2"
 description = ""
-authors = ["Pay Team"]
+authors = ["BCROS <BCRegistries@gov.bc.ca>"]
 readme = "README.md"
 package-mode = false
 

@@ -11,7 +11,7 @@ LABEL org.label-schema.vcs-ref=${VCS_REF} \
 
 USER root
 
-LABEL maintainer="travissemple"
+LABEL maintainer="BCROS <BCRegistries@gov.bc.ca>"
 LABEL vendor="BCROS"
 
 ARG APP_ENV \

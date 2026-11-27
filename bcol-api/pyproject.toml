@@ -2,7 +2,7 @@
 name = "bcol-api"
 version = "2.2.2"
 description = ""
-authors = ["BC Registries"]
+authors = ["BCROS <BCRegistries@gov.bc.ca>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]

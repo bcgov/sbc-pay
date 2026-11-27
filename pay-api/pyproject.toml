@@ -2,7 +2,7 @@
 name = "pay-api"
 version = "2.2.2"
 description = ""
-authors = ["BC Registries and Online Services"]
+authors = ["BCROS <BCRegistries@gov.bc.ca>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]

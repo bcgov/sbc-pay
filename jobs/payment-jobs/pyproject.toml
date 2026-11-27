@@ -2,7 +2,7 @@
 name = "payment-jobs"
 version = "2.2.2"
 description = ""
-authors = ["Travis Semple <travis8814@gmail.com>"]
+authors = ["BCROS <BCRegistries@gov.bc.ca>"]
 readme = "README.md"
 package-mode = false
 
