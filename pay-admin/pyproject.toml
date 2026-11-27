@@ -1,9 +1,11 @@
-[tool.poetry]
+[project]
 name = "pay-admin"
 version = "2.2.2"
 description = ""
-authors = ["BCROS <BCRegistries@gov.bc.ca>"]
+authors = [{ name = "BCROS", email = "BCRegistries@gov.bc.ca" }]
 readme = "README.md"
+
+[tool.poetry]
 package-mode = false
 
 [tool.poetry.dependencies]
