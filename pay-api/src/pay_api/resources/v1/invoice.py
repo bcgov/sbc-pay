@@ -23,6 +23,7 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.services.invoice import Invoice as InvoiceService
+from pay_api.services.payment_link import PaymentLinkService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import MAKE_PAYMENT
 from pay_api.utils.endpoints_enums import EndpointEnum
@@ -82,6 +83,18 @@ def post_invoice():
         return exception.response()
     current_app.logger.debug(">post_invoice")
     return jsonify(response), status
+
+
+@bp.route("/<int:invoice_id>/payment-links", methods=["POST", "OPTIONS"])
+@cross_origin(methods=["POST"])
+@_jwt.requires_roles([Role.SYSTEM.value])
+def post_invoice_payment_link(invoice_id: int):
+    """Issue a payment link for an existing unpaid invoice and email it to the account's admins and coordinators."""
+    try:
+        response = PaymentLinkService.create_for_invoice(invoice_id)
+    except (BusinessException, ServiceUnavailableException) as exception:
+        return exception.response()
+    return jsonify(response), HTTPStatus.CREATED
 
 
 @bp.route("/<int:invoice_id>", methods=["GET", "OPTIONS"])

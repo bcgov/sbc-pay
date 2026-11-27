@@ -26,6 +26,7 @@ from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.receipt import Receipt
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.code import Code as CodeService
 from pay_api.services.direct_sale_service import STATUS_PAID, DirectSaleService
 from pay_api.services.email_service import send_receipt_notification
@@ -336,7 +337,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             raise BusinessException(Error.INVALID_PAYMENT_METHOD)
 
     @classmethod
-    def _convert_invoice_payment_method(cls, invoice: Invoice, payment_request: tuple[dict[str, Any]]):
+    def _convert_invoice_payment_method(
+        cls, invoice: Invoice, payment_request: tuple[dict[str, Any]], cancel_cfs_invoice: bool = False
+    ):
         """Switch an unpaid invoice's payment method.
 
         Allowed only while the invoice is still CREATED (no pay system has taken
@@ -376,22 +379,27 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             PaymentMethod.CC.value,
             PaymentMethod.DIRECT_PAY.value,
         )
-        if is_ob_to_cc and invoice_reference:
+        if is_ob_to_cc and invoice_reference and not cancel_cfs_invoice:
             invoice.payment_method_code = PaymentMethod.CC.value
             invoice.save()
             return
-
-        if invoice_reference:
-            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
-            invoice_reference.save()
 
         # A CC target requires an existing CFS invoice for PayBC to settle against. Without one
         # (no active reference at this point), route through DirectSaleService (DIRECT_PAY) — the
         # pay-connector direct sale API — which doesn't need a CFS invoice. Business rule, not a
         # legacy hardcode: OB/DIRECT_PAY invoices without a CFS reference can only be paid this way.
         target_method = PaymentMethod.DIRECT_PAY.value if new_method == PaymentMethod.CC.value else new_method
-
         pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(target_method)
+
+        if invoice_reference and cancel_cfs_invoice:
+            # Check blockers first so a refusal can't leave the CAS invoice reversed.
+            pay_service.ensure_no_payment_blockers(payment_account)
+            cls._cancel_cfs_invoice_for_switch(invoice, invoice_reference, current_method)
+
+        if invoice_reference:
+            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
+            invoice_reference.save()
+
         pay_service.create_invoice(
             payment_account,
             invoice.payment_line_items,
@@ -406,6 +414,47 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         invoice.save()
         # Same as a newly created invoice, e.g. EFT/PAD release the record to the partner.
         pay_service.complete_post_invoice(invoice, None)
+
+    @classmethod
+    def _cancel_cfs_invoice_for_switch(cls, invoice: Invoice, invoice_reference: InvoiceReference, current_method: str):
+        """Reverse the invoice in CAS, refusing if CAS doesn't show the full amount still owing."""
+        cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id) if invoice.cfs_account_id else None
+        if not cfs_account:
+            raise BusinessException(Error.CFS_INVOICE_BALANCE_MISMATCH)
+        cfs_invoice = CFSService.get_invoice(cfs_account, invoice_reference.invoice_number)
+        amount_due = cfs_invoice.get("amount_due")
+        owing = Decimal(str(invoice.total)) - Decimal(str(invoice.paid or 0))
+        if amount_due is None or Decimal(str(amount_due)) != owing:
+            current_app.logger.warning(
+                "Not cancelling CFS invoice %s for invoice %s: CAS amount_due=%s, owing=%s",
+                invoice_reference.invoice_number,
+                invoice.id,
+                amount_due,
+                owing,
+            )
+            raise BusinessException(Error.CFS_INVOICE_BALANCE_MISMATCH)
+        PaymentSystemFactory.create_from_payment_method(current_method).cancel_invoice(
+            PaymentAccount.find_by_id(invoice.payment_account_id), invoice_reference.invoice_number
+        )
+
+    @classmethod
+    def switch_to_direct_pay(cls, invoice_id: int) -> None:
+        """Move an OB or CC invoice being sent a payment link to DIRECT_PAY, cancelling any CAS invoice."""
+        invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
+        current_method = invoice.payment_method_code
+        if current_method == PaymentMethod.DIRECT_PAY.value:
+            return
+        if current_method not in (PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value):
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+        # A CC request registers as DIRECT_PAY (direct sale); a CC invoice needs DIRECT_PAY to differ from itself.
+        new_method = (
+            PaymentMethod.CC.value
+            if current_method == PaymentMethod.ONLINE_BANKING.value
+            else PaymentMethod.DIRECT_PAY.value
+        )
+        cls._convert_invoice_payment_method(
+            invoice, {"paymentInfo": {"methodOfPayment": new_method}}, cancel_cfs_invoice=True
+        )
 
     @classmethod
     def update_invoice(

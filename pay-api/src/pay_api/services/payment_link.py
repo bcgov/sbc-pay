@@ -24,23 +24,27 @@ from datetime import UTC, datetime, timedelta
 from flask import current_app
 from nanoid import generate as nanoid_generate
 from requests.exceptions import HTTPError as RequestsHTTPError
+from sbc_common_components.utils.enums import QueueMessageTypes
 from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
-from pay_api.services.auth import check_auth
+from pay_api.services import gcp_queue_publisher
+from pay_api.services.auth import check_auth, get_account_admin_and_coordinator_emails
 from pay_api.services.code import Code as CodeService
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.constants import MAKE_PAYMENT
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, QueueSources
 from pay_api.utils.errors import Error
-from pay_api.utils.user_context import UserContext, user_context
+from pay_api.utils.user_context import UserContext, _get_token, user_context
 from pay_api.utils.util import get_str_by_path, hide_stub_account
 
 _TOKEN_LEN = 21
+_CONVERTIBLE_METHODS = (PaymentMethod.ONLINE_BANKING.value, PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
 
 
 class PaymentLinkService:
@@ -74,6 +78,64 @@ class PaymentLinkService:
 
         invoice_dto["paymentUrl"] = cls._build_url(token)
         return invoice_dto
+
+    @classmethod
+    def create_for_invoice(cls, invoice_id: int) -> dict:
+        """Issue a payment link for an existing unpaid invoice on a real account and email its admins/coordinators."""
+        invoice = InvoiceModel.find_by_id(invoice_id)
+        if not invoice or invoice.invoice_status_code not in (
+            InvoiceStatus.CREATED.value,
+            InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+        ):
+            raise BusinessException(Error.INVALID_REQUEST)
+        # Only OB, CC and DIRECT_PAY can be converted; PAD, EFT, DRAWDOWN, EJV, INTERNAL etc. are refused.
+        if invoice.payment_method_code not in _CONVERTIBLE_METHODS:
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+        payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+        if not str(payment_account.auth_account_id or "").isdigit():
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        # Local import to avoid a circular dependency (payment_service -> payment_link).
+        from pay_api.services.payment_service import PaymentService  # pylint: disable=import-outside-toplevel
+
+        # Pay by direct sale; an OB/CC invoice already in CAS is reversed there first.
+        PaymentService.switch_to_direct_pay(invoice.id)
+
+        # One link per invoice; calling again resends the existing one.
+        link = InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).one_or_none()
+        if not link:
+            # Linked from the start: the invoice already belongs to this account.
+            now = datetime.now(tz=UTC)
+            link = InvoicePaymentLinkModel(
+                token=cls._generate_token(), invoice_id=invoice.id, created_at=now, linked_at=now
+            )
+            db.session.add(link)
+            db.session.commit()
+        cls.resolve_token(link.token, allow_linked=True)  # raises if the existing link has expired
+
+        payment_url = cls._build_url(link.token)
+        emails = get_account_admin_and_coordinator_emails(payment_account.auth_account_id)
+        if emails:
+            ttl_days = CodeService.get_payment_link_ttl_days(invoice.corp_type_code)
+            expiry = link.created_at + timedelta(days=ttl_days)
+            gcp_queue_publisher.publish_to_queue(
+                gcp_queue_publisher.QueueMessage(
+                    source=QueueSources.PAY_API.value,
+                    message_type=QueueMessageTypes.EXPRESS_CHECKOUT_PAYMENT_REMINDER.value,
+                    payload={
+                        "emailAddresses": ",".join(emails),
+                        "paymentUrl": payment_url,
+                        "total": f"{invoice.total:,.2f}",
+                        "description": ", ".join(
+                            li.description for li in (invoice.payment_line_items or []) if li.description
+                        ),
+                        "expiryDays": (expiry.date() - datetime.now(tz=UTC).date()).days,
+                        "expiryDate": f"{expiry.strftime('%B')} {expiry.day}, {expiry.year}",
+                    },
+                    topic=current_app.config.get("ACCOUNT_MAILER_TOPIC"),
+                )
+            )
+        return {"paymentUrl": payment_url}
 
     @classmethod
     def resolve_token(cls, token: str, allow_linked: bool = False) -> InvoicePaymentLinkModel:
@@ -157,7 +219,9 @@ class PaymentLinkService:
         can read it (auth-api round-trip spoof-proofs the Account-Id header).
         """
         link = cls.resolve_token(token, allow_linked=True)
-        skip_auth = link.linked_at is None
+        # Guests holding the link can read the summary; signed-in callers must have access to the account.
+        is_guest = _get_token() is None
+        skip_auth = link.linked_at is None or is_guest
         try:
             invoice = InvoiceService.find_by_id(link.invoice_id, skip_auth_check=skip_auth)
         except (RequestsHTTPError, WerkzeugHTTPException) as err:
@@ -171,7 +235,7 @@ class PaymentLinkService:
         # them the adhoc SA account the unredeemed invoice is parked on.
         result = hide_stub_account(
             invoice.asdict(include_dynamic_fields=True),
-            InvoicePaymentLinkModel.is_unredeemed_for_invoice(link.invoice_id),
+            is_guest or InvoicePaymentLinkModel.is_unredeemed_for_invoice(link.invoice_id),
         )
         if link.return_url:
             result["returnUrl"] = link.return_url

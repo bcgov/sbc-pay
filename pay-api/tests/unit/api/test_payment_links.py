@@ -23,6 +23,7 @@ import pytest
 from requests.exceptions import HTTPError as RequestsHTTPError
 from werkzeug.exceptions import Forbidden
 
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoicePaymentLink as InvoicePaymentLinkModel
@@ -33,6 +34,7 @@ from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
+    factory_invoice,
     factory_invoice_reference,
     factory_payment_account,
     factory_receipt,
@@ -438,3 +440,208 @@ def test_payment_links_disabled_by_flag(session, client, jwt, app):
             == HTTPStatus.NOT_IMPLEMENTED
         )
         assert client.post(f"/api/v1/payment-links/{token}/redemption").status_code == HTTPStatus.NOT_IMPLEMENTED
+
+
+def _real_account_ob_invoice(auth_account_id: str = "7777"):
+    """An OB invoice on a real account, already in CAS (SETTLEMENT_SCHED with an active reference)."""
+    account = factory_payment_account(
+        auth_account_id=auth_account_id, payment_method_code=PaymentMethod.ONLINE_BANKING.value
+    )
+    account.save()
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+        total=50,
+        cfs_account_id=cfs_account.id,
+    )
+    invoice.save()
+    factory_invoice_reference(invoice.id, invoice_number=f"REG{invoice.id}").save()
+    return account, invoice
+
+
+CFS_GET_INVOICE = "pay_api.services.payment_service.CFSService.get_invoice"
+CFS_REVERSE = "pay_api.services.cfs_service.CFSService.reverse_invoice"
+
+
+def _issue_link(invoice_id: int) -> str:
+    with (
+        patch("pay_api.services.payment_link.get_account_admin_and_coordinator_emails", return_value=[]),
+        patch(CFS_GET_INVOICE, return_value={"amount_due": 50}),
+        patch(CFS_REVERSE),
+    ):
+        return PaymentLinkService.create_for_invoice(invoice_id)["paymentUrl"].rsplit("/", 1)[-1]
+
+
+def test_post_invoice_payment_link_requires_system_role(session, client, jwt, app):
+    """Only the system role can issue a payment link for an existing invoice."""
+    _, invoice = _real_account_ob_invoice()
+    headers = {"Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}"}
+
+    rv = client.post(f"/api/v1/payment-requests/{invoice.id}/payment-links", headers=headers)
+
+    assert rv.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
+
+
+def test_post_invoice_payment_link_emails_admins_and_coordinators(session, client, jwt, app):
+    """The link is emailed to the account's admins and coordinators; calling again reuses the same link."""
+    _, invoice = _real_account_ob_invoice()
+    headers = {"Authorization": f"Bearer {jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)}"}
+
+    with (
+        patch(
+            "pay_api.services.payment_link.get_account_admin_and_coordinator_emails",
+            return_value=["admin@example.com", "coord@example.com"],
+        ),
+        patch("pay_api.services.payment_link.gcp_queue_publisher.publish_to_queue") as mock_publish,
+        patch(CFS_GET_INVOICE, return_value={"amount_due": 50}),
+        patch(CFS_REVERSE),
+    ):
+        first = client.post(f"/api/v1/payment-requests/{invoice.id}/payment-links", headers=headers)
+        second = client.post(f"/api/v1/payment-requests/{invoice.id}/payment-links", headers=headers)
+
+    assert first.status_code == HTTPStatus.CREATED
+    assert first.json["paymentUrl"] == second.json["paymentUrl"]
+    assert mock_publish.call_args.args[0].payload["emailAddresses"] == "admin@example.com,coord@example.com"
+    assert InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).count() == 1
+
+
+def test_post_invoice_payment_link_rejects_stub_account_and_paid_invoice(session, client, jwt, app):
+    """Only unpaid invoices on real accounts can be sent a link."""
+    _, paid = _real_account_ob_invoice()
+    paid.invoice_status_code = InvoiceStatus.PAID.value
+    paid.save()
+    _, on_stub = _real_account_ob_invoice(auth_account_id="sa-partner")
+    headers = {"Authorization": f"Bearer {jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)}"}
+
+    for invoice in (paid, on_stub):
+        rv = client.post(f"/api/v1/payment-requests/{invoice.id}/payment-links", headers=headers)
+        assert rv.status_code == HTTPStatus.BAD_REQUEST
+
+
+@pytest.mark.parametrize(
+    "payment_method",
+    [
+        PaymentMethod.PAD.value,
+        PaymentMethod.EFT.value,
+        PaymentMethod.DRAWDOWN.value,
+        PaymentMethod.EJV.value,
+        PaymentMethod.INTERNAL.value,
+    ],
+)
+def test_post_invoice_payment_link_rejects_unsupported_payment_method(session, client, jwt, app, payment_method):
+    """Only OB and DIRECT_PAY invoices can be converted; nothing is changed or issued for other methods."""
+    _, invoice = _real_account_ob_invoice()
+    invoice.payment_method_code = payment_method
+    invoice.save()
+    headers = {"Authorization": f"Bearer {jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)}"}
+
+    with patch(CFS_GET_INVOICE) as mock_get, patch(CFS_REVERSE) as mock_reverse:
+        rv = client.post(f"/api/v1/payment-requests/{invoice.id}/payment-links", headers=headers)
+
+    assert rv.status_code == HTTPStatus.BAD_REQUEST
+    assert rv.json["type"] == "INVALID_PAYMENT_METHOD"
+    mock_get.assert_not_called()
+    mock_reverse.assert_not_called()
+    assert InvoiceModel.find_by_id(invoice.id).payment_method_code == payment_method
+    assert InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).count() == 0
+
+
+def test_redeem_real_account_invoice(session, client, jwt, app):
+    """The link is issued already linked: the invoice's own account gets through, another account is refused."""
+    account, invoice = _real_account_ob_invoice()
+    factory_payment_account(auth_account_id="8888").save()
+    token = _issue_link(invoice.id)
+
+    def _redeem_as(account_id: str):
+        headers = {
+            "Authorization": f"Bearer {jwt.create_jwt(get_claims(), token_header)}",
+            "Account-Id": account_id,
+        }
+        auth = {"account": {"id": account_id, "paymentInfo": {"methodOfPayment": PaymentMethod.ONLINE_BANKING.value}}}
+        with patch("pay_api.services.payment_link.check_auth", return_value=auth):
+            return client.post(f"/api/v1/payment-links/{token}/redemption", headers=headers)
+
+    assert _redeem_as("7777").status_code == 200
+    assert _redeem_as("8888").status_code == 400
+    assert InvoiceModel.find_by_id(invoice.id).payment_account_id == account.id
+
+
+def test_guest_can_read_linked_payment_link_without_account_details(session, client, jwt, app):
+    """A guest opening the emailed link sees the summary, but not the account it belongs to."""
+    _, invoice = _real_account_ob_invoice()
+    token = _issue_link(invoice.id)
+    assert InvoicePaymentLinkModel.find_by_token(token).linked_at is not None
+
+    rv = client.get(f"/api/v1/payment-links/{token}")
+
+    assert rv.status_code == 200
+    assert rv.json["id"] == invoice.id
+    assert rv.json["paymentAccount"]["accountId"] is None
+
+
+def test_issuing_link_cancels_cas_invoice_and_moves_to_direct_pay(session, client, jwt, app):
+    """Issuing the link reverses the OB invoice in CAS and switches it to DIRECT_PAY, so a guest can pay by card."""
+    _, invoice = _real_account_ob_invoice()
+
+    with (
+        patch("pay_api.services.payment_link.get_account_admin_and_coordinator_emails", return_value=[]),
+        patch(CFS_GET_INVOICE, return_value={"amount_due": 50}),
+        patch(CFS_REVERSE) as mock_reverse,
+    ):
+        token = PaymentLinkService.create_for_invoice(invoice.id)["paymentUrl"].rsplit("/", 1)[-1]
+
+    mock_reverse.assert_called_once_with(f"REG{invoice.id}")
+    updated = InvoiceModel.find_by_id(invoice.id)
+    assert updated.payment_method_code == PaymentMethod.DIRECT_PAY.value
+    assert updated.invoice_status_code == InvoiceStatus.CREATED.value
+
+    rv = client.post(
+        f"/api/v1/payment-links/{token}/transactions",
+        data=json.dumps(TRANSACTION_BODY),
+        headers={"content-type": "application/json"},
+    )
+    assert rv.status_code == 201
+    assert rv.json.get("paySystemUrl")
+
+
+def test_issuing_link_for_cc_invoice_cancels_cas_invoice_and_moves_to_direct_pay(session, client, jwt, app):
+    """A CC invoice's own CAS invoice is reversed and the invoice switched to DIRECT_PAY."""
+    account = factory_payment_account(auth_account_id="7788", payment_method_code=PaymentMethod.CC.value)
+    account.save()
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.CC.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.CREATED.value,
+        payment_method_code=PaymentMethod.CC.value,
+        total=50,
+        cfs_account_id=cfs_account.id,
+    )
+    invoice.save()
+    factory_invoice_reference(invoice.id, invoice_number=f"REG{invoice.id}").save()
+
+    with (
+        patch("pay_api.services.payment_link.get_account_admin_and_coordinator_emails", return_value=[]),
+        patch(CFS_GET_INVOICE, return_value={"amount_due": 50}),
+        patch(CFS_REVERSE) as mock_reverse,
+    ):
+        PaymentLinkService.create_for_invoice(invoice.id)
+
+    mock_reverse.assert_called_once_with(f"REG{invoice.id}")
+    assert InvoiceModel.find_by_id(invoice.id).payment_method_code == PaymentMethod.DIRECT_PAY.value
+
+
+def test_issuing_link_refused_when_cas_balance_differs(session, client, jwt, app):
+    """If CAS no longer shows the full amount owing, nothing is reversed and no link is issued."""
+    _, invoice = _real_account_ob_invoice()
+    headers = {"Authorization": f"Bearer {jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)}"}
+
+    with patch(CFS_GET_INVOICE, return_value={"amount_due": 0}), patch(CFS_REVERSE) as mock_reverse:
+        rv = client.post(f"/api/v1/payment-requests/{invoice.id}/payment-links", headers=headers)
+
+    assert rv.status_code == 400
+    assert rv.json["type"] == "CFS_INVOICE_BALANCE_MISMATCH"
+    mock_reverse.assert_not_called()
+    assert InvoiceModel.find_by_id(invoice.id).payment_method_code == PaymentMethod.ONLINE_BANKING.value
+    assert InvoicePaymentLinkModel.query.filter_by(invoice_id=invoice.id).count() == 0
