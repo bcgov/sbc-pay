@@ -5,7 +5,7 @@ info:
     <p>BC Registries Pay system is used by the BC Registries account services and integrated systems to create payment transactions to pay for the products purchased. This abstracts the integrated systems from the underlying payment integrations and payment methods. <br/>
     With this API you can submit the following transactions:<ul><li>Create payment transactions</li><li>Get payment status</li><li>Delete unpaid payment transactions</li><li>Generate PDF receipt</li><li>Retrieve account statements</li><li>Generate account transactions reports</li></ul>
     <p>All requests must include an Account ID.</p>
-  version: 1.0.12
+  version: 1.0.13
   contact:
     name: BC Registries
 servers:
@@ -207,6 +207,7 @@ paths:
       description: |-
         Create invoice records. This will create transaction records in payment system based on account settings. Below payment methods are decided based on the account preference.
         <ul><li>Credit Card</li><li>Pre Authorized Debit</li><li>Online Banking</li></ul>
+        <p>For API key requests, if the account's payment method needs the user to complete payment outside the API (Credit Card, Online Banking), a request with fees returns 402. Requests with no fees are created.</p>
       operationId: create_transaction
       requestBody:
         content:
@@ -303,6 +304,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples: {}
+        '402':
+          description: Payment Required. API key request with fees on an account whose payment method needs a payment action (Credit Card, Online Banking).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/payment-requests:
+                  value:
+                    type: INVALID_PAYMENT_METHOD
       parameters:
         - schema:
             type: string

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ftp-poller"
-version = "2.2.1"
+version = "2.2.2"
 description = ""
 authors = ["Travis Semple <travis8814@gmail.com>"]
 readme = "README.md"
