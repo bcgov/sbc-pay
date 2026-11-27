@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pay-admin"
-version = "2.2.2"
+version = "2.3.0"
 description = ""
 authors = ["Pay Team"]
 readme = "README.md"

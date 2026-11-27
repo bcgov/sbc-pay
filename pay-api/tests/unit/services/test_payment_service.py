@@ -686,3 +686,72 @@ def test_accept_delete_excludes_linking_key(session, public_user_mock, monkeypat
     assert called_kwargs.get("account_id") == "VENDOR_777"
     assert called_kwargs.get("one_of_roles") == [EDIT_ROLE]
     assert called_kwargs.get("allow_linking_key") in (None, False)
+
+
+def _ob_invoice_in_cas(cfs_account_id=True):
+    account = factory_payment_account(payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    account.save()
+    cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        payment_method_code=PaymentMethod.ONLINE_BANKING.value,
+        status_code=InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+        total=50,
+        cfs_account_id=cfs_account.id if cfs_account_id else None,
+    )
+    invoice.save()
+    factory_invoice_reference(invoice.id, invoice_number=f"REG{invoice.id}").save()
+    return invoice
+
+
+def test_switch_to_direct_pay_noop_for_direct_pay(session):
+    """A DIRECT_PAY invoice is left alone."""
+    invoice = _fresh_switchable_invoice(payment_method=PaymentMethod.DIRECT_PAY.value)
+
+    with patch("pay_api.services.payment_service.CFSService.get_invoice") as mock_get:
+        PaymentService.switch_to_direct_pay(invoice.id)
+
+    mock_get.assert_not_called()
+    assert Invoice.find_by_id(invoice.id).payment_method_code == PaymentMethod.DIRECT_PAY.value
+
+
+@pytest.mark.parametrize("payment_method", [PaymentMethod.PAD.value, PaymentMethod.EFT.value])
+def test_switch_to_direct_pay_rejects_unsupported_method(session, payment_method):
+    """Only OB and CC invoices can be converted."""
+    invoice = _fresh_switchable_invoice(payment_method=payment_method)
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentService.switch_to_direct_pay(invoice.id)
+    assert excinfo.value.code == Error.INVALID_PAYMENT_METHOD.code
+
+
+def test_switch_to_direct_pay_refuses_without_cfs_account(session):
+    """An invoice reference with no CFS account to check against is never reversed."""
+    invoice = _ob_invoice_in_cas(cfs_account_id=False)
+
+    with (
+        patch("pay_api.services.payment_service.CFSService.get_invoice") as mock_get,
+        patch("pay_api.services.cfs_service.CFSService.reverse_invoice") as mock_reverse,
+        pytest.raises(BusinessException) as excinfo,
+    ):
+        PaymentService.switch_to_direct_pay(invoice.id)
+
+    assert excinfo.value.code == Error.CFS_INVOICE_BALANCE_MISMATCH.code
+    mock_get.assert_not_called()
+    mock_reverse.assert_not_called()
+
+
+def test_switch_to_direct_pay_refuses_when_cas_has_no_amount_due(session):
+    """A CAS response without amount_due is treated as a mismatch."""
+    invoice = _ob_invoice_in_cas()
+
+    with (
+        patch("pay_api.services.payment_service.CFSService.get_invoice", return_value={}),
+        patch("pay_api.services.cfs_service.CFSService.reverse_invoice") as mock_reverse,
+        pytest.raises(BusinessException) as excinfo,
+    ):
+        PaymentService.switch_to_direct_pay(invoice.id)
+
+    assert excinfo.value.code == Error.CFS_INVOICE_BALANCE_MISMATCH.code
+    mock_reverse.assert_not_called()
+    assert Invoice.find_by_id(invoice.id).payment_method_code == PaymentMethod.ONLINE_BANKING.value
